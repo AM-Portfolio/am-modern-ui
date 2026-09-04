@@ -1,30 +1,15 @@
-<<<<<<< Updated upstream
 import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_dashboard_ui/am_dashboard_ui.dart' as dashboard;
 import 'package:am_common/am_common.dart' as common;
 import 'package:am_subscription_ui/am_subscription_ui.dart' as am_sub;
 import 'package:am_user_ui/am_user_ui.dart' as am_user;
 import 'package:flutter/foundation.dart' show kIsWeb;
-=======
-import 'package:am_ai_ui/am_ai_ui.dart';
-import 'package:am_analysis_ui/am_analysis_ui.dart';
-import 'package:am_auth_ui/am_auth_ui.dart';
-import 'package:am_dashboard_ui/am_dashboard_ui.dart' as dashboard;
-import 'package:am_diagnostic_ui/am_diagnostic_ui.dart';
-import 'package:am_doc_intelligence_ui/am_doc_intelligence_ui.dart';
-import 'package:am_market_ui/am_market_ui.dart';
-import 'package:am_portfolio_ui/am_portfolio_ui.dart';
-import 'package:am_subscription_ui/am_subscription_ui.dart' as am_sub;
-import 'package:am_trade_ui/am_trade_ui.dart';
-import 'package:am_user_ui/am_user_ui.dart';
->>>>>>> Stashed changes
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/shell/app_shell.dart';
-<<<<<<< Updated upstream
 import '../../features/chart/comparison_chart_expanded_page.dart';
 import 'app_routes.dart';
 import 'auth_refresh_listenable.dart';
@@ -41,16 +26,10 @@ bool _subscriptionPageEnabled() {
     common.FeatureFlagKeys.subscriptionPageEnabled,
   );
 }
-=======
-import 'app_routes.dart';
-import 'auth_refresh_listenable.dart';
-import 'share_url_builder.dart';
->>>>>>> Stashed changes
 
 GoRouter createAppRouter({
   required AuthCubit authCubit,
   required AuthRefreshListenable refreshListenable,
-<<<<<<< Updated upstream
   Uri? launchUri,
 }) {
   return GoRouter(
@@ -109,26 +88,6 @@ GoRouter createAppRouter({
         final isAdmin =
             authState is Authenticated && authState.user.isAdmin;
         if (!isAdmin) return AppRoutes.dashboard;
-=======
-}) {
-  return GoRouter(
-    initialLocation: AppRoutes.dashboard,
-    refreshListenable: refreshListenable,
-    redirect: (context, state) {
-      final isAuthenticated = authCubit.state is Authenticated;
-      final location = state.matchedLocation;
-
-      if (!isAuthenticated && AppRoutes.isAuthenticatedAppRoute(location)) {
-        final redirect = Uri.encodeComponent(state.uri.toString());
-        return '${AppRoutes.login}?redirect=$redirect';
-      }
-
-      if (isAuthenticated && location == AppRoutes.login) {
-        final target = ShareUrlBuilder.sanitizeRedirect(
-          state.uri.queryParameters['redirect'],
-        );
-        return target ?? AppRoutes.dashboard;
->>>>>>> Stashed changes
       }
 
       if (location == AppRoutes.portfolio) {
@@ -155,7 +114,6 @@ GoRouter createAppRouter({
 
       return null;
     },
-<<<<<<< Updated upstream
     errorBuilder: (context, state) {
       final authState = authCubit.state;
       final isAuthenticated = authState is Authenticated;
@@ -189,8 +147,6 @@ GoRouter createAppRouter({
         ),
       );
     },
-=======
->>>>>>> Stashed changes
     routes: [
       GoRoute(
         path: AppRoutes.login,
@@ -206,7 +162,6 @@ GoRouter createAppRouter({
       ),
       GoRoute(
         path: AppRoutes.resetPassword,
-<<<<<<< Updated upstream
         builder: (context, state) => ResetPasswordPage(
           resetToken: state.uri.queryParameters['token'],
           resetCode: state.uri.queryParameters['c'],
@@ -250,9 +205,6 @@ GoRouter createAppRouter({
           },
           onOpenPrivacy: () => context.go(AppRoutes.privacyPolicy),
         ),
-=======
-        builder: (context, state) => const ResetPasswordPage(),
->>>>>>> Stashed changes
       ),
       ShellRoute(
         builder: (context, state, child) => AppShell(child: child),
@@ -261,7 +213,6 @@ GoRouter createAppRouter({
             path: AppRoutes.dashboard,
             builder: (context, state) {
               final userId = _userId(context);
-<<<<<<< Updated upstream
               return dashboard.DashboardScreen(
                 userId: userId,
                 onOpenDocIntel: () =>
@@ -285,9 +236,6 @@ GoRouter createAppRouter({
                 series: series,
                 userId: _userId(context),
               );
-=======
-              return dashboard.DashboardScreen(userId: userId);
->>>>>>> Stashed changes
             },
           ),
           GoRoute(
@@ -295,23 +243,14 @@ GoRouter createAppRouter({
             builder: (context, state) {
               final portfolioId = state.pathParameters['portfolioId']!;
               final tab = state.pathParameters['tab'] ?? 'overview';
-<<<<<<< Updated upstream
               return buildPortfolioRoute(
                 portfolioId: portfolioId,
                 tab: tab,
-=======
-              return PortfolioScreen(
-                initialPortfolioId: portfolioId,
-                initialTab: tab,
->>>>>>> Stashed changes
                 onTabChanged: (slug) => context.go(
                   AppRoutes.portfolioPath(portfolioId, slug),
                 ),
                 onPortfolioChanged: (id, name) {
-<<<<<<< Updated upstream
                   _patchPortfolioSession(context, id, name);
-=======
->>>>>>> Stashed changes
                   final currentTab =
                       ShareUrlBuilder.portfolioTabFromLocation(
                             GoRouterState.of(context).matchedLocation,
@@ -319,11 +258,8 @@ GoRouter createAppRouter({
                           tab;
                   context.go(AppRoutes.portfolioPath(id, currentTab));
                 },
-<<<<<<< Updated upstream
                 onOpenDocIntel: () =>
                     context.go(AppRoutes.docIntelPath('doc-processor')),
-=======
->>>>>>> Stashed changes
               );
             },
           ),
@@ -331,7 +267,6 @@ GoRouter createAppRouter({
             path: '${AppRoutes.portfolio}/:tab',
             builder: (context, state) {
               final tab = state.pathParameters['tab'] ?? 'overview';
-<<<<<<< Updated upstream
               return buildPortfolioRoute(
                 portfolioId: null,
                 tab: tab,
@@ -343,27 +278,13 @@ GoRouter createAppRouter({
                 },
                 onOpenDocIntel: () =>
                     context.go(AppRoutes.docIntelPath('doc-processor')),
-=======
-              return PortfolioScreen(
-                initialTab: tab,
-                onTabChanged: (slug) =>
-                    context.go(AppRoutes.portfolioLegacyTabPath(slug)),
-                onPortfolioChanged: (id, name) {
-                  context.go(AppRoutes.portfolioPath(id, tab));
-                },
->>>>>>> Stashed changes
               );
             },
           ),
           GoRoute(
             path: AppRoutes.tradeDiscovery,
             builder: (context, state) {
-<<<<<<< Updated upstream
               return buildTradeDiscoveryRoute(
-=======
-              return TradeResponsiveLayout(
-                initialTab: 'portfolios',
->>>>>>> Stashed changes
                 onTabChanged: (slug) {
                   if (slug == 'portfolios') {
                     context.go(AppRoutes.tradeDiscovery);
@@ -377,10 +298,7 @@ GoRouter createAppRouter({
                   }
                 },
                 onPortfolioChanged: (id, name) {
-<<<<<<< Updated upstream
                   _patchPortfolioSession(context, id, name);
-=======
->>>>>>> Stashed changes
                   context.go(AppRoutes.tradePath(id, 'portfolios'));
                 },
               );
@@ -391,15 +309,9 @@ GoRouter createAppRouter({
             builder: (context, state) {
               final portfolioId = state.pathParameters['portfolioId']!;
               final tab = state.pathParameters['tab'] ?? 'portfolios';
-<<<<<<< Updated upstream
               return buildTradePortfolioRoute(
                 portfolioId: portfolioId,
                 tab: tab,
-=======
-              return TradeResponsiveLayout(
-                initialPortfolioId: portfolioId,
-                initialTab: tab,
->>>>>>> Stashed changes
                 onTabChanged: (slug) {
                   if (slug == 'portfolios' && portfolioId.isEmpty) {
                     context.go(AppRoutes.tradeDiscovery);
@@ -408,10 +320,7 @@ GoRouter createAppRouter({
                   context.go(AppRoutes.tradePath(portfolioId, slug));
                 },
                 onPortfolioChanged: (id, name) {
-<<<<<<< Updated upstream
                   _patchPortfolioSession(context, id, name);
-=======
->>>>>>> Stashed changes
                   final currentTab = ShareUrlBuilder.tradeTabFromLocation(
                         GoRouterState.of(context).matchedLocation,
                       ) ??
@@ -425,20 +334,12 @@ GoRouter createAppRouter({
             path: '${AppRoutes.trade}/:tab',
             builder: (context, state) {
               final tab = state.pathParameters['tab'] ?? 'portfolios';
-<<<<<<< Updated upstream
               return buildTradeLegacyTabRoute(
                 tab: tab,
                 onTabChanged: (slug) =>
                     context.go(AppRoutes.tradeLegacyTabPath(slug)),
                 onPortfolioChanged: (id, name) {
                   _patchPortfolioSession(context, id, name);
-=======
-              return TradeResponsiveLayout(
-                initialTab: tab,
-                onTabChanged: (slug) =>
-                    context.go(AppRoutes.tradeLegacyTabPath(slug)),
-                onPortfolioChanged: (id, name) {
->>>>>>> Stashed changes
                   context.go(AppRoutes.tradePath(id, tab));
                 },
               );
@@ -449,22 +350,15 @@ GoRouter createAppRouter({
             builder: (context, state) {
               final tab = state.pathParameters['tab'] ?? 'all-indices';
               final userId = _userId(context);
-<<<<<<< Updated upstream
               return buildMarketRoute(
                 userId: userId,
                 tab: tab,
-=======
-              return MarketPage(
-                userId: userId,
-                initialTab: tab,
->>>>>>> Stashed changes
                 onTabChanged: (slug) => context.go(AppRoutes.marketPath(slug)),
               );
             },
           ),
           GoRoute(
             path: AppRoutes.aiChat,
-<<<<<<< Updated upstream
             builder: (context, state) {
               final authState = context.read<AuthCubit>().state;
               String? displayName;
@@ -571,40 +465,6 @@ GoRouter createAppRouter({
                 onClose: () =>
                     context.go(AppRoutes.profileHighlightSubscription()),
               ),
-=======
-            builder: (context, state) => AiChatScreen(userId: _userId(context)),
-          ),
-          GoRoute(
-            path: AppRoutes.lab,
-            builder: (context, state) => const DiagnosticDashboardPage(),
-          ),
-          GoRoute(
-            path: AppRoutes.analysis,
-            builder: (context, state) {
-              final userId = _userId(context);
-              return AnalysisDashboard(
-                entityType: AnalysisEntityType.PORTFOLIO,
-                entityId: userId,
-                analysisService: RealAnalysisService(),
-              );
-            },
-          ),
-          GoRoute(
-            path: AppRoutes.docIntel,
-            builder: (context, state) =>
-                DocIntelligenceScreen(userId: _userId(context)),
-          ),
-          GoRoute(
-            path: AppRoutes.profile,
-            builder: (context, state) =>
-                ProfileSettingsPage(userId: _userId(context)),
-          ),
-          GoRoute(
-            path: AppRoutes.subscription,
-            builder: (context, state) => BlocProvider<am_sub.SubscriptionCubit>.value(
-              value: GetIt.instance<am_sub.SubscriptionCubit>(),
-              child: const am_sub.SubscriptionPricingScreen(),
->>>>>>> Stashed changes
             ),
           ),
         ],
@@ -642,7 +502,6 @@ String? _portfolioIdOnlyRedirect(String location) {
 
 String _userId(BuildContext context) {
   final authState = context.read<AuthCubit>().state;
-<<<<<<< Updated upstream
   if (authState is Authenticated && authState.user.id.isNotEmpty) {
     return authState.user.id;
   }
@@ -660,8 +519,3 @@ void _patchPortfolioSession(BuildContext context, String id, String name) {
   }
 }
 
-=======
-  return authState is Authenticated ? authState.user.id : '';
-}
-
->>>>>>> Stashed changes
