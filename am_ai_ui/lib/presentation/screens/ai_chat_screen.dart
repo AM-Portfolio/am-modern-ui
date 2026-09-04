@@ -1177,9 +1177,6 @@ class _TokenUsagePopover extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasLimit = usage.hasLimit;
-    final barColor = usage.percentFull >= 90
-        ? context.statusError
-        : context.aiPrimary;
 
     return Material(
       elevation: 0,
@@ -1250,17 +1247,18 @@ class _TokenUsagePopover extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            _SegmentedUsageBar(usage: usage, usedColor: barColor),
             const SizedBox(height: 12),
+            // Cursor-style track: colored used segment(s) + remaining
+            _TokenUsageProgressLine(usage: usage),
+            const SizedBox(height: 14),
             _UsageBreakdownRow(
-              color: barColor,
+              color: context.aiUsageUsed,
               label: 'Used this month',
               value: hasLimit ? '~${AiTokenUsage.formatCount(usage.used)}' : '—',
             ),
             const SizedBox(height: 8),
             _UsageBreakdownRow(
-              color: context.borderColor.withValues(alpha: 0.65),
+              color: context.aiUsageRemaining,
               label: 'Remaining',
               value: hasLimit ? '~${AiTokenUsage.formatCount(usage.remaining)}' : '—',
             ),
@@ -1271,40 +1269,72 @@ class _TokenUsagePopover extends StatelessWidget {
   }
 }
 
-class _SegmentedUsageBar extends StatelessWidget {
+class _TokenUsageProgressLine extends StatelessWidget {
   final AiTokenUsage usage;
-  final Color usedColor;
 
-  const _SegmentedUsageBar({
-    required this.usage,
-    required this.usedColor,
-  });
+  const _TokenUsageProgressLine({required this.usage});
 
   @override
   Widget build(BuildContext context) {
-    final track = context.borderColor.withValues(alpha: context.isDark ? 0.45 : 0.35);
-    if (!usage.hasLimit) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(4),
-        child: SizedBox(height: 8, child: ColoredBox(color: track)),
-      );
-    }
-    final usedFlex = usage.used.clamp(0, usage.limit);
-    final remainFlex = (usage.limit - usage.used).clamp(0, usage.limit);
+    final frac = usage.hasLimit ? usage.fractionUsed.clamp(0.0, 1.0) : 0.0;
+    final segments = context.aiUsageBarSegments;
+    final weights = context.aiUsageBarSegmentWeights;
+
     return ClipRRect(
-      borderRadius: BorderRadius.circular(4),
+      borderRadius: BorderRadius.circular(5),
       child: SizedBox(
-        height: 8,
-        child: Row(
-          children: [
-            if (usedFlex > 0)
-              Expanded(flex: usedFlex, child: ColoredBox(color: usedColor)),
-            if (remainFlex > 0)
-              Expanded(flex: remainFlex, child: ColoredBox(color: track)),
-          ],
+        height: 9,
+        width: double.infinity,
+        child: CustomPaint(
+          painter: _TokenUsageBarPainter(
+            fractionUsed: frac,
+            trackColor: context.aiUsageTrack,
+            segmentColors: segments,
+            segmentWeights: weights,
+          ),
         ),
       ),
     );
+  }
+}
+
+class _TokenUsageBarPainter extends CustomPainter {
+  final double fractionUsed;
+  final Color trackColor;
+  final List<Color> segmentColors;
+  final List<double> segmentWeights;
+
+  const _TokenUsageBarPainter({
+    required this.fractionUsed,
+    required this.trackColor,
+    required this.segmentColors,
+    required this.segmentWeights,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final trackPaint = Paint()..color = trackColor;
+    canvas.drawRect(Offset.zero & size, trackPaint);
+
+    if (fractionUsed <= 0 || size.width <= 0) return;
+
+    final usedWidth = size.width * fractionUsed;
+    final weightSum = segmentWeights.fold<double>(0, (a, b) => a + b);
+    var x = 0.0;
+    for (var i = 0; i < segmentColors.length; i++) {
+      final w = usedWidth * (segmentWeights[i] / weightSum);
+      canvas.drawRect(
+        Rect.fromLTWH(x, 0, w, size.height),
+        Paint()..color = segmentColors[i],
+      );
+      x += w;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _TokenUsageBarPainter oldDelegate) {
+    return oldDelegate.fractionUsed != fractionUsed ||
+        oldDelegate.trackColor != trackColor;
   }
 }
 
