@@ -7,8 +7,13 @@ import '../../providers/equity_insider_provider.dart';
 
 class EquityInsiderHero extends ConsumerWidget {
   final String symbol;
+  final VoidCallback? onSearchTap;
 
-  const EquityInsiderHero({super.key, required this.symbol});
+  const EquityInsiderHero({
+    super.key,
+    required this.symbol,
+    this.onSearchTap,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -29,32 +34,63 @@ class EquityInsiderHero extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        data.symbol ?? symbol,
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w500,
-                          color: context.textPrimary,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${data.sector ?? 'Unknown'} · NSE',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: context.textSecondary,
-                          textBaseline: TextBaseline.alphabetic,
-                          letterSpacing: 0.05,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
                       Wrap(
-                        spacing: 6,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 12,
                         runSpacing: 6,
                         children: [
-                          _buildBadge(context, 'Large Cap', isNeutral: true),
+                          Text(
+                            data.symbol ?? symbol,
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w600,
+                              color: context.textPrimary,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          _buildBadge(context, data.sector ?? 'NSE', isNeutral: true),
+                          if (onSearchTap != null)
+                            InkWell(
+                              onTap: onSearchTap,
+                              borderRadius: BorderRadius.circular(20),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: context.cardColor,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: context.borderColor),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.search_rounded,
+                                      size: 14,
+                                      color: context.colors.actionPrimaryBg,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Search stock...',
+                                      style: TextStyle(
+                                        color: context.textTertiary,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                         ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        data.companyName ?? 'National Stock Exchange · Live',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: context.textSecondary,
+                          letterSpacing: 0.1,
+                        ),
                       ),
                     ],
                   ),
