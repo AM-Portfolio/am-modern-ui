@@ -36,5 +36,5 @@ jobs:
       environment: ${{ github.event.inputs.environment }}
       gh_environment: ${{ format('web-{0}', github.event.inputs.environment) }}
       image_tag: ${{ github.event.inputs.image_tag == 'custom' && github.event.inputs.custom_tag || github.event.inputs.image_tag }}
-      namespace: ${{ github.event.inputs.environment == 'prod' && 'am-apps-prod' || 'am-apps-preprod' }}
+      namespace: ${{ github.event.inputs.environment == 'prod' && 'am-apps-prod' || (github.event.inputs.environment == 'preprod' && 'am-apps-preprod' || 'am-apps-dev') }}
     secrets: inherit

@@ -15,9 +15,10 @@
 #
 # Phase 8b: Unified caller pointing at am-pipelines@main
 #
-# Web Actions panels:
-#   - Build & GitOps — push/PR (auto freeze on main → Argo); no Helm Deploy
-#   - Manual Helm Deploy — workflow_dispatch target_env only (env approvals)
+# Web (trade-like): Build & GitOps — push/PR builds image; on main freezes
+#   am-gitops image-tags for Argo. deploy_*: false (no Helm waiting circles).
+# Manual Helm: separate workflow deploy-modern-ui.yml (like trade direct-deploy).
+# Android: unchanged — no GitOps.
 
 name: Unified CI/CD
 
@@ -156,9 +157,9 @@ jobs:
           extra_args: --only-verified
 
   # ============================================================
-  # WEB — Build & GitOps (auto panel)
-  # Push/PR web paths (or force_web with target_env=none): build image +
-  # on main freeze am-gitops image-tags for Argo. No Helm Deploy jobs.
+  # WEB — Build & GitOps (trade-style GitOps step; web only)
+  # Push/PR web paths or force_web: build image; on main freeze am-gitops.
+  # Manual Helm: deploy-modern-ui.yml (not nested here).
   # ============================================================
   web-build-gitops:
     name: Build & GitOps
@@ -166,11 +167,11 @@ jobs:
     if: |
       always() &&
       needs.security-scan.result == 'success' &&
-      (needs.detect-changes.outputs.web == 'true' || inputs.force_web == true) &&
-      (github.event_name != 'workflow_dispatch' || inputs.target_env == 'none')
+      (needs.detect-changes.outputs.web == 'true' || inputs.force_web == true)
     permissions:
-      contents: read
+      contents: write
       packages: write
+      id-token: write
     uses: AM-Portfolio/am-pipelines/.github/workflows/central-build-publish.yml@main
     with:
       language: "flutter"
@@ -184,43 +185,6 @@ jobs:
       deploy_prod: false
       # Trade-style: main push auto-commits image-tags; Argo owns Kind preprod roll
       gitops_write_preprod: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
-      gitops_values_path: "am_app"
-      gh_env_dev: "web-dev"
-      gh_env_preprod: "web-preprod"
-      gh_env_prod: "web-prod"
-      skip_secrets_scan: true
-      skip_iac_scan: true
-      skip_vulnerability_scan: false
-      no_cache: true
-    secrets: inherit
-
-  # ============================================================
-  # WEB — Manual Helm Deploy (separate panel, dispatch only)
-  # Run workflow → target_env = dev|preprod|prod. Env approvals apply.
-  # ============================================================
-  web-manual-helm:
-    name: Manual Helm Deploy
-    needs: [detect-changes, security-scan]
-    if: |
-      always() &&
-      needs.security-scan.result == 'success' &&
-      github.event_name == 'workflow_dispatch' &&
-      inputs.target_env != 'none'
-    permissions:
-      contents: read
-      packages: write
-    uses: AM-Portfolio/am-pipelines/.github/workflows/central-build-publish.yml@main
-    with:
-      language: "flutter"
-      working_directory: "am_app"
-      build_context: ".."
-      image_name: "am-modern-ui"
-      preprod_namespace: "am-apps-preprod"
-      prod_namespace: "am-apps-prod"
-      deploy_dev: ${{ inputs.target_env == 'dev' }}
-      deploy_preprod: ${{ inputs.target_env == 'preprod' }}
-      deploy_prod: ${{ inputs.target_env == 'prod' }}
-      gitops_write_preprod: false
       gitops_values_path: "am_app"
       gh_env_dev: "web-dev"
       gh_env_preprod: "web-preprod"
