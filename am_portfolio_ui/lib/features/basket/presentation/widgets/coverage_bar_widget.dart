@@ -29,7 +29,7 @@ class CoverageBarWidget extends StatelessWidget {
     final missFlex = total <= 0 ? 0 : (missing * 100).round().clamp(0, 10000);
     final barH = compact ? 8.0 : 12.0;
     final heldColor = context.statusSuccess;
-    final subColor = context.colors.actionPrimaryBg;
+    final subColor = ModuleColors.portfolio;
     final missColor = context.statusError;
 
     return Column(

@@ -17,6 +17,7 @@ import '../utils/basket_api_errors.dart';
 import '../utils/basket_responsive.dart';
 import '../utils/basket_portfolio_sync.dart';
 import '../flow/basket_flow_controller.dart';
+import '../shared/basket_panel_styles.dart';
 
 class BasketFinalPreviewPage extends ConsumerStatefulWidget {
   final BasketFinalPreviewArgs args;
@@ -210,27 +211,31 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        SegmentedButton<int>(
-                          segments: const [
-                            ButtonSegment(
-                              value: 0,
-                              label: Text('Your Basket'),
-                              icon: Icon(Icons.shopping_basket_outlined, size: 16),
-                            ),
-                            ButtonSegment(
-                              value: 1,
-                              label: Text('Original ETF'),
-                              icon: Icon(Icons.auto_awesome, size: 16),
-                            ),
-                          ],
-                          selected: {_mobilePanelIndex},
-                          onSelectionChanged: (s) {
-                            setState(() => _mobilePanelIndex = s.first);
-                          },
-                          style: ButtonStyle(
-                            visualDensity: VisualDensity.compact,
-                            textStyle: WidgetStatePropertyAll(
-                              Theme.of(context).textTheme.labelMedium,
+                        Theme(
+                          data: BasketPanelStyles.accentTheme(context),
+                          child: SegmentedButton<int>(
+                            segments: const [
+                              ButtonSegment(
+                                value: 0,
+                                label: Text('Your Basket'),
+                                icon: Icon(Icons.shopping_basket_outlined, size: 16),
+                              ),
+                              ButtonSegment(
+                                value: 1,
+                                label: Text('Original ETF'),
+                                icon: Icon(Icons.auto_awesome, size: 16),
+                              ),
+                            ],
+                            selected: {_mobilePanelIndex},
+                            onSelectionChanged: (s) {
+                              setState(() => _mobilePanelIndex = s.first);
+                            },
+                            showSelectedIcon: false,
+                            style: ButtonStyle(
+                              visualDensity: VisualDensity.compact,
+                              textStyle: WidgetStatePropertyAll(
+                                Theme.of(context).textTheme.labelMedium,
+                              ),
                             ),
                           ),
                         ),

@@ -153,7 +153,7 @@ extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
                       missingCount: missingCount,
                       excludedCount: _excludedItems.length,
                       heldColor: context.statusSuccess,
-                      subColor: context.colors.actionPrimaryBg,
+                      subColor: ModuleColors.portfolio,
                       missingColor: context.statusError,
                       bgColor: context.dividerColor,
                       coverage: coverage,
@@ -246,7 +246,7 @@ extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
                   tabAlignment: TabAlignment.start,
                   labelColor: context.textPrimary,
                   unselectedLabelColor: context.textSecondary,
-                  indicatorColor: context.colors.actionPrimaryBg,
+                  indicatorColor: ModuleColors.portfolio,
                   dividerColor: context.borderColor,
                   tabs: [
                     Tab(text: 'All (${displayItems.length})'),

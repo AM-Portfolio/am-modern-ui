@@ -41,10 +41,10 @@ class BdHoldingRow extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 16,
-                  backgroundColor: context.colors.actionPrimaryBg.withValues(alpha: 0.15),
+                  backgroundColor: ModuleColors.portfolio.withValues(alpha: 0.15),
                   child: Text(
                     displaySymbol.isNotEmpty ? displaySymbol[0] : '?',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: context.colors.actionPrimaryBg),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: ModuleColors.portfolio),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -86,7 +86,7 @@ class BdHoldingRow extends StatelessWidget {
                           minHeight: 4,
                           backgroundColor: context.colors.border,
                           valueColor: AlwaysStoppedAnimation(
-                            context.colors.actionPrimaryBg,
+                            ModuleColors.portfolio,
                           ),
                         ),
                       ),

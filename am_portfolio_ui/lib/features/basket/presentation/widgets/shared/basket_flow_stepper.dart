@@ -41,7 +41,7 @@ class BasketFlowStepper extends StatelessWidget {
     final color = isCompleted
         ? context.statusSuccess
         : (isActive
-            ? context.colors.actionPrimaryBg
+            ? ModuleColors.portfolio
             : context.colors.border);
     final textColor = isCompleted || isActive
         ? context.colors.textPrimary

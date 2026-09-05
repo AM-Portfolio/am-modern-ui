@@ -110,12 +110,12 @@ class BdHoldingCard extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 14,
-            backgroundColor: colors.actionPrimaryBg.withValues(alpha: 0.15),
+            backgroundColor: ModuleColors.portfolio.withValues(alpha: 0.15),
             child: Text(
               initial,
               style: theme.textTheme.labelMedium?.copyWith(
                 fontWeight: FontWeight.w700,
-                color: colors.actionPrimaryBg,
+                color: ModuleColors.portfolio,
               ),
             ),
           ),
@@ -147,7 +147,7 @@ class BdHoldingCard extends StatelessWidget {
                     value: (weightPercent / 100.0).clamp(0.0, 1.0),
                     minHeight: 4,
                     backgroundColor: colors.border.withValues(alpha: 0.4),
-                    color: colors.actionPrimaryBg,
+                    color: ModuleColors.portfolio,
                   ),
                 ),
               ],

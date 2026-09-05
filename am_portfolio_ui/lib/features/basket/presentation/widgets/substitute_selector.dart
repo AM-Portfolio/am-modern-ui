@@ -309,12 +309,12 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
             decoration: BoxDecoration(
               color: isFullyCovered 
                   ? context.statusSuccess.withValues(alpha: 0.1)
-                  : context.colors.actionPrimaryBg.withValues(alpha: 0.1),
+                  : ModuleColors.portfolio.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: isFullyCovered 
                     ? context.statusSuccess.withValues(alpha: 0.3)
-                    : context.colors.actionPrimaryBg.withValues(alpha: 0.3)
+                    : ModuleColors.portfolio.withValues(alpha: 0.3)
               ),
             ),
             child: Column(
@@ -344,7 +344,7 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
                     minHeight: 8,
                     backgroundColor: context.borderColor,
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      isFullyCovered ? context.statusSuccess : context.colors.actionPrimaryBg,
+                      isFullyCovered ? context.statusSuccess : ModuleColors.portfolio,
                     ),
                   ),
                 ),
@@ -386,9 +386,9 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
             child: FilledButton(
               onPressed: _selectedIsins.isEmpty ? null : _applySelection,
               style: FilledButton.styleFrom(
-                backgroundColor: context.colors.actionPrimaryBg,
+                backgroundColor: ModuleColors.portfolio,
                 foregroundColor: context.colors.actionPrimaryFg,
-                disabledBackgroundColor: context.colors.actionPrimaryBg.withValues(alpha: 0.3),
+                disabledBackgroundColor: ModuleColors.portfolio.withValues(alpha: 0.3),
               ),
               child: Text('Apply Selection (${_selectedIsins.length})'),
             ),
@@ -438,7 +438,7 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
                               _toggleAlternativeSelection(alt);
                             }
                           : null,
-                      activeColor: context.colors.actionPrimaryBg,
+                      activeColor: ModuleColors.portfolio,
                     ),
                     title: Text(alt.symbol,
                         style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -467,7 +467,7 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: context.colors.actionPrimaryBg
+                              color: ModuleColors.portfolio
                                   .withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(4),
                             ),
@@ -475,7 +475,7 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
                               'Index ETF',
                               style: TextStyle(
                                   fontSize: 9,
-                                  color: context.colors.actionPrimaryBg),
+                                  color: ModuleColors.portfolio),
                             ),
                           ),
                         if (alt.isSameSector)
@@ -553,7 +553,7 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
                 _toggleSearchedStockSelection(stock);
               }
             },
-            activeColor: context.colors.actionPrimaryBg,
+            activeColor: ModuleColors.portfolio,
           ),
           title: Text(stock.symbol),
           subtitle: Text(stock.name),

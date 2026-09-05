@@ -32,12 +32,12 @@ class BdIdentityCard extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: context.colors.actionPrimaryBg.withValues(alpha: 0.15),
+              color: ModuleColors.portfolio.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               Icons.shopping_basket_outlined,
-              color: context.colors.actionPrimaryBg,
+              color: ModuleColors.portfolio,
             ),
           ),
           const SizedBox(width: AppSpacing.md),

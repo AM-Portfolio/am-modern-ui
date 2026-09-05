@@ -102,12 +102,12 @@ class CustomizeConstituentRowMobile extends StatelessWidget {
                 CircleAvatar(
                   radius: 14,
                   backgroundColor:
-                      colors.actionPrimaryBg.withValues(alpha: 0.15),
+                      ModuleColors.portfolio.withValues(alpha: 0.15),
                   child: Text(
                     initial,
                     style: theme.textTheme.labelMedium?.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: colors.actionPrimaryBg,
+                      color: ModuleColors.portfolio,
                     ),
                   ),
                 ),

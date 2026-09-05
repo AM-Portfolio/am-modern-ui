@@ -54,7 +54,7 @@ class BdHoldingsSection extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: context.colors.actionPrimaryBg.withValues(alpha: 0.12),
+                    color: ModuleColors.portfolio.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -62,7 +62,7 @@ class BdHoldingsSection extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: context.colors.actionPrimaryBg,
+                      color: ModuleColors.portfolio,
                     ),
                   ),
                 ),
@@ -72,11 +72,11 @@ class BdHoldingsSection extends StatelessWidget {
                   icon: Icon(
                     Icons.visibility_outlined,
                     size: 18,
-                    color: context.colors.actionPrimaryBg,
+                    color: ModuleColors.portfolio,
                   ),
                   label: Text(
                     'View Allocation',
-                    style: TextStyle(color: context.colors.actionPrimaryBg),
+                    style: TextStyle(color: ModuleColors.portfolio),
                   ),
                 ),
               ],

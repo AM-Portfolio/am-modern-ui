@@ -30,7 +30,7 @@ class FpEtfPanel extends StatelessWidget {
         children: [
           FpPanelHeader(
             icon: Icons.auto_awesome,
-            iconBg: context.colors.actionPrimaryBg,
+            iconBg: ModuleColors.portfolio,
             title: 'Original ETF',
             subtitle: originalOpportunity.etfName,
             constituentsBadge: '${composition.length} Constituents',

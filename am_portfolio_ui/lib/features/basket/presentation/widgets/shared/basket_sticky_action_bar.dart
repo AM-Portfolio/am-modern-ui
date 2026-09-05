@@ -96,7 +96,7 @@ class BasketStickyActionBar extends StatelessWidget {
     final isDesktop = BasketResponsive.isDesktop(context);
     final isMobile = BasketResponsive.isMobile(context);
     final isTablet = BasketResponsive.isTablet(context);
-    final btnColor = primaryColor ?? context.colors.actionPrimaryBg;
+    final btnColor = primaryColor ?? ModuleColors.portfolio;
     final navReserveFull = PlatformConstants.globalBottomNavReserve(context);
     final isDark = context.isDark;
     final hasSecondary = secondaryLabel != null && onSecondary != null;

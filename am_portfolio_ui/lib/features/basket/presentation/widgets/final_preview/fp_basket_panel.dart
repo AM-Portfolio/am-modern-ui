@@ -48,7 +48,7 @@ class FpBasketPanel extends StatelessWidget {
       return FpStatusPill(
         label: 'Substituted',
         subLabel: subLabel,
-        color: context.colors.actionPrimaryBg,
+        color: ModuleColors.portfolio,
       );
     }
     // Should not reach here for missing/excluded items
@@ -104,7 +104,7 @@ class FpBasketPanel extends StatelessWidget {
               FpStatChip(
                 label: 'Substituted',
                 value: subCount.toString(),
-                valueColor: context.colors.actionPrimaryBg,
+                valueColor: ModuleColors.portfolio,
               ),
             ],
           ),

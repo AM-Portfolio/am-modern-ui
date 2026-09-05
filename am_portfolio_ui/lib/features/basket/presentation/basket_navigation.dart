@@ -49,6 +49,7 @@ class BasketNavigation {
     RouteSettings settings, {
     required String userId,
     required String portfolioId,
+    bool showInlineToggle = false,
   }) {
     switch (settings.name) {
       case previewRoute:
@@ -97,7 +98,7 @@ class BasketNavigation {
           builder: (_) => BasketExplorer(
             userId: userId,
             portfolioId: portfolioId,
-            showInlineToggle: false,
+            showInlineToggle: showInlineToggle,
           ),
         );
     }
@@ -521,10 +522,15 @@ class BasketSectionNavigator extends ConsumerStatefulWidget {
     super.key,
     required this.userId,
     required this.portfolioId,
+    this.showInlineToggle = false,
   });
 
   final String userId;
   final String portfolioId;
+
+  /// Web: true for Smart Baskets + Discover/My Baskets header.
+  /// Mobile: false — toggle lives in portfolio sticky header.
+  final bool showInlineToggle;
 
   @override
   ConsumerState<BasketSectionNavigator> createState() =>
@@ -617,6 +623,7 @@ class _BasketSectionNavigatorState
         settings,
         userId: widget.userId,
         portfolioId: widget.portfolioId,
+        showInlineToggle: widget.showInlineToggle,
       ),
     );
   }

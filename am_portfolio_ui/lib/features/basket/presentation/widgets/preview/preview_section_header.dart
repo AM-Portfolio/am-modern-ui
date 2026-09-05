@@ -23,7 +23,7 @@ class PreviewSectionHeader extends StatelessWidget {
       case ItemStatus.held:
         return context.statusSuccess;
       case ItemStatus.substitute:
-        return context.colors.actionPrimaryBg;
+        return ModuleColors.portfolio;
       case ItemStatus.missing:
         return context.statusError;
       case ItemStatus.excluded:

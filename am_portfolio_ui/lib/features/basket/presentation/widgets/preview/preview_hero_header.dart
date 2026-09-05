@@ -54,12 +54,12 @@ class PreviewHeroHeader extends StatelessWidget {
                   padding: const EdgeInsets.all(AppSpacing.sm),
                   decoration: BoxDecoration(
                     color:
-                        context.colors.actionPrimaryBg.withValues(alpha: 0.1),
+                        ModuleColors.portfolio.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.auto_awesome,
-                    color: context.colors.actionPrimaryBg,
+                    color: ModuleColors.portfolio,
                     size: compact ? 18 : 22,
                   ),
                 ),

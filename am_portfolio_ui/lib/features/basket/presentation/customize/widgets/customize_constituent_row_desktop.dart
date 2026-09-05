@@ -130,7 +130,7 @@ class _CustomizeConstituentRowDesktopState
         duration: const Duration(milliseconds: 100),
         height: 56,
         color: _isHovered
-            ? context.colors.actionPrimaryBg.withValues(alpha: 0.05)
+            ? ModuleColors.portfolio.withValues(alpha: 0.05)
             : Colors.transparent,
         child: Row(children: [
           Expanded(
@@ -234,7 +234,7 @@ class _CustomizeConstituentRowDesktopState
                     fontWeight: FontWeight.bold,
                     color: widget.isExcluded
                         ? context.textTertiary
-                        : context.colors.actionPrimaryBg,
+                        : ModuleColors.portfolio,
                   ),
                 ),
               ],
@@ -418,7 +418,7 @@ class _CustomizeConstituentRowDesktopState
                           onTap: widget.onSubstitute,
                           child: Icon(Icons.swap_horiz,
                               size: 18,
-                              color: context.colors.actionPrimaryBg),
+                              color: ModuleColors.portfolio),
                         ),
                         const SizedBox(width: 8),
                         InkWell(

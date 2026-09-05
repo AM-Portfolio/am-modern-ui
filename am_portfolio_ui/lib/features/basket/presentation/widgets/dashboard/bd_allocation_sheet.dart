@@ -35,7 +35,7 @@ class BdAllocationSheet extends StatelessWidget {
     final fmt = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
     final sorted = BdDashboardMath.sortedByWeight(lines, totalCurrentValue);
     final colors = [
-      context.colors.actionPrimaryBg,
+      ModuleColors.portfolio,
       context.statusSuccess,
       Colors.orangeAccent,
       Colors.blueAccent,

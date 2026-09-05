@@ -69,7 +69,7 @@ class _AlignedSideBySideGrid extends StatelessWidget {
           child: _PreviewTableCard(
             header: _PanelHeader(
               icon: Icons.pie_chart_outline,
-              iconColor: context.colors.actionPrimaryBg,
+              iconColor: ModuleColors.portfolio,
               title: 'ETF Index',
               subtitle: '$etfIsin · Target allocation',
             ),
@@ -142,7 +142,7 @@ class _MobileCombinedList extends StatelessWidget {
               Icon(
                 Icons.compare_arrows_rounded,
                 size: 18,
-                color: context.colors.actionPrimaryBg,
+                color: ModuleColors.portfolio,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -509,7 +509,7 @@ class _IndexDataRow extends StatelessWidget {
                     minHeight: 3,
                     backgroundColor:
                         context.colors.border.withValues(alpha: 0.4),
-                    color: context.colors.actionPrimaryBg,
+                    color: ModuleColors.portfolio,
                   ),
                 ),
               ],

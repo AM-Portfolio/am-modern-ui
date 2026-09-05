@@ -232,7 +232,7 @@ class _ManualBasketCreatorPageState
                 ),
               IconButton(
                 icon: Icon(Icons.donut_large_outlined,
-                    color: context.colors.actionPrimaryBg),
+                    color: ModuleColors.portfolio),
                 tooltip: 'Portfolio Summary',
                 onPressed: () => _showMobileSummarySheet(
                   context,
@@ -261,7 +261,7 @@ class _ManualBasketCreatorPageState
         : isTablet
             ? IconButton(
                 icon: Icon(Icons.assessment_outlined,
-                    color: context.colors.actionPrimaryBg),
+                    color: ModuleColors.portfolio),
                 tooltip: 'Portfolio Summary',
                 onPressed: () =>
                     setState(() => _showSummaryDrawer = !_showSummaryDrawer),
