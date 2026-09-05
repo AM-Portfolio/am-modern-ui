@@ -178,6 +178,9 @@ jobs:
       deploy_dev: ${{ (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/feature/') || startsWith(github.ref, 'refs/heads/hotfix/'))) || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'dev') }}
       deploy_preprod: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'preprod') }}
       deploy_prod: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'prod') }}
+      # Keep Argo image-tags in sync so Kind preprod does not stay on a stale pin
+      gitops_write_preprod: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'preprod') }}
+      gitops_values_path: "am_app"
       # Map environment names
       gh_env_dev: "web-dev"
       gh_env_preprod: "web-preprod"
