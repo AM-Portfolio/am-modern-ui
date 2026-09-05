@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/trade_portfolio_view_model.dart';
@@ -92,16 +93,16 @@ class TradePortfolioMobileCard extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
                                 decoration: BoxDecoration(
-                                  color: Colors.purple.withOpacity(0.1),
+                                  color: ModuleColors.trade.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(3),
-                                  border: Border.all(color: Colors.purple.withOpacity(0.3)),
+                                  border: Border.all(color: ModuleColors.trade.withOpacity(0.3)),
                                 ),
                                 child: Text(
                                   'TRADE',
                                   style: TextStyle(
                                     fontSize: 7,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.purple[700],
+                                    color: ModuleColors.trade,
                                     letterSpacing: 0.3,
                                   ),
                                 ),
@@ -168,7 +169,7 @@ class TradePortfolioMobileCard extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildMetric(context, 'Trades', portfolio.displayTotalTrades, Icons.swap_horiz, Colors.purple),
+                    _buildMetric(context, 'Trades', portfolio.displayTotalTrades, Icons.swap_horiz, ModuleColors.trade),
                     Container(width: 1, height: 24, color: Theme.of(context).dividerColor),
                     _buildMetric(
                       context,

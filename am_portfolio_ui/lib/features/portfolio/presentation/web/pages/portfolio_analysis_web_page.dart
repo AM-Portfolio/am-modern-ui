@@ -194,7 +194,7 @@ class _PortfolioAnalysisWebPageState
 
       const Spacer(),
 
-      const GlobalTimeFrameBar(
+      GlobalTimeFrameBar(
         primaryColor: ModuleColors.portfolio,
       ),
 

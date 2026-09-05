@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 
-/// Theme-aware color helpers for AI chat — all tokens from [AppColorsTheme].
+/// Theme-aware color helpers for AI chat — tokens from ModuleColors / AppColorsTheme.
 extension AiChatTheme on BuildContext {
-  Color get aiPrimary => colors.actionPrimaryBg;
+  Color get aiPrimary => ModuleColors.aiChat;
 
   Color get aiOnPrimary => colors.actionPrimaryFg;
 
   LinearGradient get aiPrimaryGradient => LinearGradient(
         colors: [
-          colors.actionPrimaryBg,
-          colors.actionPrimaryBg.withValues(alpha: 0.78),
+          ModuleColors.aiChat,
+          Color.lerp(ModuleColors.aiChat, Colors.white, 0.22)!,
         ],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,

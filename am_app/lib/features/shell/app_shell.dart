@@ -578,9 +578,16 @@ final userId =
                               moduleShareUrls: AppRoutes.navTitleToDefaultPath,
                               onThemeToggle: () {
                                 try {
-                                  context.read<ThemeCubit>().toggleTheme();
+                                  final cubit = context.read<ThemeCubit>();
+                                  showThemeModePickerDialog(
+                                    context: context,
+                                    currentMode: cubit.state.mode,
+                                    onSelected: (mode) {
+                                      cubit.setTheme(mode);
+                                    },
+                                  );
                                 } catch (e) {
-                                  debugPrint('Theme toggle error: $e');
+                                  debugPrint('Theme picker error: $e');
                                 }
                               },
                               onLogout: () async {

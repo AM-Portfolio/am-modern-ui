@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 import '../../../favorite_filter_providers.dart';
 import '../../../internal/domain/entities/favorite_filter.dart';
@@ -335,7 +336,7 @@ class _FilterBottomSheetContentState extends ConsumerState<_FilterBottomSheetCon
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     child: Row(
       children: [
-        Icon(Icons.filter_list_rounded, size: 22, color: theme.primaryColor),
+        Icon(Icons.filter_list_rounded, size: 22, color: ModuleColors.trade),
         const SizedBox(width: 10),
         Text('Filters', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, fontSize: 16)),
         if (_activeFilterCount > 0) _buildFilterBadge(theme),
@@ -351,7 +352,7 @@ class _FilterBottomSheetContentState extends ConsumerState<_FilterBottomSheetCon
     padding: const EdgeInsets.only(left: 8),
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: BoxDecoration(color: theme.primaryColor, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(color: ModuleColors.trade, borderRadius: BorderRadius.circular(12)),
       child: Text(
         '$_activeFilterCount',
         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
@@ -381,9 +382,9 @@ class _FilterBottomSheetContentState extends ConsumerState<_FilterBottomSheetCon
   Widget _buildTabBar(ThemeData theme) => TabBar(
     controller: _tabController,
     isScrollable: true,
-    labelColor: theme.primaryColor,
+    labelColor: ModuleColors.trade,
     unselectedLabelColor: theme.hintColor,
-    indicatorColor: theme.primaryColor,
+    indicatorColor: ModuleColors.trade,
     indicatorWeight: 3,
     labelPadding: const EdgeInsets.symmetric(horizontal: 20),
     labelStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
@@ -431,8 +432,8 @@ class _FilterBottomSheetContentState extends ConsumerState<_FilterBottomSheetCon
     padding: const EdgeInsets.all(12),
     constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
     style: IconButton.styleFrom(
-      backgroundColor: theme.primaryColor.withOpacity(0.1),
-      foregroundColor: theme.primaryColor,
+      backgroundColor: ModuleColors.trade.withOpacity(0.1),
+      foregroundColor: ModuleColors.trade,
     ),
   );
 
@@ -493,11 +494,11 @@ class _FilterBottomSheetContentState extends ConsumerState<_FilterBottomSheetCon
   Widget _buildFavoriteIcon(ThemeData theme, FavoriteFilter? selectedFilter) => Container(
     padding: const EdgeInsets.all(8),
     decoration: BoxDecoration(
-      color: selectedFilter != null ? theme.primaryColor.withOpacity(0.15) : theme.cardColor,
+      color: selectedFilter != null ? ModuleColors.trade.withOpacity(0.15) : theme.cardColor,
       borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: selectedFilter != null ? theme.primaryColor : theme.dividerColor),
+      border: Border.all(color: selectedFilter != null ? ModuleColors.trade : theme.dividerColor),
     ),
-    child: Icon(Icons.bookmark_rounded, size: 22, color: selectedFilter != null ? theme.primaryColor : theme.hintColor),
+    child: Icon(Icons.bookmark_rounded, size: 22, color: selectedFilter != null ? ModuleColors.trade : theme.hintColor),
   );
 
   List<PopupMenuEntry<String>> _buildFavoriteMenuItems(
@@ -518,11 +519,11 @@ class _FilterBottomSheetContentState extends ConsumerState<_FilterBottomSheetCon
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
           children: [
-            Icon(Icons.bookmark_rounded, size: 20, color: theme.primaryColor),
+            Icon(Icons.bookmark_rounded, size: 20, color: ModuleColors.trade),
             const SizedBox(width: 10),
             Text(
               'Favorites',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: theme.primaryColor),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: ModuleColors.trade),
             ),
             const Spacer(),
             Text('${filterList.filters.length}', style: TextStyle(fontSize: 13, color: theme.hintColor)),
@@ -554,7 +555,7 @@ class _FilterBottomSheetContentState extends ConsumerState<_FilterBottomSheetCon
           style: TextStyle(
             fontSize: 14,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            color: isSelected ? theme.primaryColor : null,
+            color: isSelected ? ModuleColors.trade : null,
           ),
         ),
       ),
@@ -563,7 +564,7 @@ class _FilterBottomSheetContentState extends ConsumerState<_FilterBottomSheetCon
   );
 
   Widget _buildSelectionIcon(ThemeData theme, bool isSelected) =>
-      isSelected ? Icon(Icons.check_circle, size: 18, color: theme.primaryColor) : const SizedBox(width: 18);
+      isSelected ? Icon(Icons.check_circle, size: 18, color: ModuleColors.trade) : const SizedBox(width: 18);
 
   Widget _buildFilterOptionsMenu(ThemeData theme, FavoriteFilter filter) => PopupMenuButton<String>(
     icon: Icon(Icons.more_vert, size: 18, color: theme.hintColor),

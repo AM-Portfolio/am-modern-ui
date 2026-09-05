@@ -209,9 +209,9 @@ class _TradeHoldingsTemplateState extends State<TradeHoldingsTemplate> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: isCurrentPage ? theme.primaryColor : Colors.transparent,
+                  color: isCurrentPage ? ModuleColors.trade : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: isCurrentPage ? theme.primaryColor : theme.dividerColor),
+                  border: Border.all(color: isCurrentPage ? ModuleColors.trade : theme.dividerColor),
                 ),
                 child: Text(
                   '${pageNumber + 1}',

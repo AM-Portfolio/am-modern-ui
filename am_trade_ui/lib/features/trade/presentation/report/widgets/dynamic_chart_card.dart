@@ -51,7 +51,7 @@ class _DynamicChartCardState extends ConsumerState<DynamicChartCard> {
   
   // Define colors for metrics
   final Map<ChartMetric, Color> _metricColors = {
-      ChartMetric.winRate: const Color(0xFF6C5DD3), // Purple
+      ChartMetric.winRate: ModuleColors.trade, // Trade module accent
       ChartMetric.tradeCount: const Color(0xFFFFA500), // Orange
       ChartMetric.avgWin: const Color(0xFF00FF00), // Green
       ChartMetric.avgLoss: const Color(0xFFFF0000), // Red

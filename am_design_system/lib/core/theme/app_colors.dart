@@ -13,15 +13,28 @@ class AppColors {
   static const Color primaryLight = Color(0xFF8B7EE0);
   
   // ============================================================================
-  // MODULE ACCENT COLORS
+  // MODULE ACCENT COLORS (mutable — synced from ModuleColors on theme change)
   // ============================================================================
-  
-  static const Color marketAccent = Color(0xFF06b6d4);      // Cyan
-  static const Color portfolioAccent = Color(0xFFec4899);   // Pink
-  static const Color tradeAccent = Color(0xFF8b5cf6);       // Purple
-  static const Color authAccent = Color(0xFF6C63FF);        // Indigo
-  static const Color userAccent = Color(0xFF8B7EE0);        // Light Purple
-  
+
+  static Color marketAccent = const Color(0xFF06b6d4); // Cyan
+  static Color portfolioAccent = const Color(0xFFec4899); // Pink
+  static Color tradeAccent = const Color(0xFF8b5cf6); // Purple
+  static Color authAccent = const Color(0xFF6C63FF); // Indigo
+  static Color userAccent = const Color(0xFF8B7EE0); // Light Purple
+
+  /// Keep legacy AppColors accents aligned with [ModuleColors].
+  static void syncModuleAccents({
+    required Color market,
+    required Color trade,
+    required Color portfolio,
+    required Color dashboard,
+  }) {
+    marketAccent = market;
+    tradeAccent = trade;
+    portfolioAccent = portfolio;
+    authAccent = dashboard;
+    userAccent = Color.lerp(portfolio, trade, 0.5)!;
+  }
   // ============================================================================
   // FINANCIAL STATUS COLORS
   // ============================================================================

@@ -95,6 +95,8 @@ export 'shared/widgets/inputs/multi_select_dropdown.dart';
 export 'shared/widgets/inputs/dropdown_styles.dart';
 export 'shared/widgets/inputs/compact_date_range_picker.dart';
 export 'shared/widgets/inputs/am_toggle_chip.dart';
+export 'shared/widgets/inputs/theme_mode_picker_dialog.dart';
+export 'shared/widgets/inputs/theme_selector.dart';
 
 // --- Display & Cards ---
 export 'shared/widgets/am_click_capsule.dart';

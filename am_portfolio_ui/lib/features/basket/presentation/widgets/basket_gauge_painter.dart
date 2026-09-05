@@ -11,10 +11,10 @@ class BasketGaugePainter extends CustomPainter {
 
   BasketGaugePainter({
     required this.percentage,
-    this.fillColor = ModuleColors.portfolio,
+    Color? fillColor,
     this.backgroundColor = Colors.white24,
     this.strokeWidth = 12.0,
-  });
+  }) : fillColor = fillColor ?? ModuleColors.portfolio;
 
   @override
   void paint(Canvas canvas, Size size) {

@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:am_design_system/core/navigation/app_web_navigation.dart';
 import 'package:am_design_system/core/theme/app_colors.dart';
+import 'package:am_design_system/core/module/module_config.dart';
 import 'package:am_design_system/shared/widgets/navigation/sidebar_item.dart';
 
 /// Premium floating bottom navigation bar with glassmorphism effect.
@@ -200,23 +201,23 @@ class _GlobalBottomNavigationState extends State<GlobalBottomNavigation> {
   Color? _getIconColor(String title) {
     switch (title.toLowerCase()) {
       case 'dashboard':
-        return AppColors.primary;
+        return ModuleColors.dashboard;
       case 'market':
-        return AppColors.marketAccent;
+        return ModuleColors.market;
       case 'portfolio':
-        return AppColors.portfolioAccent;
+        return ModuleColors.portfolio;
       case 'trade':
-        return AppColors.tradeAccent;
+        return ModuleColors.trade;
       case 'doc intel':
-        return const Color(0xFF00D2D3);
+        return ModuleColors.analytics;
       case 'subscription':
-        return const Color(0xFFFF9F43);
+        return ModuleColors.reports;
       case 'profile':
-        return const Color(0xFF8B7EE0);
+        return ModuleColors.dashboard;
       case 'ai chat':
-        return const Color(0xFF6C5DD3);
+        return ModuleColors.aiChat;
       case 'analysis':
-        return const Color(0xFF0984E3);
+        return ModuleColors.portfolio;
       default:
         return null;
     }

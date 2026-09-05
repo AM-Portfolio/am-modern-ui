@@ -62,8 +62,11 @@ class _BillingToggleState extends State<BillingToggle> {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            context.colors.premiumActionPrimary,
-                            context.colors.premiumActionPrimary.withValues(alpha: 0.8),
+                            Theme.of(context).colorScheme.primary,
+                            Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withValues(alpha: 0.8),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -71,7 +74,10 @@ class _BillingToggleState extends State<BillingToggle> {
                         borderRadius: BorderRadius.circular(26),
                         boxShadow: [
                           BoxShadow(
-                            color: context.colors.premiumActionPrimary.withValues(alpha: 0.25),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withValues(alpha: 0.25),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),

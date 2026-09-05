@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 import '../../../models/trade_holding_view_model.dart';
 import '../widgets/info_card.dart';
@@ -105,7 +106,7 @@ class TradeInfoSection extends StatelessWidget {
   Widget _buildTradeDetailsCard(BuildContext context) => InfoCard(
     title: 'Trade Details',
     icon: Icons.receipt_long,
-    iconColor: Colors.purple,
+    iconColor: ModuleColors.trade,
     children: [
       InfoRow(
         label: 'Status',

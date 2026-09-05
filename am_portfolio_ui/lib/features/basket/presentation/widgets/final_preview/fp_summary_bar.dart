@@ -74,7 +74,7 @@ class FpSummaryBar extends StatelessWidget {
               : const Icon(Icons.check, size: 18),
           label: Text(
             isSubmitting ? 'Creating...' : 'Confirm & Create Basket',
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
           style: FilledButton.styleFrom(
             backgroundColor: ModuleColors.portfolio,

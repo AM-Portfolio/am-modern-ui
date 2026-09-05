@@ -618,7 +618,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
             ),
             if (_currentPortfolioId != null && _currentPortfolioId != 'all')
               _buildPortfolioMenu(context),
-            const GlobalTimeFrameBar(
+            GlobalTimeFrameBar(
               variant: GlobalTimeFrameVariant.dropdown,
               primaryColor: ModuleColors.portfolio,
             ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:am_design_system/am_design_system.dart';
 import 'package:intl/intl.dart';
 
 import '../../../models/trade_holding_view_model.dart';
@@ -53,10 +54,10 @@ class _AttachmentsGridViewState extends State<AttachmentsGridView> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor.withOpacity(0.15),
+                      color: ModuleColors.trade.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(Icons.image_rounded, size: 24, color: Theme.of(context).primaryColor),
+                    child: Icon(Icons.image_rounded, size: 24, color: ModuleColors.trade),
                   ),
                   const SizedBox(width: 12),
                   Column(
@@ -84,21 +85,21 @@ class _AttachmentsGridViewState extends State<AttachmentsGridView> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor.withOpacity(0.1),
+                    color: ModuleColors.trade.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Theme.of(context).primaryColor.withOpacity(0.3)),
+                    border: Border.all(color: ModuleColors.trade.withOpacity(0.3)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.touch_app_rounded, size: 14, color: Theme.of(context).primaryColor),
+                      Icon(Icons.touch_app_rounded, size: 14, color: ModuleColors.trade),
                       const SizedBox(width: 4),
                       Text(
                         'Swipe',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: Theme.of(context).primaryColor,
+                          color: ModuleColors.trade,
                         ),
                       ),
                     ],
@@ -145,7 +146,7 @@ class _AttachmentsGridViewState extends State<AttachmentsGridView> {
                             height: 8,
                             decoration: BoxDecoration(
                               color: _currentIndex == index
-                                  ? Theme.of(context).primaryColor
+                                  ? ModuleColors.trade
                                   : Theme.of(context).colorScheme.outline.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(4),
                             ),
@@ -160,13 +161,13 @@ class _AttachmentsGridViewState extends State<AttachmentsGridView> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  color: ModuleColors.trade.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Theme.of(context).primaryColor.withOpacity(0.3)),
+                  border: Border.all(color: ModuleColors.trade.withOpacity(0.3)),
                 ),
                 child: Text(
                   '${_currentIndex + 1}/${attachments.length}',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Theme.of(context).primaryColor),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: ModuleColors.trade),
                 ),
               ),
             ],
@@ -233,7 +234,7 @@ class _AttachmentsGridViewState extends State<AttachmentsGridView> {
                               ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
                               : null,
                           strokeWidth: 3,
-                          valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
+                          valueColor: AlwaysStoppedAnimation<Color>(ModuleColors.trade),
                         ),
                       );
                     },
@@ -340,7 +341,7 @@ class _AttachmentsGridViewState extends State<AttachmentsGridView> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                               decoration: BoxDecoration(
-                                color: Theme.of(context).primaryColor.withOpacity(0.9),
+                                color: ModuleColors.trade.withOpacity(0.9),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: const Row(
@@ -414,13 +415,13 @@ class _AttachmentsGridViewState extends State<AttachmentsGridView> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor.withOpacity(0.1),
+              color: ModuleColors.trade.withOpacity(0.1),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(
               Icons.image_not_supported_outlined,
               size: 48,
-              color: Theme.of(context).primaryColor.withOpacity(0.6),
+              color: ModuleColors.trade.withOpacity(0.6),
             ),
           ),
           const SizedBox(height: 16),

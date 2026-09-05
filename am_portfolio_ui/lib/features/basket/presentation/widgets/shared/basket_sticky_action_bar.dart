@@ -144,7 +144,7 @@ class BasketStickyActionBar extends StatelessWidget {
         : (isMobile
             ? IconButton(
                 onPressed: onBack,
-                icon: const Icon(Icons.arrow_back_rounded),
+                icon: Icon(Icons.arrow_back_rounded),
                 style: IconButton.styleFrom(
                   foregroundColor: ModuleColors.portfolio,
                   minimumSize: const Size(_actionHeight, _actionHeight),
@@ -160,7 +160,7 @@ class BasketStickyActionBar extends StatelessWidget {
                 onPressed: onBack,
                 icon: const Icon(Icons.arrow_back_rounded, size: 18),
                 label: (isDesktop || isTablet)
-                    ? const Text('Back')
+                    ? Text('Back')
                     : const SizedBox.shrink(),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: ModuleColors.portfolio,

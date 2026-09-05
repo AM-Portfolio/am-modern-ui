@@ -272,6 +272,11 @@ class _SubscriptionWebPricingScreenState
           final isActionInProgress = state is SubscriptionActionInProgress;
           final screenWidth = MediaQuery.of(context).size.width;
           final isNarrow = screenWidth < 1100;
+          final brand = Theme.of(context).colorScheme.primary;
+          Color tierColor(Color rainbow, double tint) {
+            if (!ModuleColors.isBrandSynced) return rainbow;
+            return Color.lerp(brand, Colors.white, tint)!;
+          }
 
           final cards = <Widget>[
             if (freePlan != null)
@@ -288,7 +293,7 @@ class _SubscriptionWebPricingScreenState
                         currentSubscription?.planCode == freePlan.code)
                     ? null
                     : () => _handlePlanAction(context, state, freePlan),
-                primaryColor: Colors.grey.shade400,
+                primaryColor: tierColor(Colors.grey.shade400, 0.35),
                 features: freePlan.features,
                 isCurrentPlan:
                     currentSubscription?.planCode == freePlan.code,
@@ -311,7 +316,7 @@ class _SubscriptionWebPricingScreenState
                         currentSubscription?.planCode == proPlan.code)
                     ? null
                     : () => _handlePlanAction(context, state, proPlan),
-                primaryColor: const Color(0xFF1B64F2),
+                primaryColor: tierColor(const Color(0xFF1B64F2), 0.0),
                 isPopular: true,
                 features: proPlan.features,
                 isCurrentPlan: currentSubscription?.planCode == proPlan.code,
@@ -334,7 +339,7 @@ class _SubscriptionWebPricingScreenState
                         currentSubscription?.planCode == premiumPlan.code)
                     ? null
                     : () => _handlePlanAction(context, state, premiumPlan),
-                primaryColor: const Color(0xFFA824EE),
+                primaryColor: tierColor(const Color(0xFFA824EE), 0.12),
                 features: premiumPlan.features,
                 isCurrentPlan:
                     currentSubscription?.planCode == premiumPlan.code,
@@ -352,7 +357,7 @@ class _SubscriptionWebPricingScreenState
                   const SnackBar(content: Text('Contact sales triggered!')),
                 );
               },
-              primaryColor: const Color(0xFFE87C00),
+              primaryColor: tierColor(const Color(0xFFE87C00), 0.22),
               isCustom: true,
               features: const [
                 'Unlimited Portfolios & Analytics',

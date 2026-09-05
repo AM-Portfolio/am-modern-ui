@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 import '../../../internal/domain/enums/fundamental_reasons.dart';
 import '../../../internal/domain/enums/psychology_factors.dart';
@@ -47,12 +48,12 @@ class OptionalDetailsStep extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [Colors.purple.shade50, Colors.purple.shade50.withOpacity(0.3)]),
+              gradient: LinearGradient(colors: [ModuleColors.trade.withOpacity(0.08), ModuleColors.trade.withOpacity(0.03)]),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               children: [
-                Icon(Icons.psychology, color: Colors.purple.shade700, size: 24),
+                Icon(Icons.psychology, color: ModuleColors.trade, size: 24),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(

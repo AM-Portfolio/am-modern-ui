@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 class TradePortfolioSkeletonLoader extends StatelessWidget {
@@ -22,7 +23,7 @@ class TradePortfolioSkeletonLoader extends StatelessWidget {
                   color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
                   borderRadius: BorderRadius.circular(8),
                 ),
-              ).animate(onPlay: (controller) => controller.repeat()).shimmer(duration: 1200.ms, color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5)),
+              ).animate(onPlay: (controller) => controller.repeat()).shimmer(duration: 1200.ms, color: ModuleColors.trade.withOpacity(0.18)),
               const Spacer(),
               Container(
                 width: 100,

@@ -219,6 +219,18 @@ class _DashboardRecentActivityWidgetState
             label: Text(label, style: context.text.caption()),
             selected: _filter == value,
             onSelected: (_) => setState(() => _filter = value),
+            selectedColor: ModuleColors.dashboard.withValues(alpha: 0.25),
+            checkmarkColor: ModuleColors.dashboard,
+            labelStyle: context.text.caption().copyWith(
+                  color: _filter == value
+                      ? ModuleColors.dashboard
+                      : context.colors.textSecondary,
+                ),
+            side: BorderSide(
+              color: _filter == value
+                  ? ModuleColors.dashboard.withValues(alpha: 0.5)
+                  : context.colors.border,
+            ),
             visualDensity: VisualDensity.compact,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
