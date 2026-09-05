@@ -64,13 +64,13 @@ class BasketSuccessPage extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(AppSpacing.xl),
                       decoration: BoxDecoration(
-                        color: context.statusSuccess.withValues(alpha: 0.1),
+                        color: ModuleColors.portfolio.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
                         Icons.celebration,
                         size: 64,
-                        color: context.statusSuccess,
+                        color: ModuleColors.portfolio,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xxl),
@@ -116,7 +116,7 @@ class BasketSuccessPage extends StatelessWidget {
                                 '${opportunity.replicaScore.toStringAsFixed(1)}%',
                                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                       fontWeight: FontWeight.bold,
-                                      color: context.statusSuccess,
+                                      color: ModuleColors.portfolio,
                                     ),
                               ),
                             ],
@@ -182,7 +182,7 @@ class BasketSuccessPage extends StatelessWidget {
                                   );
                                 },
                                 style: FilledButton.styleFrom(
-                                  backgroundColor: context.statusSuccess,
+                                  backgroundColor: ModuleColors.portfolio,
                                   foregroundColor: Colors.white,
                                   padding: const EdgeInsets.symmetric(
                                     vertical: AppSpacing.md,
@@ -212,6 +212,11 @@ class BasketSuccessPage extends StatelessWidget {
                                   );
                                 },
                                 style: OutlinedButton.styleFrom(
+                                  foregroundColor: ModuleColors.portfolio,
+                                  side: BorderSide(
+                                    color: ModuleColors.portfolio
+                                        .withValues(alpha: 0.55),
+                                  ),
                                   padding: const EdgeInsets.symmetric(
                                     vertical: AppSpacing.md,
                                   ),

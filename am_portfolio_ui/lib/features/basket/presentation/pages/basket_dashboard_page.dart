@@ -79,12 +79,13 @@ class _BasketDashboardPageState extends ConsumerState<BasketDashboardPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.share_outlined),
+              leading: Icon(Icons.share_outlined, color: ModuleColors.portfolio),
               title: const Text('Share'),
               onTap: () => Navigator.pop(ctx, 'share'),
             ),
             ListTile(
-              leading: const Icon(Icons.download_outlined),
+              leading:
+                  Icon(Icons.download_outlined, color: ModuleColors.portfolio),
               title: const Text('Download'),
               onTap: () => Navigator.pop(ctx, 'download'),
             ),

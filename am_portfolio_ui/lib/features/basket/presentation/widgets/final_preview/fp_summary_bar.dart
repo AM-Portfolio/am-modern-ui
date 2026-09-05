@@ -37,7 +37,9 @@ class FpSummaryBar extends StatelessWidget {
           value,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
-            color: isHighlight ? context.statusSuccess : context.colors.textPrimary,
+            color: isHighlight
+                ? ModuleColors.portfolio
+                : context.colors.textPrimary,
           ),
         ),
       ],
@@ -75,7 +77,7 @@ class FpSummaryBar extends StatelessWidget {
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           style: FilledButton.styleFrom(
-            backgroundColor: context.statusSuccess,
+            backgroundColor: ModuleColors.portfolio,
             foregroundColor: Colors.white,
             padding: EdgeInsets.symmetric(
               horizontal: isDesktop ? 32 : 16, 

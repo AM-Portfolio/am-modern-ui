@@ -530,6 +530,7 @@ class _PortfolioHeatmapWidgetState
                     value: totalValue,
                     subtitle: '',
                     accentColor: const Color(0xFF0BA95B),
+                    chromeColor: ModuleColors.portfolio,
                     compact: isSmallMobile,
                     glowBorder: true,
                   ),
@@ -540,6 +541,7 @@ class _PortfolioHeatmapWidgetState
                     accentColor: isTodayPositive
                         ? const Color(0xFF0BA95B)
                         : const Color(0xFFB22222),
+                    chromeColor: ModuleColors.portfolio,
                     isPositive: isTodayPositive,
                     compact: isSmallMobile,
                     glowBorder: true,
@@ -549,6 +551,7 @@ class _PortfolioHeatmapWidgetState
                     value: topSector,
                     subtitle: topSectorChange,
                     accentColor: const Color(0xFF0BA95B),
+                    chromeColor: ModuleColors.portfolio,
                     isPositive: !topSectorChange.startsWith('-'),
                     compact: isSmallMobile,
                     glowBorder: true,
@@ -558,6 +561,7 @@ class _PortfolioHeatmapWidgetState
                     value: worstSector,
                     subtitle: worstSectorChange,
                     accentColor: const Color(0xFFB22222),
+                    chromeColor: ModuleColors.portfolio,
                     isPositive: !worstSectorChange.startsWith('-'),
                     compact: isSmallMobile,
                     glowBorder: true,

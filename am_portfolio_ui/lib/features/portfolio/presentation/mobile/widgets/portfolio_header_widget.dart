@@ -175,13 +175,13 @@ class PortfolioHeaderWidget extends StatelessWidget {
                           margin: const EdgeInsets.only(left: 8),
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.blue.withValues(alpha: 0.1),
+                            color: ModuleColors.portfolio.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
-                            border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                            border: Border.all(color: ModuleColors.portfolio.withValues(alpha: 0.3)),
                           ),
                           child: const Text(
                             'BASKET',
-                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.blue),
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: ModuleColors.portfolio),
                           ),
                         ),
                     ],

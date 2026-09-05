@@ -11,6 +11,9 @@ class PortfolioMetricCard extends StatelessWidget {
   final String value;
   final String subtitle;
   final Color accentColor;
+  /// Glow / border / watermark chrome. When null, falls back to [accentColor].
+  /// Use module brand (e.g. [ModuleColors.portfolio]) so P&L numbers stay green/red.
+  final Color? chromeColor;
   final IconData? icon;
   final bool? isPositive;
   final bool isHighlight;
@@ -26,6 +29,7 @@ class PortfolioMetricCard extends StatelessWidget {
     required this.value,
     required this.subtitle,
     required this.accentColor,
+    this.chromeColor,
     this.icon,
     this.isPositive,
     this.isHighlight = false,
@@ -54,6 +58,7 @@ class PortfolioMetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = _resolveAccent(context);
+    final chrome = chromeColor ?? accent;
     final textTheme = Theme.of(context).textTheme;
     final vPad = compact ? AppSpacing.sm + AppSpacing.xs : AppSpacing.md;
     final hPad = compact ? AppSpacing.sm + AppSpacing.xs : AppSpacing.md;
@@ -75,7 +80,7 @@ class PortfolioMetricCard extends StatelessWidget {
                     center: Alignment.bottomLeft,
                     radius: 1.2,
                     colors: [
-                      accent.withValues(alpha: 0.18),
+                      chrome.withValues(alpha: 0.18),
                       Colors.transparent,
                     ],
                   ),
@@ -96,8 +101,8 @@ class PortfolioMetricCard extends StatelessWidget {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            accent.withValues(alpha: 0.25),
-                            accent.withValues(alpha: 0.1),
+                            chrome.withValues(alpha: 0.25),
+                            chrome.withValues(alpha: 0.1),
                           ],
                         )
                       : LinearGradient(
@@ -110,7 +115,7 @@ class PortfolioMetricCard extends StatelessWidget {
                         ),
                   border: Border.all(
                     color: glowBorder
-                        ? accent.withValues(alpha: 0.35)
+                        ? chrome.withValues(alpha: 0.35)
                         : (context.isDark
                             ? Colors.white.withValues(alpha: 0.07)
                             : Colors.black.withValues(alpha: 0.06)),
@@ -122,7 +127,7 @@ class PortfolioMetricCard extends StatelessWidget {
                       : glowBorder
                           ? [
                               BoxShadow(
-                                color: accent.withValues(alpha: 0.22),
+                                color: chrome.withValues(alpha: 0.22),
                                 blurRadius: 24,
                                 spreadRadius: -2,
                                 offset: const Offset(0, 4),
@@ -153,7 +158,7 @@ class PortfolioMetricCard extends StatelessWidget {
                               size: compact ? 56 : 76,
                               color: isHighlight
                                   ? Colors.white.withValues(alpha: 0.14)
-                                  : accent.withValues(alpha: 0.07),
+                                  : chrome.withValues(alpha: 0.07),
                             ),
                           ),
                         ),
@@ -205,7 +210,7 @@ class PortfolioMetricCard extends StatelessWidget {
                                       ? [
                                           Shadow(
                                             color: accent
-                                                .withValues(alpha: 0.6),
+                                                .withValues(alpha: 0.35),
                                             blurRadius: 12,
                                           ),
                                         ]

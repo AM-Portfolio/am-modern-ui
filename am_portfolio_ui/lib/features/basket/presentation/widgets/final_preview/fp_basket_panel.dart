@@ -94,7 +94,7 @@ class FpBasketPanel extends StatelessWidget {
               FpStatChip(
                 label: 'Coverage',
                 value: '${replicaScore.toStringAsFixed(0)}%',
-                valueColor: replicaScore >= 90 ? context.statusSuccess : context.statusWarning,
+                valueColor: ModuleColors.portfolio,
               ),
               FpStatChip(
                 label: 'Held',

@@ -182,7 +182,7 @@ class _PortfolioMarketMoversWidgetState extends State<PortfolioMarketMoversWidge
 
   Widget _buildTabButton(String title, bool isGainersTab, bool isDark) {
     final isSelected = _showGainers == isGainersTab;
-    final color = isGainersTab ? const Color(0xFF00B894) : const Color(0xFFFF7675);
+    final color = isGainersTab ? ds.ModuleColors.portfolio : const Color(0xFFFF7675);
 
     return InkWell(
       onTap: () {

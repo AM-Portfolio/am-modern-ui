@@ -53,13 +53,21 @@ class BdPageHeader extends StatelessWidget {
           ),
           TextButton.icon(
             onPressed: onShare,
-            icon: const Icon(Icons.share_outlined, size: 18),
+            icon: Icon(Icons.share_outlined,
+                size: 18, color: ModuleColors.portfolio),
             label: const Text('Share'),
+            style: TextButton.styleFrom(
+              foregroundColor: ModuleColors.portfolio,
+            ),
           ),
           TextButton.icon(
             onPressed: onDownload,
-            icon: const Icon(Icons.download_outlined, size: 18),
+            icon: Icon(Icons.download_outlined,
+                size: 18, color: ModuleColors.portfolio),
             label: const Text('Download'),
+            style: TextButton.styleFrom(
+              foregroundColor: ModuleColors.portfolio,
+            ),
           ),
           IconButton(icon: const Icon(Icons.more_horiz), onPressed: onMore),
         ],

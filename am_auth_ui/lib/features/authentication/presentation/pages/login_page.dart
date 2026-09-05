@@ -225,8 +225,10 @@ class _LoginPageState extends State<LoginPage> {
   ) {
     // Avoid IntrinsicHeight: QR/OTP panes use LayoutBuilder (via QrImageView),
     // which cannot report intrinsic dimensions and blanked the glass card.
+    // Center (not stretch): parent is a ScrollView with unbounded height, so
+    // stretch would assert; center vertically aligns branding to the form.
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
           flex: 5,
@@ -260,7 +262,7 @@ class _LoginPageState extends State<LoginPage> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             'Welcome back',
