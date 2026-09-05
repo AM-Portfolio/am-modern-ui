@@ -210,17 +210,23 @@ jobs:
     secrets: inherit
 
   # ============================================================
-  # ANDROID BUILD - only when android files changed
+  # ANDROID BUILD — path changes, force_android, or any main/master push
   # Calls central-mobile-android.yml@main (Flutter -> AAB -> Play)
+  # Play upload still dispatch-only (see deploy_* below).
   # ============================================================
   android-publish:
     name: Publish Android
     needs: [detect-changes, security-scan]
-    # Run if: android files changed OR force_android manually set via workflow_dispatch
+    # main/master: always build AAB on CI commits; other branches: android paths or force
     if: |
       always() &&
       needs.security-scan.result == 'success' &&
-      (needs.detect-changes.outputs.android == 'true' || inputs.force_android == true)
+      (
+        needs.detect-changes.outputs.android == 'true' ||
+        inputs.force_android == true ||
+        github.ref == 'refs/heads/main' ||
+        github.ref == 'refs/heads/master'
+      )
     permissions:
       contents: read
     uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@main
