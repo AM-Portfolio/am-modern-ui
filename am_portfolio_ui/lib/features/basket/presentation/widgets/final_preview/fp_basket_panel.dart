@@ -168,49 +168,23 @@ class FpBasketPanel extends StatelessWidget {
           Padding(
             padding: EdgeInsets.symmetric(
               horizontal: compact ? AppSpacing.md : AppSpacing.lg,
-              vertical: compact ? AppSpacing.md : AppSpacing.lg,
+              vertical: compact ? AppSpacing.sm : AppSpacing.lg,
             ),
             child: compact
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        'Total',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: context.colors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '${totalBasketWeight.toStringAsFixed(1)}%',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            fmtValue.format(totalBasketValue),
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
+                ? Text(
+                    [
+                      'Total ${totalBasketWeight.toStringAsFixed(1)}%',
+                      fmtValue.format(totalBasketValue),
                       if (actualInvestmentCost > 0 &&
                           actualInvestmentCost != totalBasketValue)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            'Fresh orders ${fmtValue.format(actualInvestmentCost)}',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: context.colors.textSecondary,
-                            ),
-                          ),
-                        ),
-                    ],
+                        'Fresh ${fmtValue.format(actualInvestmentCost)}',
+                    ].join(' · '),
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: context.colors.textPrimary,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   )
                 : Row(
                     children: [

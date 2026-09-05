@@ -6,11 +6,13 @@ import '../../shared/basket_panel_styles.dart';
 class BdIdentityCard extends StatelessWidget {
   final BasketDetail basket;
   final int stockCount;
+  final VoidCallback? onMore;
 
   const BdIdentityCard({
     super.key,
     required this.basket,
     required this.stockCount,
+    this.onMore,
   });
 
   @override
@@ -56,9 +58,11 @@ class BdIdentityCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     if (isActive)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: context.statusSuccess.withValues(alpha: 0.15),
+                          color:
+                              context.statusSuccess.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -82,6 +86,17 @@ class BdIdentityCard extends StatelessWidget {
               ],
             ),
           ),
+          if (onMore != null)
+            IconButton(
+              icon: Icon(
+                Icons.more_horiz,
+                color: context.colors.textSecondary,
+              ),
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              onPressed: onMore,
+            ),
         ],
       ),
     );

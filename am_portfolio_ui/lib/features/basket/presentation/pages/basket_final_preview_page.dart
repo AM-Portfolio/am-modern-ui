@@ -36,6 +36,8 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
   String? _error;
   late BasketOpportunity _validatedOpportunity;
   late List<BasketItem> _validatedItems;
+  /// 0 = Your Basket (default), 1 = Original ETF — mobile only.
+  int _mobilePanelIndex = 0;
 
   @override
   void initState() {
@@ -208,16 +210,44 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        FpEtfPanel(originalOpportunity: args.originalOpportunity),
-                        const SizedBox(height: AppSpacing.xl),
-                        FpBasketPanel(
-                          finalItems: _validatedItems,
-                          replicaScore: _validatedOpportunity.replicaScore,
-                          investmentAmount: args.investmentAmount,
-                          actualInvestmentCost: actualCost,
-                          heldCount: heldCount,
-                          subCount: subCount,
+                        SegmentedButton<int>(
+                          segments: const [
+                            ButtonSegment(
+                              value: 0,
+                              label: Text('Your Basket'),
+                              icon: Icon(Icons.shopping_basket_outlined, size: 16),
+                            ),
+                            ButtonSegment(
+                              value: 1,
+                              label: Text('Original ETF'),
+                              icon: Icon(Icons.auto_awesome, size: 16),
+                            ),
+                          ],
+                          selected: {_mobilePanelIndex},
+                          onSelectionChanged: (s) {
+                            setState(() => _mobilePanelIndex = s.first);
+                          },
+                          style: ButtonStyle(
+                            visualDensity: VisualDensity.compact,
+                            textStyle: WidgetStatePropertyAll(
+                              Theme.of(context).textTheme.labelMedium,
+                            ),
+                          ),
                         ),
+                        const SizedBox(height: AppSpacing.md),
+                        if (_mobilePanelIndex == 0)
+                          FpBasketPanel(
+                            finalItems: _validatedItems,
+                            replicaScore: _validatedOpportunity.replicaScore,
+                            investmentAmount: args.investmentAmount,
+                            actualInvestmentCost: actualCost,
+                            heldCount: heldCount,
+                            subCount: subCount,
+                          )
+                        else
+                          FpEtfPanel(
+                            originalOpportunity: args.originalOpportunity,
+                          ),
                       ],
                     ),
             ),

@@ -43,4 +43,43 @@ abstract final class BasketPanelStyles {
       border: Border.all(color: context.colors.border),
     );
   }
+
+  /// Soft portfolio-pink selected chips/toggles (kills M3 yellow secondaryContainer).
+  static ThemeData accentTheme(BuildContext context) {
+    final base = Theme.of(context);
+    final accent = ModuleColors.portfolio;
+    final soft = accent.withValues(alpha: 0.18);
+    return base.copyWith(
+      colorScheme: base.colorScheme.copyWith(
+        secondaryContainer: soft,
+        onSecondaryContainer: accent,
+        primaryContainer: soft,
+        onPrimaryContainer: accent,
+      ),
+      chipTheme: base.chipTheme.copyWith(
+        selectedColor: soft,
+        checkmarkColor: accent,
+        secondarySelectedColor: soft,
+        labelStyle: base.textTheme.labelMedium?.copyWith(
+          color: context.colors.textSecondary,
+        ),
+        secondaryLabelStyle: base.textTheme.labelMedium?.copyWith(
+          color: accent,
+          fontWeight: FontWeight.w700,
+        ),
+        side: BorderSide(color: context.colors.border),
+        shape: RoundedRectangleBorder(borderRadius: AppRadii.button),
+      ),
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: SegmentedButton.styleFrom(
+          visualDensity: VisualDensity.compact,
+          selectedBackgroundColor: soft,
+          selectedForegroundColor: accent,
+          foregroundColor: context.colors.textSecondary,
+          backgroundColor: context.colors.cardSurface,
+          side: BorderSide(color: context.colors.border),
+        ),
+      ),
+    );
+  }
 }

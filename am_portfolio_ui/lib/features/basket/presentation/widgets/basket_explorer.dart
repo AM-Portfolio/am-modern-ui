@@ -6,19 +6,74 @@ import '../providers/basket_providers.dart';
 import '../utils/basket_api_errors.dart';
 import '../basket_navigation.dart';
 import '../../domain/models/basket_opportunity.dart';
+import '../shared/basket_panel_styles.dart';
 import 'etf_search_bar.dart';
 import '../pages/my_baskets_view.dart';
 
 enum BasketViewMode { discover, myBaskets }
 
+/// Discover / My Baskets segmented control (portfolio sticky header + explorer).
+class BasketModeToggle extends StatelessWidget {
+  const BasketModeToggle({
+    super.key,
+    this.compact = true,
+  });
+
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<BasketViewMode>(
+      valueListenable: BasketNavigation.viewMode,
+      builder: (context, mode, _) {
+        return Theme(
+          data: BasketPanelStyles.accentTheme(context),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              compact ? 0 : AppSpacing.sm,
+              AppSpacing.md,
+              compact ? 4 : AppSpacing.xs,
+            ),
+            child: SizedBox(
+              width: compact ? double.infinity : null,
+              child: SegmentedButton<BasketViewMode>(
+                segments: const [
+                  ButtonSegment(
+                    value: BasketViewMode.discover,
+                    label: Text('Discover'),
+                  ),
+                  ButtonSegment(
+                    value: BasketViewMode.myBaskets,
+                    label: Text('My Baskets'),
+                  ),
+                ],
+                selected: {mode},
+                onSelectionChanged: (Set<BasketViewMode> next) {
+                  BasketNavigation.setViewMode(next.first);
+                },
+                showSelectedIcon: false,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class BasketExplorer extends ConsumerStatefulWidget {
   final String userId;
   final String portfolioId;
+
+  /// When false, Discover/My Baskets lives in the portfolio sticky header.
+  final bool showInlineToggle;
 
   const BasketExplorer({
     super.key,
     required this.userId,
     required this.portfolioId,
+    this.showInlineToggle = true,
   });
 
   @override
@@ -29,7 +84,6 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
   String? _query;
   String? _lastEmptyTelemetryQuery;
   String? _selectedThemeId;
-  BasketViewMode _viewMode = BasketViewMode.discover;
 
   bool get _watchOpportunities {
     final nested = BasketNavigation.navigatorKey.currentState;
@@ -40,18 +94,22 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
   void initState() {
     super.initState();
     BasketNavigation.registerMyBasketsListener(_showMyBasketsTab);
+    BasketNavigation.viewMode.addListener(_onViewModeChanged);
   }
 
   @override
   void dispose() {
+    BasketNavigation.viewMode.removeListener(_onViewModeChanged);
     BasketNavigation.unregisterMyBasketsListener();
     super.dispose();
   }
 
+  void _onViewModeChanged() {
+    if (mounted) setState(() {});
+  }
+
   void _showMyBasketsTab() {
-    if (mounted) {
-      setState(() => _viewMode = BasketViewMode.myBaskets);
-    }
+    if (mounted) setState(() {});
   }
 
   void _updateQuery({String? query, String? themeId}) {
@@ -117,66 +175,45 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
 
         final themes =
             catalog.themes.where((t) => t.featured && t.query.isNotEmpty).toList();
+        final viewMode = BasketNavigation.viewMode.value;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.md,
-                AppSpacing.sm,
-                AppSpacing.md,
-                AppSpacing.xs,
-              ),
-              child: LayoutBuilder(
+            if (widget.showInlineToggle)
+              LayoutBuilder(
                 builder: (context, constraints) {
-                  final stackHeader = constraints.maxWidth < AmBreakpoints.mobile;
-                  final title = Text(
-                    'Smart Baskets',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.3,
+                  final stackHeader =
+                      constraints.maxWidth < AmBreakpoints.mobile;
+                  if (stackHeader) {
+                    return const BasketModeToggle();
+                  }
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      AppSpacing.sm,
+                      AppSpacing.md,
+                      AppSpacing.xs,
                     ),
-                  );
-                  final segments = SegmentedButton<BasketViewMode>(
-                    segments: [
-                      ButtonSegment(
-                        value: BasketViewMode.discover,
-                        label: const Text('Discover'),
-                        icon: stackHeader ? null : const Icon(Icons.search),
-                      ),
-                      ButtonSegment(
-                        value: BasketViewMode.myBaskets,
-                        label: const Text('My Baskets'),
-                        icon: stackHeader
-                            ? null
-                            : const Icon(Icons.shopping_basket),
-                      ),
-                    ],
-                    selected: {_viewMode},
-                    onSelectionChanged: (Set<BasketViewMode> newSelection) {
-                      setState(() {
-                        _viewMode = newSelection.first;
-                      });
-                    },
-                    showSelectedIcon: false,
-                    style: SegmentedButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Smart Baskets',
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        const Flexible(child: BasketModeToggle(compact: false)),
+                      ],
                     ),
-                  );
-                  // Mobile: segments only — drop "Smart Baskets" title.
-                  if (stackHeader) return segments;
-                  return Row(
-                    children: [
-                      Expanded(child: title),
-                      const SizedBox(width: AppSpacing.sm),
-                      Flexible(child: segments),
-                    ],
                   );
                 },
               ),
-            ),
-            if (_viewMode == BasketViewMode.myBaskets)
+            if (viewMode == BasketViewMode.myBaskets)
               Expanded(
                 child: MyBasketsView(
                   userId: widget.userId,

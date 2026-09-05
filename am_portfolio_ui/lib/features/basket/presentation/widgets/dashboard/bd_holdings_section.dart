@@ -85,18 +85,43 @@ class BdHoldingsSection extends StatelessWidget {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-            child: Row(
-              children: BdHoldingsFilter.values.map((f) {
-                final selected = f == filter;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    label: Text(_filterLabel(f)),
-                    selected: selected,
-                    onSelected: (_) => onFilterChanged(f),
-                  ),
-                );
-              }).toList(),
+            child: Theme(
+              data: BasketPanelStyles.accentTheme(context),
+              child: Row(
+                children: BdHoldingsFilter.values.map((f) {
+                  final selected = f == filter;
+                  final accent = ModuleColors.portfolio;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Text(
+                        _filterLabel(f),
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                              color: selected
+                                  ? accent
+                                  : context.colors.textSecondary,
+                              fontWeight:
+                                  selected ? FontWeight.w700 : FontWeight.w500,
+                            ),
+                      ),
+                      selected: selected,
+                      onSelected: (_) => onFilterChanged(f),
+                      showCheckmark: selected,
+                      selectedColor: accent.withValues(alpha: 0.18),
+                      checkmarkColor: accent,
+                      backgroundColor: context.colors.cardSurface,
+                      side: BorderSide(
+                        color: selected
+                            ? accent.withValues(alpha: 0.45)
+                            : context.colors.border,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppRadii.button,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.sm),

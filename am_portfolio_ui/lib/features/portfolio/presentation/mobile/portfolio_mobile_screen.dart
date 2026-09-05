@@ -14,6 +14,7 @@ import '../../internal/data/dtos/portfolio_create_request_dto.dart';
 import '../../internal/data/dtos/portfolio_update_request_dto.dart';
 import 'widgets/portfolio_tab_content_widget.dart';
 import 'widgets/portfolio_form_modal.dart';
+import '../../../basket/presentation/widgets/basket_explorer.dart';
 
 /// Mobile-optimized portfolio screen with bottom navigation and portfolio selection
 class PortfolioMobileScreen extends ConsumerStatefulWidget {
@@ -451,7 +452,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
         autoHideMobileTabsOnScroll: true,
         onBackToGlobal: widget.onBack,
         mobileStickyHeader: _tabController.index == 3
-            ? null
+            ? const BasketModeToggle()
             : _buildStickyControlsRow(context, currentName),
         items: [
           SecondarySidebarItem(
@@ -541,100 +542,82 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
         ? Colors.white.withValues(alpha: 0.12)
         : const Color(0xFFDDD6FE);
 
-    return SizedBox(
-      width: double.infinity,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
-        child: Row(
-          children: [
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 128),
-              child: _buildPortfolioSwitcher(context, currentName),
+    Widget actionChip({
+      required VoidCallback onTap,
+      required IconData icon,
+      required String label,
+      Color? iconColor,
+      bool iconOnly = false,
+    }) {
+      return Tooltip(
+        message: label,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            height: 36,
+            padding: EdgeInsets.symmetric(horizontal: iconOnly ? 8 : 8),
+            decoration: BoxDecoration(
+              color: chipBg,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: chipBorder),
             ),
-            const Spacer(),
-            Flexible(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (widget.onOpenDocIntel != null) ...[
-                    Flexible(
-                      child: InkWell(
-                        onTap: widget.onOpenDocIntel,
-                        borderRadius: BorderRadius.circular(10),
-                        child: Container(
-                          height: 36,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          decoration: BoxDecoration(
-                            color: chipBg,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: chipBorder),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.psychology_outlined,
-                                  size: 17, color: Color(0xFF00D2D3)),
-                              const SizedBox(width: 4),
-                              Flexible(
-                                child: Text(
-                                  'Doc Intel',
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: onSurface,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                  ],
-                  Flexible(
-                    child: InkWell(
-                      onTap: _showAddPortfolioModal,
-                      borderRadius: BorderRadius.circular(10),
-                      child: Container(
-                        height: 36,
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        decoration: BoxDecoration(
-                          color: chipBg,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: chipBorder),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.add_circle_outline,
-                                size: 17, color: onSurface),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                'Add',
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: onSurface,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 17, color: iconColor ?? onSurface),
+                if (!iconOnly) ...[
+                  const SizedBox(width: 4),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: onSurface,
                     ),
                   ),
                 ],
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 2, 12, 6),
+        child: Row(
+          children: [
+            // Shrinks first when space is tight — never nest Flexible+min Rows.
+            Flexible(
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 128),
+                  child: _buildPortfolioSwitcher(context, currentName),
+                ),
               ),
             ),
-            const SizedBox(width: 8),
-            if (_currentPortfolioId != null && _currentPortfolioId != 'all') ...[
-              _buildPortfolioMenu(context),
-              const SizedBox(width: 8),
+            const SizedBox(width: 6),
+            if (widget.onOpenDocIntel != null) ...[
+              actionChip(
+                onTap: widget.onOpenDocIntel!,
+                icon: Icons.psychology_outlined,
+                iconColor: const Color(0xFF00D2D3),
+                label: 'Doc Intel',
+                iconOnly: true,
+              ),
+              const SizedBox(width: 6),
             ],
+            actionChip(
+              onTap: _showAddPortfolioModal,
+              icon: Icons.add_circle_outline,
+              label: 'Add',
+            ),
+            if (_currentPortfolioId != null && _currentPortfolioId != 'all')
+              _buildPortfolioMenu(context),
             const GlobalTimeFrameBar(
               variant: GlobalTimeFrameVariant.dropdown,
             ),
@@ -701,6 +684,8 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     if (portfolio == null) return const SizedBox.shrink();
 
     return PopupMenuButton<String>(
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
       icon: const Icon(Icons.more_vert, size: 20),
       onSelected: (value) {
         if (value == 'edit') {

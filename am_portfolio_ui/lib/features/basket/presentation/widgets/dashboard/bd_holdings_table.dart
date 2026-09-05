@@ -90,82 +90,76 @@ class BdHoldingCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = context.colors;
     final initial = line.symbol.isNotEmpty ? line.symbol[0] : '?';
+    final meta = [
+      '${line.quantity.toInt()} units',
+      'Wt ${weightPercent.toStringAsFixed(1)}%',
+      fmt.format(lineValue),
+    ].join(' · ');
 
     return Container(
       margin: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
         vertical: AppSpacing.xs,
       ),
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
       decoration: BasketPanelStyles.insetPanel(context),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor:
-                    colors.actionPrimaryBg.withValues(alpha: 0.15),
-                child: Text(
-                  initial,
+          CircleAvatar(
+            radius: 14,
+            backgroundColor: colors.actionPrimaryBg.withValues(alpha: 0.15),
+            child: Text(
+              initial,
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: colors.actionPrimaryBg,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  line.symbol,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w700,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  meta,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadii.sm),
+                  child: LinearProgressIndicator(
+                    value: (weightPercent / 100.0).clamp(0.0, 1.0),
+                    minHeight: 4,
+                    backgroundColor: colors.border.withValues(alpha: 0.4),
                     color: colors.actionPrimaryBg,
                   ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      line.symbol,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    if (line.companyName?.isNotEmpty == true)
-                      Text(
-                        line.companyName!,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                    Text(
-                      'Weight ${weightPercent.toStringAsFixed(1)}%',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: colors.textTertiary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '${line.quantity.toInt()} units',
-                style: theme.textTheme.bodySmall,
-              ),
-              Text(
-                fmt.format(lineValue),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              Text(
-                BdDashboardMath.formatPnlPercent(pnlPct, hasMarket: hasMarket),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: pnlColor,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            BdDashboardMath.formatPnlPercent(pnlPct, hasMarket: hasMarket),
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: pnlColor,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),

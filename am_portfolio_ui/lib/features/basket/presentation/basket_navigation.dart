@@ -25,7 +25,25 @@ class BasketNavigation {
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
 
+  /// Shared Discover / My Baskets mode (sticky header + explorer).
+  static final ValueNotifier<BasketViewMode> viewMode =
+      ValueNotifier(BasketViewMode.discover);
+
   static bool get hasNestedNavigator => navigatorKey.currentState != null;
+
+  /// Switch explorer mode; pops nested preview/customize back to explorer first.
+  static void setViewMode(BasketViewMode mode) {
+    final nested = navigatorKey.currentState;
+    if (nested != null && nested.canPop()) {
+      nested.popUntil(
+        (route) =>
+            route.settings.name == explorerRoute || route.isFirst,
+      );
+    }
+    if (viewMode.value != mode) {
+      viewMode.value = mode;
+    }
+  }
 
   static Route<dynamic> onGenerateRoute(
     RouteSettings settings, {
@@ -79,6 +97,7 @@ class BasketNavigation {
           builder: (_) => BasketExplorer(
             userId: userId,
             portfolioId: portfolioId,
+            showInlineToggle: false,
           ),
         );
     }
@@ -182,6 +201,7 @@ class BasketNavigation {
   }
 
   static void _notifyShowMyBaskets() {
+    setViewMode(BasketViewMode.myBaskets);
     _showMyBasketsListener?.call();
   }
 

@@ -7,6 +7,7 @@ import '../../domain/models/tracking_basket.dart';
 import '../../domain/models/basket_draft.dart';
 import '../providers/basket_providers.dart';
 import '../basket_navigation.dart';
+import '../shared/basket_panel_styles.dart';
 import '../utils/basket_portfolio_sync.dart';
 import '../utils/basket_api_errors.dart';
 import '../flow/basket_flow_controller.dart';
@@ -98,13 +99,65 @@ class _MyBasketsViewState extends ConsumerState<MyBasketsView> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final int crossAxisCount;
-        if (constraints.maxWidth >= 1050) {
-          crossAxisCount = 3;
-        } else if (constraints.maxWidth >= 680) {
-          crossAxisCount = 2;
-        } else {
-          crossAxisCount = 1;
+        Widget draftSection() {
+          if (visibleDrafts.isEmpty) return const SizedBox.shrink();
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.sm),
+                child: Text(
+                  'Drafts',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleSmall
+                      ?.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
+              ...visibleDrafts.map(
+                (d) => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                  child: _DraftBasketCard(
+                    draft: d,
+                    userId: widget.userId,
+                    portfolioId: widget.portfolioId,
+                    onChanged: _refresh,
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
+
+        Widget activeSection() {
+          if (visibleActive.isEmpty) return const SizedBox.shrink();
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.md, AppSpacing.lg, AppSpacing.md, AppSpacing.sm),
+                child: Text(
+                  'Active',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleSmall
+                      ?.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
+              ...visibleActive.map(
+                (b) => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                  child: _TrackingBasketCard(
+                    basket: b,
+                    userId: widget.userId,
+                    portfolioId: widget.portfolioId,
+                  ),
+                ),
+              ),
+            ],
+          );
         }
 
         return RefreshIndicator(
@@ -115,76 +168,13 @@ class _MyBasketsViewState extends ConsumerState<MyBasketsView> {
               SliverToBoxAdapter(
                 child: _buildFilterBar(context, draftCount, draftLimit),
               ),
-              if (visibleDrafts.isNotEmpty) ...[
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.sm),
-                    child: Text(
-                      'Drafts',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleSmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                  ),
+              SliverToBoxAdapter(child: draftSection()),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                  child: activeSection(),
                 ),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                  sliver: SliverGrid(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: crossAxisCount,
-                      crossAxisSpacing: AppSpacing.md,
-                      mainAxisSpacing: AppSpacing.md,
-                      childAspectRatio: crossAxisCount == 1 ? 1.4 : 1.05,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) => _DraftBasketCard(
-                        draft: visibleDrafts[index],
-                        userId: widget.userId,
-                        portfolioId: widget.portfolioId,
-                        onChanged: _refresh,
-                      ),
-                      childCount: visibleDrafts.length,
-                    ),
-                  ),
-                ),
-              ],
-              if (visibleActive.isNotEmpty) ...[
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.md, AppSpacing.lg, AppSpacing.md, AppSpacing.sm),
-                    child: Text(
-                      'Active',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleSmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
-                  sliver: SliverGrid(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: crossAxisCount,
-                      crossAxisSpacing: AppSpacing.md,
-                      mainAxisSpacing: AppSpacing.md,
-                      childAspectRatio: crossAxisCount == 1 ? 1.4 : 1.05,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) => _TrackingBasketCard(
-                        basket: visibleActive[index],
-                        userId: widget.userId,
-                        portfolioId: widget.portfolioId,
-                      ),
-                      childCount: visibleActive.length,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ],
           ),
         );
@@ -193,31 +183,64 @@ class _MyBasketsViewState extends ConsumerState<MyBasketsView> {
   }
 
   Widget _buildFilterBar(BuildContext context, int draftCount, int draftLimit) {
+    final accent = ModuleColors.portfolio;
+
+    Widget filterChip({
+      required String label,
+      required bool selected,
+      required VoidCallback onSelected,
+    }) {
+      return Theme(
+        data: BasketPanelStyles.accentTheme(context),
+        child: ChoiceChip(
+          label: Text(
+            label,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: selected ? accent : context.colors.textSecondary,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                ),
+          ),
+          selected: selected,
+          onSelected: (_) => onSelected(),
+          showCheckmark: selected,
+          selectedColor: accent.withValues(alpha: 0.18),
+          backgroundColor: context.colors.cardSurface,
+          checkmarkColor: accent,
+          side: BorderSide(
+            color: selected
+                ? accent.withValues(alpha: 0.45)
+                : context.colors.border,
+          ),
+          shape: RoundedRectangleBorder(borderRadius: AppRadii.button),
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-          AppSpacing.md, AppSpacing.md, AppSpacing.md, 0),
+          AppSpacing.md, AppSpacing.sm, AppSpacing.md, 0),
       child: Row(
         children: [
           Expanded(
             child: Wrap(
               spacing: AppSpacing.sm,
               children: [
-                ChoiceChip(
-                  label: const Text('All'),
+                filterChip(
+                  label: 'All',
                   selected: _filter == _MyBasketsFilter.all,
-                  onSelected: (_) =>
+                  onSelected: () =>
                       setState(() => _filter = _MyBasketsFilter.all),
                 ),
-                ChoiceChip(
-                  label: const Text('Active'),
+                filterChip(
+                  label: 'Active',
                   selected: _filter == _MyBasketsFilter.active,
-                  onSelected: (_) =>
+                  onSelected: () =>
                       setState(() => _filter = _MyBasketsFilter.active),
                 ),
-                ChoiceChip(
-                  label: const Text('Drafts'),
+                filterChip(
+                  label: 'Drafts',
                   selected: _filter == _MyBasketsFilter.drafts,
-                  onSelected: (_) =>
+                  onSelected: () =>
                       setState(() => _filter = _MyBasketsFilter.drafts),
                 ),
               ],
@@ -414,146 +437,157 @@ class _DraftBasketCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final colors = context.colors;
-    const draftColor = Colors.amber;
+    // Prefer ETF name so cards read like Discover.
+    final title =
+        draft.etfName ?? draft.basketName ?? 'Untitled draft';
+    final initial = title.isNotEmpty ? title[0].toUpperCase() : 'D';
+    final money = NumberFormat('#,##,##0');
+    final planned = draft.investmentAmount != null
+        ? '₹${money.format(draft.investmentAmount!)}'
+        : '—';
+    final score = (draft.replicaScore ?? 0).clamp(0, 100);
+    final scoreColor = score >= 70
+        ? context.statusSuccess
+        : score >= 40
+            ? context.statusWarning
+            : context.statusError;
+    final dateLabel = draft.updatedAt != null
+        ? DateFormat('MMM dd, yyyy').format(draft.updatedAt!)
+        : null;
+    final metaParts = <String>[
+      'Draft',
+      if (dateLabel != null) dateLabel,
+    ];
 
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: AppRadii.card,
-        border: Border.all(color: colors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          )
-        ],
-      ),
+    Widget metric({
+      required String label,
+      required String value,
+      Color? valueColor,
+    }) {
+      return Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: colors.textTertiary,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: valueColor ?? colors.textPrimary,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Material(
-        color: Colors.transparent,
-        child: InkWell(
+        color: colors.cardSurface,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
           borderRadius: AppRadii.card,
+          side: BorderSide(color: colors.border),
+        ),
+        child: InkWell(
           onTap: () => _continue(context, ref),
+          onLongPress: () => _confirmDelete(context, ref),
+          borderRadius: AppRadii.card,
           child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
+            padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: draftColor.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: draftColor.withOpacity(0.4)),
-                      ),
-                      child: const Text(
-                        'DRAFT',
-                        style: TextStyle(
-                          color: Color(0xFFB45309),
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor:
+                          ModuleColors.portfolio.withValues(alpha: 0.15),
+                      child: Text(
+                        initial,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: ModuleColors.portfolio,
                         ),
                       ),
                     ),
-                    if (draft.etfIsin.isNotEmpty)
-                      Text(
-                        draft.etfIsin,
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodySmall
-                            ?.copyWith(color: colors.textSecondary),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        draft.basketName ??
-                            draft.etfName ??
-                            'Untitled draft',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold, height: 1.2),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      if (draft.updatedAt != null)
-                        Text(
-                          'Saved on ${DateFormat('MMM dd, yyyy').format(draft.updatedAt!)}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: colors.textSecondary,
-                                fontSize: 11,
-                              ),
-                        ),
-                    ],
-                  ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Planned investment',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: colors.textSecondary,
-                            fontSize: 11,
+                    const SizedBox(width: AppSpacing.sm + 2),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '₹${draft.investmentAmount != null ? NumberFormat('#,##,##0').format(draft.investmentAmount!) : '—'}',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: -0.5,
-                          ),
-                    ),
-                    if (draft.replicaScore != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        'Match ${draft.replicaScore!.toStringAsFixed(0)}%',
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          const SizedBox(height: 2),
+                          Text(
+                            metaParts.join(' · '),
+                            style: theme.textTheme.bodySmall?.copyWith(
                               color: colors.textSecondary,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.md),
-                Divider(height: 1, color: colors.border.withOpacity(0.5)),
-                const SizedBox(height: AppSpacing.md),
+                const SizedBox(height: AppSpacing.sm + 2),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Text(
-                          'Continue customize',
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                color: Theme.of(context).colorScheme.primary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(Icons.arrow_forward,
-                            size: 14,
-                            color: Theme.of(context).colorScheme.primary),
-                      ],
+                    metric(
+                      label: 'Coverage',
+                      value: draft.replicaScore != null
+                          ? '${score.toStringAsFixed(0)}%'
+                          : '—',
+                      valueColor: draft.replicaScore != null
+                          ? scoreColor
+                          : colors.textTertiary,
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline,
-                          color: Colors.redAccent, size: 20),
-                      onPressed: () => _confirmDelete(context, ref),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
+                    metric(
+                      label: 'Invested',
+                      value: planned,
+                    ),
+                    metric(
+                      label: 'P&L',
+                      value: '—',
+                      valueColor: colors.textTertiary,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Continue customize',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: ModuleColors.portfolio,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right,
+                      color: ModuleColors.portfolio,
+                      size: 20,
                     ),
                   ],
                 ),
@@ -632,25 +666,96 @@ class _TrackingBasketCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final colors = context.colors;
-    final statusColor = _getStatusColor(basket.status);
     final statusText = _getStatusText(basket.status);
+    final title = basket.etfName ?? 'Unnamed Basket';
+    final initial = title.isNotEmpty ? title[0].toUpperCase() : 'B';
+    final money = NumberFormat('#,##,##0');
+    final pct = NumberFormat('+0.00;-0.00');
 
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: AppRadii.card,
-        border: Border.all(color: colors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          )
-        ],
-      ),
+    final coverage = basket.displayCoveragePercent.clamp(0, 100);
+    final coverageColor = coverage >= 70
+        ? context.statusSuccess
+        : coverage >= 40
+            ? context.statusWarning
+            : context.statusError;
+
+    final investedLabel = basket.investmentAmount != null
+        ? '₹${money.format(basket.investmentAmount!)}'
+        : '—';
+
+    final pnl = basket.totalPnL;
+    final pnlPct = basket.pnlPercent;
+    final hasPnl = pnl != null;
+    final pnlColor = !hasPnl
+        ? colors.textTertiary
+        : pnl! >= 0
+            ? context.statusSuccess
+            : context.statusError;
+    final pnlLabel = !hasPnl
+        ? '—'
+        : '${pnl >= 0 ? '+' : '-'}₹${money.format(pnl.abs())}';
+    final pnlPctLabel = pnlPct != null ? '${pct.format(pnlPct)}%' : null;
+
+    final dateLabel = basket.createdAt != null
+        ? DateFormat('MMM dd, yyyy').format(basket.createdAt!)
+        : null;
+    final metaParts = <String>[
+      statusText.toLowerCase(),
+      if (dateLabel != null) dateLabel,
+    ];
+
+    Widget metric({
+      required String label,
+      required String value,
+      Color? valueColor,
+      String? subtitle,
+    }) {
+      return Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: colors.textTertiary,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: valueColor ?? colors.textPrimary,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (subtitle != null)
+              Text(
+                subtitle,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: valueColor ?? colors.textTertiary,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+          ],
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Material(
-        color: Colors.transparent,
+        color: colors.cardSurface,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadii.card,
+          side: BorderSide(color: colors.border),
+        ),
         child: InkWell(
           borderRadius: AppRadii.card,
           onTap: () {
@@ -663,111 +768,89 @@ class _TrackingBasketCard extends ConsumerWidget {
               );
             }
           },
+          onLongPress: () => _confirmDelete(context, ref),
           child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
+            padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: statusColor.withOpacity(0.3)),
-                      ),
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor:
+                          ModuleColors.portfolio.withValues(alpha: 0.15),
                       child: Text(
-                        statusText,
-                        style: TextStyle(
-                            color: statusColor,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold),
+                        initial,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: ModuleColors.portfolio,
+                        ),
                       ),
                     ),
-                    if (basket.etfIsin != null && basket.etfIsin!.isNotEmpty)
-                      Text(
-                        basket.etfIsin!,
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodySmall
-                            ?.copyWith(color: colors.textSecondary),
+                    const SizedBox(width: AppSpacing.sm + 2),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            metaParts.join(' · '),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colors.textSecondary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        basket.etfName ?? 'Unnamed Basket',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold, height: 1.2),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      if (basket.createdAt != null)
-                        Text(
-                          'Created on ${DateFormat('MMM dd, yyyy').format(basket.createdAt!)}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: colors.textSecondary,
-                                fontSize: 11,
-                              ),
-                        ),
-                    ],
-                  ),
-                ),
-                Column(
+                const SizedBox(height: AppSpacing.sm + 2),
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Total Value',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: colors.textSecondary,
-                            fontSize: 11,
-                          ),
+                    metric(
+                      label: 'Coverage',
+                      value: '${coverage.toStringAsFixed(0)}%',
+                      valueColor: coverageColor,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '₹${basket.totalValue != null ? NumberFormat('#,##,##0.00').format(basket.totalValue!) : '0.00'}',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: -0.5,
-                          ),
+                    metric(
+                      label: 'Invested',
+                      value: investedLabel,
+                    ),
+                    metric(
+                      label: 'P&L',
+                      value: pnlLabel,
+                      valueColor: pnlColor,
+                      subtitle: hasPnl ? pnlPctLabel : null,
                     ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.md),
-                Divider(height: 1, color: colors.border.withOpacity(0.5)),
-                const SizedBox(height: AppSpacing.md),
+                const SizedBox(height: AppSpacing.sm),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Text(
-                          'View Details',
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                color: Theme.of(context).colorScheme.primary,
-                                fontWeight: FontWeight.bold,
-                              ),
+                    Expanded(
+                      child: Text(
+                        'View details',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: ModuleColors.portfolio,
+                          fontWeight: FontWeight.w600,
                         ),
-                        const SizedBox(width: 4),
-                        Icon(Icons.arrow_forward,
-                            size: 14,
-                            color: Theme.of(context).colorScheme.primary),
-                      ],
+                      ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline,
-                          color: Colors.redAccent, size: 20),
-                      onPressed: () => _confirmDelete(context, ref),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
+                    Icon(
+                      Icons.chevron_right,
+                      color: ModuleColors.portfolio,
+                      size: 20,
                     ),
                   ],
                 ),
@@ -777,22 +860,6 @@ class _TrackingBasketCard extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  Color _getStatusColor(BasketStatus status) {
-    switch (status) {
-      case BasketStatus.active:
-      case BasketStatus.completed:
-        return Colors.green;
-      case BasketStatus.partially_filled:
-        return Colors.orange;
-      case BasketStatus.failed:
-        return Colors.red;
-      case BasketStatus.pending:
-        return Colors.blue;
-      default:
-        return Colors.green;
-    }
   }
 
   String _getStatusText(BasketStatus status) {
