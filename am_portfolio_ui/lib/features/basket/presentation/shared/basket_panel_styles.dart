@@ -2,29 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 
 /// Shared panel/card decorations for basket flow screens.
+/// Mirrors dashboard [AmGlassCard]: solid surface in light, soft glass in dark.
 abstract final class BasketPanelStyles {
   BasketPanelStyles._();
 
   static BoxDecoration glassCard(BuildContext context) {
-    return BoxDecoration(
-      borderRadius: BorderRadius.circular(18),
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          context.cardColor.withValues(alpha: context.isDark ? 0.35 : 0.55),
-          context.cardColor.withValues(alpha: context.isDark ? 0.15 : 0.25),
+    final colors = context.colors;
+    if (!context.isDark) {
+      return BoxDecoration(
+        color: colors.cardSurface,
+        borderRadius: AppRadii.card,
+        border: Border.all(color: colors.border, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: context.shadow(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
-      ),
-      border: Border.all(
-        color: context.isDark
-            ? Colors.white.withValues(alpha: 0.07)
-            : Colors.black.withValues(alpha: 0.06),
-      ),
+      );
+    }
+    return BoxDecoration(
+      color: context.glassOverlay(0.04),
+      borderRadius: AppRadii.card,
+      border: Border.all(color: context.glassOverlay(0.08)),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withValues(alpha: context.isDark ? 0.25 : 0.05),
-          blurRadius: 12,
+          color: context.shadow(0.2),
+          blurRadius: 16,
           offset: const Offset(0, 4),
         ),
       ],
@@ -33,9 +38,9 @@ abstract final class BasketPanelStyles {
 
   static BoxDecoration insetPanel(BuildContext context) {
     return BoxDecoration(
-      color: context.backgroundColor,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: context.borderColor),
+      color: context.colors.surface,
+      borderRadius: BorderRadius.circular(AppRadii.md),
+      border: Border.all(color: context.colors.border),
     );
   }
 }

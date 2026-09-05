@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../../../domain/models/basket_detail.dart';
+import '../../shared/basket_panel_styles.dart';
 import 'bd_dashboard_math.dart';
 import 'bd_holdings_table.dart';
 
@@ -29,22 +30,7 @@ class BdHoldingsSection extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        color: context.cardColor.withValues(alpha: context.isDark ? 0.35 : 0.85),
-        border: Border.all(
-          color: context.isDark
-              ? Colors.white.withValues(alpha: 0.07)
-              : Colors.black.withValues(alpha: 0.06),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: context.isDark ? 0.2 : 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      decoration: BasketPanelStyles.glassCard(context),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

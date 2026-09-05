@@ -78,31 +78,36 @@ class AuthFlowShell extends StatelessWidget {
                               if (isCompact)
                                 form
                               else
-                                IntrinsicHeight(
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      Expanded(
-                                        flex: 5,
-                                        child: _BrandingPanel(
-                                          title: brandingTitle,
-                                          subtitle: brandingSubtitle,
-                                          logo: brand.logo,
-                                          appIcon: brand.appIcon,
-                                        ),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      flex: 5,
+                                      child: _BrandingPanel(
+                                        title: brandingTitle,
+                                        subtitle: brandingSubtitle,
+                                        logo: brand.logo,
+                                        appIcon: brand.appIcon,
                                       ),
-                                      Container(
-                                        width: 1,
-                                        margin: const EdgeInsets.symmetric(
-                                          horizontal: AppSpacing.sm + 4,
+                                    ),
+                                    Expanded(
+                                      flex: 5,
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          border: Border(
+                                            left: BorderSide(
+                                              color: context.colors.divider
+                                                  .withValues(alpha: 0.5),
+                                            ),
+                                          ),
                                         ),
-                                        color: context.colors.divider
-                                            .withValues(alpha: 0.5),
+                                        padding: const EdgeInsets.only(
+                                          left: AppSpacing.md,
+                                        ),
+                                        child: form,
                                       ),
-                                      Expanded(flex: 5, child: form),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
                             ],
                           ),

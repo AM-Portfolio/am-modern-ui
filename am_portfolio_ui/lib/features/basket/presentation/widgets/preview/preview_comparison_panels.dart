@@ -198,13 +198,10 @@ class _MobileCombinedCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final fmt =
         NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
-    final priceFmt =
-        NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
 
     final w = item.etfWeight.clamp(0.0, 100.0);
     final isMissing = item.status == ItemStatus.missing;
     final qty = isMissing ? null : item.heldQuantity;
-    final avg = item.heldAveragePrice;
     final price = item.lastPrice;
     final value =
         (qty != null && price != null && qty > 0) ? qty * price : null;
@@ -216,156 +213,54 @@ class _MobileCombinedCard extends StatelessWidget {
         : null;
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
       decoration: BoxDecoration(
-        color: context.colors.surface,
-        borderRadius: BorderRadius.circular(AppRadii.lg),
+        color: context.colors.cardSurface,
+        borderRadius: AppRadii.card,
         border: Border.all(color: context.colors.border),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Row(
         children: [
-          Row(
-            children: [
-              _StockAvatar(symbol: item.stockSymbol),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.stockSymbol,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                    if (holdingLabel != null)
-                      Text(
-                        holdingLabel,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: context.colors.textSecondary,
-                              fontSize: 11,
-                            ),
-                      ),
-                  ],
-                ),
-              ),
-              FpStatusPill(label: themeLabel, color: themeColor),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Text(
-                'ETF weight',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: context.colors.textSecondary,
-                    ),
-              ),
-              const Spacer(),
-              Text(
-                '${w.toStringAsFixed(1)}%',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadii.sm),
-            child: LinearProgressIndicator(
-              value: (w / 100.0).clamp(0.0, 1.0),
-              minHeight: 4,
-              backgroundColor: context.colors.border.withValues(alpha: 0.4),
-              color: context.colors.actionPrimaryBg,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            decoration: BoxDecoration(
-              color: context.colors.cardSurface.withValues(alpha: 0.45),
-              borderRadius: BorderRadius.circular(AppRadii.md),
-            ),
-            child: Row(
+          _StockAvatar(symbol: item.stockSymbol),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: _MobileStat(
-                    label: 'Units',
-                    value: isMissing ? '0' : (qty?.toStringAsFixed(0) ?? '—'),
-                    sub: (!isMissing && avg != null)
-                        ? 'avg ${priceFmt.format(avg)}'
-                        : null,
-                  ),
+                Text(
+                  item.stockSymbol,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                 ),
-                Container(
-                  width: 1,
-                  height: 32,
-                  color: context.colors.border.withValues(alpha: 0.6),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 10),
-                    child: _MobileStat(
-                      label: 'Value',
-                      value: isMissing
-                          ? '₹0'
-                          : (value != null ? fmt.format(value) : '—'),
-                      sub: (!isMissing && price != null)
-                          ? '@ ${priceFmt.format(price)}'
-                          : null,
-                    ),
-                  ),
+                const SizedBox(height: 2),
+                Text(
+                  [
+                    if (holdingLabel != null) holdingLabel,
+                    'Wt ${w.toStringAsFixed(1)}%',
+                    'Units ${isMissing ? '0' : (qty?.toStringAsFixed(0) ?? '—')}',
+                    isMissing
+                        ? 'Value ₹0'
+                        : (value != null
+                            ? 'Value ${fmt.format(value)}'
+                            : 'Value —'),
+                  ].join(' · '),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: context.colors.textSecondary,
+                      ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
+          const SizedBox(width: AppSpacing.sm),
+          FpStatusPill(label: themeLabel, color: themeColor),
         ],
       ),
-    );
-  }
-}
-
-class _MobileStat extends StatelessWidget {
-  final String label;
-  final String value;
-  final String? sub;
-
-  const _MobileStat({
-    required this.label,
-    required this.value,
-    this.sub,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: context.colors.textTertiary,
-                fontSize: 10,
-              ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-        ),
-        if (sub != null)
-          Text(
-            sub!,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: context.colors.textTertiary,
-                  fontSize: 10,
-                ),
-          ),
-      ],
     );
   }
 }

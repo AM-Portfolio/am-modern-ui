@@ -450,33 +450,7 @@ extension _ManualBasketCreatorPageLogic on _ManualBasketCreatorPageState {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: Row(children: [
-          Icon(Icons.shield_outlined, color: context.statusWarning),
-          const SizedBox(width: 8),
-          const Text('Coverage Too Low'),
-        ]),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Your current basket coverage is ${coverage.toStringAsFixed(0)}%.'),
-            const SizedBox(height: 8),
-            const Text('You need at least 80% coverage to create a basket.'),
-            const SizedBox(height: 16),
-            const Text('How to improve:'),
-            const Text('• Increase your investment amount'),
-            const Text('• Substitute missing stocks from your portfolio'),
-            const Text('• Use + button to increase held stock quantities'),
-          ],
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK, I\'ll improve coverage'),
-          ),
-        ],
-      ),
+      builder: (ctx) => BasketCoverageGateDialog(coverage: coverage),
     );
   }
 
@@ -590,27 +564,7 @@ extension _ManualBasketCreatorPageLogic on _ManualBasketCreatorPageState {
     final action = await showDialog<String>(
       context: context,
       barrierDismissible: false,
-      builder: (c) => AlertDialog(
-        title: const Text('Leave customize?'),
-        content: const Text(
-          'You have unsaved changes. Discard will lose them. '
-          'Save draft & exit keeps your work under My Baskets → Drafts.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(c).pop('keep'),
-            child: const Text('Keep editing'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(c).pop('discard'),
-            child: const Text('Discard'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(c).pop('save'),
-            child: const Text('Save draft & exit'),
-          ),
-        ],
-      ),
+      builder: (c) => const BasketLeaveCustomizeDialog(),
     );
 
     if (!mounted) return;

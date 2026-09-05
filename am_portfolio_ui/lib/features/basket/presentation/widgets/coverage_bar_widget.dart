@@ -1,82 +1,132 @@
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 
+/// Horizontal multi-color weight bar: Held / Substitute / Missing.
 class CoverageBarWidget extends StatelessWidget {
-  final double matchScore; // 0 to 100
-  final double replicaScore; // 0 to 100
-  final double missingScore; // 0 to 100
+  final double heldPct;
+  final double substitutePct;
+  final double missingPct;
+  final bool compact;
+  final bool showLegend;
 
   const CoverageBarWidget({
-    Key? key,
-    required this.matchScore,
-    required this.replicaScore,
-    required this.missingScore,
-  }) : super(key: key);
+    super.key,
+    required this.heldPct,
+    required this.substitutePct,
+    required this.missingPct,
+    this.compact = true,
+    this.showLegend = true,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final held = heldPct.clamp(0.0, 100.0);
+    final sub = substitutePct.clamp(0.0, 100.0);
+    final missing = missingPct.clamp(0.0, 100.0);
+    final total = (held + sub + missing);
+    final heldFlex = total <= 0 ? 0 : (held * 100).round().clamp(0, 10000);
+    final subFlex = total <= 0 ? 0 : (sub * 100).round().clamp(0, 10000);
+    final missFlex = total <= 0 ? 0 : (missing * 100).round().clamp(0, 10000);
+    final barH = compact ? 8.0 : 12.0;
+    final heldColor = context.statusSuccess;
+    final subColor = context.colors.actionPrimaryBg;
+    final missColor = context.statusError;
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Basket Coverage', style: Theme.of(context).textTheme.titleSmall),
-            Text('${replicaScore.toStringAsFixed(1)}% / 100%', style: Theme.of(context).textTheme.bodySmall),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.xs),
         ClipRRect(
-          borderRadius: AppRadii.card,
-          child: Container(
-            height: 12,
-            width: double.infinity,
-            color: context.dividerColor,
+          borderRadius: BorderRadius.circular(barH),
+          child: SizedBox(
+            height: barH,
             child: Row(
               children: [
-                if (matchScore > 0)
+                if (heldFlex > 0)
                   Expanded(
-                    flex: (matchScore * 100).toInt(),
-                    child: Container(color: context.statusSuccess),
+                    flex: heldFlex,
+                    child: ColoredBox(color: heldColor),
                   ),
-                if (replicaScore - matchScore > 0)
+                if (subFlex > 0)
                   Expanded(
-                    flex: ((replicaScore - matchScore) * 100).toInt(),
-                    child: Container(color: context.statusInfo),
+                    flex: subFlex,
+                    child: ColoredBox(color: subColor),
                   ),
-                if (missingScore > 0)
+                if (missFlex > 0)
                   Expanded(
-                    flex: (missingScore * 100).toInt(),
-                    child: Container(color: context.colors.actionPrimaryBg.withOpacity(0.2)),
+                    flex: missFlex,
+                    child: ColoredBox(color: missColor),
+                  ),
+                if (heldFlex + subFlex + missFlex == 0)
+                  Expanded(
+                    child: ColoredBox(
+                      color: context.colors.border.withValues(alpha: 0.4),
+                    ),
                   ),
               ],
             ),
           ),
         ),
-        const SizedBox(height: AppSpacing.xs),
-        Row(
-          children: [
-            _buildLegend(context, 'Held', context.statusSuccess),
-            const SizedBox(width: AppSpacing.sm),
-            _buildLegend(context, 'Substituted', context.statusInfo),
-            const SizedBox(width: AppSpacing.sm),
-            _buildLegend(context, 'Gap', context.colors.actionPrimaryBg.withOpacity(0.2)),
-          ],
-        )
+        if (showLegend) ...[
+          SizedBox(height: compact ? 6 : 8),
+          Row(
+            children: [
+              _Legend(
+                color: heldColor,
+                label: 'Held ${held.toStringAsFixed(0)}%',
+                compact: compact,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              if (sub > 0.05)
+                _Legend(
+                  color: subColor,
+                  label: 'Sub ${sub.toStringAsFixed(0)}%',
+                  compact: compact,
+                ),
+              if (sub > 0.05) const SizedBox(width: AppSpacing.sm),
+              if (missing > 0.05)
+                _Legend(
+                  color: missColor,
+                  label: 'Gap ${missing.toStringAsFixed(0)}%',
+                  compact: compact,
+                ),
+            ],
+          ),
+        ],
       ],
     );
   }
+}
 
-  Widget _buildLegend(BuildContext context, String label, Color color) {
+class _Legend extends StatelessWidget {
+  final Color color;
+  final String label;
+  final bool compact;
+
+  const _Legend({
+    required this.color,
+    required this.label,
+    required this.compact,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 8,
-          height: 8,
+          width: compact ? 6 : 8,
+          height: compact ? 6 : 8,
           decoration: BoxDecoration(shape: BoxShape.circle, color: color),
         ),
         const SizedBox(width: 4),
-        Text(label, style: Theme.of(context).textTheme.labelSmall),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                fontSize: compact ? 10 : null,
+                color: context.colors.textSecondary,
+              ),
+        ),
       ],
     );
   }

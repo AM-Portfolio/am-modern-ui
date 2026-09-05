@@ -126,17 +126,24 @@ Future<void> showCustomizeQtySheet({
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),
     builder: (ctx) {
-      return Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.viewInsetsOf(ctx).bottom,
-        ),
-        child: _CustomizeQtySheetBody(
-          item: item,
-          initialQty: allocatedUnits,
-          gapVsEtf: gapVsEtf,
-          onDelta: onDelta,
-          onSetQty: onSetQty,
-        ),
+      final navReserveFull = PlatformConstants.globalBottomNavReserve(ctx);
+      return ValueListenableBuilder<double>(
+        valueListenable: GlobalBottomNavVisibility.factor,
+        builder: (context, navFactor, _) {
+          final t = navFactor.clamp(0.0, 1.0);
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.viewInsetsOf(ctx).bottom + (navReserveFull * t),
+            ),
+            child: _CustomizeQtySheetBody(
+              item: item,
+              initialQty: allocatedUnits,
+              gapVsEtf: gapVsEtf,
+              onDelta: onDelta,
+              onSetQty: onSetQty,
+            ),
+          );
+        },
       );
     },
   );

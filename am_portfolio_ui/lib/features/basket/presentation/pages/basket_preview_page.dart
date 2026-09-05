@@ -156,6 +156,7 @@ class _BasketContentState extends ConsumerState<_BasketContent> {
       children: [
         Expanded(
           child: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: AppSpacing.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [

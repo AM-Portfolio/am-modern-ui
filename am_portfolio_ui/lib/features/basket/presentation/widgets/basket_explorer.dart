@@ -128,55 +128,52 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                 AppSpacing.md,
                 AppSpacing.xs,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Smart Baskets',
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.3,
-                        ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final stackHeader = constraints.maxWidth < AmBreakpoints.mobile;
+                  final title = Text(
+                    'Smart Baskets',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.3,
+                    ),
+                  );
+                  final segments = SegmentedButton<BasketViewMode>(
+                    segments: [
+                      ButtonSegment(
+                        value: BasketViewMode.discover,
+                        label: const Text('Discover'),
+                        icon: stackHeader ? null : const Icon(Icons.search),
                       ),
-                      SegmentedButton<BasketViewMode>(
-                        segments: const [
-                          ButtonSegment(
-                            value: BasketViewMode.discover,
-                            label: Text('Discover'),
-                            icon: Icon(Icons.search),
-                          ),
-                          ButtonSegment(
-                            value: BasketViewMode.myBaskets,
-                            label: Text('My Baskets'),
-                            icon: Icon(Icons.shopping_basket),
-                          ),
-                        ],
-                        selected: {_viewMode},
-                        onSelectionChanged: (Set<BasketViewMode> newSelection) {
-                          setState(() {
-                            _viewMode = newSelection.first;
-                          });
-                        },
-                        showSelectedIcon: false,
-                        style: SegmentedButton.styleFrom(
-                          visualDensity: VisualDensity.compact,
-                        ),
+                      ButtonSegment(
+                        value: BasketViewMode.myBaskets,
+                        label: const Text('My Baskets'),
+                        icon: stackHeader
+                            ? null
+                            : const Icon(Icons.shopping_basket),
                       ),
                     ],
-                  ),
-                  if (_viewMode == BasketViewMode.discover) ...[
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      'Match your holdings to ETF baskets and see what you already own.',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: context.textSecondary,
-                      ),
+                    selected: {_viewMode},
+                    onSelectionChanged: (Set<BasketViewMode> newSelection) {
+                      setState(() {
+                        _viewMode = newSelection.first;
+                      });
+                    },
+                    showSelectedIcon: false,
+                    style: SegmentedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
                     ),
-                  ],
-                ],
+                  );
+                  // Mobile: segments only — drop "Smart Baskets" title.
+                  if (stackHeader) return segments;
+                  return Row(
+                    children: [
+                      Expanded(child: title),
+                      const SizedBox(width: AppSpacing.sm),
+                      Flexible(child: segments),
+                    ],
+                  );
+                },
               ),
             ),
             if (_viewMode == BasketViewMode.myBaskets)
@@ -270,55 +267,94 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                         onRetry: () => ref.invalidate(opportunitiesProvider),
                       );
                     }
-                    return GridView.builder(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.md,
-                        AppSpacing.xs,
-                        AppSpacing.md,
-                        AppSpacing.md,
-                      ),
-                      gridDelegate:
-                          const SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent: 340,
-                        mainAxisExtent: 220,
-                        crossAxisSpacing: AppSpacing.md,
-                        mainAxisSpacing: AppSpacing.md,
-                      ),
-                      itemCount: opportunities.length,
-                      itemBuilder: (context, index) {
-                        final opp = opportunities[index];
-                        return TweenAnimationBuilder<double>(
-                          tween: Tween(begin: 0, end: 1),
-                          duration: Duration(
-                            milliseconds: 280 + (index * 40).clamp(0, 200),
+                    return LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isMobile =
+                            constraints.maxWidth < AmBreakpoints.mobile;
+                        if (isMobile) {
+                          return ListView.builder(
+                            padding: const EdgeInsets.fromLTRB(
+                              AppSpacing.md,
+                              AppSpacing.xs,
+                              AppSpacing.md,
+                              AppSpacing.md,
+                            ),
+                            itemCount: opportunities.length,
+                            itemBuilder: (context, index) {
+                              final opp = opportunities[index];
+                              return _BasketOpportunityCard(
+                                opportunity: opp,
+                                compactList: true,
+                                onTap: () {
+                                  ProductTelemetry.instance.featureAction(
+                                    'basket_open_preview',
+                                    tag: 'basket',
+                                    metadata: {'etf_isin': opp.etfIsin},
+                                  );
+                                  BasketNavigation.openPreview(
+                                    context,
+                                    etfIsin: opp.etfIsin,
+                                    userId: widget.userId,
+                                    portfolioId: widget.portfolioId,
+                                    opportunity: opp,
+                                  );
+                                },
+                              );
+                            },
+                          );
+                        }
+                        return GridView.builder(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.md,
+                            AppSpacing.xs,
+                            AppSpacing.md,
+                            AppSpacing.md,
                           ),
-                          curve: Curves.easeOutCubic,
-                          builder: (context, value, child) {
-                            return Opacity(
-                              opacity: value,
-                              child: Transform.translate(
-                                offset: Offset(0, 12 * (1 - value)),
-                                child: child,
+                          gridDelegate:
+                              const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 340,
+                            mainAxisExtent: 220,
+                            crossAxisSpacing: AppSpacing.md,
+                            mainAxisSpacing: AppSpacing.md,
+                          ),
+                          itemCount: opportunities.length,
+                          itemBuilder: (context, index) {
+                            final opp = opportunities[index];
+                            return TweenAnimationBuilder<double>(
+                              tween: Tween(begin: 0, end: 1),
+                              duration: Duration(
+                                milliseconds:
+                                    280 + (index * 40).clamp(0, 200),
+                              ),
+                              curve: Curves.easeOutCubic,
+                              builder: (context, value, child) {
+                                return Opacity(
+                                  opacity: value,
+                                  child: Transform.translate(
+                                    offset: Offset(0, 12 * (1 - value)),
+                                    child: child,
+                                  ),
+                                );
+                              },
+                              child: _BasketOpportunityCard(
+                                opportunity: opp,
+                                onTap: () {
+                                  ProductTelemetry.instance.featureAction(
+                                    'basket_open_preview',
+                                    tag: 'basket',
+                                    metadata: {'etf_isin': opp.etfIsin},
+                                  );
+                                  BasketNavigation.openPreview(
+                                    context,
+                                    etfIsin: opp.etfIsin,
+                                    userId: widget.userId,
+                                    portfolioId: widget.portfolioId,
+                                    opportunity: opp,
+                                  );
+                                },
                               ),
                             );
                           },
-                          child: _BasketOpportunityCard(
-                            opportunity: opp,
-                            onTap: () {
-                              ProductTelemetry.instance.featureAction(
-                                'basket_open_preview',
-                                tag: 'basket',
-                                metadata: {'etf_isin': opp.etfIsin},
-                              );
-                              BasketNavigation.openPreview(
-                                context,
-                                etfIsin: opp.etfIsin,
-                                userId: widget.userId,
-                                portfolioId: widget.portfolioId,
-                                opportunity: opp,
-                              );
-                            },
-                          ),
                         );
                       },
                     );
@@ -392,6 +428,7 @@ class _ThemeChip extends StatelessWidget {
 class _BasketOpportunityCard extends StatelessWidget {
   final BasketOpportunity opportunity;
   final VoidCallback onTap;
+  final bool compactList;
 
   /// Compact score ring — must stay small inside fixed-height grid cards.
   static const double _scoreRingSize = AppSpacing.xxl + AppSpacing.xs; // 52
@@ -399,10 +436,139 @@ class _BasketOpportunityCard extends StatelessWidget {
   const _BasketOpportunityCard({
     required this.opportunity,
     required this.onTap,
+    this.compactList = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (compactList) {
+      return _buildHoldingsStyleListCard(context);
+    }
+    return _buildGridCard(context);
+  }
+
+  Widget _buildHoldingsStyleListCard(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = context.colors;
+    final score = opportunity.matchScore.clamp(0, 100);
+    final scoreColor = score >= 70
+        ? context.statusSuccess
+        : score >= 40
+            ? context.statusWarning
+            : context.statusError;
+    final initial = opportunity.etfName.isNotEmpty
+        ? opportunity.etfName[0].toUpperCase()
+        : '?';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Material(
+      color: colors.cardSurface,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadii.card,
+        side: BorderSide(color: colors.border),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: AppRadii.card,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor:
+                        colors.actionPrimaryBg.withValues(alpha: 0.15),
+                    child: Text(
+                      initial,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: colors.actionPrimaryBg,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm + 2),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          opportunity.etfName,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${opportunity.heldCount} held · ${opportunity.missingCount} missing'
+                          '${opportunity.totalItems > 0 ? ' · ${opportunity.totalItems} stocks' : ''}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colors.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '${score.toStringAsFixed(0)}%',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: scoreColor,
+                        ),
+                      ),
+                      Text(
+                        'match',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: colors.textTertiary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (opportunity.readyToReplicate) ...[
+                    const SizedBox(width: AppSpacing.sm),
+                    Icon(Icons.check_circle, size: 18, color: context.statusSuccess),
+                  ],
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Preview basket',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: colors.actionPrimaryBg,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right,
+                    color: colors.actionPrimaryBg,
+                    size: 20,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+    );
+  }
+
+  Widget _buildGridCard(BuildContext context) {
     final theme = Theme.of(context);
     final score = opportunity.matchScore.clamp(0, 100);
     final scoreColor = score >= 70
@@ -479,7 +645,8 @@ class _BasketOpportunityCard extends StatelessWidget {
                             CircularProgressIndicator(
                               value: value,
                               strokeWidth: 5,
-                              backgroundColor: scoreColor.withValues(alpha: 0.15),
+                              backgroundColor:
+                                  scoreColor.withValues(alpha: 0.15),
                               color: scoreColor,
                             ),
                             Text(
@@ -543,8 +710,11 @@ class _BasketOpportunityCard extends StatelessWidget {
                     backgroundColor: context.colors.actionPrimaryBg,
                     foregroundColor: context.colors.actionPrimaryFg,
                     minimumSize: const Size.fromHeight(AppSpacing.xl),
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                    shape: RoundedRectangleBorder(borderRadius: AppRadii.button),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: AppRadii.button,
+                    ),
                   ),
                   child: const Text('Preview basket'),
                 ),

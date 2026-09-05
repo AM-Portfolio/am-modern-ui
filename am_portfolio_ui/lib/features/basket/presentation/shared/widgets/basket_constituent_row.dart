@@ -84,6 +84,7 @@ class BasketConstituentRow extends StatelessWidget {
         onQtyChanged: onQtyChanged,
         onTargetQtyChanged: onTargetQtyChanged,
         onDirectTargetQtySet: onDirectTargetQtySet,
+        customWeightPercent: customWeightPercent,
         allocatedUnits: allocatedUnits,
         gapVsEtf: gapVsEtf,
         canIncrease: canIncrease,

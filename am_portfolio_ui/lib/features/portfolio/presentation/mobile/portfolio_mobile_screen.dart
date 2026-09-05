@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:ui';
-import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -384,10 +383,10 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             decoration: BoxDecoration(
-              color: ModuleColors.portfolio.withOpacity(0.25),
+              color: ModuleColors.portfolio.withValues(alpha: 0.25),
               borderRadius: BorderRadius.circular(30),
               border: Border.all(
-                color: ModuleColors.portfolio.withOpacity(0.6),
+                color: ModuleColors.portfolio.withValues(alpha: 0.6),
                 width: 1.2,
               ),
             ),
@@ -451,7 +450,9 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
         showMobileMenuButton: false,
         autoHideMobileTabsOnScroll: true,
         onBackToGlobal: widget.onBack,
-        mobileStickyHeader: _buildStickyControlsRow(context, currentName),
+        mobileStickyHeader: _tabController.index == 3
+            ? null
+            : _buildStickyControlsRow(context, currentName),
         items: [
           SecondarySidebarItem(
             title: 'Overview',
@@ -551,67 +552,85 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
               child: _buildPortfolioSwitcher(context, currentName),
             ),
             const Spacer(),
-            if (widget.onOpenDocIntel != null) ...[
-              InkWell(
-                onTap: widget.onOpenDocIntel,
-                borderRadius: BorderRadius.circular(10),
-                child: Container(
-                  height: 36,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  decoration: BoxDecoration(
-                    color: chipBg,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: chipBorder),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.psychology_outlined,
-                          size: 17, color: Color(0xFF00D2D3)),
-                      const SizedBox(width: 5),
-                      Text(
-                        'Doc Intel',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: onSurface,
+            Flexible(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (widget.onOpenDocIntel != null) ...[
+                    Flexible(
+                      child: InkWell(
+                        onTap: widget.onOpenDocIntel,
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          height: 36,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          decoration: BoxDecoration(
+                            color: chipBg,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: chipBorder),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.psychology_outlined,
+                                  size: 17, color: Color(0xFF00D2D3)),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  'Doc Intel',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: onSurface,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-            ],
-            InkWell(
-              onTap: _showAddPortfolioModal,
-              borderRadius: BorderRadius.circular(10),
-              child: Container(
-                height: 36,
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                decoration: BoxDecoration(
-                  color: chipBg,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: chipBorder),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.add_circle_outline, size: 17, color: onSurface),
-                    const SizedBox(width: 5),
-                    Text(
-                      'Add Portfolio',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: onSurface,
+                    ),
+                    const SizedBox(width: 6),
+                  ],
+                  Flexible(
+                    child: InkWell(
+                      onTap: _showAddPortfolioModal,
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        height: 36,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        decoration: BoxDecoration(
+                          color: chipBg,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: chipBorder),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.add_circle_outline,
+                                size: 17, color: onSurface),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                'Add',
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: onSurface,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             if (_currentPortfolioId != null && _currentPortfolioId != 'all') ...[
               _buildPortfolioMenu(context),
               const SizedBox(width: 8),
@@ -650,7 +669,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
       iconSize: 16,
       borderRadius: 10,
       menuMaxHeight: 148,
-      primaryColor: AppColors.primary,
+      primaryColor: context.colors.actionPrimaryBg,
       backgroundColor: isDark ? Colors.white.withValues(alpha: 0.06) : null,
       borderColor: isDark ? Colors.white.withValues(alpha: 0.1) : null,
       contentPadding: const EdgeInsets.symmetric(horizontal: 8),

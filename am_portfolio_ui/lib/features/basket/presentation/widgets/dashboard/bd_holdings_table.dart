@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:intl/intl.dart';
 import '../../../domain/models/basket_detail.dart';
+import '../../shared/basket_panel_styles.dart';
 import 'bd_dashboard_math.dart';
 import 'bd_holding_row.dart';
 
@@ -86,57 +87,87 @@ class BdHoldingCard extends StatelessWidget {
         : (line.pnl >= 0 ? context.statusSuccess : context.statusError);
     final lineValue = BdDashboardMath.lineCurrentValue(line);
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 18,
-                  child: Text(line.symbol.isNotEmpty ? line.symbol[0] : '?'),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(line.symbol, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      if (line.companyName?.isNotEmpty == true)
-                        Text(line.companyName!, style: TextStyle(fontSize: 12, color: context.colors.textSecondary)),
-                    ],
+    final theme = Theme.of(context);
+    final colors = context.colors;
+    final initial = line.symbol.isNotEmpty ? line.symbol[0] : '?';
+
+    return Container(
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xs,
+      ),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BasketPanelStyles.insetPanel(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor:
+                    colors.actionPrimaryBg.withValues(alpha: 0.15),
+                child: Text(
+                  initial,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: colors.actionPrimaryBg,
                   ),
                 ),
-                Text('${weightPercent.toStringAsFixed(1)}%', style: const TextStyle(fontWeight: FontWeight.bold)),
-              ],
-            ),
-            const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(2),
-              child: LinearProgressIndicator(
-                value: (weightPercent / 100.0).clamp(0.0, 1.0),
-                minHeight: 4,
-                backgroundColor: context.colors.border,
-                valueColor: AlwaysStoppedAnimation(context.colors.actionPrimaryBg),
               ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('${line.quantity.toInt()} units'),
-                Text(fmt.format(lineValue)),
-                Text(
-                  BdDashboardMath.formatPnlPercent(pnlPct, hasMarket: hasMarket),
-                  style: TextStyle(color: pnlColor, fontWeight: FontWeight.bold),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      line.symbol,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (line.companyName?.isNotEmpty == true)
+                      Text(
+                        line.companyName!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                    Text(
+                      'Weight ${weightPercent.toStringAsFixed(1)}%',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: colors.textTertiary,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${line.quantity.toInt()} units',
+                style: theme.textTheme.bodySmall,
+              ),
+              Text(
+                fmt.format(lineValue),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                BdDashboardMath.formatPnlPercent(pnlPct, hasMarket: hasMarket),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: pnlColor,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

@@ -63,6 +63,7 @@ export 'core/module/module_color_provider.dart';
 // --- Navigation ---
 export 'shared/widgets/navigation/global_sidebar.dart';
 export 'shared/widgets/navigation/global_bottom_navigation.dart';
+export 'shared/widgets/navigation/global_bottom_nav_visibility.dart';
 export 'shared/widgets/share/share_link_button.dart';
 export 'shared/widgets/navigation/module_bottom_navigation.dart';
 export 'shared/widgets/navigation/secondary_sidebar.dart';

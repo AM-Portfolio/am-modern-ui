@@ -300,13 +300,7 @@ extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
       padding: const EdgeInsets.all(12),
       color: context.cardColor,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Text('Investment Amount', style: theme.textTheme.labelMedium),
-          const SizedBox(width: 4),
-          Icon(Icons.info_outline, size: 14, color: context.textTertiary),
-        ]),
-        const SizedBox(height: 8),
-        // Amount input row
+        // Amount input — label lives inside the field as hint.
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
@@ -323,17 +317,28 @@ extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
                   ? TextField(
                       controller: _amountController,
                       keyboardType: TextInputType.number,
-                      decoration:
-                          const InputDecoration.collapsed(hintText: '0'),
+                      decoration: InputDecoration.collapsed(
+                        hintText: 'Investment Amount',
+                        hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                          color: context.textTertiary,
+                        ),
+                      ),
                       onChanged: (_) => _scheduleRecalculate(),
-                      onSubmitted: (_) => _scheduleRecalculate(immediate: true),
+                      onSubmitted: (_) =>
+                          _scheduleRecalculate(immediate: true),
                     )
                   : Text(
                       _amountController.text.isEmpty
-                          ? '0'
+                          ? 'Investment Amount'
                           : _amountController.text,
-                      style: theme.textTheme.bodyLarge
-                          ?.copyWith(fontWeight: FontWeight.bold),
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        fontWeight: _amountController.text.isEmpty
+                            ? FontWeight.w400
+                            : FontWeight.bold,
+                        color: _amountController.text.isEmpty
+                            ? context.textTertiary
+                            : null,
+                      ),
                     ),
             ),
             GestureDetector(
