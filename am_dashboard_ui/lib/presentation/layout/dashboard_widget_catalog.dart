@@ -127,7 +127,6 @@ class DashboardWidgetCatalog {
     DashboardWidgetContext ctx,
   ) {
     final overviewsAsync = ref.watch(portfolioOverviewsProvider(ctx.userId));
-    final onSurface = Theme.of(context).colorScheme.onSurface;
     return AmGlassCard(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -138,7 +137,7 @@ class DashboardWidgetCatalog {
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 16,
-              color: onSurface,
+              color: ModuleColors.dashboard,
               fontFamily: 'Inter',
             ),
           ),

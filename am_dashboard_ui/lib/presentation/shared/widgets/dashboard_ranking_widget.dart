@@ -327,12 +327,14 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
+          color: isSelected
+              ? ModuleColors.dashboard
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: ModuleColors.dashboard.withOpacity(0.25),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -345,7 +347,7 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
             fontSize: 11,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
             color: isSelected
-                ? (isDark ? Colors.black : context.colors.textPrimary)
+                ? Colors.white
                 : onSurfaceVariant,
             fontFamily: 'Inter',
           ),

@@ -314,17 +314,74 @@ class _ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
         ],
       ),
       actions: [
-        IconButton(
-          icon: Icon(Icons.history_rounded, color: context.textSecondary),
-          onPressed: onHistory,
-          tooltip: 'Chat history',
+        Padding(
+          padding: const EdgeInsets.only(right: 4),
+          child: IconButton(
+            icon: Badge(
+              isLabelVisible: false,
+              child: Icon(Icons.history_rounded, color: context.aiPrimary),
+            ),
+            onPressed: onHistory,
+            tooltip: 'History / Recent Chats',
+          ),
         ),
         Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: IconButton(
-            icon: Icon(Icons.add_rounded, color: context.textSecondary),
-            onPressed: onNewChat,
-            tooltip: 'New chat',
+          padding: const EdgeInsets.only(right: 12),
+          child: Tooltip(
+            message: 'New chat',
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onNewChat,
+                borderRadius: BorderRadius.circular(24),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: context.aiPrimary.withValues(alpha: 0.65),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: context.aiPrimary.withValues(alpha: 0.28),
+                        blurRadius: 14,
+                        spreadRadius: 0,
+                      ),
+                    ],
+                    color: context.aiPrimary.withValues(alpha: 0.08),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: context.aiPrimary.withValues(alpha: 0.2),
+                        ),
+                        child: Icon(
+                          Icons.add_rounded,
+                          size: 16,
+                          color: context.aiPrimary,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'New Chat',
+                        style: TextStyle(
+                          color: context.textPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       ],

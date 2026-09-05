@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'package:am_design_system/core/module/module_config.dart';
+import 'package:am_design_system/core/theme/color_extensions.dart';
+
 /// A reusable widget for selecting a portfolio, extracted from the Trade Sidebar logic.
 /// Designed to be flexible with different portfolio data models via extractors.
 class SharedPortfolioSelector<T> extends StatelessWidget {
@@ -41,7 +44,7 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
   /// Whether to show in compact mode (icon only)
   final bool isCompact;
 
-  /// Accent color for the selector (defaults to Primary)
+  /// Accent color for the selector (defaults to ModuleColors.portfolio)
   final Color? accentColor;
 
   /// Whether to render in dark mode (defaults to context theme)
@@ -49,20 +52,15 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Determine theme mode
     final isDarkMode = isDark ?? Theme.of(context).brightness == Brightness.dark;
+    final colors = context.colors;
+    final effectiveAccent = accentColor ?? ModuleColors.portfolio;
 
-    // Determine accent color (default to current primary or purple fallback)
-    final effectiveAccent = accentColor ?? const Color(0xFF6C5DD3);
-
-    // Text colors
-    final textColor = isDarkMode ? Colors.white : Colors.black87;
-    final subTextColor = isDarkMode ? Colors.white54 : Colors.black54;
-
-    // Background color for the card
-    final cardBgColor = isDarkMode ? const Color(0xFF2C2C3E) : Colors.white;
-    final cardBorderColor =
-        isDarkMode ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05);
+    final textColor = colors.textPrimary;
+    final subTextColor = colors.textSecondary;
+    final cardBgColor = colors.cardSurface;
+    final cardBorderColor = effectiveAccent.withValues(alpha: 0.35);
+    final idleFieldBorder = colors.border.withValues(alpha: 0.45);
 
     String displayName = 'Select Portfolio';
     if (currentPortfolioName != null) {
@@ -78,7 +76,7 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
     ThemeData menuTheme(BuildContext context) => Theme.of(context).copyWith(
           hoverColor: Colors.transparent,
           highlightColor: Colors.transparent,
-          splashColor: effectiveAccent.withOpacity(0.12),
+          splashColor: effectiveAccent.withValues(alpha: 0.12),
           popupMenuTheme: PopupMenuThemeData(
             color: cardBgColor,
             surfaceTintColor: Colors.transparent,
@@ -125,14 +123,18 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
             offset: const Offset(40, 0),
             color: cardBgColor,
             surfaceTintColor: Colors.transparent,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: cardBorderColor),
+            ),
             icon: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: effectiveAccent.withOpacity(0.1),
+                color: effectiveAccent.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(Icons.account_balance_wallet, color: effectiveAccent, size: 20),
+              child: Icon(Icons.account_balance_wallet,
+                  color: effectiveAccent, size: 20),
             ),
             onSelected: (portfolioId) {
               final portfolio =
@@ -145,7 +147,6 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
       );
     }
 
-    // Cleaner, flatter design for "Header-like" feel
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: Column(
@@ -180,15 +181,12 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
               },
               itemBuilder: buildItems,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  color: isDarkMode ? Colors.transparent : Colors.white,
+                  color: isDarkMode ? Colors.transparent : colors.cardSurface,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: isDarkMode
-                        ? Colors.white.withOpacity(0.1)
-                        : Colors.black.withOpacity(0.1),
-                  ),
+                  border: Border.all(color: idleFieldBorder),
                 ),
                 child: Row(
                   children: [
@@ -261,15 +259,15 @@ class _HoverablePortfolioMenuRowState extends State<_HoverablePortfolioMenuRow> 
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         decoration: BoxDecoration(
           color: _hovered
-              ? widget.accent.withOpacity(0.16)
+              ? widget.accent.withValues(alpha: 0.16)
               : (widget.isSelected
-                  ? widget.accent.withOpacity(0.08)
+                  ? widget.accent.withValues(alpha: 0.12)
                   : Colors.transparent),
           borderRadius: BorderRadius.circular(8),
           boxShadow: _hovered
               ? [
                   BoxShadow(
-                    color: widget.accent.withOpacity(0.22),
+                    color: widget.accent.withValues(alpha: 0.22),
                     blurRadius: 10,
                     spreadRadius: -2,
                     offset: const Offset(0, 2),
@@ -283,7 +281,7 @@ class _HoverablePortfolioMenuRowState extends State<_HoverablePortfolioMenuRow> 
               child: AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 160),
                 style: TextStyle(
-                  color: widget.textColor,
+                  color: active ? widget.accent : widget.textColor,
                   fontWeight: active ? FontWeight.w600 : FontWeight.normal,
                   fontSize: 13,
                 ),

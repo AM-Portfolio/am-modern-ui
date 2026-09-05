@@ -939,19 +939,13 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
                                               MainAxisAlignment.center,
                                           children: [
                                             Icon(
-                                              Theme.of(context).brightness ==
-                                                      Brightness.dark
-                                                  ? Icons.light_mode_rounded
-                                                  : Icons.dark_mode_rounded,
+                                              Icons.palette_rounded,
                                               color: _resolvedColor,
                                               size: 20,
                                             ),
                                             const SizedBox(width: 10),
                                             Text(
-                                              Theme.of(context).brightness ==
-                                                      Brightness.dark
-                                                  ? 'Switch to Light Mode'
-                                                  : 'Switch to Dark Mode',
+                                              'Change theme',
                                               style: TextStyle(
                                                 color: _resolvedColor,
                                                 fontSize: 14,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/color_extensions.dart';
 import '../../../core/theme/cubit/theme_cubit.dart';
 
 /// Catalog entry for the Profile "Select Theme" picker.
@@ -128,20 +129,22 @@ class ThemeModePickerPanel extends StatelessWidget {
           includeWhiteIfSelected: true,
           currentMode: currentMode,
         );
+    final accent = Theme.of(context).colorScheme.primary;
+    final surface = context.colors.cardSurface;
 
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 420),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: const Color(0xFF12131A).withValues(alpha: 0.96),
+          color: surface.withValues(alpha: 0.98),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: const Color(0xFF8B5CF6).withValues(alpha: 0.45),
+            color: accent.withValues(alpha: 0.45),
             width: 1.2,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF8B5CF6).withValues(alpha: 0.18),
+              color: accent.withValues(alpha: 0.18),
               blurRadius: 28,
               spreadRadius: 1,
             ),
@@ -153,10 +156,10 @@ class ThemeModePickerPanel extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Select Theme',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: context.colors.textPrimary,
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                 ),
@@ -171,6 +174,7 @@ class ThemeModePickerPanel extends StatelessWidget {
                         child: _ThemeOptionRow(
                           option: option,
                           selected: option.mode == currentMode,
+                          liveAccent: accent,
                           onTap: () => onSelected(option.mode),
                         ),
                       ),
@@ -189,11 +193,13 @@ class _ThemeOptionRow extends StatefulWidget {
   const _ThemeOptionRow({
     required this.option,
     required this.selected,
+    required this.liveAccent,
     required this.onTap,
   });
 
   final ThemeModeOption option;
   final bool selected;
+  final Color liveAccent;
   final VoidCallback onTap;
 
   @override
@@ -206,7 +212,9 @@ class _ThemeOptionRowState extends State<_ThemeOptionRow> {
   @override
   Widget build(BuildContext context) {
     final highlighted = widget.selected || _hovered;
-    const switchActive = Color(0xFF8B5CF6);
+    final switchActive = widget.liveAccent;
+    final textPrimary = context.colors.textPrimary;
+    final textSecondary = context.colors.textSecondary;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
@@ -219,7 +227,9 @@ class _ThemeOptionRowState extends State<_ThemeOptionRow> {
           curve: Curves.easeOut,
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
           decoration: BoxDecoration(
-            color: highlighted ? const Color(0xFF000000) : Colors.transparent,
+            color: highlighted
+                ? Colors.black.withValues(alpha: 0.35)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(14),
             boxShadow: highlighted
                 ? [
@@ -263,8 +273,8 @@ class _ThemeOptionRowState extends State<_ThemeOptionRow> {
                   children: [
                     Text(
                       widget.option.title,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: textPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
@@ -273,7 +283,7 @@ class _ThemeOptionRowState extends State<_ThemeOptionRow> {
                     Text(
                       widget.option.description,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.55),
+                        color: textSecondary,
                         fontSize: 12,
                       ),
                     ),

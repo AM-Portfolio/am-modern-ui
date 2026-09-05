@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -64,99 +66,159 @@ class _AiHistoryDrawerState extends ConsumerState<AiHistoryDrawer> {
     }
   }
 
+  String _relativeTime(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 1) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} mins ago';
+    if (diff.inHours < 24) return '${diff.inHours} hr ago';
+    if (diff.inDays == 1) return 'Yesterday';
+    if (diff.inDays < 7) return '${diff.inDays} days ago';
+    return DateFormat.MMMd().format(dt);
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(aiSessionProvider);
     final width = MediaQuery.sizeOf(context).width;
     final drawerWidth = width < 480 ? width * 0.92 : 360.0;
+    final accent = context.aiPrimary;
+    final count = state.sessions.length;
 
     return Drawer(
       width: drawerWidth,
-      backgroundColor: context.surfaceColor,
-      child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
-              child: Row(
+      backgroundColor: Colors.transparent,
+      child: ClipRRect(
+        borderRadius: const BorderRadius.horizontal(left: Radius.circular(18)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          child: Container(
+            decoration: BoxDecoration(
+              color: context.colors.cardSurface.withValues(alpha: 0.92),
+              border: Border(
+                left: BorderSide(color: accent.withValues(alpha: 0.45), width: 1.4),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: accent.withValues(alpha: 0.18),
+                  blurRadius: 24,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+            child: SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(Icons.history_rounded, color: context.aiPrimary, size: 22),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Chat history',
-                      style: TextStyle(
-                        color: context.textPrimary,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
-                      ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 8, 10),
+                    child: Row(
+                      children: [
+                        Icon(Icons.history_rounded, color: accent, size: 22),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Recent Chat History',
+                            style: TextStyle(
+                              color: context.textPrimary,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        if (count > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: accent.withValues(alpha: 0.85),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '$count',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        IconButton(
+                          tooltip: 'Refresh',
+                          onPressed: state.isLoading
+                              ? null
+                              : () =>
+                                  ref.read(aiSessionProvider.notifier).refresh(),
+                          icon: Icon(
+                            Icons.refresh_rounded,
+                            color: context.textSecondary,
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'Close',
+                          onPressed: () => Navigator.of(context).maybePop(),
+                          icon: Icon(
+                            Icons.close_rounded,
+                            color: context.textSecondary,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  IconButton(
-                    tooltip: 'Refresh',
-                    onPressed: state.isLoading
-                        ? null
-                        : () => ref.read(aiSessionProvider.notifier).refresh(),
-                    icon: Icon(Icons.refresh_rounded, color: context.textSecondary),
-                  ),
-                  IconButton(
-                    tooltip: 'Close',
-                    onPressed: () => Navigator.of(context).maybePop(),
-                    icon: Icon(Icons.close_rounded, color: context.textSecondary),
-                  ),
+                  Divider(height: 1, color: context.dividerColor),
+                  if (state.isLoading && state.sessions.isEmpty)
+                    const Expanded(
+                      child: Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  else if (state.error != null && state.sessions.isEmpty)
+                    Expanded(
+                      child: _EmptyOrError(
+                        message: state.error!,
+                        onRetry: () =>
+                            ref.read(aiSessionProvider.notifier).refresh(),
+                      ),
+                    )
+                  else if (state.sessions.isEmpty)
+                    const Expanded(
+                      child: _EmptyOrError(
+                        message:
+                            'No saved chats yet.\nSend a message to start one.',
+                      ),
+                    )
+                  else
+                    Expanded(
+                      child: RefreshIndicator(
+                        onRefresh: () =>
+                            ref.read(aiSessionProvider.notifier).refresh(),
+                        child: ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
+                          itemCount: state.sessions.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 8),
+                          itemBuilder: (context, index) {
+                            final session = state.sessions[index];
+                            final selected =
+                                session.id == widget.activeSessionId;
+                            return _SessionTile(
+                              session: session,
+                              selected: selected,
+                              relativeTime: _relativeTime(session.updatedAt),
+                              onTap: () => widget.onSelectSession(session.id),
+                              onDelete: () => _confirmDelete(session),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  if (state.isLoading && state.sessions.isNotEmpty)
+                    const LinearProgressIndicator(minHeight: 2),
                 ],
               ),
             ),
-            Divider(height: 1, color: context.dividerColor),
-            if (state.isLoading && state.sessions.isEmpty)
-              const Expanded(
-                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-              )
-            else if (state.error != null && state.sessions.isEmpty)
-              Expanded(
-                child: _EmptyOrError(
-                  message: state.error!,
-                  onRetry: () =>
-                      ref.read(aiSessionProvider.notifier).refresh(),
-                ),
-              )
-            else if (state.sessions.isEmpty)
-              const Expanded(
-                child: _EmptyOrError(
-                  message: 'No saved chats yet.\nSend a message to start one.',
-                ),
-              )
-            else
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: () =>
-                      ref.read(aiSessionProvider.notifier).refresh(),
-                  child: ListView.separated(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: state.sessions.length,
-                    separatorBuilder: (_, __) => Divider(
-                      height: 1,
-                      indent: 16,
-                      endIndent: 16,
-                      color: context.dividerColor.withValues(alpha: 0.5),
-                    ),
-                    itemBuilder: (context, index) {
-                      final session = state.sessions[index];
-                      final selected = session.id == widget.activeSessionId;
-                      return _SessionTile(
-                        session: session,
-                        selected: selected,
-                        onTap: () => widget.onSelectSession(session.id),
-                        onDelete: () => _confirmDelete(session),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            if (state.isLoading && state.sessions.isNotEmpty)
-              const LinearProgressIndicator(minHeight: 2),
-          ],
+          ),
         ),
       ),
     );
@@ -166,27 +228,49 @@ class _AiHistoryDrawerState extends ConsumerState<AiHistoryDrawer> {
 class _SessionTile extends StatelessWidget {
   final AiSessionSummary session;
   final bool selected;
+  final String relativeTime;
   final VoidCallback onTap;
   final VoidCallback onDelete;
 
   const _SessionTile({
     required this.session,
     required this.selected,
+    required this.relativeTime,
     required this.onTap,
     required this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
-    final dateLabel = DateFormat.yMMMd().add_jm().format(session.updatedAt);
+    final accent = context.aiPrimary;
     return Material(
-      color: selected
-          ? context.aiPrimary.withValues(alpha: 0.12)
-          : Colors.transparent,
+      color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 4, 12),
+        borderRadius: BorderRadius.circular(14),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.fromLTRB(12, 12, 4, 12),
+          decoration: BoxDecoration(
+            color: selected
+                ? accent.withValues(alpha: 0.12)
+                : context.colors.cardSurface.withValues(alpha: 0.35),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected
+                  ? accent.withValues(alpha: 0.65)
+                  : context.colors.border.withValues(alpha: 0.35),
+              width: selected ? 1.5 : 1,
+            ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: accent.withValues(alpha: 0.22),
+                      blurRadius: 12,
+                    ),
+                  ]
+                : null,
+          ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -205,24 +289,24 @@ class _SessionTile extends StatelessWidget {
                             selected ? FontWeight.w700 : FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      dateLabel,
-                      style: TextStyle(
-                        color: context.textSecondary,
-                        fontSize: 12,
-                      ),
-                    ),
-                    if (session.agentType.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        session.agentType,
-                        style: TextStyle(
-                          color: context.textSecondary.withValues(alpha: 0.85),
-                          fontSize: 11,
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.schedule_rounded,
+                          size: 12,
+                          color: context.textSecondary,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 4),
+                        Text(
+                          relativeTime,
+                          style: TextStyle(
+                            color: context.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -231,8 +315,10 @@ class _SessionTile extends StatelessWidget {
                 onPressed: onDelete,
                 icon: Icon(
                   Icons.delete_outline_rounded,
-                  size: 20,
-                  color: context.textSecondary,
+                  size: 18,
+                  color: selected
+                      ? accent.withValues(alpha: 0.85)
+                      : context.textSecondary,
                 ),
               ),
             ],
@@ -258,7 +344,9 @@ class _EmptyOrError extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              onRetry != null ? Icons.cloud_off_rounded : Icons.chat_bubble_outline,
+              onRetry != null
+                  ? Icons.cloud_off_rounded
+                  : Icons.chat_bubble_outline,
               size: 40,
               color: context.textSecondary,
             ),

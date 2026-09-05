@@ -109,6 +109,7 @@ class ModuleColors {
   static const Color _dashboard = Color(0xFF3b82f6); // Blue
   static const Color _analytics = Color(0xFF10b981); // Green
   static const Color _reports = Color(0xFFf59e0b); // Amber
+  static const Color _aiChat = Color(0xFF6C5DD3); // Indigo / violet
 
   static Color market = _market;
   static Color trade = _trade;
@@ -116,6 +117,10 @@ class ModuleColors {
   static Color dashboard = _dashboard;
   static Color analytics = _analytics;
   static Color reports = _reports;
+  static Color aiChat = _aiChat;
+
+  /// True after a brand theme sync (skyBlue / imperialGold / cyberNeon).
+  static bool isBrandSynced = false;
 
   /// When [multicolor] is true, restore distinct AM accents; otherwise sync all to [brand].
   static void applyBrandSync({
@@ -129,6 +134,8 @@ class ModuleColors {
       dashboard = _dashboard;
       analytics = _analytics;
       reports = _reports;
+      aiChat = _aiChat;
+      isBrandSynced = false;
     } else {
       market = brand;
       trade = brand;
@@ -136,6 +143,8 @@ class ModuleColors {
       dashboard = brand;
       analytics = Color.lerp(brand, Colors.white, 0.12)!;
       reports = Color.lerp(brand, Colors.black, 0.08)!;
+      aiChat = brand;
+      isBrandSynced = true;
     }
     AppColors.syncModuleAccents(
       market: market,

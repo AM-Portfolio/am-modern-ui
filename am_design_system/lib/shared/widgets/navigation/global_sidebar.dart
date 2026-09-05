@@ -7,6 +7,7 @@ import 'package:am_design_system/core/navigation/app_web_navigation.dart';
 import 'package:am_design_system/core/theme/app_glassmorphism_v2.dart';
 import 'package:am_design_system/core/theme/app_colors.dart';
 import 'package:am_design_system/core/theme/app_colors_theme.dart';
+import 'package:am_design_system/core/theme/color_extensions.dart';
 import 'package:am_design_system/shared/widgets/navigation/sidebar_item.dart';
 import 'package:am_design_system/core/utils/conditional_mouse_region.dart';
 import 'package:am_design_system/core/module/module_config.dart';
@@ -99,14 +100,14 @@ class GlobalSidebar extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 32),
               child: Column(
                 children: [
-                  // Theme Toggle
+                  // Theme picker (full catalog — same as Profile)
                   if (onThemeToggle != null) ...[
                     _buildActionButton(
-                      icon: isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                      icon: Icons.palette_rounded,
                       onTap: onThemeToggle!,
                       isDarkMode: isDarkMode,
-                      tooltip: 'Toggle Theme',
-                      color: isDarkMode ? Colors.amber : const Color(0xFF6C5DD3),
+                      tooltip: 'Select Theme',
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                     const SizedBox(height: 24),
                   ],
@@ -185,100 +186,106 @@ class GlobalSidebar extends StatelessWidget {
   }
 
   Widget _buildUserProfile() {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: PopupMenuButton<String>(
-        offset: const Offset(60, -120), // Open to the right/above roughly
-      tooltip: 'Profile Options',
-      color: isDarkMode ? const Color(0xFF1E1E2C) : Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: isDarkMode ? Colors.white.withOpacity(0.1) : Colors.grey.withOpacity(0.2),
-        ),
-      ),
-      onSelected: (value) {
-        if (value == 'profile') {
-          onProfileTap?.call();
-        } else if (value == 'logout') {
-          onLogout?.call();
-        }
+    return Builder(
+      builder: (context) {
+        final themeColors = context.colors;
+        final accent = Theme.of(context).colorScheme.primary;
+        return MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: PopupMenuButton<String>(
+            offset: const Offset(60, -120),
+            tooltip: 'Profile Options',
+            color: themeColors.cardSurface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(
+                color: themeColors.border.withValues(alpha: 0.35),
+              ),
+            ),
+            onSelected: (value) {
+              if (value == 'profile') {
+                onProfileTap?.call();
+              } else if (value == 'logout') {
+                onLogout?.call();
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'profile',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.person_outline_rounded,
+                      color: themeColors.textPrimary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Profile & Settings',
+                      style: TextStyle(
+                        color: themeColors.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.logout_rounded,
+                      color: themeColors.statusError,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Logout',
+                      style: TextStyle(
+                        color: themeColors.statusError,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: accent.withValues(alpha: 0.5),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: accent.withValues(alpha: 0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ClipOval(
+                child: userAvatarUrl != null
+                    ? Image.network(
+                        userAvatarUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _buildUserInitials(),
+                      )
+                    : _buildUserInitials(),
+              ),
+            ),
+          ),
+        );
       },
-      itemBuilder: (context) => [
-        PopupMenuItem(
-          value: 'profile',
-          child: Row(
-            children: [
-              Icon(
-                Icons.person_outline_rounded,
-                color: isDarkMode ? Colors.white : Colors.black87,
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Profile & Settings',
-                style: TextStyle(
-                  color: isDarkMode ? Colors.white : Colors.black87,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const PopupMenuDivider(),
-        PopupMenuItem(
-          value: 'logout',
-          child: Row(
-            children: [
-              const Icon(
-                Icons.logout_rounded,
-                color: Colors.redAccent,
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Logout',
-                style: TextStyle(
-                  color: Colors.redAccent,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: const Color(0xFF6C5DD3).withOpacity(0.5),
-            width: 2,
-          ),
-          boxShadow: [
-             BoxShadow(
-                color: const Color(0xFF6C5DD3).withOpacity(0.2),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-             ),
-          ],
-        ),
-        child: ClipOval(
-          child: userAvatarUrl != null
-              ? Image.network(
-                  userAvatarUrl!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _buildUserInitials(),
-                )
-              : _buildUserInitials(),
-        ),
-      ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildUserInitials() {
     return Container(
@@ -307,6 +314,8 @@ class GlobalSidebar extends StatelessWidget {
         return ModuleColors.trade;
       case 'analysis':
         return ModuleColors.portfolio;
+      case 'ai chat':
+        return ModuleColors.aiChat;
       default:
         return null;
     }
