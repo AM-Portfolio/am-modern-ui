@@ -19,7 +19,7 @@
 #   am-gitops image-tags for Argo. Deploy→Dev/Prod wait for web-* approval;
 #   Deploy→Preprod skips on main while GitOps is on (unless force_preprod_helm).
 # Manual Helm override: dispatch force_preprod_helm, or deploy-modern-ui.yml.
-# Android: Play only via workflow_dispatch + target_env (no GitOps).
+# Android: on main/master always build AAB; Play only via workflow_dispatch + target_env.
 
 name: Unified CI/CD
 
