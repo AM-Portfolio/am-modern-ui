@@ -16,9 +16,10 @@
 # Phase 8b: Unified caller pointing at am-pipelines@main
 #
 # Web (trade-like): Build & GitOps — push/PR builds image; on main freezes
-#   am-gitops image-tags for Argo. deploy_*: false (no Helm waiting circles).
-# Manual Helm: separate workflow deploy-modern-ui.yml (like trade direct-deploy).
-# Android: unchanged — no GitOps.
+#   am-gitops image-tags for Argo. Deploy→Dev/Prod wait for web-* approval;
+#   Deploy→Preprod skips on main while GitOps is on (unless force_preprod_helm).
+# Manual Helm override: dispatch force_preprod_helm, or deploy-modern-ui.yml.
+# Android: Play only via workflow_dispatch + target_env (no GitOps).
 
 name: Unified CI/CD
 
@@ -57,6 +58,21 @@ on:
           - preprod
           - prod
         default: 'none'
+      deploy_preprod_helm:
+        description: "Helm roll to Kind preprod (image_name-preprod). Feature branches always; on main needs force or gitops off."
+        required: false
+        type: boolean
+        default: true
+      gitops_write_preprod:
+        description: "On main: auto-commit image tag to am-gitops (Argo). Preferred for main."
+        required: false
+        type: boolean
+        default: true
+      force_preprod_helm:
+        description: "Helm on main even when gitops is on / Argo Auto-Sync (may fight selfHeal)."
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   # ============================================================
@@ -153,9 +169,9 @@ jobs:
           extra_args: --only-verified
 
   # ============================================================
-  # WEB — Build & GitOps (trade-style GitOps step; web only)
+  # WEB — Build & GitOps (trade-style gates; web only)
   # Push/PR web paths or force_web: build image; on main freeze am-gitops.
-  # Manual Helm: deploy-modern-ui.yml (not nested here).
+  # Deploy→Dev/Prod: approval via web-*; Preprod Helm skips on main+GitOps.
   # ============================================================
   web-build-gitops:
     name: Build & GitOps
@@ -176,11 +192,13 @@ jobs:
       image_name: "am-modern-ui"
       preprod_namespace: "am-apps-preprod"
       prod_namespace: "am-apps-prod"
-      deploy_dev: false
-      deploy_preprod: false
-      deploy_prod: false
-      # Trade-style: main push auto-commits image-tags; Argo owns Kind preprod roll
-      gitops_write_preprod: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
+      dev_namespace: "am-apps-dev"
+      deploy_dev: true
+      deploy_prod: true
+      # Two preprod paths: GitOps (Argo on main) and/or Helm (fixed release -preprod + Kind Vault).
+      deploy_preprod: ${{ github.event_name != 'workflow_dispatch' && true || inputs.deploy_preprod_helm }}
+      gitops_write_preprod: ${{ github.event_name != 'workflow_dispatch' && true || inputs.gitops_write_preprod }}
+      force_preprod_helm: ${{ github.event_name == 'workflow_dispatch' && inputs.force_preprod_helm || false }}
       gitops_values_path: "am_app"
       gh_env_dev: "web-dev"
       gh_env_preprod: "web-preprod"
