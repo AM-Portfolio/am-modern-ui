@@ -19,7 +19,9 @@
 #   am-gitops image-tags for Argo. Deploy→Dev/Prod wait for web-* approval;
 #   Deploy→Preprod skips on main while GitOps is on (unless force_preprod_helm).
 # Manual Helm override: dispatch force_preprod_helm, or deploy-modern-ui.yml.
-# Android: on main/master always build AAB; Play only via workflow_dispatch + target_env.
+# Android: on main/master always build AAB and run Dev/Preprod/Prod deploy jobs
+#   (Play uploads gated by GitHub Environments android-dev/preprod/prod approvals).
+# Manual Play-only: workflow_dispatch + target_env.
 
 name: Unified CI/CD
 
@@ -212,7 +214,7 @@ jobs:
   # ============================================================
   # ANDROID BUILD — path changes, force_android, or any main/master push
   # Calls central-mobile-android.yml@main (Flutter -> AAB -> Play)
-  # Play upload still dispatch-only (see deploy_* below).
+  # On main/master: deploy_dev/preprod/prod enabled (env approvals still apply).
   # ============================================================
   android-publish:
     name: Publish Android
@@ -242,11 +244,11 @@ jobs:
       # Play Internal (preprod track) AAB talks to prod APIs
       am_domain: "am.asrax.in"
       am_env: "prod"
-      # Play uploads only via workflow_dispatch + target_env (not auto on main push).
-      # Avoids waiting android-dev/preprod/prod approvals after every main CI/web change.
-      deploy_dev: ${{ github.event_name == 'workflow_dispatch' && inputs.target_env == 'dev' }}
-      deploy_preprod: ${{ github.event_name == 'workflow_dispatch' && inputs.target_env == 'preprod' }}
-      deploy_prod: ${{ github.event_name == 'workflow_dispatch' && inputs.target_env == 'prod' }}
+      # main/master merge: enable Dev + Preprod + Prod deploy jobs.
+      # workflow_dispatch: still select one env via target_env.
+      deploy_dev: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'dev') }}
+      deploy_preprod: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'preprod') }}
+      deploy_prod: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'prod') }}
       # Map environment names
       gh_env_dev: "android-dev"
       gh_env_preprod: "android-preprod"
