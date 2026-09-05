@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 import '../../../models/trade_holding_view_model.dart';
 import '../../../../providers/trade_controller_providers.dart';
@@ -265,10 +266,10 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader>
                           children: [
                             Text(
                               widget.trade.displaySymbol,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF7C4DFF), // Purple
+                                color: ModuleColors.trade, // Purple
                                 letterSpacing: 0.5,
                               ),
                             ),
@@ -369,10 +370,10 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader>
                     suffixIcon: widget.onFilterChanged != null
                         ? TextButton(
                             onPressed: () => widget.onFilterChanged(null),
-                            child: const Text("HIDE",
+                            child: Text("HIDE",
                                 style: TextStyle(
                                     fontSize: 12,
-                                    color: Color(0xFF7C4DFF),
+                                    color: ModuleColors.trade,
                                     fontWeight: FontWeight.bold)),
                           )
                         : null),
@@ -741,7 +742,7 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader>
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(color: Theme.of(context).primaryColor),
+            borderSide: BorderSide(color: ModuleColors.trade),
           ),
           isDense: true,
         ),
@@ -761,12 +762,12 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader>
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: _showDetails
-                ? Theme.of(context).primaryColor.withOpacity(0.15)
+                ? ModuleColors.trade.withOpacity(0.15)
                 : Theme.of(context).colorScheme.surface.withOpacity(0.8),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: _showDetails
-                  ? Theme.of(context).primaryColor.withOpacity(0.4)
+                  ? ModuleColors.trade.withOpacity(0.4)
                   : Theme.of(context).dividerColor.withOpacity(0.2),
               width: 1.5,
             ),
@@ -778,7 +779,7 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader>
                 _showDetails ? Icons.expand_less : Icons.expand_more,
                 size: 18,
                 color: _showDetails
-                    ? Theme.of(context).primaryColor
+                    ? ModuleColors.trade
                     : Theme.of(context).colorScheme.onSurface,
               ),
               const SizedBox(width: 6),
@@ -788,7 +789,7 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader>
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: _showDetails
-                      ? Theme.of(context).primaryColor
+                      ? ModuleColors.trade
                       : Theme.of(context).colorScheme.onSurface,
                 ),
               ),
@@ -818,22 +819,22 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader>
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: Theme.of(context).primaryColor.withOpacity(0.12),
+          color: ModuleColors.trade.withOpacity(0.12),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-              color: Theme.of(context).primaryColor.withOpacity(0.25)),
+              color: ModuleColors.trade.withOpacity(0.25)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 12, color: Theme.of(context).primaryColor),
+            Icon(icon, size: 12, color: ModuleColors.trade),
             const SizedBox(width: 4),
             Text(
               label,
               style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: Theme.of(context).primaryColor),
+                  color: ModuleColors.trade),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

@@ -6,16 +6,25 @@ from __future__ import annotations
 import argparse
 import functools
 import http.server
-import os
 import socketserver
 from pathlib import Path
+
+
+class ThreadingHTTPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    """Concurrent requests — CanvasKit/wasm + main.dart.js must not block each other."""
+
+    allow_reuse_address = True
+    daemon_threads = True
 
 
 class SPARequestHandler(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
         # Avoid stale main.dart.js after local rebuilds.
-        if self.path.split("?", 1)[0].endswith((".js", ".html")):
+        if self.path.split("?", 1)[0].endswith((".js", ".html", ".wasm")):
             self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
+        # Required for ES module dynamic import of canvaskit.js
+        if self.path.split("?", 1)[0].endswith(".js"):
+            self.send_header("Access-Control-Allow-Origin", "*")
         super().end_headers()
 
     def send_head(self):
@@ -58,7 +67,7 @@ def main() -> None:
         raise SystemExit(f"Directory not found: {web_root}")
 
     handler = functools.partial(SPARequestHandler, directory=str(web_root))
-    with socketserver.TCPServer(("", args.port), handler) as httpd:
+    with ThreadingHTTPServer(("", args.port), handler) as httpd:
         print(f"Serving {web_root} at http://localhost:{args.port}/ (SPA fallback enabled)")
         try:
             httpd.serve_forever()

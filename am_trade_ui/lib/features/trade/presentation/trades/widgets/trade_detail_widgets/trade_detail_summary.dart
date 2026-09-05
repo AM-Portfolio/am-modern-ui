@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 import '../../../models/trade_holding_view_model.dart';
 
@@ -337,7 +338,7 @@ class TradeDetailSummary extends StatelessWidget {
                         ),
                         const Spacer(),
                         // Mobile simplified upload button
-                        Icon(Icons.cloud_upload_outlined, color: const Color(0xFF7C4DFF), size: 20),
+                        Icon(Icons.cloud_upload_outlined, color: ModuleColors.trade, size: 20),
                      ],
                   ),
                   const SizedBox(height: 16),

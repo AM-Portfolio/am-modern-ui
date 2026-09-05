@@ -529,7 +529,9 @@ GoRouter createAppRouter({
             ),
           GoRoute(
             path: AppRoutes.activeSessions,
-            builder: (context, state) => buildActiveSessionsRoute(),
+            builder: (context, state) => buildActiveSessionsRoute(
+              onOpenSecuritySettings: () => context.go(AppRoutes.profile),
+            ),
           ),
         ],
       ),

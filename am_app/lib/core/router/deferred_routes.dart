@@ -298,12 +298,14 @@ Widget buildProfileRoute({
   );
 }
 
-Widget buildActiveSessionsRoute() {
+Widget buildActiveSessionsRoute({VoidCallback? onOpenSecuritySettings}) {
   return DeferredModuleLoader(
     load: _loadUser,
     skeleton: const GenericModuleSkeleton(),
     loadingMessage: 'Loading sessions…',
-    builder: () => user_ui.ActiveSessionsPage(),
+    builder: () => user_ui.ActiveSessionsPage(
+      onOpenSecuritySettings: onOpenSecuritySettings,
+    ),
   );
 }
 

@@ -353,7 +353,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     // 7..(7+N): Dynamic Indices
     // Last: Admin
 
-    const accentColor = ModuleColors.market;
+    final accentColor = ModuleColors.market;
     final currentIndex = _swipeController.currentIndex;
 
     final mainItems = [
@@ -473,7 +473,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
 
   // User Mode - Simplified Navigation (Dashboard, Overview, Heatmap)
   List<SecondarySidebarSection> _buildUserModeSections(MarketProvider provider) {
-    const accentColor = ModuleColors.market;
+    final accentColor = ModuleColors.market;
     final currentIndex = _swipeController.currentIndex;
 
     final userItems = [
@@ -521,7 +521,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     }
     
     // Developer mode - show all items
-    const accentColor = ModuleColors.market;
+    final accentColor = ModuleColors.market;
 
     final items = [
       NavigationItem(
@@ -625,7 +625,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
   }
 
   List<NavigationItem> _buildUserModeNavigationItems(MarketProvider provider) {
-    const accentColor = ModuleColors.market;
+    final accentColor = ModuleColors.market;
 
     return [
       NavigationItem(

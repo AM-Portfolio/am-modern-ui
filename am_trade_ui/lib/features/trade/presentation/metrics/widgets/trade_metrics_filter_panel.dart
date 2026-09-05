@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:am_design_system/am_design_system.dart';
 import '../../../internal/domain/entities/metrics_filter_config.dart';
 import '../../../internal/domain/entities/filter_criteria.dart';
 import '../../widgets/filters/date_range_filter_group.dart';
@@ -283,7 +284,7 @@ class _TradeMetricsFilterPanelState extends ConsumerState<TradeMetricsFilterPane
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [theme.primaryColor.withOpacity(0.05), theme.primaryColor.withOpacity(0.02)],
+                    colors: [ModuleColors.trade.withOpacity(0.05), ModuleColors.trade.withOpacity(0.02)],
                   ),
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                 ),
@@ -292,10 +293,10 @@ class _TradeMetricsFilterPanelState extends ConsumerState<TradeMetricsFilterPane
                     Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: theme.primaryColor.withOpacity(0.12),
+                        color: ModuleColors.trade.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(Icons.tune_rounded, color: theme.primaryColor, size: 18),
+                      child: Icon(Icons.tune_rounded, color: ModuleColors.trade, size: 18),
                     ),
                     const SizedBox(width: 12),
                     Column(
@@ -317,7 +318,7 @@ class _TradeMetricsFilterPanelState extends ConsumerState<TradeMetricsFilterPane
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: theme.primaryColor.withOpacity(0.15),
+                                  color: ModuleColors.trade.withOpacity(0.15),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
@@ -325,7 +326,7 @@ class _TradeMetricsFilterPanelState extends ConsumerState<TradeMetricsFilterPane
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
-                                    color: theme.primaryColor,
+                                    color: ModuleColors.trade,
                                   ),
                                 ),
                               ),
@@ -390,21 +391,21 @@ class _TradeMetricsFilterPanelState extends ConsumerState<TradeMetricsFilterPane
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
-                              color: theme.primaryColor.withOpacity(0.1),
+                              color: ModuleColors.trade.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: theme.primaryColor.withOpacity(0.2)),
+                              border: Border.all(color: ModuleColors.trade.withOpacity(0.2)),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.add_circle_outline_rounded, size: 16, color: theme.primaryColor),
+                                Icon(Icons.add_circle_outline_rounded, size: 16, color: ModuleColors.trade),
                                 const SizedBox(width: 6),
                                 Text(
                                   'Add',
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: theme.primaryColor,
+                                    color: ModuleColors.trade,
                                   ),
                                 ),
                               ],
@@ -484,8 +485,8 @@ class _TradeMetricsFilterPanelState extends ConsumerState<TradeMetricsFilterPane
     children: [
       Container(
         padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(color: theme.primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-        child: Icon(icon, size: 16, color: theme.primaryColor),
+        decoration: BoxDecoration(color: ModuleColors.trade.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+        child: Icon(icon, size: 16, color: ModuleColors.trade),
       ),
       const SizedBox(width: 12),
       Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
@@ -516,17 +517,17 @@ class _TradeMetricsFilterPanelState extends ConsumerState<TradeMetricsFilterPane
     margin: const EdgeInsets.only(top: 12),
     padding: const EdgeInsets.all(24),
     decoration: BoxDecoration(
-      color: theme.primaryColor.withOpacity(0.03),
+      color: ModuleColors.trade.withOpacity(0.03),
       borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: theme.primaryColor.withOpacity(0.1)),
+      border: Border.all(color: ModuleColors.trade.withOpacity(0.1)),
     ),
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(color: theme.primaryColor.withOpacity(0.1), shape: BoxShape.circle),
-          child: Icon(Icons.filter_alt_off_rounded, size: 32, color: theme.primaryColor.withOpacity(0.6)),
+          decoration: BoxDecoration(color: ModuleColors.trade.withOpacity(0.1), shape: BoxShape.circle),
+          child: Icon(Icons.filter_alt_off_rounded, size: 32, color: ModuleColors.trade.withOpacity(0.6)),
         ),
         const SizedBox(height: 12),
         Text(

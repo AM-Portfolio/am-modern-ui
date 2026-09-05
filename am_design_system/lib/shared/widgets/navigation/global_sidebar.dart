@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:am_design_system/core/navigation/app_web_navigation.dart';
 import 'package:am_design_system/core/theme/app_glassmorphism_v2.dart';
 import 'package:am_design_system/core/theme/app_colors.dart';
+import 'package:am_design_system/core/theme/app_colors_theme.dart';
 import 'package:am_design_system/shared/widgets/navigation/sidebar_item.dart';
 import 'package:am_design_system/core/utils/conditional_mouse_region.dart';
 import 'package:am_design_system/core/module/module_config.dart';
@@ -47,9 +48,12 @@ class GlobalSidebar extends StatelessWidget {
   Widget build(BuildContext context) {
     // Thin strip width
     const double width = 80.0; // Slightly wider for better spacing
+    final surface = Theme.of(context).extension<AppColorsTheme>()?.surface ??
+        (isDarkMode ? const Color(0xFF1a1a2e) : Colors.white);
 
     return AppGlassmorphismV2.glassPrism(
       isDark: isDarkMode,
+      surfaceColor: surface,
       child: SizedBox(
         width: width,
         height: double.infinity,
@@ -293,12 +297,18 @@ class GlobalSidebar extends StatelessWidget {
 
   Color? _getIconColor(String title) {
     switch (title.toLowerCase()) {
-      case 'dashboard': return AppColors.primary;
-      case 'market': return AppColors.marketAccent;
-      case 'portfolio': return AppColors.portfolioAccent;
-      case 'trade': return AppColors.tradeAccent;
-      case 'analysis': return AppColors.accentPink; // Analysis often uses red/pink
-      default: return null;
+      case 'dashboard':
+        return ModuleColors.dashboard;
+      case 'market':
+        return ModuleColors.market;
+      case 'portfolio':
+        return ModuleColors.portfolio;
+      case 'trade':
+        return ModuleColors.trade;
+      case 'analysis':
+        return ModuleColors.portfolio;
+      default:
+        return null;
     }
   }
 

@@ -6,8 +6,8 @@ import 'package:am_design_system/am_design_system.dart';
 abstract final class BasketPanelStyles {
   BasketPanelStyles._();
 
-  /// Portfolio-module brand accent (never theme purple).
-  static const Color accent = ModuleColors.portfolio;
+  /// Portfolio-module brand accent (theme-synced via ModuleColors).
+  static Color get accent => ModuleColors.portfolio;
 
   static BoxDecoration glassCard(BuildContext context) {
     final colors = context.colors;

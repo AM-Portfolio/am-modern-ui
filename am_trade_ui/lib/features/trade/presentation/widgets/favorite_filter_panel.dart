@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 import '../../internal/domain/entities/favorite_filter.dart';
 import '../cubit/favorite_filter/favorite_filter_cubit.dart';
@@ -27,7 +28,7 @@ class FavoriteFilterPanel extends StatelessWidget {
   Widget _buildDropdownIcon(ThemeData theme, FavoriteFilter? selectedFilter) => Stack(
     clipBehavior: Clip.none,
     children: [
-      Icon(Icons.bookmark_rounded, color: theme.primaryColor, size: 20),
+      Icon(Icons.bookmark_rounded, color: ModuleColors.trade, size: 20),
       if (selectedFilter != null)
         Positioned(
           right: -2,
@@ -35,7 +36,7 @@ class FavoriteFilterPanel extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
-              color: theme.primaryColor,
+              color: ModuleColors.trade,
               shape: BoxShape.circle,
               border: Border.all(color: theme.scaffoldBackgroundColor, width: 1.5),
             ),
@@ -50,11 +51,11 @@ class FavoriteFilterPanel extends StatelessWidget {
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     child: Row(
       children: [
-        Icon(Icons.bookmark_rounded, size: 18, color: theme.primaryColor),
+        Icon(Icons.bookmark_rounded, size: 18, color: ModuleColors.trade),
         const SizedBox(width: 8),
         Text(
           'Favorite Filters',
-          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: theme.primaryColor),
+          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: ModuleColors.trade),
         ),
         const Spacer(),
         Text(
@@ -78,7 +79,7 @@ class FavoriteFilterPanel extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: Row(
         children: [
-          if (isSelected) Icon(Icons.check_circle, size: 16, color: theme.primaryColor) else const SizedBox(width: 16),
+          if (isSelected) Icon(Icons.check_circle, size: 16, color: ModuleColors.trade) else const SizedBox(width: 16),
           const SizedBox(width: 8),
           if (isDefault) ...[Icon(Icons.star, size: 14, color: Colors.amber[700]), const SizedBox(width: 4)],
           Expanded(
@@ -86,7 +87,7 @@ class FavoriteFilterPanel extends StatelessWidget {
               filter.name,
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected ? theme.primaryColor : null,
+                color: isSelected ? ModuleColors.trade : null,
               ),
             ),
           ),

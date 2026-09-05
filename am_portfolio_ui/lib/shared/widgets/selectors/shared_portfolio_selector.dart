@@ -107,7 +107,7 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(4),
                                 border: Border.all(color: ModuleColors.portfolio.withValues(alpha: 0.3)),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'BASKET',
                                 style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: ModuleColors.portfolio),
                               ),
@@ -178,7 +178,7 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(4),
                                   border: Border.all(color: ModuleColors.portfolio.withValues(alpha: 0.3)),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'BASKET',
                                   style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: ModuleColors.portfolio),
                                 ),
@@ -250,7 +250,7 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                                           borderRadius: BorderRadius.circular(4),
                                           border: Border.all(color: ModuleColors.portfolio.withValues(alpha: 0.3)),
                                         ),
-                                        child: const Text(
+                                        child: Text(
                                           'BASKET',
                                           style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: ModuleColors.portfolio),
                                         ),

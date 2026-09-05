@@ -55,7 +55,7 @@ class BdPageHeader extends StatelessWidget {
             onPressed: onShare,
             icon: Icon(Icons.share_outlined,
                 size: 18, color: ModuleColors.portfolio),
-            label: const Text('Share'),
+            label: Text('Share'),
             style: TextButton.styleFrom(
               foregroundColor: ModuleColors.portfolio,
             ),
@@ -64,7 +64,7 @@ class BdPageHeader extends StatelessWidget {
             onPressed: onDownload,
             icon: Icon(Icons.download_outlined,
                 size: 18, color: ModuleColors.portfolio),
-            label: const Text('Download'),
+            label: Text('Download'),
             style: TextButton.styleFrom(
               foregroundColor: ModuleColors.portfolio,
             ),

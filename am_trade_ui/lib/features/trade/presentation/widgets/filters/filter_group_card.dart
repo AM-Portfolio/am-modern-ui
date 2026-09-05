@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 import 'filter_group.dart';
 
@@ -46,13 +47,13 @@ class _FilterGroupCardState extends State<FilterGroupCard> with SingleTickerProv
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: widget.filterGroup.hasActiveFilters
-              ? theme.primaryColor.withOpacity(0.3)
+              ? ModuleColors.trade.withOpacity(0.3)
               : theme.dividerColor.withOpacity(0.5),
           width: widget.filterGroup.hasActiveFilters ? 1.5 : 1,
         ),
         boxShadow: [
           if (widget.filterGroup.hasActiveFilters)
-            BoxShadow(color: theme.primaryColor.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 1)),
+            BoxShadow(color: ModuleColors.trade.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 1)),
         ],
       ),
       child: Column(
@@ -72,7 +73,7 @@ class _FilterGroupCardState extends State<FilterGroupCard> with SingleTickerProv
                 decoration: BoxDecoration(
                   gradient: widget.filterGroup.hasActiveFilters
                       ? LinearGradient(
-                          colors: [theme.primaryColor.withOpacity(0.08), theme.primaryColor.withOpacity(0.03)],
+                          colors: [ModuleColors.trade.withOpacity(0.08), ModuleColors.trade.withOpacity(0.03)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         )
@@ -84,10 +85,10 @@ class _FilterGroupCardState extends State<FilterGroupCard> with SingleTickerProv
                     Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: theme.primaryColor.withOpacity(0.12),
+                        color: ModuleColors.trade.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: Icon(widget.filterGroup.icon, size: 14, color: theme.primaryColor),
+                      child: Icon(widget.filterGroup.icon, size: 14, color: ModuleColors.trade),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -104,11 +105,11 @@ class _FilterGroupCardState extends State<FilterGroupCard> with SingleTickerProv
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                         decoration: BoxDecoration(
-                          color: theme.primaryColor,
+                          color: ModuleColors.trade,
                           borderRadius: BorderRadius.circular(5),
                           boxShadow: [
                             BoxShadow(
-                              color: theme.primaryColor.withOpacity(0.3),
+                              color: ModuleColors.trade.withOpacity(0.3),
                               blurRadius: 2,
                               offset: const Offset(0, 1),
                             ),
@@ -156,7 +157,7 @@ class _FilterGroupCardState extends State<FilterGroupCard> with SingleTickerProv
                 ? Container(
                     padding: const EdgeInsets.fromLTRB(8, 6, 8, 8),
                     decoration: BoxDecoration(
-                      color: isDark ? null : theme.primaryColor.withOpacity(0.01),
+                      color: isDark ? null : ModuleColors.trade.withOpacity(0.01),
                       borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
                     ),
                     child: widget.filterGroup.buildContent(context),

@@ -231,6 +231,7 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
                     title: 'Portfolios',
                     icon: Icons.account_balance_wallet,
                     isSelected: _selectedView == MobileTradeViewType.portfolios,
+                    accentColor: ModuleColors.trade,
                     onTap: () =>
                         _onViewChanged(MobileTradeViewType.portfolios),
                   ),
@@ -238,24 +239,28 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
                     title: 'Holdings',
                     icon: Icons.dashboard_outlined,
                     isSelected: _selectedView == MobileTradeViewType.holdings,
+                    accentColor: ModuleColors.trade,
                     onTap: () => _onViewChanged(MobileTradeViewType.holdings),
                   ),
                   SecondarySidebarItem(
                     title: 'Calendar',
                     icon: Icons.calendar_today_outlined,
                     isSelected: _selectedView == MobileTradeViewType.calendar,
+                    accentColor: ModuleColors.trade,
                     onTap: () => _onViewChanged(MobileTradeViewType.calendar),
                   ),
                   SecondarySidebarItem(
                     title: 'Journal',
                     icon: Icons.book_outlined,
                     isSelected: _selectedView == MobileTradeViewType.journal,
+                    accentColor: ModuleColors.trade,
                     onTap: () => _onViewChanged(MobileTradeViewType.journal),
                   ),
                   SecondarySidebarItem(
                     title: 'Templates',
                     icon: Icons.style_outlined,
                     isSelected: _selectedView == MobileTradeViewType.templates,
+                    accentColor: ModuleColors.trade,
                     onTap: () => _onViewChanged(MobileTradeViewType.templates),
                   ),
                 ],
@@ -547,7 +552,7 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
                     ? Icons.dashboard_outlined
                     : Icons.calendar_today_outlined,
                 size: 80,
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                color: ModuleColors.trade.withOpacity(0.3),
               ),
               const SizedBox(height: 24),
               Text(
@@ -611,8 +616,8 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
           padding: const EdgeInsets.only(bottom: 96.0),
           child: FloatingActionButton(
             onPressed: () => _onViewChanged(MobileTradeViewType.addTrade),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+            backgroundColor: ModuleColors.trade,
+            foregroundColor: Colors.white,
             elevation: 4,
             shape: const CircleBorder(),
             child: const Icon(Icons.add),

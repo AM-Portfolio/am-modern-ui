@@ -152,7 +152,10 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
         // ),
       ),
       body: Container(
-        decoration: AppGlassmorphismV2.techBackground(isDark: isDark),
+        decoration: AppGlassmorphismV2.techBackground(
+          isDark: isDark,
+          scaffoldColor: context.colors.scaffoldBackground,
+        ),
         child: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
@@ -235,7 +238,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                         shape: BoxShape.circle,
                         color: context.colors.premiumActionPrimary.withValues(alpha: 0.15),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.workspace_premium_rounded,
                         color: ModuleColors.portfolio,
                         size: 22,
@@ -315,7 +318,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
             child: CircleAvatar(
               radius: 56,
               backgroundColor: ModuleColors.portfolio.withValues(alpha: 0.1),
-              child: const Icon(
+              child: Icon(
                 Icons.person,
                 size: 60,
                 color: ModuleColors.portfolio,
@@ -517,10 +520,20 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
             BlocBuilder<ThemeCubit, ThemeState>(
               builder: (context, themeState) {
                 final currentMode = themeState.mode;
-                String modeLabel = 'System Default';
-                if (currentMode == AppThemeMode.light || currentMode == AppThemeMode.white) modeLabel = 'Light Mode';
-                if (currentMode == AppThemeMode.dark) modeLabel = 'Dark Mode';
-                if (currentMode == AppThemeMode.skyBlue) modeLabel = 'Sky Blue Mode';
+                var modeLabel = 'System Default';
+                if (currentMode == AppThemeMode.light) {
+                  modeLabel = 'Minimal Light';
+                } else if (currentMode == AppThemeMode.white) {
+                  modeLabel = 'Pure White';
+                } else if (currentMode == AppThemeMode.dark) {
+                  modeLabel = 'Midnight OLED';
+                } else if (currentMode == AppThemeMode.skyBlue) {
+                  modeLabel = 'Sky Blue Breeze';
+                } else if (currentMode == AppThemeMode.imperialGold) {
+                  modeLabel = 'Imperial Gold';
+                } else if (currentMode == AppThemeMode.cyberNeon) {
+                  modeLabel = 'Cyber Neon / Rose Quartz';
+                }
 
                 return _buildSettingTile(
                   context,
@@ -958,61 +971,11 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
   }
 
   void _showThemeSelectionDialog(BuildContext context, AppThemeMode currentMode) {
-    showDialog(
+    showThemeModePickerDialog(
       context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Select Theme'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              RadioListTile<AppThemeMode>(
-                title: const Text('System Default'),
-                value: AppThemeMode.system,
-                groupValue: currentMode,
-                onChanged: (mode) {
-                  if (mode != null) {
-                    context.read<ThemeCubit>().setTheme(mode);
-                  }
-                  Navigator.pop(dialogContext);
-                },
-              ),
-              RadioListTile<AppThemeMode>(
-                title: const Text('Light Mode'),
-                value: AppThemeMode.light,
-                groupValue: currentMode,
-                onChanged: (mode) {
-                  if (mode != null) {
-                    context.read<ThemeCubit>().setTheme(mode);
-                  }
-                  Navigator.pop(dialogContext);
-                },
-              ),
-              RadioListTile<AppThemeMode>(
-                title: const Text('Dark Mode'),
-                value: AppThemeMode.dark,
-                groupValue: currentMode,
-                onChanged: (mode) {
-                  if (mode != null) {
-                    context.read<ThemeCubit>().setTheme(mode);
-                  }
-                  Navigator.pop(dialogContext);
-                },
-              ),
-              RadioListTile<AppThemeMode>(
-                title: const Text('Sky Blue Mode'),
-                value: AppThemeMode.skyBlue,
-                groupValue: currentMode,
-                onChanged: (mode) {
-                  if (mode != null) {
-                    context.read<ThemeCubit>().setTheme(mode);
-                  }
-                  Navigator.pop(dialogContext);
-                },
-              ),
-            ],
-          ),
-        );
+      currentMode: currentMode,
+      onSelected: (AppThemeMode mode) {
+        context.read<ThemeCubit>().setTheme(mode);
       },
     );
   }

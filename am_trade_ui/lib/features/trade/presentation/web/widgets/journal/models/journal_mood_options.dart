@@ -7,7 +7,7 @@ class JournalMoodOptions {
     'neutral': {'emoji': '😐', 'label': 'Neutral', 'color': context.colors.statusNeutral},
     'anxious': {'emoji': '😰', 'label': 'Anxious', 'color': context.colors.statusWarning},
     'frustrated': {'emoji': '😤', 'label': 'Frustrated', 'color': context.colors.statusError},
-    'focused': {'emoji': '🎯', 'label': 'Focused', 'color': context.colors.actionPrimaryBg},
+    'focused': {'emoji': '🎯', 'label': 'Focused', 'color': ModuleColors.trade},
     'tired': {'emoji': '😴', 'label': 'Tired', 'color': context.colors.border}, // Fallback for purple
   };
 
@@ -20,21 +20,21 @@ class JournalMoodOptions {
   };
 
   static List<Map<String, dynamic>> getTags(BuildContext context) => [
-    {'label': 'Breakout', 'color': context.colors.actionPrimaryBg},
+    {'label': 'Breakout', 'color': ModuleColors.trade},
     {'label': 'Breakdown', 'color': context.colors.statusError},
     {'label': 'Profit', 'color': context.colors.statusSuccess},
     {'label': 'Loss', 'color': context.colors.statusError},
-    {'label': 'Lesson', 'color': context.colors.actionPrimaryBg},
+    {'label': 'Lesson', 'color': ModuleColors.trade},
     {'label': 'Mistake', 'color': context.colors.statusWarning},
     {'label': 'Good Entry', 'color': context.colors.statusSuccess},
     {'label': 'Bad Entry', 'color': context.colors.statusError},
     {'label': 'Patience', 'color': context.colors.statusNeutral},
     {'label': 'FOMO', 'color': context.colors.statusError},
     {'label': 'Revenge', 'color': context.colors.statusError},
-    {'label': 'Discipline', 'color': context.colors.actionPrimaryBg},
-    {'label': 'Analysis', 'color': context.colors.actionPrimaryBg},
+    {'label': 'Discipline', 'color': ModuleColors.trade},
+    {'label': 'Analysis', 'color': ModuleColors.trade},
     {'label': 'Pattern', 'color': context.colors.statusWarning},
-    {'label': 'Support/Resistance', 'color': context.colors.actionPrimaryBg},
+    {'label': 'Support/Resistance', 'color': ModuleColors.trade},
   ];
 
   // Helper properties to access without context if color is not needed

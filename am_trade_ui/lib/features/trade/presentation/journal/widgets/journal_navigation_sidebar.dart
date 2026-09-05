@@ -2,11 +2,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
+import 'package:am_design_system/am_design_system.dart';
 import 'package:am_design_system/shared/widgets/navigation/secondary_sidebar.dart';
+
 import '../../../internal/domain/entities/notebook_item.dart';
 import '../../../internal/domain/entities/notebook_tag.dart';
 import '../../../internal/domain/entities/journal_entry.dart';
-import 'package:am_design_system/core/theme/app_colors.dart';
 
 class JournalNavigationSidebar extends StatelessWidget {
   const JournalNavigationSidebar({
@@ -35,7 +36,7 @@ class JournalNavigationSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Green accent for Trade/Journal
-    const tradeAccent = AppColors.tradeAccent; 
+    final tradeAccent = ModuleColors.trade; 
 
     return SecondarySidebar(
       title: 'TRADE',

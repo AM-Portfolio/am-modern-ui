@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 /// Enhanced template with rich pre-filled content
 class EnhancedTemplateDialog extends StatefulWidget {
@@ -466,12 +467,12 @@ Notes: _____
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF6C5DD3).withOpacity(0.1),
+                  color: ModuleColors.trade.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.description_outlined,
-                  color: Color(0xFF6C5DD3),
+                  color: ModuleColors.trade,
                   size: 24,
                 ),
               ),
@@ -522,12 +523,12 @@ Notes: _____
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: isSelected
-                  ? const Color(0xFF6C5DD3).withOpacity(0.15)
+                  ? ModuleColors.trade.withOpacity(0.15)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isSelected
-                    ? const Color(0xFF6C5DD3)
+                    ? ModuleColors.trade
                     : Colors.transparent,
                 width: 2,
               ),
@@ -571,9 +572,9 @@ Notes: _____
                   ),
                 ),
                 if (isSelected)
-                  const Icon(
+                  Icon(
                     Icons.check_circle,
-                    color: Color(0xFF6C5DD3),
+                    color: ModuleColors.trade,
                     size: 20,
                   ),
               ],
@@ -690,10 +691,10 @@ Notes: _____
                     );
                     Navigator.of(context).pop();
                   },
-            icon: const Icon(Icons.check),
-            label: const Text('Use Template'),
+            icon: Icon(Icons.check),
+            label: Text('Use Template'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6C5DD3),
+              backgroundColor: ModuleColors.trade,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               disabledBackgroundColor: Colors.grey,
