@@ -7,14 +7,23 @@ import '../../../../core/styles/market_theme_extension.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/equity_insider_provider.dart';
 
-class EquityInsiderFinancials extends ConsumerWidget {
+class EquityInsiderFinancials extends ConsumerStatefulWidget {
   final String symbol;
 
   const EquityInsiderFinancials({super.key, required this.symbol});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final asyncData = ref.watch(fundamentalFinancialsProvider(symbol));
+  ConsumerState<EquityInsiderFinancials> createState() =>
+      _EquityInsiderFinancialsState();
+}
+
+class _EquityInsiderFinancialsState
+    extends ConsumerState<EquityInsiderFinancials> {
+  bool _isQuarterly = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final asyncData = ref.watch(fundamentalFinancialsProvider(widget.symbol));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -23,7 +32,7 @@ class EquityInsiderFinancials extends ConsumerWidget {
         asyncData.when(
           data: (data) {
             if (data == null) return const Text('No financials data available');
-            
+
             return LayoutBuilder(
               builder: (context, constraints) {
                 final isMobile = constraints.maxWidth < 700;
@@ -47,7 +56,10 @@ class EquityInsiderFinancials extends ConsumerWidget {
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, st) => Text('Error loading financials: $e', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          error: (e, st) => Text(
+            'Error loading financials: $e',
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          ),
         ),
       ],
     );
@@ -80,7 +92,13 @@ class EquityInsiderFinancials extends ConsumerWidget {
   }
 
   Widget _buildRevenueChart(BuildContext context, FundamentalRatiosResponse data) {
-    final statements = _maps(data.incomeStatement);
+    final annualStatements = _maps(data.incomeStatement);
+    final quarterlyStatements = _maps(data.quarterlyIncomeStatement);
+
+    final statements = _isQuarterly && quarterlyStatements.isNotEmpty
+        ? quarterlyStatements
+        : annualStatements;
+
     // Usually API returns latest first, take 4 and reverse for chronological
     final recent = statements.take(4).toList().reversed.toList();
 
@@ -89,11 +107,27 @@ class EquityInsiderFinancials extends ConsumerWidget {
 
     return _ChartCard(
       title: 'Revenue & PAT (₹ Cr)',
-      periodIndicator: 'Annual',
+      headerRight: _buildToggleCapsule(
+        context: context,
+        firstLabel: 'Annual',
+        secondLabel: 'Quarterly',
+        isSecondSelected: _isQuarterly,
+        onFirstTap: () {
+          if (_isQuarterly) setState(() => _isQuarterly = false);
+        },
+        onSecondTap: () {
+          if (!_isQuarterly) setState(() => _isQuarterly = true);
+        },
+      ),
       child: statements.isEmpty
           ? Center(
-              child: Text('No income statement data',
-                  style: TextStyle(color: context.textTertiary, fontSize: 12)))
+              child: Text(
+                _isQuarterly
+                    ? 'No quarterly statement data'
+                    : 'No income statement data',
+                style: TextStyle(color: context.textTertiary, fontSize: 12),
+              ),
+            )
           : Column(
               children: [
                 SizedBox(
@@ -108,6 +142,7 @@ class EquityInsiderFinancials extends ConsumerWidget {
                     color2: patColor,
                     name1: 'Revenue',
                     name2: 'PAT',
+                    isQuarterly: _isQuarterly,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -122,7 +157,8 @@ class EquityInsiderFinancials extends ConsumerWidget {
     );
   }
 
-  Widget _buildBalanceSheetChart(BuildContext context, FundamentalRatiosResponse data) {
+  Widget _buildBalanceSheetChart(
+      BuildContext context, FundamentalRatiosResponse data) {
     final balance = _maps(data.balanceSheet);
     final recent = balance.take(3).toList().reversed.toList();
 
@@ -131,11 +167,20 @@ class EquityInsiderFinancials extends ConsumerWidget {
 
     return _ChartCard(
       title: 'Balance sheet (₹ Cr)',
-      periodIndicator: 'Annual',
+      headerRight: Text(
+        'Annual',
+        style: TextStyle(
+          fontSize: 10,
+          color: context.marketTheme.chartBlue,
+        ),
+      ),
       child: balance.isEmpty
           ? Center(
-              child: Text('No balance sheet data',
-                  style: TextStyle(color: context.textTertiary, fontSize: 12)))
+              child: Text(
+                'No balance sheet data',
+                style: TextStyle(color: context.textTertiary, fontSize: 12),
+              ),
+            )
           : Column(
               children: [
                 SizedBox(
@@ -149,6 +194,7 @@ class EquityInsiderFinancials extends ConsumerWidget {
                     color2: equityColor,
                     name1: 'Total Assets',
                     name2: 'Equity',
+                    isQuarterly: false,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -163,6 +209,79 @@ class EquityInsiderFinancials extends ConsumerWidget {
     );
   }
 
+  /// Reusable capsule toggle styled exactly like the chart's % vs 123 unit toggle
+  Widget _buildToggleCapsule({
+    required BuildContext context,
+    required String firstLabel,
+    required String secondLabel,
+    required bool isSecondSelected,
+    required VoidCallback onFirstTap,
+    required VoidCallback onSecondTap,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.05)
+            : Colors.black.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildCapsuleSegment(
+            context: context,
+            label: firstLabel,
+            isSelected: !isSecondSelected,
+            onTap: onFirstTap,
+          ),
+          _buildCapsuleSegment(
+            context: context,
+            label: secondLabel,
+            isSelected: isSecondSelected,
+            onTap: onSecondTap,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCapsuleSegment({
+    required BuildContext context,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = isSelected
+        ? const Color(0xFF00D1FF)
+        : (isDark ? Colors.white70 : Colors.black87);
+    final bgColor = isSelected
+        ? const Color(0xFF00D1FF).withValues(alpha: 0.15)
+        : Colors.transparent;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
   List<Map<String, dynamic>> _maps(List<dynamic>? raw) {
     if (raw == null) return const [];
     return [
@@ -174,12 +293,12 @@ class EquityInsiderFinancials extends ConsumerWidget {
 
 class _ChartCard extends StatelessWidget {
   final String title;
-  final String periodIndicator;
+  final Widget headerRight;
   final Widget child;
 
   const _ChartCard({
     required this.title,
-    required this.periodIndicator,
+    required this.headerRight,
     required this.child,
   });
 
@@ -206,13 +325,7 @@ class _ChartCard extends StatelessWidget {
                   color: context.textSecondary,
                 ),
               ),
-              Text(
-                periodIndicator,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: context.marketTheme.chartBlue,
-                ),
-              ),
+              headerRight,
             ],
           ),
           const SizedBox(height: 14),
@@ -233,6 +346,7 @@ class _BarChartWidget extends StatelessWidget {
   final Color color2;
   final String name1;
   final String name2;
+  final bool isQuarterly;
 
   const _BarChartWidget({
     required this.dataList,
@@ -244,6 +358,7 @@ class _BarChartWidget extends StatelessWidget {
     required this.color2,
     required this.name1,
     required this.name2,
+    this.isQuarterly = false,
   });
 
   double _val(Map<String, dynamic> row, String key, [String? fallback]) {
@@ -316,7 +431,11 @@ class _BarChartWidget extends StatelessWidget {
               final String seriesName = rodIndex == 0 ? name1 : name2;
               return BarTooltipItem(
                 '$period\n$seriesName: ₹$val Cr',
-                TextStyle(color: context.textPrimary, fontSize: 10, fontWeight: FontWeight.w500),
+                TextStyle(
+                  color: context.textPrimary,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                ),
               );
             },
           ),
@@ -328,11 +447,14 @@ class _BarChartWidget extends StatelessWidget {
               showTitles: true,
               getTitlesWidget: (value, meta) {
                 if (value < 0 || value >= dataList.length) return const SizedBox();
-                final String period = (dataList[value.toInt()]['period'] ?? '').toString();
-                // Shorten period e.g. Mar 2026 -> Mar 26
+                final String period =
+                    (dataList[value.toInt()]['period'] ?? '').toString();
                 final parts = period.split(' ');
                 String shortPeriod = period;
-                if (parts.length == 2 && parts[1].length == 4) {
+                if (!isQuarterly && parts.length == 2 && parts[1].length == 4) {
+                  shortPeriod = 'FY${parts[1].substring(2)}';
+                } else if (parts.length == 2 && parts[1].length == 4) {
+                  // E.g. Mar 2026 -> Mar 26, Jun 2026 -> Jun 26
                   shortPeriod = '${parts[0]} ${parts[1].substring(2)}';
                 }
                 return Padding(
@@ -365,7 +487,8 @@ class _BarChartWidget extends StatelessWidget {
             ),
           ),
           topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
         gridData: FlGridData(
           show: true,

@@ -16,6 +16,7 @@ class EquityInsiderShareholding extends ConsumerStatefulWidget {
 
 class _EquityInsiderShareholdingState extends ConsumerState<EquityInsiderShareholding> {
   int _activeIndex = -1;
+  int _selectedQuarterIndex = 0;
 
   void _onClick(int index) {
     setState(() {
@@ -34,15 +35,53 @@ class _EquityInsiderShareholdingState extends ConsumerState<EquityInsiderShareho
           data: (shareholding) {
             if (shareholding == null || shareholding.isEmpty) return const SizedBox.shrink();
 
-            final latest = shareholding.first as Map;
-            final period = latest['period'] ?? 'Latest';
+            _selectedQuarterIndex = _selectedQuarterIndex.clamp(0, shareholding.length - 1);
+            final selected = shareholding[_selectedQuarterIndex] as Map;
             
-            final slices = _getSlices(context, latest);
+            final slices = _getSlices(context, selected);
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildSectionHeader(context, 'Shareholding pattern — $period'),
+                _buildSectionHeader(context, 'Shareholding pattern'),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: List.generate(shareholding.length, (idx) {
+                      final q = shareholding[idx] as Map;
+                      final p = q['period'] ?? 'Q$idx';
+                      final isSelected = idx == _selectedQuarterIndex;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0, bottom: 16.0),
+                        child: InkWell(
+                          onTap: () => setState(() {
+                            _selectedQuarterIndex = idx;
+                            _activeIndex = -1; // Reset highlight
+                          }),
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: isSelected ? context.marketTheme.chartBlue.withValues(alpha: 0.15) : Colors.transparent,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isSelected ? context.marketTheme.chartBlue : context.borderColor,
+                              ),
+                            ),
+                            child: Text(
+                              p,
+                              style: TextStyle(
+                                color: isSelected ? context.marketTheme.chartBlue : context.textSecondary,
+                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(

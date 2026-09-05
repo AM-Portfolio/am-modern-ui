@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:am_market_sdk/market/api.dart';
 import 'package:am_design_system/core/theme/color_extensions.dart';
+import 'typewriter_hint_controller.dart';
 
 /**
  * Reusable, high-speed Smart Search & Recommendation widget.
@@ -13,6 +14,7 @@ import 'package:am_design_system/core/theme/color_extensions.dart';
  *   <li>Circular initial badge displaying the capitalized first letter (e.g., 'H', 'T', 'A').</li>
  *   <li>Passes the clean trading symbol (e.g. 'HDFCBANK') to onSelected callback.</li>
  *   <li>Supports both full-width center search and compact top-header search mode.</li>
+ *   <li>Optional animated ghost hints with smooth typewriter effect.</li>
  * </ul>
  */
 class SmartSearchAnchor extends StatefulWidget {
@@ -22,18 +24,22 @@ class SmartSearchAnchor extends StatefulWidget {
     required this.onSelected,
     this.onSubmit,
     this.hintText,
+    this.animatedHints,
     this.compact = false,
     this.category = 'STOCKS',
     this.searchHandler,
+    this.recentSearches = const [],
   });
 
   final TextEditingController? controller;
   final ValueChanged<String> onSelected;
   final VoidCallback? onSubmit;
   final String? hintText;
+  final List<String>? animatedHints;
   final bool compact;
   final String category;
   final Future<List<SecurityDocument>?> Function(String query)? searchHandler;
+  final List<String> recentSearches;
 
   @override
   State<SmartSearchAnchor> createState() => _SmartSearchAnchorState();
@@ -50,16 +56,35 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
   bool _isLoading = false;
 
   final SecurityExplorerApi _searchApi = SecurityExplorerApi();
+  TypewriterHintController? _typewriterController;
+  String _currentAnimatedHint = '';
+  bool _isAnimatingHint = false;
 
   @override
   void initState() {
     super.initState();
     _controller = widget.controller ?? TextEditingController();
     _focusNode.addListener(_onFocusChanged);
+
+    if (widget.animatedHints != null && widget.animatedHints!.isNotEmpty) {
+      _typewriterController = TypewriterHintController(
+        hints: widget.animatedHints!,
+        onHintChanged: (text, isAnimating) {
+          if (mounted) {
+            setState(() {
+              _currentAnimatedHint = text;
+              _isAnimatingHint = isAnimating;
+            });
+          }
+        },
+      );
+      _typewriterController!.start();
+    }
   }
 
   @override
   void dispose() {
+    _typewriterController?.dispose();
     _debounceTimer?.cancel();
     _removeOverlay();
     _focusNode.removeListener(_onFocusChanged);
@@ -72,10 +97,16 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
 
   void _onFocusChanged() {
     if (_focusNode.hasFocus) {
+      _typewriterController?.pause();
       if (_controller.text.trim().isNotEmpty) {
         _onQueryChanged(_controller.text);
+      } else if (widget.recentSearches.isNotEmpty) {
+        _showOverlay();
       }
     } else {
+      if (_controller.text.isEmpty) {
+        _typewriterController?.resume();
+      }
       // Delay removal so tap/click events in overlay execute completely
       Future.delayed(const Duration(milliseconds: 250), () {
         if (mounted && !_focusNode.hasFocus) {
@@ -98,7 +129,12 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
     final trimmed = query.trim();
 
     if (trimmed.isEmpty) {
-      _removeOverlay();
+      if (widget.recentSearches.isNotEmpty && _focusNode.hasFocus) {
+        setState(() => _recommendations = []);
+        _showOverlay();
+      } else {
+        _removeOverlay();
+      }
       return;
     }
 
@@ -125,7 +161,7 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
           _isLoading = false;
         });
 
-        if (_recommendations.isNotEmpty && _focusNode.hasFocus) {
+        if ((_recommendations.isNotEmpty || widget.recentSearches.isNotEmpty) && _focusNode.hasFocus) {
           _showOverlay();
         } else {
           _removeOverlay();
@@ -145,6 +181,11 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
     final renderBox = context.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
     final size = renderBox.size;
+    final isQueryEmpty = _controller.text.trim().isEmpty;
+
+    if (isQueryEmpty && widget.recentSearches.isEmpty) {
+      return;
+    }
 
     _overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
@@ -171,7 +212,88 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
                 ],
               ),
               constraints: const BoxConstraints(maxHeight: 280),
-              child: ListView.separated(
+              child: isQueryEmpty
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
+                          child: Row(
+                            children: [
+                              Icon(Icons.history_rounded, size: 14, color: context.colors.textTertiary),
+                              const SizedBox(width: 6),
+                              Text(
+                                'RECENTLY VIEWED',
+                                style: TextStyle(
+                                  color: context.colors.textTertiary,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Divider(color: context.colors.divider, height: 1),
+                        ListView.separated(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          shrinkWrap: true,
+                          itemCount: widget.recentSearches.length,
+                          separatorBuilder: (context, index) => Divider(
+                            color: context.colors.divider,
+                            height: 1,
+                            indent: 48,
+                          ),
+                          itemBuilder: (context, index) {
+                            final sym = widget.recentSearches[index];
+                            final initial = sym.isNotEmpty ? sym[0] : '?';
+                            return InkWell(
+                              borderRadius: BorderRadius.circular(8),
+                              onTap: () => _handleSelection(sym),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 28,
+                                      height: 28,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: context.colors.surface,
+                                        border: Border.all(color: context.colors.border, width: 1),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        initial,
+                                        style: TextStyle(
+                                          color: context.colors.actionPrimaryBg,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        sym,
+                                        style: TextStyle(
+                                          color: context.colors.textPrimary,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                    Icon(Icons.north_west_rounded, size: 14, color: context.colors.textTertiary),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    )
+                  : ListView.separated(
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 shrinkWrap: true,
                 itemCount: _recommendations.length,
@@ -312,8 +434,13 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
           fontSize: widget.compact ? 13 : 15,
         ),
         decoration: InputDecoration(
-          hintText: widget.hintText ?? (widget.compact ? 'Symbol…' : 'e.g. HDFC, TCS, RELIANCE'),
-          hintStyle: TextStyle(color: context.colors.textTertiary),
+          hintText: _typewriterController != null
+              ? _currentAnimatedHint
+              : (widget.hintText ?? (widget.compact ? 'Symbol…' : 'e.g. HDFC, TCS, RELIANCE')),
+          hintStyle: TextStyle(
+            color: context.colors.textTertiary,
+            fontStyle: _typewriterController != null ? FontStyle.italic : FontStyle.normal,
+          ),
           filled: true,
           fillColor: context.colors.scaffoldBackground,
           prefixIcon: Icon(Icons.search, color: accentColor, size: widget.compact ? 18 : 22),

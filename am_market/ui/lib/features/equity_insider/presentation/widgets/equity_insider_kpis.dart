@@ -27,7 +27,7 @@ class EquityInsiderKpis extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncData = ref.watch(fundamentalRatiosProvider(symbol));
+    final asyncData = ref.watch(fundamentalUnifiedProvider(symbol));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -47,8 +47,70 @@ class EquityInsiderKpis extends ConsumerWidget {
 
             final isBank = data.casa != null || data.nim != null || data.netNpa != null;
 
+            double? yoyRevGrowth;
+            double? yoyProfitGrowth;
+
+            if (data.incomeStatement != null && data.incomeStatement!.length >= 2) {
+              try {
+                final curr = data.incomeStatement![0];
+                final prev = data.incomeStatement![1];
+
+                final currRev = (curr['revenue'] as num?)?.toDouble() ?? (curr['totalRevenue'] as num?)?.toDouble();
+                final prevRev = (prev['revenue'] as num?)?.toDouble() ?? (prev['totalRevenue'] as num?)?.toDouble();
+                if (currRev != null && prevRev != null && prevRev != 0) {
+                  yoyRevGrowth = ((currRev - prevRev) / prevRev.abs()) * 100;
+                }
+
+                final currNet = (curr['netIncome'] as num?)?.toDouble() ?? (curr['netProfit'] as num?)?.toDouble();
+                final prevNet = (prev['netIncome'] as num?)?.toDouble() ?? (prev['netProfit'] as num?)?.toDouble();
+                if (currNet != null && prevNet != null && prevNet != 0) {
+                  yoyProfitGrowth = ((currNet - prevNet) / prevNet.abs()) * 100;
+                }
+              } catch (_) {}
+            }
+
             // Build candidate list of metrics in logical priority order
             final List<_KpiMetric> candidates = [
+              if (yoyRevGrowth != null)
+                _KpiMetric(
+                  label: 'YoY Rev Growth %',
+                  value: yoyRevGrowth,
+                  subtitle: 'Growth',
+                  isPositive: yoyRevGrowth > 0,
+                  isNegative: yoyRevGrowth < 0,
+                ),
+              if (yoyProfitGrowth != null)
+                _KpiMetric(
+                  label: 'YoY PAT Growth %',
+                  value: yoyProfitGrowth,
+                  subtitle: 'Growth',
+                  isPositive: yoyProfitGrowth > 0,
+                  isNegative: yoyProfitGrowth < 0,
+                ),
+              if (data.operatingMarginPercent != null)
+                _KpiMetric(
+                  label: 'OPM %',
+                  value: data.operatingMarginPercent,
+                  subtitle: 'Profitability',
+                  isPositive: data.operatingMarginPercent! > 15,
+                  isNegative: data.operatingMarginPercent! < 5,
+                ),
+              if (data.netProfitMarginPercent != null)
+                _KpiMetric(
+                  label: 'NPM %',
+                  value: data.netProfitMarginPercent,
+                  subtitle: 'Profitability',
+                  isPositive: data.netProfitMarginPercent! > 10,
+                  isNegative: data.netProfitMarginPercent! < 0,
+                ),
+              if (data.cfoPat != null)
+                _KpiMetric(
+                  label: 'CFO / PAT',
+                  value: data.cfoPat,
+                  subtitle: 'Cash Quality',
+                  isPositive: data.cfoPat! >= 1.0,
+                  isNegative: data.cfoPat! < 0.5,
+                ),
               _KpiMetric(
                 label: 'P/E',
                 value: data.peRatio,

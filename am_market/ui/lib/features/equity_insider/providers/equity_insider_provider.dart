@@ -6,6 +6,37 @@ import 'package:am_market_ui/core/services/market_data_sdk_service.dart';
 import 'package:am_auth_ui/core/services/secure_storage_service.dart';
 import 'package:get_it/get_it.dart';
 
+/// In-session recently viewed stocks (max 5). 
+/// Reset when browser refreshes or new session begins.
+final recentlyViewedStocksProvider =
+    NotifierProvider<RecentlyViewedStocksNotifier, List<String>>(
+  RecentlyViewedStocksNotifier.new,
+);
+
+class RecentlyViewedStocksNotifier extends Notifier<List<String>> {
+  static const int maxRecent = 5;
+
+  @override
+  List<String> build() => const [];
+
+  void recordView(String symbol) {
+    final sym = symbol.trim().toUpperCase();
+    if (sym.isEmpty) return;
+    final updated = List<String>.from(state);
+    updated.remove(sym);
+    updated.insert(0, sym);
+    if (updated.length > maxRecent) {
+      state = updated.sublist(0, maxRecent);
+    } else {
+      state = updated;
+    }
+  }
+
+  void clear() {
+    state = const [];
+  }
+}
+
 class EquityChartQuery {
   final String symbol;
   final String timeframe;
@@ -195,6 +226,24 @@ final fundamentalRatiosProvider =
     return await sdkService.fundamentalApi.getRatios(symbol);
   } catch (e) {
     throw Exception('Failed to load ratios for $symbol: $e');
+  }
+});
+
+final fundamentalUnifiedProvider =
+    FutureProvider.family<FundamentalRatiosResponse?, String>((ref, symbol) async {
+  final sdkService = MarketDataSdkService();
+  try {
+    if (GetIt.I.isRegistered<SecureStorageService>()) {
+      final token = await GetIt.I<SecureStorageService>().getAccessToken();
+      if (token != null && token.isNotEmpty) {
+        sdkService.setAuthentication(token);
+      }
+    }
+  } catch (_) {}
+  try {
+    return await sdkService.fundamentalApi.getFundamentals(symbol);
+  } catch (e) {
+    throw Exception('Failed to load fundamentals for $symbol: $e');
   }
 });
 

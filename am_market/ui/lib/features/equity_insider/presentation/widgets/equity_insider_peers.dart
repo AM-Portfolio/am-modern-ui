@@ -23,10 +23,12 @@ class _PeerColumnDef {
 
 class EquityInsiderPeers extends ConsumerStatefulWidget {
   final String symbol;
+  final ValueChanged<String>? onPeerSelected;
 
   const EquityInsiderPeers({
     super.key,
     required this.symbol,
+    this.onPeerSelected,
   });
 
   @override
@@ -298,53 +300,65 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
       dayChangeColor = p.dayChangePercent! >= 0 ? context.marketTheme.positive : context.marketTheme.negative;
     }
 
+    final targetSymbol = (p.symbol != null && p.symbol!.isNotEmpty) ? p.symbol! : '';
+    final canNavigate = !isCurrent && targetSymbol.isNotEmpty && widget.onPeerSelected != null;
+
     return DataRow(
       color: WidgetStateProperty.resolveWith<Color?>((states) => rowBg),
       cells: [
         DataCell(
-          Container(
-            decoration: isCurrent
-                ? BoxDecoration(border: Border(left: BorderSide(color: context.marketTheme.positive, width: 2)))
-                : null,
-            padding: EdgeInsets.only(left: isCurrent ? 8 : 10),
-            alignment: Alignment.centerLeft,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
+          MouseRegion(
+            cursor: canNavigate ? SystemMouseCursors.click : SystemMouseCursors.basic,
+            child: InkWell(
+              onTap: canNavigate ? () => widget.onPeerSelected!(targetSymbol) : null,
+              borderRadius: BorderRadius.circular(6),
+              child: Container(
+                decoration: isCurrent
+                    ? BoxDecoration(border: Border(left: BorderSide(color: context.marketTheme.positive, width: 2)))
+                    : null,
+                padding: EdgeInsets.only(left: isCurrent ? 8 : 10, top: 4, bottom: 4, right: 8),
+                alignment: Alignment.centerLeft,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      (p.symbol != null && p.symbol!.isNotEmpty) ? p.symbol! : shortName,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w500,
-                        color: context.textPrimary,
-                        fontSize: 12,
-                      ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          targetSymbol.isNotEmpty ? targetSymbol : shortName,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: canNavigate ? context.marketTheme.chartBlue : context.textPrimary,
+                            fontSize: 12,
+                            decoration: canNavigate ? TextDecoration.underline : TextDecoration.none,
+                            decorationColor: context.marketTheme.chartBlue.withValues(alpha: 0.4),
+                          ),
+                        ),
+                        if (isCurrent) ...[
+                          const SizedBox(width: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: context.marketTheme.surface,
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                            child: Text(
+                              'YOU',
+                              style: TextStyle(fontSize: 9, color: context.marketTheme.textSecondary),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                    if (isCurrent) ...[
-                      const SizedBox(width: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                        decoration: BoxDecoration(
-                          color: context.marketTheme.surface,
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                        child: Text(
-                          'YOU',
-                          style: TextStyle(fontSize: 9, color: context.marketTheme.textSecondary),
-                        ),
-                      ),
-                    ],
+                    const SizedBox(height: 1),
+                    Text(
+                      targetSymbol.isNotEmpty ? shortName : (p.sector ?? ''),
+                      style: TextStyle(fontSize: 10, color: context.marketTheme.textSecondary),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 1),
-                Text(
-                  (p.symbol != null && p.symbol!.isNotEmpty) ? shortName : (p.sector ?? ''),
-                  style: TextStyle(fontSize: 10, color: context.marketTheme.textSecondary),
-                ),
-              ],
+              ),
             ),
           ),
         ),
