@@ -259,6 +259,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
                           ),
                           child: TimeFrameSelector(
                             compact: true,
+                            primaryColor: ModuleColors.portfolio,
                             selectedTimeFrame: selected,
                             onTimeFrameChanged: (tf) =>
                                 ref.read(appTimeFrameProvider.notifier).setTimeFrame(tf),

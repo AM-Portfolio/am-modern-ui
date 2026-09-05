@@ -20,29 +20,41 @@ class BasketGlassDialog extends StatelessWidget {
     final border = isDark
         ? Colors.white.withValues(alpha: 0.1)
         : Colors.black.withValues(alpha: 0.08);
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isCompact = screenWidth < AmBreakpoints.mobile;
+    final maxDialogWidth = isCompact
+        ? screenWidth - 48
+        : 420.0;
+    final horizontalInset = isCompact ? 24.0 : 40.0;
 
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(_radius),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            decoration: BoxDecoration(
-              color: fill,
-              borderRadius: BorderRadius.circular(_radius),
-              border: Border.all(color: border),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.15),
-                  blurRadius: 28,
-                  offset: const Offset(0, 8),
-                ),
-              ],
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: horizontalInset,
+        vertical: 24,
+      ),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxDialogWidth),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(_radius),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: Container(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              decoration: BoxDecoration(
+                color: fill,
+                borderRadius: BorderRadius.circular(_radius),
+                border: Border.all(color: border),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.15),
+                    blurRadius: 28,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: child,
             ),
-            child: child,
           ),
         ),
       ),

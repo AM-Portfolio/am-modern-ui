@@ -282,7 +282,7 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
         ],
         primaryLabel: 'Confirm & Create Basket',
         primaryIcon: Icons.check,
-        primaryColor: context.statusSuccess,
+        primaryColor: ModuleColors.portfolio,
         onBack: () => Navigator.of(context).maybePop(),
         onPrimary: _confirmAndCreate,
         isLoading: _isSubmitting,

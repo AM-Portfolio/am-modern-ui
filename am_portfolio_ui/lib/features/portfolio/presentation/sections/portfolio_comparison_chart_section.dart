@@ -1,6 +1,7 @@
 import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_overlay_provider.dart';
 import 'package:am_dashboard_ui/presentation/shared/widgets/dashboard_chart_widget.dart';
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -30,7 +31,10 @@ class PortfolioComparisonChartSection extends ConsumerWidget {
 
     return SizedBox(
       height: height,
-      child: DashboardChartWidget(userId: resolvedUserId),
+      child: DashboardChartWidget(
+        userId: resolvedUserId,
+        accentColor: ModuleColors.portfolio,
+      ),
     );
   }
 

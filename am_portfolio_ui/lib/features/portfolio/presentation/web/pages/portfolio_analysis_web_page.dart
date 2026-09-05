@@ -194,7 +194,9 @@ class _PortfolioAnalysisWebPageState
 
       const Spacer(),
 
-      const GlobalTimeFrameBar(),
+      const GlobalTimeFrameBar(
+        primaryColor: ModuleColors.portfolio,
+      ),
 
       const SizedBox(width: 16),
 
@@ -414,7 +416,7 @@ class _PortfolioAnalysisWebPageState
         children: [
           const Row(
             children: [
-              Icon(Icons.pie_chart, color: Colors.blue, size: 20),
+              Icon(Icons.pie_chart, color: ModuleColors.portfolio, size: 20),
               SizedBox(width: 8),
               Expanded(
                 child: Text(

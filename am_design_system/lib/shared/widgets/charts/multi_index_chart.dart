@@ -72,6 +72,9 @@ class MultiIndexChart extends StatefulWidget {
   final bool preNormalizedPercent;
   final bool initialShowAbsoluteValues;
 
+  /// When set, first series uses this color; area fill is only drawn for that series.
+  final Color? accentColor;
+
   const MultiIndexChart({
     super.key,
     this.chartData,
@@ -91,6 +94,7 @@ class MultiIndexChart extends StatefulWidget {
     this.showEndValuePills = true,
     this.preNormalizedPercent = false,
     this.initialShowAbsoluteValues = false,
+    this.accentColor,
   }) : assert(
           chartData != null || historicalData != null,
           'Provide chartData or historicalData',
@@ -137,6 +141,11 @@ class MultiIndexChart extends StatefulWidget {
 
   // Color palette for different indices (alias for ComparisonChartColors).
   static List<Color> get indexColors => ComparisonChartColors.palette;
+
+  Color colorForSeriesIndex(int index) {
+    if (index == 0 && accentColor != null) return accentColor!;
+    return indexColors[index % indexColors.length];
+  }
 
   @override
   State<MultiIndexChart> createState() => _MultiIndexChartState();
@@ -228,8 +237,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
               : cleanMin[symbol]! +
                   (value - cleanMin[firstSymbol]!) / denominator0 * denI;
         }
-        final color = MultiIndexChart
-            .indexColors[i % MultiIndexChart.indexColors.length];
+        final color = widget.colorForSeriesIndex(i);
         rows.add(
           Text(
             _formatAxisTick(tickVal),
@@ -1155,8 +1163,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
       children: _activeIndices.asMap().entries.map((entry) {
         final index = entry.key;
         final symbol = entry.value;
-        final color = MultiIndexChart
-            .indexColors[index % MultiIndexChart.indexColors.length];
+        final color = widget.colorForSeriesIndex(index);
         final isHidden = _hiddenIndices.contains(symbol);
 
         return AmClickCapsule(
@@ -1393,8 +1400,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                                 final isNegative = val < 0;
                                 final color = isNegative
                                     ? const Color(0xFFEF4444)
-                                    : MultiIndexChart.indexColors[idx %
-                                        MultiIndexChart.indexColors.length];
+                                    : widget.colorForSeriesIndex(idx);
 
                                 return BarChartRodData(
                                   toY: val,
@@ -1645,8 +1651,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
 
                                 final double originalY = val as double;
                                 final Color color =
-                                    MultiIndexChart.indexColors[index %
-                                        MultiIndexChart.indexColors.length];
+                                    widget.colorForSeriesIndex(index);
 
                                 double drawY = originalY;
                                 if (_useMultiYAxis && index > 0 && index < _activeIndices.length) {
@@ -1752,9 +1757,8 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                                   final valueText = _showAbsoluteValues
                                       ? displayVal.toStringAsFixed(2)
                                       : '${displayVal >= 0 ? '+' : ''}${displayVal.toStringAsFixed(2)}%';
-                                  final seriesColor = MultiIndexChart
-                                      .indexColors[spot.barIndex %
-                                          MultiIndexChart.indexColors.length];
+                                  final seriesColor =
+                                      widget.colorForSeriesIndex(spot.barIndex);
 
                                   if (i == 0) {
                                     return LineTooltipItem(
@@ -1814,8 +1818,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     return _activeIndices.asMap().entries.where((entry) => !_hiddenIndices.contains(entry.value)).map((entry) {
       final index = entry.key;
       final symbol = entry.value;
-      final color = MultiIndexChart
-          .indexColors[index % MultiIndexChart.indexColors.length];
+      final color = widget.colorForSeriesIndex(index);
 
       final spots = <FlSpot>[];
       for (int i = 0; i < visibleData.length; i++) {
@@ -1839,6 +1842,9 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
         }
       }
 
+      final bool fillArea =
+          widget.accentColor == null || index == 0;
+
       return LineChartBarData(
         spots: spots,
         isCurved: true,
@@ -1852,7 +1858,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
         ),
         dotData: FlDotData(show: false),
         belowBarData: BarAreaData(
-          show: true,
+          show: fillArea,
           gradient: LinearGradient(
             colors: [
               color.withOpacity(0.25),
@@ -1887,8 +1893,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
       if (rawVal == null) continue;
 
       final double originalY = rawVal as double;
-      final Color color = MultiIndexChart.indexColors[
-          i % MultiIndexChart.indexColors.length];
+      final Color color = widget.colorForSeriesIndex(i);
 
       double drawY = originalY;
       if (_useMultiYAxis && i > 0 && i < _activeIndices.length) {

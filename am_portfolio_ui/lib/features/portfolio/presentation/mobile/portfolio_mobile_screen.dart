@@ -620,6 +620,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
               _buildPortfolioMenu(context),
             const GlobalTimeFrameBar(
               variant: GlobalTimeFrameVariant.dropdown,
+              primaryColor: ModuleColors.portfolio,
             ),
           ],
         ),

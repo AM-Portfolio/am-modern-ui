@@ -235,7 +235,7 @@ class PortfolioHeatmapConfig {
   }) => getHeatmapConfig(
     title: title,
     showSubCards: showSubCards,
-    accentColor: accentColor ?? Colors.green,
+    accentColor: accentColor ?? ModuleColors.portfolio,
   );
 
   /// Configuration for value portfolio

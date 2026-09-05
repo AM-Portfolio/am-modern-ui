@@ -15,9 +15,7 @@ class PreviewSummarySidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double matchScore = opportunity.matchScore;
-    final Color scoreColor = matchScore > 85
-        ? context.statusSuccess
-        : (matchScore > 60 ? context.statusWarning : context.statusError);
+    final Color scoreColor = ModuleColors.portfolio;
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),

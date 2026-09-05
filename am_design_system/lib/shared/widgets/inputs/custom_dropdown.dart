@@ -190,6 +190,7 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
                                 padding: const EdgeInsets.only(bottom: 6),
                                 child: _HoverableDropdownItemChild(
                                   isSelected: isSelected,
+                                  accentColor: widget.primaryColor ?? theme.primaryColor,
                                   child: DefaultTextStyle(
                                     style: DropdownStyles.createTextStyle(
                                       context,
@@ -371,11 +372,17 @@ extension DropdownItemHelper<T> on T {
 class _HoverableDropdownItemChild extends StatefulWidget {
   final Widget child;
   final bool isSelected;
+  final Color? accentColor;
 
-  const _HoverableDropdownItemChild({required this.child, this.isSelected = false});
+  const _HoverableDropdownItemChild({
+    required this.child,
+    this.isSelected = false,
+    this.accentColor,
+  });
 
   @override
-  State<_HoverableDropdownItemChild> createState() => _HoverableDropdownItemChildState();
+  State<_HoverableDropdownItemChild> createState() =>
+      _HoverableDropdownItemChildState();
 }
 
 class _HoverableDropdownItemChildState extends State<_HoverableDropdownItemChild> {
@@ -384,6 +391,7 @@ class _HoverableDropdownItemChildState extends State<_HoverableDropdownItemChild
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final accent = widget.accentColor ?? theme.primaryColor;
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
@@ -393,27 +401,39 @@ class _HoverableDropdownItemChildState extends State<_HoverableDropdownItemChild
         curve: Curves.easeOutCubic,
         // Use padding to shift content instead of transform to avoid overflow clipping
         padding: EdgeInsets.only(
-          left: _isHovered ? 12.0 : 8.0, 
-          right: _isHovered ? 4.0 : 8.0, 
-          top: 10.0, 
-          bottom: 10.0
+          left: _isHovered ? 12.0 : 8.0,
+          right: _isHovered ? 4.0 : 8.0,
+          top: 10.0,
+          bottom: 10.0,
         ),
         decoration: BoxDecoration(
-          color: _isHovered 
-              ? theme.primaryColor.withValues(alpha: 0.15) 
-              : (widget.isSelected ? theme.primaryColor.withValues(alpha: 0.05) : Colors.transparent),
+          color: _isHovered
+              ? accent.withValues(alpha: 0.15)
+              : (widget.isSelected
+                  ? accent.withValues(alpha: 0.05)
+                  : Colors.transparent),
           borderRadius: BorderRadius.circular(8),
+          boxShadow: _isHovered
+              ? [
+                  BoxShadow(
+                    color: accent.withValues(alpha: 0.2),
+                    blurRadius: 10,
+                    spreadRadius: -2,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: AnimatedDefaultTextStyle(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOutCubic,
           style: TextStyle(
-            color: _isHovered ? theme.primaryColor : theme.colorScheme.onSurface,
+            color: _isHovered ? accent : theme.colorScheme.onSurface,
             fontWeight: _isHovered ? FontWeight.w600 : FontWeight.w500,
           ),
           child: IconTheme(
             data: IconThemeData(
-              color: _isHovered ? theme.primaryColor : theme.iconTheme.color,
+              color: _isHovered ? accent : theme.iconTheme.color,
             ),
             child: widget.child,
           ),
