@@ -35,6 +35,7 @@ class FundamentalRatiosResponse {
     this.netProfitMarginPercent,
     this.shareholding,
     this.incomeStatement,
+    this.quarterlyIncomeStatement,
     this.balanceSheet,
     this.cashFlow,
     this.description,
@@ -107,6 +108,7 @@ class FundamentalRatiosResponse {
   // Financials & Shareholding dynamic lists
   List<dynamic>? shareholding;
   List<dynamic>? incomeStatement;
+  List<dynamic>? quarterlyIncomeStatement;
   List<dynamic>? balanceSheet;
   List<dynamic>? cashFlow;
   List<dynamic>? corporateActions;
@@ -255,6 +257,9 @@ class FundamentalRatiosResponse {
         incomeStatement: financials['incomeStatement'] is List
             ? financials['incomeStatement'] as List
             : (json['incomeStatement'] is List ? json['incomeStatement'] as List : []),
+        quarterlyIncomeStatement: financials['quarterlyIncomeStatement'] is List
+            ? financials['quarterlyIncomeStatement'] as List
+            : (json['quarterlyIncomeStatement'] is List ? json['quarterlyIncomeStatement'] as List : []),
         balanceSheet: financials['balanceSheet'] is List
             ? financials['balanceSheet'] as List
             : (json['balanceSheet'] is List ? json['balanceSheet'] as List : []),

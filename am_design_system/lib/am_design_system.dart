@@ -176,4 +176,5 @@ export 'shared/widgets/movers/am_top_movers_panel.dart';
 
 // --- Search & Autocomplete ---
 export 'shared/widgets/search/smart_search_anchor.dart';
+export 'shared/widgets/search/typewriter_hint_controller.dart';
 

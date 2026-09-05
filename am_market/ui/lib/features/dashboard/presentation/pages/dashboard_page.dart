@@ -123,6 +123,8 @@ class _MarketContentState extends ConsumerState<MarketContent> {
   late SwipeNavigationController _swipeController;
   final GlobalKey<UserDashboardPageState> _dashboardKey =
       GlobalKey<UserDashboardPageState>();
+  final GlobalKey<EquityInsiderPageState> _equityInsiderKey =
+      GlobalKey<EquityInsiderPageState>();
 
   static const _staticTitleToSlug = {
     'All Indices': 'all-indices',
@@ -505,6 +507,9 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     isSelected: _swipeController.currentIndex == index,
     accentColor: ModuleColors.market,
     onTap: () {
+      if (title == 'Equity Insider') {
+        _equityInsiderKey.currentState?.resetToLanding();
+      }
       _swipeController.navigateTo(index);
       context.read<MarketProvider>().selectIndex(title);
       widget.onTabChanged?.call(_slugForTitle(title));
@@ -577,7 +582,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         title: 'Equity Insider',
         subtitle: 'Fundamental analysis',
         icon: Icons.insights_rounded,
-        page: _wrapPage(EquityInsiderPage()),
+        page: _wrapPage(EquityInsiderPage(key: _equityInsiderKey)),
         accentColor: accentColor,
       ),
     ];
@@ -646,7 +651,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         title: 'Equity Insider',
         subtitle: 'Fundamental analysis',
         icon: Icons.insights_rounded,
-        page: _wrapPage(EquityInsiderPage()),
+        page: _wrapPage(EquityInsiderPage(key: _equityInsiderKey)),
         accentColor: accentColor,
       ),
     ];
