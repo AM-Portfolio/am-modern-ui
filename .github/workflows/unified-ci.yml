@@ -133,12 +133,8 @@ jobs:
               - 'am_user_ui/**'
               - 'am_diagnostic_ui/**'
               - 'am_doc_intelligence_ui/**'
-              - '.github/workflows/unified-ci.yml'
-
-  # ============================================================
-  # SHARED SECURITY SCAN - runs once, gates both pipelines
-  # If this fails: neither web nor android will build
-  # ============================================================
+              # Do NOT include unified-ci.yml here — workflow-only edits must not
+              # queue Android Play env approvals (dev/preprod/prod) on main.
   security-scan:
     name: Security Scan (Secrets)
     runs-on: ubuntu-latest
@@ -222,11 +218,11 @@ jobs:
       # Play Internal (preprod track) AAB talks to prod APIs
       am_domain: "am.asrax.in"
       am_env: "prod"
-      # Automatic deployments by branch + Manual overrides
-      deploy_dev: ${{ (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/feature/') || startsWith(github.ref, 'refs/heads/hotfix/'))) || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'dev') }}
-      # Play Internal: main, develop, feature/*, hotfix/*, or manual target_env=preprod
-      deploy_preprod: ${{ (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/feature/') || startsWith(github.ref, 'refs/heads/hotfix/'))) || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'preprod') }}
-      deploy_prod: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'prod') }}
+      # Play uploads only via workflow_dispatch + target_env (not auto on main push).
+      # Avoids waiting android-dev/preprod/prod approvals after every main CI/web change.
+      deploy_dev: ${{ github.event_name == 'workflow_dispatch' && inputs.target_env == 'dev' }}
+      deploy_preprod: ${{ github.event_name == 'workflow_dispatch' && inputs.target_env == 'preprod' }}
+      deploy_prod: ${{ github.event_name == 'workflow_dispatch' && inputs.target_env == 'prod' }}
       # Map environment names
       gh_env_dev: "android-dev"
       gh_env_preprod: "android-preprod"
