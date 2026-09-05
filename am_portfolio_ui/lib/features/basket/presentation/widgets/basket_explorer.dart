@@ -224,7 +224,7 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(
                   AppSpacing.md,
-                  AppSpacing.sm + AppSpacing.xs,
+                  AppSpacing.sm,
                   AppSpacing.md,
                   AppSpacing.sm,
                 ),
@@ -426,11 +426,11 @@ class _ThemeChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final primary = context.colors.actionPrimaryBg;
+    final accent = ModuleColors.portfolio;
     return Material(
       color: selected
-          ? primary.withValues(alpha: 0.12)
-          : context.colors.surface.withValues(alpha: 0.5),
+          ? accent.withValues(alpha: 0.18)
+          : context.colors.cardSurface,
       borderRadius: AppRadii.button,
       child: InkWell(
         onTap: onTap,
@@ -445,14 +445,14 @@ class _ThemeChip extends StatelessWidget {
             borderRadius: AppRadii.button,
             border: Border.all(
               color: selected
-                  ? primary.withValues(alpha: 0.45)
-                  : context.dividerColor.withValues(alpha: 0.35),
+                  ? accent.withValues(alpha: 0.45)
+                  : context.colors.border,
             ),
           ),
           child: Text(
             label,
             style: theme.textTheme.labelMedium?.copyWith(
-              color: selected ? primary : null,
+              color: selected ? accent : context.colors.textSecondary,
               fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
             ),
           ),
@@ -487,121 +487,157 @@ class _BasketOpportunityCard extends StatelessWidget {
   Widget _buildHoldingsStyleListCard(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.colors;
-    final score = opportunity.matchScore.clamp(0, 100);
-    final scoreColor = score >= 70
+    final accent = ModuleColors.portfolio;
+    final coverage = (opportunity.replicaScore > 0
+            ? opportunity.replicaScore
+            : opportunity.matchScore)
+        .clamp(0, 100);
+    final coverageColor = coverage >= 70
         ? context.statusSuccess
-        : score >= 40
+        : coverage >= 40
             ? context.statusWarning
             : context.statusError;
     final initial = opportunity.etfName.isNotEmpty
         ? opportunity.etfName[0].toUpperCase()
         : '?';
+    final metaParts = <String>[
+      if (opportunity.totalItems > 0) '${opportunity.totalItems} stocks',
+      if (opportunity.readyToReplicate) 'Ready',
+    ];
+
+    Widget metric({
+      required String label,
+      required String value,
+      Color? valueColor,
+    }) {
+      return Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: colors.textTertiary,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: valueColor ?? colors.textPrimary,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Material(
-      color: colors.cardSurface,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadii.card,
-        side: BorderSide(color: colors.border),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadii.card,
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 18,
-                    backgroundColor:
-                        colors.actionPrimaryBg.withValues(alpha: 0.15),
-                    child: Text(
-                      initial,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: colors.actionPrimaryBg,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm + 2),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          opportunity.etfName,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${opportunity.heldCount} held · ${opportunity.missingCount} missing'
-                          '${opportunity.totalItems > 0 ? ' · ${opportunity.totalItems} stocks' : ''}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colors.textSecondary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        '${score.toStringAsFixed(0)}%',
+        color: colors.cardSurface,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadii.card,
+          side: BorderSide(color: colors.border),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: AppRadii.card,
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: accent.withValues(alpha: 0.15),
+                      child: Text(
+                        initial,
                         style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: scoreColor,
+                          fontWeight: FontWeight.w700,
+                          color: accent,
                         ),
-                      ),
-                      Text(
-                        'match',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: colors.textTertiary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (opportunity.readyToReplicate) ...[
-                    const SizedBox(width: AppSpacing.sm),
-                    Icon(Icons.check_circle, size: 18, color: context.statusSuccess),
-                  ],
-                ],
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Preview basket',
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: colors.actionPrimaryBg,
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ),
-                  Icon(
-                    Icons.chevron_right,
-                    color: colors.actionPrimaryBg,
-                    size: 20,
-                  ),
-                ],
-              ),
-            ],
+                    const SizedBox(width: AppSpacing.sm + 2),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            opportunity.etfName,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (metaParts.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              metaParts.join(' · '),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colors.textSecondary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm + 2),
+                Row(
+                  children: [
+                    metric(
+                      label: 'Coverage',
+                      value: '${coverage.toStringAsFixed(0)}%',
+                      valueColor: coverageColor,
+                    ),
+                    metric(
+                      label: 'Held',
+                      value: '${opportunity.heldCount}',
+                    ),
+                    metric(
+                      label: 'Missing',
+                      value: '${opportunity.missingCount}',
+                      valueColor: opportunity.missingCount > 0
+                          ? context.statusWarning
+                          : context.statusSuccess,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Preview basket',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: accent,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right,
+                      color: accent,
+                      size: 20,
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    ),
     );
   }
 
@@ -744,8 +780,8 @@ class _BasketOpportunityCard extends StatelessWidget {
                 child: FilledButton(
                   onPressed: onTap,
                   style: FilledButton.styleFrom(
-                    backgroundColor: context.colors.actionPrimaryBg,
-                    foregroundColor: context.colors.actionPrimaryFg,
+                    backgroundColor: ModuleColors.portfolio,
+                    foregroundColor: Colors.white,
                     minimumSize: const Size.fromHeight(AppSpacing.xl),
                     padding:
                         const EdgeInsets.symmetric(vertical: AppSpacing.sm),
