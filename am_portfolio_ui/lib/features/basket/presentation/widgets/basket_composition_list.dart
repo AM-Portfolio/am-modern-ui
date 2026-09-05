@@ -58,7 +58,7 @@ class _BasketCompositionListState extends State<BasketCompositionList>
           child: TabBar(
             controller: _tabController,
             indicator: BoxDecoration(
-              color: context.colors.actionPrimaryBg.withValues(alpha: 0.2),
+              color: ModuleColors.portfolio.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             dividerColor: Colors.transparent,
@@ -221,10 +221,10 @@ class _BasketCompositionListState extends State<BasketCompositionList>
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: context.colors.actionPrimaryBg.withValues(alpha: 0.08),
+              color: ModuleColors.portfolio.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: context.colors.actionPrimaryBg.withValues(alpha: 0.3),
+                color: ModuleColors.portfolio.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
@@ -265,7 +265,7 @@ class _BasketCompositionListState extends State<BasketCompositionList>
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Icon(
                         Icons.swap_horiz,
-                        color: context.colors.actionPrimaryBg,
+                        color: ModuleColors.portfolio,
                         size: 28,
                       ),
                     ),
@@ -306,7 +306,7 @@ class _BasketCompositionListState extends State<BasketCompositionList>
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: context.colors.actionPrimaryBg.withValues(alpha: 0.15),
+                      color: ModuleColors.portfolio.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -315,14 +315,14 @@ class _BasketCompositionListState extends State<BasketCompositionList>
                         Icon(
                           Icons.info_outline,
                           size: 14,
-                          color: context.colors.actionPrimaryBg,
+                          color: ModuleColors.portfolio,
                         ),
                         const SizedBox(width: 6),
                         Flexible(
                           child: Text(
                             item.reason!,
                             style: TextStyle(
-                              color: context.colors.actionPrimaryBg,
+                              color: ModuleColors.portfolio,
                               fontSize: 12,
                             ),
                           ),

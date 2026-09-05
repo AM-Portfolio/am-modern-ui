@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
+import '../../../internal/domain/entities/portfolio_holding.dart';
 import '../../../providers/portfolio_providers.dart';
 
 /// Portfolio holdings widget with comprehensive display controller at bottom
@@ -157,6 +157,7 @@ class _PortfolioHoldingsWidgetState
           selectedDisplayFormat: _displayFormat,
           selectedSortBy: _sortBy,
           sortAscending: _sortAscending,
+          accentColor: ModuleColors.portfolio,
           onChangeTypeChanged: (HoldingsChangeType type) {
             setState(() {
               _changeType = type;
@@ -200,7 +201,7 @@ class _PortfolioHoldingsWidgetState
 
   /// Build custom bottom row with display format preference
   Widget _buildCustomBottomRow(
-    holding,
+    PortfolioHolding holding,
     double changeValue,
     double changePercent,
     bool isPositive,
@@ -260,14 +261,14 @@ class _PortfolioHoldingsWidgetState
                 return Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor.withAlpha(25),
+                    color: ModuleColors.portfolio.withAlpha(25),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
                     b.brokerName,
                     style: TextStyle(
                       fontSize: 10,
-                      color: Theme.of(context).primaryColor,
+                      color: ModuleColors.portfolio,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -300,7 +301,7 @@ class _PortfolioHoldingsWidgetState
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
               ),
               Text(
-                '${holding.currentPrice.toStringAsFixed(2)}',
+                holding.currentPrice.toStringAsFixed(2),
                 style: const TextStyle(
                   fontWeight: FontWeight.w500,
                   fontSize: 12,

@@ -99,66 +99,97 @@ class _MyBasketsViewState extends ConsumerState<MyBasketsView> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        Widget draftSection() {
-          if (visibleDrafts.isEmpty) return const SizedBox.shrink();
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.sm),
-                child: Text(
-                  'Drafts',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleSmall
-                      ?.copyWith(fontWeight: FontWeight.bold),
-                ),
-              ),
-              ...visibleDrafts.map(
-                (d) => Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                  child: _DraftBasketCard(
-                    draft: d,
-                    userId: widget.userId,
-                    portfolioId: widget.portfolioId,
-                    onChanged: _refresh,
-                  ),
-                ),
-              ),
-            ],
+        final isMobile = constraints.maxWidth < AmBreakpoints.mobile;
+
+        Widget sectionHeader(String title, {bool isFirst = false}) {
+          return Padding(
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              isFirst ? AppSpacing.sm : AppSpacing.lg,
+              AppSpacing.md,
+              AppSpacing.sm,
+            ),
+            child: Text(
+              title,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleSmall
+                  ?.copyWith(fontWeight: FontWeight.bold),
+            ),
           );
         }
 
-        Widget activeSection() {
-          if (visibleActive.isEmpty) return const SizedBox.shrink();
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.md, AppSpacing.lg, AppSpacing.md, AppSpacing.sm),
-                child: Text(
-                  'Active',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleSmall
-                      ?.copyWith(fontWeight: FontWeight.bold),
-                ),
-              ),
-              ...visibleActive.map(
-                (b) => Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                  child: _TrackingBasketCard(
-                    basket: b,
-                    userId: widget.userId,
-                    portfolioId: widget.portfolioId,
+        if (isMobile) {
+          Widget draftSection() {
+            if (visibleDrafts.isEmpty) return const SizedBox.shrink();
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                sectionHeader('Drafts', isFirst: true),
+                ...visibleDrafts.map(
+                  (d) => Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                    child: _DraftBasketCard(
+                      draft: d,
+                      userId: widget.userId,
+                      portfolioId: widget.portfolioId,
+                      onChanged: _refresh,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            );
+          }
+
+          Widget activeSection() {
+            if (visibleActive.isEmpty) return const SizedBox.shrink();
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                sectionHeader('Active', isFirst: visibleDrafts.isEmpty),
+                ...visibleActive.map(
+                  (b) => Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                    child: _TrackingBasketCard(
+                      basket: b,
+                      userId: widget.userId,
+                      portfolioId: widget.portfolioId,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: _refresh,
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: _buildFilterBar(context, draftCount, draftLimit),
+                ),
+                SliverToBoxAdapter(child: draftSection()),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                    child: activeSection(),
+                  ),
+                ),
+              ],
+            ),
           );
         }
+
+        // Desktop / web: compact multi-column card grid
+        const gridDelegate = SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 360,
+          mainAxisExtent: 168,
+          crossAxisSpacing: AppSpacing.md,
+          mainAxisSpacing: AppSpacing.md,
+        );
 
         return RefreshIndicator(
           onRefresh: _refresh,
@@ -168,13 +199,61 @@ class _MyBasketsViewState extends ConsumerState<MyBasketsView> {
               SliverToBoxAdapter(
                 child: _buildFilterBar(context, draftCount, draftLimit),
               ),
-              SliverToBoxAdapter(child: draftSection()),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                  child: activeSection(),
+              if (visibleDrafts.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: sectionHeader('Drafts', isFirst: true),
                 ),
-              ),
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                  sliver: SliverGrid(
+                    gridDelegate: gridDelegate,
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final d = visibleDrafts[index];
+                        return _DraftBasketCard(
+                          draft: d,
+                          userId: widget.userId,
+                          portfolioId: widget.portfolioId,
+                          onChanged: _refresh,
+                          compact: true,
+                        );
+                      },
+                      childCount: visibleDrafts.length,
+                    ),
+                  ),
+                ),
+              ],
+              if (visibleActive.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: sectionHeader(
+                    'Active',
+                    isFirst: visibleDrafts.isEmpty,
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.md,
+                    0,
+                    AppSpacing.md,
+                    AppSpacing.md,
+                  ),
+                  sliver: SliverGrid(
+                    gridDelegate: gridDelegate,
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final b = visibleActive[index];
+                        return _TrackingBasketCard(
+                          basket: b,
+                          userId: widget.userId,
+                          portfolioId: widget.portfolioId,
+                          compact: true,
+                        );
+                      },
+                      childCount: visibleActive.length,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         );
@@ -300,12 +379,14 @@ class _DraftBasketCard extends ConsumerWidget {
   final String userId;
   final String portfolioId;
   final Future<void> Function() onChanged;
+  final bool compact;
 
   const _DraftBasketCard({
     required this.draft,
     required this.userId,
     required this.portfolioId,
     required this.onChanged,
+    this.compact = false,
   });
 
   Future<void> _continue(BuildContext context, WidgetRef ref) async {
@@ -458,7 +539,7 @@ class _DraftBasketCard extends ConsumerWidget {
         : null;
     final metaParts = <String>[
       'Draft',
-      if (dateLabel != null) dateLabel,
+      ?dateLabel,
     ];
 
     Widget metric({
@@ -466,136 +547,139 @@ class _DraftBasketCard extends ConsumerWidget {
       required String value,
       Color? valueColor,
     }) {
-      return Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: colors.textTertiary,
-              ),
+      final column = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: colors.textTertiary,
             ),
-            const SizedBox(height: 2),
-            Text(
-              value,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: valueColor ?? colors.textPrimary,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: valueColor ?? colors.textPrimary,
             ),
-          ],
-        ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       );
+      return Expanded(child: column);
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Material(
-        color: colors.cardSurface,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: AppRadii.card,
-          side: BorderSide(color: colors.border),
-        ),
-        child: InkWell(
-          onTap: () => _continue(context, ref),
-          onLongPress: () => _confirmDelete(context, ref),
-          borderRadius: AppRadii.card,
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 18,
-                      backgroundColor:
-                          ModuleColors.portfolio.withValues(alpha: 0.15),
-                      child: Text(
-                        initial,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: ModuleColors.portfolio,
-                        ),
+    final card = Material(
+      color: colors.cardSurface,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadii.card,
+        side: BorderSide(color: colors.border),
+      ),
+      child: InkWell(
+        onTap: () => _continue(context, ref),
+        onLongPress: () => _confirmDelete(context, ref),
+        borderRadius: AppRadii.card,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor:
+                        ModuleColors.portfolio.withValues(alpha: 0.15),
+                    child: Text(
+                      initial,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: ModuleColors.portfolio,
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.sm + 2),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(width: AppSpacing.sm + 2),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            metaParts.join(' · '),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colors.textSecondary,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.sm + 2),
-                Row(
-                  children: [
-                    metric(
-                      label: 'Coverage',
-                      value: draft.replicaScore != null
-                          ? '${score.toStringAsFixed(0)}%'
-                          : '—',
-                      valueColor: draft.replicaScore != null
-                          ? scoreColor
-                          : colors.textTertiary,
-                    ),
-                    metric(
-                      label: 'Invested',
-                      value: planned,
-                    ),
-                    metric(
-                      label: 'P&L',
-                      value: '—',
-                      valueColor: colors.textTertiary,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Continue customize',
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: ModuleColors.portfolio,
-                          fontWeight: FontWeight.w600,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
+                        const SizedBox(height: 2),
+                        Text(
+                          metaParts.join(' · '),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colors.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm + 2),
+              Row(
+                children: [
+                  metric(
+                    label: 'Coverage',
+                    value: draft.replicaScore != null
+                        ? '${score.toStringAsFixed(0)}%'
+                        : '—',
+                    valueColor: draft.replicaScore != null
+                        ? scoreColor
+                        : colors.textTertiary,
+                  ),
+                  metric(
+                    label: 'Invested',
+                    value: planned,
+                  ),
+                  metric(
+                    label: 'P&L',
+                    value: '—',
+                    valueColor: colors.textTertiary,
+                  ),
+                ],
+              ),
+              if (compact) const Spacer() else const SizedBox(height: AppSpacing.sm),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Continue customize',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: ModuleColors.portfolio,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    Icon(
-                      Icons.chevron_right,
-                      color: ModuleColors.portfolio,
-                      size: 20,
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                  Icon(
+                    Icons.chevron_right,
+                    color: ModuleColors.portfolio,
+                    size: 20,
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
+    );
+
+    if (compact) return card;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: card,
     );
   }
 }
@@ -604,11 +688,13 @@ class _TrackingBasketCard extends ConsumerWidget {
   final TrackingBasket basket;
   final String userId;
   final String portfolioId;
+  final bool compact;
 
   const _TrackingBasketCard({
     required this.basket,
     required this.userId,
     required this.portfolioId,
+    this.compact = false,
   });
 
   void _confirmDelete(BuildContext context, WidgetRef ref) {
@@ -690,7 +776,7 @@ class _TrackingBasketCard extends ConsumerWidget {
     final hasPnl = pnl != null;
     final pnlColor = !hasPnl
         ? colors.textTertiary
-        : pnl! >= 0
+        : pnl >= 0
             ? context.statusSuccess
             : context.statusError;
     final pnlLabel = !hasPnl
@@ -703,7 +789,7 @@ class _TrackingBasketCard extends ConsumerWidget {
         : null;
     final metaParts = <String>[
       statusText.toLowerCase(),
-      if (dateLabel != null) dateLabel,
+      ?dateLabel,
     ];
 
     Widget metric({
@@ -747,118 +833,122 @@ class _TrackingBasketCard extends ConsumerWidget {
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Material(
-        color: colors.cardSurface,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: AppRadii.card,
-          side: BorderSide(color: colors.border),
-        ),
-        child: InkWell(
-          borderRadius: AppRadii.card,
-          onTap: () {
-            if (basket.basketId.isNotEmpty) {
-              BasketNavigation.openDashboard(
-                context,
-                basketId: basket.basketId,
-                userId: userId,
-                portfolioId: portfolioId,
-              );
-            }
-          },
-          onLongPress: () => _confirmDelete(context, ref),
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 18,
-                      backgroundColor:
-                          ModuleColors.portfolio.withValues(alpha: 0.15),
-                      child: Text(
-                        initial,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: ModuleColors.portfolio,
-                        ),
+    final card = Material(
+      color: colors.cardSurface,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadii.card,
+        side: BorderSide(color: colors.border),
+      ),
+      child: InkWell(
+        borderRadius: AppRadii.card,
+        onTap: () {
+          if (basket.basketId.isNotEmpty) {
+            BasketNavigation.openDashboard(
+              context,
+              basketId: basket.basketId,
+              userId: userId,
+              portfolioId: portfolioId,
+            );
+          }
+        },
+        onLongPress: () => _confirmDelete(context, ref),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor:
+                        ModuleColors.portfolio.withValues(alpha: 0.15),
+                    child: Text(
+                      initial,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: ModuleColors.portfolio,
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.sm + 2),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(width: AppSpacing.sm + 2),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            metaParts.join(' · '),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colors.textSecondary,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.sm + 2),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    metric(
-                      label: 'Coverage',
-                      value: '${coverage.toStringAsFixed(0)}%',
-                      valueColor: coverageColor,
-                    ),
-                    metric(
-                      label: 'Invested',
-                      value: investedLabel,
-                    ),
-                    metric(
-                      label: 'P&L',
-                      value: pnlLabel,
-                      valueColor: pnlColor,
-                      subtitle: hasPnl ? pnlPctLabel : null,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'View details',
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: ModuleColors.portfolio,
-                          fontWeight: FontWeight.w600,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
+                        const SizedBox(height: 2),
+                        Text(
+                          metaParts.join(' · '),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colors.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm + 2),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  metric(
+                    label: 'Coverage',
+                    value: '${coverage.toStringAsFixed(0)}%',
+                    valueColor: coverageColor,
+                  ),
+                  metric(
+                    label: 'Invested',
+                    value: investedLabel,
+                  ),
+                  metric(
+                    label: 'P&L',
+                    value: pnlLabel,
+                    valueColor: pnlColor,
+                    subtitle: hasPnl ? pnlPctLabel : null,
+                  ),
+                ],
+              ),
+              if (compact) const Spacer() else const SizedBox(height: AppSpacing.sm),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'View details',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: ModuleColors.portfolio,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    Icon(
-                      Icons.chevron_right,
-                      color: ModuleColors.portfolio,
-                      size: 20,
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                  Icon(
+                    Icons.chevron_right,
+                    color: ModuleColors.portfolio,
+                    size: 20,
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
+    );
+
+    if (compact) return card;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: card,
     );
   }
 

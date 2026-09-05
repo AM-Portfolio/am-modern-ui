@@ -652,7 +652,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
       iconSize: 16,
       borderRadius: 10,
       menuMaxHeight: 148,
-      primaryColor: context.colors.actionPrimaryBg,
+      primaryColor: ModuleColors.portfolio,
       backgroundColor: isDark ? Colors.white.withValues(alpha: 0.06) : null,
       borderColor: isDark ? Colors.white.withValues(alpha: 0.1) : null,
       contentPadding: const EdgeInsets.symmetric(horizontal: 8),

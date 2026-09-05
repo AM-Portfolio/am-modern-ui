@@ -285,6 +285,7 @@ extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
             selected: !_isCustomAmount &&
                 _amountController.text == preset.toString(),
             compact: true,
+            accentColor: ModuleColors.portfolio,
             onTap: () => _setFixedAmount(preset),
           ),
         ),
@@ -292,6 +293,7 @@ extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
         label: 'Custom',
         selected: _isCustomAmount,
         compact: true,
+        accentColor: ModuleColors.portfolio,
         onTap: () => setState(() => _isCustomAmount = true),
       ),
     ];

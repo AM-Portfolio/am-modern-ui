@@ -101,6 +101,8 @@ class PreviewSummarySidebar extends StatelessWidget {
             child: FilledButton(
               onPressed: onCustomizeTap,
               style: FilledButton.styleFrom(
+                backgroundColor: ModuleColors.portfolio,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                 shape: RoundedRectangleBorder(
                   borderRadius: AppRadii.button,

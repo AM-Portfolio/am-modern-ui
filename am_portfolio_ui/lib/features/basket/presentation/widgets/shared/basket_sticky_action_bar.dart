@@ -146,8 +146,11 @@ class BasketStickyActionBar extends StatelessWidget {
                 onPressed: onBack,
                 icon: const Icon(Icons.arrow_back_rounded),
                 style: IconButton.styleFrom(
+                  foregroundColor: ModuleColors.portfolio,
                   minimumSize: const Size(_actionHeight, _actionHeight),
-                  side: BorderSide(color: context.colors.border),
+                  side: BorderSide(
+                    color: ModuleColors.portfolio.withValues(alpha: 0.45),
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppRadii.md),
                   ),
@@ -160,6 +163,7 @@ class BasketStickyActionBar extends StatelessWidget {
                     ? const Text('Back')
                     : const SizedBox.shrink(),
                 style: OutlinedButton.styleFrom(
+                  foregroundColor: ModuleColors.portfolio,
                   minimumSize: Size(isDesktop ? 100 : 44, _actionHeight),
                   padding: EdgeInsets.symmetric(
                     horizontal: isDesktop ? AppSpacing.md : AppSpacing.sm,
@@ -167,7 +171,9 @@ class BasketStickyActionBar extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppRadii.md),
                   ),
-                  side: BorderSide(color: context.colors.border),
+                  side: BorderSide(
+                    color: ModuleColors.portfolio.withValues(alpha: 0.45),
+                  ),
                 ),
               ));
 
@@ -194,6 +200,10 @@ class BasketStickyActionBar extends StatelessWidget {
                   onPressed:
                       (secondaryEnabled && !isLoading) ? onSecondary : null,
                   style: OutlinedButton.styleFrom(
+                    foregroundColor: ModuleColors.portfolio,
+                    side: BorderSide(
+                      color: ModuleColors.portfolio.withValues(alpha: 0.45),
+                    ),
                     minimumSize: const Size(0, _actionHeight),
                   ),
                   child: Text(
@@ -234,6 +244,10 @@ class BasketStickyActionBar extends StatelessWidget {
             OutlinedButton(
               onPressed: (secondaryEnabled && !isLoading) ? onSecondary : null,
               style: OutlinedButton.styleFrom(
+                foregroundColor: ModuleColors.portfolio,
+                side: BorderSide(
+                  color: ModuleColors.portfolio.withValues(alpha: 0.45),
+                ),
                 minimumSize: const Size(80, _actionHeight),
               ),
               child: Text(secondaryLabel!, overflow: TextOverflow.ellipsis),

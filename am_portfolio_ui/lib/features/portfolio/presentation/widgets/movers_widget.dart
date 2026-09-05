@@ -66,7 +66,7 @@ class _MoversWidgetState extends State<MoversWidget> {
                     ),
                     child: Icon(
                       Icons.auto_graph_rounded,
-                      color: Theme.of(context).primaryColor,
+                      color: ModuleColors.portfolio,
                       size: 18,
                     ),
                   ),
@@ -87,7 +87,7 @@ class _MoversWidgetState extends State<MoversWidget> {
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                        backgroundColor: ModuleColors.portfolio.withValues(alpha: 0.1),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                       ),
                       child: Text(
@@ -95,7 +95,7 @@ class _MoversWidgetState extends State<MoversWidget> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: Theme.of(context).primaryColor,
+                          color: ModuleColors.portfolio,
                         ),
                       ),
                     ),

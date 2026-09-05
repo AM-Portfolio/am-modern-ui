@@ -86,7 +86,7 @@ class FpBasketPanel extends StatelessWidget {
         children: [
           FpPanelHeader(
             icon: Icons.shopping_basket_outlined,
-            iconBg: Colors.pinkAccent,
+            iconBg: ModuleColors.portfolio,
             title: 'Your Custom Basket',
             subtitle: '${finalItems.length} Constituents',
             constituentsBadge: '', // Empty because it's replaced by chips

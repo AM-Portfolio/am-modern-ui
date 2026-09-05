@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart';
 import '../../internal/domain/entities/portfolio_analytics.dart';
 
 /// Widget displaying market cap allocation of the portfolio
@@ -27,7 +28,7 @@ class MarketCapAllocationWidget extends StatelessWidget {
             children: [
               Icon(
                 Icons.insights,
-                color: Theme.of(context).primaryColor,
+                color: ModuleColors.portfolio,
                 size: 24,
               ),
               const SizedBox(width: 8),

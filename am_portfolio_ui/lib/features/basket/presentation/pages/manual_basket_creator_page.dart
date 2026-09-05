@@ -293,33 +293,36 @@ class _ManualBasketCreatorPageState
       ],
     );
 
-    if (widget.embedded) {
-      return PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, _) async {
-          if (didPop) return;
-          await _handleBack();
-        },
-        child: Column(
-          children: [
-            Expanded(child: body),
-            _buildBottomActionBar(coverage, displayItems),
-          ],
-        ),
-      );
-    }
+    final page = widget.embedded
+        ? PopScope(
+            canPop: false,
+            onPopInvokedWithResult: (didPop, _) async {
+              if (didPop) return;
+              await _handleBack();
+            },
+            child: Column(
+              children: [
+                Expanded(child: body),
+                _buildBottomActionBar(coverage, displayItems),
+              ],
+            ),
+          )
+        : PopScope(
+            canPop: false,
+            onPopInvokedWithResult: (didPop, _) async {
+              if (didPop) return;
+              await _handleBack();
+            },
+            child: Scaffold(
+              backgroundColor: context.backgroundColor,
+              body: body,
+              bottomNavigationBar: _buildBottomActionBar(coverage, displayItems),
+            ),
+          );
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) async {
-        if (didPop) return;
-        await _handleBack();
-      },
-      child: Scaffold(
-        backgroundColor: context.backgroundColor,
-        body: body,
-        bottomNavigationBar: _buildBottomActionBar(coverage, displayItems),
-      ),
+    return Theme(
+      data: BasketPanelStyles.accentTheme(context),
+      child: page,
     );
   }
 }

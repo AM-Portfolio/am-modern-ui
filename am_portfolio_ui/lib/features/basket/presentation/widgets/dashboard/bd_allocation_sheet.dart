@@ -39,11 +39,11 @@ class BdAllocationSheet extends StatelessWidget {
       context.statusSuccess,
       Colors.orangeAccent,
       Colors.blueAccent,
-      Colors.pinkAccent,
       Colors.teal,
       Colors.amber,
       Colors.cyan,
-      Colors.deepPurple,
+      const Color(0xFFF472B6),
+      const Color(0xFFA78BFA),
     ];
 
     return DraggableScrollableSheet(

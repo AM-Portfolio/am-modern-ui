@@ -168,19 +168,22 @@ class BasketCoverageGateDialog extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: context.colors.surface.withValues(alpha: 0.5),
+                      color: ModuleColors.portfolio.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(AppRadii.md),
-                      border: Border.all(color: context.colors.border),
+                      border: Border.all(
+                        color: ModuleColors.portfolio.withValues(alpha: 0.35),
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(t.$1, size: 14, color: context.colors.textSecondary),
+                        Icon(t.$1, size: 14, color: ModuleColors.portfolio),
                         const SizedBox(width: 6),
                         Text(
                           t.$2,
                           style: theme.textTheme.labelSmall?.copyWith(
                             fontWeight: FontWeight.w600,
+                            color: ModuleColors.portfolio,
                           ),
                         ),
                       ],
@@ -192,6 +195,10 @@ class BasketCoverageGateDialog extends StatelessWidget {
           const SizedBox(height: AppSpacing.lg),
           FilledButton(
             onPressed: () => Navigator.pop(context),
+            style: FilledButton.styleFrom(
+              backgroundColor: ModuleColors.portfolio,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Got it'),
           ),
         ],
@@ -236,6 +243,10 @@ class BasketLeaveCustomizeDialog extends StatelessWidget {
           const SizedBox(height: AppSpacing.lg),
           FilledButton(
             onPressed: () => Navigator.of(context).pop('save'),
+            style: FilledButton.styleFrom(
+              backgroundColor: ModuleColors.portfolio,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Save draft & exit'),
           ),
           const SizedBox(height: AppSpacing.sm),

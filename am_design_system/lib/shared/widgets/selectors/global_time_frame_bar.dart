@@ -26,6 +26,7 @@ class GlobalTimeFrameBar extends ConsumerWidget {
     this.variant = GlobalTimeFrameVariant.auto,
     this.availableTimeFrames,
     this.dropdownWidth = 72,
+    this.primaryColor,
   });
 
   final GlobalTimeFrameVariant variant;
@@ -34,8 +35,12 @@ class GlobalTimeFrameBar extends ConsumerWidget {
   /// Width of the compact mobile dropdown (default tighter than before).
   final double dropdownWidth;
 
+  /// Accent for pills/dropdown; defaults to theme [actionPrimaryBg].
+  final Color? primaryColor;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final accent = primaryColor ?? context.colors.actionPrimaryBg;
     final useDropdown = switch (variant) {
       GlobalTimeFrameVariant.dropdown => true,
       GlobalTimeFrameVariant.pills => false,
@@ -46,6 +51,7 @@ class GlobalTimeFrameBar extends ConsumerWidget {
       return MobileTimeFrameDropdown(
         width: dropdownWidth,
         availableTimeFrames: availableTimeFrames,
+        primaryColor: accent,
       );
     }
 
@@ -56,7 +62,7 @@ class GlobalTimeFrameBar extends ConsumerWidget {
       selectedTimeFrame: timeFrame,
       availableTimeFrames: options,
       compact: true,
-      primaryColor: context.colors.actionPrimaryBg,
+      primaryColor: accent,
       onTimeFrameChanged: (tf) =>
           ref.read(appTimeFrameProvider.notifier).setTimeFrame(tf),
     );

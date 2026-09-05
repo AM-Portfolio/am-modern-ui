@@ -6,6 +6,9 @@ import 'package:am_design_system/am_design_system.dart';
 abstract final class BasketPanelStyles {
   BasketPanelStyles._();
 
+  /// Portfolio-module brand accent (never theme purple).
+  static const Color accent = ModuleColors.portfolio;
+
   static BoxDecoration glassCard(BuildContext context) {
     final colors = context.colors;
     if (!context.isDark) {
@@ -44,17 +47,39 @@ abstract final class BasketPanelStyles {
     );
   }
 
-  /// Soft portfolio-pink selected chips/toggles (kills M3 yellow secondaryContainer).
+  /// Remap theme purple → portfolio pink for chips, segmented, and primary CTAs.
   static ThemeData accentTheme(BuildContext context) {
     final base = Theme.of(context);
-    final accent = ModuleColors.portfolio;
     final soft = accent.withValues(alpha: 0.18);
+    final appColors = context.colors.copyWith(actionPrimaryBg: accent);
     return base.copyWith(
+      primaryColor: accent,
       colorScheme: base.colorScheme.copyWith(
+        primary: accent,
+        onPrimary: Colors.white,
         secondaryContainer: soft,
         onSecondaryContainer: accent,
         primaryContainer: soft,
         onPrimaryContainer: accent,
+      ),
+      extensions: [
+        ...base.extensions.values.where((e) => e is! AppColorsTheme),
+        appColors,
+      ],
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: accent,
+          foregroundColor: Colors.white,
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: accent,
+          side: BorderSide(color: accent.withValues(alpha: 0.45)),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(foregroundColor: accent),
       ),
       chipTheme: base.chipTheme.copyWith(
         selectedColor: soft,

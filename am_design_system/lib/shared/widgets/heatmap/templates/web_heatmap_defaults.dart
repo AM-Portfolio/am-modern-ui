@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/module/module_config.dart';
 import '../../selectors/selectors.dart';
 import '../configs/display_config.dart';
 import '../configs/interaction_config.dart';
@@ -41,7 +42,7 @@ class WebHeatmapDefaults {
       selectorPadding: const EdgeInsets.all(18),
       cardPadding: const EdgeInsets.all(18),
       selectorSpacing: 18,
-      accentColor: accentColor ?? Colors.blue,
+      accentColor: accentColor ?? ModuleColors.portfolio,
       borderRadius: 12,
       elevation: 4,
       animationDuration: const Duration(milliseconds: 300),

@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart'
     hide MarketCapType, MetricType, TimeFrame, SectorType;
-import 'package:am_library/am_library.dart';
 import '../mappers/sector_heatmap_converter.dart';
 import '../../internal/domain/entities/portfolio_analytics.dart';
 import 'portfolio_analytics_cubit.dart';
@@ -136,6 +135,7 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
             sectorAllocation: analyticsState.sectorAllocation,
             showSubCards: true,
             subtitle: 'Sector Performance Analysis',
+            accentColor: ModuleColors.portfolio,
           );
 
           // Apply Sector filtering using domain-aware mapping

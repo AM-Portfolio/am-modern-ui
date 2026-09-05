@@ -645,6 +645,10 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
               Navigator.pop(ctx);
               _toggleSearchedStockSelection(stock);
             },
+            style: FilledButton.styleFrom(
+              backgroundColor: ModuleColors.portfolio,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Select Anyway'),
           ),
         ],
@@ -671,6 +675,10 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
               Navigator.pop(ctx);
               _toggleSearchedStockSelection(stock);
             },
+            style: FilledButton.styleFrom(
+              backgroundColor: ModuleColors.portfolio,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Select Anyway'),
           ),
         ],
