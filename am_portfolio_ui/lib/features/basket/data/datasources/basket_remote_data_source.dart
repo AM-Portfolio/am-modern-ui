@@ -40,6 +40,23 @@ abstract class BasketRemoteDataSource {
     required String basketId,
     required String userId,
   });
+
+  Future<Map<String, dynamic>> listDrafts({
+    required String userId,
+    String? portfolioId,
+  });
+
+  Future<Map<String, dynamic>> getDraft({
+    required String draftId,
+    required String userId,
+  });
+
+  Future<Map<String, dynamic>> upsertDraft(Map<String, dynamic> request);
+
+  Future<void> deleteDraft({
+    required String draftId,
+    required String userId,
+  });
 }
 
 class BasketRemoteDataSourceImpl implements BasketRemoteDataSource {
@@ -177,6 +194,59 @@ class BasketRemoteDataSourceImpl implements BasketRemoteDataSource {
       queryParams: {
         'userId': userId,
       },
+      parser: (data) => data,
+    );
+  }
+
+  @override
+  Future<Map<String, dynamic>> listDrafts({
+    required String userId,
+    String? portfolioId,
+  }) async {
+    final response = await apiClient.get(
+      BasketEndpoints.drafts,
+      queryParams: {
+        'userId': userId,
+        if (portfolioId != null && portfolioId.isNotEmpty)
+          'portfolioId': portfolioId,
+      },
+      parser: (data) => data,
+    );
+    return Map<String, dynamic>.from(response as Map);
+  }
+
+  @override
+  Future<Map<String, dynamic>> getDraft({
+    required String draftId,
+    required String userId,
+  }) async {
+    final response = await apiClient.get(
+      BasketEndpoints.draftById(draftId),
+      queryParams: {'userId': userId},
+      parser: (data) => data,
+    );
+    return Map<String, dynamic>.from(response as Map);
+  }
+
+  @override
+  Future<Map<String, dynamic>> upsertDraft(Map<String, dynamic> request) async {
+    // POST is primary (gateway-friendly); PUT remains on the server for compatibility.
+    final response = await apiClient.post(
+      BasketEndpoints.drafts,
+      body: request,
+      parser: (data) => data,
+    );
+    return Map<String, dynamic>.from(response as Map);
+  }
+
+  @override
+  Future<void> deleteDraft({
+    required String draftId,
+    required String userId,
+  }) async {
+    await apiClient.delete(
+      BasketEndpoints.draftById(draftId),
+      queryParams: {'userId': userId},
       parser: (data) => data,
     );
   }

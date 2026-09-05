@@ -450,7 +450,7 @@ class _PortfolioAnalysisWebPageState
         children: [
           const Row(
             children: [
-              Icon(Icons.account_balance, color: Colors.purple, size: 20),
+              Icon(Icons.account_balance, color: ModuleColors.portfolio, size: 20),
               SizedBox(width: 8),
               Expanded(
                 child: Text(

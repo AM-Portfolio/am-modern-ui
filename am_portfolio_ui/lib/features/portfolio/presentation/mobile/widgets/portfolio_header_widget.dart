@@ -69,7 +69,7 @@ class PortfolioHeaderWidget extends StatelessWidget {
                             ),
                             child: Icon(
                               Icons.account_balance_wallet,
-                              color: Theme.of(context).primaryColor,
+                              color: ModuleColors.portfolio,
                               size: 20,
                             ),
                           ),
@@ -154,7 +154,7 @@ class PortfolioHeaderWidget extends StatelessWidget {
                   leading: Icon(
                     Icons.account_balance_wallet,
                     color: p.portfolioId == currentPortfolioId
-                        ? Theme.of(context).primaryColor
+                        ? ModuleColors.portfolio
                         : Colors.grey,
                   ),
                   title: Row(
@@ -166,7 +166,7 @@ class PortfolioHeaderWidget extends StatelessWidget {
                               ? FontWeight.bold
                               : FontWeight.normal,
                           color: p.portfolioId == currentPortfolioId
-                              ? Theme.of(context).primaryColor
+                              ? ModuleColors.portfolio
                               : null,
                         ),
                       ),
@@ -187,7 +187,7 @@ class PortfolioHeaderWidget extends StatelessWidget {
                     ],
                   ),
                   trailing: p.portfolioId == currentPortfolioId
-                      ? Icon(Icons.check, color: Theme.of(context).primaryColor)
+                      ? Icon(Icons.check, color: ModuleColors.portfolio)
                       : null,
                   onTap: () {
                     Navigator.pop(context);
@@ -218,9 +218,9 @@ class PortfolioHeaderWidget extends StatelessWidget {
   /// Builds the tab bar
   Widget _buildTabBar(BuildContext context) => TabBar(
     controller: tabController,
-    labelColor: Theme.of(context).primaryColor,
+    labelColor: ModuleColors.portfolio,
     unselectedLabelColor: Colors.grey,
-    indicatorColor: Theme.of(context).primaryColor,
+    indicatorColor: ModuleColors.portfolio,
     labelPadding: EdgeInsets.zero, // Optimize space
     indicatorSize: TabBarIndicatorSize.label,
     labelStyle: const TextStyle(

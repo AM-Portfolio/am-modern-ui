@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart';
 import '../../internal/domain/entities/portfolio_analytics.dart';
 import '../../internal/domain/entities/portfolio_holding.dart';
 
@@ -191,7 +192,7 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
                   ),
                   child: Icon(
                     Icons.donut_small_rounded,
-                    color: Theme.of(context).primaryColor,
+                    color: ModuleColors.portfolio,
                     size: 18,
                   ),
                 ),
@@ -663,7 +664,7 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? Theme.of(context).primaryColor : Colors.transparent,
+          color: isSelected ? ModuleColors.portfolio : Colors.transparent,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Text(

@@ -134,7 +134,7 @@ class _PortfolioMarketMoversWidgetState extends State<PortfolioMarketMoversWidge
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                      color: ds.ModuleColors.portfolio.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -142,7 +142,7 @@ class _PortfolioMarketMoversWidgetState extends State<PortfolioMarketMoversWidge
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
-                        color: Theme.of(context).primaryColor,
+                        color: ds.ModuleColors.portfolio,
                       ),
                     ),
                   ),

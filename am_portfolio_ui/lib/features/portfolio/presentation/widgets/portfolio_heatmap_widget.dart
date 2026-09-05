@@ -386,11 +386,14 @@ class _PortfolioHeatmapWidgetState
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.arrow_back, size: 16, color: Colors.blue),
+                  Icon(Icons.arrow_back, size: 16, color: ModuleColors.portfolio),
                   const SizedBox(width: 4),
                   Text(
                     'Portfolio > ${_drillDownTile!.displayName}',
-                    style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: ModuleColors.portfolio,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -621,6 +624,7 @@ class _PortfolioHeatmapWidgetState
             variant: isNarrow
                 ? GlobalTimeFrameVariant.dropdown
                 : GlobalTimeFrameVariant.pills,
+            primaryColor: ModuleColors.portfolio,
           ),
         );
 
@@ -678,6 +682,7 @@ class _PortfolioHeatmapWidgetState
               if (val != null) _onFiltersChanged(sector: val);
             },
             isExpanded: true,
+            primaryColor: ModuleColors.portfolio,
           ),
         ),
         const SizedBox(width: 8),
@@ -694,6 +699,7 @@ class _PortfolioHeatmapWidgetState
               if (val != null) _onFiltersChanged(marketCap: val);
             },
             isExpanded: true,
+            primaryColor: ModuleColors.portfolio,
           ),
         ),
         const SizedBox(width: 8),
@@ -710,114 +716,10 @@ class _PortfolioHeatmapWidgetState
               if (val != null) _onFiltersChanged(layout: val);
             },
             isExpanded: true,
+            primaryColor: ModuleColors.portfolio,
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildLegendDot(BuildContext context, Color color, String label) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Container(
-        width: 8,
-        height: 8,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-        ),
-      ),
-      const SizedBox(width: 5),
-      Text(
-        label,
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
-          fontSize: 11,
-        ),
-      ),
-    ],
-  );
-
-  Widget _buildInlineStatusBar(BuildContext context) {
-    return BlocBuilder<PortfolioCubit, PortfolioState>(
-      builder: (context, state) {
-        bool isConnected = false;
-        double todayChangePct = 0.0;
-        if (state is PortfolioLoaded) {
-          isConnected = state.isLiveDataActive;
-          todayChangePct = state.summary.todayChangePercentage;
-        }
-
-        Color statusColor = state is! PortfolioLoaded
-            ? const Color(0xFFF39C12)
-            : isConnected
-                ? const Color(0xFF0BA95B)
-                : const Color(0xFFF39C12);
-        String statusText = state is! PortfolioLoaded
-            ? 'LOADING...'
-            : isConnected
-                ? 'LIVE FEED ACTIVE'
-                : 'SYNCING...';
-
-        final isPositive = todayChangePct >= 0;
-        final sentimentColor =
-            isPositive ? const Color(0xFF0BA95B) : const Color(0xFFB22222);
-        final sentimentText =
-            isPositive ? 'BULLISH' : 'BEARISH';
-
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 7, height: 7,
-              decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              statusText,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Icon(Icons.access_time, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7), size: 12),
-            const SizedBox(width: 4),
-            BlocBuilder<PortfolioHeatmapCubit, PortfolioHeatmapState>(
-              builder: (context, heatmapState) {
-                String timeText = 'Just now';
-                if (heatmapState is PortfolioHeatmapLoaded) {
-                  final diff = DateTime.now().difference(heatmapState.lastUpdated);
-                  if (diff.inMinutes > 0) {
-                    timeText = '${diff.inMinutes}m ago';
-                  } else if (diff.inSeconds > 0) {
-                    timeText = '${diff.inSeconds}s ago';
-                  }
-                }
-                return Text(
-                  'Updated: $timeText',
-                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 10),
-                );
-              },
-            ),
-            const SizedBox(width: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: sentimentColor.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: sentimentColor.withValues(alpha: 0.3)),
-              ),
-              child: Text(
-                sentimentText,
-                style: TextStyle(
-                  color: sentimentColor, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.5,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
     );
   }
 

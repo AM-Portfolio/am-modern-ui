@@ -35,15 +35,15 @@ class BdAllocationSheet extends StatelessWidget {
     final fmt = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
     final sorted = BdDashboardMath.sortedByWeight(lines, totalCurrentValue);
     final colors = [
-      context.colors.actionPrimaryBg,
+      ModuleColors.portfolio,
       context.statusSuccess,
       Colors.orangeAccent,
       Colors.blueAccent,
-      Colors.pinkAccent,
       Colors.teal,
       Colors.amber,
       Colors.cyan,
-      Colors.deepPurple,
+      const Color(0xFFF472B6),
+      const Color(0xFFA78BFA),
     ];
 
     return DraggableScrollableSheet(

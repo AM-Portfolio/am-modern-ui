@@ -12,6 +12,7 @@ class AmToggleChip extends StatelessWidget {
     required this.selected,
     required this.onTap,
     this.compact = false,
+    this.accentColor,
   });
 
   final String label;
@@ -19,11 +20,15 @@ class AmToggleChip extends StatelessWidget {
   final VoidCallback onTap;
   final bool compact;
 
+  /// When set (e.g. [ModuleColors.portfolio]), overrides theme [actionPrimaryBg].
+  final Color? accentColor;
+
   @override
   Widget build(BuildContext context) {
     final colors =
         Theme.of(context).extension<AppColorsTheme>() ?? AppColorsTheme.dark;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = accentColor ?? colors.actionPrimaryBg;
 
     return Material(
       color: Colors.transparent,
@@ -38,21 +43,21 @@ class AmToggleChip extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             color: selected
-                ? colors.actionPrimaryBg.withValues(alpha: 0.18)
+                ? accent.withValues(alpha: 0.18)
                 : (isDark
                     ? colors.cardSurface.withValues(alpha: 0.4)
                     : colors.surface),
             borderRadius: AppRadii.chip,
             border: Border.all(
               color: selected
-                  ? colors.actionPrimaryBg.withValues(alpha: 0.55)
+                  ? accent.withValues(alpha: 0.55)
                   : colors.border.withValues(alpha: 0.6),
             ),
           ),
           child: Text(
             label,
             style: TextStyle(
-              color: selected ? colors.actionPrimaryBg : colors.textSecondary,
+              color: selected ? accent : colors.textSecondary,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
               fontSize: compact ? 12 : 13,
             ),

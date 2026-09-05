@@ -79,6 +79,16 @@ class _BasketDashboardPageState extends ConsumerState<BasketDashboardPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
+              leading: const Icon(Icons.share_outlined),
+              title: const Text('Share'),
+              onTap: () => Navigator.pop(ctx, 'share'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.download_outlined),
+              title: const Text('Download'),
+              onTap: () => Navigator.pop(ctx, 'download'),
+            ),
+            ListTile(
               leading: const Icon(Icons.delete_outline, color: Colors.red),
               title: const Text('Delete basket'),
               onTap: () => Navigator.pop(ctx, 'delete'),
@@ -87,7 +97,16 @@ class _BasketDashboardPageState extends ConsumerState<BasketDashboardPage> {
         ),
       ),
     );
-    if (action == 'delete' && mounted) {
+    if (!mounted || action == null) return;
+    if (action == 'share') {
+      _shareBasket(basket);
+      return;
+    }
+    if (action == 'download') {
+      _downloadCsv(basket);
+      return;
+    }
+    if (action == 'delete') {
       final confirm = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -144,27 +163,39 @@ class _BasketDashboardPageState extends ConsumerState<BasketDashboardPage> {
 
           return Column(
             children: [
-              BdPageHeader(
-                onBack: widget.embedded
-                    ? () => BasketNavigation.returnToMyBaskets(
-                          context,
-                          userId: widget.userId,
-                        )
-                    : null,
-                onShare: () => _shareBasket(basket),
-                onDownload: () => _downloadCsv(basket),
-                onMore: () => _showMoreMenu(basket),
-              ),
+              if (!isMobile)
+                BdPageHeader(
+                  onBack: widget.embedded
+                      ? () => BasketNavigation.returnToMyBaskets(
+                            context,
+                            userId: widget.userId,
+                          )
+                      : null,
+                  onShare: () => _shareBasket(basket),
+                  onDownload: () => _downloadCsv(basket),
+                  onMore: () => _showMoreMenu(basket),
+                ),
               Expanded(
                 child: RefreshIndicator(
                   onRefresh: _refresh,
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      isMobile ? AppSpacing.sm : 16,
+                      16,
+                      16,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        BdIdentityCard(basket: basket, stockCount: stockCount),
+                        BdIdentityCard(
+                          basket: basket,
+                          stockCount: stockCount,
+                          onMore: isMobile
+                              ? () => _showMoreMenu(basket)
+                              : null,
+                        ),
                         const SizedBox(height: 16),
                         BdKpiRow(basket: basket),
                         const SizedBox(height: 20),
@@ -194,7 +225,7 @@ class _BasketDashboardPageState extends ConsumerState<BasketDashboardPage> {
         },
         loading: () => Column(
           children: [
-            const BdPageHeader(),
+            if (!isMobile) const BdPageHeader(),
             Expanded(child: _DashboardSkeleton(isMobile: isMobile)),
           ],
         ),

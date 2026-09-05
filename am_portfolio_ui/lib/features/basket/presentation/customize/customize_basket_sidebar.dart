@@ -34,7 +34,7 @@ extension _ManualBasketCreatorPageSidebar on _ManualBasketCreatorPageState {
             missingCount: missingCount,
             excludedCount: excludedCount,
             heldColor: context.statusSuccess,
-            subColor: context.colors.actionPrimaryBg,
+            subColor: ModuleColors.portfolio,
             missingColor: context.statusError,
             bgColor: context.dividerColor,
             coverage: coverage,
@@ -153,10 +153,10 @@ extension _ManualBasketCreatorPageSidebar on _ManualBasketCreatorPageState {
                   child: OutlinedButton.icon(
                     onPressed: _openSubstituteSelector,
                     icon: Icon(Icons.swap_horiz,
-                        size: 16, color: context.colors.actionPrimaryBg),
+                        size: 16, color: ModuleColors.portfolio),
                     label: Text('Find Replacement',
                         style: TextStyle(
-                            color: context.colors.actionPrimaryBg)),
+                            color: ModuleColors.portfolio)),
                   ),
                 ),
               ],
@@ -249,7 +249,7 @@ extension _ManualBasketCreatorPageSidebar on _ManualBasketCreatorPageState {
 
         ListTile(
           leading: Icon(Icons.assessment_outlined,
-              color: context.colors.actionPrimaryBg),
+              color: ModuleColors.portfolio),
           title: const Text('View Portfolio Summary'),
           onTap: () {
             Navigator.of(ctx).pop();
@@ -259,7 +259,17 @@ extension _ManualBasketCreatorPageSidebar on _ManualBasketCreatorPageState {
         ),
         const Divider(height: 1),
         ListTile(
-          leading: Icon(Icons.save_alt, color: context.colors.actionPrimaryBg),
+          leading: Icon(Icons.drafts_outlined,
+              color: ModuleColors.portfolio),
+          title: const Text('Save draft'),
+          enabled: _hasCalculated && !_hasStaleData && !_isCalculating,
+          onTap: () {
+            Navigator.of(ctx).pop();
+            _saveDraft();
+          },
+        ),
+        ListTile(
+          leading: Icon(Icons.save_alt, color: ModuleColors.portfolio),
           title: const Text('Save Basket'),
           onTap: () {
             Navigator.of(ctx).pop();
@@ -302,7 +312,11 @@ extension _ManualBasketCreatorPageSidebar on _ManualBasketCreatorPageState {
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) {
         final theme = Theme.of(ctx);
-        return DraggableScrollableSheet(
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(ctx).bottom,
+          ),
+          child: DraggableScrollableSheet(
           initialChildSize: 0.7,
           minChildSize: 0.4,
           maxChildSize: 0.95,
@@ -330,7 +344,7 @@ extension _ManualBasketCreatorPageSidebar on _ManualBasketCreatorPageState {
                   missingCount: missingCount,
                   excludedCount: _excludedItems.length,
                   heldColor: context.statusSuccess,
-                  subColor: context.colors.actionPrimaryBg,
+                  subColor: ModuleColors.portfolio,
                   missingColor: context.statusError,
                   bgColor: context.dividerColor,
                   coverage: coverage,
@@ -344,6 +358,7 @@ extension _ManualBasketCreatorPageSidebar on _ManualBasketCreatorPageState {
               ]),
             ),
           ),
+        ),
         );
       },
     );

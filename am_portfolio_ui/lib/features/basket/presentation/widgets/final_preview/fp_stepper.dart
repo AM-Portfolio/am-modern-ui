@@ -15,7 +15,7 @@ class FpStepper extends StatelessWidget {
     final theme = Theme.of(context);
     final color = isCompleted
         ? context.statusSuccess
-        : (isActive ? context.colors.actionPrimaryBg : context.colors.border);
+        : (isActive ? ModuleColors.portfolio : context.colors.border);
     final textColor = (isCompleted || isActive)
         ? context.colors.textPrimary
         : context.colors.textTertiary;

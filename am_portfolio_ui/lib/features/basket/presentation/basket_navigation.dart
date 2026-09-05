@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:am_common/am_common.dart';
 import '../domain/models/basket_opportunity.dart';
@@ -7,6 +8,8 @@ import 'pages/basket_dashboard_page.dart';
 import 'pages/manual_basket_creator_page.dart';
 import 'pages/basket_final_preview_page.dart';
 import 'widgets/basket_explorer.dart';
+import 'providers/basket_providers.dart';
+import 'flow/basket_flow_controller.dart';
 
 /// Nested basket navigation inside portfolio content (keeps global + secondary sidebars).
 class BasketNavigation {
@@ -22,12 +25,31 @@ class BasketNavigation {
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
 
+  /// Shared Discover / My Baskets mode (sticky header + explorer).
+  static final ValueNotifier<BasketViewMode> viewMode =
+      ValueNotifier(BasketViewMode.discover);
+
   static bool get hasNestedNavigator => navigatorKey.currentState != null;
+
+  /// Switch explorer mode; pops nested preview/customize back to explorer first.
+  static void setViewMode(BasketViewMode mode) {
+    final nested = navigatorKey.currentState;
+    if (nested != null && nested.canPop()) {
+      nested.popUntil(
+        (route) =>
+            route.settings.name == explorerRoute || route.isFirst,
+      );
+    }
+    if (viewMode.value != mode) {
+      viewMode.value = mode;
+    }
+  }
 
   static Route<dynamic> onGenerateRoute(
     RouteSettings settings, {
     required String userId,
     required String portfolioId,
+    bool showInlineToggle = false,
   }) {
     switch (settings.name) {
       case previewRoute:
@@ -38,6 +60,7 @@ class BasketNavigation {
             etfIsin: args.etfIsin,
             userId: args.userId,
             portfolioId: args.portfolioId,
+            seededOpportunity: args.seededOpportunity,
             embedded: true,
           ),
         );
@@ -75,6 +98,7 @@ class BasketNavigation {
           builder: (_) => BasketExplorer(
             userId: userId,
             portfolioId: portfolioId,
+            showInlineToggle: showInlineToggle,
           ),
         );
     }
@@ -84,6 +108,7 @@ class BasketNavigation {
     required String userId,
     required String portfolioId,
     required String etfIsin,
+    String? draftId,
   }) {
     SessionPersistenceService.instance.patch(
       userId,
@@ -96,6 +121,7 @@ class BasketNavigation {
           etfIsin: etfIsin,
           userId: userId,
           portfolioId: portfolioId,
+          draftId: draftId,
         ),
       ),
     );
@@ -105,6 +131,7 @@ class BasketNavigation {
     required String userId,
     required String portfolioId,
     required String etfIsin,
+    String? draftId,
   }) {
     SessionPersistenceService.instance.patch(
       userId,
@@ -117,6 +144,7 @@ class BasketNavigation {
           etfIsin: etfIsin,
           userId: userId,
           portfolioId: portfolioId,
+          draftId: draftId,
         ),
       ),
     );
@@ -174,6 +202,7 @@ class BasketNavigation {
   }
 
   static void _notifyShowMyBaskets() {
+    setViewMode(BasketViewMode.myBaskets);
     _showMyBasketsListener?.call();
   }
 
@@ -202,6 +231,54 @@ class BasketNavigation {
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
+  /// Resume a saved draft on Customize (skip Preview).
+  static void openCreatorFromDraft(
+    BuildContext context, {
+    required BasketOpportunity opportunity,
+    required String userId,
+    required String portfolioId,
+    String? draftId,
+  }) {
+    final args = BasketCreatorArgs(
+      opportunity: opportunity,
+      userId: userId,
+      portfolioId: portfolioId,
+    );
+
+    _persistCreator(
+      userId: userId,
+      portfolioId: portfolioId,
+      etfIsin: opportunity.etfIsin,
+      draftId: draftId,
+    );
+
+    final nested = navigatorKey.currentState;
+    if (nested != null) {
+      nested.popUntil(
+        (route) =>
+            route.settings.name == explorerRoute || route.isFirst,
+      );
+      nested.pushNamed(creatorRoute, arguments: args);
+      _notifyShowMyBaskets();
+      return;
+    }
+
+    if (GoRouter.maybeOf(context) != null) {
+      context.push('/portfolio/basket/creator', extra: args.toMap());
+      return;
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ManualBasketCreatorPage(
+          opportunity: opportunity,
+          userId: userId,
+          portfolioId: portfolioId,
+        ),
+      ),
+    );
+  }
+
   static void clearBasketSession(String userId) {
     SessionPersistenceService.instance.patch(
       userId,
@@ -214,6 +291,8 @@ class BasketNavigation {
     required String etfIsin,
     required String userId,
     required String portfolioId,
+    BasketOpportunity? opportunity,
+    BasketOpportunity? seededOpportunity,
   }) {
     if (etfIsin.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -222,10 +301,12 @@ class BasketNavigation {
       return;
     }
 
+    final seed = seededOpportunity ?? opportunity;
     final args = BasketPreviewArgs(
       etfIsin: etfIsin,
       userId: userId,
       portfolioId: portfolioId,
+      seededOpportunity: seed,
     );
 
     _persistPreview(
@@ -251,6 +332,7 @@ class BasketNavigation {
           etfIsin: etfIsin,
           userId: userId,
           portfolioId: portfolioId,
+          seededOpportunity: seed,
         ),
       ),
     );
@@ -261,6 +343,7 @@ class BasketNavigation {
     required BasketOpportunity opportunity,
     required String userId,
     required String portfolioId,
+    String? draftId,
   }) {
     final args = BasketCreatorArgs(
       opportunity: opportunity,
@@ -272,6 +355,7 @@ class BasketNavigation {
       userId: userId,
       portfolioId: portfolioId,
       etfIsin: opportunity.etfIsin,
+      draftId: draftId,
     );
 
     final nested = navigatorKey.currentState;
@@ -319,23 +403,32 @@ class BasketPreviewArgs {
     required this.etfIsin,
     required this.userId,
     required this.portfolioId,
-  });
+    BasketOpportunity? opportunity,
+    BasketOpportunity? seededOpportunity,
+  }) : seededOpportunity = seededOpportunity ?? opportunity;
 
   final String etfIsin;
   final String userId;
   final String portfolioId;
+  final BasketOpportunity? seededOpportunity;
+
+  BasketOpportunity? get opportunity => seededOpportunity;
 
   Map<String, dynamic> toMap() => {
         'etfIsin': etfIsin,
         'userId': userId,
         'portfolioId': portfolioId,
+        if (seededOpportunity != null) 'seededOpportunity': seededOpportunity,
+        if (opportunity != null) 'opportunity': opportunity,
       };
 
   factory BasketPreviewArgs.fromMap(Map<String, dynamic> map) {
+    final seed = map['seededOpportunity'] ?? map['opportunity'];
     return BasketPreviewArgs(
       etfIsin: map['etfIsin'] as String,
       userId: map['userId'] as String,
       portfolioId: map['portfolioId'] as String,
+      seededOpportunity: seed as BasketOpportunity?,
     );
   }
 }
@@ -369,6 +462,8 @@ class BasketFinalPreviewArgs {
     required this.portfolioId,
     required this.excludedItems,
     required this.idempotencyKey,
+    this.trustCustomizeOutput = false,
+    this.draftId,
   });
 
   final BasketOpportunity originalOpportunity;
@@ -380,6 +475,8 @@ class BasketFinalPreviewArgs {
   final String portfolioId;
   final Set<String> excludedItems;
   final String idempotencyKey;
+  final bool trustCustomizeOutput;
+  final String? draftId;
 }
 
 class _BasketNavigatorObserver extends NavigatorObserver {
@@ -388,30 +485,60 @@ class _BasketNavigatorObserver extends NavigatorObserver {
 
   @override
   void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    if (route.settings.name == BasketNavigation.previewRoute ||
-        route.settings.name == BasketNavigation.creatorRoute ||
-        route.settings.name == BasketNavigation.finalPreviewRoute) {
-      BasketNavigation.clearBasketSession(userId);
+    final prevName = previousRoute?.settings.name;
+    // Only clear when returning to explorer. Creator→preview must keep session.
+    if (prevName == BasketNavigation.explorerRoute ||
+        (previousRoute?.isFirst == true &&
+            prevName != BasketNavigation.previewRoute &&
+            prevName != BasketNavigation.creatorRoute &&
+            prevName != BasketNavigation.finalPreviewRoute &&
+            prevName != BasketNavigation.dashboardRoute)) {
+      if (route.settings.name == BasketNavigation.previewRoute ||
+          route.settings.name == BasketNavigation.creatorRoute ||
+          route.settings.name == BasketNavigation.finalPreviewRoute) {
+        BasketNavigation.clearBasketSession(userId);
+      }
+      return;
+    }
+
+    // Re-persist preview when popping creator back onto preview.
+    if (route.settings.name == BasketNavigation.creatorRoute &&
+        prevName == BasketNavigation.previewRoute) {
+      final args = previousRoute?.settings.arguments;
+      if (args is BasketPreviewArgs) {
+        BasketNavigation._persistPreview(
+          userId: args.userId,
+          portfolioId: args.portfolioId,
+          etfIsin: args.etfIsin,
+        );
+      }
     }
   }
 }
 
 /// Hosts basket explorer / preview / creator inside the portfolio body pane.
-class BasketSectionNavigator extends StatefulWidget {
+class BasketSectionNavigator extends ConsumerStatefulWidget {
   const BasketSectionNavigator({
     super.key,
     required this.userId,
     required this.portfolioId,
+    this.showInlineToggle = false,
   });
 
   final String userId;
   final String portfolioId;
 
+  /// Web: true for Smart Baskets + Discover/My Baskets header.
+  /// Mobile: false — toggle lives in portfolio sticky header.
+  final bool showInlineToggle;
+
   @override
-  State<BasketSectionNavigator> createState() => _BasketSectionNavigatorState();
+  ConsumerState<BasketSectionNavigator> createState() =>
+      _BasketSectionNavigatorState();
 }
 
-class _BasketSectionNavigatorState extends State<BasketSectionNavigator> {
+class _BasketSectionNavigatorState
+    extends ConsumerState<BasketSectionNavigator> {
   bool _restored = false;
   late final _BasketNavigatorObserver _observer;
 
@@ -436,7 +563,43 @@ class _BasketSectionNavigatorState extends State<BasketSectionNavigator> {
     final nav = BasketNavigation.navigatorKey.currentState;
     if (nav == null || !mounted) return;
 
-    if (basket.route == BasketNavigation.previewRoute &&
+    if (basket.route == BasketNavigation.creatorRoute &&
+        basket.draftId != null &&
+        basket.draftId!.isNotEmpty) {
+      try {
+        final repository = await ref.read(basketRepositoryProvider.future);
+        final detail = await repository.getDraft(
+          draftId: basket.draftId!,
+          userId: widget.userId,
+        );
+        final opportunity = detail.opportunity;
+        if (opportunity == null || !mounted) return;
+        ref.read(basketFlowControllerProvider.notifier).restoreFromDraft(
+              opportunity: opportunity,
+              excludedSymbols: detail.excludedSymbols.toSet(),
+              manualQtyOverrides: detail.manualQtyOverrides,
+              investmentAmount: detail.investmentAmount ?? 0,
+              basketName: detail.basketName ??
+                  'My ${detail.etfName ?? 'ETF'} Basket',
+              hasCalculated: detail.hasCalculated,
+              draftId: detail.id,
+            );
+        nav.pushNamed(
+          BasketNavigation.creatorRoute,
+          arguments: BasketCreatorArgs(
+            opportunity: opportunity,
+            userId: widget.userId,
+            portfolioId: widget.portfolioId,
+          ),
+        );
+        return;
+      } catch (_) {
+        // Fall through to preview restore.
+      }
+    }
+
+    if ((basket.route == BasketNavigation.previewRoute ||
+            basket.route == BasketNavigation.creatorRoute) &&
         basket.etfIsin != null &&
         basket.etfIsin!.isNotEmpty) {
       nav.pushNamed(
@@ -460,6 +623,7 @@ class _BasketSectionNavigatorState extends State<BasketSectionNavigator> {
         settings,
         userId: widget.userId,
         portfolioId: widget.portfolioId,
+        showInlineToggle: widget.showInlineToggle,
       ),
     );
   }

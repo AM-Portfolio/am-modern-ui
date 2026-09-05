@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../../../domain/models/basket_detail.dart';
+import '../../shared/basket_panel_styles.dart';
 
 class BdIdentityCard extends StatelessWidget {
   final BasketDetail basket;
   final int stockCount;
+  final VoidCallback? onMore;
 
   const BdIdentityCard({
     super.key,
     required this.basket,
     required this.stockCount,
+    this.onMore,
   });
 
   @override
@@ -21,29 +24,7 @@ class BdIdentityCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            context.cardColor.withValues(alpha: context.isDark ? 0.35 : 0.55),
-            context.cardColor.withValues(alpha: context.isDark ? 0.15 : 0.25),
-          ],
-        ),
-        border: Border.all(
-          color: context.isDark
-              ? Colors.white.withValues(alpha: 0.07)
-              : Colors.black.withValues(alpha: 0.06),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: context.isDark ? 0.25 : 0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      decoration: BasketPanelStyles.glassCard(context),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -51,12 +32,12 @@ class BdIdentityCard extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: context.colors.actionPrimaryBg.withValues(alpha: 0.15),
+              color: ModuleColors.portfolio.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               Icons.shopping_basket_outlined,
-              color: context.colors.actionPrimaryBg,
+              color: ModuleColors.portfolio,
             ),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -77,9 +58,11 @@ class BdIdentityCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     if (isActive)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: context.statusSuccess.withValues(alpha: 0.15),
+                          color:
+                              context.statusSuccess.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -103,6 +86,17 @@ class BdIdentityCard extends StatelessWidget {
               ],
             ),
           ),
+          if (onMore != null)
+            IconButton(
+              icon: Icon(
+                Icons.more_horiz,
+                color: context.colors.textSecondary,
+              ),
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              onPressed: onMore,
+            ),
         ],
       ),
     );

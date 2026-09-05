@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:intl/intl.dart';
 import '../../../domain/models/basket_detail.dart';
+import '../../shared/basket_panel_styles.dart';
 import 'bd_dashboard_math.dart';
 import 'bd_holding_row.dart';
 
@@ -86,57 +87,81 @@ class BdHoldingCard extends StatelessWidget {
         : (line.pnl >= 0 ? context.statusSuccess : context.statusError);
     final lineValue = BdDashboardMath.lineCurrentValue(line);
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 18,
-                  child: Text(line.symbol.isNotEmpty ? line.symbol[0] : '?'),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(line.symbol, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      if (line.companyName?.isNotEmpty == true)
-                        Text(line.companyName!, style: TextStyle(fontSize: 12, color: context.colors.textSecondary)),
-                    ],
-                  ),
-                ),
-                Text('${weightPercent.toStringAsFixed(1)}%', style: const TextStyle(fontWeight: FontWeight.bold)),
-              ],
-            ),
-            const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(2),
-              child: LinearProgressIndicator(
-                value: (weightPercent / 100.0).clamp(0.0, 1.0),
-                minHeight: 4,
-                backgroundColor: context.colors.border,
-                valueColor: AlwaysStoppedAnimation(context.colors.actionPrimaryBg),
+    final theme = Theme.of(context);
+    final colors = context.colors;
+    final initial = line.symbol.isNotEmpty ? line.symbol[0] : '?';
+    final meta = [
+      '${line.quantity.toInt()} units',
+      'Wt ${weightPercent.toStringAsFixed(1)}%',
+      fmt.format(lineValue),
+    ].join(' · ');
+
+    return Container(
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xs,
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BasketPanelStyles.insetPanel(context),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 14,
+            backgroundColor: ModuleColors.portfolio.withValues(alpha: 0.15),
+            child: Text(
+              initial,
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: ModuleColors.portfolio,
               ),
             ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${line.quantity.toInt()} units'),
-                Text(fmt.format(lineValue)),
                 Text(
-                  BdDashboardMath.formatPnlPercent(pnlPct, hasMarket: hasMarket),
-                  style: TextStyle(color: pnlColor, fontWeight: FontWeight.bold),
+                  line.symbol,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  meta,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadii.sm),
+                  child: LinearProgressIndicator(
+                    value: (weightPercent / 100.0).clamp(0.0, 1.0),
+                    minHeight: 4,
+                    backgroundColor: colors.border.withValues(alpha: 0.4),
+                    color: ModuleColors.portfolio,
+                  ),
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            BdDashboardMath.formatPnlPercent(pnlPct, hasMarket: hasMarket),
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: pnlColor,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }

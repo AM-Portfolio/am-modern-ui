@@ -62,6 +62,12 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
       reverseCurve: Curves.easeInBack,
     );
     _bottomNavFactor = Tween<double>(begin: 0.0, end: 1.0).animate(bottomNavCurve);
+    // Drive overlay consumers with the linear controller value so layout
+    // lift stays in sync with show/hide (curved factor overshoots).
+    _bottomNavController.addListener(() {
+      GlobalBottomNavVisibility.setFactor(_bottomNavController.value);
+    });
+    GlobalBottomNavVisibility.setFactor(_bottomNavController.value);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkInitialAuthAndConnect();

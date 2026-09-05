@@ -13,7 +13,7 @@ extension _ManualBasketCreatorPageLogic on _ManualBasketCreatorPageState {
 
   void _updateTargetQuantity(int index, int delta) {
     final item = _items[index];
-    if (item.lastPrice == null) return;
+    if (item.lastPrice == null || item.lastPrice! <= 0) return;
 
     final symbol = item.stockSymbol;
     final amount = double.tryParse(_amountController.text) ?? 0.0;
@@ -33,19 +33,28 @@ extension _ManualBasketCreatorPageLogic on _ManualBasketCreatorPageState {
 
     setState(() {
       _manualQtyOverrides[symbol] = newQty;
-      _items[index] = item.copyWith(targetQuantityLocked: true);
+      _items[index] = item.copyWith(
+        targetQuantity: newQty.toDouble(),
+        targetQuantityLocked: true,
+      );
     });
+    ref.read(basketFlowControllerProvider.notifier).setManualQtyOverride(symbol, newQty);
     _scheduleRecalculate();
   }
 
   void _setDirectTargetQuantity(int index, int qty) {
     final item = _items[index];
-    if (item.lastPrice == null) return;
+    if (item.lastPrice == null || item.lastPrice! <= 0) return;
     final heldMax = (item.heldQuantity ?? 0).toInt();
+    final clampedQty = qty.clamp(0, heldMax);
     setState(() {
-      _manualQtyOverrides[item.stockSymbol] = qty.clamp(0, heldMax);
-      _items[index] = item.copyWith(targetQuantityLocked: true);
+      _manualQtyOverrides[item.stockSymbol] = clampedQty;
+      _items[index] = item.copyWith(
+        targetQuantity: clampedQty.toDouble(),
+        targetQuantityLocked: true,
+      );
     });
+    ref.read(basketFlowControllerProvider.notifier).setManualQtyOverride(item.stockSymbol, clampedQty);
     _scheduleRecalculate();
   }
 
@@ -65,6 +74,22 @@ extension _ManualBasketCreatorPageLogic on _ManualBasketCreatorPageState {
       amount,
       _excludedItems,
       manualQtyForSymbol: (symbol) => _manualQtyOverrides[symbol],
+    );
+  }
+
+  double _heldCoverageValue() {
+    final live = _totalCustomInvestment(_items);
+    if (live > 0) return live;
+    return _currentOpportunity.heldCoverageValue ?? 0.0;
+  }
+
+  double _computeResidualCash() {
+    final investmentAmount = double.tryParse(_amountController.text) ?? 0.0;
+    final actual = _actualCost ?? 0.0;
+    return BasketAllocationMath.leftoverCash(
+      investmentAmount: investmentAmount,
+      heldCoverageValue: _heldCoverageValue(),
+      actualInvestmentCost: actual,
     );
   }
 
@@ -93,6 +118,7 @@ extension _ManualBasketCreatorPageLogic on _ManualBasketCreatorPageState {
     setState(() {
       _excludedItems.add(_items[index].stockSymbol);
     });
+    ref.read(basketFlowControllerProvider.notifier).excludeSymbol(_items[index].stockSymbol);
     _scheduleRecalculate();
   }
 
@@ -100,6 +126,7 @@ extension _ManualBasketCreatorPageLogic on _ManualBasketCreatorPageState {
     setState(() {
       _excludedItems.remove(_items[index].stockSymbol);
     });
+    ref.read(basketFlowControllerProvider.notifier).includeSymbol(_items[index].stockSymbol);
     _scheduleRecalculate();
   }
 
@@ -109,6 +136,9 @@ extension _ManualBasketCreatorPageLogic on _ManualBasketCreatorPageState {
       _manualQtyOverrides.clear();
       _items = List.from(widget.opportunity.composition);
     });
+    ref.read(basketFlowControllerProvider.notifier)
+      ..clearManualQtyOverrides()
+      ..startFlow(widget.opportunity);
     _scheduleRecalculate();
   }
 
@@ -122,6 +152,7 @@ extension _ManualBasketCreatorPageLogic on _ManualBasketCreatorPageState {
 
   void _scheduleRecalculate({bool immediate = false}) {
     _debounceTimer?.cancel();
+    _calcEpoch++;
     final delay = immediate
         ? Duration.zero
         : const Duration(milliseconds: 350);
@@ -129,6 +160,7 @@ extension _ManualBasketCreatorPageLogic on _ManualBasketCreatorPageState {
   }
 
   Future<void> _runRecalculate() async {
+      final epoch = _calcEpoch;
       if (!mounted) return;
       if (_amountController.text.isEmpty) {
         if (_isCalculating) setState(() => _isCalculating = false);
@@ -165,12 +197,19 @@ extension _ManualBasketCreatorPageLogic on _ManualBasketCreatorPageState {
           },
         ).future);
 
-        if (!mounted) return;
+        if (!mounted || epoch != _calcEpoch) return;
         setState(() {
           _currentOpportunity = updatedOpportunity;
           _items = updatedOpportunity.composition.map((item) {
             if (_excludedItems.contains(item.stockSymbol)) {
               return item.copyWith(clearBuyQuantity: true);
+            }
+            final overrideQty = _manualQtyOverrides[item.stockSymbol];
+            if (overrideQty != null) {
+              return item.copyWith(
+                targetQuantity: overrideQty.toDouble(),
+                targetQuantityLocked: true,
+              );
             }
             return item;
           }).toList();
@@ -178,14 +217,26 @@ extension _ManualBasketCreatorPageLogic on _ManualBasketCreatorPageState {
           _actualCost = updatedOpportunity.actualInvestmentCost;
           _budgetVariance = updatedOpportunity.budgetVariance;
         });
+        final flow = ref.read(basketFlowControllerProvider.notifier);
+        flow.updateOpportunity(updatedOpportunity);
+        flow.setInvestmentAmount(amount);
+        flow.setHasCalculated(true);
+        final baseline = _resumeRefreshBaseline;
+        if (baseline != null) {
+          _resumeRefreshBaseline = null;
+          _maybeShowResumeRefreshBanner(baseline, updatedOpportunity);
+        }
       } catch (e) {
-        if (!mounted) return;
+        if (!mounted || epoch != _calcEpoch) return;
         setState(() => _hasStaleData = true);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error calculating quantities: $e')),
+          SnackBar(
+            content: Text(basketApiErrorMessage(e)),
+            backgroundColor: context.statusError,
+          ),
         );
       } finally {
-        if (mounted) {
+        if (mounted && epoch == _calcEpoch) {
           setState(() => _isCalculating = false);
         }
       }
@@ -213,7 +264,11 @@ extension _ManualBasketCreatorPageLogic on _ManualBasketCreatorPageState {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (ctx) => SubstituteSelector(
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(ctx).bottom,
+        ),
+        child: SubstituteSelector(
         originalSymbol: item.stockSymbol,
         originalIsin: item.isin,
         requiredMarketCap: item.marketCapCategory ?? '',
@@ -236,10 +291,16 @@ extension _ManualBasketCreatorPageLogic on _ManualBasketCreatorPageState {
             _isCalculating = true;
           });
           try {
-            final assignments = selections.map((s) => {
-              'missingIsin': item.isin.isNotEmpty ? item.isin : item.stockSymbol,
-              'substituteIsin': s.isin,
-              if (s.assignedWeight != null) 'assignedWeight': s.assignedWeight,
+            final assignments = selections.map((s) {
+              final isin = s.isin.trim();
+              final symbol = s.symbol.trim();
+              return {
+                'missingIsin':
+                    item.isin.isNotEmpty ? item.isin : item.stockSymbol,
+                'substituteIsin': isin.isNotEmpty ? isin : symbol,
+                if (symbol.isNotEmpty) 'substituteSymbol': symbol,
+                if (s.assignedWeight != null) 'assignedWeight': s.assignedWeight,
+              };
             }).toList();
 
             final updated = await ref.read(applySubstitutesProvider(request: {
@@ -306,6 +367,7 @@ extension _ManualBasketCreatorPageLogic on _ManualBasketCreatorPageState {
             if (mounted) setState(() => _isCalculating = false);
           }
         },
+        ),
       ),
     );
   }
@@ -351,19 +413,35 @@ extension _ManualBasketCreatorPageLogic on _ManualBasketCreatorPageState {
     }
 
     final basketName = _basketNameController.text.trim();
+    final flow = ref.read(basketFlowControllerProvider);
+    final flowNotifier = ref.read(basketFlowControllerProvider.notifier);
+    flowNotifier.setInvestmentAmount(amount);
+    flowNotifier.setBasketName(basketName);
+    flowNotifier.setHasCalculated(_hasCalculated);
+
+    final finalItems = _items.map((item) {
+      final overrideQty = _manualQtyOverrides[item.stockSymbol];
+      if (overrideQty == null) return item;
+      return item.copyWith(
+        targetQuantity: overrideQty.toDouble(),
+        targetQuantityLocked: true,
+      );
+    }).toList();
 
     BasketNavigation.openFinalPreview(
       context,
       args: BasketFinalPreviewArgs(
         originalOpportunity: widget.opportunity,
         finalOpportunity: _currentOpportunity,
-        finalItems: List.unmodifiable(_items),
+        finalItems: List.unmodifiable(finalItems),
         investmentAmount: amount,
         basketName: basketName,
         userId: widget.userId,
         portfolioId: widget.portfolioId,
         excludedItems: _excludedItems,
         idempotencyKey: DateTime.now().millisecondsSinceEpoch.toString(),
+        trustCustomizeOutput: _hasCalculated && !_hasStaleData,
+        draftId: flow.draftId,
       ),
     );
   }
@@ -372,33 +450,149 @@ extension _ManualBasketCreatorPageLogic on _ManualBasketCreatorPageState {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: Row(children: [
-          Icon(Icons.shield_outlined, color: context.statusWarning),
-          const SizedBox(width: 8),
-          const Text('Coverage Too Low'),
-        ]),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Your current basket coverage is ${coverage.toStringAsFixed(0)}%.'),
-            const SizedBox(height: 8),
-            const Text('You need at least 80% coverage to create a basket.'),
-            const SizedBox(height: 16),
-            const Text('How to improve:'),
-            const Text('• Increase your investment amount'),
-            const Text('• Substitute missing stocks from your portfolio'),
-            const Text('• Use + button to increase held stock quantities'),
-          ],
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK, I\'ll improve coverage'),
-          ),
-        ],
-      ),
+      builder: (ctx) => BasketCoverageGateDialog(coverage: coverage),
     );
+  }
+
+  Future<void> _saveDraft({bool exitAfter = false}) async {
+    if (_isCalculating) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Text('Wait for calculation to finish before saving'),
+        backgroundColor: context.statusWarning,
+      ));
+      return;
+    }
+    if (_hasStaleData) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Text('Composition is refreshing — try again in a moment'),
+        backgroundColor: context.statusWarning,
+      ));
+      return;
+    }
+    if (!_hasCalculated) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Text('Calculate quantities before saving a draft'),
+        backgroundColor: context.statusWarning,
+      ));
+      return;
+    }
+    final amount = double.tryParse(_amountController.text);
+    if (amount == null || amount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Text('Enter an investment amount before saving'),
+        backgroundColor: context.statusWarning,
+      ));
+      return;
+    }
+
+    final flow = ref.read(basketFlowControllerProvider);
+    final basketName = _basketNameController.text.trim();
+    try {
+      final repository = await ref.read(basketRepositoryProvider.future);
+      final saved = await repository.upsertDraft({
+        'userId': widget.userId,
+        'sourcePortfolioId': widget.portfolioId,
+        'etfIsin': _currentOpportunity.etfIsin,
+        'etfName': _currentOpportunity.etfName,
+        'basketName': basketName.isEmpty
+            ? 'My ${_currentOpportunity.etfName} Basket'
+            : basketName,
+        'investmentAmount': amount,
+        'replicaScore': _currentOpportunity.replicaScore,
+        'hasCalculated': _hasCalculated,
+        'excludedSymbols': _excludedItems.toList(),
+        'manualQtyOverrides': _manualQtyOverrides,
+        'opportunity': _currentOpportunity.copyWith(composition: _items).toJson(),
+        if (flow.draftId != null) 'draftId': flow.draftId,
+      });
+
+      final notifier = ref.read(basketFlowControllerProvider.notifier);
+      notifier.setDraftId(saved.id);
+      notifier.setInvestmentAmount(amount);
+      notifier.setBasketName(basketName);
+      notifier.setHasCalculated(true);
+      notifier.updateOpportunity(
+        _currentOpportunity.copyWith(composition: _items),
+      );
+      notifier.markSaved();
+
+      ref.invalidate(basketDraftsProvider((
+        userId: widget.userId,
+        portfolioId: widget.portfolioId,
+      )));
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Text('Draft saved'),
+        backgroundColor: context.statusSuccess,
+      ));
+      if (exitAfter && mounted) {
+        _exitCreator();
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(basketApiErrorMessage(e)),
+        backgroundColor: context.statusError,
+      ));
+    }
+  }
+
+  /// PopScope uses canPop:false, so maybePop is a no-op — must pop explicitly.
+  void _exitCreator() {
+    final nested = BasketNavigation.navigatorKey.currentState;
+    if (nested != null && nested.canPop()) {
+      nested.pop();
+      return;
+    }
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  Future<void> _handleBack() async {
+    final flow = ref.read(basketFlowControllerProvider);
+    final dirty = flow.isDirty ||
+        (_hasCalculated &&
+            (flow.lastSavedFingerprint == null ||
+                flow.fingerprint() != flow.lastSavedFingerprint));
+    if (!dirty) {
+      _exitCreator();
+      return;
+    }
+
+    final action = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (c) => const BasketLeaveCustomizeDialog(),
+    );
+
+    if (!mounted) return;
+    if (action == 'discard') {
+      ref.read(basketFlowControllerProvider.notifier).resetFlow();
+      _exitCreator();
+    } else if (action == 'save') {
+      await _saveDraft(exitAfter: true);
+    }
+  }
+
+  /// Soft banner when background recalc changes composition/scores after draft resume.
+  void _maybeShowResumeRefreshBanner(
+    BasketOpportunity before,
+    BasketOpportunity after,
+  ) {
+    final beforeScore = before.replicaScore;
+    final afterScore = after.replicaScore;
+    final beforeLen = before.composition.length;
+    final afterLen = after.composition.length;
+    if ((beforeScore - afterScore).abs() < 0.5 && beforeLen == afterLen) {
+      return;
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: const Text(
+          'Holdings or prices changed — allocation refreshed from live data.'),
+      backgroundColor: context.statusWarning,
+    ));
   }
 }

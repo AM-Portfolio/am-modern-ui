@@ -14,28 +14,48 @@ class BasketFlowStepper extends StatelessWidget {
     this.trailing,
   });
 
+  String _shortLabel(BasketFlowStep step) {
+    switch (step) {
+      case BasketFlowStep.preview:
+        return 'Preview';
+      case BasketFlowStep.customize:
+        return 'Customize';
+      case BasketFlowStep.finalReview:
+        return 'Review';
+      case BasketFlowStep.confirm:
+        return 'Confirm';
+    }
+  }
+
   Widget _buildStep(
     BuildContext context,
     BasketFlowStep step, {
     required bool isCompleted,
     required bool isActive,
+    required bool isNext,
     required bool showLabel,
+    required bool compact,
   }) {
     final theme = Theme.of(context);
     final isPending = !isCompleted && !isActive;
     final color = isCompleted
         ? context.statusSuccess
-        : (isActive ? context.colors.actionPrimaryBg : context.colors.border);
-    final textColor = (isCompleted || isActive)
+        : (isActive
+            ? ModuleColors.portfolio
+            : context.colors.border);
+    final textColor = isCompleted || isActive
         ? context.colors.textPrimary
-        : context.colors.textTertiary;
+        : (isNext
+            ? context.colors.textSecondary
+            : context.colors.textTertiary);
+    final label = compact ? _shortLabel(step) : step.label;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 24,
-          height: 24,
+          width: 22,
+          height: 22,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: (isCompleted || isActive) ? color : Colors.transparent,
@@ -52,25 +72,28 @@ class BasketFlowStepper extends StatelessWidget {
                   ),
                 ),
         ),
-        const SizedBox(width: 8),
-        if (showLabel)
+        if (showLabel) ...[
+          const SizedBox(width: 6),
           Text(
-            step.label,
-            style: theme.textTheme.bodyMedium?.copyWith(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
               color: textColor,
-              fontWeight: (isCompleted || isActive) ? FontWeight.bold : FontWeight.normal,
+              fontWeight: (isCompleted || isActive)
+                  ? FontWeight.w700
+                  : FontWeight.w500,
             ),
           ),
+        ],
       ],
     );
   }
 
-  Widget _buildLine(BuildContext context, {double width = 32}) {
+  Widget _buildLine(BuildContext context, {double width = 24}) {
     return Container(
       width: width,
       height: 1,
-      color: context.colors.border,
-      margin: const EdgeInsets.symmetric(horizontal: 12),
+      color: context.colors.border.withValues(alpha: 0.7),
+      margin: const EdgeInsets.symmetric(horizontal: 6),
     );
   }
 
@@ -79,12 +102,15 @@ class BasketFlowStepper extends StatelessWidget {
     const steps = BasketFlowStep.values;
     final compact = BasketResponsive.useCompactPreview(context);
     final showAllLabels = BasketResponsive.widthOf(context) >= 720;
+    final currentIndex = currentStep.index;
 
     return Container(
       decoration: BoxDecoration(
         color: context.colors.surface,
         border: Border(
-          bottom: BorderSide(color: context.colors.border.withValues(alpha: 0.6)),
+          bottom: BorderSide(
+            color: context.colors.border.withValues(alpha: 0.6),
+          ),
         ),
       ),
       child: SafeArea(
@@ -92,7 +118,7 @@ class BasketFlowStepper extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md,
-            vertical: AppSpacing.sm,
+            vertical: 6,
           ),
           child: Row(
             children: [
@@ -103,13 +129,20 @@ class BasketFlowStepper extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       for (var i = 0; i < steps.length; i++) ...[
-                        if (i > 0) _buildLine(context, width: compact ? 16 : 32),
+                        if (i > 0)
+                          _buildLine(context, width: compact ? 10 : 24),
                         _buildStep(
                           context,
                           steps[i],
-                          isCompleted: steps[i].stepNumber < currentStep.stepNumber,
+                          isCompleted: steps[i].stepNumber <
+                              currentStep.stepNumber,
                           isActive: steps[i] == currentStep,
-                          showLabel: showAllLabels || steps[i] == currentStep,
+                          isNext: i == currentIndex + 1,
+                          showLabel: showAllLabels ||
+                              steps[i] == currentStep ||
+                              steps[i].stepNumber < currentStep.stepNumber ||
+                              i == currentIndex + 1,
+                          compact: compact || !showAllLabels,
                         ),
                       ],
                     ],

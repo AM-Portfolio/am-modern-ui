@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 
+import '../../utils/basket_responsive.dart';
+
 class BdPageHeader extends StatelessWidget {
   final VoidCallback? onBack;
   final VoidCallback? onShare;
@@ -17,6 +19,23 @@ class BdPageHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = BasketResponsive.isMobile(context);
+
+    if (isMobile) {
+      if (onMore == null) return const SizedBox.shrink();
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
+        child: Align(
+          alignment: Alignment.centerRight,
+          child: IconButton(
+            icon: const Icon(Icons.more_horiz),
+            visualDensity: VisualDensity.compact,
+            onPressed: onMore,
+          ),
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, AppSpacing.md, 16, AppSpacing.sm),
       child: Row(
@@ -26,7 +45,10 @@ class BdPageHeader extends StatelessWidget {
           Expanded(
             child: Text(
               'Basket Dashboard',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
           ),
           TextButton.icon(

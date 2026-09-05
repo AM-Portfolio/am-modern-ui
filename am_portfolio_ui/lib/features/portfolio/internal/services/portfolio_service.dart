@@ -329,4 +329,9 @@ class PortfolioService {
       rethrow;
     }
   }
+
+  /// Dismiss demo portfolio (stub for API compatibility)
+  Future<void> dismissDemoPortfolio() async {
+    // Left as stub for backward compatibility with older UI branches/mains
+  }
 }

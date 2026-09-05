@@ -107,6 +107,60 @@ class BasketOpportunity {
     );
   }
 
+  /// List response already includes enough composition to render preview without POST /preview.
+  bool get isListPayloadSufficientForPreview =>
+      composition.isNotEmpty &&
+      totalItems > 0 &&
+      composition.length == totalItems;
+
+  /// Sorted `SYMBOL:qty` of held/substitute lines — compared to live portfolio holdings.
+  String get compositionHoldingsFingerprint {
+    final parts = composition
+        .where((item) =>
+            (item.status == ItemStatus.held ||
+                item.status == ItemStatus.substitute) &&
+            (item.heldQuantity ?? 0) > 0)
+        .map((item) {
+          final symbol = (item.userHoldingSymbol ?? item.stockSymbol).toUpperCase();
+          final qty = (item.heldQuantity ?? 0).round();
+          return '$symbol:$qty';
+        })
+        .toList()
+      ..sort();
+    return parts.join('|');
+  }
+
+  static String fingerprintFromHoldings(
+    Iterable<MapEntry<String, double>> holdings,
+  ) {
+    final parts = holdings
+        .where((entry) => entry.key.isNotEmpty && entry.value > 0)
+        .map((entry) => '${entry.key.toUpperCase()}:${entry.value.round()}')
+        .toList()
+      ..sort();
+    return parts.join('|');
+  }
+
+  /// Seed is usable only when composition is complete and holdings have not changed.
+  bool isSeedValidForPreview(String currentHoldingsFingerprint) {
+    return isListPayloadSufficientForPreview &&
+        compositionHoldingsFingerprint == currentHoldingsFingerprint;
+  }
+
+  /// Customize can skip initial recalculate when quantities were synced for this amount.
+  bool isQuantitiesCalculatedForAmount(double amount) {
+    if (amount <= 0) return false;
+    final syncedAmount = investmentAmount;
+    if (syncedAmount == null || (syncedAmount - amount).abs() > 0.01) {
+      return false;
+    }
+    if (composition.isEmpty) return false;
+    if (actualInvestmentCost == null) return false;
+    return composition.any(
+      (item) => (item.buyQuantity ?? 0) > 0 || (item.targetQuantity ?? 0) > 0,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'etfIsin': etfIsin,
@@ -366,6 +420,11 @@ class Alternative {
   final bool isSameSector;
   final bool canFullyCover;
   final String? coverageLabel;
+  final double? physicalQuantity;
+  final double? usedInThisBasketQuantity;
+  final double? usedInActiveBasketsQuantity;
+  final double? remainingQuantity;
+  final bool indexEtf;
 
   const Alternative({
     required this.symbol,
@@ -377,7 +436,15 @@ class Alternative {
     this.isSameSector = false,
     this.canFullyCover = false,
     this.coverageLabel,
+    this.physicalQuantity,
+    this.usedInThisBasketQuantity,
+    this.usedInActiveBasketsQuantity,
+    this.remainingQuantity,
+    this.indexEtf = false,
   });
+
+  double get effectiveRemainingQty =>
+      remainingQuantity ?? quantity ?? 0.0;
 
   factory Alternative.fromJson(Map<String, dynamic> json) {
     return Alternative(
@@ -390,6 +457,13 @@ class Alternative {
       isSameSector: json['isSameSector'] as bool? ?? false,
       canFullyCover: json['canFullyCover'] as bool? ?? false,
       coverageLabel: json['coverageLabel'] as String?,
+      physicalQuantity: (json['physicalQuantity'] as num?)?.toDouble(),
+      usedInThisBasketQuantity:
+          (json['usedInThisBasketQuantity'] as num?)?.toDouble(),
+      usedInActiveBasketsQuantity:
+          (json['usedInActiveBasketsQuantity'] as num?)?.toDouble(),
+      remainingQuantity: (json['remainingQuantity'] as num?)?.toDouble(),
+      indexEtf: json['indexEtf'] as bool? ?? false,
     );
   }
 
@@ -404,6 +478,11 @@ class Alternative {
       'isSameSector': isSameSector,
       'canFullyCover': canFullyCover,
       'coverageLabel': coverageLabel,
+      'physicalQuantity': physicalQuantity,
+      'usedInThisBasketQuantity': usedInThisBasketQuantity,
+      'usedInActiveBasketsQuantity': usedInActiveBasketsQuantity,
+      'remainingQuantity': remainingQuantity,
+      'indexEtf': indexEtf,
     };
   }
 
@@ -417,6 +496,11 @@ class Alternative {
     bool? isSameSector,
     bool? canFullyCover,
     String? coverageLabel,
+    double? physicalQuantity,
+    double? usedInThisBasketQuantity,
+    double? usedInActiveBasketsQuantity,
+    double? remainingQuantity,
+    bool? indexEtf,
   }) {
     return Alternative(
       symbol: symbol ?? this.symbol,
@@ -428,6 +512,13 @@ class Alternative {
       isSameSector: isSameSector ?? this.isSameSector,
       canFullyCover: canFullyCover ?? this.canFullyCover,
       coverageLabel: coverageLabel ?? this.coverageLabel,
+      physicalQuantity: physicalQuantity ?? this.physicalQuantity,
+      usedInThisBasketQuantity:
+          usedInThisBasketQuantity ?? this.usedInThisBasketQuantity,
+      usedInActiveBasketsQuantity:
+          usedInActiveBasketsQuantity ?? this.usedInActiveBasketsQuantity,
+      remainingQuantity: remainingQuantity ?? this.remainingQuantity,
+      indexEtf: indexEtf ?? this.indexEtf,
     );
   }
 }

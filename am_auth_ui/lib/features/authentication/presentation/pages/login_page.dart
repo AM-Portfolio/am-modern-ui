@@ -223,21 +223,26 @@ class _LoginPageState extends State<LoginPage> {
     AuthState state,
     String appName,
   ) {
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            flex: 5,
-            child: _buildBrandingPanel(context, appName),
-          ),
-          Container(
-            width: 1,
-            margin: const EdgeInsets.symmetric(horizontal: 12),
-            color: context.colors.divider.withValues(alpha: 0.5),
-          ),
-          Expanded(
-            flex: 5,
+    // Avoid IntrinsicHeight: QR/OTP panes use LayoutBuilder (via QrImageView),
+    // which cannot report intrinsic dimensions and blanked the glass card.
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          flex: 5,
+          child: _buildBrandingPanel(context, appName),
+        ),
+        Expanded(
+          flex: 5,
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(
+                  color: context.colors.divider.withValues(alpha: 0.5),
+                ),
+              ),
+            ),
+            padding: const EdgeInsets.only(left: 24),
             child: _buildLoginForm(
               context,
               state,
@@ -245,8 +250,8 @@ class _LoginPageState extends State<LoginPage> {
               showEmailTitle: true,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
