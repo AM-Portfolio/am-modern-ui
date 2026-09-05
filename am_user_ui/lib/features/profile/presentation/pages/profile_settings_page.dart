@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -22,6 +23,10 @@ class ProfileSettingsPage extends StatefulWidget {
   /// Opens the existing subscription / pricing screen via GoRouter when set.
   final VoidCallback? onOpenSubscription;
 
+  final VoidCallback? onOpenActiveSessions;
+
+  final VoidCallback? onOpenScanWebLogin;
+
   /// When true (e.g. returning from Subscription), pulse Account + Subscription.
   final bool highlightSubscription;
 
@@ -38,6 +43,8 @@ class ProfileSettingsPage extends StatefulWidget {
     this.onOpenPrivacyPolicy,
     this.onOpenTermsOfService,
     this.onOpenSubscription,
+    this.onOpenActiveSessions,
+    this.onOpenScanWebLogin,
     this.highlightSubscription = false,
     this.subscriptionStatusLabel,
     this.isPaidSubscription,
@@ -61,6 +68,8 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
   VoidCallback? get onOpenPrivacyPolicy => widget.onOpenPrivacyPolicy;
   VoidCallback? get onOpenTermsOfService => widget.onOpenTermsOfService;
   VoidCallback? get onOpenSubscription => widget.onOpenSubscription;
+  VoidCallback? get onOpenActiveSessions => widget.onOpenActiveSessions;
+  VoidCallback? get onOpenScanWebLogin => widget.onOpenScanWebLogin;
   String? get subscriptionStatusLabel => widget.subscriptionStatusLabel;
   bool get isPaidSubscription => widget.isPaidSubscription ?? false;
 
@@ -127,10 +136,8 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
         foregroundColor: context.colors.textPrimary,
         title: Text(
           'Profile & Settings',
-          style: TextStyle(
+          style: context.text.pageTitle(compact: true).copyWith(
             color: context.colors.textPrimary,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
           ),
         ),
         backgroundColor: Colors.transparent,
@@ -157,8 +164,8 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                   width: contentWidth,
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 24,
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.lg,
                     ),
                     child: Column(
                       children: [
@@ -166,11 +173,11 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                         _buildProfileHeader(context, isDark),
 
                         if (onOpenSubscription != null && !isDesktop) ...[
-                          const SizedBox(height: 24),
+                          const SizedBox(height: AppSpacing.lg),
                           _buildPremiumUpgradeCard(context, isDark),
                         ],
 
-                        const SizedBox(height: 32),
+                        const SizedBox(height: AppSpacing.xl),
 
                         // Settings Content
                         _buildSettingsContent(context, isDark, isDesktop),
@@ -191,10 +198,10 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
       color: Colors.transparent,
       child: InkWell(
         onTap: onOpenSubscription,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: AppRadii.dialog,
         child: Ink(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: AppRadii.dialog,
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -240,9 +247,8 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                         isPaidSubscription
                             ? (subscriptionStatusLabel ?? 'Premium plan')
                             : 'Unlock more with Premium',
-                        style: TextStyle(
+                        style: context.text.sectionTitle().copyWith(
                           color: context.colors.textPrimary,
-                          fontSize: 17,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.2,
                         ),
@@ -255,13 +261,12 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                   isPaidSubscription
                       ? 'You’re on a paid plan. Manage billing, change plans, or review access anytime.'
                       : 'Live data, deeper analytics, and AI tools — upgrade to level up your portfolio experience.',
-                  style: TextStyle(
+                  style: context.text.bodyMuted().copyWith(
                     color: context.colors.textSecondary,
-                    fontSize: 13.5,
                     height: 1.4,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.md),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
@@ -271,12 +276,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(28),
+                        borderRadius: AppRadii.button,
                       ),
-                      textStyle: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                      ),
+                      textStyle: context.text.button(compact: true),
                     ),
                     child: Text(
                       isPaidSubscription ? 'Manage plan' : 'Explore plans',
@@ -321,24 +323,25 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
             ),
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: AppSpacing.lg),
         Text(
           displayName != null && displayName!.isNotEmpty
               ? displayName!
               : userId,
-          style: TextStyle(
+          style: context.text.pageTitle().copyWith(
             color: context.textPrimary,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
             letterSpacing: 0.5,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm + AppSpacing.xs,
+            vertical: 6,
+          ),
           decoration: BoxDecoration(
             color: context.colors.surface.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: AppRadii.dialog,
             border: Border.all(
               color: context.colors.border.withValues(alpha: 0.1),
             ),
@@ -348,13 +351,11 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
             children: [
               Text(
                 'User ID',
-                style: TextStyle(
+                style: context.text.caption().copyWith(
                   color: context.textSecondary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               InkWell(
                 onTap: () => _copyUserId(context, userId),
                 child: Icon(
@@ -380,14 +381,14 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
       children: [
         // Account Section
         _buildSectionHeader(context, 'Account', isDark),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.md),
         AnimatedBuilder(
           animation: _highlightPulse,
           builder: (context, child) {
             final glow = _highlightActive ? _highlightPulse.value : 0.0;
             return Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: AppRadii.card,
                 boxShadow: glow > 0
                     ? [
                         BoxShadow(
@@ -458,8 +459,8 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                 title: 'Delete Account',
                 subtitle: 'Permanently remove your data',
                 isDark: isDark,
-                iconColor: Colors.redAccent.shade700,
-                textColor: Colors.redAccent.shade700,
+                iconColor: context.colors.statusError,
+                textColor: context.colors.statusError,
                 trailing: const SizedBox(),
                 onTap: () => _showDeleteAccountDialog(context, isDark),
               ),
@@ -467,11 +468,48 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
           ),
         ),
 
-        const SizedBox(height: 32),
+        const SizedBox(height: AppSpacing.xl),
+
+        _buildSectionHeader(context, 'Security', isDark),
+        const SizedBox(height: AppSpacing.md),
+        _buildGlassSection(
+          context,
+          isDark,
+          children: [
+            if (!kIsWeb && onOpenScanWebLogin != null) ...[
+              _buildSettingTile(
+                context,
+                icon: Icons.qr_code_scanner_rounded,
+                title: 'Scan to log in on web',
+                subtitle: 'Approve a browser login from your phone',
+                isDark: isDark,
+                onTap: onOpenScanWebLogin!,
+              ),
+              _buildDivider(isDark),
+            ],
+            _buildSettingTile(
+              context,
+              icon: Icons.devices_other_outlined,
+              title: 'Active sessions',
+              subtitle: 'Review browsers and devices signed in',
+              isDark: isDark,
+              onTap: onOpenActiveSessions ??
+                  () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Active sessions is unavailable here'),
+                      ),
+                    );
+                  },
+            ),
+          ],
+        ),
+
+        const SizedBox(height: AppSpacing.xl),
 
         // Preferences Section
         _buildSectionHeader(context, 'Preferences', isDark),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.md),
         _buildGlassSection(
           context,
           isDark,
@@ -495,9 +533,8 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                   onTap: () => _showThemeSelectionDialog(context, currentMode),
                   trailing: Text(
                     modeLabel,
-                    style: TextStyle(
+                    style: context.text.body().copyWith(
                       color: context.colors.textSecondary,
-                      fontSize: 14,
                     ),
                   ),
                 );
@@ -515,11 +552,11 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
           ],
         ),
 
-        const SizedBox(height: 32),
+        const SizedBox(height: AppSpacing.xl),
 
         // About Section
         _buildSectionHeader(context, 'About', isDark),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.md),
         _buildGlassSection(
           context,
           isDark,
@@ -551,9 +588,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
           ],
         ),
         if (!isDesktop) ...[
-          const SizedBox(height: 32),
+          const SizedBox(height: AppSpacing.xl),
           _buildSectionHeader(context, 'Session', isDark),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.md),
           _buildGlassSection(
             context,
             isDark,
@@ -564,8 +601,8 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                 title: 'Log Out',
                 subtitle: 'Sign out of your account',
                 isDark: isDark,
-                iconColor: Colors.redAccent,
-                textColor: Colors.redAccent,
+                iconColor: context.colors.statusError,
+                textColor: context.colors.statusError,
                 trailing: const SizedBox(),
                 onTap: () {
                   context.read<AuthCubit>().logout();
@@ -588,7 +625,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
       duration: const Duration(milliseconds: 250),
       decoration: BoxDecoration(
         color: context.colors.surface.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: AppRadii.card,
         border: Border.all(
           color: highlighted
               ? ModuleColors.portfolio.withValues(alpha: 0.5)
@@ -604,7 +641,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: AppRadii.card,
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Column(children: children),
@@ -638,7 +675,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.md),
           child: Row(
             children: [
               Container(
@@ -647,7 +684,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                   color: highlighted
                       ? accent.withValues(alpha: 0.2)
                       : context.colors.surface.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppRadii.input,
                   border: highlighted
                       ? Border.all(color: accent.withValues(alpha: 0.45))
                       : null,
@@ -659,27 +696,23 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                   size: 20,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
-                      style: TextStyle(
-                        color:
-                            textColor ?? context.colors.textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                      style: context.text.sectionTitle(compact: true).copyWith(
+                        color: textColor ?? context.colors.textPrimary,
                       ),
                     ),
                     if (subtitle != null) ...[
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSpacing.xs),
                       Text(
                         subtitle,
-                        style: TextStyle(
+                        style: context.text.bodyMuted().copyWith(
                           color: context.colors.textSecondary,
-                          fontSize: 13,
                         ),
                       ),
                     ],
@@ -713,12 +746,14 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
 
   Widget _buildSectionHeader(BuildContext context, String title, bool isDark) {
     return Padding(
-      padding: const EdgeInsets.only(left: 12, bottom: 4),
+      padding: const EdgeInsets.only(
+        left: AppSpacing.sm + AppSpacing.xs,
+        bottom: AppSpacing.xs,
+      ),
       child: Text(
         title.toUpperCase(),
-        style: TextStyle(
+        style: context.text.caption().copyWith(
           color: context.colors.textSecondary,
-          fontSize: 12,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.5,
         ),
@@ -1005,8 +1040,8 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
               backgroundColor: context.colors.scaffoldBackground,
               title: Text(
                 'Delete Account',
-                style: TextStyle(
-                  color: Colors.redAccent.shade700,
+                style: context.text.sectionTitle().copyWith(
+                  color: context.colors.statusError,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -1019,36 +1054,36 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                     children: [
                       Text(
                         'Are you sure you want to permanently delete your account? Your account will be deactivated immediately, and all your data will be permanently deleted in 90 days if you do not log back in.',
-                        style: TextStyle(
+                        style: context.text.body().copyWith(
                           color: context.colors.textSecondary,
-                          fontSize: 14,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppSpacing.md),
                       Text(
                         'Please tell us why you are leaving (Required):',
-                        style: TextStyle(
+                        style: context.text.label().copyWith(
                           color: context.colors.textPrimary,
                           fontWeight: FontWeight.w600,
-                          fontSize: 14,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.sm),
                       DropdownButtonFormField<String>(
                         value: selectedReason,
                         dropdownColor: context.colors.scaffoldBackground,
-                        style: TextStyle(
+                        style: context.text.body().copyWith(
                           color: context.colors.textPrimary,
-                          fontSize: 14,
                         ),
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: context.colors.surface,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: AppRadii.input,
                             borderSide: BorderSide.none,
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md,
+                            vertical: AppSpacing.sm + AppSpacing.xs,
+                          ),
                         ),
                         items: reasons.map((r) {
                           return DropdownMenuItem<String>(
@@ -1065,23 +1100,25 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                         },
                       ),
                       if (isOtherSelected) ...[
-                        const SizedBox(height: 16),
+                        const SizedBox(height: AppSpacing.md),
                         TextFormField(
                           controller: feedbackController,
                           maxLines: 3,
                           decoration: InputDecoration(
                             hintText: 'Your feedback helps us improve...',
-                            hintStyle: TextStyle(
+                            hintStyle: context.text.bodyMuted().copyWith(
                               color: context.colors.textSecondary,
                             ),
                             filled: true,
                             fillColor: context.colors.surface,
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: AppRadii.input,
                               borderSide: BorderSide.none,
                             ),
                           ),
-                          style: TextStyle(color: context.colors.textPrimary),
+                          style: context.text.body().copyWith(
+                            color: context.colors.textPrimary,
+                          ),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'Feedback is required when selecting "Other".';
@@ -1102,14 +1139,14 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                   onPressed: () => Navigator.pop(dialogContext),
                   child: Text(
                     'Cancel',
-                    style: TextStyle(
+                    style: context.text.label().copyWith(
                       color: context.colors.textSecondary,
                     ),
                   ),
                 ),
                 FilledButton(
                   style: FilledButton.styleFrom(
-                    backgroundColor: Colors.redAccent.shade700,
+                    backgroundColor: context.colors.statusError,
                     foregroundColor: Colors.white,
                   ),
                   onPressed: () async {
@@ -1159,7 +1196,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text('Failed to delete account: $e'),
-                              backgroundColor: Colors.red,
+                              backgroundColor: context.colors.statusError,
                             ),
                           );
                         }

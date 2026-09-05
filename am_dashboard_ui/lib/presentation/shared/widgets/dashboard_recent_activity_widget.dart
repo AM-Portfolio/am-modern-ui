@@ -1,6 +1,7 @@
 import 'package:am_dashboard_ui/domain/models/activity_item.dart';
 import 'package:am_dashboard_ui/domain/models/recent_activity_response.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
+import 'package:am_dashboard_ui/presentation/shared/widgets/activity_status_filter.dart';
 import 'package:am_dashboard_ui/presentation/shared/widgets/recent_activity_mobile_section.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
@@ -78,9 +79,18 @@ class _DashboardRecentActivitySectionState
           });
         },
         onViewAll: () => setState(() {
-          _pageSize = 25;
+          _pageSize = response.totalItems > 20 ? 50 : 25;
           _page = 0;
         }),
+        onJumpToLatest: () {
+          // Newest rows: page 0 for TIMESTAMP desc; last page when ascending.
+          final lastPage = (response.totalPages - 1).clamp(0, 1 << 30);
+          final target = _sortBy == 'TIMESTAMP' &&
+                  _sortDirection == SortDirection.ascending
+              ? lastPage
+              : 0;
+          setState(() => _page = target);
+        },
       ),
       loading: () => const SizedBox(
         height: 320,
@@ -105,7 +115,7 @@ class _DashboardRecentActivitySectionState
 }
 
 /// Lumina recent activity table — server paginated when [response] metadata is set.
-class DashboardRecentActivityWidget extends StatelessWidget {
+class DashboardRecentActivityWidget extends StatefulWidget {
   const DashboardRecentActivityWidget({
     super.key,
     required this.response,
@@ -116,6 +126,7 @@ class DashboardRecentActivityWidget extends StatelessWidget {
     this.onPageSizeChanged,
     this.onSort,
     this.onViewAll,
+    this.onJumpToLatest,
   });
 
   final RecentActivityResponse response;
@@ -126,46 +137,112 @@ class DashboardRecentActivityWidget extends StatelessWidget {
   final ValueChanged<int>? onPageSizeChanged;
   final void Function(int columnIndex, SortDirection direction)? onSort;
   final VoidCallback? onViewAll;
+  final VoidCallback? onJumpToLatest;
 
-  List<ActivityItem> get activities => response.items;
+  @override
+  State<DashboardRecentActivityWidget> createState() =>
+      _DashboardRecentActivityWidgetState();
+}
+
+class _DashboardRecentActivityWidgetState
+    extends State<DashboardRecentActivityWidget> {
+  ActivityStatusFilter _filter = ActivityStatusFilter.all;
+  final ScrollController _tableScroll = ScrollController();
+
+  @override
+  void dispose() {
+    _tableScroll.dispose();
+    super.dispose();
+  }
+
+  List<ActivityItem> get _filtered =>
+      filterActivitiesByStatus(widget.response.items, _filter);
 
   static bool _isMobile(BuildContext context) =>
       MediaQuery.sizeOf(context).width < 600;
+
+  void _jumpToLatest() {
+    final response = widget.response;
+    final lastPage = (response.totalPages - 1).clamp(0, 1 << 30);
+    final newestOnLastPage =
+        widget.sortColumnIndex == 2 &&
+        widget.sortDirection == SortDirection.ascending;
+    final targetPage = newestOnLastPage ? lastPage : 0;
+    if (response.page != targetPage) {
+      widget.onJumpToLatest?.call();
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_tableScroll.hasClients) return;
+      final offset = newestOnLastPage
+          ? _tableScroll.position.maxScrollExtent
+          : _tableScroll.position.minScrollExtent;
+      _tableScroll.animateTo(
+        offset,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     if (_isMobile(context)) {
       return RecentActivityMobileSection(
-        activities: activities,
-        totalItems: response.totalItems,
-        pageSize: pageSize,
-        onViewAll: onViewAll,
+        activities: _filtered,
+        totalItems: widget.response.totalItems,
+        pageSize: widget.pageSize,
+        currentPage: widget.response.page,
+        totalPages: widget.response.totalPages,
+        statusFilter: _filter,
+        onStatusFilterChanged: (f) => setState(() => _filter = f),
+        onViewAll: widget.onViewAll,
+        onPageChanged: widget.onPageChanged,
       );
     }
 
     return _buildDesktopTable(context);
   }
 
+  Widget _buildFilterChips(BuildContext context) {
+    final chips = <(ActivityStatusFilter, String)>[
+      (ActivityStatusFilter.all, 'All'),
+      (ActivityStatusFilter.win, 'Win'),
+      (ActivityStatusFilter.loss, 'Loss'),
+      (ActivityStatusFilter.neutral, 'Neutral'),
+    ];
+    return Wrap(
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.xs,
+      children: [
+        for (final (value, label) in chips)
+          FilterChip(
+            label: Text(label, style: context.text.caption()),
+            selected: _filter == value,
+            onSelected: (_) => setState(() => _filter = value),
+            visualDensity: VisualDensity.compact,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+      ],
+    );
+  }
+
   Widget _buildDesktopTable(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = context.isDark;
     final onSurface = context.colors.textPrimary;
     final onSurfaceVariant = context.colors.textSecondary;
     final currencyFormat = NumberFormat.currency(symbol: '₹', decimalDigits: 2);
     final dateFormat = DateFormat('MMM d, yyyy');
-    final headerStyle = TextStyle(
-      fontSize: 11,
-      fontWeight: FontWeight.w600,
-      color: onSurfaceVariant,
-      fontFamily: 'Inter',
-    );
-    final rowStyle = TextStyle(
-      fontSize: 12,
-      color: onSurface,
-      fontFamily: 'Inter',
-    );
+    final headerStyle = context.text.caption().copyWith(
+          color: onSurfaceVariant,
+          fontWeight: FontWeight.w600,
+        );
+    final rowStyle = context.text.label().copyWith(color: onSurface);
+    final activities = _filtered;
+    final showJump = widget.response.totalItems > widget.pageSize ||
+        widget.response.totalItems > 20;
 
     return AmGlassCard(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -174,47 +251,59 @@ class DashboardRecentActivityWidget extends StatelessWidget {
             children: [
               Text(
                 'Recent Activity',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                  color: onSurface,
-                  fontFamily: 'Inter',
-                ),
+                style: context.text.sectionTitle(compact: true).copyWith(
+                      color: onSurface,
+                    ),
               ),
-              if (response.totalItems > pageSize)
+              if (widget.response.totalItems > widget.pageSize)
                 InkWell(
-                  onTap: onViewAll,
+                  onTap: widget.onViewAll,
                   hoverColor: Colors.transparent,
                   child: Text(
-                    'View All (${response.totalItems}) →',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: context.colors.actionPrimaryBg,
-                      fontFamily: 'Inter',
-                    ),
+                    'View All (${widget.response.totalItems}) →',
+                    style: context.text.link(compact: true).copyWith(
+                          color: context.colors.actionPrimaryBg,
+                        ),
                   ),
                 ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.sm),
+          _buildFilterChips(context),
+          const SizedBox(height: AppSpacing.sm + 4),
           LayoutBuilder(
             builder: (context, constraints) {
               final table = SizedBox(
-                height: 300,
+                height: 450,
                 child: PaginatedSortableTable<ActivityItem>(
                   items: activities,
-                  pageSize: pageSize,
+                  pageSize: widget.pageSize,
                   pageSizeOptions: const [10, 25, 50],
-                  initialSortColumnIndex: sortColumnIndex,
-                  initialSortDirection: sortDirection,
+                  initialSortColumnIndex: widget.sortColumnIndex,
+                  initialSortDirection: widget.sortDirection,
                   serverPagination: true,
-                  serverTotalItems: response.totalItems,
-                  serverTotalPages: response.totalPages,
-                  serverCurrentPage: response.page,
-                  onServerPageChanged: onPageChanged,
-                  onServerPageSizeChanged: onPageSizeChanged,
-                  onServerSort: onSort,
+                  serverTotalItems: widget.response.totalItems,
+                  serverTotalPages: widget.response.totalPages,
+                  serverCurrentPage: widget.response.page,
+                  onServerPageChanged: widget.onPageChanged,
+                  onServerPageSizeChanged: widget.onPageSizeChanged,
+                  onServerSort: widget.onSort,
+                  scrollController: _tableScroll,
+                  footerTrailing: showJump
+                      ? TextButton(
+                          onPressed: _jumpToLatest,
+                          style: TextButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                          ),
+                          child: Text(
+                            'Jump to latest',
+                            style: context.text.caption().copyWith(
+                                  color: context.colors.actionPrimaryBg,
+                                ),
+                          ),
+                        )
+                      : null,
                   headerTextStyle: headerStyle,
                   rowTextStyle: rowStyle,
                   headerBackgroundColor: isDark

@@ -259,8 +259,9 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, void>> logout() async {
     final userId = await _storageService.getUserId();
+    final refreshToken = await _storageService.getRefreshToken();
     try {
-      await _dataSource.logout();
+      await _dataSource.logout(refreshToken: refreshToken);
       await _storageService.clearAuthData();
       UserContext.instance.invalidate(); // evict in-memory cache
       if (userId != null && userId.isNotEmpty) {
@@ -606,6 +607,65 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(NetworkFailure(e.message));
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message, code: e.statusCode.toString()));
+    } catch (e) {
+      return Left(UnknownFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, AuthResultEntity>> persistWebSession({
+    required String userId,
+    required String email,
+    String? displayName,
+    String? accessToken,
+    String? refreshToken,
+    int? expiresInSeconds,
+  }) async {
+    try {
+      await _storageService.saveCookieSessionUser(
+        userId: userId,
+        email: email,
+        displayName: displayName,
+      );
+
+      final resolvedAccessToken = accessToken ?? 'bff_cookie_session';
+      final expiresAt = accessToken != null
+          ? DateTime.now().add(
+              Duration(seconds: expiresInSeconds ?? 3600),
+            )
+          : DateTime.now().add(const Duration(days: 7));
+
+      await _storageService.saveAccessToken(resolvedAccessToken);
+      if (refreshToken != null && refreshToken.isNotEmpty) {
+        await _storageService.saveRefreshToken(refreshToken);
+      }
+      await _storageService.saveUserId(userId);
+      await _storageService.saveUserEmail(email);
+      if (displayName != null) {
+        await _storageService.saveUserDisplayName(displayName);
+      }
+      await _storageService.saveTokenExpiry(expiresAt);
+
+      final userEntity = UserEntity(
+        id: userId,
+        email: email,
+        displayName: displayName,
+        authMethod: accessToken != null ? 'web_bff' : 'web_cookie',
+      );
+      final tokensEntity = AuthTokensEntity(
+        accessToken: resolvedAccessToken,
+        refreshToken: refreshToken,
+        expiresAt: expiresAt,
+      );
+      final authResult = AuthResultEntity(user: userEntity, tokens: tokensEntity);
+
+      UserContext.instance.populate(
+        accessToken: resolvedAccessToken,
+        userId: userId,
+        email: email,
+      );
+
+      return Right(_enrichedEntity(authResult));
     } catch (e) {
       return Left(UnknownFailure(e.toString()));
     }

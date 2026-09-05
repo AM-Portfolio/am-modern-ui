@@ -29,44 +29,37 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
   @override
   Widget build(BuildContext context) {
     final items = _showGainers ? widget.gainers : widget.losers;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = context.isDark;
     final onSurface = context.colors.textPrimary;
     final onSurfaceVariant = context.colors.textSecondary;
-    final toggleBgColor = isDark ? Colors.white.withValues(alpha: 0.05) : context.colors.actionPrimaryBg.withValues(alpha: 0.1);
+    final toggleBgColor = isDark
+        ? context.colors.surface.withValues(alpha: 0.5)
+        : context.colors.actionPrimaryBg.withValues(alpha: 0.1);
     final currencyFormat = NumberFormat.currency(symbol: '₹', decimalDigits: 2);
-    final headerStyle = TextStyle(
-      fontSize: 11,
-      fontWeight: FontWeight.w600,
-      color: onSurfaceVariant,
-      fontFamily: 'Inter',
-    );
-    final rowStyle = TextStyle(
-      fontSize: 12,
-      color: onSurface,
-      fontFamily: 'Inter',
-    );
+    final headerStyle = context.text.caption().copyWith(
+          color: onSurfaceVariant,
+          fontWeight: FontWeight.w600,
+        );
+    final rowStyle = context.text.label().copyWith(color: onSurface);
 
     return AmGlassCard(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Market Movers',
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
-              color: onSurface,
-              fontFamily: 'Inter',
-            ),
+            style: context.text.sectionTitle(compact: true).copyWith(
+                  color: onSurface,
+                ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.md),
           Container(
             decoration: BoxDecoration(
               color: toggleBgColor,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppRadii.button,
             ),
-            padding: const EdgeInsets.all(4),
+            padding: const EdgeInsets.all(AppSpacing.xs),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -75,7 +68,7 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.sm + 4),
           LayoutBuilder(
             builder: (context, constraints) {
               final isMobile = MediaQuery.of(context).size.width < 600;

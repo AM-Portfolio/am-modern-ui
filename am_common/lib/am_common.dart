@@ -60,6 +60,7 @@ export 'core/feature_flags/feature_flag_config.dart';
 export 'core/feature_flags/feature_flag_service.dart';
 export 'core/feature_flags/feature_flag_provider.dart';
 export 'core/feature_flags/feature_flag_platform.dart';
+export 'core/offline_sync/offline_sync.dart';
 
 // Widgets
 export 'features/attachment/internal/presentation/widgets/shared_attachment_section.dart';

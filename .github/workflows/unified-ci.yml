@@ -14,6 +14,12 @@
 #   - If scan fails, neither web nor android builds run
 #
 # Phase 8b: Unified caller pointing at am-pipelines@main
+#
+# Web (trade-like): Build & GitOps — push/PR builds image; on main freezes
+#   am-gitops image-tags for Argo. Deploy→Dev/Prod wait for web-* approval;
+#   Deploy→Preprod skips on main while GitOps is on (unless force_preprod_helm).
+# Manual Helm override: dispatch force_preprod_helm, or deploy-modern-ui.yml.
+# Android: on main/master always build AAB; Play only via workflow_dispatch + target_env.
 
 name: Unified CI/CD
 
@@ -52,6 +58,21 @@ on:
           - preprod
           - prod
         default: 'none'
+      deploy_preprod_helm:
+        description: "Helm roll to Kind preprod (image_name-preprod). Feature branches always; on main needs force or gitops off."
+        required: false
+        type: boolean
+        default: true
+      gitops_write_preprod:
+        description: "On main: auto-commit image tag to am-gitops (Argo). Preferred for main."
+        required: false
+        type: boolean
+        default: true
+      force_preprod_helm:
+        description: "Helm on main even when gitops is on / Argo Auto-Sync (may fight selfHeal)."
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   # ============================================================
@@ -128,12 +149,8 @@ jobs:
               - 'am_user_ui/**'
               - 'am_diagnostic_ui/**'
               - 'am_doc_intelligence_ui/**'
-              - '.github/workflows/unified-ci.yml'
-
-  # ============================================================
-  # SHARED SECURITY SCAN - runs once, gates both pipelines
-  # If this fails: neither web nor android will build
-  # ============================================================
+              # Do NOT include unified-ci.yml here — workflow-only edits must not
+              # queue Android Play env approvals (dev/preprod/prod) on main.
   security-scan:
     name: Security Scan (Secrets)
     runs-on: ubuntu-latest
@@ -152,20 +169,21 @@ jobs:
           extra_args: --only-verified
 
   # ============================================================
-  # WEB BUILD - only when web files changed
-  # Calls central-build-publish.yml@main (Docker -> Helm -> K8s)
+  # WEB — Build & GitOps (trade-style gates; web only)
+  # Push/PR web paths or force_web: build image; on main freeze am-gitops.
+  # Deploy→Dev/Prod: approval via web-*; Preprod Helm skips on main+GitOps.
   # ============================================================
-  web-publish:
-    name: Publish Web
+  web-build-gitops:
+    name: Build & GitOps
     needs: [detect-changes, security-scan]
-    # Run if: web files changed OR force_web manually set via workflow_dispatch
     if: |
       always() &&
       needs.security-scan.result == 'success' &&
       (needs.detect-changes.outputs.web == 'true' || inputs.force_web == true)
     permissions:
-      contents: read
+      contents: write
       packages: write
+      id-token: write
     uses: AM-Portfolio/am-pipelines/.github/workflows/central-build-publish.yml@main
     with:
       language: "flutter"
@@ -174,15 +192,17 @@ jobs:
       image_name: "am-modern-ui"
       preprod_namespace: "am-apps-preprod"
       prod_namespace: "am-apps-prod"
-      # Automatic deployments by branch + Manual overrides
-      deploy_dev: ${{ (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/feature/') || startsWith(github.ref, 'refs/heads/hotfix/'))) || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'dev') }}
-      deploy_preprod: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'preprod') }}
-      deploy_prod: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'prod') }}
-      # Map environment names
+      dev_namespace: "am-apps-dev"
+      deploy_dev: true
+      deploy_prod: true
+      # Two preprod paths: GitOps (Argo on main) and/or Helm (fixed release -preprod + Kind Vault).
+      deploy_preprod: ${{ github.event_name != 'workflow_dispatch' && true || inputs.deploy_preprod_helm }}
+      gitops_write_preprod: ${{ github.event_name != 'workflow_dispatch' && true || inputs.gitops_write_preprod }}
+      force_preprod_helm: ${{ github.event_name == 'workflow_dispatch' && inputs.force_preprod_helm || false }}
+      gitops_values_path: "am_app"
       gh_env_dev: "web-dev"
       gh_env_preprod: "web-preprod"
       gh_env_prod: "web-prod"
-      # Skip duplicate scans, but KEEP vulnerability scan
       skip_secrets_scan: true
       skip_iac_scan: true
       skip_vulnerability_scan: false
@@ -190,17 +210,23 @@ jobs:
     secrets: inherit
 
   # ============================================================
-  # ANDROID BUILD - only when android files changed
+  # ANDROID BUILD — path changes, force_android, or any main/master push
   # Calls central-mobile-android.yml@main (Flutter -> AAB -> Play)
+  # Play upload still dispatch-only (see deploy_* below).
   # ============================================================
   android-publish:
     name: Publish Android
     needs: [detect-changes, security-scan]
-    # Run if: android files changed OR force_android manually set via workflow_dispatch
+    # main/master: always build AAB on CI commits; other branches: android paths or force
     if: |
       always() &&
       needs.security-scan.result == 'success' &&
-      (needs.detect-changes.outputs.android == 'true' || inputs.force_android == true)
+      (
+        needs.detect-changes.outputs.android == 'true' ||
+        inputs.force_android == true ||
+        github.ref == 'refs/heads/main' ||
+        github.ref == 'refs/heads/master'
+      )
     permissions:
       contents: read
     uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@main
@@ -216,11 +242,11 @@ jobs:
       # Play Internal (preprod track) AAB talks to prod APIs
       am_domain: "am.asrax.in"
       am_env: "prod"
-      # Automatic deployments by branch + Manual overrides
-      deploy_dev: ${{ (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/feature/') || startsWith(github.ref, 'refs/heads/hotfix/'))) || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'dev') }}
-      # Play Internal: main, develop, feature/*, hotfix/*, or manual target_env=preprod
-      deploy_preprod: ${{ (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/feature/') || startsWith(github.ref, 'refs/heads/hotfix/'))) || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'preprod') }}
-      deploy_prod: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.target_env == 'prod') }}
+      # Play uploads only via workflow_dispatch + target_env (not auto on main push).
+      # Avoids waiting android-dev/preprod/prod approvals after every main CI/web change.
+      deploy_dev: ${{ github.event_name == 'workflow_dispatch' && inputs.target_env == 'dev' }}
+      deploy_preprod: ${{ github.event_name == 'workflow_dispatch' && inputs.target_env == 'preprod' }}
+      deploy_prod: ${{ github.event_name == 'workflow_dispatch' && inputs.target_env == 'prod' }}
       # Map environment names
       gh_env_dev: "android-dev"
       gh_env_preprod: "android-preprod"

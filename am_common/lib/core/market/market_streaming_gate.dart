@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:am_library/am_library.dart';
 import 'package:rxdart/rxdart.dart';
 
+import '../debug/agent_debug_log.dart';
 import 'market_status.dart';
 import 'market_status_client.dart';
 
@@ -74,6 +75,19 @@ class MarketStreamingGate {
       final next = await _client.fetchStatus(exchange: 'NSE');
       _status = next;
       _lastFetchedAt = DateTime.now();
+      // #region agent log
+      agentDebugLog(
+        location: 'market_streaming_gate.dart:refresh',
+        message: 'market status fetched',
+        hypothesisId: 'H4',
+        data: {
+          'open': next.open,
+          'reason': next.reason,
+          'sessionStart': next.sessionStart,
+          'sessionEnd': next.sessionEnd,
+        },
+      );
+      // #endregion
       _setOpen(next.open);
       _scheduleSessionBoundary(next);
     } catch (e, st) {
@@ -96,6 +110,14 @@ class MarketStreamingGate {
       '${_status != null ? ' (${_status!.reason})' : ''}',
       tag: 'MarketStreamingGate',
     );
+    // #region agent log
+    agentDebugLog(
+      location: 'market_streaming_gate.dart:_setOpen',
+      message: 'gate open flag changed',
+      hypothesisId: 'H4',
+      data: {'open': open, 'reason': _status?.reason},
+    );
+    // #endregion
     _isOpenSubject.add(open);
   }
 

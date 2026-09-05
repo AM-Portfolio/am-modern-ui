@@ -59,6 +59,43 @@ Future<void> configureCoreDependencies() async {
     () => common.FeatureFlagService(config: common.ConfigService.growthbook),
   );
 
+  getIt.registerLazySingleton<common.OfflineSyncEngine>(() {
+    final engine = common.OfflineSyncEngine(
+      config: common.OfflineSyncConfig(
+        appId: 'am_app',
+        userIdProvider: () => UserContext.instance.cachedUserId,
+        // Central widget cache matrix — edit here, not in feature files.
+        widgets: common.OfflineWidgetCatalog.amAppDefaults,
+      ),
+      isReadsEnabled: () {
+        try {
+          return getIt<common.FeatureFlagService>()
+              .isOn(common.FeatureFlagKeys.offlineReadsV1);
+        } catch (_) {
+          return false;
+        }
+      },
+      isWritesEnabled: () {
+        try {
+          return getIt<common.FeatureFlagService>()
+              .isOn(common.FeatureFlagKeys.offlineWritesV1);
+        } catch (_) {
+          return false;
+        }
+      },
+      canFlush: () async {
+        try {
+          final token =
+              await getIt<SecureStorageService>().getAccessToken();
+          return token != null && token.isNotEmpty;
+        } catch (_) {
+          return false;
+        }
+      },
+    );
+    return engine;
+  });
+
   common.BootTrace.instance.mark('di_core_done');
 }
 
@@ -66,7 +103,7 @@ Future<void> configureCoreDependencies() async {
 Future<void> configureFeatureDependencies() async {
   if (_featureDependenciesConfigured) return;
   _featureDependenciesConfigured = true;
-  _registerSubscriptionDependencies();
+  await _registerSubscriptionDependencies();
   common.BootTrace.instance.mark('di_feature_done');
 }
 
@@ -149,7 +186,7 @@ void _registerDashboardDependencies() {
   });
 }
 
-void _registerSubscriptionDependencies() {
+Future<void> _registerSubscriptionDependencies() async {
   String baseUrl = common.EnvDomains.subscription;
   if (baseUrl.endsWith('/subscriptions')) {
     baseUrl = baseUrl.substring(0, baseUrl.length - '/subscriptions'.length);
@@ -164,9 +201,7 @@ void _registerSubscriptionDependencies() {
       receiveTimeout: const Duration(seconds: 30),
     ),
   );
-  subscriptionDio.interceptors.add(
-    auth_ui.AuthInterceptor(getIt<auth_ui.SecureStorageService>()),
-  );
+  auth_ui.AuthProviders.attachAuthInterceptor(subscriptionDio);
   getIt.registerSingleton<Dio>(
     subscriptionDio,
     instanceName: 'subscriptionDio',
@@ -178,9 +213,20 @@ void _registerSubscriptionDependencies() {
     ),
   );
 
+  if (!getIt.isRegistered<CacheService>()) {
+    final cache = CacheService();
+    await cache.init();
+    getIt.registerSingleton<CacheService>(cache);
+  }
+
+  getIt.registerLazySingleton<subscription_ui.SubscriptionBrowserCache>(
+    () => subscription_ui.SubscriptionBrowserCache(getIt<CacheService>()),
+  );
+
   getIt.registerLazySingleton<subscription_ui.SubscriptionCubit>(
     () => subscription_ui.SubscriptionCubit(
       getIt<subscription_ui.SubscriptionRemoteDataSource>(),
+      browserCache: getIt<subscription_ui.SubscriptionBrowserCache>(),
     ),
   );
 }

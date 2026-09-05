@@ -272,6 +272,8 @@ Widget buildProfileRoute({
   VoidCallback? onOpenPrivacyPolicy,
   VoidCallback? onOpenTermsOfService,
   VoidCallback? onOpenSubscription,
+  VoidCallback? onOpenActiveSessions,
+  VoidCallback? onOpenScanWebLogin,
   bool highlightSubscription = false,
 }) {
   return DeferredModuleLoader(
@@ -286,11 +288,22 @@ Widget buildProfileRoute({
         onOpenPrivacyPolicy: onOpenPrivacyPolicy,
         onOpenTermsOfService: onOpenTermsOfService,
         onOpenSubscription: onOpenSubscription,
+        onOpenActiveSessions: onOpenActiveSessions,
+        onOpenScanWebLogin: onOpenScanWebLogin,
         highlightSubscription: highlightSubscription,
         subscriptionStatusLabel: statusLabel,
         isPaidSubscription: isPaid,
       ),
     ),
+  );
+}
+
+Widget buildActiveSessionsRoute() {
+  return DeferredModuleLoader(
+    load: _loadUser,
+    skeleton: const GenericModuleSkeleton(),
+    loadingMessage: 'Loading sessions…',
+    builder: () => user_ui.ActiveSessionsPage(),
   );
 }
 
@@ -317,42 +330,19 @@ class _ProfileSubscriptionLoaderState extends State<_ProfileSubscriptionLoader> 
 
   Future<void> _load() async {
     try {
-      if (!GetIt.instance.isRegistered<am_sub.SubscriptionRemoteDataSource>()) {
+      if (!GetIt.instance.isRegistered<am_sub.SubscriptionCubit>()) {
         return;
       }
-      final sub = await GetIt.instance<am_sub.SubscriptionRemoteDataSource>()
-          .getCurrentSubscription();
+      final cubit = GetIt.instance<am_sub.SubscriptionCubit>();
+      await cubit.ensureSubscriptionStatus();
       if (!mounted) return;
-      final name = sub.planName.trim().isNotEmpty
-          ? sub.planName.trim()
-          : _planNameFromCode(sub.planCode);
-      final state = _titleCase(sub.state);
       setState(() {
-        _statusLabel = state.isEmpty ? name : '$name · $state';
-        _isPaid = !_isFreePlan(sub.planCode);
+        _statusLabel = cubit.statusLabel;
+        _isPaid = cubit.isPaidSubscription;
       });
     } catch (_) {
       // Leave default Profile copy if subscription API fails.
     }
-  }
-
-  static bool _isFreePlan(String planCode) {
-    final code = planCode.toLowerCase();
-    return code.contains('free') || code == 'am_free';
-  }
-
-  static String _planNameFromCode(String planCode) {
-    final code = planCode.toLowerCase();
-    if (code.contains('premium')) return 'Premium';
-    if (code.contains('pro')) return 'Pro';
-    if (code.contains('free')) return 'Free';
-    return planCode;
-  }
-
-  static String _titleCase(String raw) {
-    final s = raw.trim();
-    if (s.isEmpty) return '';
-    return '${s[0].toUpperCase()}${s.substring(1).toLowerCase()}';
   }
 
   @override

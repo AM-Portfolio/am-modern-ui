@@ -220,7 +220,7 @@ class AuthRemoteDataSource implements AuthDataSource {
   }
 
   @override
-  Future<void> logout() async {
+  Future<void> logout({String? refreshToken}) async {
     try {
       final fullUrl = AuthEndpoints.logout;
       await _dio.post(fullUrl);
