@@ -12,6 +12,7 @@ import '../widgets/equity_insider_financials.dart';
 import '../widgets/equity_insider_shareholding.dart';
 import '../widgets/equity_insider_peers.dart';
 import '../widgets/equity_insider_section_nav_bar.dart';
+import '../widgets/equity_insider_empty_view.dart';
 
 /// Equity Insider – Fundamental Analysis.
 class EquityInsiderPage extends ConsumerStatefulWidget {
@@ -109,113 +110,12 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
   }
 
   Widget _buildEmptySearch() {
-    final recent = ref.watch(recentlyViewedStocksProvider);
-    const accentColor = ModuleColors.market;
-    final surfaceColor = context.colors.cardSurface;
-    final borderColor = context.colors.border;
-
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: surfaceColor.withValues(alpha: 0.7),
-                  border: Border.all(color: borderColor, width: 1.5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: accentColor.withValues(alpha: 0.25),
-                      blurRadius: 24,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-                alignment: Alignment.center,
-                child: const Icon(
-                  Icons.insights_rounded,
-                  size: 38,
-                  color: accentColor,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'EQUITY INSIDER',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: context.colors.textPrimary,
-                  letterSpacing: 1.5,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Enter a stock symbol for deep fundamental analysis, valuation & peers.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: context.colors.textSecondary,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 28),
-              SmartSearchAnchor(
-                controller: _controller,
-                animatedHints: _typewriterHints,
-                recentSearches: recent,
-                onRemoveRecent: (sym) {
-                  ref.read(recentlyViewedStocksProvider.notifier).removeView(sym);
-                },
-                onClearRecent: () {
-                  ref.read(recentlyViewedStocksProvider.notifier).clear();
-                },
-                accentColor: accentColor,
-                searchHandler: (q) => _sdkService.securityApi.search(
-                  q,
-                  smartRecommendations: true,
-                  category: 'STOCKS',
-                  limit: 8,
-                ),
-                onSelected: (symbol) {
-                  _navigateToSymbol(symbol);
-                },
-                onSubmit: _search,
-              ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                alignment: WrapAlignment.center,
-                children: ['TCS', 'RELIANCE', 'INFY', 'HDFCBANK', 'WIPRO', 'RAILTEL']
-                    .map(
-                      (s) => ActionChip(
-                        label: Text(
-                          s,
-                          style: TextStyle(
-                            color: context.colors.textPrimary,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
-                        ),
-                        backgroundColor: context.colors.cardSurface,
-                        side: BorderSide(color: context.colors.border),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        onPressed: () {
-                          _navigateToSymbol(s);
-                        },
-                      ),
-                    )
-                    .toList(),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return EquityInsiderEmptyView(
+      controller: _controller,
+      sdkService: _sdkService,
+      typewriterHints: _typewriterHints,
+      onSelectSymbol: _navigateToSymbol,
+      onSearch: _search,
     );
   }
 
@@ -254,7 +154,7 @@ class _FundamentalsBody extends ConsumerStatefulWidget {
 
 class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
   final ScrollController _scrollController = ScrollController();
-  final List<GlobalKey> _sectionKeys = List.generate(5, (_) => GlobalKey());
+  final List<GlobalKey> _sectionKeys = List.generate(6, (_) => GlobalKey());
   int _activeIndex = 0;
   bool _isManualScrolling = false;
   bool _isSearchOverlayOpen = false;
@@ -320,25 +220,15 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
   Widget _buildSectionCard({
     required BuildContext context,
     required Widget child,
-    required GlobalKey sectionKey,
+    GlobalKey? sectionKey,
     bool isMobile = false,
   }) {
     return Container(
       key: sectionKey,
-      padding: EdgeInsets.all(isMobile ? 14 : 22),
-      decoration: BoxDecoration(
-        color: context.colors.cardSurface.withValues(alpha: 0.85),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.colors.border, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
+      child: GlassCard(
+        padding: EdgeInsets.all(isMobile ? 16 : 24),
+        child: child,
       ),
-      child: child,
     );
   }
 
@@ -356,89 +246,152 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
+    final isMobile = MediaQuery.of(context).size.width < 800;
     final recent = ref.watch(recentlyViewedStocksProvider);
 
     return Stack(
       children: [
-        Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                controller: _scrollController,
-                physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(
-                  isMobile ? 12 : 24,
-                  isMobile ? 12 : 20,
-                  isMobile ? 12 : 24,
-                  40,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Unified Hero & Section Navbar Card
-                    _buildSectionCard(
-                      sectionKey: _sectionKeys[0],
-                      context: context,
-                      isMobile: isMobile,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          EquityInsiderHero(
-                            symbol: widget.symbol,
-                            onSearchTap: _openSearchOverlay,
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 800;
+
+            return Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    physics: const BouncingScrollPhysics(),
+                    padding: EdgeInsets.fromLTRB(
+                      isMobile ? 12 : 16,
+                      isMobile ? 12 : 16,
+                      isMobile ? 12 : 16,
+                      32,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Section 0: Header (Company Hero + Section Nav Bar without card wrapper)
+                        Column(
+                          key: _sectionKeys[0],
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            EquityInsiderHero(
+                              symbol: widget.symbol,
+                              onSearchTap: _openSearchOverlay,
+                            ),
+                            const SizedBox(height: 24),
+                            EquityInsiderSectionNavBar(
+                              activeIndex: _activeIndex,
+                              onTabSelected: _scrollToSection,
+                              isMobile: isMobile,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Row 1: Valuation & Key Metrics (Left 60%) + Price Performance & Chart (Right 40%)
+                        if (isMobile) ...[
+                          _buildSectionCard(
+                            context: context,
+                            isMobile: isMobile,
+                            child: EquityInsiderKpis(symbol: widget.symbol),
                           ),
                           const SizedBox(height: 14),
-                          EquityInsiderSectionNavBar(
-                            activeIndex: _activeIndex,
-                            onTabSelected: _scrollToSection,
+                          _buildSectionCard(
+                            sectionKey: _sectionKeys[1],
+                            context: context,
                             isMobile: isMobile,
+                            child: EquityInsiderChart(symbol: widget.symbol),
                           ),
-                          const SizedBox(height: 20),
-                          EquityInsiderKpis(symbol: widget.symbol),
+                        ] else ...[
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                flex: 60,
+                                child: _buildSectionCard(
+                                  context: context,
+                                  isMobile: false,
+                                  child: EquityInsiderKpis(symbol: widget.symbol),
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                flex: 40,
+                                child: _buildSectionCard(
+                                  sectionKey: _sectionKeys[1],
+                                  context: context,
+                                  isMobile: false,
+                                  child: EquityInsiderChart(symbol: widget.symbol),
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
+                        const SizedBox(height: 14),
 
-                    _buildSectionCard(
-                      sectionKey: _sectionKeys[1],
-                      context: context,
-                      isMobile: isMobile,
-                      child: EquityInsiderChart(symbol: widget.symbol),
-                    ),
-                    const SizedBox(height: 20),
+                        // Row 2: Financial Performance (Left 60%) + Shareholding Pattern (Right 40%)
+                        if (isMobile) ...[
+                          _buildSectionCard(
+                            sectionKey: _sectionKeys[2],
+                            context: context,
+                            isMobile: isMobile,
+                            child: EquityInsiderFinancials(symbol: widget.symbol),
+                          ),
+                          const SizedBox(height: 14),
+                          _buildSectionCard(
+                            sectionKey: _sectionKeys[3],
+                            context: context,
+                            isMobile: isMobile,
+                            child: EquityInsiderShareholding(symbol: widget.symbol),
+                          ),
+                        ] else ...[
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                flex: 60,
+                                child: _buildSectionCard(
+                                  sectionKey: _sectionKeys[2],
+                                  context: context,
+                                  isMobile: false,
+                                  child: EquityInsiderFinancials(symbol: widget.symbol),
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                flex: 40,
+                                child: _buildSectionCard(
+                                  sectionKey: _sectionKeys[3],
+                                  context: context,
+                                  isMobile: false,
+                                  child: EquityInsiderShareholding(symbol: widget.symbol),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        const SizedBox(height: 14),
 
-                    _buildSectionCard(
-                      sectionKey: _sectionKeys[2],
-                      context: context,
-                      isMobile: isMobile,
-                      child: EquityInsiderFinancials(symbol: widget.symbol),
+                        // Row 3: Full-width Peer Comparison Section
+                        _buildSectionCard(
+                          sectionKey: _sectionKeys[4],
+                          context: context,
+                          isMobile: isMobile,
+                          child: EquityInsiderPeers(
+                            symbol: widget.symbol,
+                            onPeerSelected: widget.onSelectSymbol,
+                          ),
+                        ),
+                        // Anchor for Documents tab (Section 5)
+                        SizedBox(key: _sectionKeys[5], height: 0),
+                      ],
                     ),
-                    const SizedBox(height: 20),
-
-                    _buildSectionCard(
-                      sectionKey: _sectionKeys[3],
-                      context: context,
-                      isMobile: isMobile,
-                      child: EquityInsiderShareholding(symbol: widget.symbol),
-                    ),
-                    const SizedBox(height: 20),
-
-                    _buildSectionCard(
-                      sectionKey: _sectionKeys[4],
-                      context: context,
-                      isMobile: isMobile,
-                      child: EquityInsiderPeers(
-                        symbol: widget.symbol,
-                        onPeerSelected: widget.onSelectSymbol,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          ],
+              ],
+            );
+          },
         ),
 
         // Full Screen Search Overlay with Soft Backdrop Blur

@@ -6,20 +6,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_sdk/market/api.dart';
 import 'package:intl/intl.dart';
 import '../../providers/equity_insider_provider.dart';
-
-class _PeerColumnDef {
-  final String label;
-  final String key;
-  final double? Function(CompetitorPeer peer) valueGetter;
-  final Widget Function(BuildContext context, CompetitorPeer peer, double maxRoe) cellBuilder;
-
-  const _PeerColumnDef({
-    required this.label,
-    required this.key,
-    required this.valueGetter,
-    required this.cellBuilder,
-  });
-}
+import 'equity_insider_peers_columns.dart';
 
 class EquityInsiderPeers extends ConsumerStatefulWidget {
   final String symbol;
@@ -45,12 +32,12 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
         _sortDescending = !_sortDescending;
       } else {
         _activeSortColumn = column;
-        _sortDescending = true; // Default to descending for new columns
+        _sortDescending = true;
       }
     });
   }
 
-  double _getSortValue(CompetitorPeer peer, String column, List<_PeerColumnDef> activeCols) {
+  double _getSortValue(CompetitorPeer peer, String column, List<PeerColumnDef> activeCols) {
     if (column == 'currentPrice') return peer.currentPrice ?? double.negativeInfinity;
     if (column == 'dayChangePercent') return peer.dayChangePercent ?? double.negativeInfinity;
 
@@ -62,7 +49,7 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
     return double.negativeInfinity;
   }
 
-  List<CompetitorPeer> _getSortedPeers(List<CompetitorPeer> peers, List<_PeerColumnDef> activeCols) {
+  List<CompetitorPeer> _getSortedPeers(List<CompetitorPeer> peers, List<PeerColumnDef> activeCols) {
     final list = List<CompetitorPeer>.from(peers);
     list.sort((a, b) {
       final aVal = _getSortValue(a, _activeSortColumn, activeCols);
@@ -70,120 +57,6 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
       return _sortDescending ? bVal.compareTo(aVal) : aVal.compareTo(bVal);
     });
     return list;
-  }
-
-  List<_PeerColumnDef> _resolveActiveColumns(List<CompetitorPeer> peers) {
-    final List<_PeerColumnDef> candidates = [
-      _PeerColumnDef(
-        label: 'P/E',
-        key: 'pe',
-        valueGetter: (p) => p.pe,
-        cellBuilder: (context, p, _) => Text(
-          p.pe != null ? p.pe!.toStringAsFixed(2) : '—',
-          style: TextStyle(color: context.textSecondary),
-        ),
-      ),
-      _PeerColumnDef(
-        label: 'P/B',
-        key: 'pb',
-        valueGetter: (p) => p.pb,
-        cellBuilder: (context, p, _) => Text(
-          p.pb != null ? p.pb!.toStringAsFixed(2) : '—',
-          style: TextStyle(color: context.textSecondary),
-        ),
-      ),
-      _PeerColumnDef(
-        label: 'ROE %',
-        key: 'roe',
-        valueGetter: (p) => p.roe,
-        cellBuilder: (context, p, maxRoe) => _buildMetricBar(context, p.roe, maxRoe),
-      ),
-      _PeerColumnDef(
-        label: 'ROA %',
-        key: 'roa',
-        valueGetter: (p) => p.roa,
-        cellBuilder: (context, p, _) => Text(
-          p.roa != null ? p.roa!.toStringAsFixed(2) : '—',
-          style: TextStyle(
-            color: p.roa != null && p.roa! > 1.5
-                ? context.marketTheme.positive
-                : (p.roa != null && p.roa! < 0 ? context.marketTheme.negative : context.textSecondary),
-          ),
-        ),
-      ),
-      _PeerColumnDef(
-        label: 'NIM %',
-        key: 'nim',
-        valueGetter: (p) => p.nim,
-        cellBuilder: (context, p, _) => Text(
-          p.nim != null ? '${p.nim!.toStringAsFixed(2)}%' : '—',
-          style: TextStyle(
-            color: p.nim != null && p.nim! > 3.0 ? context.marketTheme.positive : context.textSecondary,
-          ),
-        ),
-      ),
-      _PeerColumnDef(
-        label: 'Net NPA %',
-        key: 'netNpa',
-        valueGetter: (p) => p.netNpa,
-        cellBuilder: (context, p, _) => Text(
-          p.netNpa != null ? '${p.netNpa!.toStringAsFixed(2)}%' : '—',
-          style: TextStyle(
-            color: p.netNpa != null && p.netNpa! < 0.5
-                ? context.marketTheme.positive
-                : (p.netNpa != null && p.netNpa! > 1.0 ? context.marketTheme.negative : context.textSecondary),
-          ),
-        ),
-      ),
-      _PeerColumnDef(
-        label: 'CASA %',
-        key: 'casa',
-        valueGetter: (p) => p.casa,
-        cellBuilder: (context, p, _) => Text(
-          p.casa != null ? '${p.casa!.toStringAsFixed(2)}%' : '—',
-          style: TextStyle(color: context.textSecondary),
-        ),
-      ),
-      _PeerColumnDef(
-        label: 'ROCE %',
-        key: 'roce',
-        valueGetter: (p) => p.roce,
-        cellBuilder: (context, p, _) => Text(
-          p.roce != null ? p.roce!.toStringAsFixed(2) : '—',
-          style: TextStyle(
-            color: p.roce != null && p.roce! > 30
-                ? context.marketTheme.positive
-                : (p.roce != null && p.roce! > 15 ? context.textSecondary : context.marketTheme.negative),
-          ),
-        ),
-      ),
-      _PeerColumnDef(
-        label: 'EV/EBITDA',
-        key: 'evEbitda',
-        valueGetter: (p) => p.evEbitda,
-        cellBuilder: (context, p, _) => Text(
-          p.evEbitda != null ? p.evEbitda!.toStringAsFixed(2) : '—',
-          style: TextStyle(color: context.textSecondary),
-        ),
-      ),
-      _PeerColumnDef(
-        label: 'Quick Ratio',
-        key: 'quickRatio',
-        valueGetter: (p) => p.quickRatio,
-        cellBuilder: (context, p, _) => Text(
-          p.quickRatio != null ? p.quickRatio!.toStringAsFixed(2) : '—',
-          style: TextStyle(color: context.textSecondary),
-        ),
-      ),
-    ];
-
-    // Dynamically keep only columns that have populated non-null data across peers
-    return candidates.where((col) {
-      return peers.any((p) {
-        final val = col.valueGetter(p);
-        return val != null && val.isFinite;
-      });
-    }).toList();
   }
 
   @override
@@ -203,7 +76,7 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
               );
             }
 
-            final activeCols = _resolveActiveColumns(peers);
+            final activeCols = PeerColumnsHelper.resolveActiveColumns(peers);
             final sortedPeers = _getSortedPeers(peers, activeCols);
             final double maxRoe = peers.fold(0.0, (m, p) => max(m, p.roe ?? 0.0));
 
@@ -219,18 +92,22 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 14),
-                    child: Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        _buildSortTab('Price', 'currentPrice'),
-                        _buildSortTab('Day Chg', 'dayChangePercent'),
-                        ...activeCols.map((col) => _buildSortTab(col.label, col.key)),
-                      ],
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _buildSortTab('Price', 'currentPrice'),
+                          const SizedBox(width: 8),
+                          _buildSortTab('Day Chg', 'dayChangePercent'),
+                          ...activeCols.map((col) => Padding(
+                                padding: const EdgeInsets.only(left: 8),
+                                child: _buildSortTab(col.label, col.key),
+                              )),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
-                  // Use LayoutBuilder to dynamically expand the width of the table
                   LayoutBuilder(
                     builder: (context, constraints) {
                       return SingleChildScrollView(
@@ -238,11 +115,11 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
                         child: ConstrainedBox(
                           constraints: BoxConstraints(minWidth: constraints.maxWidth),
                           child: DataTable(
-                            headingRowHeight: 40,
-                            dataRowMaxHeight: 65,
-                            dataRowMinHeight: 65,
-                            columnSpacing: 24, // adjust to let columns breathe
-                            horizontalMargin: 14,
+                            headingRowHeight: 32,
+                            dataRowMaxHeight: 44,
+                            dataRowMinHeight: 44,
+                            columnSpacing: 20,
+                            horizontalMargin: 12,
                             headingTextStyle: TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.w500,
@@ -271,6 +148,7 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
                       );
                     },
                   ),
+                  const SizedBox(height: 10),
                 ],
               ),
             );
@@ -285,13 +163,12 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
     );
   }
 
-  DataRow _buildRow(CompetitorPeer p, double maxRoe, List<_PeerColumnDef> activeCols) {
+  DataRow _buildRow(CompetitorPeer p, double maxRoe, List<PeerColumnDef> activeCols) {
     final isCurrent = p.symbol == widget.symbol;
     final rowBg = isCurrent ? context.marketTheme.positive.withValues(alpha: 0.04) : context.cardColor.withValues(alpha: 0);
     final name = p.companyName ?? '';
     final shortName = name.length > 28 ? '${name.substring(0, 25)}...' : name;
 
-    // Build the day change percent string
     String dayChangeStr = '—';
     Color dayChangeColor = context.textSecondary;
     if (p.dayChangePercent != null) {
@@ -300,52 +177,48 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
       dayChangeColor = p.dayChangePercent! >= 0 ? context.marketTheme.positive : context.marketTheme.negative;
     }
 
-    final targetSymbol = (p.symbol != null && p.symbol!.isNotEmpty) ? p.symbol! : '';
-    final canNavigate = !isCurrent && targetSymbol.isNotEmpty && widget.onPeerSelected != null;
+    final targetSymbol = (p.symbol ?? '').trim();
 
     return DataRow(
-      color: WidgetStateProperty.resolveWith<Color?>((states) => rowBg),
+      color: WidgetStateProperty.all(rowBg),
       cells: [
         DataCell(
-          MouseRegion(
-            cursor: canNavigate ? SystemMouseCursors.click : SystemMouseCursors.basic,
-            child: InkWell(
-              onTap: canNavigate ? () => widget.onPeerSelected!(targetSymbol) : null,
-              borderRadius: BorderRadius.circular(6),
-              child: Container(
-                decoration: isCurrent
-                    ? BoxDecoration(border: Border(left: BorderSide(color: context.marketTheme.positive, width: 2)))
-                    : null,
-                padding: EdgeInsets.only(left: isCurrent ? 8 : 10, top: 4, bottom: 4, right: 8),
-                alignment: Alignment.centerLeft,
+          InkWell(
+            onTap: targetSymbol.isNotEmpty && targetSymbol != widget.symbol
+                ? () => widget.onPeerSelected?.call(targetSymbol)
+                : null,
+            child: SizedBox(
+              width: 140,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Row(
-                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          targetSymbol.isNotEmpty ? targetSymbol : shortName,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: canNavigate ? context.marketTheme.chartBlue : context.textPrimary,
-                            fontSize: 12,
-                            decoration: canNavigate ? TextDecoration.underline : TextDecoration.none,
-                            decorationColor: context.marketTheme.chartBlue.withValues(alpha: 0.4),
+                        Flexible(
+                          child: Text(
+                            targetSymbol.isNotEmpty ? targetSymbol : (shortName.isNotEmpty ? shortName : '—'),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                              color: isCurrent ? context.marketTheme.positive : context.textPrimary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         if (isCurrent) ...[
                           const SizedBox(width: 4),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                             decoration: BoxDecoration(
-                              color: context.marketTheme.surface,
+                              color: context.marketTheme.positive.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(3),
                             ),
                             child: Text(
                               'YOU',
-                              style: TextStyle(fontSize: 9, color: context.marketTheme.textSecondary),
+                              style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: context.marketTheme.positive),
                             ),
                           ),
                         ],
@@ -382,43 +255,6 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
               alignment: Alignment.centerRight,
               child: col.cellBuilder(context, p, maxRoe),
             ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMetricBar(BuildContext context, double? val, double maxVal) {
-    if (val == null) {
-      return Text('—', style: TextStyle(color: context.textSecondary));
-    }
-    final pct = maxVal > 0 ? (val / maxVal).clamp(0.0, 1.0) : 0.0;
-    final color = val > 30 ? context.marketTheme.positive : (val > 15 ? context.marketTheme.chartBlue : context.marketTheme.negative);
-    final textColor = val > 30 ? context.marketTheme.positive : (val > 15 ? context.textSecondary : context.marketTheme.negative);
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(val.toStringAsFixed(2), style: TextStyle(color: textColor)),
-        const SizedBox(width: 6),
-        Container(
-          width: 40,
-          height: 3,
-          decoration: BoxDecoration(
-            color: context.marketTheme.surface,
-            borderRadius: BorderRadius.circular(2),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 40 * pct,
-                height: 3,
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ],
           ),
         ),
       ],
@@ -485,23 +321,16 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
 
   Widget _buildSectionHeader(BuildContext context, String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            title.toUpperCase(),
+            'Peer Comparison',
             style: TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.8,
-              color: context.textTertiary,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Container(
-              height: 1,
-              color: context.borderColor,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: context.textPrimary,
             ),
           ),
         ],

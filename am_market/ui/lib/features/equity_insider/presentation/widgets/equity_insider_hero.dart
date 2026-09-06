@@ -22,111 +22,84 @@ class EquityInsiderHero extends ConsumerWidget {
     return asyncData.when(
       data: (data) {
         if (data == null) return const Text('No profile data');
-        
+
+        final isPos = (data.dayChangePercent ?? 0) >= 0;
+        final deltaColor = isPos ? context.marketTheme.positive : context.marketTheme.negative;
+        final arrow = isPos ? '▲' : '▼';
+        final absChange = data.dayChange != null ? data.dayChange!.abs().toStringAsFixed(2) : '0.00';
+        final pctChange = data.dayChangePercent != null ? data.dayChangePercent!.abs().toStringAsFixed(2) : '0.00';
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                _buildLogo(context, data.companyName ?? data.symbol ?? symbol),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Wrap(
                         crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 12,
-                        runSpacing: 6,
+                        spacing: 8,
+                        runSpacing: 4,
                         children: [
                           Text(
                             data.symbol ?? symbol,
                             style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
                               color: context.textPrimary,
                               letterSpacing: -0.5,
                             ),
                           ),
                           _buildBadge(context, data.sector ?? 'NSE', isNeutral: true),
+                          if (data.industry != null && data.industry!.isNotEmpty)
+                            _buildBadge(context, data.industry!, isNeutral: true),
                           if (onSearchTap != null)
-                            InkWell(
-                              onTap: onSearchTap,
-                              borderRadius: BorderRadius.circular(20),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: context.cardColor,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: ModuleColors.market.withValues(alpha: 0.35),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.search_rounded,
-                                      size: 14,
-                                      color: ModuleColors.market,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'Search stock...',
-                                      style: TextStyle(
-                                        color: context.textTertiary,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
+                            _buildSearchCapsule(context),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 3),
                       Text(
                         data.companyName ?? 'National Stock Exchange · Live',
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: 12,
                           color: context.textSecondary,
                           letterSpacing: 0.1,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(width: 16),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
                       '₹${_formatCurrency(data.currentPrice)}',
                       style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
                         color: context.textPrimary,
-                        letterSpacing: -1,
+                        letterSpacing: -0.8,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${data.dayChangePercent != null && data.dayChangePercent! >= 0 ? '+' : ''}${_formatNum(data.dayChange)} today',
+                      '$arrow ₹$absChange ($pctChange%)',
                       style: TextStyle(
                         fontSize: 12,
-                        color: data.dayChangePercent != null && data.dayChangePercent! >= 0
-                            ? context.marketTheme.positive
-                            : context.marketTheme.negative,
+                        fontWeight: FontWeight.w600,
+                        color: deltaColor,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'NSE · Live',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: context.textSecondary,
-                      ),
-                    ),
+                    const SizedBox(height: 6),
+                    _buildWatchlistButton(context),
                   ],
                 ),
               ],
@@ -135,13 +108,106 @@ class EquityInsiderHero extends ConsumerWidget {
               const SizedBox(height: 12),
               _ExpandableDescription(text: data.description!),
             ],
-            const SizedBox(height: 16),
-            Container(height: 1, color: context.borderColor),
           ],
         );
       },
       loading: () => const SizedBox(height: 80, child: Center(child: CircularProgressIndicator())),
       error: (e, st) => Text('Error loading profile: $e', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+    );
+  }
+
+  Widget _buildLogo(BuildContext context, String name) {
+    final initials = name.trim().isNotEmpty
+        ? name.trim().split(RegExp(r'\s+')).take(2).map((e) => e[0].toUpperCase()).join()
+        : 'EQ';
+
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: ModuleColors.market.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: ModuleColors.market.withValues(alpha: 0.35),
+          width: 1,
+        ),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        initials,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: ModuleColors.market,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchCapsule(BuildContext context) {
+    return InkWell(
+      onTap: onSearchTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: context.cardColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: ModuleColors.market.withValues(alpha: 0.35),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.search_rounded,
+              size: 13,
+              color: ModuleColors.market,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              'Search stock...',
+              style: TextStyle(
+                color: context.textTertiary,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWatchlistButton(BuildContext context) {
+    return SizedBox(
+      height: 28,
+      child: OutlinedButton.icon(
+        onPressed: () {
+          // TODO: Wire to watchlist provider
+        },
+        icon: const Icon(Icons.add, size: 14, color: ModuleColors.market),
+        label: const Text(
+          'Add to Watchlist',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: ModuleColors.market,
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+          side: BorderSide(
+            color: ModuleColors.market.withValues(alpha: 0.4),
+            width: 1,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(6),
+          ),
+        ),
+      ),
     );
   }
 
@@ -151,10 +217,6 @@ class EquityInsiderHero extends ConsumerWidget {
     return formatter.format(val);
   }
 
-  String _formatNum(num? val) {
-    if (val == null) return '---';
-    return val.toStringAsFixed(2);
-  }
 
   Widget _buildBadge(BuildContext context, String text, {bool isPos = false, bool isNeg = false, bool isNeutral = false}) {
     Color bg;
@@ -171,16 +233,17 @@ class EquityInsiderHero extends ConsumerWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: fg.withValues(alpha: 0.3)),
       ),
       child: Text(
         text,
         style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w500,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
           color: fg,
         ),
       ),

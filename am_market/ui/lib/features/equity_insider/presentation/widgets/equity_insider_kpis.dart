@@ -214,12 +214,37 @@ class EquityInsiderKpis extends ConsumerWidget {
             return LayoutBuilder(
               builder: (context, constraints) {
                 final double totalWidth = constraints.maxWidth;
-                int cols = 7;
-                if (totalWidth < 380) {
+                if (totalWidth < 420) {
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                      mainAxisExtent: 80,
+                    ),
+                    itemCount: validMetrics.length,
+                    itemBuilder: (context, i) {
+                      final metric = validMetrics[i];
+                      return _buildKpi(
+                        context,
+                        label: metric.label,
+                        value: metric.value!,
+                        subtitle: metric.subtitle,
+                        isPositive: metric.isPositive,
+                        isNegative: metric.isNegative,
+                      );
+                    },
+                  );
+                }
+
+                int cols = 5;
+                if (totalWidth < 480) {
                   cols = 2;
-                } else if (totalWidth < 650) {
+                } else if (totalWidth < 700) {
                   cols = 3;
-                } else if (totalWidth < 900) {
+                } else if (totalWidth < 950) {
                   cols = 4;
                 }
 
@@ -229,10 +254,10 @@ class EquityInsiderKpis extends ConsumerWidget {
                 return Wrap(
                   spacing: spacing,
                   runSpacing: spacing,
-                  children: validMetrics.map((metric) {
+                  children: validMetrics.take(15).map((metric) {
                     return SizedBox(
                       width: itemWidth.clamp(100.0, 200.0),
-                      height: 95,
+                      height: 90,
                       child: _buildKpi(
                         context,
                         label: metric.label,
@@ -259,24 +284,21 @@ class EquityInsiderKpis extends ConsumerWidget {
 
   Widget _buildSectionHeader(BuildContext context, String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            title.toUpperCase(),
-            style: TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.8,
-              color: context.textTertiary,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Container(
-              height: 1,
-              color: context.borderColor,
-            ),
+          Row(
+            children: [
+              Text(
+                'Valuation & Key Metrics',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: context.textPrimary,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -295,13 +317,9 @@ class EquityInsiderKpis extends ConsumerWidget {
     if (isPositive) valColor = context.marketTheme.positive;
     if (isNegative) valColor = context.marketTheme.negative;
 
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: context.cardColor,
-        border: Border.all(color: context.borderColor),
-        borderRadius: BorderRadius.circular(10),
-      ),
+    return GlassCard(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      borderRadius: 12,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
@@ -309,28 +327,34 @@ class EquityInsiderKpis extends ConsumerWidget {
           Text(
             label.toUpperCase(),
             style: TextStyle(
-              fontSize: 9,
+              fontSize: 10,
               color: context.textTertiary,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.4,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value.toStringAsFixed(2),
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: valColor,
-            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           const Spacer(),
           Text(
+            value.toStringAsFixed(2),
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: valColor,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
             subtitle,
             style: TextStyle(
-              fontSize: 10,
+              fontSize: 12,
               color: context.textSecondary,
+              fontWeight: FontWeight.w500,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

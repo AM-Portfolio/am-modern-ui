@@ -20,12 +20,11 @@ class EquityInsiderSectionNavBar extends StatelessWidget {
     'Financials',
     'Shareholding',
     'Peers',
+    'Documents',
   ];
 
   @override
   Widget build(BuildContext context) {
-    final surfaceColor = context.colors.cardSurface;
-    final borderColor = context.colors.border;
     const activeColor = ModuleColors.market;
 
     Widget buildTabs() {
@@ -34,31 +33,26 @@ class EquityInsiderSectionNavBar extends StatelessWidget {
         children: List.generate(sections.length, (index) {
           final isActive = index == activeIndex;
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 3.0),
+            padding: const EdgeInsets.only(right: 24.0),
             child: InkWell(
               onTap: () => onTabSelected(index),
-              borderRadius: BorderRadius.circular(20),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: isActive
-                      ? activeColor.withValues(alpha: 0.15)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isActive
-                        ? activeColor.withValues(alpha: 0.6)
-                        : Colors.transparent,
-                    width: 1,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: isActive ? activeColor : Colors.transparent,
+                      width: 3,
+                    ),
                   ),
                 ),
                 child: Text(
                   sections[index],
                   style: TextStyle(
                     color: isActive ? activeColor : context.colors.textSecondary,
-                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                    fontSize: 13,
+                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                    fontSize: 15,
+                    letterSpacing: 0.3,
                   ),
                 ),
               ),
@@ -68,27 +62,23 @@ class EquityInsiderSectionNavBar extends StatelessWidget {
       );
     }
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          height: 48,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: surfaceColor.withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: borderColor),
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: context.colors.border,
+            width: 1,
           ),
-          child: isMobile
-              ? SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  child: buildTabs(),
-                )
-              : buildTabs(),
         ),
       ),
+      child: isMobile
+          ? SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              child: buildTabs(),
+            )
+          : buildTabs(),
     );
   }
 }
