@@ -58,15 +58,17 @@ class EquityInsiderHero extends ConsumerWidget {
                                 decoration: BoxDecoration(
                                   color: context.cardColor,
                                   borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: context.borderColor),
+                                  border: Border.all(
+                                    color: ModuleColors.market.withValues(alpha: 0.35),
+                                  ),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(
+                                    const Icon(
                                       Icons.search_rounded,
                                       size: 14,
-                                      color: context.colors.actionPrimaryBg,
+                                      color: ModuleColors.market,
                                     ),
                                     const SizedBox(width: 6),
                                     Text(

@@ -72,6 +72,7 @@ class _EquityInsiderChartState extends ConsumerState<EquityInsiderChart> {
                 scrollDirection: Axis.horizontal,
                 child: TimeFrameSelector(
                   selectedTimeFrame: _selectedTimeFrame,
+                  primaryColor: ModuleColors.market,
                   availableTimeFrames: const [
                     TimeFrame.oneDay,
                     TimeFrame.oneWeek,

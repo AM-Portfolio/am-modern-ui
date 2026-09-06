@@ -26,7 +26,7 @@ class EquityInsiderSectionNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final surfaceColor = context.colors.cardSurface;
     final borderColor = context.colors.border;
-    final activeColor = context.colors.actionPrimaryBg;
+    const activeColor = ModuleColors.market;
 
     Widget buildTabs() {
       return Row(

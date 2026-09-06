@@ -32,6 +32,14 @@ class RecentlyViewedStocksNotifier extends Notifier<List<String>> {
     }
   }
 
+  void removeView(String symbol) {
+    final sym = symbol.trim().toUpperCase();
+    if (sym.isEmpty) return;
+    final updated = List<String>.from(state);
+    updated.remove(sym);
+    state = updated;
+  }
+
   void clear() {
     state = const [];
   }

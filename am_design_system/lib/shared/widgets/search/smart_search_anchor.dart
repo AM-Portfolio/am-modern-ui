@@ -29,6 +29,9 @@ class SmartSearchAnchor extends StatefulWidget {
     this.category = 'STOCKS',
     this.searchHandler,
     this.recentSearches = const [],
+    this.onRemoveRecent,
+    this.onClearRecent,
+    this.accentColor,
   });
 
   final TextEditingController? controller;
@@ -40,6 +43,9 @@ class SmartSearchAnchor extends StatefulWidget {
   final String category;
   final Future<List<SecurityDocument>?> Function(String query)? searchHandler;
   final List<String> recentSearches;
+  final ValueChanged<String>? onRemoveRecent;
+  final VoidCallback? onClearRecent;
+  final Color? accentColor;
 
   @override
   State<SmartSearchAnchor> createState() => _SmartSearchAnchorState();
@@ -58,7 +64,6 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
   final SecurityExplorerApi _searchApi = SecurityExplorerApi();
   TypewriterHintController? _typewriterController;
   String _currentAnimatedHint = '';
-  bool _isAnimatingHint = false;
 
   @override
   void initState() {
@@ -69,16 +74,29 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
     if (widget.animatedHints != null && widget.animatedHints!.isNotEmpty) {
       _typewriterController = TypewriterHintController(
         hints: widget.animatedHints!,
-        onHintChanged: (text, isAnimating) {
+        onHintChanged: (text, _) {
           if (mounted) {
             setState(() {
               _currentAnimatedHint = text;
-              _isAnimatingHint = isAnimating;
             });
           }
         },
       );
       _typewriterController!.start();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant SmartSearchAnchor oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.recentSearches != widget.recentSearches) {
+      if (_overlayEntry != null && _controller.text.trim().isEmpty) {
+        if (widget.recentSearches.isEmpty) {
+          _removeOverlay();
+        } else {
+          _overlayEntry!.markNeedsBuild();
+        }
+      }
     }
   }
 
@@ -188,17 +206,19 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
     }
 
     _overlayEntry = OverlayEntry(
-      builder: (context) => Positioned(
-        width: widget.compact ? 320 : size.width,
-        child: CompositedTransformFollower(
-          link: _layerLink,
-          showWhenUnlinked: false,
-          offset: Offset(widget.compact ? -(320 - size.width) : 0, size.height + 6),
-          child: Material(
-            elevation: 8,
-            borderRadius: BorderRadius.circular(12),
-            color: context.colors.cardSurface,
-            child: Container(
+      builder: (context) {
+        final effectiveAccentColor = widget.accentColor ?? context.colors.actionPrimaryBg;
+        return Positioned(
+          width: widget.compact ? 320 : size.width,
+          child: CompositedTransformFollower(
+            link: _layerLink,
+            showWhenUnlinked: false,
+            offset: Offset(widget.compact ? -(320 - size.width) : 0, size.height + 6),
+            child: Material(
+              elevation: 8,
+              borderRadius: BorderRadius.circular(12),
+              color: context.colors.cardSurface,
+              child: Container(
               decoration: BoxDecoration(
                 color: context.colors.cardSurface,
                 borderRadius: BorderRadius.circular(12),
@@ -218,7 +238,7 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
+                          padding: const EdgeInsets.fromLTRB(14, 8, 8, 4),
                           child: Row(
                             children: [
                               Icon(Icons.history_rounded, size: 14, color: context.colors.textTertiary),
@@ -232,6 +252,25 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
                                   letterSpacing: 0.5,
                                 ),
                               ),
+                              const Spacer(),
+                              if (widget.onClearRecent != null)
+                                InkWell(
+                                  onTap: () {
+                                    widget.onClearRecent!();
+                                  },
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    child: Text(
+                                      'Clear',
+                                      style: TextStyle(
+                                        color: context.colors.textTertiary,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                             ],
                           ),
                         ),
@@ -252,7 +291,7 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
                               borderRadius: BorderRadius.circular(8),
                               onTap: () => _handleSelection(sym),
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                 child: Row(
                                   children: [
                                     Container(
@@ -267,7 +306,7 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
                                       child: Text(
                                         initial,
                                         style: TextStyle(
-                                          color: context.colors.actionPrimaryBg,
+                                          color: effectiveAccentColor,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 12,
                                         ),
@@ -284,7 +323,23 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
                                         ),
                                       ),
                                     ),
-                                    Icon(Icons.north_west_rounded, size: 14, color: context.colors.textTertiary),
+                                    if (widget.onRemoveRecent != null)
+                                      IconButton(
+                                        icon: Icon(
+                                          Icons.close_rounded,
+                                          size: 14,
+                                          color: context.colors.textTertiary,
+                                        ),
+                                        splashRadius: 14,
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                                        tooltip: 'Remove $sym',
+                                        onPressed: () {
+                                          widget.onRemoveRecent!(sym);
+                                        },
+                                      )
+                                    else
+                                      Icon(Icons.north_west_rounded, size: 14, color: context.colors.textTertiary),
                                   ],
                                 ),
                               ),
@@ -334,7 +389,7 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
                               child: Text(
                                 initial,
                                 style: TextStyle(
-                                  color: context.colors.actionPrimaryBg,
+                                  color: effectiveAccentColor,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 13,
                                 ),
@@ -399,8 +454,9 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
             ),
           ),
         ),
-      ),
-    );
+      );
+    },
+  );
 
     overlay.insert(_overlayEntry!);
   }
@@ -412,7 +468,7 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = context.colors.actionPrimaryBg;
+    final effectiveAccentColor = widget.accentColor ?? context.colors.actionPrimaryBg;
 
     return CompositedTransformTarget(
       link: _layerLink,
@@ -443,7 +499,7 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
           ),
           filled: true,
           fillColor: context.colors.scaffoldBackground,
-          prefixIcon: Icon(Icons.search, color: accentColor, size: widget.compact ? 18 : 22),
+          prefixIcon: Icon(Icons.search, color: effectiveAccentColor, size: widget.compact ? 18 : 22),
           suffixIcon: _isLoading
               ? Padding(
                   padding: const EdgeInsets.all(12),
@@ -452,7 +508,7 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
                     height: 14,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: accentColor,
+                      color: effectiveAccentColor,
                     ),
                   ),
                 )
@@ -480,7 +536,7 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(widget.compact ? 8 : 12),
-            borderSide: BorderSide(color: accentColor, width: 1.5),
+            borderSide: BorderSide(color: effectiveAccentColor, width: 1.5),
           ),
         ),
       ),

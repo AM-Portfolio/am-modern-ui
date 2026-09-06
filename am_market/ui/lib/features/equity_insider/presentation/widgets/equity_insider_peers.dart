@@ -437,7 +437,7 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
             Text(
               label,
               style: TextStyle(
-                color: isSorted ? context.marketTheme.positive : context.textTertiary,
+                color: isSorted ? ModuleColors.market : context.textTertiary,
               ),
             ),
             if (sortKey != null) ...[
@@ -447,7 +447,7 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
                     ? (_sortDescending ? Icons.arrow_downward : Icons.arrow_upward)
                     : Icons.unfold_more,
                 size: 10,
-                color: isSorted ? context.marketTheme.positive : context.textTertiary.withValues(alpha: 0.5),
+                color: isSorted ? ModuleColors.market : context.textTertiary.withValues(alpha: 0.5),
               ),
             ],
           ],
@@ -465,9 +465,9 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: isActive ? context.marketTheme.surface : context.cardColor.withValues(alpha: 0),
+          color: isActive ? ModuleColors.market.withValues(alpha: 0.15) : context.cardColor.withValues(alpha: 0),
           border: Border.all(
-            color: isActive ? context.marketTheme.border : context.borderColor,
+            color: isActive ? ModuleColors.market.withValues(alpha: 0.6) : context.borderColor,
           ),
           borderRadius: BorderRadius.circular(6),
         ),
@@ -475,8 +475,8 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
           label,
           style: TextStyle(
             fontSize: 10,
-            fontWeight: FontWeight.w500,
-            color: isActive ? context.marketTheme.positive : context.textSecondary,
+            fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+            color: isActive ? ModuleColors.market : context.textSecondary,
           ),
         ),
       ),

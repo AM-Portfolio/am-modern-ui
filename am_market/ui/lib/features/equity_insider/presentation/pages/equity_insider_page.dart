@@ -1,5 +1,4 @@
 import 'dart:ui';
-import '../../../../core/styles/market_theme_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
@@ -83,14 +82,17 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
 
   @override
   Widget build(BuildContext context) {
+    const marketCyan = ModuleColors.market;
+    final scaffoldBg = context.colors.scaffoldBackground;
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              context.colors.scaffoldBackground,
-              context.marketTheme.background,
-              context.marketTheme.surface,
+              scaffoldBg,
+              Color.alphaBlend(marketCyan.withValues(alpha: 0.05), scaffoldBg),
+              context.colors.surface,
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -108,7 +110,7 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
 
   Widget _buildEmptySearch() {
     final recent = ref.watch(recentlyViewedStocksProvider);
-    final accentColor = context.colors.actionPrimaryBg;
+    const accentColor = ModuleColors.market;
     final surfaceColor = context.colors.cardSurface;
     final borderColor = context.colors.border;
 
@@ -129,15 +131,15 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
                   border: Border.all(color: borderColor, width: 1.5),
                   boxShadow: [
                     BoxShadow(
-                      color: accentColor.withValues(alpha: 0.15),
-                      blurRadius: 20,
+                      color: accentColor.withValues(alpha: 0.25),
+                      blurRadius: 24,
                       spreadRadius: 2,
                     ),
                   ],
                 ),
                 alignment: Alignment.center,
-                child: Icon(
-                  Icons.analytics_outlined,
+                child: const Icon(
+                  Icons.insights_rounded,
                   size: 38,
                   color: accentColor,
                 ),
@@ -166,6 +168,13 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
                 controller: _controller,
                 animatedHints: _typewriterHints,
                 recentSearches: recent,
+                onRemoveRecent: (sym) {
+                  ref.read(recentlyViewedStocksProvider.notifier).removeView(sym);
+                },
+                onClearRecent: () {
+                  ref.read(recentlyViewedStocksProvider.notifier).clear();
+                },
+                accentColor: accentColor,
                 searchHandler: (q) => _sdkService.securityApi.search(
                   q,
                   smartRecommendations: true,
@@ -471,6 +480,13 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                           SmartSearchAnchor(
                             controller: widget.controller,
                             recentSearches: recent,
+                            onRemoveRecent: (sym) {
+                              ref.read(recentlyViewedStocksProvider.notifier).removeView(sym);
+                            },
+                            onClearRecent: () {
+                              ref.read(recentlyViewedStocksProvider.notifier).clear();
+                            },
+                            accentColor: ModuleColors.market,
                             searchHandler: (q) => widget.sdkService.securityApi.search(
                               q,
                               smartRecommendations: true,
