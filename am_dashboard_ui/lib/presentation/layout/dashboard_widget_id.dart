@@ -24,6 +24,7 @@ enum DashboardWidgetId {
   portfolioList,
   allocation,
   benchmarkComparison,
+  news,
 }
 
 extension DashboardWidgetIdX on DashboardWidgetId {
@@ -35,6 +36,7 @@ extension DashboardWidgetIdX on DashboardWidgetId {
         DashboardWidgetId.portfolioList => 'Your Portfolios',
         DashboardWidgetId.allocation => 'Allocation',
         DashboardWidgetId.benchmarkComparison => 'Performance Chart',
+        DashboardWidgetId.news => 'News',
       };
 
   String get module => switch (this) {
