@@ -39,8 +39,8 @@ class TradeSettingsCard extends StatelessWidget {
           if (!isMobile) ...[
             Container(
               padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(color: Colors.purple.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-              child: const Icon(Icons.tune, size: 16, color: Colors.purple),
+              decoration: BoxDecoration(color: ModuleColors.trade.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+              child: Icon(Icons.tune, size: 16, color: ModuleColors.trade),
             ),
             const SizedBox(width: 8),
             Text(

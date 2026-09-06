@@ -12,9 +12,12 @@ class DashboardChartWidget extends ConsumerWidget {
   const DashboardChartWidget({
     super.key,
     required this.userId,
+    this.accentColor,
   });
 
   final String userId;
+  /// Module brand for primary series (e.g. [ModuleColors.portfolio] on overview).
+  final Color? accentColor;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -36,6 +39,7 @@ class DashboardChartWidget extends ConsumerWidget {
               state: state,
               overlay: overlay,
               tfCode: tfCode,
+              accentColor: accentColor,
               legendTrailing: _AddSeriesButton(overlay: overlay, state: state),
             ),
           ),
@@ -111,12 +115,14 @@ class _ChartBody extends ConsumerWidget {
     required this.overlay,
     required this.tfCode,
     required this.legendTrailing,
+    this.accentColor,
   });
 
   final OverlayChartState state;
   final DashboardOverlayNotifier overlay;
   final String tfCode;
   final Widget legendTrailing;
+  final Color? accentColor;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -148,6 +154,7 @@ class _ChartBody extends ConsumerWidget {
         showEndValuePills: false,
         showExpandButton: false,
         preNormalizedPercent: true,
+        accentColor: accentColor,
         legendTrailing: legendTrailing,
         onRemoveSeries: (label) {
           for (final entry in state.series.entries) {

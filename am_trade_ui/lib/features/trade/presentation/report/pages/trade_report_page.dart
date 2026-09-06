@@ -149,7 +149,7 @@ class _TradeReportPageState extends ConsumerState<TradeReportPage> {
 
     return Row(
       children: [
-        const GlobalTimeFrameBar(),
+        GlobalTimeFrameBar(primaryColor: ModuleColors.trade),
         const SizedBox(width: 16),
         // Date Range Picker Display
         GestureDetector(

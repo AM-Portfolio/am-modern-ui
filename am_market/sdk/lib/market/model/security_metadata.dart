@@ -9,11 +9,14 @@ part of openapi.api;
 class SecurityMetadata {
   /// Returns a new [SecurityMetadata] instance.
   SecurityMetadata({
+    this.companyName,
     this.sector,
     this.industry,
     this.marketCapValue,
     this.marketCapType,
   });
+
+  String? companyName;
 
   ///
   /// Please note: This property should have been non-nullable! Since the specification file
@@ -107,6 +110,7 @@ class SecurityMetadata {
       }());
 
       return SecurityMetadata(
+        companyName: mapValueOfType<String>(json, r'companyName') ?? mapValueOfType<String>(json, r'company_name'),
         sector: mapValueOfType<String>(json, r'sector'),
         industry: mapValueOfType<String>(json, r'industry'),
         marketCapValue: mapValueOfType<int>(json, r'marketCapValue'),

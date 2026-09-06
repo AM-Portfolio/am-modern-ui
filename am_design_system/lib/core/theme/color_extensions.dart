@@ -70,6 +70,10 @@ extension ThemeColorExtensions on BuildContext {
   Color get premiumAction => colors.premiumActionPrimary;
   Color get promotionalHighlight => colors.promotionalHighlight;
 
+  Color get aiUsageUsed => colors.aiUsageUsed;
+  Color get aiUsageRemaining => colors.aiUsageRemaining;
+  Color get aiUsageTrack => colors.aiUsageTrack;
+
   // ==========================================================================
   // GLASSMORPHISM & OVERLAYS
   // ==========================================================================

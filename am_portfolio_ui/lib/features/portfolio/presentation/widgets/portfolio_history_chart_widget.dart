@@ -229,7 +229,7 @@ class _PortfolioHistoryChartWidgetState
                 iconSize: 16,
                 borderRadius: 10,
                 menuMaxHeight: 148,
-                primaryColor: AppColors.primary,
+                primaryColor: ModuleColors.portfolio,
                 backgroundColor:
                     isDark ? Colors.white.withValues(alpha: 0.06) : null,
                 borderColor:
@@ -797,7 +797,7 @@ class _PortfolioHistoryChartWidgetState
                         ChartFactory.area(
                           data: singleData ?? const [],
                           lines: resolvedLines,
-                          color: AppColors.primary,
+                          color: ModuleColors.portfolio,
                           config: CommonChartConfig(
                             xInterval: 1, // Evaluate every index so our sparse labels are shown
                             enableZoom: false,
@@ -1191,7 +1191,7 @@ class _EndOfLineBadge extends StatelessWidget {
     final Color badgeColor = color ??
         (isSecondary
             ? (lastPoint.y < 0 ? const Color(0xFF4A89FF) : const Color(0xFF00E676))
-            : AppColors.primary);
+            : ModuleColors.portfolio);
 
     return Positioned(
       top: (topPixels - 12 + nudge).clamp(0.0, chartHeight - 24),

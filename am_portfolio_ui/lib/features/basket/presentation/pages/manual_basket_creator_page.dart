@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'dart:math' as math;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
 
@@ -10,18 +9,19 @@ import '../providers/basket_providers.dart';
 import '../utils/basket_api_errors.dart';
 import '../widgets/substitute_selector.dart';
 import '../basket_navigation.dart';
+import '../flow/basket_flow_controller.dart';
 import '../widgets/shared/basket_flow_step.dart';
 import '../widgets/shared/basket_flow_stepper.dart';
 import '../widgets/shared/basket_sticky_action_bar.dart';
+import '../widgets/shared/basket_glass_dialogs.dart';
 import '../utils/basket_allocation_math.dart';
+import '../utils/basket_responsive.dart';
 import '../shared/widgets/basket_stat_pill.dart';
 import '../shared/widgets/basket_group_header.dart';
 import '../customize/widgets/customize_actual_cost_banner.dart';
 import '../customize/widgets/customize_allocation_summary_card.dart';
 import '../customize/widgets/customize_basket_comparison_tab.dart';
-import '../customize/widgets/customize_constituent_row_desktop.dart';
-import '../customize/widgets/customize_constituent_row_mobile.dart';
-import '../customize/widgets/customize_constituent_row_tablet.dart';
+import '../shared/widgets/basket_constituent_row.dart';
 import '../customize/widgets/customize_sector_comparison_tab.dart';
 import '../customize/customize_basket_formatters.dart';
 import '../customize/customize_basket_metrics.dart';
@@ -78,6 +78,8 @@ class _ManualBasketCreatorPageState
   double? _actualCost;
   double? _budgetVariance;
   final Map<String, int> _manualQtyOverrides = {};
+  int _calcEpoch = 0;
+  BasketOpportunity? _resumeRefreshBaseline;
 
   // ---------------------------------------------------------------------------
   // Lifecycle
@@ -91,18 +93,96 @@ class _ManualBasketCreatorPageState
     _items = List.from(_currentOpportunity.composition);
     _basketNameController.text = 'My ${_currentOpportunity.etfName} Basket';
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final flow = ref.read(basketFlowControllerProvider);
+      final flowNotifier = ref.read(basketFlowControllerProvider.notifier);
+      var restoredFromFlow = false;
+      if (flow.currentOpportunity?.etfIsin == widget.opportunity.etfIsin) {
+        restoredFromFlow = true;
+        setState(() {
+          _currentOpportunity = flow.currentOpportunity ?? widget.opportunity;
+          _items = List.from(_currentOpportunity.composition);
+          _excludedItems
+            ..clear()
+            ..addAll(flow.excludedSymbols);
+          _manualQtyOverrides
+            ..clear()
+            ..addAll(flow.manualQtyOverrides);
+          if (flow.investmentAmount != null) {
+            _amountController.text = flow.investmentAmount!.toInt().toString();
+          }
+          if (flow.basketName != null && flow.basketName!.isNotEmpty) {
+            _basketNameController.text = flow.basketName!;
+          }
+          if (flow.hasCalculated) {
+            _hasCalculated = true;
+            _actualCost = _currentOpportunity.actualInvestmentCost;
+            _budgetVariance = _currentOpportunity.budgetVariance;
+          }
+        });
+      } else {
+        if (!flow.isEmpty) {
+          flowNotifier.resetFlow();
+        }
+        flowNotifier.startFlow(widget.opportunity);
+      }
+
+      final defaultAmount =
+          widget.opportunity.minimumInvestmentAmount ?? 100000.0;
       if (_amountController.text.isEmpty) {
-        final defaultAmount =
-            widget.opportunity.minimumInvestmentAmount ?? 100000.0;
         _amountController.text = defaultAmount.toInt().toString();
+      }
+
+      final amount = double.tryParse(_amountController.text) ?? defaultAmount;
+      if (restoredFromFlow &&
+          _hasCalculated &&
+          _currentOpportunity.isQuantitiesCalculatedForAmount(amount)) {
+        // Instant hydrate from draft/session; refresh in background.
+        _scheduleBackgroundRefreshAfterResume();
+        return;
+      }
+      if (widget.opportunity.isQuantitiesCalculatedForAmount(defaultAmount) &&
+          !restoredFromFlow) {
+        setState(() {
+          _hasCalculated = true;
+          _actualCost = widget.opportunity.actualInvestmentCost;
+          _budgetVariance = widget.opportunity.budgetVariance;
+        });
+        return;
       }
       _scheduleRecalculate(immediate: true);
     });
   }
 
+  void _scheduleBackgroundRefreshAfterResume() {
+    final before = _currentOpportunity;
+    _resumeRefreshBaseline = before;
+    _scheduleRecalculate(immediate: true);
+  }
+
+  void _syncFlowSnapshot() {
+    final amount = double.tryParse(_amountController.text);
+    final flow = ref.read(basketFlowControllerProvider.notifier);
+    if (amount != null && amount > 0) {
+      flow.setInvestmentAmount(amount);
+    }
+    final name = _basketNameController.text.trim();
+    if (name.isNotEmpty) {
+      flow.setBasketName(name);
+    }
+    flow.setHasCalculated(_hasCalculated);
+    flow.updateOpportunity(
+      _currentOpportunity.copyWith(composition: _items),
+    );
+  }
+
   @override
   void dispose() {
     _debounceTimer?.cancel();
+    try {
+      _syncFlowSnapshot();
+    } catch (_) {
+      // Provider may already be disposed when leaving the section.
+    }
     _amountController.dispose();
     _basketNameController.dispose();
     _scrollController.dispose();
@@ -111,9 +191,9 @@ class _ManualBasketCreatorPageState
   }
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final isMobile = screenWidth < AmBreakpoints.mobile; // < 600
-    final isDesktop = screenWidth >= AmBreakpoints.tablet; // >= 1100
+    final isMobile = BasketResponsive.isMobile(context);
+    final isDesktop = BasketResponsive.isDesktop(context);
+    final isTablet = BasketResponsive.isTablet(context);
 
     final displayItems = _items;
 
@@ -137,8 +217,6 @@ class _ManualBasketCreatorPageState
       _excludedItems,
     );
 
-    final isTablet = !isMobile && !isDesktop;
-
     final flowTrailing = isMobile
         ? Row(
             mainAxisSize: MainAxisSize.min,
@@ -152,6 +230,20 @@ class _ManualBasketCreatorPageState
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                 ),
+              IconButton(
+                icon: Icon(Icons.donut_large_outlined,
+                    color: ModuleColors.portfolio),
+                tooltip: 'Portfolio Summary',
+                onPressed: () => _showMobileSummarySheet(
+                  context,
+                  displayItems,
+                  heldCount,
+                  subCount,
+                  missingCount,
+                  excludedCount,
+                  coverage,
+                ),
+              ),
               IconButton(
                 icon: const Icon(Icons.more_vert),
                 onPressed: () => _showMobileOptionsMenu(
@@ -169,7 +261,7 @@ class _ManualBasketCreatorPageState
         : isTablet
             ? IconButton(
                 icon: Icon(Icons.assessment_outlined,
-                    color: context.colors.actionPrimaryBg),
+                    color: ModuleColors.portfolio),
                 tooltip: 'Portfolio Summary',
                 onPressed: () =>
                     setState(() => _showSummaryDrawer = !_showSummaryDrawer),
@@ -201,19 +293,36 @@ class _ManualBasketCreatorPageState
       ],
     );
 
-    if (widget.embedded) {
-      return Column(
-        children: [
-          Expanded(child: body),
-          _buildBottomActionBar(coverage, displayItems),
-        ],
-      );
-    }
+    final page = widget.embedded
+        ? PopScope(
+            canPop: false,
+            onPopInvokedWithResult: (didPop, _) async {
+              if (didPop) return;
+              await _handleBack();
+            },
+            child: Column(
+              children: [
+                Expanded(child: body),
+                _buildBottomActionBar(coverage, displayItems),
+              ],
+            ),
+          )
+        : PopScope(
+            canPop: false,
+            onPopInvokedWithResult: (didPop, _) async {
+              if (didPop) return;
+              await _handleBack();
+            },
+            child: Scaffold(
+              backgroundColor: context.backgroundColor,
+              body: body,
+              bottomNavigationBar: _buildBottomActionBar(coverage, displayItems),
+            ),
+          );
 
-    return Scaffold(
-      backgroundColor: context.backgroundColor,
-      body: body,
-      bottomNavigationBar: _buildBottomActionBar(coverage, displayItems),
+    return Theme(
+      data: BasketPanelStyles.accentTheme(context),
+      child: page,
     );
   }
 }

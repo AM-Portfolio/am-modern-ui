@@ -66,7 +66,7 @@ class _MoversWidgetState extends State<MoversWidget> {
                     ),
                     child: Icon(
                       Icons.auto_graph_rounded,
-                      color: Theme.of(context).primaryColor,
+                      color: ModuleColors.portfolio,
                       size: 18,
                     ),
                   ),
@@ -87,7 +87,7 @@ class _MoversWidgetState extends State<MoversWidget> {
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                        backgroundColor: ModuleColors.portfolio.withValues(alpha: 0.1),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                       ),
                       child: Text(
@@ -95,7 +95,7 @@ class _MoversWidgetState extends State<MoversWidget> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: Theme.of(context).primaryColor,
+                          color: ModuleColors.portfolio,
                         ),
                       ),
                     ),
@@ -190,7 +190,7 @@ class _MoversWidgetState extends State<MoversWidget> {
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
-                        color: _showGainers ? context.colors.marketPositiveIndicator.withValues(alpha: 0.15) : Colors.transparent,
+                        color: _showGainers ? ModuleColors.portfolio.withValues(alpha: 0.15) : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Center(
@@ -199,7 +199,7 @@ class _MoversWidgetState extends State<MoversWidget> {
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: _showGainers ? FontWeight.bold : FontWeight.w500,
-                            color: _showGainers ? context.colors.marketPositiveIndicator : Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+                            color: _showGainers ? ModuleColors.portfolio : Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
                           ),
                         ),
                       ),
@@ -266,7 +266,9 @@ class _MoversWidgetState extends State<MoversWidget> {
     List<Stock> stocks,
     bool isGainers,
   ) {
-    final color = isGainers ? context.colors.marketPositiveIndicator : context.colors.marketNegativeIndicator;
+    final color = isGainers
+        ? ModuleColors.portfolio
+        : context.colors.marketNegativeIndicator;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

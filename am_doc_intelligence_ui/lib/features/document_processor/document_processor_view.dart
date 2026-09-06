@@ -563,7 +563,12 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         (_selectedBrokerType == 'GROWW' && _selectedDocType != null) ||
         (_selectedBrokerType == 'ANGEL_ONE' &&
             (_selectedDocType == 'COMBINE_PORTFOLIO' ||
-                _selectedDocType == 'TRADE_EQ'));
+                _selectedDocType == 'TRADE_EQ')) ||
+        (_selectedBrokerType == 'UPSTOX' &&
+            _selectedDocType == 'STOCK_PORTFOLIO') ||
+        (_selectedBrokerType == 'DHAN' &&
+            (_selectedDocType == 'PORTFOLIO_EQUITY' ||
+                _selectedDocType == 'PORTFOLIO_ETF'));
 
     final uploadVisual = Container(
       width: double.infinity,
@@ -697,7 +702,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                       : primary,
                 ),
                 label: Text(
-                  "Don't have the document? Download from ${_selectedBrokerType == 'ZERODHA' ? 'Zerodha Console' : _selectedBrokerType == 'ANGEL_ONE' ? 'Angel One' : 'Groww'}",
+                  "Don't have the document? Download from ${_brokerDownloadLabel(_selectedBrokerType!)}",
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
@@ -1133,6 +1138,67 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
           _buildStep(3, 'Upload the downloaded file here'),
         ];
       }
+    } else if (broker == 'UPSTOX') {
+      if (docType == 'STOCK_PORTFOLIO') {
+        url = 'https://pro.upstox.com/';
+        title = 'Download Upstox Portfolio';
+        steps = [
+          _buildStep(
+            1,
+            'Log in to Upstox Pro and go to Holdings, then click the three-dot menu (⋮) at the top right of the holdings table',
+            imagePath: 'assets/images/upstox_step1.png',
+          ),
+          _buildStep(
+            2,
+            'Select "Stock holdings report" from the menu',
+            imagePath: 'assets/images/upstox_step2.png',
+          ),
+          _buildStep(
+            3,
+            'On the Reports > Holding page, select a date if needed, then click the download icon at the top right',
+            imagePath: 'assets/images/upstox_step3.png',
+          ),
+          _buildStep(
+            4,
+            'Choose "Download XLSX" from the format menu',
+            imagePath: 'assets/images/upstox_step4.png',
+          ),
+          _buildStep(5, 'Upload the downloaded file here'),
+        ];
+      }
+    } else if (broker == 'DHAN') {
+      if (docType == 'PORTFOLIO_EQUITY' || docType == 'PORTFOLIO_ETF') {
+        url = 'https://web.dhan.co/';
+        title = 'Download Dhan Portfolio';
+        steps = [
+          _buildStep(
+            1,
+            'Log in to Dhan Web and click the profile icon at the top right',
+            imagePath: 'assets/images/dhan_step1.png',
+          ),
+          _buildStep(
+            2,
+            'Select "My Profile on Dhan" from the menu',
+            imagePath: 'assets/images/dhan_step2.png',
+          ),
+          _buildStep(
+            3,
+            'In Manage Account, click "Statements & Reports"',
+            imagePath: 'assets/images/dhan_step3.png',
+          ),
+          _buildStep(
+            4,
+            'Under "General Statement for:", select "Holding Summary"',
+            imagePath: 'assets/images/dhan_step4.png',
+          ),
+          _buildStep(
+            5,
+            'Choose the date and click "Email Holding Summary", then download the attachment from your registered email',
+            imagePath: 'assets/images/dhan_step5.png',
+          ),
+          _buildStep(6, 'Upload the downloaded file here'),
+        ];
+      }
     }
 
     showDialog(
@@ -1157,7 +1223,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                       }
                     },
                     icon: const Icon(Icons.open_in_new, size: 18),
-                    label: Text('Open ${broker == 'ZERODHA' ? 'Zerodha Console' : broker == 'ANGEL_ONE' ? 'Angel One' : 'Groww'}'),
+                    label: Text('Open ${_brokerDownloadLabel(broker)}'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     ),
@@ -1175,6 +1241,23 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         ],
       ),
     );
+  }
+
+  String _brokerDownloadLabel(String broker) {
+    switch (broker) {
+      case 'ZERODHA':
+        return 'Zerodha Console';
+      case 'ANGEL_ONE':
+        return 'Angel One';
+      case 'UPSTOX':
+        return 'Upstox';
+      case 'DHAN':
+        return 'Dhan';
+      case 'GROWW':
+        return 'Groww';
+      default:
+        return broker;
+    }
   }
 
   Widget _buildStep(int stepNumber, String text, {String? imagePath}) {

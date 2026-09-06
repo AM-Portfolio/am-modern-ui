@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/module/module_config.dart';
+
 /// Configuration for heatmap visual styling and spacing
 /// Controls padding, spacing, colors, and other visual properties
 class VisualConfig {
@@ -105,7 +107,7 @@ class VisualConfig {
     selectorPadding: const EdgeInsets.all(16),
     cardPadding: const EdgeInsets.all(16),
     selectorSpacing: 16,
-    accentColor: accentColor ?? Colors.blue,
+    accentColor: accentColor ?? ModuleColors.portfolio,
     borderRadius: 12,
     elevation: 3,
     animationDuration: const Duration(milliseconds: 250),

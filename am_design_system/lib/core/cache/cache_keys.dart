@@ -50,6 +50,13 @@ class MarketCacheKeys {
   static String sectors(String userId) => 'market_sectors_$userId';
 }
 
+/// Subscription / pricing — browser-persisted (Hive on web ≈ localStorage).
+class SubscriptionCacheKeys {
+  static const plans = 'subscription_plans_v1';
+
+  static String me(String userId) => 'subscription_me_v1_$userId';
+}
+
 /// Default TTL durations for different data types
 class CacheTTL {
   /// Short-lived data (5 minutes) - realtime market data
@@ -63,4 +70,10 @@ class CacheTTL {
 
   /// Very long-lived data (24 hours) - static reference data
   static const veryLong = Duration(hours: 24);
+
+  /// Plans catalog — browser-friendly reopen window
+  static const subscriptionPlans = Duration(minutes: 15);
+
+  /// Current subscription `/me` — slightly shorter than plans
+  static const subscriptionMe = Duration(minutes: 5);
 }

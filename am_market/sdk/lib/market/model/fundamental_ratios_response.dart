@@ -50,6 +50,8 @@ class FundamentalRatiosResponse {
     this.priceCagr3Y,
     this.priceCagr5Y,
     this.corporateActions,
+    this.roa,
+    this.dynamicRatios,
   });
 
   String? symbol;
@@ -60,6 +62,7 @@ class FundamentalRatiosResponse {
   double? pbRatio;
   double? roe;
   double? roce;
+  double? roa;
   double? dividendYield;
   double? debtToEquity;
   double? eps;
@@ -88,6 +91,9 @@ class FundamentalRatiosResponse {
   double? priceCagr1Y;
   double? priceCagr3Y;
   double? priceCagr5Y;
+
+  // Dynamic / Extensible Ratios for forward and backward compatibility
+  Map<String, dynamic>? dynamicRatios;
 
   // New Profile / Price Metrics
   String? description;
@@ -152,12 +158,14 @@ class FundamentalRatiosResponse {
     if (this.pbRatio != null) json[r'pbRatio'] = this.pbRatio;
     if (this.roe != null) json[r'roe'] = this.roe;
     if (this.roce != null) json[r'roce'] = this.roce;
+    if (this.roa != null) json[r'roa'] = this.roa;
     if (this.dividendYield != null) json[r'dividendYield'] = this.dividendYield;
     if (this.debtToEquity != null) json[r'debtToEquity'] = this.debtToEquity;
     if (this.eps != null) json[r'eps'] = this.eps;
     if (this.bookValue != null) json[r'bookValue'] = this.bookValue;
     if (this.marketCap != null) json[r'marketCap'] = this.marketCap;
     if (this.priceToSales != null) json[r'priceToSales'] = this.priceToSales;
+    if (this.dynamicRatios != null) json[r'dynamicRatios'] = this.dynamicRatios;
     return json;
   }
 
@@ -186,6 +194,11 @@ class FundamentalRatiosResponse {
       // Helper to coerce num -> double
       double? num2d(dynamic v) => v is num ? v.toDouble() : null;
 
+      // Extract dynamic / extensible ratio map safely for backward/forward compatibility
+      final dynamicRatios = json['dynamicRatios'] is Map
+          ? (json['dynamicRatios'] as Map).cast<String, dynamic>()
+          : (valuation.isNotEmpty ? Map<String, dynamic>.from(valuation) : null);
+
       return FundamentalRatiosResponse(
         // Identity fields from company section (unified endpoint) or flat
         symbol: mapValueOfType<String>(json, r'symbol') ??
@@ -210,6 +223,7 @@ class FundamentalRatiosResponse {
         pbRatio: num2d(valuation['pb']) ?? mapValueOfType<double>(json, r'pbRatio'),
         roe: num2d(valuation['roe']) ?? num2d(profitability['roe']) ?? mapValueOfType<double>(json, r'roe'),
         roce: num2d(valuation['roce']) ?? num2d(profitability['roce']) ?? mapValueOfType<double>(json, r'roce'),
+        roa: num2d(valuation['roa']) ?? num2d(profitability['roa']) ?? mapValueOfType<double>(json, r'roa'),
         dividendYield: num2d(valuation['dividendYield']) ?? mapValueOfType<double>(json, r'dividendYield'),
         debtToEquity: num2d(valuation['debtToEquity']) ?? mapValueOfType<double>(json, r'debtToEquity'),
         eps: num2d(valuation['eps']) ?? mapValueOfType<double>(json, r'eps'),
@@ -234,6 +248,7 @@ class FundamentalRatiosResponse {
         priceCagr1Y: num2d(analytics['priceCagr1Y']),
         priceCagr3Y: num2d(analytics['priceCagr3Y']),
         priceCagr5Y: num2d(analytics['priceCagr5Y']),
+        dynamicRatios: dynamicRatios,
         
         // Lists
         shareholding: json['shareholding'] is List ? json['shareholding'] as List : [],
@@ -283,6 +298,11 @@ class CompetitorPeer {
   double? roce;
   double? roa;
   double? evEbitda;
+  double? nim;
+  double? netNpa;
+  double? casa;
+  double? quickRatio;
+  Map<String, dynamic>? dynamicRatios;
 
   String? description;
   double? sectorMarketCapInr;
@@ -303,6 +323,11 @@ class CompetitorPeer {
     this.roce,
     this.roa,
     this.evEbitda,
+    this.nim,
+    this.netNpa,
+    this.casa,
+    this.quickRatio,
+    this.dynamicRatios,
     this.description,
     this.sectorMarketCapInr,
     this.sectorMarketCapUsd,
@@ -312,6 +337,7 @@ class CompetitorPeer {
     if (value is Map) {
       final json = value.cast<String, dynamic>();
       double? num2d(dynamic v) => v is num ? v.toDouble() : null;
+      final dyn = json['dynamicRatios'] is Map ? (json['dynamicRatios'] as Map).cast<String, dynamic>() : null;
       return CompetitorPeer(
         instrumentKey: json['instrumentKey']?.toString(),
         isin: json['isin']?.toString(),
@@ -327,6 +353,11 @@ class CompetitorPeer {
         roce: num2d(json['roce']),
         roa: num2d(json['roa']),
         evEbitda: num2d(json['evEbitda']),
+        nim: num2d(json['nim']),
+        netNpa: num2d(json['netNpa']),
+        casa: num2d(json['casa']),
+        quickRatio: num2d(json['quickRatio']),
+        dynamicRatios: dyn,
         description: json['description']?.toString(),
         sectorMarketCapInr: num2d(json['sectorMarketCapInr']),
         sectorMarketCapUsd: num2d(json['sectorMarketCapUsd']),

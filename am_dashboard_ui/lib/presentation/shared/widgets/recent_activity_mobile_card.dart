@@ -32,14 +32,17 @@ class RecentActivityMobileCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadii.card,
         child: AmGlassCard(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm + 4,
+            vertical: AppSpacing.sm + 4,
+          ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               _LetterAvatar(letter: initial, color: avatarColor),
-              const SizedBox(width: 10),
+              const SizedBox(width: AppSpacing.sm + 2),
               Expanded(
                 flex: 5,
                 child: Column(
@@ -47,26 +50,22 @@ class RecentActivityMobileCard extends StatelessWidget {
                   children: [
                     Text(
                       symbol,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                        color: onSurface,
-                        fontFamily: 'Inter',
-                      ),
+                      style: context.text.body().copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: onSurface,
+                          ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: AppSpacing.xxs + 1),
                     Text(
                       formatActivityDate(item.timestamp),
-                      style: TextStyle(
-                        color: onSurfaceVariant,
-                        fontSize: 11,
-                        fontFamily: 'Inter',
-                      ),
+                      style: context.text
+                          .caption()
+                          .copyWith(color: onSurfaceVariant),
                     ),
                     if (avgAtQty != null) ...[
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSpacing.xs),
                       Row(
                         children: [
                           Icon(
@@ -74,15 +73,14 @@ class RecentActivityMobileCard extends StatelessWidget {
                             size: 12,
                             color: onSurfaceVariant.withValues(alpha: 0.8),
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: AppSpacing.xs),
                           Flexible(
                             child: Text(
                               avgAtQty,
-                              style: TextStyle(
-                                color: onSurfaceVariant,
-                                fontSize: 10,
-                                fontFamily: 'Inter',
-                              ),
+                              style: context.text.caption().copyWith(
+                                    color: onSurfaceVariant,
+                                    fontSize: AppTypeScale.xs,
+                                  ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -93,29 +91,26 @@ class RecentActivityMobileCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: AppSpacing.sm - 2),
               SizedBox(
                 width: 88,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Total Invested',
-                      style: TextStyle(
-                        color: onSurfaceVariant,
-                        fontSize: 9,
-                        fontFamily: 'Inter',
-                      ),
+                      'Invested',
+                      style: context.text.caption().copyWith(
+                            color: onSurfaceVariant,
+                            fontSize: AppTypeScale.xs,
+                          ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppSpacing.xxs),
                     Text(
                       formatCurrencyInr(totalInvested),
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                        color: onSurface,
-                        fontFamily: 'Inter',
-                      ),
+                      style: context.text.label().copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: onSurface,
+                          ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -123,48 +118,39 @@ class RecentActivityMobileCard extends StatelessWidget {
                 ),
               ),
               Container(
+                margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
                 width: 1,
-                height: 52,
-                margin: const EdgeInsets.symmetric(horizontal: 8),
-                color: colors.border.withValues(alpha: 0.35),
+                height: 36,
+                color: colors.divider.withValues(alpha: 0.5),
               ),
               SizedBox(
                 width: 72,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    _StatusBadge(label: statusLabel(status), color: accent),
-                    const SizedBox(height: 4),
                     Text(
                       formatReturnPercent(item.profitLossPercent),
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                        color: accent,
-                        fontFamily: 'Inter',
-                      ),
-                      textAlign: TextAlign.right,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      formatPnlLine(item.profitLoss),
-                      style: TextStyle(
-                        fontSize: 9,
-                        color: accent.withValues(alpha: 0.9),
-                        fontFamily: 'Inter',
-                      ),
-                      textAlign: TextAlign.right,
+                      style: context.text.label().copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: accent,
+                          ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(
+                      formatPnlLine(item.profitLoss),
+                      style: context.text.caption().copyWith(
+                            color: onSurfaceVariant,
+                            fontSize: AppTypeScale.xs,
+                          ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    _StatusChip(label: statusLabel(status), color: accent),
                   ],
                 ),
-              ),
-              const SizedBox(width: 4),
-              Icon(
-                Icons.chevron_right,
-                size: 18,
-                color: colors.actionPrimaryBg,
               ),
             ],
           ),
@@ -183,29 +169,26 @@ class _LetterAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 38,
-      height: 38,
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.22),
-        shape: BoxShape.circle,
-        border: Border.all(color: color.withValues(alpha: 0.45)),
-      ),
+      width: 36,
+      height: 36,
       alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.18),
+        borderRadius: AppRadii.button,
+      ),
       child: Text(
         letter,
-        style: TextStyle(
-          fontWeight: FontWeight.w800,
-          fontSize: 16,
-          color: color,
-          fontFamily: 'Inter',
-        ),
+        style: context.text.sectionTitle(compact: true).copyWith(
+              color: color,
+              fontWeight: FontWeight.w800,
+            ),
       ),
     );
   }
 }
 
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.label, required this.color});
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.label, required this.color});
 
   final String label;
   final Color color;
@@ -213,21 +196,21 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm - 2,
+        vertical: AppSpacing.xxs,
+      ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppRadii.xs),
       ),
       child: Text(
         label,
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.w700,
-          fontSize: 9,
-          fontFamily: 'Inter',
-          letterSpacing: 0.3,
-        ),
+        style: context.text.caption().copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+              fontSize: AppTypeScale.xs,
+            ),
       ),
     );
   }

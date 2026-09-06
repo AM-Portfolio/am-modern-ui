@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:am_design_system/core/theme/app_glassmorphism_v2.dart';
 import 'package:am_design_system/core/theme/app_colors.dart';
+import 'package:am_design_system/core/theme/app_colors_theme.dart';
 import 'package:am_design_system/core/utils/conditional_mouse_region.dart';
 
 /// Secondary sidebar item model for structured navigation
@@ -78,15 +79,22 @@ class SecondarySidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+    final colors = Theme.of(context).extension<AppColorsTheme>();
+    final bg = isDark
+        ? (colors?.scaffoldBackground ?? AppColors.darkBackground)
+        : (colors?.scaffoldBackground ?? const Color(0xFFF9FAFB));
+    final borderColor = isDark
+        ? Colors.white.withOpacity(0.05)
+        : Colors.black.withOpacity(0.05);
+
     return Container(
       width: width,
       height: double.infinity,
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkBackground : const Color(0xFFF9FAFB),
+        color: bg,
         border: Border(
-           right: BorderSide(
-            color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+          right: BorderSide(
+            color: borderColor,
             width: 1,
           ),
         ),

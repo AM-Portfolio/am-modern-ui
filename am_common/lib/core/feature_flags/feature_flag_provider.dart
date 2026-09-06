@@ -28,3 +28,13 @@ final subscriptionPageEnabledProvider = Provider<bool>((ref) {
     featureFlagProvider(FeatureFlagKeys.subscriptionPageEnabled),
   );
 });
+
+final offlineReadsEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(featureFlagProvider(FeatureFlagKeys.offlineReadsV1));
+});
+
+final offlineWritesEnabledProvider = Provider<bool>((ref) {
+  final reads = ref.watch(offlineReadsEnabledProvider);
+  if (!reads) return false;
+  return ref.watch(featureFlagProvider(FeatureFlagKeys.offlineWritesV1));
+});

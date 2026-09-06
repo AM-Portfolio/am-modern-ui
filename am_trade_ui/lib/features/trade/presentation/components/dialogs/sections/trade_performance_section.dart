@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 import '../../../models/trade_holding_view_model.dart';
 import '../widgets/info_card.dart';
@@ -114,7 +115,7 @@ class TradePerformanceSection extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: _buildIndicator(context, 'Executions', '${holding.executionCount}', Colors.purple, Icons.swap_horiz),
+            child: _buildIndicator(context, 'Executions', '${holding.executionCount}', ModuleColors.trade, Icons.swap_horiz),
           ),
         ],
       ),

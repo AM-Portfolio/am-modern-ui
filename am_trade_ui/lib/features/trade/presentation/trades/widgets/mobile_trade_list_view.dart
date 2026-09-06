@@ -79,8 +79,8 @@ class MobileTradeListView extends StatelessWidget {
              // Filter Icon
              Container(
                 height: 48, width: 48,
-                decoration: BoxDecoration(color: context.colors.actionPrimaryBg.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                child: Icon(Icons.tune, color: context.colors.actionPrimaryBg),
+                decoration: BoxDecoration(color: ModuleColors.trade.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                child: Icon(Icons.tune, color: ModuleColors.trade),
              ),
              const SizedBox(width: 12),
              Expanded(
@@ -98,12 +98,12 @@ class MobileTradeListView extends StatelessWidget {
                       // Add Button
                       Container(
                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                         decoration: BoxDecoration(color: context.colors.actionPrimaryBg.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                         decoration: BoxDecoration(color: ModuleColors.trade.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
                          child: Row(
                             children: [
-                               Icon(Icons.add, size: 16, color: context.colors.actionPrimaryBg),
+                               Icon(Icons.add, size: 16, color: ModuleColors.trade),
                                const SizedBox(width: 4),
-                               Text("+ Add", style: TextStyle(color: context.colors.actionPrimaryBg, fontWeight: FontWeight.bold))
+                               Text("+ Add", style: TextStyle(color: ModuleColors.trade, fontWeight: FontWeight.bold))
                             ],
                          ),
                       ),
@@ -126,7 +126,7 @@ class MobileTradeListView extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         child: Container(
            decoration: BoxDecoration(
-              color: isSelected ? context.colors.actionPrimaryBg : Colors.transparent, 
+              color: isSelected ? ModuleColors.trade : Colors.transparent, 
               borderRadius: BorderRadius.circular(18),
               border: isSelected ? null : Border.all(color: context.colors.border)
            ),

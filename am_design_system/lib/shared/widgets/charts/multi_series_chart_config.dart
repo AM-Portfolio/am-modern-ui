@@ -27,6 +27,8 @@ class MultiSeriesChartConfig extends Equatable {
     this.expandedChartPath,
     this.showEndValuePills = true,
     this.preNormalizedPercent = false,
+    this.initialShowAbsoluteValues = false,
+    this.accentColor,
   });
 
   /// When null, [resolveSelectedSeries] uses [preferredSeriesOrder] + data labels.
@@ -62,6 +64,12 @@ class MultiSeriesChartConfig extends Equatable {
   /// Values are already % change from each series baseline (overlay charts).
   final bool preNormalizedPercent;
 
+  /// When true, chart opens by default in Absolute Price (123 / ₹) mode instead of % Change mode.
+  final bool initialShowAbsoluteValues;
+
+  /// Module brand for the first series (line + area fill). Later series keep the shared palette.
+  final Color? accentColor;
+
   List<String> resolveSelectedSeries(MultiSeriesChartData data) =>
       selectedSeries ?? data.labels(preferredOrder: preferredSeriesOrder);
 
@@ -80,5 +88,7 @@ class MultiSeriesChartConfig extends Equatable {
         expandedChartPath,
         showEndValuePills,
         preNormalizedPercent,
+        initialShowAbsoluteValues,
+        accentColor,
       ];
 }

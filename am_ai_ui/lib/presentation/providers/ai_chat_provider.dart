@@ -4,8 +4,11 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
 import '../../data/ai_chat_service.dart';
+import '../../data/ai_dio_web_credentials.dart';
 import '../../data/ai_intent_response.dart';
 import '../../data/ai_stream_event.dart';
+import 'ai_session_provider.dart';
+import 'ai_usage_provider.dart';
 
 // ─── Service Provider ─────────────────────────────────────────────────────────
 
@@ -16,10 +19,12 @@ final aiChatServiceProvider = Provider<AiChatService>((ref) {
       baseUrl: AiChatService.baseUrl,
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 45),
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+      extra: kIsWeb ? const {'withCredentials': true} : null,
     ),
   );
-  dio.interceptors.add(AuthInterceptor(SecureStorageService()));
+  if (kIsWeb) configureAiWebCredentials(dio);
+  AuthProviders.attachAuthInterceptor(dio);
   return AiChatService(dio);
 });
 
@@ -31,6 +36,7 @@ class ChatState {
   final String? sessionId;
   final String? activeTool;
   final String? currentTraceId;
+  final bool quotaExceeded;
 
   const ChatState({
     this.messages = const [],
@@ -38,6 +44,7 @@ class ChatState {
     this.sessionId,
     this.activeTool,
     this.currentTraceId,
+    this.quotaExceeded = false,
   });
 
   ChatState copyWith({
@@ -46,6 +53,7 @@ class ChatState {
     String? sessionId,
     String? activeTool,
     String? currentTraceId,
+    bool? quotaExceeded,
   }) =>
       ChatState(
         messages: messages ?? this.messages,
@@ -53,6 +61,7 @@ class ChatState {
         sessionId: sessionId ?? this.sessionId,
         activeTool: activeTool,
         currentTraceId: currentTraceId ?? this.currentTraceId,
+        quotaExceeded: quotaExceeded ?? this.quotaExceeded,
       );
 }
 
@@ -91,6 +100,7 @@ class AiChatNotifier extends Notifier<ChatState> {
       messages: [...state.messages, userMsg, assistantMsg],
       isLoading: true,
       activeTool: null,
+      quotaExceeded: false,
     );
 
     final service = ref.read(aiChatServiceProvider);
@@ -115,6 +125,9 @@ class AiChatNotifier extends Notifier<ChatState> {
           sessionId:
               response.sessionId.isNotEmpty ? response.sessionId : state.sessionId,
         );
+        unawaited(ref.read(aiUsageProvider.notifier).refresh());
+      } on AiQuotaExceededException catch (e) {
+        _handleQuotaExceeded(e);
       } catch (e) {
         final error = AiIntentResponse.error('Could not reach AI: $e');
         _updateLastMessage(
@@ -225,6 +238,10 @@ class AiChatNotifier extends Notifier<ChatState> {
             break;
         }
       }
+    } on AiQuotaExceededException catch (e) {
+      _handleQuotaExceeded(e);
+      _cancelToken = null;
+      return;
     } catch (e) {
       fullText.write('\nError: ');
       widgetId = 'ERROR';
@@ -281,7 +298,45 @@ class AiChatNotifier extends Notifier<ChatState> {
         activeTool: null,
         sessionId: finalSessionId,
       );
+      unawaited(ref.read(aiUsageProvider.notifier).refresh());
       _cancelToken = null;
+    }
+  }
+
+  void _handleQuotaExceeded(AiQuotaExceededException e) {
+    final lower = e.message.toLowerCase();
+    final isRealQuota = lower.contains('quota') ||
+        e.details.containsKey('limit') ||
+        e.details.containsKey('used');
+    final error = AiIntentResponse(
+      message: e.message,
+      widgetId: 'ERROR',
+      widgetParams: {
+        'reason': isRealQuota ? 'quota_exceeded' : 'subscription_error',
+        'code': isRealQuota ? 'QUOTA_EXCEEDED' : 'SUBSCRIPTION_ERROR',
+        ...e.details,
+      },
+      sessionId: state.sessionId ?? '',
+      toolsUsed: const [],
+      traceId: '',
+    );
+    _updateLastMessage(
+      text: error.message,
+      response: error,
+      isStreaming: false,
+      activeTool: null,
+    );
+    state = state.copyWith(
+      isLoading: false,
+      activeTool: null,
+      // Upgrade dialog only for genuine quota exhaustion
+      quotaExceeded: isRealQuota,
+    );
+  }
+
+  void clearQuotaExceeded() {
+    if (state.quotaExceeded) {
+      state = state.copyWith(quotaExceeded: false);
     }
   }
 
@@ -381,6 +436,25 @@ class AiChatNotifier extends Notifier<ChatState> {
   void clearChat() {
     stopGeneration();
     state = const ChatState();
+  }
+
+  /// Loads a persisted session from the gateway and replaces the local transcript.
+  Future<void> loadSession(String sessionId) async {
+    if (sessionId.isEmpty) return;
+    stopGeneration();
+    state = state.copyWith(isLoading: true, activeTool: null);
+    try {
+      final service = ref.read(aiSessionServiceProvider);
+      final detail = await service.getSession(sessionId);
+      state = ChatState(
+        messages: detail.toChatMessages(),
+        isLoading: false,
+        sessionId: detail.session.id,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, activeTool: null);
+      rethrow;
+    }
   }
 }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../../../domain/models/basket_detail.dart';
+import '../../shared/basket_panel_styles.dart';
 import 'bd_dashboard_math.dart';
 import 'bd_holdings_table.dart';
 
@@ -29,22 +30,7 @@ class BdHoldingsSection extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        color: context.cardColor.withValues(alpha: context.isDark ? 0.35 : 0.85),
-        border: Border.all(
-          color: context.isDark
-              ? Colors.white.withValues(alpha: 0.07)
-              : Colors.black.withValues(alpha: 0.06),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: context.isDark ? 0.2 : 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      decoration: BasketPanelStyles.glassCard(context),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,7 +54,7 @@ class BdHoldingsSection extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: context.colors.actionPrimaryBg.withValues(alpha: 0.12),
+                    color: ModuleColors.portfolio.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -76,7 +62,7 @@ class BdHoldingsSection extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: context.colors.actionPrimaryBg,
+                      color: ModuleColors.portfolio,
                     ),
                   ),
                 ),
@@ -86,11 +72,11 @@ class BdHoldingsSection extends StatelessWidget {
                   icon: Icon(
                     Icons.visibility_outlined,
                     size: 18,
-                    color: context.colors.actionPrimaryBg,
+                    color: ModuleColors.portfolio,
                   ),
                   label: Text(
                     'View Allocation',
-                    style: TextStyle(color: context.colors.actionPrimaryBg),
+                    style: TextStyle(color: ModuleColors.portfolio),
                   ),
                 ),
               ],
@@ -99,18 +85,43 @@ class BdHoldingsSection extends StatelessWidget {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-            child: Row(
-              children: BdHoldingsFilter.values.map((f) {
-                final selected = f == filter;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    label: Text(_filterLabel(f)),
-                    selected: selected,
-                    onSelected: (_) => onFilterChanged(f),
-                  ),
-                );
-              }).toList(),
+            child: Theme(
+              data: BasketPanelStyles.accentTheme(context),
+              child: Row(
+                children: BdHoldingsFilter.values.map((f) {
+                  final selected = f == filter;
+                  final accent = ModuleColors.portfolio;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Text(
+                        _filterLabel(f),
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                              color: selected
+                                  ? accent
+                                  : context.colors.textSecondary,
+                              fontWeight:
+                                  selected ? FontWeight.w700 : FontWeight.w500,
+                            ),
+                      ),
+                      selected: selected,
+                      onSelected: (_) => onFilterChanged(f),
+                      showCheckmark: selected,
+                      selectedColor: accent.withValues(alpha: 0.18),
+                      checkmarkColor: accent,
+                      backgroundColor: context.colors.cardSurface,
+                      side: BorderSide(
+                        color: selected
+                            ? accent.withValues(alpha: 0.45)
+                            : context.colors.border,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppRadii.button,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.sm),

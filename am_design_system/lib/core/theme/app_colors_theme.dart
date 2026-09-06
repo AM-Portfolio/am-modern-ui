@@ -28,11 +28,18 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
     required this.premiumGradientEnd,
     required this.premiumActionPrimary,
     required this.promotionalHighlight,
+    required this.aiUsageUsed,
+    required this.aiUsageRemaining,
+    required this.aiUsageTrack,
     required this.scaffoldBackground,
     required this.cardSurface,
     required this.surface,
     required this.border,
     required this.divider,
+    required this.authBackdropStart,
+    required this.authBackdropMid,
+    required this.authBackdropEnd,
+    required this.authParticleHighlight,
     required this.textPrimary,
     required this.textSecondary,
     required this.textTertiary,
@@ -66,6 +73,11 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
   final Color premiumActionPrimary;
   final Color promotionalHighlight;
 
+  // AI chat — token usage meter
+  final Color aiUsageUsed;
+  final Color aiUsageRemaining;
+  final Color aiUsageTrack;
+
   // Surfaces
   final Color scaffoldBackground;
   final Color cardSurface;
@@ -73,11 +85,25 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
   final Color border;
   final Color divider;
 
+  /// Auth shell backdrop gradient (login / register / forgot password).
+  final Color authBackdropStart;
+  final Color authBackdropMid;
+  final Color authBackdropEnd;
+
+  /// Particle highlight for [InteractiveBackground] on auth pages.
+  final Color authParticleHighlight;
+
   // Text
   final Color textPrimary;
   final Color textSecondary;
   final Color textTertiary;
   final Color textDisabled;
+
+  LinearGradient get authBackdropGradient => LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [authBackdropStart, authBackdropMid, authBackdropEnd],
+      );
 
   /// Dark theme semantic palette (maps to existing [AppColors] values).
   static const AppColorsTheme dark = AppColorsTheme(
@@ -100,11 +126,18 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
     premiumGradientEnd: Color(0xFF1B1B3A),
     premiumActionPrimary: Color(0xFF1B64F2),
     promotionalHighlight: Color(0xFFE87C00),
+    aiUsageUsed: AppColors.primary,
+    aiUsageRemaining: Color(0xFF4A4F57),
+    aiUsageTrack: Color(0xFF2A2E35),
     scaffoldBackground: AppColors.darkBackground,
     cardSurface: AppColors.darkCard,
     surface: AppColors.darkSurface,
     border: AppColors.darkBorder,
     divider: AppColors.darkDivider,
+    authBackdropStart: AppColors.darkBackground,
+    authBackdropMid: AppColors.darkBackgroundLight,
+    authBackdropEnd: AppColors.darkBackgroundDeep,
+    authParticleHighlight: AppColors.accentBlue,
     textPrimary: AppColors.textPrimaryDark,
     textSecondary: AppColors.textSecondaryDark,
     textTertiary: AppColors.textTertiaryDark,
@@ -132,11 +165,18 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
     premiumGradientEnd: Color(0xFFE3F2FD),
     premiumActionPrimary: Color(0xFF1B64F2),
     promotionalHighlight: Color(0xFFE87C00),
+    aiUsageUsed: AppColors.primary,
+    aiUsageRemaining: Color(0xFFD0D4DB),
+    aiUsageTrack: Color(0xFFE6E8ED),
     scaffoldBackground: AppColors.lightBackground,
     cardSurface: AppColors.lightCard,
     surface: AppColors.lightSurface,
     border: AppColors.lightBorder,
     divider: AppColors.lightDivider,
+    authBackdropStart: AppColors.lightAuthBackdropStart,
+    authBackdropMid: AppColors.lightAuthBackdropMid,
+    authBackdropEnd: AppColors.lightAuthBackdropEnd,
+    authParticleHighlight: AppColors.info,
     textPrimary: AppColors.textPrimaryLight,
     textSecondary: AppColors.textSecondaryLight,
     textTertiary: AppColors.textTertiaryLight,
@@ -164,15 +204,139 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
     premiumGradientEnd: Color(0xFF81D4FA),
     premiumActionPrimary: Color(0xFF0288D1),
     promotionalHighlight: Color(0xFFE87C00),
+    aiUsageUsed: Color(0xFF0288D1),
+    aiUsageRemaining: Color(0xFFBFE0F2),
+    aiUsageTrack: Color(0xFFD6EAF5),
     scaffoldBackground: Color(0xFFD1ECF9),
     cardSurface: Colors.white,
     surface: Color(0xFFD1ECF9),
     border: Color(0xFFBFE0F2),
     divider: Color(0xFFD6EAF5),
+    authBackdropStart: Color(0xFFE1F5FE),
+    authBackdropMid: Color(0xFFB3E5FC),
+    authBackdropEnd: Color(0xFF81D4FA),
+    authParticleHighlight: Color(0xFF0288D1),
     textPrimary: AppColors.textPrimaryLight,
     textSecondary: AppColors.textSecondaryLight,
     textTertiary: AppColors.textTertiaryLight,
     textDisabled: AppColors.textDisabledLight,
+  );
+
+  /// Midnight OLED — near-black surfaces for OLED displays.
+  static const AppColorsTheme midnightOled = AppColorsTheme(
+    actionPrimaryBg: Color(0xFF8B5CF6),
+    actionPrimaryFg: Colors.white,
+    statusSuccess: AppColors.success,
+    statusError: AppColors.error,
+    statusWarning: AppColors.warning,
+    statusInfo: AppColors.info,
+    statusNeutral: AppColors.neutral,
+    marketPositiveIndicator: Color(0xFF00C896),
+    marketNegativeIndicator: Color(0xFFF87171),
+    marketPositiveBg: Color(0x1A00C896),
+    marketNegativeBg: Color(0x1AF87171),
+    marketCardSurface: Color(0xFF121212),
+    marketBorderDefault: Color(0xFF2A2A2A),
+    marketBorderMuted: Color(0xFF1A1A1A),
+    premiumGradientStart: Color(0xFF1A0A1A),
+    premiumGradientCenter: Color(0xFF12081F),
+    premiumGradientEnd: Color(0xFF0A0A12),
+    premiumActionPrimary: Color(0xFF8B5CF6),
+    promotionalHighlight: Color(0xFFE87C00),
+    aiUsageUsed: Color(0xFF8B5CF6),
+    aiUsageRemaining: Color(0xFF3A3A3A),
+    aiUsageTrack: Color(0xFF1F1F1F),
+    scaffoldBackground: Color(0xFF000000),
+    cardSurface: Color(0xFF121212),
+    surface: Color(0xFF0A0A0A),
+    border: Color(0xFF2A2A2A),
+    divider: Color(0xFF1F1F1F),
+    authBackdropStart: Color(0xFF000000),
+    authBackdropMid: Color(0xFF0A0A0A),
+    authBackdropEnd: Color(0xFF121018),
+    authParticleHighlight: Color(0xFF8B5CF6),
+    textPrimary: AppColors.textPrimaryDark,
+    textSecondary: AppColors.textSecondaryDark,
+    textTertiary: AppColors.textTertiaryDark,
+    textDisabled: AppColors.textDisabledDark,
+  );
+
+  /// Imperial Gold — gin-golden champagne amber on deep warm black.
+  static const AppColorsTheme imperialGold = AppColorsTheme(
+    actionPrimaryBg: Color(0xFFC9A84C),
+    actionPrimaryFg: Color(0xFF1A1408),
+    statusSuccess: AppColors.success,
+    statusError: AppColors.error,
+    statusWarning: AppColors.warning,
+    statusInfo: AppColors.info,
+    statusNeutral: AppColors.neutral,
+    marketPositiveIndicator: Color(0xFF00C896),
+    marketNegativeIndicator: Color(0xFFF87171),
+    marketPositiveBg: Color(0x1A00C896),
+    marketNegativeBg: Color(0x1AF87171),
+    marketCardSurface: Color(0xFF1A1710),
+    marketBorderDefault: Color(0xFF4A3F24),
+    marketBorderMuted: Color(0xFF2E2818),
+    premiumGradientStart: Color(0xFF3D3420),
+    premiumGradientCenter: Color(0xFF2A2414),
+    premiumGradientEnd: Color(0xFF16120A),
+    premiumActionPrimary: Color(0xFFC9A84C),
+    promotionalHighlight: Color(0xFFE8C547),
+    aiUsageUsed: Color(0xFFC9A84C),
+    aiUsageRemaining: Color(0xFF4A4030),
+    aiUsageTrack: Color(0xFF2A2418),
+    scaffoldBackground: Color(0xFF0C0A06),
+    cardSurface: Color(0xFF1A1710),
+    surface: Color(0xFF14110B),
+    border: Color(0xFF4A3F24),
+    divider: Color(0xFF2E2818),
+    authBackdropStart: Color(0xFF0C0A06),
+    authBackdropMid: Color(0xFF1A1710),
+    authBackdropEnd: Color(0xFF2A2414),
+    authParticleHighlight: Color(0xFFE8D5A3),
+    textPrimary: AppColors.textPrimaryDark,
+    textSecondary: AppColors.textSecondaryDark,
+    textTertiary: AppColors.textTertiaryDark,
+    textDisabled: AppColors.textDisabledDark,
+  );
+
+  /// Cyber Neon / Rose Quartz — dark magenta & purple fusion.
+  static const AppColorsTheme cyberNeon = AppColorsTheme(
+    actionPrimaryBg: Color(0xFFE879F9),
+    actionPrimaryFg: Color(0xFF1A0A1A),
+    statusSuccess: AppColors.success,
+    statusError: AppColors.error,
+    statusWarning: AppColors.warning,
+    statusInfo: AppColors.info,
+    statusNeutral: AppColors.neutral,
+    marketPositiveIndicator: Color(0xFF00C896),
+    marketNegativeIndicator: Color(0xFFF87171),
+    marketPositiveBg: Color(0x1A00C896),
+    marketNegativeBg: Color(0x1AF87171),
+    marketCardSurface: Color(0xFF1A1024),
+    marketBorderDefault: Color(0xFF3D2A55),
+    marketBorderMuted: Color(0xFF2A1A3A),
+    premiumGradientStart: Color(0xFF3D1F4A),
+    premiumGradientCenter: Color(0xFF2A1540),
+    premiumGradientEnd: Color(0xFF1A0A2A),
+    premiumActionPrimary: Color(0xFFD946EF),
+    promotionalHighlight: Color(0xFFE87C00),
+    aiUsageUsed: Color(0xFFE879F9),
+    aiUsageRemaining: Color(0xFF4A3557),
+    aiUsageTrack: Color(0xFF2A1A3A),
+    scaffoldBackground: Color(0xFF0F0818),
+    cardSurface: Color(0xFF1A1024),
+    surface: Color(0xFF140C1E),
+    border: Color(0xFF3D2A55),
+    divider: Color(0xFF2A1A3A),
+    authBackdropStart: Color(0xFF0F0818),
+    authBackdropMid: Color(0xFF1A1024),
+    authBackdropEnd: Color(0xFF2A1540),
+    authParticleHighlight: Color(0xFFE879F9),
+    textPrimary: AppColors.textPrimaryDark,
+    textSecondary: AppColors.textSecondaryDark,
+    textTertiary: AppColors.textTertiaryDark,
+    textDisabled: AppColors.textDisabledDark,
   );
 
   @override
@@ -196,11 +360,18 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
     Color? premiumGradientEnd,
     Color? premiumActionPrimary,
     Color? promotionalHighlight,
+    Color? aiUsageUsed,
+    Color? aiUsageRemaining,
+    Color? aiUsageTrack,
     Color? scaffoldBackground,
     Color? cardSurface,
     Color? surface,
     Color? border,
     Color? divider,
+    Color? authBackdropStart,
+    Color? authBackdropMid,
+    Color? authBackdropEnd,
+    Color? authParticleHighlight,
     Color? textPrimary,
     Color? textSecondary,
     Color? textTertiary,
@@ -229,11 +400,19 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
       premiumGradientEnd: premiumGradientEnd ?? this.premiumGradientEnd,
       premiumActionPrimary: premiumActionPrimary ?? this.premiumActionPrimary,
       promotionalHighlight: promotionalHighlight ?? this.promotionalHighlight,
+      aiUsageUsed: aiUsageUsed ?? this.aiUsageUsed,
+      aiUsageRemaining: aiUsageRemaining ?? this.aiUsageRemaining,
+      aiUsageTrack: aiUsageTrack ?? this.aiUsageTrack,
       scaffoldBackground: scaffoldBackground ?? this.scaffoldBackground,
       cardSurface: cardSurface ?? this.cardSurface,
       surface: surface ?? this.surface,
       border: border ?? this.border,
       divider: divider ?? this.divider,
+      authBackdropStart: authBackdropStart ?? this.authBackdropStart,
+      authBackdropMid: authBackdropMid ?? this.authBackdropMid,
+      authBackdropEnd: authBackdropEnd ?? this.authBackdropEnd,
+      authParticleHighlight:
+          authParticleHighlight ?? this.authParticleHighlight,
       textPrimary: textPrimary ?? this.textPrimary,
       textSecondary: textSecondary ?? this.textSecondary,
       textTertiary: textTertiary ?? this.textTertiary,
@@ -280,12 +459,21 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
           Color.lerp(premiumActionPrimary, other.premiumActionPrimary, t)!,
       promotionalHighlight:
           Color.lerp(promotionalHighlight, other.promotionalHighlight, t)!,
+      aiUsageUsed: Color.lerp(aiUsageUsed, other.aiUsageUsed, t)!,
+      aiUsageRemaining: Color.lerp(aiUsageRemaining, other.aiUsageRemaining, t)!,
+      aiUsageTrack: Color.lerp(aiUsageTrack, other.aiUsageTrack, t)!,
       scaffoldBackground:
           Color.lerp(scaffoldBackground, other.scaffoldBackground, t)!,
       cardSurface: Color.lerp(cardSurface, other.cardSurface, t)!,
       surface: Color.lerp(surface, other.surface, t)!,
       border: Color.lerp(border, other.border, t)!,
       divider: Color.lerp(divider, other.divider, t)!,
+      authBackdropStart:
+          Color.lerp(authBackdropStart, other.authBackdropStart, t)!,
+      authBackdropMid: Color.lerp(authBackdropMid, other.authBackdropMid, t)!,
+      authBackdropEnd: Color.lerp(authBackdropEnd, other.authBackdropEnd, t)!,
+      authParticleHighlight:
+          Color.lerp(authParticleHighlight, other.authParticleHighlight, t)!,
       textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
       textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
       textTertiary: Color.lerp(textTertiary, other.textTertiary, t)!,

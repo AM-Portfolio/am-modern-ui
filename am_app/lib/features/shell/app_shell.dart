@@ -8,6 +8,7 @@ import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:get_it/get_it.dart';
 import 'package:am_common/am_common.dart' as common;
 import 'package:am_library/am_library.dart';
+import 'package:am_subscription_ui/am_subscription_ui.dart' as am_sub;
 
 import '../../core/navigation/cross_module_section_sequence.dart';
 import '../../core/navigation/cross_section_swipe_host.dart';
@@ -41,7 +42,10 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
   double _bottomNavScrollAccum = 0;
   static const double _bottomNavScrollThreshold = 12;
   Timer? _bottomNavHideTimer;
+  Timer? _securityAlertHideTimer;
   StreamSubscription<bool>? _marketGateSubscription;
+  StreamSubscription<List<SecurityEventModel>>? _securityEventsSub;
+  SecurityEventModel? _securityAlert;
 
   @override
   void initState() {
@@ -58,11 +62,18 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
       reverseCurve: Curves.easeInBack,
     );
     _bottomNavFactor = Tween<double>(begin: 0.0, end: 1.0).animate(bottomNavCurve);
+    // Drive overlay consumers with the linear controller value so layout
+    // lift stays in sync with show/hide (curved factor overshoots).
+    _bottomNavController.addListener(() {
+      GlobalBottomNavVisibility.setFactor(_bottomNavController.value);
+    });
+    GlobalBottomNavVisibility.setFactor(_bottomNavController.value);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkInitialAuthAndConnect();
       _restoreSessionNav();
       _seedPortfolioSelectionFromSession();
+      _startSecurityAlertsIfWeb();
     });
     
     _showBottomNavWithIdleHide();
@@ -71,10 +82,49 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
   @override
   void dispose() {
     _bottomNavHideTimer?.cancel();
+    _securityAlertHideTimer?.cancel();
     _marketGateSubscription?.cancel();
     _marketGateSubscription = null;
+    _securityEventsSub?.cancel();
+    if (kIsWeb) {
+      AuthProviders.securityAlertService.stop();
+    }
     _bottomNavController.dispose();
     super.dispose();
+  }
+
+  void _startSecurityAlertsIfWeb() {
+    if (!kIsWeb) return;
+    final service = AuthProviders.securityAlertService;
+    service.start();
+    _securityEventsSub ??= service.events.listen((events) {
+      if (!mounted) return;
+      final next = events.isNotEmpty ? events.first : null;
+      if (next == null) {
+        _securityAlertHideTimer?.cancel();
+        setState(() => _securityAlert = null);
+        return;
+      }
+      if (_securityAlert?.eventId == next.eventId) return;
+      _presentSecurityAlert(next);
+    });
+  }
+
+  void _presentSecurityAlert(SecurityEventModel event) {
+    _securityAlertHideTimer?.cancel();
+    setState(() => _securityAlert = event);
+    _securityAlertHideTimer = Timer(const Duration(seconds: 5), () {
+      unawaited(_acknowledgeSecurityAlert());
+    });
+  }
+
+  Future<void> _acknowledgeSecurityAlert() async {
+    final alert = _securityAlert;
+    if (alert == null) return;
+    _securityAlertHideTimer?.cancel();
+    await AuthProviders.securityAlertService.acknowledge(alert.eventId);
+    if (!mounted) return;
+    setState(() => _securityAlert = null);
   }
 
   Future<void> _startMarketStreamingGate() async {
@@ -510,7 +560,8 @@ final userId =
                     );
                   }
                 },
-                child: Scaffold(
+                child: common.OfflineShell(
+                  child: Scaffold(
                   // Body draws under the floating overlay nav — no reserved slot.
                   extendBody: !isDesktop,
                   body: Stack(
@@ -527,13 +578,33 @@ final userId =
                               moduleShareUrls: AppRoutes.navTitleToDefaultPath,
                               onThemeToggle: () {
                                 try {
-                                  context.read<ThemeCubit>().toggleTheme();
+                                  final cubit = context.read<ThemeCubit>();
+                                  showThemeModePickerDialog(
+                                    context: context,
+                                    currentMode: cubit.state.mode,
+                                    onSelected: (mode) {
+                                      cubit.setTheme(mode);
+                                    },
+                                  );
                                 } catch (e) {
-                                  debugPrint('Theme toggle error: $e');
+                                  debugPrint('Theme picker error: $e');
                                 }
                               },
-                              onLogout: () =>
-                                  context.read<AuthCubit>().logout(),
+                              onLogout: () async {
+                                final uid = authState.user.id;
+                                if (GetIt.I.isRegistered<common.OfflineSyncEngine>() &&
+                                    uid.isNotEmpty) {
+                                  await GetIt.I<common.OfflineSyncEngine>()
+                                      .clearUser(uid);
+                                }
+                                if (GetIt.I.isRegistered<am_sub.SubscriptionCubit>()) {
+                                  await GetIt.I<am_sub.SubscriptionCubit>()
+                                      .invalidateCache();
+                                }
+                                if (context.mounted) {
+                                  await context.read<AuthCubit>().logout();
+                                }
+                              },
                               onProfileTap: () =>
                                   context.go(AppRoutes.profile),
                               onNavigate: (title) =>
@@ -641,8 +712,24 @@ final userId =
                             ),
                           ),
                         ),
+                      if (kIsWeb && _securityAlert != null)
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          child: SecurityAlertBanner(
+                            event: _securityAlert!,
+                            onAcknowledge: () async {
+                              await _acknowledgeSecurityAlert();
+                            },
+                            onReviewSessions: () {
+                              context.go(AppRoutes.activeSessions);
+                            },
+                          ),
+                        ),
                     ],
                   ),
+                ),
                 ),
               );
             },

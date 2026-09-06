@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 import '../../../../providers/trade_internal_providers.dart';
 import '../../../holdings/components/trade_holdings_advanced_template.dart';
@@ -74,7 +75,7 @@ class SimilarTradesSection extends ConsumerWidget {
       gradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [Colors.blue.shade600.withOpacity(0.08), Colors.blue.shade600.withOpacity(0.03)],
+        colors: [ModuleColors.trade.withOpacity(0.08), ModuleColors.trade.withOpacity(0.03)],
       ),
       borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
       border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1))),
@@ -84,10 +85,10 @@ class SimilarTradesSection extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.blue.shade600.withOpacity(0.15),
+            color: ModuleColors.trade.withOpacity(0.15),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(Icons.history, size: 20, color: Colors.blue.shade600),
+          child: Icon(Icons.history, size: 20, color: ModuleColors.trade),
         ),
         const SizedBox(width: 12),
         Text(
@@ -103,18 +104,18 @@ class SimilarTradesSection extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.blue.shade600.withOpacity(0.1),
+            color: ModuleColors.trade.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.blue.shade600.withOpacity(0.3)),
+            border: Border.all(color: ModuleColors.trade.withOpacity(0.3)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.filter_alt, size: 14, color: Colors.blue.shade600),
+              Icon(Icons.filter_alt, size: 14, color: ModuleColors.trade),
               const SizedBox(width: 6),
               Text(
                 'Symbol: $symbol',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.blue.shade600),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: ModuleColors.trade),
               ),
             ],
           ),

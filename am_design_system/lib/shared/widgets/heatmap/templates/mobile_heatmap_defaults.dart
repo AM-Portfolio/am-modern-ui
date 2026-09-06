@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/module/module_config.dart';
 import '../../selectors/selectors.dart';
 import '../configs/display_config.dart';
 import '../configs/interaction_config.dart';
@@ -45,7 +46,7 @@ class MobileHeatmapDefaults {
       selectorPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       cardPadding: const EdgeInsets.all(12),
       selectorSpacing: 8,
-      accentColor: accentColor ?? Colors.blue,
+      accentColor: accentColor ?? ModuleColors.portfolio,
       borderRadius: 8,
       elevation: 2,
       animationDuration: const Duration(milliseconds: 250),

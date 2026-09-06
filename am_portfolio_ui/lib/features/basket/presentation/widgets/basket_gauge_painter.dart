@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart';
 import 'dart:math' as math;
 
 class BasketGaugePainter extends CustomPainter {
@@ -10,10 +11,10 @@ class BasketGaugePainter extends CustomPainter {
 
   BasketGaugePainter({
     required this.percentage,
-    this.fillColor = Colors.greenAccent,
+    Color? fillColor,
     this.backgroundColor = Colors.white24,
     this.strokeWidth = 12.0,
-  });
+  }) : fillColor = fillColor ?? ModuleColors.portfolio;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -125,7 +126,7 @@ class _AnimatedRadialGaugeState extends State<AnimatedRadialGauge>
                 size: Size(widget.size, widget.size),
                 painter: BasketGaugePainter(
                   percentage: _animation.value,
-                  fillColor: widget.fillColor ?? Colors.greenAccent,
+                  fillColor: widget.fillColor ?? ModuleColors.portfolio,
                 ),
               ),
               Column(

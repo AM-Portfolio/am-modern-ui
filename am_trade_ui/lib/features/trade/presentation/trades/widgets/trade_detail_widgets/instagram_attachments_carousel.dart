@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 import '../../../models/trade_holding_view_model.dart';
 
@@ -49,7 +50,7 @@ class _InstagramAttachmentsCarouselState extends State<InstagramAttachmentsCarou
           padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
           child: Row(
             children: [
-              Icon(Icons.image_rounded, size: 24, color: Theme.of(context).primaryColor),
+              Icon(Icons.image_rounded, size: 24, color: ModuleColors.trade),
               const SizedBox(width: 12),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,7 +107,7 @@ class _InstagramAttachmentsCarouselState extends State<InstagramAttachmentsCarou
                           height: 8,
                           decoration: BoxDecoration(
                             color: _currentIndex == index
-                                ? Theme.of(context).primaryColor
+                                ? ModuleColors.trade
                                 : Theme.of(context).colorScheme.outline.withOpacity(0.3),
                             borderRadius: BorderRadius.circular(4),
                           ),
@@ -217,7 +218,7 @@ class _InstagramAttachmentsCarouselState extends State<InstagramAttachmentsCarou
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                     decoration: BoxDecoration(
-                                      color: Theme.of(context).primaryColor.withOpacity(0.85),
+                                      color: ModuleColors.trade.withOpacity(0.85),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: Text(
@@ -301,7 +302,7 @@ class _InstagramAttachmentsCarouselState extends State<InstagramAttachmentsCarou
                                     ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
                                     : null,
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
+                                valueColor: AlwaysStoppedAnimation<Color>(ModuleColors.trade),
                               ),
                             );
                           },

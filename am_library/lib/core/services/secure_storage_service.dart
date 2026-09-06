@@ -28,6 +28,9 @@ class SecureStorageService {
   static const String _userEmailKey = 'user_email';
   static const String _userDisplayNameKey = 'user_display_name';
   static const String _tokenExpiryKey = 'token_expiry';
+  static const String _lastAppUnlockAtKey = 'last_app_unlock_at';
+
+  static const String _cookieSessionMarker = 'bff_cookie_session';
 
   static String get _fallbackToken {
     const token = String.fromEnvironment('AM_DEV_TOKEN');
@@ -58,6 +61,9 @@ class SecureStorageService {
   /// Get access token — cache-first; optional expiry validation for authenticated calls.
   Future<String?> getAccessToken({bool checkExpiry = true}) async {
     if (_cachedAccessToken != null && _cachedAccessToken!.isNotEmpty) {
+      if (_cachedAccessToken == _cookieSessionMarker) {
+        return _cachedAccessToken;
+      }
       if (checkExpiry && _isJwtExpired(_cachedAccessToken!)) {
         return null;
       }
@@ -163,6 +169,25 @@ class SecureStorageService {
     return name;
   }
 
+  // ── App lock (mobile) ────────────────────────────────────────────────────
+
+  Future<void> saveLastAppUnlockAt(DateTime unlockedAt) async {
+    await _storage.write(
+      key: _lastAppUnlockAtKey,
+      value: unlockedAt.toIso8601String(),
+    );
+  }
+
+  Future<DateTime?> getLastAppUnlockAt() async {
+    final raw = await _storage.read(key: _lastAppUnlockAtKey);
+    if (raw == null || raw.isEmpty) return null;
+    return DateTime.tryParse(raw);
+  }
+
+  Future<void> clearLastAppUnlockAt() async {
+    await _storage.delete(key: _lastAppUnlockAtKey);
+  }
+
   // ── Expiry ───────────────────────────────────────────────────────────────
 
   /// Save token expiry timestamp
@@ -204,6 +229,7 @@ class SecureStorageService {
   Future<bool> isTokenExpired() async {
     final token = await _storage.read(key: _accessTokenKey);
     if (token == null || token.isEmpty) return true;
+    if (token == _cookieSessionMarker) return false;
     if (token == 'mock_dev_token') return false;
     
     // Check JWT exp claim first
@@ -227,6 +253,20 @@ class SecureStorageService {
     _cachedUserDisplayName = null;
   }
 
+  Future<void> saveCookieSessionUser({
+    required String userId,
+    required String email,
+    String? displayName,
+  }) async {
+    await saveUserId(userId);
+    await saveUserEmail(email);
+    if (displayName != null && displayName.isNotEmpty) {
+      await saveUserDisplayName(displayName);
+    }
+    await saveAccessToken(_cookieSessionMarker);
+    await saveTokenExpiry(DateTime.now().add(const Duration(days: 7)));
+  }
+
   // ── Clearing ─────────────────────────────────────────────────────────────
 
   /// Clear all stored data (persistent + in-memory cache).
@@ -244,5 +284,6 @@ class SecureStorageService {
     await _storage.delete(key: _userEmailKey);
     await _storage.delete(key: _userDisplayNameKey);
     await _storage.delete(key: _tokenExpiryKey);
+    await _storage.delete(key: _lastAppUnlockAtKey);
   }
 }

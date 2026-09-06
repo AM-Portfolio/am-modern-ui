@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 import '../../internal/domain/entities/portfolio_summary.dart';
 import '../cubit/portfolio_cubit.dart';
@@ -68,7 +69,7 @@ class PortfolioAnalysisWidget extends StatelessWidget {
       Colors.green,
       Colors.orange,
       Colors.red,
-      Colors.purple,
+      ModuleColors.portfolio,
       Colors.teal,
       Colors.grey,
     ];

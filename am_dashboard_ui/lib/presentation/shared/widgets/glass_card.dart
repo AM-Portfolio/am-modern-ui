@@ -41,14 +41,18 @@ class AmGlassCard extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Container(
           decoration: BoxDecoration(
-            color: context.glassOverlay(0.04),
+            color: colors.cardSurface.withValues(alpha: 0.92),
             borderRadius: AppRadii.dialog,
             border: Border.all(
-              color: context.glassOverlay(0.08),
+              color: ModuleColors.isBrandSynced
+                  ? ModuleColors.dashboard.withValues(alpha: 0.22)
+                  : context.glassOverlay(0.08),
             ),
             boxShadow: [
               BoxShadow(
-                color: context.shadow(0.2),
+                color: ModuleColors.isBrandSynced
+                    ? ModuleColors.dashboard.withValues(alpha: 0.12)
+                    : context.shadow(0.2),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),

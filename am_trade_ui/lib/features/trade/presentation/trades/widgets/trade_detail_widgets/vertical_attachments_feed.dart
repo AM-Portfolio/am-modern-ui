@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 import '../../../models/trade_holding_view_model.dart';
 
@@ -41,10 +42,10 @@ class _VerticalAttachmentsFeedState extends State<VerticalAttachmentsFeed> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withOpacity(0.15),
+                  color: ModuleColors.trade.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(Icons.image_rounded, size: 24, color: Theme.of(context).primaryColor),
+                child: Icon(Icons.image_rounded, size: 24, color: ModuleColors.trade),
               ),
               const SizedBox(width: 12),
               Column(
@@ -178,7 +179,7 @@ class _VerticalAttachmentsFeedState extends State<VerticalAttachmentsFeed> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor.withOpacity(0.9),
+                        color: ModuleColors.trade.withOpacity(0.9),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -207,13 +208,13 @@ class _VerticalAttachmentsFeedState extends State<VerticalAttachmentsFeed> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor.withOpacity(0.1),
+              color: ModuleColors.trade.withOpacity(0.1),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(
               Icons.image_not_supported_outlined,
               size: 48,
-              color: Theme.of(context).primaryColor.withOpacity(0.6),
+              color: ModuleColors.trade.withOpacity(0.6),
             ),
           ),
           const SizedBox(height: 16),

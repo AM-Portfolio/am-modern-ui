@@ -34,6 +34,7 @@ class PortfolioBasketsWebPage extends StatelessWidget {
             child: BasketSectionNavigator(
               userId: userId,
               portfolioId: portfolioId!,
+              showInlineToggle: true,
             ),
           ),
         ],

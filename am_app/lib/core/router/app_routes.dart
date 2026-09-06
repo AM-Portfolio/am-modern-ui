@@ -23,6 +23,10 @@ class AppRoutes {
   static const subscription = '/app/subscription';
   static const deleteAccount = '/delete-account';
   static const chartCompare = '/app/chart/compare';
+  static const appLock = '/app-lock';
+  static const scanWebLogin = '/app/scan-web-login';
+  static const scanWebLoginConfirm = '/app/scan-web-login/confirm';
+  static const activeSessions = '/app/active-sessions';
 
   /// Legal pages must be readable without login (Play Store / App Store reviewers).
   static const publicLegalRoutes = {
@@ -195,6 +199,7 @@ class AppRoutes {
     forgotPassword,
     resetPassword,
     verifyEmail,
+    appLock,
   };
 
   /// Strip a trailing slash (except root) so `/reset-password/` matches allowlists.

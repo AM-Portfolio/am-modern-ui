@@ -11,6 +11,9 @@ export 'core/theme/app_colors.dart';
 export 'core/theme/app_colors_theme.dart';
 export 'core/theme/app_spacing.dart';
 export 'core/theme/app_radii.dart';
+export 'core/theme/app_type_scale.dart';
+export 'core/theme/app_text_styles.dart';
+export 'core/theme/app_component_sizes.dart';
 export 'core/theme/color_extensions.dart';
 export 'core/theme/app_typography.dart';
 export 'core/theme/app_animations.dart';
@@ -20,6 +23,7 @@ export 'core/theme/cubit/theme_cubit.dart';
 export 'core/theme/theme_repository.dart';
 export 'core/config/design_system_config.dart';
 export 'core/config/design_system_provider.dart';
+export 'core/config/brand_config.dart';
 
 // Contracts
 export 'core/contracts/design_contract.dart';
@@ -32,6 +36,7 @@ export 'core/utils/conditional_mouse_region.dart';
 
 // Constants & API Endpoints
 export 'core/constants/app_constants.dart';
+export 'core/constants/app_config.dart';
 export 'core/constants/ui_constants.dart';
 export 'core/constants/breakpoints.dart';
 
@@ -58,6 +63,7 @@ export 'core/module/module_color_provider.dart';
 // --- Navigation ---
 export 'shared/widgets/navigation/global_sidebar.dart';
 export 'shared/widgets/navigation/global_bottom_navigation.dart';
+export 'shared/widgets/navigation/global_bottom_nav_visibility.dart';
 export 'shared/widgets/share/share_link_button.dart';
 export 'shared/widgets/navigation/module_bottom_navigation.dart';
 export 'shared/widgets/navigation/secondary_sidebar.dart';
@@ -77,6 +83,7 @@ export 'shared/widgets/containers/selector_container.dart';
 export 'shared/widgets/platform_widget.dart';
 
 // --- Inputs & Controls ---
+export 'shared/widgets/buttons/am_back_button.dart';
 export 'shared/widgets/buttons/app_button.dart';
 export 'shared/widgets/buttons/glossy_button.dart';
 export 'shared/widgets/buttons/reset_button.dart';
@@ -88,6 +95,8 @@ export 'shared/widgets/inputs/multi_select_dropdown.dart';
 export 'shared/widgets/inputs/dropdown_styles.dart';
 export 'shared/widgets/inputs/compact_date_range_picker.dart';
 export 'shared/widgets/inputs/am_toggle_chip.dart';
+export 'shared/widgets/inputs/theme_mode_picker_dialog.dart';
+export 'shared/widgets/inputs/theme_selector.dart';
 
 // --- Display & Cards ---
 export 'shared/widgets/am_click_capsule.dart';
@@ -166,4 +175,7 @@ export 'shared/models/am_mover_item.dart';  // Generic mover tile data model
 // in any module. Map your domain model to AmMoverItem, pass the lists, done.
 // See am_top_movers_panel.dart for full API docs and usage examples.
 export 'shared/widgets/movers/am_top_movers_panel.dart';
+
+// --- Search & Autocomplete ---
+export 'shared/widgets/search/smart_search_anchor.dart';
 

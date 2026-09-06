@@ -506,7 +506,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         onThemeToggle: () {
           context.read<ThemeCubit>().toggleTheme();
         },
-        // Footer: Add Trade Button (Synced with Green Theme)
+        // Footer: Add Trade Button (Synced with Trade Theme)
         footer: Padding(
           padding: const EdgeInsets.all(16),
           child: SidebarPrimaryAction(
@@ -574,6 +574,9 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     return Consumer(
       builder: (context, ref, child) {
         final portfoliosAsyncValue = ref.watch(enrichedTradePortfoliosProvider);
+        // Progressive: stream often has realized cards before enrichment finishes.
+        final streamPortfolios =
+            ref.watch(tradePortfoliosStreamProvider).asData?.value;
 
         return portfoliosAsyncValue.when(
           data: (portfolios) => TradePortfolioDiscoveryTemplate(
@@ -737,16 +740,35 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
               ref.invalidate(enrichedTradePortfoliosProvider);
             },
           ),
-          loading: () => TradePortfolioDiscoveryTemplate(
-            portfolios: const [],
-            isLoading: true,
-            onPortfolioSelected: (_) {},
-          ),
+          loading: () {
+            if (streamPortfolios != null && streamPortfolios.isNotEmpty) {
+              return TradePortfolioDiscoveryTemplate(
+                portfolios: streamPortfolios,
+                isLoading: false,
+                onPortfolioSelected: (portfolio) {
+                  _onPortfolioSelected(portfolio.id, portfolio.name);
+                },
+                onRefresh: () {
+                  ref.invalidate(tradePortfoliosStreamProvider);
+                  ref.invalidate(enrichedTradePortfoliosProvider);
+                },
+              );
+            }
+            return TradePortfolioDiscoveryTemplate(
+              portfolios: const [],
+              isLoading: true,
+              onPortfolioSelected: (_) {},
+            );
+          },
           error: (error, _) => TradePortfolioDiscoveryTemplate(
-            portfolios: const [],
+            portfolios: streamPortfolios ?? const [],
             isLoading: false,
-            errorMessage: 'Failed to load portfolios: $error',
-            onPortfolioSelected: (_) {},
+            errorMessage: streamPortfolios == null || streamPortfolios.isEmpty
+                ? 'Failed to load portfolios: $error'
+                : null,
+            onPortfolioSelected: (portfolio) {
+              _onPortfolioSelected(portfolio.id, portfolio.name);
+            },
             onRefresh: () {
               ref.invalidate(tradePortfoliosStreamProvider);
               ref.invalidate(enrichedTradePortfoliosProvider);

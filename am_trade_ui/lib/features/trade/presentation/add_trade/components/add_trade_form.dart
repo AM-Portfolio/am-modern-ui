@@ -445,7 +445,7 @@ class _AddTradeFormState extends State<AddTradeForm> {
                         height: isCompact ? 22 : 28,
                         decoration: BoxDecoration(
                           color: isActive || isCompleted
-                              ? theme.colorScheme.primary
+                              ? ModuleColors.trade
                               : theme.colorScheme.surfaceContainerHighest,
                           shape: BoxShape.circle,
                         ),
@@ -477,7 +477,7 @@ class _AddTradeFormState extends State<AddTradeForm> {
                             fontWeight:
                                 isActive ? FontWeight.bold : FontWeight.normal,
                             color: isActive
-                                ? theme.colorScheme.primary
+                                ? ModuleColors.trade
                                 : theme.colorScheme.onSurface.withOpacity(0.6),
                             fontSize: isCompact ? 11 : 12,
                           ),
@@ -494,7 +494,7 @@ class _AddTradeFormState extends State<AddTradeForm> {
                     child: Container(
                       height: 2,
                       color: isCompleted
-                          ? theme.colorScheme.primary
+                          ? ModuleColors.trade
                           : theme.colorScheme.surfaceContainerHighest,
                     ),
                   ),

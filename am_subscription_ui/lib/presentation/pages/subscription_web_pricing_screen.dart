@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:am_library/am_library.dart';
+import 'package:am_design_system/am_design_system.dart';
 import '../widgets/billing_toggle.dart';
 import '../widgets/pricing_card.dart';
 import '../cubit/subscription_cubit.dart';
@@ -177,10 +178,9 @@ class _SubscriptionWebPricingScreenState
       appBar: AppBar(
         title: Text(
           'Pricing & Subscriptions',
-          style: TextStyle(
-            color: colorScheme.onSurface,
-            fontWeight: FontWeight.bold,
-          ),
+          style: context.text.pageTitle(compact: true).copyWith(
+                color: colorScheme.onSurface,
+              ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -199,7 +199,7 @@ class _SubscriptionWebPricingScreenState
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
-                backgroundColor: Colors.green,
+                backgroundColor: context.colors.statusSuccess,
               ),
             );
             _scrollToActivePlan(state.subscription.planCode);
@@ -207,7 +207,7 @@ class _SubscriptionWebPricingScreenState
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
-                backgroundColor: Colors.red,
+                backgroundColor: context.colors.statusError,
               ),
             );
           } else if (state is SubscriptionLoaded &&
@@ -222,6 +222,8 @@ class _SubscriptionWebPricingScreenState
 
           var plans = <Plan>[];
           dynamic currentSubscription;
+          final isRefreshing =
+              state is SubscriptionLoaded && state.refreshing;
 
           if (state is SubscriptionLoaded) {
             plans = state.plans;
@@ -239,15 +241,20 @@ class _SubscriptionWebPricingScreenState
                 children: [
                   Text(
                     'Error loading plans: ${state.message}',
-                    style: const TextStyle(color: Colors.red),
+                    style: context.text.body().copyWith(
+                          color: context.colors.statusError,
+                        ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.md),
                   ElevatedButton(
                     onPressed: () => context
                         .read<SubscriptionCubit>()
-                        .loadPlansAndSubscription(),
-                    child: const Text('Retry'),
+                        .loadPlansAndSubscription(force: true),
+                    child: Text(
+                      'Retry',
+                      style: context.text.button(compact: true),
+                    ),
                   ),
                 ],
               ),
@@ -265,6 +272,11 @@ class _SubscriptionWebPricingScreenState
           final isActionInProgress = state is SubscriptionActionInProgress;
           final screenWidth = MediaQuery.of(context).size.width;
           final isNarrow = screenWidth < 1100;
+          final brand = Theme.of(context).colorScheme.primary;
+          Color tierColor(Color rainbow, double tint) {
+            if (!ModuleColors.isBrandSynced) return rainbow;
+            return Color.lerp(brand, Colors.white, tint)!;
+          }
 
           final cards = <Widget>[
             if (freePlan != null)
@@ -281,7 +293,7 @@ class _SubscriptionWebPricingScreenState
                         currentSubscription?.planCode == freePlan.code)
                     ? null
                     : () => _handlePlanAction(context, state, freePlan),
-                primaryColor: Colors.grey.shade400,
+                primaryColor: tierColor(Colors.grey.shade400, 0.35),
                 features: freePlan.features,
                 isCurrentPlan:
                     currentSubscription?.planCode == freePlan.code,
@@ -304,7 +316,7 @@ class _SubscriptionWebPricingScreenState
                         currentSubscription?.planCode == proPlan.code)
                     ? null
                     : () => _handlePlanAction(context, state, proPlan),
-                primaryColor: const Color(0xFF1B64F2),
+                primaryColor: tierColor(const Color(0xFF1B64F2), 0.0),
                 isPopular: true,
                 features: proPlan.features,
                 isCurrentPlan: currentSubscription?.planCode == proPlan.code,
@@ -327,7 +339,7 @@ class _SubscriptionWebPricingScreenState
                         currentSubscription?.planCode == premiumPlan.code)
                     ? null
                     : () => _handlePlanAction(context, state, premiumPlan),
-                primaryColor: const Color(0xFFA824EE),
+                primaryColor: tierColor(const Color(0xFFA824EE), 0.12),
                 features: premiumPlan.features,
                 isCurrentPlan:
                     currentSubscription?.planCode == premiumPlan.code,
@@ -345,7 +357,7 @@ class _SubscriptionWebPricingScreenState
                   const SnackBar(content: Text('Contact sales triggered!')),
                 );
               },
-              primaryColor: const Color(0xFFE87C00),
+              primaryColor: tierColor(const Color(0xFFE87C00), 0.22),
               isCustom: true,
               features: const [
                 'Unlimited Portfolios & Analytics',
@@ -361,66 +373,78 @@ class _SubscriptionWebPricingScreenState
             ),
           ];
 
-          return SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  BillingToggle(
-                    isAnnual: _isAnnual,
-                    onChanged: (value) => setState(() => _isAnnual = value),
-                  ),
-                  const SizedBox(height: 40),
-                  if (isNarrow) ...[
-                    SizedBox(
-                      height: 600,
-                      child: PageView(
-                        controller: _pageController,
-                        onPageChanged: (index) {
-                          setState(() => _currentPage = index);
-                        },
-                        children: cards,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(
-                        cards.length,
-                        (index) => AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          width: _currentPage == index ? 24 : 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: _currentPage == index
-                                ? theme.colorScheme.primary
-                                : (isDark ? Colors.white30 : Colors.black12),
-                            borderRadius: BorderRadius.circular(4),
+          return Column(
+            children: [
+              if (isRefreshing) const LinearProgressIndicator(minHeight: 2),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        BillingToggle(
+                          isAnnual: _isAnnual,
+                          onChanged: (value) =>
+                              setState(() => _isAnnual = value),
+                        ),
+                        const SizedBox(height: 40),
+                        if (isNarrow) ...[
+                          SizedBox(
+                            height: 600,
+                            child: PageView(
+                              controller: _pageController,
+                              onPageChanged: (index) {
+                                setState(() => _currentPage = index);
+                              },
+                              children: cards,
+                            ),
                           ),
-                        ),
-                      ),
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(
+                              cards.length,
+                              (index) => AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                margin:
+                                    const EdgeInsets.symmetric(horizontal: 4),
+                                width: _currentPage == index ? 24 : 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: _currentPage == index
+                                      ? theme.colorScheme.primary
+                                      : (isDark
+                                          ? Colors.white30
+                                          : Colors.black12),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ] else
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            controller: _scrollController,
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 16),
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minWidth: screenWidth - 32,
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: cards,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                  ] else
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      controller: _scrollController,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minWidth: screenWidth - 32,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: cards,
-                        ),
-                      ),
-                    ),
-                ],
+                  ),
+                ),
               ),
-            ),
+            ],
           );
         },
       ),

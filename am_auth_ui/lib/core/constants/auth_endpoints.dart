@@ -32,6 +32,46 @@ class AuthEndpoints {
   static String get identityChangePassword =>
       '$identityBaseUrl/auth/change-password';
 
+  static String get identityDeviceLinkStart =>
+      '$identityBaseUrl/auth/device-link/start';
+
+  static String identityDeviceLinkStatus(String deviceLinkId) =>
+      '$identityBaseUrl/auth/device-link/$deviceLinkId/status';
+
+  static String identityDeviceLinkPreview(String deviceLinkId) =>
+      '$identityBaseUrl/auth/device-link/$deviceLinkId/preview';
+
+  static String identityDeviceLinkApprove(String deviceLinkId) =>
+      '$identityBaseUrl/auth/device-link/$deviceLinkId/approve';
+
+  static String identityDeviceLinkDeny(String deviceLinkId) =>
+      '$identityBaseUrl/auth/device-link/$deviceLinkId/deny';
+
+  static String identityDeviceLinkCancel(String deviceLinkId) =>
+      '$identityBaseUrl/auth/device-link/$deviceLinkId/cancel';
+
+  static String get identityWebOtpSend => '$identityBaseUrl/auth/web/otp/send';
+
+  static String get identityWebOtpVerify =>
+      '$identityBaseUrl/auth/web/otp/verify';
+
+  static String get identityStepUp => '$identityBaseUrl/auth/step-up';
+
+  static String get identitySecurityEvents =>
+      '$identityBaseUrl/users/me/security-events';
+
+  static String identitySecurityEventAck(String eventId) =>
+      '$identityBaseUrl/users/me/security-events/$eventId/ack';
+
+  static String get identityLoginSessions =>
+      '$identityBaseUrl/users/me/login-sessions';
+
+  static String identityLoginSessionRevoke(String sessionId) =>
+      '$identityBaseUrl/users/me/login-sessions/$sessionId';
+
+  static String get identityLoginSessionsRevokeAll =>
+      '$identityBaseUrl/users/me/login-sessions';
+
   // Authentication endpoints
   static String get login =>
       '$authBaseUrl/v1/tokens'; // Centralized Token Service (am-auth-tokens)

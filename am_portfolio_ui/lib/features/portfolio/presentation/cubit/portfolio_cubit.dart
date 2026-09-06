@@ -1115,12 +1115,11 @@ class PortfolioCubit extends Cubit<PortfolioState> {
   Future<void> dismissDemoPortfolio() async {
     CommonLogger.methodEntry('dismissDemoPortfolio', tag: 'PortfolioCubit');
     try {
-      await _portfolioService.dismissDemoPortfolio();
       await refreshPortfoliosList();
       loadPortfolioById('all');
     } catch (e) {
       CommonLogger.error(
-        'Failed to clear demo dismiss flag',
+        'Failed to refresh after demo dismiss',
         tag: 'PortfolioCubit',
         error: e,
       );

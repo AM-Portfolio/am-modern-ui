@@ -299,7 +299,7 @@ class PortfolioSummaryWidget extends StatelessWidget {
 
   Widget _buildPremiumActionCard(BuildContext context, String title, IconData icon, VoidCallback? onTap) {
     final cardColor = context.colors.cardSurface;
-    final primaryColor = context.colors.actionPrimaryBg;
+    final primaryColor = ModuleColors.portfolio;
 
     return Material(
       color: Colors.transparent,

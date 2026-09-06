@@ -12,10 +12,12 @@ class MobileTimeFrameDropdown extends ConsumerWidget {
     super.key,
     this.width = 72,
     this.availableTimeFrames,
+    this.primaryColor,
   });
 
   final double width;
   final List<TimeFrame>? availableTimeFrames;
+  final Color? primaryColor;
 
   /// Height that fits approximately 3 menu rows.
   static const double menuMaxHeightForThreeItems = 148;
@@ -38,7 +40,7 @@ class MobileTimeFrameDropdown extends ConsumerWidget {
         iconSize: 16,
         borderRadius: 10,
         menuMaxHeight: menuMaxHeightForThreeItems,
-        primaryColor: AppColors.primary,
+        primaryColor: primaryColor ?? AppColors.primary,
         backgroundColor:
             isDark ? Colors.white.withValues(alpha: 0.06) : null,
         borderColor: isDark ? Colors.white.withValues(alpha: 0.1) : null,

@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart';
 import '../../internal/domain/entities/portfolio_analytics.dart';
 import '../../internal/domain/entities/portfolio_holding.dart';
 
@@ -157,8 +158,13 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
               end: Alignment.bottomRight,
               colors: _isDark
                   ? [
-                      const Color(0xFF0D1B2A).withValues(alpha: 0.9),
-                      const Color(0xFF0A1628).withValues(alpha: 0.75),
+                      context.colors.cardSurface.withValues(alpha: 0.95),
+                      Color.lerp(
+                            context.colors.cardSurface,
+                            ModuleColors.portfolio,
+                            ModuleColors.isBrandSynced ? 0.12 : 0.04,
+                          )!
+                          .withValues(alpha: 0.85),
                     ]
                   : [
                       Colors.white.withValues(alpha: 0.45),
@@ -166,9 +172,11 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
                     ],
             ),
             border: Border.all(
-              color: _isDark
-                  ? Colors.white.withValues(alpha: 0.07)
-                  : Colors.black.withValues(alpha: 0.07),
+              color: ModuleColors.isBrandSynced
+                  ? ModuleColors.portfolio.withValues(alpha: 0.28)
+                  : (_isDark
+                      ? Colors.white.withValues(alpha: 0.07)
+                      : Colors.black.withValues(alpha: 0.07)),
               width: 1,
             ),
           borderRadius: BorderRadius.circular(18),
@@ -191,7 +199,7 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
                   ),
                   child: Icon(
                     Icons.donut_small_rounded,
-                    color: Theme.of(context).primaryColor,
+                    color: ModuleColors.portfolio,
                     size: 18,
                   ),
                 ),
@@ -349,6 +357,7 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
                           child: CustomPaint(
                             painter: _GlowingDonutPainter(
                               weights,
+                              palette: _sectorPalette(),
                               progress: _donutAnimation.value,
                               pulse: _pulseAnimation.value,
                               hoveredIndex: _hoveredIndex,
@@ -587,12 +596,29 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
     );
   }
 
+  List<Color> _sectorPalette() {
+    if (!ModuleColors.isBrandSynced) return _kRainbowPalette;
+    final b = ModuleColors.portfolio;
+    return [
+      b,
+      Color.lerp(b, Colors.white, 0.18)!,
+      Color.lerp(b, Colors.white, 0.32)!,
+      Color.lerp(b, Colors.black, 0.12)!,
+      Color.lerp(b, Colors.white, 0.45)!,
+      Color.lerp(b, Colors.black, 0.22)!,
+      Color.lerp(b, Colors.white, 0.55)!,
+      Color.lerp(b, Colors.black, 0.08)!,
+    ];
+  }
+
   List<Color> _getGradientColors(int index) {
-    final color = _kPalette[index % _kPalette.length];
+    final palette = _sectorPalette();
+    final color = palette[index % palette.length];
     return [color, color.withValues(alpha: 0.8)];
   }
 
   Widget _buildCenterText(int index, List<SectorWeight> weights) {
+    final palette = _sectorPalette();
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -601,7 +627,7 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 fontSize: 24,
-                color: _kPalette[index % _kPalette.length],
+                color: palette[index % palette.length],
               ),
         ),
         Padding(
@@ -663,7 +689,7 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? Theme.of(context).primaryColor : Colors.transparent,
+          color: isSelected ? ModuleColors.portfolio : Colors.transparent,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Text(
@@ -814,7 +840,7 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
   }
 }
 
-const List<Color> _kPalette = [
+const List<Color> _kRainbowPalette = [
   Color(0xFF00B894),
   Color(0xFFFF7675),
   Color(0xFF60A5FA),
@@ -827,6 +853,7 @@ const List<Color> _kPalette = [
 
 class _GlowingDonutPainter extends CustomPainter {
   final List<SectorWeight> sectorWeights;
+  final List<Color> palette;
   final double progress;
   final double pulse;
   final int? hoveredIndex;
@@ -835,6 +862,7 @@ class _GlowingDonutPainter extends CustomPainter {
 
   _GlowingDonutPainter(
     this.sectorWeights, {
+    required this.palette,
     this.progress = 1.0,
     this.pulse = 0.0,
     this.hoveredIndex,
@@ -857,7 +885,7 @@ class _GlowingDonutPainter extends CustomPainter {
 
     for (int i = 0; i < sectorWeights.length; i++) {
       final weight = sectorWeights[i];
-      final color = _kPalette[i % _kPalette.length];
+      final color = palette[i % palette.length];
       
       double getTargetColorAlpha(int? activeHover) {
         if (activeHover == null) return 1.0;
@@ -928,6 +956,7 @@ class _GlowingDonutPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _GlowingDonutPainter oldDelegate) =>
       oldDelegate.sectorWeights != sectorWeights ||
+      oldDelegate.palette != palette ||
       oldDelegate.progress != progress ||
       oldDelegate.pulse != pulse ||
       oldDelegate.hoveredIndex != hoveredIndex ||

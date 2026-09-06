@@ -26,20 +26,16 @@ class DashboardAllocationWidget extends StatelessWidget {
             children: [
               Text(
                 'Allocation',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 20,
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontFamily: 'Inter',
-                ),
+                style: context.text.sectionTitle().copyWith(
+                      color: context.colors.textPrimary,
+                    ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
               Text(
                 'No sector allocation data yet.',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontFamily: 'Inter',
-                ),
+                style: context.text.bodyMuted().copyWith(
+                      color: context.colors.textSecondary,
+                    ),
               ),
             ],
           ),
@@ -66,25 +62,22 @@ class DashboardAllocationWidget extends StatelessWidget {
       const Color(0xFFFFD600), // Yellow
     ];
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = context.isDark;
     final onSurface = context.colors.textPrimary;
     final onSurfaceVariant = context.colors.textSecondary;
 
     return AmGlassCard(
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.all(AppSpacing.md + 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Allocation',
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
-              color: onSurface,
-              fontFamily: 'Inter',
-            ),
+            style: context.text.sectionTitle(compact: true).copyWith(
+                  color: onSurface,
+                ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.md),
           
           // Donut area using fl_chart directly for perfect alignment
           Center(

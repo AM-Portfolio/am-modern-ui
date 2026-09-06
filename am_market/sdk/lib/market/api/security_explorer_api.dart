@@ -12,14 +12,17 @@ class SecurityExplorerApi {
 
   final ApiClient apiClient;
 
-  /// Search securities by symbol or ISIN
+  /// Search securities by symbol or ISIN with optional smart recommendations
   ///
   /// Note: This method returns the HTTP [Response].
   ///
   /// Parameters:
   ///
   /// * [String] query (required):
-  Future<Response> searchWithHttpInfo(String query,) async {
+  /// * [bool] smartRecommendations:
+  /// * [String] category:
+  /// * [int] limit:
+  Future<Response> searchWithHttpInfo(String query, {bool? smartRecommendations, String? category, int? limit}) async {
     final path = r'/v1/securities/search';
     Object? postBody;
 
@@ -27,10 +30,18 @@ class SecurityExplorerApi {
     final headerParams = <String, String>{};
     final formParams = <String, String>{};
 
-      queryParams.addAll(_queryParams('', 'query', query));
+    queryParams.addAll(_queryParams('', 'query', query));
+    if (smartRecommendations != null) {
+      queryParams.addAll(_queryParams('', 'smartRecommendations', smartRecommendations));
+    }
+    if (category != null && category.isNotEmpty) {
+      queryParams.addAll(_queryParams('', 'category', category));
+    }
+    if (limit != null) {
+      queryParams.addAll(_queryParams('', 'limit', limit));
+    }
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -43,13 +54,16 @@ class SecurityExplorerApi {
     );
   }
 
-  /// Search securities by symbol or ISIN
+  /// Search securities by symbol or ISIN with optional smart recommendations
   ///
   /// Parameters:
   ///
   /// * [String] query (required):
-  Future<List<SecurityDocument>?> search(String query,) async {
-    final response = await searchWithHttpInfo(query,);
+  /// * [bool] smartRecommendations:
+  /// * [String] category:
+  /// * [int] limit:
+  Future<List<SecurityDocument>?> search(String query, {bool? smartRecommendations, String? category, int? limit}) async {
+    final response = await searchWithHttpInfo(query, smartRecommendations: smartRecommendations, category: category, limit: limit);
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }

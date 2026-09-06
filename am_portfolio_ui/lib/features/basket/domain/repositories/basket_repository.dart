@@ -2,6 +2,7 @@ import '../models/basket_catalog.dart';
 import '../models/basket_opportunity.dart';
 import '../models/tracking_basket.dart';
 import '../models/basket_detail.dart';
+import '../models/basket_draft.dart';
 
 abstract class BasketRepository {
   Future<BasketCatalog> getCatalog();
@@ -37,6 +38,23 @@ abstract class BasketRepository {
 
   Future<BasketDetail> getBasketDetail({
     required String basketId,
+    required String userId,
+  });
+
+  Future<BasketDraftListResult> listDrafts({
+    required String userId,
+    String? portfolioId,
+  });
+
+  Future<BasketDraftDetail> getDraft({
+    required String draftId,
+    required String userId,
+  });
+
+  Future<BasketDraftDetail> upsertDraft(Map<String, dynamic> request);
+
+  Future<void> deleteDraft({
+    required String draftId,
     required String userId,
   });
 }
