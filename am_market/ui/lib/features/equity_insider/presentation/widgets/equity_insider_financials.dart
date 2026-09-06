@@ -21,7 +21,7 @@ class EquityInsiderFinancials extends ConsumerStatefulWidget {
 class _EquityInsiderFinancialsState
     extends ConsumerState<EquityInsiderFinancials> {
   bool _isQuarterly = false;
-  int _periodCount = 4;
+  final int _periodCount = 4;
   bool _showRevenue = true;
   bool _showPAT = true;
   bool _showPatMargin = false;
@@ -73,6 +73,7 @@ class _EquityInsiderFinancialsState
                 const SizedBox(height: 14),
                 FinancialComparisonSection(
                   statements: statements,
+                  balanceSheets: _maps(data.balanceSheet),
                   isQuarterly: _isQuarterly,
                   periodCount: _periodCount,
                   showRevenue: _showRevenue,
@@ -109,9 +110,7 @@ class _EquityInsiderFinancialsState
               if (!_isQuarterly) setState(() => _isQuarterly = true);
             },
           ),
-          const SizedBox(width: 10),
-          _buildPeriodSelector(context),
-          const SizedBox(width: 10),
+          const SizedBox(width: 14),
           _buildMetricToggle(
             context: context,
             label: 'Rev',
@@ -134,46 +133,6 @@ class _EquityInsiderFinancialsState
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildPeriodSelector(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (final count in [4, 8, 12, -1])
-          Padding(
-            padding: const EdgeInsets.only(right: 6.0),
-            child: InkWell(
-              onTap: () => setState(() => _periodCount = count == -1 ? 4 : count), // Simplified Custom to 4 for now
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _periodCount == count || (count == -1 && false) // Custom not implemented
-                      ? context.cardColor
-                      : Colors.transparent,
-                  border: Border.all(
-                    color: _periodCount == count
-                        ? context.colors.border
-                        : Colors.transparent,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Text(
-                  count == -1 ? 'Custom' : 'Last $count',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: _periodCount == count ? FontWeight.w500 : FontWeight.normal,
-                    color: _periodCount == count
-                        ? context.textPrimary
-                        : context.textSecondary,
-                  ),
-                ),
-              ),
-            ),
-          ),
-      ],
     );
   }
 
@@ -246,7 +205,7 @@ class _EquityInsiderFinancialsState
 
   Widget _buildRevenueChart(BuildContext context, List<Map<String, dynamic>> statements) {
     final recent = statements.take(_periodCount).toList().reversed.toList();
-    const Color revColor = ModuleColors.market;
+    final Color revColor = ModuleColors.market;
     final Color patColor = context.marketTheme.positive;
 
     return FinancialChartCard(
@@ -280,7 +239,7 @@ class _EquityInsiderFinancialsState
                 const SizedBox(height: 10),
                 FinancialChartLegend(
                   items: [
-                    const FinancialLegendItem(color: revColor, label: 'Revenue'),
+                    FinancialLegendItem(color: revColor, label: 'Revenue'),
                     FinancialLegendItem(color: patColor, label: 'PAT'),
                   ],
                 ),
@@ -295,7 +254,7 @@ class _EquityInsiderFinancialsState
     final recent = balance.take(3).toList().reversed.toList();
 
     final Color assetsColor = context.marketTheme.chartPurple;
-    const Color equityColor = ModuleColors.market;
+    final Color equityColor = ModuleColors.market;
 
     return FinancialChartCard(
       title: 'Balance sheet (₹ Cr)',
@@ -326,7 +285,7 @@ class _EquityInsiderFinancialsState
                 FinancialChartLegend(
                   items: [
                     FinancialLegendItem(color: assetsColor, label: 'Total Assets'),
-                    const FinancialLegendItem(color: equityColor, label: 'Equity'),
+                    FinancialLegendItem(color: equityColor, label: 'Equity'),
                   ],
                 ),
               ],

@@ -1,21 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../../../../core/styles/market_theme_extension.dart';
 
-class TakeawayItem {
+class _TakeawayMetric {
   final IconData icon;
   final Color iconColor;
-  final String text;
+  final String label;
+  final String valueText;
+  final String? deltaText;
+  final bool isPositive;
 
-  const TakeawayItem({
+  const _TakeawayMetric({
     required this.icon,
     required this.iconColor,
-    required this.text,
+    required this.label,
+    required this.valueText,
+    this.deltaText,
+    required this.isPositive,
   });
 }
 
 class FinancialComparisonSection extends StatelessWidget {
   final List<Map<String, dynamic>> statements;
+  final List<Map<String, dynamic>> balanceSheets;
   final bool isQuarterly;
   final int periodCount;
   final bool showRevenue;
@@ -25,6 +33,7 @@ class FinancialComparisonSection extends StatelessWidget {
   const FinancialComparisonSection({
     super.key,
     required this.statements,
+    this.balanceSheets = const [],
     required this.isQuarterly,
     required this.periodCount,
     required this.showRevenue,
@@ -51,12 +60,12 @@ class FinancialComparisonSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              flex: 72,
+              flex: 64,
               child: _buildTableCard(context),
             ),
             const SizedBox(width: 12),
             Expanded(
-              flex: 28,
+              flex: 36,
               child: _buildTakeawaysCard(context),
             ),
           ],
@@ -168,7 +177,9 @@ class FinancialComparisonSection extends StatelessWidget {
                     ? (pat / rev) * 100
                     : null;
 
-                final opProfit = _num(curr, 'operatingProfit', 'ebit');
+                final opProfit = _num(curr, 'operatingProfit', 'ebit') ??
+                    _num(curr, 'operatingIncome') ??
+                    (rev != null && _num(curr, 'totalExpenses') != null ? (rev - _num(curr, 'totalExpenses')!) : null);
 
                 return SizedBox(
                   width: 90,
@@ -198,10 +209,14 @@ class FinancialComparisonSection extends StatelessWidget {
   }
 
   Widget _buildTakeawaysCard(BuildContext context) {
-    final takeaways = _computeTakeaways(context);
+    final periodLabel = statements.isNotEmpty
+        ? _formatPeriod((statements.first['period'] ?? '').toString())
+        : (isQuarterly ? 'Quarterly' : 'Annual');
+
+    final metrics = _computeKeyTakeawayMetrics(context);
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: context.cardColor,
         border: Border.all(color: context.borderColor),
@@ -212,85 +227,203 @@ class FinancialComparisonSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.auto_awesome_rounded, size: 14, color: ModuleColors.market),
+              Icon(Icons.auto_awesome_rounded, size: 14, color: ModuleColors.market),
               const SizedBox(width: 6),
               Text(
-                'Key Takeaways',
+                'Key Takeaways ($periodLabel)',
                 style: TextStyle(
                   fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                   color: context.textPrimary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          if (takeaways.isEmpty)
-            Text(
-              'Financial trajectory within historical ranges.',
-              style: TextStyle(color: context.textSecondary, fontSize: 11),
+          const SizedBox(height: 12),
+          if (metrics.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'Financial trajectory within historical ranges.',
+                style: TextStyle(color: context.textSecondary, fontSize: 11),
+              ),
             )
           else
-            ...takeaways.map((item) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(item.icon, size: 14, color: item.iconColor),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        item.text,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: context.textSecondary,
-                          height: 1.3,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
+            ...metrics.map((m) => _buildTakeawayRow(context, m)),
         ],
       ),
     );
   }
 
-  List<TakeawayItem> _computeTakeaways(BuildContext context) {
-    final list = <TakeawayItem>[];
+  Widget _buildTakeawayRow(BuildContext context, _TakeawayMetric metric) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5.0),
+      child: Row(
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: metric.iconColor.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(metric.icon, size: 12, color: metric.iconColor),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 45,
+                  child: Text(
+                    metric.label,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: context.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Expanded(
+                  flex: 55,
+                  child: Text(
+                    metric.valueText,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: context.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.right,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (metric.deltaText != null) ...[
+            const SizedBox(width: 8),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  metric.isPositive ? Icons.arrow_drop_up_rounded : Icons.arrow_drop_down_rounded,
+                  size: 14,
+                  color: metric.isPositive ? context.marketTheme.positive : context.marketTheme.negative,
+                ),
+                Text(
+                  metric.deltaText!,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: metric.isPositive ? context.marketTheme.positive : context.marketTheme.negative,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  List<_TakeawayMetric> _computeKeyTakeawayMetrics(BuildContext context) {
+    final list = <_TakeawayMetric>[];
     final recent = statements.take(2).toList();
-    if (recent.length >= 2) {
+    final periodTag = isQuarterly ? 'QoQ' : 'YoY';
+
+    // 1. Revenue
+    if (recent.isNotEmpty) {
       final currRev = _num(recent[0], 'revenue', 'totalRevenue');
-      final prevRev = _num(recent[1], 'revenue', 'totalRevenue');
-      if (currRev != null && prevRev != null && prevRev != 0) {
-        final g = ((currRev - prevRev) / prevRev.abs()) * 100;
-        list.add(TakeawayItem(
-          icon: g >= 0 ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-          iconColor: g >= 0 ? context.marketTheme.positive : context.marketTheme.negative,
-          text: 'Revenue ${g >= 0 ? 'grew' : 'declined'} ${g.abs().toStringAsFixed(1)}% ${isQuarterly ? 'QoQ' : 'YoY'}',
+      final prevRev = recent.length > 1 ? _num(recent[1], 'revenue', 'totalRevenue') : null;
+      if (currRev != null) {
+        double? delta;
+        if (prevRev != null && prevRev != 0) {
+          delta = ((currRev - prevRev) / prevRev.abs()) * 100;
+        }
+        list.add(_TakeawayMetric(
+          icon: Icons.account_balance_wallet_rounded,
+          iconColor: context.marketTheme.positive,
+          label: 'Revenue',
+          valueText: '₹ ${NumberFormat('#,##,##0', 'en_IN').format(currRev.toInt())} Cr',
+          deltaText: delta != null ? '${delta.abs().toStringAsFixed(1)}% $periodTag' : null,
+          isPositive: (delta ?? 0) >= 0,
         ));
       }
 
+      // 2. PAT
       final currPat = _num(recent[0], 'profitAfterTax', 'netIncome');
-      final prevPat = _num(recent[1], 'profitAfterTax', 'netIncome');
-      if (currPat != null && prevPat != null && prevPat != 0) {
-        final g = ((currPat - prevPat) / prevPat.abs()) * 100;
-        list.add(TakeawayItem(
-          icon: g >= 0 ? Icons.check_circle_outline_rounded : Icons.warning_amber_rounded,
-          iconColor: g >= 0 ? context.marketTheme.positive : context.marketTheme.negative,
-          text: 'PAT ${g >= 0 ? 'surged' : 'dropped'} ${g.abs().toStringAsFixed(1)}% in latest period',
+      final prevPat = recent.length > 1 ? _num(recent[1], 'profitAfterTax', 'netIncome') : null;
+      if (currPat != null) {
+        double? delta;
+        if (prevPat != null && prevPat != 0) {
+          delta = ((currPat - prevPat) / prevPat.abs()) * 100;
+        }
+        list.add(_TakeawayMetric(
+          icon: Icons.payments_rounded,
+          iconColor: ModuleColors.market,
+          label: 'PAT',
+          valueText: '₹ ${NumberFormat('#,##,##0', 'en_IN').format(currPat.toInt())} Cr',
+          deltaText: delta != null ? '${delta.abs().toStringAsFixed(1)}% $periodTag' : null,
+          isPositive: (delta ?? 0) >= 0,
         ));
+
+        // 3. PAT Margin
+        if (currRev != null && currRev != 0) {
+          final currMargin = (currPat / currRev) * 100;
+          double? marginPp;
+          if (prevRev != null && prevRev != 0 && prevPat != null) {
+            final prevMargin = (prevPat / prevRev) * 100;
+            marginPp = currMargin - prevMargin;
+          }
+          list.add(_TakeawayMetric(
+            icon: Icons.pie_chart_outline_rounded,
+            iconColor: context.marketTheme.chartPurple,
+            label: 'PAT Margin',
+            valueText: '${currMargin.toStringAsFixed(1)}%',
+            deltaText: marginPp != null ? '${marginPp.abs().toStringAsFixed(1)} pp $periodTag' : null,
+            isPositive: (marginPp ?? 0) >= 0,
+          ));
+        }
       }
     }
 
-    if (list.isEmpty) {
-      list.add(const TakeawayItem(
-        icon: Icons.info_outline_rounded,
-        iconColor: ModuleColors.market,
-        text: 'Review quarterly earnings reports for multi-period trajectory',
-      ));
+    // 4 & 5. Balance Sheet: Total Assets & Equity
+    final recentBal = balanceSheets.take(2).toList();
+    if (recentBal.isNotEmpty) {
+      final currAssets = _num(recentBal[0], 'totalAssets');
+      final prevAssets = recentBal.length > 1 ? _num(recentBal[1], 'totalAssets') : null;
+      if (currAssets != null) {
+        double? assetDelta;
+        if (prevAssets != null && prevAssets != 0) {
+          assetDelta = ((currAssets - prevAssets) / prevAssets.abs()) * 100;
+        }
+        list.add(_TakeawayMetric(
+          icon: Icons.domain_rounded,
+          iconColor: Colors.indigoAccent,
+          label: 'Total Assets',
+          valueText: '₹ ${NumberFormat('#,##,##0', 'en_IN').format(currAssets.toInt())} Cr',
+          deltaText: assetDelta != null ? '${assetDelta.abs().toStringAsFixed(1)}% YoY' : null,
+          isPositive: (assetDelta ?? 0) >= 0,
+        ));
+      }
+
+      final currEquity = _num(recentBal[0], 'equityCapital', 'totalEquity');
+      final prevEquity = recentBal.length > 1 ? _num(recentBal[1], 'equityCapital', 'totalEquity') : null;
+      if (currEquity != null) {
+        double? equityDelta;
+        if (prevEquity != null && prevEquity != 0) {
+          equityDelta = ((currEquity - prevEquity) / prevEquity.abs()) * 100;
+        }
+        list.add(_TakeawayMetric(
+          icon: Icons.layers_rounded,
+          iconColor: Colors.cyanAccent,
+          label: 'Equity',
+          valueText: '₹ ${NumberFormat('#,##,##0', 'en_IN').format(currEquity.toInt())} Cr',
+          deltaText: equityDelta != null ? '${equityDelta.abs().toStringAsFixed(1)}% YoY' : null,
+          isPositive: (equityDelta ?? 0) >= 0,
+        ));
+      }
     }
 
     return list;
@@ -369,7 +502,23 @@ class FinancialComparisonSection extends StatelessWidget {
   }
 
   double? _num(Map<String, dynamic> row, String key, [String? fallback]) {
-    final v = row[key] ?? (fallback != null ? row[fallback] : null);
+    var v = row[key] ?? (fallback != null ? row[fallback] : null);
+    if (v == null && row['lineItems'] is Map) {
+      final lineItems = row['lineItems'] as Map;
+      v = lineItems[key] ?? (fallback != null ? lineItems[fallback] : null);
+      if (v == null) {
+        // Match common Title Case variations
+        for (final entry in lineItems.entries) {
+          final k = entry.key.toString().replaceAll(RegExp(r'[\s_-]'), '').toLowerCase();
+          final target1 = key.replaceAll(RegExp(r'[\s_-]'), '').toLowerCase();
+          final target2 = fallback?.replaceAll(RegExp(r'[\s_-]'), '').toLowerCase();
+          if (k == target1 || (target2 != null && k == target2)) {
+            v = entry.value;
+            break;
+          }
+        }
+      }
+    }
     if (v is num) return v.toDouble();
     if (v is String) {
       final clean = v.replaceAll(RegExp(r'[^\d.-]'), '');

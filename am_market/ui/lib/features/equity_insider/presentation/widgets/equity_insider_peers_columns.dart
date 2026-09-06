@@ -97,11 +97,13 @@ class PeerColumnsHelper {
         key: 'roce',
         valueGetter: (p) => p.roce,
         cellBuilder: (context, p, _) => Text(
-          p.roce != null ? '${p.roce!.toStringAsFixed(2)}%' : '—',
+          p.roce != null ? p.roce!.toStringAsFixed(2) : '—',
           style: TextStyle(
             color: p.roce != null && p.roce! > 15.0
                 ? context.marketTheme.positive
                 : (p.roce != null && p.roce! < 0 ? context.marketTheme.negative : context.textSecondary),
+            fontWeight: p.roce != null && p.roce! > 15.0 ? FontWeight.w600 : FontWeight.normal,
+            fontSize: 12,
           ),
         ),
       ),
@@ -130,42 +132,18 @@ class PeerColumnsHelper {
 
   static Widget buildMetricBar(BuildContext context, double? roe, double maxRoe) {
     if (roe == null) {
-      return Text('—', style: TextStyle(color: context.textSecondary));
+      return Text('—', style: TextStyle(color: context.textSecondary, fontSize: 12));
     }
-    final fraction = maxRoe > 0 ? (roe / maxRoe).clamp(0.0, 1.0) : 0.0;
     final isPos = roe >= 0;
     final color = isPos ? context.marketTheme.positive : context.marketTheme.negative;
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          width: 45,
-          child: Text(
-            '${roe.toStringAsFixed(1)}%',
-            style: TextStyle(color: color, fontWeight: FontWeight.w500),
-          ),
-        ),
-        const SizedBox(width: 6),
-        Container(
-          width: 48,
-          height: 5,
-          decoration: BoxDecoration(
-            color: context.borderColor,
-            borderRadius: BorderRadius.circular(2.5),
-          ),
-          alignment: Alignment.centerLeft,
-          child: FractionallySizedBox(
-            widthFactor: fraction,
-            child: Container(
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(2.5),
-              ),
-            ),
-          ),
-        ),
-      ],
+    return Text(
+      roe.toStringAsFixed(2),
+      style: TextStyle(
+        color: color,
+        fontWeight: isPos ? FontWeight.w600 : FontWeight.normal,
+        fontSize: 12,
+      ),
     );
   }
 }

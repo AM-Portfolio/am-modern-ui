@@ -135,7 +135,7 @@ class EquityInsiderHero extends ConsumerWidget {
       alignment: Alignment.center,
       child: Text(
         initials,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w700,
           color: ModuleColors.market,
@@ -161,7 +161,7 @@ class EquityInsiderHero extends ConsumerWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.search_rounded,
               size: 13,
               color: ModuleColors.market,
@@ -188,8 +188,8 @@ class EquityInsiderHero extends ConsumerWidget {
         onPressed: () {
           // TODO: Wire to watchlist provider
         },
-        icon: const Icon(Icons.add, size: 14, color: ModuleColors.market),
-        label: const Text(
+        icon: Icon(Icons.add, size: 14, color: ModuleColors.market),
+        label: Text(
           'Add to Watchlist',
           style: TextStyle(
             fontSize: 11,

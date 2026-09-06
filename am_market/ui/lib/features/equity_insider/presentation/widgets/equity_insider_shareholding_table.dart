@@ -20,7 +20,7 @@ class ShareholdingTrendTable extends StatelessWidget {
 
     final categories = <_ShareholdingCat>[
       _ShareholdingCat(label: 'Promoters', key: 'promotersPercent', color: context.marketTheme.positive),
-      const _ShareholdingCat(label: 'FII / Foreign', key: 'fiiPercent', color: ModuleColors.market),
+      _ShareholdingCat(label: 'FII / Foreign', key: 'fiiPercent', color: ModuleColors.market),
       _ShareholdingCat(label: 'Mutual Funds', key: 'mutualFundsPercent', color: context.marketTheme.chartPurple),
       _ShareholdingCat(label: 'DII / Others', key: 'diiPercent', color: context.marketTheme.textSecondary),
       _ShareholdingCat(label: 'Retail & Public', key: 'retailAndOtherPercent', color: context.marketTheme.textMuted),

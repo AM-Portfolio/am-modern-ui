@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 
@@ -20,12 +19,11 @@ class EquityInsiderSectionNavBar extends StatelessWidget {
     'Financials',
     'Shareholding',
     'Peers',
-    'Documents',
   ];
 
   @override
   Widget build(BuildContext context) {
-    const activeColor = ModuleColors.market;
+    final activeColor = ModuleColors.market;
 
     Widget buildTabs() {
       return Row(

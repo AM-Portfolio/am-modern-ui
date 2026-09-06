@@ -83,7 +83,7 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
 
   @override
   Widget build(BuildContext context) {
-    const marketCyan = ModuleColors.market;
+    final marketCyan = ModuleColors.market;
     final scaffoldBg = context.colors.scaffoldBackground;
 
     return Scaffold(
@@ -154,7 +154,7 @@ class _FundamentalsBody extends ConsumerStatefulWidget {
 
 class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
   final ScrollController _scrollController = ScrollController();
-  final List<GlobalKey> _sectionKeys = List.generate(6, (_) => GlobalKey());
+  final List<GlobalKey> _sectionKeys = List.generate(5, (_) => GlobalKey());
   int _activeIndex = 0;
   bool _isManualScrolling = false;
   bool _isSearchOverlayOpen = false;
@@ -172,7 +172,11 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
   void didUpdateWidget(covariant _FundamentalsBody oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.symbol != oldWidget.symbol) {
-      ref.read(recentlyViewedStocksProvider.notifier).recordView(widget.symbol);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref.read(recentlyViewedStocksProvider.notifier).recordView(widget.symbol);
+        }
+      });
     }
   }
 
@@ -383,8 +387,6 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                             onPeerSelected: widget.onSelectSymbol,
                           ),
                         ),
-                        // Anchor for Documents tab (Section 5)
-                        SizedBox(key: _sectionKeys[5], height: 0),
                       ],
                     ),
                   ),

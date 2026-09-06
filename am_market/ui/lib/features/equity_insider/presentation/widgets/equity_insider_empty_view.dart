@@ -22,7 +22,7 @@ class EquityInsiderEmptyView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const accentColor = ModuleColors.market;
+    final accentColor = ModuleColors.market;
     final surfaceColor = context.colors.cardSurface;
     final borderColor = context.colors.border;
 
@@ -54,7 +54,7 @@ class EquityInsiderEmptyView extends StatelessWidget {
                       ],
                     ),
                     alignment: Alignment.center,
-                    child: const Icon(
+                    child: Icon(
                       Icons.insights_rounded,
                       size: 38,
                       color: accentColor,

@@ -252,6 +252,7 @@ class EquityInsiderKpis extends ConsumerWidget {
                 final double itemWidth = (totalWidth - (spacing * (cols - 1))) / cols;
 
                 return Wrap(
+                  alignment: WrapAlignment.center,
                   spacing: spacing,
                   runSpacing: spacing,
                   children: validMetrics.take(15).map((metric) {
@@ -318,14 +319,15 @@ class EquityInsiderKpis extends ConsumerWidget {
     if (isNegative) valColor = context.marketTheme.negative;
 
     return GlassCard(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       borderRadius: 12,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
             label.toUpperCase(),
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 10,
               color: context.textTertiary,
@@ -336,22 +338,28 @@ class EquityInsiderKpis extends ConsumerWidget {
             overflow: TextOverflow.ellipsis,
           ),
           const Spacer(),
-          Text(
-            value.toStringAsFixed(2),
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: valColor,
-              letterSpacing: -0.5,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value.toStringAsFixed(2),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: valColor,
+                letterSpacing: -0.5,
+              ),
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 3),
           Text(
             subtitle,
+            textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 12,
-              color: context.textSecondary,
-              fontWeight: FontWeight.w500,
+              fontSize: 11,
+              color: ModuleColors.market,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
