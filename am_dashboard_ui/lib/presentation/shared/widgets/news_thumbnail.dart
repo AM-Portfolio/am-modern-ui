@@ -1,4 +1,5 @@
 import 'package:am_design_system/am_design_system.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class NewsThumbnail extends StatelessWidget {
@@ -13,12 +14,19 @@ class NewsThumbnail extends StatelessWidget {
   final double width;
   final double height;
 
+  static bool _isAbsoluteHttpUrl(String src) {
+    final uri = Uri.tryParse(src);
+    if (uri == null || !uri.hasScheme || !uri.hasAuthority) return false;
+    final scheme = uri.scheme.toLowerCase();
+    return scheme == 'http' || scheme == 'https';
+  }
+
   @override
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(AppRadii.sm);
     final placeholder = _NewsThumbPlaceholder(width: width, height: height);
     final src = url?.trim() ?? '';
-    if (src.isEmpty) return placeholder;
+    if (src.isEmpty || !_isAbsoluteHttpUrl(src)) return placeholder;
 
     return ClipRRect(
       borderRadius: radius,
@@ -31,12 +39,18 @@ class NewsThumbnail extends StatelessWidget {
           alignment: Alignment.center,
           gaplessPlayback: true,
           filterQuality: FilterQuality.medium,
-          webHtmlElementStrategy: WebHtmlElementStrategy.never,
+          // Prefer bytes for ClipRRect; fall back to HTML <img> on web CDN failures.
+          webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
           loadingBuilder: (context, child, progress) {
             if (progress == null) return child;
             return placeholder;
           },
-          errorBuilder: (_, __, ___) => placeholder,
+          errorBuilder: (context, error, stackTrace) {
+            if (kDebugMode) {
+              debugPrint('NewsThumbnail failed url=$src error=$error');
+            }
+            return placeholder;
+          },
         ),
       ),
     );

@@ -1,14 +1,13 @@
-import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import 'package:am_design_system/core/navigation/app_web_navigation.dart';
 import 'package:am_design_system/core/theme/app_glassmorphism_v2.dart';
-import 'package:am_design_system/core/theme/app_colors.dart';
 import 'package:am_design_system/core/theme/app_colors_theme.dart';
 import 'package:am_design_system/core/theme/color_extensions.dart';
 import 'package:am_design_system/shared/widgets/navigation/sidebar_item.dart';
+import 'package:am_design_system/shared/widgets/navigation/sidebar_layout_metrics.dart';
 import 'package:am_design_system/core/utils/conditional_mouse_region.dart';
 import 'package:am_design_system/core/module/module_config.dart';
 import 'package:am_design_system/shared/widgets/share/share_link_button.dart';
@@ -60,12 +59,15 @@ class GlobalSidebar extends StatelessWidget {
         height: double.infinity,
         child: Column(
           children: [
-            const SizedBox(height: 48),
-            
-            // 1. App Logo / Brand Icon
-            _buildAppLogo(),
+            const SizedBox(height: SidebarLayoutMetrics.topInset),
 
-            const SizedBox(height: 48),
+            // 1. App Logo / Brand Icon (shared header band with secondary toggle)
+            SizedBox(
+              height: SidebarLayoutMetrics.headerBandHeight,
+              child: Center(child: _buildAppLogo()),
+            ),
+
+            const SizedBox(height: SidebarLayoutMetrics.afterHeaderGap),
 
             // 2. Main Navigation Icons
             Expanded(
@@ -73,7 +75,9 @@ class GlobalSidebar extends StatelessWidget {
                 child: Column(
                   children: items.map((item) {
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 32),
+                      padding: const EdgeInsets.only(
+                        bottom: SidebarLayoutMetrics.navTileGap,
+                      ),
                       child: _GlobalSidebarItem(
                         item: item,
                         isDark: isDarkMode,
@@ -129,8 +133,8 @@ class GlobalSidebar extends StatelessWidget {
       child: GestureDetector(
         onTap: () => onNavigate('Dashboard'),
         child: Container(
-          width: 64,
-          height: 40,
+          width: SidebarLayoutMetrics.logoWidth,
+          height: SidebarLayoutMetrics.logoHeight,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
             color: isDarkMode ? const Color(0xFF0A0F1A) : Colors.white,
@@ -399,24 +403,18 @@ class _GlobalSidebarItemState extends State<_GlobalSidebarItem> {
           cursor: SystemMouseCursors.click,
           onEnter: (_) => setState(() => _isHovered = true),
           onExit: (_) => setState(() => _isHovered = false),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: 56,
-            height: 56,
-            decoration: isSelected
-                ? AppGlassmorphismV2.finDashActiveItem(
-                    accentColor: widget.accentColor,
-                    isDark: widget.isDark,
-                  )
-                : AppGlassmorphismV2.finDashInactiveItem(isDark: widget.isDark),
+          child: SidebarFinDashTile(
+            isActive: isSelected,
+            isDark: widget.isDark,
+            accentColor: widget.accentColor,
+            size: SidebarLayoutMetrics.navTileSize,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
                   widget.item.icon,
-                  // Color Logic: If selected OR hovered, use accent color. Else use inactive color.
                   color: (isSelected || _isHovered)
-                      ? widget.accentColor 
+                      ? widget.accentColor
                       : (widget.isDark ? Colors.white54 : Colors.black87),
                   size: 24,
                 ),
@@ -425,10 +423,11 @@ class _GlobalSidebarItemState extends State<_GlobalSidebarItem> {
                   widget.item.title,
                   style: TextStyle(
                     fontSize: 9,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.normal,
                     color: (isSelected || _isHovered)
-                      ? widget.accentColor 
-                      : (widget.isDark ? Colors.white54 : Colors.black87),
+                        ? widget.accentColor
+                        : (widget.isDark ? Colors.white54 : Colors.black87),
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 1,

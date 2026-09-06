@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import '../../../core/module/module_config.dart';
 import '../../../core/navigation/app_web_navigation.dart';
 import '../am_click_capsule.dart';
 import 'comparison_chart_colors.dart';
@@ -1079,7 +1080,11 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
           visualDensity: VisualDensity.compact,
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-          icon: const Icon(Icons.zoom_out, color: Color(0xFF00D1FF), size: 22),
+          icon: Icon(
+            Icons.zoom_out,
+            color: ModuleColors.dashboard,
+            size: 22,
+          ),
           onPressed: () => _zoom(_zoomScale - 0.2),
           tooltip: 'Zoom Out',
         ),
@@ -1098,7 +1103,11 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
           visualDensity: VisualDensity.compact,
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-          icon: const Icon(Icons.zoom_in, color: Color(0xFF00D1FF), size: 22),
+          icon: Icon(
+            Icons.zoom_in,
+            color: ModuleColors.dashboard,
+            size: 22,
+          ),
           onPressed: () => _zoom(_zoomScale + 0.2),
           tooltip: 'Zoom In',
         ),

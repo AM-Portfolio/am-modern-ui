@@ -208,7 +208,6 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         subtitle: null,
         showModuleBottomNavigation: false,
         headerActions: const [],
-        header: const SizedBox(height: 16),
         onBackToGlobal: widget.onBack,
         onThemeToggle: () {
           context.read<ThemeCubit>().toggleTheme();
@@ -297,20 +296,17 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         ),
         footer: (_currentPortfolioId == null || _currentPortfolioId == 'all')
             ? const SizedBox.shrink()
-            : Padding(
-                padding: const EdgeInsets.all(16),
-                child: SidebarPrimaryAction(
-                  title: 'New Trade',
-                  icon: Icons.add,
-                  accentColor: ModuleColors.portfolio,
-                  onTap: () {
-                    if (widget.addTradeBuilder != null) {
-                      setState(() {
-                        _isAddingTrade = true;
-                      });
-                    }
-                  },
-                ),
+            : SidebarPrimaryAction(
+                title: 'New Trade',
+                icon: Icons.add,
+                accentColor: ModuleColors.portfolio,
+                onTap: () {
+                  if (widget.addTradeBuilder != null) {
+                    setState(() {
+                      _isAddingTrade = true;
+                    });
+                  }
+                },
               ),
         sections: [
           if (widget.portfolios != null && widget.portfolios!.isNotEmpty)
