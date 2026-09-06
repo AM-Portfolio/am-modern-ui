@@ -126,7 +126,7 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
           accentColor: color,
           isCompact: effectiveCompact,
           child: Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: const EdgeInsets.symmetric(vertical: 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

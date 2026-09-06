@@ -61,13 +61,15 @@ class _DashboardNewsSectionState extends ConsumerState<DashboardNewsSection> {
 
     return insight.when(
       loading: () => const AmGlassCard(
+        surfaceAlpha: 0.32,
         padding: EdgeInsets.all(16),
         child: _NewsSkeleton(),
       ),
       error: (_, __) => AmGlassCard(
+        surfaceAlpha: 0.32,
         padding: const EdgeInsets.all(16),
         child: AmErrorWidget(
-          message: 'News is unavailable',
+          message: 'Market Intelligence is unavailable',
           onRetry: () => ref.invalidate(newsInsightProvider),
         ),
       ),

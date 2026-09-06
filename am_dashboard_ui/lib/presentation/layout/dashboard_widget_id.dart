@@ -36,7 +36,7 @@ extension DashboardWidgetIdX on DashboardWidgetId {
         DashboardWidgetId.portfolioList => 'Your Portfolios',
         DashboardWidgetId.allocation => 'Allocation',
         DashboardWidgetId.benchmarkComparison => 'Performance Chart',
-        DashboardWidgetId.news => 'News',
+        DashboardWidgetId.news => 'Market Intelligence',
       };
 
   String get module => switch (this) {

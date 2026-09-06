@@ -218,7 +218,7 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.text('News'), findsNothing);
+    expect(find.text('Market Intelligence'), findsNothing);
     expect(find.text('Current affairs'), findsNothing);
   });
 
@@ -233,7 +233,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('News'), findsOneWidget);
+    expect(find.text('Market Intelligence'), findsOneWidget);
     expect(find.text('Current affairs'), findsOneWidget);
     expect(find.text('Your holdings'), findsOneWidget);
   });

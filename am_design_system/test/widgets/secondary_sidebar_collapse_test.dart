@@ -38,6 +38,8 @@ void main() {
     expect(find.text('Holdings'), findsOneWidget);
     expect(find.text('BODY'), findsOneWidget);
     expect(find.byTooltip('Collapse sidebar'), findsOneWidget);
+    expect(find.byIcon(Icons.keyboard_double_arrow_left), findsOneWidget);
+    expect(find.byIcon(Icons.keyboard_double_arrow_right), findsNothing);
 
     await tester.tap(find.byTooltip('Collapse sidebar'));
     await tester.pumpAndSettle();
@@ -45,6 +47,8 @@ void main() {
     expect(find.text('Holdings'), findsNothing);
     expect(find.byTooltip('Holdings'), findsOneWidget);
     expect(find.byTooltip('Expand sidebar'), findsOneWidget);
+    expect(find.byIcon(Icons.keyboard_double_arrow_right), findsOneWidget);
+    expect(find.byIcon(Icons.keyboard_double_arrow_left), findsNothing);
     expect(find.text('BODY'), findsOneWidget);
   });
 }

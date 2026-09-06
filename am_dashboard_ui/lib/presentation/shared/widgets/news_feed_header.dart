@@ -18,7 +18,7 @@ class NewsFeedHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'News',
+          'Market Intelligence',
           style: TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 16,
