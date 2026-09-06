@@ -62,6 +62,8 @@ class SecondarySidebar extends StatelessWidget {
     this.accentColor = const Color(0xFF6C5DD3),
     this.icon = Icons.grid_view_rounded,
     this.showDividers = false,
+    this.isCompact = false,
+    this.onToggleCollapse,
   }) : assert(child != null || items != null || sections != null, 'Either child, items, or sections must be provided');
 
   final String? title;
@@ -75,6 +77,8 @@ class SecondarySidebar extends StatelessWidget {
   final Color accentColor;
   final IconData icon;
   final bool showDividers;
+  final bool isCompact;
+  final VoidCallback? onToggleCollapse;
 
   @override
   Widget build(BuildContext context) {
@@ -115,8 +119,7 @@ class SecondarySidebar extends StatelessWidget {
                 : _buildItemsList(context, items!, isDark)),
           ),
 
-          // Footer Section (New Trade Button)
-          if (footer != null)
+          if (footer != null && !isCompact)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               child: footer!,
@@ -127,32 +130,70 @@ class SecondarySidebar extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context, bool isDark) {
-    if (header != null) return header!;
+    final iconBox = Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: accentColor,
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: accentColor.withOpacity(0.4),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Icon(icon, color: Colors.white, size: 20),
+    );
+
+    final toggle = onToggleCollapse == null
+        ? null
+        : IconButton(
+            tooltip: isCompact ? 'Expand sidebar' : 'Collapse sidebar',
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            visualDensity: VisualDensity.compact,
+            icon: Icon(
+              isCompact
+                  ? Icons.arrow_forward_ios
+                  : Icons.arrow_back_ios_new,
+              size: 14,
+              color: accentColor,
+            ),
+            onPressed: onToggleCollapse,
+          );
+
+    if (isCompact) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(4, 12, 4, 8),
+        child: Column(
+          children: [
+            iconBox,
+            if (toggle != null) toggle,
+          ],
+        ),
+      );
+    }
+
+    if (header != null) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(8, 8, 4, 8),
+        child: Row(
+          children: [
+            Expanded(child: header!),
+            if (toggle != null) toggle,
+          ],
+        ),
+      );
+    }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+      padding: const EdgeInsets.fromLTRB(20, 16, 8, 16),
       child: Row(
         children: [
-          // Icon Box
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: accentColor, // Brand color background
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: accentColor.withOpacity(0.4),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Icon(icon, color: Colors.white, size: 20),
-          ),
+          iconBox,
           const SizedBox(width: 12),
-          
-          // Title & Subtitle
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -182,13 +223,7 @@ class SecondarySidebar extends StatelessWidget {
               ],
             ),
           ),
-
-          // Trailing Settings/Filter Icon
-          Icon(
-            Icons.tune_rounded,
-            color: isDark ? Colors.white24 : Colors.black26,
-            size: 18,
-          ),
+          if (toggle != null) toggle,
         ],
       ),
     );
@@ -196,7 +231,7 @@ class SecondarySidebar extends StatelessWidget {
 
   Widget _buildItemsList(BuildContext context, List<SecondarySidebarItem> itemList, bool isDark) {
     return ListView.separated(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: isCompact ? 8 : 12, vertical: 8),
       itemCount: itemList.length,
       separatorBuilder: (context, index) => const SizedBox(height: 2),
       itemBuilder: (context, index) {
@@ -204,6 +239,7 @@ class SecondarySidebar extends StatelessWidget {
           item: itemList[index],
           isDark: isDark,
           accentColor: accentColor,
+          isCompact: isCompact,
         );
       },
     );
@@ -219,6 +255,7 @@ class SecondarySidebar extends StatelessWidget {
           section: section,
           isDark: isDark,
           accentColor: accentColor,
+          isCompact: isCompact,
         );
       },
     );
@@ -229,11 +266,13 @@ class _SecondarySidebarSectionWidget extends StatefulWidget {
   final SecondarySidebarSection section;
   final bool isDark;
   final Color accentColor;
+  final bool isCompact;
 
   const _SecondarySidebarSectionWidget({
     required this.section,
     required this.isDark,
     required this.accentColor,
+    this.isCompact = false,
   });
 
   @override
@@ -255,7 +294,7 @@ class _SecondarySidebarSectionWidgetState extends State<_SecondarySidebarSection
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Section Header (Title + Collapser)
-        if (widget.section.title.isNotEmpty)
+        if (widget.section.title.isNotEmpty && !widget.isCompact)
           InkWell(
             onTap: () => setState(() => _isExpanded = !_isExpanded),
             borderRadius: BorderRadius.circular(8),
@@ -291,7 +330,7 @@ class _SecondarySidebarSectionWidgetState extends State<_SecondarySidebarSection
 
         // Section Items or Custom Widget
         if (_isExpanded || widget.section.title.isEmpty) ...[ // Always show if no title (e.g. top section)
-          if (widget.section.customWidget != null)
+          if (widget.section.customWidget != null && !widget.isCompact)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: widget.section.customWidget!,
@@ -300,13 +339,14 @@ class _SecondarySidebarSectionWidgetState extends State<_SecondarySidebarSection
             ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: EdgeInsets.symmetric(horizontal: widget.isCompact ? 8 : 12),
               itemCount: widget.section.items!.length,
               separatorBuilder: (_, __) => const SizedBox(height: 2),
               itemBuilder: (_, index) => _SecondarySidebarTile(
                 item: widget.section.items![index],
                 isDark: widget.isDark,
                 accentColor: widget.accentColor,
+                isCompact: widget.isCompact,
               ),
             ),
         ],
@@ -320,11 +360,13 @@ class _SecondarySidebarTile extends StatefulWidget {
   final SecondarySidebarItem item;
   final bool isDark;
   final Color accentColor;
+  final bool isCompact;
 
   const _SecondarySidebarTile({
     required this.item,
     required this.isDark,
     required this.accentColor,
+    this.isCompact = false,
   });
 
   @override
@@ -357,70 +399,86 @@ class _SecondarySidebarTileState extends State<_SecondarySidebarTile> {
             ? (widget.item.accentColor ?? widget.accentColor).withOpacity(0.08)
             : Colors.transparent;
 
+    final tile = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: item.onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: EdgeInsets.symmetric(
+            horizontal: widget.isCompact ? 0 : 12,
+            vertical: 10,
+          ),
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: Colors.transparent,
+              width: 1,
+            ),
+          ),
+          child: widget.isCompact
+              ? Center(
+                  child: Icon(
+                    item.icon,
+                    color: iconColor,
+                    size: 20,
+                  ),
+                )
+              : Row(
+                  children: [
+                    Icon(
+                      item.icon,
+                      color: iconColor,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        item.title,
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: 13,
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.w400,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (item.trailing != null)
+                      item.trailing!
+                    else if (item.subtitle != null)
+                      Text(
+                        item.subtitle!,
+                        style: TextStyle(
+                          color: isDark ? Colors.white24 : Colors.black26,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      )
+                    else if (isSelected && isDark)
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: item.accentColor ?? widget.accentColor,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                  ],
+                ),
+        ),
+      ),
+    );
+
     return ConditionalMouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: item.onTap,
-          borderRadius: BorderRadius.circular(8),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: Colors.transparent, // Placeholder for potential border
-                width: 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  item.icon,
-                  color: iconColor,
-                  size: 18,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    item.title,
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: 13,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (item.trailing != null) 
-                  item.trailing!
-                else if (item.subtitle != null) // e.g. "Coming Soon" badge
-                  Text(
-                    item.subtitle!,
-                    style: TextStyle(
-                      color: isDark ? Colors.white24 : Colors.black26,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  )
-                else if (isSelected && isDark) // Optional selection dot
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: item.accentColor ?? widget.accentColor,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
+      child: widget.isCompact
+          ? Tooltip(message: item.title, child: tile)
+          : tile,
     );
   }
 }

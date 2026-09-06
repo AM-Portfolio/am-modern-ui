@@ -30,6 +30,14 @@ void main() {
       service.isOn(FeatureFlagKeys.subscriptionPageEnabled, defaultValue: true),
       isTrue,
     );
+    expect(
+      service.isOn(FeatureFlagKeys.newsUiEnabled, defaultValue: true),
+      isTrue,
+    );
+    expect(
+      service.isOn(FeatureFlagKeys.newsUiEnabled, defaultValue: false),
+      isFalse,
+    );
     service.dispose();
   });
 }

@@ -4,7 +4,8 @@
   "description": "AM Investment Platform - Modern UI Task Runner",
   "scripts": {
     "manage": "python scripts/manage.py",
-    "run:app": "npm run run:app:local",
+    "start": "npm run run:app:9000:prod",
+    "run:app": "npm run run:app:9000:prod",
     "run:app:9000": "cd am_app && flutter run -d web-server --web-hostname=localhost --web-port=9000 --no-web-resources-cdn --dart-define=AM_ENV=prod",
     "run:app:9000:prod": "cd am_app && flutter run -d web-server --web-hostname=localhost --web-port=9000 --no-web-resources-cdn --dart-define=AM_ENV=prod",
     "start:app:9000:prod": "python scripts/start_app_web.py --env prod --port 9000",

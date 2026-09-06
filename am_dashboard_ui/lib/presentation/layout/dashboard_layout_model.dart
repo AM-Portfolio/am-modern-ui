@@ -99,42 +99,48 @@ class DashboardLayoutModel extends Equatable {
 
 /// Default layout: overlay comparison chart + movers (same chart as Portfolio overview).
 DashboardLayoutModel defaultDashboardLayout() {
-  return DashboardLayoutModel(
+  return const DashboardLayoutModel(
     slots: [
-      const DashboardWidgetSlot(
+      DashboardWidgetSlot(
         id: DashboardWidgetId.summary,
         visible: true,
         order: 0,
         size: DashboardWidgetSize.full,
       ),
-      const DashboardWidgetSlot(
+      DashboardWidgetSlot(
         id: DashboardWidgetId.benchmarkComparison,
         visible: true,
         order: 1,
         size: DashboardWidgetSize.twoThirds,
       ),
-      const DashboardWidgetSlot(
+      DashboardWidgetSlot(
         id: DashboardWidgetId.movers,
         visible: true,
         order: 2,
         size: DashboardWidgetSize.oneThird,
       ),
-      const DashboardWidgetSlot(
-        id: DashboardWidgetId.recentActivity,
+      DashboardWidgetSlot(
+        id: DashboardWidgetId.news,
         visible: true,
         order: 3,
-        size: DashboardWidgetSize.half,
+        size: DashboardWidgetSize.twoThirds,
       ),
-      const DashboardWidgetSlot(
-        id: DashboardWidgetId.portfolioList,
+      DashboardWidgetSlot(
+        id: DashboardWidgetId.recentActivity,
         visible: true,
         order: 4,
-        size: DashboardWidgetSize.half,
+        size: DashboardWidgetSize.oneThird,
       ),
-      const DashboardWidgetSlot(
+      DashboardWidgetSlot(
+        id: DashboardWidgetId.portfolioList,
+        visible: true,
+        order: 5,
+        size: DashboardWidgetSize.oneThird,
+      ),
+      DashboardWidgetSlot(
         id: DashboardWidgetId.allocation,
         visible: false,
-        order: 5,
+        order: 6,
         size: DashboardWidgetSize.oneThird,
       ),
     ],
@@ -161,12 +167,22 @@ DashboardLayoutModel normalizeDashboardLayout(DashboardLayoutModel layout) {
   return layout.copyWith(slots: slots);
 }
 
+const _newsRowSlotIds = {
+  DashboardWidgetId.news,
+  DashboardWidgetId.recentActivity,
+  DashboardWidgetId.portfolioList,
+  DashboardWidgetId.allocation,
+};
+
 /// Ensures every default widget slot exists (saved layouts may omit newer slots).
+/// News row order and size always follow the current defaults so saved layouts
+/// pick up the news + stacked activity/portfolios grid.
 DashboardLayoutModel mergeWithDefaultLayout(DashboardLayoutModel layout) {
   final defaults = defaultDashboardLayout();
   final savedById = {for (final s in layout.slots) s.id: s};
   final merged = <DashboardWidgetSlot>[
-    for (final slot in defaults.slots) savedById[slot.id] ?? slot,
+    for (final slot in defaults.slots)
+      _mergeDefaultSlot(slot, savedById[slot.id]),
   ];
   for (final slot in layout.slots) {
     if (!merged.any((s) => s.id == slot.id)) {
@@ -174,4 +190,47 @@ DashboardLayoutModel mergeWithDefaultLayout(DashboardLayoutModel layout) {
     }
   }
   return layout.copyWith(slots: merged);
+}
+
+DashboardWidgetSlot _mergeDefaultSlot(
+  DashboardWidgetSlot fallback,
+  DashboardWidgetSlot? saved,
+) {
+  if (saved == null) return fallback;
+  if (_newsRowSlotIds.contains(fallback.id)) {
+    return saved.copyWith(order: fallback.order, size: fallback.size);
+  }
+  return saved;
+}
+
+/// Narrow dashboards keep Your Portfolios above Recent Activity and put News last.
+/// Saved desktop order is unchanged.
+List<DashboardWidgetSlot> compactDashboardSlots(
+  List<DashboardWidgetSlot> slots, {
+  required bool newsEnabled,
+}) {
+  final filtered = [
+    for (final slot in slots)
+      if (newsEnabled || slot.id != DashboardWidgetId.news) slot,
+  ];
+  DashboardWidgetSlot? news;
+  DashboardWidgetSlot? activity;
+  DashboardWidgetSlot? portfolios;
+  final out = <DashboardWidgetSlot>[];
+  for (final slot in filtered) {
+    switch (slot.id) {
+      case DashboardWidgetId.news:
+        news = slot;
+      case DashboardWidgetId.recentActivity:
+        activity = slot;
+      case DashboardWidgetId.portfolioList:
+        portfolios = slot;
+      default:
+        out.add(slot);
+    }
+  }
+  if (portfolios != null) out.add(portfolios);
+  if (activity != null) out.add(activity);
+  if (news != null) out.add(news);
+  return out;
 }
