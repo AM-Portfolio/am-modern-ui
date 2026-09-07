@@ -22,7 +22,7 @@ final aiSessionServiceProvider = Provider<AiSessionService>((ref) {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      extra: kIsWeb ? const {'withCredentials': true} : null,
+      extra: kIsWeb ? <String, dynamic>{'withCredentials': true} : null,
     ),
   );
   if (kIsWeb) configureAiWebCredentials(dio);

@@ -12,7 +12,7 @@ final aiUsageServiceProvider = Provider<AiUsageService>((ref) {
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 15),
       headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
-      extra: kIsWeb ? const {'withCredentials': true} : null,
+      extra: kIsWeb ? <String, dynamic>{'withCredentials': true} : null,
     ),
   );
   if (kIsWeb) configureAiWebCredentials(dio);
