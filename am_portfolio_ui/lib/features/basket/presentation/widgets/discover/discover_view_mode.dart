@@ -1,0 +1,1 @@
+enum BasketViewMode { discover, myBaskets }

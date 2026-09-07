@@ -21,11 +21,13 @@ class BasketRepositoryImpl implements BasketRepository {
     required String userId,
     required String portfolioId,
     String? query,
+    String mode = 'DISCOVER',
   }) async {
     return remoteDataSource.getOpportunities(
       userId: userId,
       portfolioId: portfolioId,
       query: query,
+      mode: mode,
     );
   }
 

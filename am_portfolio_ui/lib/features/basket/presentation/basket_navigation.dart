@@ -529,7 +529,7 @@ class BasketSectionNavigator extends ConsumerStatefulWidget {
   final String portfolioId;
 
   /// Web: true for Smart Baskets + Discover/My Baskets header.
-  /// Mobile: false — toggle lives in portfolio sticky header.
+  /// Prefer true so Discover/My Baskets lives once inside the explorer.
   final bool showInlineToggle;
 
   @override
