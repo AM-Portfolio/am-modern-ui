@@ -72,6 +72,18 @@ Your portfolio currently shows no gain or loss.
       expect(cleaned, contains('Here is your portfolio summary'));
       expect(cleaned, isNot(contains('48,52,788')));
     });
+    test('strips leaked tool_code blocks from model text', () {
+      const text = '''
+I'll check your top performers for today.
+<tool_code>
+get_top_movers
+</tool_code>
+''';
+      final cleaned = AiMessageFormat.cleanDisplayText(text, null);
+      expect(cleaned, contains("I'll check your top performers"));
+      expect(cleaned, isNot(contains('tool_code')));
+      expect(cleaned, isNot(contains('get_top_movers')));
+    });
   });
 
   group('AiMessageFormat.parseMarkdownTable', () {

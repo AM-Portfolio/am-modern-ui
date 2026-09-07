@@ -43,6 +43,9 @@ class AiMessageFormat {
     var out = text.trim();
     if (out.isEmpty) return out;
 
+    // Models sometimes leak pseudo-XML tool markup into the assistant message.
+    out = _stripToolCodeBlocks(out);
+
     final widgetId = response?.widgetId ?? 'TEXT_RESPONSE';
     if (_structuredWidgets.contains(widgetId)) {
       out = _stripMarkdownTables(out);
@@ -52,6 +55,23 @@ class AiMessageFormat {
       out = _collapseBlankLines(out);
     }
     return out;
+  }
+
+  static final _toolCodeBlock = RegExp(
+    r'<tool_code>[\s\S]*?</tool_code>',
+    caseSensitive: false,
+  );
+  static final _toolCodeLine = RegExp(
+    r'^\s*</?tool_code>\s*$',
+    caseSensitive: false,
+    multiLine: true,
+  );
+
+  /// Drop leaked `<tool_code>…</tool_code>` (and bare tags) from model text.
+  static String _stripToolCodeBlocks(String text) {
+    var out = text.replaceAll(_toolCodeBlock, '');
+    out = out.replaceAll(_toolCodeLine, '');
+    return _collapseBlankLines(out);
   }
 
   static String toolLabel(String toolName) =>

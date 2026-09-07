@@ -1056,7 +1056,8 @@ class _InputBarState extends ConsumerState<_InputBar> {
   bool _usagePanelOpen = false;
 
   Future<void> _toggleUsagePanel() async {
-    if (!_usagePanelOpen && !widget.usage.hasLimit) {
+    // Always refresh when opening so the ring reflects post-chat metering.
+    if (!_usagePanelOpen) {
       await ref.read(aiUsageProvider.notifier).refresh();
     }
     if (!mounted) return;

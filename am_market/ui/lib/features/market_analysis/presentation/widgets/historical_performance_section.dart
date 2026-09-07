@@ -61,7 +61,7 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                     child: Text(
                       'Historical Monthly Performance (10 Years)',
                       style: AmTextStyles.h6.copyWith(
-                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                        color: context.colors.textPrimary,
                         fontSize: isMobile ? 14 : 18,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -71,7 +71,7 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                   if (!isMobile)
                   Text(
                     'Scroll to view more months  ➡',
-                    style: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontSize: 12),
+                    style: TextStyle(color: context.colors.textSecondary.withValues(alpha: 0.5), fontSize: 12),
                   ),
                 ],
               ),
@@ -124,10 +124,10 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                                 height: 36.0,
                                 padding: const EdgeInsets.symmetric(vertical: 8.0),
                                 decoration: BoxDecoration(
-                                  color: isDark ? const Color(0xFF1E1E32).withOpacity(0.8) : Colors.black.withOpacity(0.04),
+                                  color: isDark ? context.colors.cardSurface.withValues(alpha: 0.70) : Colors.black.withOpacity(0.04),
                                   border: Border(
                                     bottom: BorderSide(
-                                      color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08),
+                                      color: isDark ? context.colors.border.withValues(alpha: 0.35) : Colors.black.withOpacity(0.08),
                                       width: 1.0,
                                     ),
                                   ),
@@ -202,10 +202,10 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                               Container(
                                 padding: const EdgeInsets.symmetric(vertical: 8.0),
                                 decoration: BoxDecoration(
-                                  color: isDark ? const Color(0xFF1E1E32).withOpacity(0.8) : Colors.black.withOpacity(0.04),
+                                  color: isDark ? context.colors.cardSurface.withValues(alpha: 0.70) : Colors.black.withOpacity(0.04),
                                   border: Border(
                                     bottom: BorderSide(
-                                      color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08),
+                                      color: isDark ? context.colors.border.withValues(alpha: 0.35) : Colors.black.withOpacity(0.08),
                                       width: 1.0,
                                     ),
                                   ),
@@ -255,10 +255,10 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                                     Container(
                                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                                       decoration: BoxDecoration(
-                                        color: isDark ? const Color(0xFF1E1E32).withOpacity(0.8) : Colors.black.withOpacity(0.04),
+                                        color: isDark ? context.colors.cardSurface.withValues(alpha: 0.70) : Colors.black.withOpacity(0.04),
                                         border: Border(
                                           bottom: BorderSide(
-                                            color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08),
+                                            color: isDark ? context.colors.border.withValues(alpha: 0.35) : Colors.black.withOpacity(0.08),
                                             width: 1.0,
                                           ),
                                         ),

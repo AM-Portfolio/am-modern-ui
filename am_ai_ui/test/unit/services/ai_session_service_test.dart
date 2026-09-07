@@ -86,6 +86,38 @@ void main() {
       expect(chat[1].response?.widgetId, 'HOLDINGS_LIST');
       expect(chat[1].response?.toolsUsed, ['get_holdings']);
     });
+
+    test('copies unmodifiable widget_params from session messages', () {
+      final detail = AiSessionDetail.fromJson({
+        'session': {
+          'id': 'sess-2',
+          'title': 'T',
+          'product_id': 'am_app',
+          'agent_type': 'fin_portfolio',
+          'channel': 'user_app',
+          'created_at': '2026-09-01T10:00:00Z',
+          'updated_at': '2026-09-01T10:05:00Z',
+        },
+        'messages': [
+          {
+            'id': 'm1',
+            'session_id': 'sess-2',
+            'role': 'assistant',
+            'content': 'Summary',
+            'widget_id': 'PORTFOLIO_SUMMARY',
+            'widget_params':
+                Map<String, dynamic>.unmodifiable({'userId': 'u1'}),
+            'tools_used': <String>[],
+            'created_at': '2026-09-01T10:02:00Z',
+          },
+        ],
+      });
+
+      final params = detail.messages.single.widgetParams!;
+      params['extra'] = true;
+      expect(params['userId'], 'u1');
+      expect(params['extra'], true);
+    });
   });
 
   group('AiSessionService Configuration', () {

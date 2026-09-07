@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:am_market_sdk/market/api.dart';
 import 'package:am_design_system/core/theme/color_extensions.dart';
+import 'typewriter_hint_controller.dart';
 
 /**
  * Reusable, high-speed Smart Search & Recommendation widget.
@@ -13,6 +14,7 @@ import 'package:am_design_system/core/theme/color_extensions.dart';
  *   <li>Circular initial badge displaying the capitalized first letter (e.g., 'H', 'T', 'A').</li>
  *   <li>Passes the clean trading symbol (e.g. 'HDFCBANK') to onSelected callback.</li>
  *   <li>Supports both full-width center search and compact top-header search mode.</li>
+ *   <li>Optional animated ghost hints with smooth typewriter effect.</li>
  * </ul>
  */
 class SmartSearchAnchor extends StatefulWidget {
@@ -22,18 +24,28 @@ class SmartSearchAnchor extends StatefulWidget {
     required this.onSelected,
     this.onSubmit,
     this.hintText,
+    this.animatedHints,
     this.compact = false,
     this.category = 'STOCKS',
     this.searchHandler,
+    this.recentSearches = const [],
+    this.onRemoveRecent,
+    this.onClearRecent,
+    this.accentColor,
   });
 
   final TextEditingController? controller;
   final ValueChanged<String> onSelected;
   final VoidCallback? onSubmit;
   final String? hintText;
+  final List<String>? animatedHints;
   final bool compact;
   final String category;
   final Future<List<SecurityDocument>?> Function(String query)? searchHandler;
+  final List<String> recentSearches;
+  final ValueChanged<String>? onRemoveRecent;
+  final VoidCallback? onClearRecent;
+  final Color? accentColor;
 
   @override
   State<SmartSearchAnchor> createState() => _SmartSearchAnchorState();
@@ -50,16 +62,47 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
   bool _isLoading = false;
 
   final SecurityExplorerApi _searchApi = SecurityExplorerApi();
+  TypewriterHintController? _typewriterController;
+  String _currentAnimatedHint = '';
 
   @override
   void initState() {
     super.initState();
     _controller = widget.controller ?? TextEditingController();
     _focusNode.addListener(_onFocusChanged);
+
+    if (widget.animatedHints != null && widget.animatedHints!.isNotEmpty) {
+      _typewriterController = TypewriterHintController(
+        hints: widget.animatedHints!,
+        onHintChanged: (text, _) {
+          if (mounted) {
+            setState(() {
+              _currentAnimatedHint = text;
+            });
+          }
+        },
+      );
+      _typewriterController!.start();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant SmartSearchAnchor oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.recentSearches != widget.recentSearches) {
+      if (_overlayEntry != null && _controller.text.trim().isEmpty) {
+        if (widget.recentSearches.isEmpty) {
+          _removeOverlay();
+        } else {
+          _overlayEntry!.markNeedsBuild();
+        }
+      }
+    }
   }
 
   @override
   void dispose() {
+    _typewriterController?.dispose();
     _debounceTimer?.cancel();
     _removeOverlay();
     _focusNode.removeListener(_onFocusChanged);
@@ -72,10 +115,16 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
 
   void _onFocusChanged() {
     if (_focusNode.hasFocus) {
+      _typewriterController?.pause();
       if (_controller.text.trim().isNotEmpty) {
         _onQueryChanged(_controller.text);
+      } else if (widget.recentSearches.isNotEmpty) {
+        _showOverlay();
       }
     } else {
+      if (_controller.text.isEmpty) {
+        _typewriterController?.resume();
+      }
       // Delay removal so tap/click events in overlay execute completely
       Future.delayed(const Duration(milliseconds: 250), () {
         if (mounted && !_focusNode.hasFocus) {
@@ -98,7 +147,12 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
     final trimmed = query.trim();
 
     if (trimmed.isEmpty) {
-      _removeOverlay();
+      if (widget.recentSearches.isNotEmpty && _focusNode.hasFocus) {
+        setState(() => _recommendations = []);
+        _showOverlay();
+      } else {
+        _removeOverlay();
+      }
       return;
     }
 
@@ -125,7 +179,7 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
           _isLoading = false;
         });
 
-        if (_recommendations.isNotEmpty && _focusNode.hasFocus) {
+        if ((_recommendations.isNotEmpty || widget.recentSearches.isNotEmpty) && _focusNode.hasFocus) {
           _showOverlay();
         } else {
           _removeOverlay();
@@ -145,19 +199,26 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
     final renderBox = context.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
     final size = renderBox.size;
+    final isQueryEmpty = _controller.text.trim().isEmpty;
+
+    if (isQueryEmpty && widget.recentSearches.isEmpty) {
+      return;
+    }
 
     _overlayEntry = OverlayEntry(
-      builder: (context) => Positioned(
-        width: widget.compact ? 320 : size.width,
-        child: CompositedTransformFollower(
-          link: _layerLink,
-          showWhenUnlinked: false,
-          offset: Offset(widget.compact ? -(320 - size.width) : 0, size.height + 6),
-          child: Material(
-            elevation: 8,
-            borderRadius: BorderRadius.circular(12),
-            color: context.colors.cardSurface,
-            child: Container(
+      builder: (context) {
+        final effectiveAccentColor = widget.accentColor ?? context.colors.actionPrimaryBg;
+        return Positioned(
+          width: widget.compact ? 320 : size.width,
+          child: CompositedTransformFollower(
+            link: _layerLink,
+            showWhenUnlinked: false,
+            offset: Offset(widget.compact ? -(320 - size.width) : 0, size.height + 6),
+            child: Material(
+              elevation: 8,
+              borderRadius: BorderRadius.circular(12),
+              color: context.colors.cardSurface,
+              child: Container(
               decoration: BoxDecoration(
                 color: context.colors.cardSurface,
                 borderRadius: BorderRadius.circular(12),
@@ -171,7 +232,123 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
                 ],
               ),
               constraints: const BoxConstraints(maxHeight: 280),
-              child: ListView.separated(
+              child: isQueryEmpty
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(14, 8, 8, 4),
+                          child: Row(
+                            children: [
+                              Icon(Icons.history_rounded, size: 14, color: context.colors.textTertiary),
+                              const SizedBox(width: 6),
+                              Text(
+                                'RECENTLY VIEWED',
+                                style: TextStyle(
+                                  color: context.colors.textTertiary,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              const Spacer(),
+                              if (widget.onClearRecent != null)
+                                InkWell(
+                                  onTap: () {
+                                    widget.onClearRecent!();
+                                  },
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    child: Text(
+                                      'Clear',
+                                      style: TextStyle(
+                                        color: context.colors.textTertiary,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        Divider(color: context.colors.divider, height: 1),
+                        ListView.separated(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          shrinkWrap: true,
+                          itemCount: widget.recentSearches.length,
+                          separatorBuilder: (context, index) => Divider(
+                            color: context.colors.divider,
+                            height: 1,
+                            indent: 48,
+                          ),
+                          itemBuilder: (context, index) {
+                            final sym = widget.recentSearches[index];
+                            final initial = sym.isNotEmpty ? sym[0] : '?';
+                            return InkWell(
+                              borderRadius: BorderRadius.circular(8),
+                              onTap: () => _handleSelection(sym),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 28,
+                                      height: 28,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: context.colors.surface,
+                                        border: Border.all(color: context.colors.border, width: 1),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        initial,
+                                        style: TextStyle(
+                                          color: effectiveAccentColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        sym,
+                                        style: TextStyle(
+                                          color: context.colors.textPrimary,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                    if (widget.onRemoveRecent != null)
+                                      IconButton(
+                                        icon: Icon(
+                                          Icons.close_rounded,
+                                          size: 14,
+                                          color: context.colors.textTertiary,
+                                        ),
+                                        splashRadius: 14,
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                                        tooltip: 'Remove $sym',
+                                        onPressed: () {
+                                          widget.onRemoveRecent!(sym);
+                                        },
+                                      )
+                                    else
+                                      Icon(Icons.north_west_rounded, size: 14, color: context.colors.textTertiary),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    )
+                  : ListView.separated(
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 shrinkWrap: true,
                 itemCount: _recommendations.length,
@@ -212,7 +389,7 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
                               child: Text(
                                 initial,
                                 style: TextStyle(
-                                  color: context.colors.actionPrimaryBg,
+                                  color: effectiveAccentColor,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 13,
                                 ),
@@ -277,8 +454,9 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
             ),
           ),
         ),
-      ),
-    );
+      );
+    },
+  );
 
     overlay.insert(_overlayEntry!);
   }
@@ -290,7 +468,7 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = context.colors.actionPrimaryBg;
+    final effectiveAccentColor = widget.accentColor ?? context.colors.actionPrimaryBg;
 
     return CompositedTransformTarget(
       link: _layerLink,
@@ -312,11 +490,16 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
           fontSize: widget.compact ? 13 : 15,
         ),
         decoration: InputDecoration(
-          hintText: widget.hintText ?? (widget.compact ? 'Symbol…' : 'e.g. HDFC, TCS, RELIANCE'),
-          hintStyle: TextStyle(color: context.colors.textTertiary),
+          hintText: _typewriterController != null
+              ? _currentAnimatedHint
+              : (widget.hintText ?? (widget.compact ? 'Symbol…' : 'e.g. HDFC, TCS, RELIANCE')),
+          hintStyle: TextStyle(
+            color: context.colors.textTertiary,
+            fontStyle: _typewriterController != null ? FontStyle.italic : FontStyle.normal,
+          ),
           filled: true,
           fillColor: context.colors.scaffoldBackground,
-          prefixIcon: Icon(Icons.search, color: accentColor, size: widget.compact ? 18 : 22),
+          prefixIcon: Icon(Icons.search, color: effectiveAccentColor, size: widget.compact ? 18 : 22),
           suffixIcon: _isLoading
               ? Padding(
                   padding: const EdgeInsets.all(12),
@@ -325,7 +508,7 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
                     height: 14,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: accentColor,
+                      color: effectiveAccentColor,
                     ),
                   ),
                 )
@@ -353,7 +536,7 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(widget.compact ? 8 : 12),
-            borderSide: BorderSide(color: accentColor, width: 1.5),
+            borderSide: BorderSide(color: effectiveAccentColor, width: 1.5),
           ),
         ),
       ),

@@ -22,13 +22,27 @@ class AuthInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    final token = await _storageService.getAccessToken();
+    try {
+      final token = await _storageService.getAccessToken();
 
-    if (token != null && token.isNotEmpty && _shouldAttachBearer(token)) {
-      options.headers['Authorization'] = 'Bearer $token';
+      // Dio/web may hand back an unmodifiable headers map — copy before write.
+      if (token != null && token.isNotEmpty && _shouldAttachBearer(token)) {
+        options.headers = Map<String, dynamic>.from(options.headers);
+        options.headers['Authorization'] = 'Bearer $token';
+      }
+
+      handler.next(options);
+    } catch (e, st) {
+      handler.reject(
+        DioException(
+          requestOptions: options,
+          error: e,
+          stackTrace: st,
+          type: DioExceptionType.unknown,
+          message: 'Auth interceptor failed: $e',
+        ),
+      );
     }
-
-    return handler.next(options);
   }
 
   @override
@@ -56,7 +70,7 @@ class AuthInterceptor extends Interceptor {
 
     final retryOptions = err.requestOptions.copyWith(
       headers: {
-        ...err.requestOptions.headers,
+        ...Map<String, dynamic>.from(err.requestOptions.headers),
         'Authorization': 'Bearer $newToken',
       },
       extra: {

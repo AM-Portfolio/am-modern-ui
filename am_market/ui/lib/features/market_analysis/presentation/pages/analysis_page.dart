@@ -11,20 +11,21 @@ class AnalysisPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isMobile = MediaQuery.of(context).size.width < 600;
+    final marketColor = ModuleColors.market;
+    final scaffoldBg = context.colors.scaffoldBackground;
     
     return Scaffold(
       body: Container(
-        // Applied custom linear gradient using the exact requested base shade #151524
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Color(0xFF0F0F1A), // Deep backdrop
-              Color(0xFF151524), // Base theme shade (rgba(21, 21, 36, 1))
-              Color(0xFF1F1F35), // Subtle lighter endpoint for structural gradient
+              scaffoldBg,
+              Color.alphaBlend(marketColor.withValues(alpha: 0.05), scaffoldBg),
+              context.colors.surface,
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            stops: [0.0, 0.5, 1.0],
+            stops: const [0.0, 0.5, 1.0],
           ),
         ),
         child: SafeArea(
@@ -39,12 +40,12 @@ class AnalysisPage extends ConsumerWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Market Analysis',
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: context.colors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -52,7 +53,7 @@ class AnalysisPage extends ConsumerWidget {
                         'Detailed indices performance, seasonality, and heatmaps',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.white.withOpacity(0.6),
+                          color: context.colors.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -67,12 +68,12 @@ class AnalysisPage extends ConsumerWidget {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Market Analysis',
                             style: TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: context.colors.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -80,7 +81,7 @@ class AnalysisPage extends ConsumerWidget {
                             'Detailed indices performance, seasonality, and heatmaps',
                             style: TextStyle(
                               fontSize: 14,
-                              color: Colors.white.withOpacity(0.6),
+                              color: context.colors.textSecondary,
                             ),
                           ),
                         ],

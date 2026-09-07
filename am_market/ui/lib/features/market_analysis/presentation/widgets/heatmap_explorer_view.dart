@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart' as provider_pkg;
 import 'package:provider/provider.dart' show ReadContext, WatchContext;
-import 'package:am_design_system/core/theme/app_colors.dart';
+import 'package:am_design_system/am_design_system.dart';
 import 'package:am_library/am_library.dart';
 import 'package:am_market_common/providers/market_provider.dart';
 import 'package:am_market_ui/shared/widgets/glass_container.dart';
@@ -115,24 +115,7 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
     });
 
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? const [
-                  Color(0xFF0F0F1A), // Deep shadow
-                  Color(0xFF151524), // Custom base shade (rgba(21, 21, 36, 1))
-                  Color(0xFF1F1F35), // Subtle lighter highlight
-                ]
-              : const [
-                  Color(0xFFF5F5FC), // Light lilac backdrop
-                  Color(0xFFECECF8), // Base light theme shade
-                  Color(0xFFE2E2F2), // Subtle accent light highlight
-                ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          stops: const [0.0, 0.5, 1.0],
-        ),
-      ),
+      color: Colors.transparent,
       child: SafeArea(
         top: false,
         bottom: false,
@@ -143,9 +126,11 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
               margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
               padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E2C).withOpacity(0.4) : AppColors.lightCard.withOpacity(0.85),
+            color: isDark
+                ? context.colors.cardSurface.withValues(alpha: 0.60)
+                : context.colors.cardSurface.withValues(alpha: 0.90),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
+            border: Border.all(color: context.colors.border.withValues(alpha: isDark ? 0.35 : 0.5)),
             boxShadow: isDark
                 ? []
                 : [
@@ -169,15 +154,15 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
                        decoration: BoxDecoration(
                          color: isDark ? Colors.black.withOpacity(0.2) : Colors.black.withOpacity(0.03),
                          borderRadius: BorderRadius.circular(12),
-                         border: Border.all(color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.08)),
+                         border: Border.all(color: context.colors.border.withValues(alpha: isDark ? 0.25 : 0.4)),
                        ),
                        child: TextField(
                          controller: _searchController,
-                         style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 14),
+                         style: TextStyle(color: context.colors.textPrimary, fontSize: 14),
                          decoration: InputDecoration(
                            hintText: 'Search Symbol (e.g. RELIANCE, NIFTY 50)',
-                           hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 13),
-                           prefixIcon: Icon(Icons.search, color: isDark ? Colors.white54 : Colors.black54, size: 20),
+                           hintStyle: TextStyle(color: context.colors.textSecondary.withValues(alpha: 0.6), fontSize: 13),
+                           prefixIcon: Icon(Icons.search, color: context.colors.textSecondary, size: 20),
                            border: InputBorder.none,
                            contentPadding: const EdgeInsets.symmetric(vertical: 10),
                          ),
@@ -209,20 +194,19 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
                        padding: const EdgeInsets.symmetric(horizontal: 18),
                        decoration: BoxDecoration(
                          color: isDark
-                             ? const Color(0xFF00D1FF).withOpacity(0.2)
-                             : const Color(0xFF0E7490),
+                             ? ModuleColors.market.withValues(alpha: 0.2)
+                             : ModuleColors.market,
                          borderRadius: BorderRadius.circular(12),
                          border: Border.all(
                            color: isDark
-                               ? const Color(0xFF00D1FF).withOpacity(0.45)
-                               : const Color(0xFF0E7490),
+                               ? ModuleColors.market.withValues(alpha: 0.45)
+                               : ModuleColors.market,
                          ),
                          boxShadow: isDark
                              ? []
                              : [
                                  BoxShadow(
-                                   color: const Color(0xFF0E7490)
-                                       .withOpacity(0.18),
+                                   color: ModuleColors.market.withValues(alpha: 0.18),
                                    blurRadius: 6,
                                    offset: const Offset(0, 2),
                                  ),
@@ -233,7 +217,7 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
                             selector: (_, p) => p.isLoading,
                             builder: (context, isLoading, child) {
                               final labelColor = isDark
-                                  ? const Color(0xFF00D1FF)
+                                  ? ModuleColors.market
                                   : Colors.white;
                               return isLoading 
                                   ? SizedBox(
@@ -294,9 +278,11 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
                     const SizedBox(height: 10),
                     Container(
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF1E1E2C).withOpacity(0.4) : AppColors.lightCard.withOpacity(0.85),
+                        color: isDark
+                            ? context.colors.cardSurface.withValues(alpha: 0.60)
+                            : context.colors.cardSurface.withValues(alpha: 0.90),
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
+                        border: Border.all(color: context.colors.border.withValues(alpha: isDark ? 0.35 : 0.5)),
                         boxShadow: isDark
                             ? []
                             : [
@@ -333,22 +319,24 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
                         : Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                                Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: isDark ? const Color(0xFF1E1E2C).withOpacity(0.4) : AppColors.lightCard.withOpacity(0.85),
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
-                                  boxShadow: isDark
-                                      ? []
-                                      : [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(0.04),
-                                            blurRadius: 10,
-                                            offset: const Offset(0, 4),
-                                          )
-                                        ],
-                                ),
+                                 Container(
+                                 padding: const EdgeInsets.all(16),
+                                 decoration: BoxDecoration(
+                                   color: isDark
+                                       ? context.colors.cardSurface.withValues(alpha: 0.60)
+                                       : context.colors.cardSurface.withValues(alpha: 0.90),
+                                   borderRadius: BorderRadius.circular(16),
+                                   border: Border.all(color: context.colors.border.withValues(alpha: isDark ? 0.35 : 0.5)),
+                                   boxShadow: isDark
+                                       ? []
+                                       : [
+                                           BoxShadow(
+                                             color: Colors.black.withOpacity(0.04),
+                                             blurRadius: 10,
+                                             offset: const Offset(0, 4),
+                                           )
+                                         ],
+                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -487,9 +475,11 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E2C).withOpacity(0.4) : AppColors.lightCard.withOpacity(0.85),
+        color: isDark
+            ? context.colors.cardSurface.withValues(alpha: 0.60)
+            : context.colors.cardSurface.withValues(alpha: 0.90),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
+        border: Border.all(color: context.colors.border.withValues(alpha: isDark ? 0.35 : 0.5)),
         boxShadow: isDark
             ? []
             : [
@@ -716,9 +706,11 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
 
       return Container(
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E2C).withOpacity(0.4) : AppColors.lightCard.withOpacity(0.85),
+            color: isDark
+                ? context.colors.cardSurface.withValues(alpha: 0.60)
+                : context.colors.cardSurface.withValues(alpha: 0.90),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
+            border: Border.all(color: context.colors.border.withValues(alpha: isDark ? 0.35 : 0.5)),
             boxShadow: isDark
                 ? []
                 : [
@@ -879,19 +871,24 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isDark
-              ? (isSelected ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.2))
-              : (isSelected ? Colors.black.withOpacity(0.1) : Colors.black.withOpacity(0.03)),
+          color: isSelected
+              ? ModuleColors.market.withValues(alpha: isDark ? 0.25 : 0.15)
+              : (isDark ? context.colors.cardSurface.withValues(alpha: 0.5) : Colors.black.withOpacity(0.04)),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? (isDark ? Colors.white54 : Colors.black26) : Colors.transparent),
+          border: Border.all(
+            color: isSelected
+                ? ModuleColors.market.withValues(alpha: 0.6)
+                : context.colors.border.withValues(alpha: isDark ? 0.2 : 0.4),
+          ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isDark
-                ? Colors.white.withOpacity(isSelected ? 1 : 0.7)
-                : Colors.black.withOpacity(isSelected ? 1 : 0.7),
+            color: isSelected
+                ? ModuleColors.market
+                : context.colors.textSecondary,
             fontSize: 12,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
         ),
       ),

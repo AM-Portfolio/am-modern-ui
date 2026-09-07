@@ -263,6 +263,9 @@ class ConfigService {
         },
       );
       if (res.statusCode == 200) {
+        final body = res.body.trimLeft();
+        // Flutter web-server returns index.html (200) for missing paths.
+        if (body.startsWith('<')) return null;
         return jsonDecode(res.body) as Map<String, dynamic>;
       }
     } catch (e) {

@@ -1126,13 +1126,14 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     bool isEnabled = true,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeAccent = widget.accentColor ?? ModuleColors.market;
     final color = isSelected
-        ? const Color(0xFF00D1FF)
+        ? activeAccent
         : (isEnabled 
             ? (isDark ? Colors.white70 : Colors.black87) 
             : (isDark ? Colors.white24 : Colors.black26));
     final bgColor = isSelected
-        ? const Color(0xFF00D1FF).withOpacity(0.15)
+        ? activeAccent.withValues(alpha: 0.15)
         : Colors.transparent;
 
     return IgnorePointer(
