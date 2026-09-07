@@ -222,7 +222,7 @@ class EquityInsiderKpis extends ConsumerWidget {
                       crossAxisCount: 2,
                       crossAxisSpacing: 8,
                       mainAxisSpacing: 8,
-                      mainAxisExtent: 80,
+                      mainAxisExtent: 96,
                     ),
                     itemCount: validMetrics.length,
                     itemBuilder: (context, i) {
@@ -319,7 +319,7 @@ class EquityInsiderKpis extends ConsumerWidget {
     if (isNegative) valColor = context.marketTheme.negative;
 
     return GlassCard(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       borderRadius: 12,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -337,21 +337,25 @@ class EquityInsiderKpis extends ConsumerWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          const Spacer(),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              value.toStringAsFixed(2),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: valColor,
-                letterSpacing: -0.5,
+          const SizedBox(height: 2),
+          Expanded(
+            child: Center(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  value.toStringAsFixed(2),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: valColor,
+                    letterSpacing: -0.5,
+                  ),
+                ),
               ),
             ),
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 2),
           Text(
             subtitle,
             textAlign: TextAlign.center,

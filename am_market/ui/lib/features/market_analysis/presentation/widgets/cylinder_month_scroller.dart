@@ -1,6 +1,7 @@
-﻿import 'dart:math';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_common/models/indices_performance_model.dart';
 import 'package:am_market_ui/features/market_analysis/presentation/widgets/monthly_performance_card.dart';
 
@@ -276,12 +277,12 @@ class _CylinderMonthScrollerState extends State<CylinderMonthScroller>
           height: 36.0,
           decoration: BoxDecoration(
             color: isDark
-                ? const Color(0xFF1E1E32).withOpacity(0.95)
+                ? context.colors.cardSurface.withValues(alpha: 0.70)
                 : Colors.black.withOpacity(0.05),
             border: Border(
               bottom: BorderSide(
                 color: isDark
-                    ? Colors.white.withOpacity(0.10)
+                    ? context.colors.border.withValues(alpha: 0.35)
                     : Colors.black.withOpacity(0.08),
               ),
             ),

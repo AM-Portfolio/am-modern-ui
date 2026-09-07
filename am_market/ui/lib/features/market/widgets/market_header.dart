@@ -29,7 +29,7 @@ class _AllIndicesChipState extends State<AllIndicesChip> {
 
   @override
   Widget build(BuildContext context) {
-    final accent = const Color(0xFF00D1FF);
+    final accent = ModuleColors.market;
 
     if (widget.iconOnly) {
       return Tooltip(

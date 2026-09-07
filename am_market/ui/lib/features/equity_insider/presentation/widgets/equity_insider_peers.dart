@@ -102,23 +102,12 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final double tableWidth = max(constraints.maxWidth, 1080.0);
-                    return SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: SizedBox(
-                        width: tableWidth,
-                        child: Column(
-                          children: [
-                            _buildTableHeader(context, activeCols),
-                            const SizedBox(height: 4),
-                            ...sortedPeers.map((peer) => _buildTableRow(context, peer, maxRoe, activeCols)),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
+                AmAdaptiveTableCardView<CompetitorPeer>(
+                  items: sortedPeers,
+                  breakpoint: 768.0,
+                  spacing: 10.0,
+                  tableBuilder: (context, items) => _buildDesktopTable(context, items, maxRoe, activeCols),
+                  cardBuilder: (context, peer, index) => _buildMobilePeerCard(context, peer, maxRoe, activeCols),
                 ),
               ],
             );
@@ -136,6 +125,134 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildDesktopTable(
+    BuildContext context,
+    List<CompetitorPeer> sortedPeers,
+    double maxRoe,
+    List<PeerColumnDef> activeCols,
+  ) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double tableWidth = max(constraints.maxWidth, 1080.0);
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: tableWidth,
+            child: Column(
+              children: [
+                _buildTableHeader(context, activeCols),
+                const SizedBox(height: 4),
+                ...sortedPeers.map((peer) => _buildTableRow(context, peer, maxRoe, activeCols)),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMobilePeerCard(
+    BuildContext context,
+    CompetitorPeer peer,
+    double maxRoe,
+    List<PeerColumnDef> activeCols,
+  ) {
+    final isCurrent = peer.symbol == widget.symbol;
+    final targetSymbol = (peer.symbol ?? '').trim();
+    final displayName = targetSymbol.isNotEmpty ? targetSymbol : (peer.companyName ?? '—');
+    final isClickable = targetSymbol.isNotEmpty && targetSymbol != widget.symbol;
+
+    String dayChangeStr = '—';
+    Color dayChangeColor = context.textSecondary;
+    if (peer.dayChangePercent != null) {
+      final sign = peer.dayChangePercent! >= 0 ? '+' : '';
+      dayChangeStr = '$sign${peer.dayChangePercent!.toStringAsFixed(2)}%';
+      dayChangeColor = peer.dayChangePercent! >= 0
+          ? context.marketTheme.positive
+          : context.marketTheme.negative;
+    }
+
+    final priceStr = peer.currentPrice != null
+        ? '₹${NumberFormat('#,##,##0.00', 'en_IN').format(peer.currentPrice)}'
+        : '—';
+
+    final isPriceActive = _activeSortColumn == 'currentPrice';
+    final isDayChgActive = _activeSortColumn == 'dayChangePercent';
+
+    return AmEntityMobileCard(
+      isSelected: isCurrent,
+      accentColor: ModuleColors.market,
+      onTap: isClickable ? () => widget.onPeerSelected?.call(targetSymbol) : null,
+      leading: AmLetterAvatar(
+        text: displayName,
+        color: isCurrent ? context.marketTheme.positive : null,
+      ),
+      title: Text(
+        displayName,
+        style: TextStyle(
+          fontWeight: FontWeight.w700,
+          fontSize: 13,
+          color: isClickable
+              ? ModuleColors.market
+              : (isCurrent ? context.marketTheme.positive : context.textPrimary),
+        ),
+        overflow: TextOverflow.ellipsis,
+      ),
+      titleBadge: isCurrent
+          ? AmMetricBadge(
+              label: 'YOU',
+              color: context.marketTheme.positive,
+              fontSize: 9,
+            )
+          : null,
+      subtitle: (peer.companyName != null &&
+              peer.companyName!.isNotEmpty &&
+              peer.companyName != targetSymbol)
+          ? peer.companyName
+          : null,
+      primaryMetric: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: isPriceActive
+              ? ModuleColors.market.withValues(alpha: 0.12)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(
+          priceStr,
+          style: TextStyle(
+            color: isPriceActive ? ModuleColors.market : context.textPrimary,
+            fontWeight: isPriceActive ? FontWeight.w700 : FontWeight.w600,
+            fontSize: 13,
+          ),
+        ),
+      ),
+      secondaryMetric: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        decoration: BoxDecoration(
+          color: isDayChgActive
+              ? ModuleColors.market.withValues(alpha: 0.12)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: AmMetricBadge(
+          label: dayChangeStr,
+          color: dayChangeColor,
+          fontSize: 10,
+        ),
+      ),
+      metricsColumns: 3,
+      metrics: activeCols.map((col) {
+        final isColActive = _activeSortColumn == col.key;
+        return AmCardMetricItem(
+          label: col.label,
+          valueWidget: col.cellBuilder(context, peer, maxRoe),
+          isHighlighted: isColActive,
+        );
+      }).toList(),
     );
   }
 

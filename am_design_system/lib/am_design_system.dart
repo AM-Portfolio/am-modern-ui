@@ -112,6 +112,7 @@ export 'shared/widgets/cards/app_card.dart';
 export 'shared/widgets/cards/investment_card.dart';
 export 'shared/widgets/cards/am_stat_card.dart';
 export 'shared/widgets/cards/am_mobile_list_tile.dart';
+export 'shared/widgets/cards/am_entity_mobile_card.dart';
 export 'shared/widgets/portfolio_display_controller.dart';
 export 'shared/widgets/display/interactive_background.dart';
 // Heatmaps
@@ -142,6 +143,7 @@ export 'shared/widgets/calendar/universal_calendar/data_provider.dart';
 export 'shared/widgets/tables/sortable_table.dart';
 export 'shared/widgets/tables/paginated_sortable_table.dart';
 export 'shared/widgets/tables/adaptive_data_table.dart';
+export 'shared/widgets/tables/am_adaptive_table_view.dart';
 export 'shared/widgets/charts/chart_factory.dart';
 export 'shared/widgets/charts/chart_types.dart';
 export 'shared/widgets/charts/chart_axis_scale.dart';

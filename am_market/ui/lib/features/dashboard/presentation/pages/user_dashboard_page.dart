@@ -563,10 +563,24 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
 
     // Main content
     final isMobile = MediaQuery.sizeOf(context).width < 768;
+    final marketColor = ModuleColors.market;
+    final scaffoldBg = context.colors.scaffoldBackground;
+
     return Stack(
           children: [
             Container(
-              decoration: AppGlassmorphismV2.techBackground(isDark: isDark),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    scaffoldBg,
+                    Color.alphaBlend(marketColor.withValues(alpha: 0.05), scaffoldBg),
+                    context.colors.surface,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  stops: const [0.0, 0.5, 1.0],
+                ),
+              ),
               child: SingleChildScrollView(
                 padding: EdgeInsets.all(isMobile ? 12 : 24),
                 child: Column(
@@ -678,14 +692,14 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                                 children: [
                                   IconButton(
                                     icon: Icon(Icons.show_chart, 
-                                        color: !isBarChart ? MarketColors.borderSelected(context) : (isDark ? Colors.white54 : Colors.black54),
+                                        color: !isBarChart ? ModuleColors.market : (isDark ? Colors.white54 : Colors.black54),
                                         size: 20),
                                     onPressed: () => setState(() => isBarChart = false),
                                     tooltip: 'Line Chart',
                                   ),
                                   IconButton(
                                     icon: Icon(Icons.bar_chart, 
-                                        color: isBarChart ? MarketColors.borderSelected(context) : (isDark ? Colors.white54 : Colors.black54),
+                                        color: isBarChart ? ModuleColors.market : (isDark ? Colors.white54 : Colors.black54),
                                         size: 20),
                                     onPressed: () => setState(() => isBarChart = true),
                                     tooltip: 'Bar Chart',
@@ -767,7 +781,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                                                        data.indexSymbol.toLowerCase().contains(_popoverSearchQuery.toLowerCase()) ||
                                                        (data.indexName?.toLowerCase().contains(_popoverSearchQuery.toLowerCase()) ?? false)
                                                      ).toList();
-                                                     final accent = MarketColors.borderSelected(context);
+                                                     final accent = ModuleColors.market;
 
                                                      return Column(
                                                        mainAxisSize: MainAxisSize.min,
@@ -980,7 +994,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                                  child: IconButton(
                                    icon: RotationTransition(
                                      turns: Tween<double>(begin: 0.0, end: 0.125).animate(_popoverAnimationController),
-                                     child: Icon(Icons.add, color: MarketColors.borderSelected(context)),
+                                     child: Icon(Icons.add, color: ModuleColors.market),
                                    ),
                                    onPressed: _togglePopover,
                                    tooltip: 'Compare Indices',
@@ -1048,10 +1062,10 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: MarketColors.borderSelected(context).withValues(alpha: 0.15),
+                        color: ModuleColors.market.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: MarketColors.borderSelected(context).withValues(alpha: 0.35),
+                          color: ModuleColors.market.withValues(alpha: 0.35),
                         ),
                       ),
                       child: Row(
@@ -1060,7 +1074,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                           Text(
                             selectedIndexForMovers,
                             style: TextStyle(
-                              color: MarketColors.borderSelected(context),
+                              color: ModuleColors.market,
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                             ),
@@ -1069,7 +1083,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                           Icon(
                             Icons.keyboard_arrow_down_rounded,
                             size: 16,
-                            color: MarketColors.borderSelected(context).withValues(alpha: 0.9),
+                            color: ModuleColors.market.withValues(alpha: 0.9),
                           ),
                         ],
                       ),
