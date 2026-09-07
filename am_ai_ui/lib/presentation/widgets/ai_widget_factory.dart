@@ -16,12 +16,6 @@ class AiWidgetFactory {
 
   static Map<String, dynamic>? _coerceDataMap(dynamic raw) {
     if (raw == null) return null;
-    if (raw is Map<String, dynamic>) {
-      if (raw.containsKey('ok') && raw['data'] is Map<String, dynamic>) {
-        return Map<String, dynamic>.from(raw['data'] as Map);
-      }
-      return raw;
-    }
     if (raw is Map) {
       final map = Map<String, dynamic>.from(raw);
       if (map.containsKey('ok') && map['data'] is Map) {

@@ -200,9 +200,22 @@ def resolve_boot_trace(env_vars, flags, action):
 
 def construct_dart_defines(env_vars, boot_trace):
     defines = []
+    skip_empty = {"AM_DEV_TOKEN", "AM_DEV_USER_ID", "AM_DEV_USER_EMAIL", "AM_DEV_AUTH_TOKEN"}
+    placeholders = {
+        "your-dev-token",
+        "your-dev-user-id",
+        "mock_dev_token",
+        "local-dev-user",
+        "your-google-client-id",
+    }
     for k, v in env_vars.items():
-        if k.startswith("AM_") and k != "AM_BOOT_TRACE":
-            defines.append(f"--dart-define={k}={v}")
+        if not k.startswith("AM_") or k == "AM_BOOT_TRACE":
+            continue
+        if k in skip_empty and (not v or v.strip() in placeholders):
+            continue
+        if v.strip() in placeholders:
+            continue
+        defines.append(f"--dart-define={k}={v}")
     defines.append(f"--dart-define=AM_BOOT_TRACE={'true' if boot_trace else 'false'}")
     return defines
 
@@ -221,15 +234,20 @@ def handle_run(pkg, env_name, flags):
 
     device = get_available_device(env_vars)
     port = get_web_port(package, env_vars)
+    # Bind IPv4 explicitly — hostname=localhost often listens on ::1 only, so
+    # Chrome via 127.0.0.1 hangs waiting for the debug service / never shows login.
+    web_host = env_vars.get("FLUTTER_WEB_HOSTNAME", "127.0.0.1")
 
-    launch_url = f"http://localhost:{port}/login"
+    launch_url = f"http://{web_host}:{port}/login"
     if boot_trace:
         launch_url += "?bootTrace=1"
         print("[BootTrace] Enabled — console timing + summary after load")
         print(f"[BootTrace] Launch URL: {launch_url}")
+    print(f"[Web] Serving on http://{web_host}:{port}/login (AM_ENV={env_name})")
 
     cmd = [
         "flutter", "run", "-d", device,
+        f"--web-hostname={web_host}",
         f"--web-port={port}",
         "--no-web-resources-cdn",
         "--web-browser-flag=--disable-web-security",

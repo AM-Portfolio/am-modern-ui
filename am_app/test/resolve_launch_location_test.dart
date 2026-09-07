@@ -68,15 +68,23 @@ void main() {
       );
     });
 
-    test('falls back to dashboard for unknown or root paths', () {
+    test('root and unknown paths open login (not dashboard spinner)', () {
       expect(
         resolveLaunchLocation(launchUri: Uri.parse('https://am.asrax.in/')),
-        AppRoutes.dashboard,
+        AppRoutes.login,
+      );
+      expect(
+        resolveLaunchLocation(launchUri: Uri.parse('http://localhost:9000/')),
+        AppRoutes.login,
       );
       expect(
         resolveLaunchLocation(launchUri: Uri.parse('https://am.asrax.in/unknown')),
-        AppRoutes.dashboard,
+        AppRoutes.login,
       );
+    });
+
+    test('null launchUri defaults to login', () {
+      expect(resolveLaunchLocation(launchUri: null), AppRoutes.login);
     });
   });
 }
