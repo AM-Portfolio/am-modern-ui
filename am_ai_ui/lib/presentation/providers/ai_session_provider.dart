@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
 import '../../data/ai_chat_service.dart';
 import '../../data/ai_dio_web_credentials.dart';
+import '../../data/ai_session_errors.dart';
 import '../../data/ai_session_models.dart';
 import '../../data/ai_session_service.dart';
 
@@ -66,7 +67,7 @@ class AiSessionNotifier extends Notifier<SessionListState> {
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        error: _friendlyError(e),
+        error: aiSessionFriendlyError(e),
       );
     }
   }
@@ -81,32 +82,9 @@ class AiSessionNotifier extends Notifier<SessionListState> {
       );
       return true;
     } catch (e) {
-      state = state.copyWith(error: _friendlyError(e));
+      state = state.copyWith(error: aiSessionFriendlyError(e));
       return false;
     }
-  }
-
-  static String _friendlyError(Object e) {
-    if (e is DioException) {
-      final code = e.response?.statusCode;
-      if (code == 401 || code == 403) {
-        return 'Sign in again to load chat history.';
-      }
-      if (code == 404) return 'Session not found.';
-      return e.message ?? 'Could not reach chat history.';
-    }
-    if (e is FormatException) {
-      final msg = e.message;
-      if (msg.contains('HTML') ||
-          msg.contains('empty') ||
-          msg.contains('non-JSON') ||
-          msg.contains('non-object') ||
-          msg.contains('auth')) {
-        return 'Sign in again to load chat history.';
-      }
-      return 'Could not load chat history.';
-    }
-    return e.toString();
   }
 }
 

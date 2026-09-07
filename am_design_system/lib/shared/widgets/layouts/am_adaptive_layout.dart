@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/breakpoints.dart';
+import '../zoom/browser_zoom_host.dart';
 
 /// Responsive layout engine for the AM Platform.
 ///
@@ -93,7 +94,7 @@ class AmAdaptiveLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = constraints.maxWidth;
+        final width = BrowserZoomScope.layoutWidthOf(context);
         final currentPadding = _getAdaptivePadding(width);
         final spacing = _getAdaptiveSpacing(width);
         final rSpacing = rowSpacing ?? spacing;

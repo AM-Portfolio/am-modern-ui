@@ -88,6 +88,22 @@ void main() {
 
       expect(response.toolsUsed, ['tool_a', 'tool_b', 'tool_c']);
     });
+
+    test('copies unmodifiable widgetParams so callers can mutate safely', () {
+      final json = {
+        'message': 'ok',
+        'widgetId': 'TEXT_RESPONSE',
+        'widgetParams': Map<String, dynamic>.unmodifiable({'a': 1}),
+        'sessionId': 's1',
+        'toolsUsed': <String>[],
+        'traceId': 't1',
+      };
+
+      final response = AiIntentResponse.fromJson(json);
+      response.widgetParams['b'] = 2;
+      expect(response.widgetParams['a'], 1);
+      expect(response.widgetParams['b'], 2);
+    });
   });
 
   group('AiIntentResponse.error factory', () {

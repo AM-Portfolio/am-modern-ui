@@ -33,6 +33,10 @@ export 'core/utils/common_logger.dart';
 export 'core/utils/device_utils.dart';
 export 'core/utils/validators.dart';
 export 'core/utils/conditional_mouse_region.dart';
+export 'core/utils/browser_zoom.dart';
+export 'core/utils/browser_zoom_platform.dart';
+export 'shared/widgets/zoom/browser_zoom_host.dart';
+export 'shared/widgets/zoom/app_zoom_scroll_guard.dart';
 
 // Constants & API Endpoints
 export 'core/constants/app_constants.dart';
@@ -68,6 +72,7 @@ export 'shared/widgets/share/share_link_button.dart';
 export 'shared/widgets/navigation/module_bottom_navigation.dart';
 export 'shared/widgets/navigation/secondary_sidebar.dart';
 export 'shared/widgets/navigation/sidebar_item.dart';
+export 'shared/widgets/navigation/sidebar_layout_metrics.dart';
 export 'shared/widgets/navigation/sidebar_nav_item.dart';
 export 'shared/widgets/navigation/sidebar_primary_action.dart';
 export 'shared/widgets/navigation/swipeable_page_view.dart';
@@ -107,6 +112,7 @@ export 'shared/widgets/cards/app_card.dart';
 export 'shared/widgets/cards/investment_card.dart';
 export 'shared/widgets/cards/am_stat_card.dart';
 export 'shared/widgets/cards/am_mobile_list_tile.dart';
+export 'shared/widgets/cards/am_entity_mobile_card.dart';
 export 'shared/widgets/portfolio_display_controller.dart';
 export 'shared/widgets/display/interactive_background.dart';
 // Heatmaps
@@ -137,6 +143,7 @@ export 'shared/widgets/calendar/universal_calendar/data_provider.dart';
 export 'shared/widgets/tables/sortable_table.dart';
 export 'shared/widgets/tables/paginated_sortable_table.dart';
 export 'shared/widgets/tables/adaptive_data_table.dart';
+export 'shared/widgets/tables/am_adaptive_table_view.dart';
 export 'shared/widgets/charts/chart_factory.dart';
 export 'shared/widgets/charts/chart_types.dart';
 export 'shared/widgets/charts/chart_axis_scale.dart';
@@ -178,4 +185,5 @@ export 'shared/widgets/movers/am_top_movers_panel.dart';
 
 // --- Search & Autocomplete ---
 export 'shared/widgets/search/smart_search_anchor.dart';
+export 'shared/widgets/search/typewriter_hint_controller.dart';
 

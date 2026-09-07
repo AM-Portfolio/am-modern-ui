@@ -134,6 +134,11 @@ class _AMAppState extends ConsumerState<AMApp> {
                 theme: themeState.lightTheme,
                 darkTheme: themeState.darkTheme,
                 themeMode: themeState.themeMode,
+                builder: (context, child) {
+                  return BrowserZoomHost(
+                    child: child ?? const SizedBox.shrink(),
+                  );
+                },
                 localizationsDelegates: const [
                   GlobalMaterialLocalizations.delegate,
                   GlobalWidgetsLocalizations.delegate,

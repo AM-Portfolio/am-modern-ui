@@ -152,7 +152,7 @@ DateTime _parseDate(Object? raw) {
 
 Map<String, dynamic>? _asStringKeyedMap(Object? raw) {
   if (raw == null) return null;
-  if (raw is Map<String, dynamic>) return raw;
+  // Always copy — Dio/JS JSON maps can be unmodifiable on Flutter web.
   if (raw is Map) return Map<String, dynamic>.from(raw);
   return null;
 }

@@ -17,10 +17,15 @@ class AiIntentResponse {
   });
 
   factory AiIntentResponse.fromJson(Map<String, dynamic> json) {
+    final rawParams =
+        json['widgetParams'] ?? json['widget_params'] ?? const <String, dynamic>{};
     return AiIntentResponse(
       message: json['message'] as String? ?? '',
       widgetId: json['widgetId'] as String? ?? (json['widget_id'] as String? ?? 'TEXT_RESPONSE'),
-      widgetParams: (json['widgetParams'] as Map<String, dynamic>?) ?? (json['widget_params'] as Map<String, dynamic>?) ?? {},
+      // Copy — Dio/web JSON maps are often unmodifiable.
+      widgetParams: rawParams is Map
+          ? Map<String, dynamic>.from(rawParams)
+          : <String, dynamic>{},
       sessionId: json['sessionId'] as String? ?? (json['session_id'] as String? ?? ''),
       toolsUsed: ((json['toolsUsed'] ?? json['tools_used']) as List<dynamic>?)
               ?.map((e) => e.toString())

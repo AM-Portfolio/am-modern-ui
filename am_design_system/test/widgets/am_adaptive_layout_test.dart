@@ -67,4 +67,36 @@ void main() {
 
     expect(find.byType(Row), findsOneWidget);
   });
+
+  testWidgets(
+      'Zoom-compensated MediaQuery 1400px stays desktop even if box is 900',
+      (tester) async {
+    tester.view.physicalSize = const Size(900, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      const MediaQuery(
+        data: MediaQueryData(size: Size(1400, 800)),
+        child: MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 900,
+              child: AmAdaptiveLayout(
+                primary: Text('PRIMARY_SLOT'),
+                secondary: Text('SECONDARY_SLOT'),
+                detail: Text('DETAIL_SLOT'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('PRIMARY_SLOT'), findsOneWidget);
+    expect(find.text('SECONDARY_SLOT'), findsOneWidget);
+    expect(find.text('DETAIL_SLOT'), findsOneWidget);
+    expect(find.byType(Row), findsOneWidget);
+  });
 }

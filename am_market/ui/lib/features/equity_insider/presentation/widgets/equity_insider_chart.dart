@@ -58,135 +58,114 @@ class _EquityInsiderChartState extends ConsumerState<EquityInsiderChart> {
     final query = EquityChartQuery(symbol: widget.symbol, timeframe: tfCode);
     final chartDataAsync = ref.watch(equityStockChartDataProvider(query));
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader(context, 'Price performance & chart'),
-        const SizedBox(height: 8),
-        // Timeframe selector bar
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: TimeFrameSelector(
-                  selectedTimeFrame: _selectedTimeFrame,
-                  availableTimeFrames: const [
-                    TimeFrame.oneDay,
-                    TimeFrame.oneWeek,
-                    TimeFrame.oneMonth,
-                    TimeFrame.sixMonths,
-                    TimeFrame.oneYear,
-                    TimeFrame.fiveYears,
-                  ],
-                  onTimeFrameChanged: (newTf) {
-                    setState(() {
-                      _selectedTimeFrame = newTf;
-                    });
-                  },
-                  compact: true,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        // Chart View Container
-        Container(
-          height: 380,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SizedBox(
+          height: 310,
           width: double.infinity,
-          decoration: BoxDecoration(
-            color: context.cardColor,
-            border: Border.all(color: context.borderColor),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-          child: chartDataAsync.when(
-            data: (chartData) {
-              if (chartData.series.isEmpty) {
-                return Center(
-                  child: Text(
-                    'No price chart data available for ${widget.symbol} ($tfCode)',
-                    style: TextStyle(
-                      color: context.textSecondary,
-                      fontSize: 13,
-                    ),
-                  ),
-                );
-              }
-
-              return ComparisonChartView(
-                data: chartData,
-                config: MultiSeriesChartConfig(
-                  timeFrameCode: tfCode,
-                  embedMode: true,
-                  height: 360,
-                  showExpandButton: false,
-                  initialShowAbsoluteValues: true,
-                ),
-              );
-            },
-            loading: () => const Center(
-              child: SizedBox(
-                width: 28,
-                height: 28,
-                child: CircularProgressIndicator(strokeWidth: 2.5),
-              ),
-            ),
-            error: (err, stack) => Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Failed to load chart: $err',
+                    'Price Performance & Chart',
                     style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
                       fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: context.textPrimary,
                     ),
-                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
-                  OutlinedButton(
-                    onPressed: () => ref.refresh(equityStockChartDataProvider(query)),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: context.borderColor),
-                      foregroundColor: context.textPrimary,
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: TimeFrameSelector(
+                      selectedTimeFrame: _selectedTimeFrame,
+                      primaryColor: ModuleColors.market,
+                      availableTimeFrames: const [
+                        TimeFrame.oneDay,
+                        TimeFrame.oneMonth,
+                        TimeFrame.sixMonths,
+                        TimeFrame.oneYear,
+                        TimeFrame.fiveYears,
+                      ],
+                      onTimeFrameChanged: (newTf) {
+                        setState(() {
+                          _selectedTimeFrame = newTf;
+                        });
+                      },
+                      compact: true,
                     ),
-                    child: const Text('Retry', style: TextStyle(fontSize: 12)),
                   ),
                 ],
               ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+              const SizedBox(height: 8),
+              Expanded(
+                child: chartDataAsync.when(
+                  data: (chartData) {
+                    if (chartData.series.isEmpty) {
+                      return Center(
+                        child: Text(
+                          'No price data for ${widget.symbol} ($tfCode)',
+                          style: TextStyle(
+                            color: context.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                      );
+                    }
 
-  Widget _buildSectionHeader(BuildContext context, String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        children: [
-          Text(
-            title.toUpperCase(),
-            style: TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.8,
-              color: context.textTertiary,
-            ),
+                    return ComparisonChartView(
+                      data: chartData,
+                      config: MultiSeriesChartConfig(
+                        timeFrameCode: tfCode,
+                        embedMode: true,
+                        height: 270, // Increased to fill 310 space correctly
+                        showExpandButton: false,
+                        initialShowAbsoluteValues: true,
+                      ),
+                    );
+                  },
+                  loading: () => const Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2.0),
+                    ),
+                  ),
+                  error: (err, stack) => Center(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Failed to load chart: $err',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                              fontSize: 11,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 6),
+                          OutlinedButton(
+                            onPressed: () => ref.refresh(equityStockChartDataProvider(query)),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: context.borderColor),
+                              foregroundColor: context.textPrimary,
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            ),
+                            child: const Text('Retry', style: TextStyle(fontSize: 11)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Container(
-              height: 1,
-              color: context.borderColor,
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

@@ -4,10 +4,12 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import '../../../core/module/module_config.dart';
 import '../../../core/navigation/app_web_navigation.dart';
 import '../am_click_capsule.dart';
 import 'comparison_chart_colors.dart';
 import 'multi_series_chart_data.dart';
+import '../zoom/app_zoom_scroll_guard.dart';
 
 const double kComparisonChartHeaderRowHeight = 36.0;
 
@@ -848,11 +850,13 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
           },
         ),
       },
-      child: Listener(
-        behavior: HitTestBehavior.translucent,
-        onPointerSignal: (event) =>
-            _handlePointerSignal(event, viewportWidth),
-        child: child,
+      child: AppZoomScrollGuard(
+        child: Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerSignal: (event) =>
+              _handlePointerSignal(event, viewportWidth),
+          child: child,
+        ),
       ),
     );
   }
@@ -1079,7 +1083,11 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
           visualDensity: VisualDensity.compact,
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-          icon: const Icon(Icons.zoom_out, color: Color(0xFF00D1FF), size: 22),
+          icon: Icon(
+            Icons.zoom_out,
+            color: ModuleColors.dashboard,
+            size: 22,
+          ),
           onPressed: () => _zoom(_zoomScale - 0.2),
           tooltip: 'Zoom Out',
         ),
@@ -1098,7 +1106,11 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
           visualDensity: VisualDensity.compact,
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-          icon: const Icon(Icons.zoom_in, color: Color(0xFF00D1FF), size: 22),
+          icon: Icon(
+            Icons.zoom_in,
+            color: ModuleColors.dashboard,
+            size: 22,
+          ),
           onPressed: () => _zoom(_zoomScale + 0.2),
           tooltip: 'Zoom In',
         ),
@@ -1114,13 +1126,14 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     bool isEnabled = true,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeAccent = widget.accentColor ?? ModuleColors.market;
     final color = isSelected
-        ? const Color(0xFF00D1FF)
+        ? activeAccent
         : (isEnabled 
             ? (isDark ? Colors.white70 : Colors.black87) 
             : (isDark ? Colors.white24 : Colors.black26));
     final bgColor = isSelected
-        ? const Color(0xFF00D1FF).withOpacity(0.15)
+        ? activeAccent.withValues(alpha: 0.15)
         : Colors.transparent;
 
     return IgnorePointer(

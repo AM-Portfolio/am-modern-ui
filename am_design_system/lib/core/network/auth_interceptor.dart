@@ -11,19 +11,32 @@ class AuthInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    final token = await _storageService.getAccessToken();
-    
-    // Add token to header if available
-    if (token != null && token.isNotEmpty) {
-      options.headers['Authorization'] = 'Bearer $token';
+    try {
+      final token = await _storageService.getAccessToken();
+
+      // Dio/web may hand back an unmodifiable headers map — copy before write.
+      if (token != null && token.isNotEmpty) {
+        options.headers = Map<String, dynamic>.from(options.headers);
+        options.headers['Authorization'] = 'Bearer $token';
+      }
+
+      handler.next(options);
+    } catch (e, st) {
+      handler.reject(
+        DioException(
+          requestOptions: options,
+          error: e,
+          stackTrace: st,
+          type: DioExceptionType.unknown,
+          message: 'Auth interceptor failed: $e',
+        ),
+      );
     }
-    
-    return handler.next(options);
   }
 
   @override
   Future<void> onError(
-    DioException err, 
+    DioException err,
     ErrorInterceptorHandler handler,
   ) async {
     // Determine if the error is 401 Unauthorized
@@ -32,7 +45,7 @@ class AuthInterceptor extends Interceptor {
       // For now, we just pass the error through
       // But we might want to clear local storage if the session is definitely invalid
     }
-    
+
     return handler.next(err);
   }
 }
