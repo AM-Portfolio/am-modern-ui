@@ -45,8 +45,8 @@ GoRouter createAppRouter({
           authState is AuthRestoreFailed;
 
       // Browser opens http://localhost:9000/ — no page registered for `/`.
+      // Never send auth-pending users to dashboard (spinner / no login page).
       if (location == '/' || location.isEmpty) {
-        if (authPending) return AppRoutes.dashboard;
         return isAuthenticated ? AppRoutes.dashboard : AppRoutes.login;
       }
 

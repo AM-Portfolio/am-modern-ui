@@ -31,14 +31,22 @@ class SecureStorageService {
 
   static String get _fallbackToken {
     const token = String.fromEnvironment('AM_DEV_TOKEN');
-    if (token.isNotEmpty && token != 'mock_dev_token') return token;
-    return '';
+    if (token.isEmpty ||
+        token == 'mock_dev_token' ||
+        token == 'your-dev-token') {
+      return '';
+    }
+    return token;
   }
 
   static String get _fallbackUserId {
     const userId = String.fromEnvironment('AM_DEV_USER_ID');
-    if (userId.isNotEmpty && userId != 'local-dev-user') return userId;
-    return '';
+    if (userId.isEmpty ||
+        userId == 'local-dev-user' ||
+        userId == 'your-dev-user-id') {
+      return '';
+    }
+    return userId;
   }
 
   static String get _fallbackUserEmail {

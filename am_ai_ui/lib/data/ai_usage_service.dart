@@ -101,9 +101,19 @@ class AiUsageService {
         if (item is! Map) continue;
         final code = (item['metric_code'] ?? item['metricCode'] ?? '').toString();
         if (code != 'ai_chat_tokens') continue;
-        final used = (item['used'] as num?)?.toInt() ?? 0;
-        final limit = (item['limit'] as num?)?.toInt() ?? 0;
-        final remaining = (item['remaining'] as num?)?.toInt() ?? (limit - used);
+        var used = (item['used'] as num?)?.toInt() ?? 0;
+        var limit = (item['limit'] as num?)?.toInt() ?? 0;
+        // Some responses omit limit on the usage row — fall back to plan limits.
+        if (limit <= 0) {
+          final limits = data['limits'];
+          if (limits is Map) {
+            limit = (limits['ai_chat_tokens'] as num?)?.toInt() ??
+                (limits['aiChatTokens'] as num?)?.toInt() ??
+                0;
+          }
+        }
+        final remaining = (item['remaining'] as num?)?.toInt() ??
+            (limit > 0 ? (limit - used).clamp(0, limit) : 0);
         return AiTokenUsage(used: used, limit: limit, remaining: remaining);
       }
     }

@@ -133,7 +133,7 @@ class AiChatNotifier extends Notifier<ChatState> {
           isStreaming: false,
           activeTool: null,
         );
-        state = state.copyWith(isLoading: false);
+        state = state.copyWith(isLoading: false, activeTool: null);
       } finally {
         _cancelToken = null;
       }
