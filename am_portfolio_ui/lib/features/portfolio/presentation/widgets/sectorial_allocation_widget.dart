@@ -29,7 +29,7 @@ class SectorialAllocationWidget extends StatelessWidget {
             children: [
               Icon(
                 Icons.donut_small,
-                color: Theme.of(context).primaryColor,
+                color: ModuleColors.portfolio,
                 size: 24,
               ),
               const SizedBox(width: 8),

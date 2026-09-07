@@ -15,10 +15,11 @@ class AppTheme {
   static ThemeData get darkTheme {
     return _buildTheme(
       brightness: Brightness.dark,
-      backgroundColor: AppColors.darkBackground,
-      surfaceColor: AppColors.darkSurface,
-      primaryColor: AppColors.primary,
+      backgroundColor: AppColorsTheme.midnightOled.scaffoldBackground,
+      surfaceColor: AppColorsTheme.midnightOled.surface,
+      primaryColor: AppColorsTheme.midnightOled.actionPrimaryBg,
       textColor: AppColors.textPrimaryDark,
+      customColors: AppColorsTheme.midnightOled,
     );
   }
 
@@ -50,6 +51,28 @@ class AppTheme {
       primaryColor: const Color(0xFF0288D1),
       textColor: AppColors.textPrimaryLight,
       customColors: AppColorsTheme.skyBlue,
+    );
+  }
+
+  static ThemeData get imperialGoldTheme {
+    return _buildTheme(
+      brightness: Brightness.dark,
+      backgroundColor: AppColorsTheme.imperialGold.scaffoldBackground,
+      surfaceColor: AppColorsTheme.imperialGold.surface,
+      primaryColor: AppColorsTheme.imperialGold.actionPrimaryBg,
+      textColor: AppColors.textPrimaryDark,
+      customColors: AppColorsTheme.imperialGold,
+    );
+  }
+
+  static ThemeData get cyberNeonTheme {
+    return _buildTheme(
+      brightness: Brightness.dark,
+      backgroundColor: AppColorsTheme.cyberNeon.scaffoldBackground,
+      surfaceColor: AppColorsTheme.cyberNeon.surface,
+      primaryColor: AppColorsTheme.cyberNeon.actionPrimaryBg,
+      textColor: AppColors.textPrimaryDark,
+      customColors: AppColorsTheme.cyberNeon,
     );
   }
 

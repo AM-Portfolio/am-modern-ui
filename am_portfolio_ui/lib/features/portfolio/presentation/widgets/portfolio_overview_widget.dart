@@ -439,6 +439,8 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
     final double periodReturnPct = selectedTimeFrame.code == '1d' ? summaryToUse.todayChangePercentage : summaryToUse.totalGainLossPercentage;
     final String periodLabel = selectedTimeFrame.code == 'all' ? 'total' : selectedTimeFrame.displayName;
 
+    final modulePink = ds.ModuleColors.portfolio;
+
     return [
       PortfolioMetricCard(
         title: 'Total Return',
@@ -450,6 +452,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
             : (periodReturn > 0
                 ? const Color(0xFF00B894)
                 : const Color(0xFFFF7675)),
+        chromeColor: modulePink,
         icon: periodReturn >= 0
             ? Icons.trending_up_rounded
             : Icons.trending_down_rounded,
@@ -470,6 +473,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
             : (summaryToUse.todayChange > 0
                 ? const Color(0xFF00B894)
                 : const Color(0xFFFF7675)),
+        chromeColor: modulePink,
         icon: summaryToUse.todayChange >= 0
             ? Icons.keyboard_double_arrow_up_rounded
             : Icons.keyboard_double_arrow_down_rounded,
@@ -484,7 +488,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         title: 'Total Balance',
         value: _formatCurrency(summaryToUse.totalValue),
         subtitle: '${summaryToUse.totalAssets} Active Holdings',
-        accentColor: const Color(0xFF4A6FE3), // Royal blue accent
+        accentColor: modulePink,
         icon: null,
         isPositive: null,
         compact: compact,
@@ -496,7 +500,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         title: 'Invested Amount',
         value: _formatCurrency(summaryToUse.investmentValue),
         subtitle: 'Total Principal',
-        accentColor: const Color(0xFF00BCD4), // Cyan accent
+        accentColor: modulePink,
         icon: null,
         isPositive: null,
         isHighlight: false,

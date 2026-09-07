@@ -144,8 +144,10 @@ class ApiClient {
       // 4xx errors should NOT be retried (except maybe 408)
       // 5xx errors WILL be retried by _requestWithRetry if it catches this ApiException
       String message = 'Unknown error';
+      dynamic errorBody;
       try {
         final errorData = jsonDecode(response.body);
+        errorBody = errorData is Map ? errorData : null;
         if (errorData is Map) {
           message = (errorData['message'] ??
                   errorData['error'] ??
@@ -162,7 +164,11 @@ class ApiClient {
         message = 'Error ${response.statusCode}: ${response.reasonPhrase}';
       }
 
-      throw ApiException(message, statusCode: response.statusCode);
+      throw ApiException(
+        message,
+        statusCode: response.statusCode,
+        data: errorBody,
+      );
     }
   }
 

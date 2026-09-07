@@ -32,6 +32,8 @@ dependencies:
   flutter_animate: ^4.5.0
   shared_preferences: ^2.3.3
   go_router: ^14.0.0
+  am_market_sdk:
+    path: ../am_market/sdk
 
   # Browser Cache
   hive: ^2.2.3

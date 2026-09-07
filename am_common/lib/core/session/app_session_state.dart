@@ -85,12 +85,14 @@ class BasketSessionState {
   final String? etfIsin;
   final String? userId;
   final String? portfolioId;
+  final String? draftId;
 
   const BasketSessionState({
     required this.route,
     this.etfIsin,
     this.userId,
     this.portfolioId,
+    this.draftId,
   });
 
   Map<String, dynamic> toJson() => {
@@ -98,6 +100,7 @@ class BasketSessionState {
         if (etfIsin != null) 'etfIsin': etfIsin,
         if (userId != null) 'userId': userId,
         if (portfolioId != null) 'portfolioId': portfolioId,
+        if (draftId != null) 'draftId': draftId,
       };
 
   factory BasketSessionState.fromJson(Map<String, dynamic> json) {
@@ -106,6 +109,7 @@ class BasketSessionState {
       etfIsin: json['etfIsin'] as String?,
       userId: json['userId'] as String?,
       portfolioId: json['portfolioId'] as String?,
+      draftId: json['draftId'] as String?,
     );
   }
 }

@@ -2,140 +2,42 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:am_design_system/core/constants/app_config.dart';
-import 'package:am_design_system/core/theme/cubit/theme_cubit.dart';
-import 'package:am_design_system/core/theme/app_colors.dart';
+import 'package:am_design_system/core/theme/app_spacing.dart';
+import 'package:am_design_system/core/theme/app_text_styles.dart';
 import 'package:am_design_system/core/theme/color_extensions.dart';
-import '../widgets/app_header_widget.dart';
-import '../widgets/glass_card_widget.dart';
-import '../widgets/theme_toggle_widget.dart';
+import 'package:am_design_system/core/utils/validators.dart';
+
 import '../cubit/auth_cubit.dart';
 import '../cubit/auth_state.dart';
-import 'package:am_design_system/core/utils/validators.dart';
-import 'package:am_design_system/shared/widgets/display/interactive_background.dart';
+import '../widgets/auth_flow_shell.dart';
+import '../widgets/auth_primary_button.dart';
+import '../widgets/email_login_form_widget.dart';
 
-/// Reset password page with redesigned UI
 class ResetPasswordPage extends StatelessWidget {
   const ResetPasswordPage({super.key, this.resetToken, this.resetCode});
-  
+
   final String? resetToken;
   final String? resetCode;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: BlocConsumer<AuthCubit, AuthState>(
-          listener: (context, state) {
-            if (state is PasswordResetSuccess) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Password reset successfully! Please sign in with your new password.'),
-                  backgroundColor: context.colors.statusSuccess,
-                ),
-              );
-              context.go('/login');
-            } else if (state is AuthError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.message), backgroundColor: context.colors.statusError),
-              );
-            }
-          },
-          builder: (context, state) {
-            return BlocBuilder<ThemeCubit, ThemeState>(
-              builder: (context, themeState) {
-                return LayoutBuilder(
-                  builder: (context, constraints) {
-                    final isCompact = constraints.maxWidth < 600;
-                    
-                    return Stack(
-                      children: [
-                        // Background
-                        _buildBackground(),
-                        
-                        // Main content
-                        Center(
-                          child: SingleChildScrollView(
-                            padding: EdgeInsets.all(isCompact ? 16 : 24),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                AppHeaderWidget(
-                                  appName: AppConfig.getAppName(),
-                                  appIcon: AppConfig.getAppIcon(),
-                                  isCompact: isCompact,
-                                ),
-                                if (isCompact) const SizedBox(height: 24),
-                                
-                                GlassCardWidget(
-                                  isCompact: isCompact,
-                                  child: ResetPasswordPageForm(
-                                    resetToken: resetToken,
-                                    resetCode: resetCode,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        
-                        // Theme toggle
-                        Positioned(
-                          top: 16,
-                          right: 16,
-                          child: ThemeToggleWidget(iconSize: isCompact ? 20 : 24),
-                        ),
-                        
-                        // Back button
-                        Positioned(
-                          top: 16,
-                          left: 16,
-                          child: IconButton(
-                            icon: const Icon(Icons.arrow_back),
-                            onPressed: () => context.go('/login'),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                );
-              },
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBackground() {
-    return Positioned.fill(
-      child: Builder(
-        builder: (context) => Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                context.colors.surface,
-                context.colors.scaffoldBackground,
-                context.colors.surface,
-              ],
-            ),
-          ),
-          child: InteractiveBackground(
-            baseColor: context.colors.actionPrimaryBg,
-            highlightColor: context.colors.actionPrimaryBg.withValues(alpha: 0.8),
-          ),
-        ),
+    return AuthFlowShell(
+      showBack: true,
+      onBack: () => context.go('/login'),
+      brandingTitle: 'Choose a new password',
+      brandingSubtitle:
+          'Set a strong password so you can get back into your account securely.',
+      form: ResetPasswordPageForm(
+        resetToken: resetToken,
+        resetCode: resetCode,
       ),
     );
   }
 }
 
-/// Reset password form widget
 class ResetPasswordPageForm extends StatefulWidget {
   const ResetPasswordPageForm({super.key, this.resetToken, this.resetCode});
-  
+
   final String? resetToken;
   final String? resetCode;
 
@@ -182,130 +84,149 @@ class _ResetPasswordPageFormState extends State<ResetPasswordPageForm> {
   void _handleSubmit() {
     if (_formKey.currentState!.validate()) {
       context.read<AuthCubit>().resetPassword(
-        resetToken: _linkCode == null ? _tokenController.text : null,
-        resetCode: _linkCode,
-        newPassword: _passwordController.text,
-        confirmPassword: _confirmPasswordController.text,
-      );
+            resetToken: _linkCode == null ? _tokenController.text : null,
+            resetCode: _linkCode,
+            newPassword: _passwordController.text,
+            confirmPassword: _confirmPasswordController.text,
+          );
     }
   }
 
   @override
-  Widget build(BuildContext context) => Form(
-    key: _formKey,
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Text(
-          'Reset Password 🔐',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 32),
+  Widget build(BuildContext context) {
+    final isCompact = MediaQuery.sizeOf(context).width < 600;
+    final primary = context.colors.actionPrimaryBg;
+    final gap = isCompact ? 12.0 : 16.0;
 
-        if (!_hasDeepLink) ...[
-          TextFormField(
-            controller: _tokenController,
-            decoration: const InputDecoration(
-              labelText: 'Reset Token',
-              prefixIcon: Icon(Icons.vpn_key_outlined),
-              border: OutlineInputBorder(),
-            ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Reset token is required';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-        ],
-
-        // New Password
-        TextFormField(
-          controller: _passwordController,
-          obscureText: _obscurePassword,
-          decoration: InputDecoration(
-            labelText: 'New Password',
-            prefixIcon: const Icon(Icons.lock),
-            border: const OutlineInputBorder(),
-            suffixIcon: IconButton(
-              icon: Icon(
-                _obscurePassword ? Icons.visibility : Icons.visibility_off,
+    return BlocConsumer<AuthCubit, AuthState>(
+      listener: (context, state) {
+        if (state is PasswordResetSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                'Password reset successfully. Please sign in with your new password.',
               ),
-              onPressed: () {
-                setState(() {
-                  _obscurePassword = !_obscurePassword;
-                });
-              },
+              backgroundColor: context.colors.statusSuccess,
             ),
-          ),
-          validator: (value) {
-            if (value == null || value.isEmpty) return 'Please enter a password';
-            if (value.length < 8) return 'Password must be at least 8 characters';
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
+          );
+          context.go('/login');
+        } else if (state is AuthError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: context.colors.statusError,
+            ),
+          );
+        }
+      },
+      builder: (context, state) {
+        final loading = state is AuthLoading;
 
-        // Confirm Password
-        TextFormField(
-          controller: _confirmPasswordController,
-          obscureText: _obscureConfirmPassword,
-          decoration: InputDecoration(
-            labelText: 'Confirm Password',
-            prefixIcon: const Icon(Icons.lock_outline),
-            border: const OutlineInputBorder(),
-            suffixIcon: IconButton(
-              icon: Icon(
-                _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
+        return Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Reset password',
+                style: context.text.pageTitle(compact: isCompact).copyWith(
+                      color: context.colors.textPrimary,
+                    ),
               ),
-              onPressed: () {
-                setState(() {
-                  _obscureConfirmPassword = !_obscureConfirmPassword;
-                });
-              },
-            ),
-          ),
-          validator: (value) {
-            if (value == null || value.isEmpty) return 'Please confirm your password';
-            if (value != _passwordController.text) return 'Passwords do not match';
-            return null;
-          },
-        ),
-        const SizedBox(height: 32),
-
-        // Reset Password Button
-        SizedBox(
-          height: 48,
-          child: ElevatedButton(
-            onPressed: _handleSubmit,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: context.colors.actionPrimaryBg,
-              foregroundColor: context.colors.actionPrimaryFg,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'Enter a new password for your account.',
+                style: context.text.bodyMuted(compact: isCompact).copyWith(
+                      color: context.colors.textSecondary,
+                    ),
               ),
-            ),
-            child: const Text(
-              'Reset Password',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
+              SizedBox(height: isCompact ? AppSpacing.md : AppSpacing.md + 4),
+              if (!_hasDeepLink) ...[
+                LiquidTextField(
+                  controller: _tokenController,
+                  enabled: !loading,
+                  textInputAction: TextInputAction.next,
+                  labelText: 'Reset token',
+                  hintText: 'Paste your reset token',
+                  prefixIcon: Icons.vpn_key_outlined,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Reset token is required';
+                    }
+                    return null;
+                  },
+                ),
+                SizedBox(height: gap),
+              ],
+              LiquidTextField(
+                controller: _passwordController,
+                enabled: !loading,
+                obscureText: _obscurePassword,
+                textInputAction: TextInputAction.next,
+                autofillHints: const [AutofillHints.newPassword],
+                labelText: 'New password',
+                hintText: 'Create a new password',
+                prefixIcon: Icons.lock_outline,
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_off
+                        : Icons.visibility,
+                    color: context.colors.textSecondary,
+                  ),
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
+                ),
+                validator: Validators.validatePassword,
+              ),
+              SizedBox(height: gap),
+              LiquidTextField(
+                controller: _confirmPasswordController,
+                enabled: !loading,
+                obscureText: _obscureConfirmPassword,
+                textInputAction: TextInputAction.done,
+                autofillHints: const [AutofillHints.newPassword],
+                onFieldSubmitted: (_) => _handleSubmit(),
+                labelText: 'Confirm password',
+                hintText: 'Re-enter your password',
+                prefixIcon: Icons.lock_outline,
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscureConfirmPassword
+                        ? Icons.visibility_off
+                        : Icons.visibility,
+                    color: context.colors.textSecondary,
+                  ),
+                  onPressed: () => setState(
+                    () =>
+                        _obscureConfirmPassword = !_obscureConfirmPassword,
+                  ),
+                ),
+                validator: (value) => Validators.validatePasswordMatch(
+                  value,
+                  _passwordController.text,
+                ),
+              ),
+              SizedBox(height: isCompact ? 16 : 20),
+              AuthPrimaryButton(
+                label: 'Reset Password',
+                loading: loading,
+                onPressed: _handleSubmit,
+              ),
+              SizedBox(height: isCompact ? 12 : 16),
+              TextButton(
+                onPressed: loading ? null : () => context.go('/login'),
+                style: TextButton.styleFrom(foregroundColor: primary),
+                child: Text(
+                  'Back to Sign In',
+                  style: context.text.link(compact: isCompact),
+                ),
+              ),
+            ],
           ),
-        ),
-        
-        const SizedBox(height: 16),
-        
-        // Back to login link
-        TextButton(
-          onPressed: () => context.go('/login'),
-          child: const Text('Back to Sign In'),
-        ),
-      ],
-    ),
-  );
+        );
+      },
+    );
+  }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -15,7 +16,7 @@ Color _getCardBorder(BuildContext context) =>
         : Theme.of(context).colorScheme.outline.withOpacity(0.1);
 Color _getCardHoverBorder(BuildContext context) =>
     Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF7C3AED)
+        ? ModuleColors.trade
         : Theme.of(context).colorScheme.primary;
 Color _getBadgeBg(BuildContext context) => Theme.of(context).brightness ==
         Brightness.dark
@@ -164,10 +165,10 @@ class _TradePortfolioDiscoveryTemplateState
               const SizedBox(height: 24),
               ElevatedButton.icon(
                 onPressed: widget.onCreatePortfolio,
-                icon: const Icon(Icons.add_rounded),
-                label: const Text('Create Portfolio'),
+                icon: Icon(Icons.add_rounded),
+                label: Text('Create Portfolio'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF7C3AED),
+                  backgroundColor: ModuleColors.trade,
                   foregroundColor: Colors.white,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
@@ -254,10 +255,10 @@ class _TradePortfolioDiscoveryTemplateState
                       padding: const EdgeInsets.only(right: 8),
                       child: FilledButton.icon(
                         onPressed: widget.onCreatePortfolio,
-                        icon: const Icon(Icons.add_rounded, size: 18),
-                        label: const Text('New Portfolio'),
+                        icon: Icon(Icons.add_rounded, size: 18),
+                        label: Text('New Portfolio'),
                         style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFF7C3AED),
+                          backgroundColor: ModuleColors.trade,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 10),
@@ -295,7 +296,7 @@ class _TradePortfolioDiscoveryTemplateState
                       value: '₹${_formatNum(totalValue)}',
                       icon: Icons.account_balance_wallet_rounded,
                       iconColor: Colors.white,
-                      iconBgColor: const Color(0xFF7C3AED),
+                      iconBgColor: ModuleColors.trade,
                     ),
                     const SizedBox(width: 8),
                     _buildStatBadge(
@@ -312,7 +313,7 @@ class _TradePortfolioDiscoveryTemplateState
                       value: '$totalTrades',
                       icon: Icons.swap_horiz_rounded,
                       iconColor: Colors.white,
-                      iconBgColor: const Color(0xFF7C3AED),
+                      iconBgColor: ModuleColors.trade,
                     ),
                     const SizedBox(width: 8),
                     _buildStatBadge(
@@ -353,10 +354,10 @@ class _TradePortfolioDiscoveryTemplateState
                       icon: Icons.percent_rounded,
                       iconColor: Colors.white,
                       iconBgColor: avgWinRate >= 50
-                          ? const Color(0xFF7C3AED)
+                          ? ModuleColors.trade
                           : const Color(0xFFF59E0B),
                       valueColor: avgWinRate >= 50
-                          ? const Color(0xFF7C3AED)
+                          ? ModuleColors.trade
                           : const Color(0xFFF59E0B),
                     ),
                   ],
@@ -479,8 +480,8 @@ class _TradePortfolioDiscoveryTemplateState
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(
-                              color: Color(0xFF7C3AED), width: 1.5),
+                          borderSide: BorderSide(
+                              color: ModuleColors.trade, width: 1.5),
                         ),
                       ),
                       onChanged: (value) => setState(() {
@@ -549,12 +550,12 @@ class _TradePortfolioDiscoveryTemplateState
                     padding: const EdgeInsets.symmetric(horizontal: 14),
                     decoration: BoxDecoration(
                       color: _showOnlyProfit
-                          ? const Color(0xFF7C3AED).withValues(alpha: 0.15)
+                          ? ModuleColors.trade.withValues(alpha: 0.15)
                           : _getSearchBg(context),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: _showOnlyProfit
-                            ? const Color(0xFF7C3AED)
+                            ? ModuleColors.trade
                             : _getSearchBorder(context),
                         width: 1,
                       ),
@@ -566,7 +567,7 @@ class _TradePortfolioDiscoveryTemplateState
                           Icons.trending_up_rounded,
                           size: 16,
                           color: _showOnlyProfit
-                              ? const Color(0xFF7C3AED)
+                              ? ModuleColors.trade
                               : Theme.of(context)
                                   .colorScheme
                                   .onSurface
@@ -579,7 +580,7 @@ class _TradePortfolioDiscoveryTemplateState
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                             color: _showOnlyProfit
-                                ? const Color(0xFF7C3AED)
+                                ? ModuleColors.trade
                                 : Theme.of(context)
                                     .colorScheme
                                     .onSurface
@@ -810,11 +811,11 @@ class _TradePortfolioDiscoveryTemplateState
             height: 32,
             margin: const EdgeInsets.symmetric(horizontal: 2),
             decoration: BoxDecoration(
-              color: isCurrent ? const Color(0xFF7C3AED) : _getBadgeBg(context),
+              color: isCurrent ? ModuleColors.trade : _getBadgeBg(context),
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
                 color: isCurrent
-                    ? const Color(0xFF7C3AED)
+                    ? ModuleColors.trade
                     : _getBadgeBorder(context),
               ),
             ),
@@ -971,7 +972,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
             boxShadow: _isHovered
                 ? [
                     BoxShadow(
-                      color: const Color(0xFF7C3AED).withValues(alpha: 0.25),
+                      color: ModuleColors.trade.withValues(alpha: 0.25),
                       blurRadius: 20,
                       spreadRadius: 2,
                     ),
@@ -1007,7 +1008,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                                   const Color(0xFF047857)
                                 ]
                               : [
-                                  const Color(0xFF7C3AED),
+                                  ModuleColors.trade,
                                   const Color(0xFF6D28D9)
                                 ],
                         ),
@@ -1149,7 +1150,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                     children: [
                       _metric(
                         icon: Icons.swap_horiz_rounded,
-                        iconColor: const Color(0xFF7C3AED),
+                        iconColor: ModuleColors.trade,
                         label: 'Trades',
                         value: p.displayTotalTrades,
                       ),
@@ -1198,7 +1199,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                               .withValues(alpha: 0.08)),
                       _metric(
                         icon: Icons.check_circle_outline_rounded,
-                        iconColor: const Color(0xFF7C3AED),
+                        iconColor: ModuleColors.trade,
                         label: 'Closed Win Rate',
                         value: p.displayWinRate,
                       ),

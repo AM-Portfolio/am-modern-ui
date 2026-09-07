@@ -1,19 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../module/module_config.dart';
 import '../app_theme.dart';
 import '../theme_repository.dart';
 
-enum AppThemeMode { system, light, dark, white, skyBlue }
+enum AppThemeMode {
+  system,
+  light,
+  dark,
+  white,
+  skyBlue,
+  imperialGold,
+  cyberNeon,
+}
 
 class ThemeState {
   final AppThemeMode mode;
-  
+
   const ThemeState(this.mode);
 
   ThemeMode get themeMode {
     switch (mode) {
       case AppThemeMode.dark:
-        return ThemeMode.dark; 
+      case AppThemeMode.imperialGold:
+      case AppThemeMode.cyberNeon:
+        return ThemeMode.dark;
       case AppThemeMode.light:
       case AppThemeMode.white:
       case AppThemeMode.skyBlue:
@@ -32,17 +44,60 @@ class ThemeState {
     }
     return AppTheme.lightTheme;
   }
-  
+
   ThemeData get darkTheme {
-    return AppTheme.darkTheme;
+    switch (mode) {
+      case AppThemeMode.imperialGold:
+        return AppTheme.imperialGoldTheme;
+      case AppThemeMode.cyberNeon:
+        return AppTheme.cyberNeonTheme;
+      case AppThemeMode.dark:
+        return AppTheme.darkTheme;
+      default:
+        return AppTheme.darkTheme;
+    }
   }
-  
-  /// Helper to check if current theme is dark
-  bool get isDarkMode => mode == AppThemeMode.dark;
-  
-  /// Helper to check if current theme is light
-  bool get isLightMode => mode == AppThemeMode.light || mode == AppThemeMode.white || mode == AppThemeMode.skyBlue;
-  
+
+  bool get isDarkMode =>
+      mode == AppThemeMode.dark ||
+      mode == AppThemeMode.imperialGold ||
+      mode == AppThemeMode.cyberNeon;
+
+  bool get isLightMode =>
+      mode == AppThemeMode.light ||
+      mode == AppThemeMode.white ||
+      mode == AppThemeMode.skyBlue;
+
+  /// Default AM look keeps distinct module colors; brand themes sync all accents.
+  bool get keepsMulticolorModules {
+    switch (mode) {
+      case AppThemeMode.system:
+      case AppThemeMode.light:
+      case AppThemeMode.dark:
+      case AppThemeMode.white:
+        return true;
+      case AppThemeMode.skyBlue:
+      case AppThemeMode.imperialGold:
+      case AppThemeMode.cyberNeon:
+        return false;
+    }
+  }
+
+  Color get brandAccent {
+    switch (mode) {
+      case AppThemeMode.skyBlue:
+        return const Color(0xFF0288D1);
+      case AppThemeMode.imperialGold:
+        return const Color(0xFFC9A84C); // gin golden
+      case AppThemeMode.cyberNeon:
+        return const Color(0xFFE879F9);
+      case AppThemeMode.dark:
+        return const Color(0xFF8B5CF6);
+      default:
+        return const Color(0xFF6C5DD3);
+    }
+  }
+
   ThemeState copyWith({AppThemeMode? mode}) {
     return ThemeState(mode ?? this.mode);
   }
@@ -50,33 +105,41 @@ class ThemeState {
 
 class ThemeCubit extends Cubit<ThemeState> {
   final ThemeRepository _repository;
-  
+
   ThemeCubit(this._repository) : super(const ThemeState(AppThemeMode.system)) {
+    _syncModuleAccents(state);
     _loadSavedTheme();
   }
 
-  /// Load theme from persistent storage
+  void _syncModuleAccents(ThemeState themeState) {
+    ModuleColors.applyBrandSync(
+      multicolor: themeState.keepsMulticolorModules,
+      brand: themeState.brandAccent,
+    );
+  }
+
   Future<void> _loadSavedTheme() async {
     final savedMode = await _repository.getThemeMode();
     if (savedMode != null) {
       final mode = _stringToThemeMode(savedMode);
-      emit(ThemeState(mode));
+      final next = ThemeState(mode);
+      _syncModuleAccents(next);
+      emit(next);
     }
   }
 
-  /// Set theme and persist it
   Future<void> setTheme(AppThemeMode mode) async {
-    emit(ThemeState(mode));
+    final next = ThemeState(mode);
+    _syncModuleAccents(next);
+    emit(next);
     await _repository.saveThemeMode(_themeModeToString(mode));
   }
-  
-  /// Toggle between light and dark themes
+
   Future<void> toggleTheme() async {
     final newMode = state.isDarkMode ? AppThemeMode.light : AppThemeMode.dark;
     await setTheme(newMode);
   }
-  
-  /// Convert AppThemeMode to string for storage
+
   String _themeModeToString(AppThemeMode mode) {
     switch (mode) {
       case AppThemeMode.system:
@@ -89,10 +152,13 @@ class ThemeCubit extends Cubit<ThemeState> {
         return 'white';
       case AppThemeMode.skyBlue:
         return 'skyBlue';
+      case AppThemeMode.imperialGold:
+        return 'imperialGold';
+      case AppThemeMode.cyberNeon:
+        return 'cyberNeon';
     }
   }
-  
-  /// Convert string to AppThemeMode
+
   AppThemeMode _stringToThemeMode(String mode) {
     switch (mode) {
       case 'system':
@@ -105,6 +171,10 @@ class ThemeCubit extends Cubit<ThemeState> {
         return AppThemeMode.white;
       case 'skyBlue':
         return AppThemeMode.skyBlue;
+      case 'imperialGold':
+        return AppThemeMode.imperialGold;
+      case 'cyberNeon':
+        return AppThemeMode.cyberNeon;
       default:
         return AppThemeMode.system;
     }

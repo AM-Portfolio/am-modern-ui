@@ -32,7 +32,7 @@ void main() async {
       receiveTimeout: const Duration(seconds: 30),
     ),
   );
-  subscriptionDio.interceptors.add(AuthInterceptor(storage));
+  AuthProviders.attachAuthInterceptor(subscriptionDio);
   
   // Register named Dio client
   GetIt.I.registerSingleton<Dio>(subscriptionDio, instanceName: 'subscriptionDio');

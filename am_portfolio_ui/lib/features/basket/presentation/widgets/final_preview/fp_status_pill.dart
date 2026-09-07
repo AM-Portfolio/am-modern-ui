@@ -5,18 +5,24 @@ class FpStatusPill extends StatelessWidget {
   final String label;
   final String? subLabel;
   final Color color;
+  final bool compact;
 
   const FpStatusPill({
     super.key,
     required this.label,
     this.subLabel,
     required this.color,
+    this.compact = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final showSub = !compact && subLabel != null;
     final pill = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 6 : 8,
+        vertical: compact ? 2 : 4,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(6),
@@ -28,19 +34,19 @@ class FpStatusPill extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.circle, size: 8, color: color),
+              Icon(Icons.circle, size: compact ? 6 : 8, color: color),
               const SizedBox(width: 4),
               Text(
                 label,
                 style: TextStyle(
                   color: color,
-                  fontSize: 12,
+                  fontSize: compact ? 10 : 12,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ],
           ),
-          if (subLabel != null) ...[
+          if (showSub) ...[
             const SizedBox(height: 2),
             Text(
               subLabel!,

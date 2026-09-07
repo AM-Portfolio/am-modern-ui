@@ -159,11 +159,9 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
         centerTitle: true,
         title: Text(
           'Subscription',
-          style: TextStyle(
-            color: onSurface,
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
+          style: context.text.sectionTitle(compact: true).copyWith(
+                color: onSurface,
+              ),
         ),
       ),
       body: BlocConsumer<SubscriptionCubit, SubscriptionState>(
@@ -205,6 +203,8 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
 
           List<Plan> plans = const [];
           Subscription? current;
+          final isRefreshing =
+              state is SubscriptionLoaded && state.refreshing;
 
           if (state is SubscriptionLoaded) {
             plans = state.plans;
@@ -218,25 +218,23 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
           } else if (state is SubscriptionError) {
             return Center(
               child: Padding(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       'Couldn’t load plans',
-                      style: TextStyle(
-                        color: onSurface,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 18,
-                      ),
+                      style: context.text.sectionTitle().copyWith(
+                            color: onSurface,
+                          ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.sm),
                     Text(
                       state.message,
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: muted),
+                      style: context.text.bodyMuted().copyWith(color: muted),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: AppSpacing.lg),
                     FilledButton(
                       style: FilledButton.styleFrom(backgroundColor: context.colors.premiumActionPrimary),
                       onPressed: () => context
@@ -276,6 +274,7 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
 
           return Column(
             children: [
+              if (isRefreshing) const LinearProgressIndicator(minHeight: 2),
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
@@ -314,35 +313,27 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
                       Text(
                         hasPaid ? 'Your Premium Access' : 'Unlock more with Premium',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: onSurface,
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800,
-                          height: 1.2,
-                          letterSpacing: -0.4,
-                        ),
+                        style: context.text.heroTitle(compact: true).copyWith(
+                              color: onSurface,
+                            ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: AppSpacing.sm + 2),
                       Text(
                         hasPaid
                             ? 'You’re on ${current!.planName}. Manage or switch plans below.'
                             : 'See more, move faster — analytics, live data, and AI tools in one upgrade.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: muted,
-                          fontSize: 15,
-                          height: 1.4,
-                        ),
+                        style: context.text.bodyMuted().copyWith(color: muted),
                       ),
                       if (hasPaid) ...[
-                        const SizedBox(height: 20),
+                        const SizedBox(height: AppSpacing.lg),
                         _CurrentPlanBanner(
                           subscription: current!,
                           isDark: isDark,
                           colors: context.colors,
                         ),
                       ],
-                      const SizedBox(height: 28),
+                      const SizedBox(height: AppSpacing.xl - 4),
                       _DurationChips(
                         isAnnual: _isAnnual,
                         isDark: isDark,
@@ -350,7 +341,7 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
                         onChanged: (annual) =>
                             setState(() => _isAnnual = annual),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: AppSpacing.lg),
                       _PlanPicker(
                         isDark: isDark,
                         colors: context.colors,
@@ -362,46 +353,35 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
                         onSelect: (tier) =>
                             setState(() => _selectedTier = tier),
                       ),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: AppSpacing.md),
                       Text(
                         'What you get',
-                        style: TextStyle(
-                          color: onSurface,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16,
-                        ),
+                        style: context.text.sectionTitle(compact: true).copyWith(
+                              color: onSurface,
+                            ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       ...benefits.map(
                         (b) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.only(bottom: 8),
                           child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                margin: const EdgeInsets.only(top: 2),
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: isDark
-                                      ? context.colors.premiumActionPrimary.withValues(alpha: 0.2)
-                                      : context.colors.premiumActionPrimary.withValues(alpha: 0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.check_rounded,
-                                  size: 14,
-                                  color: context.colors.premiumActionPrimary,
-                                ),
+                              Icon(
+                                Icons.check_circle_rounded,
+                                size: 16,
+                                color: context.colors.premiumActionPrimary,
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   b,
                                   style: TextStyle(
                                     color: onSurface,
-                                    fontSize: 15,
-                                    height: 1.35,
+                                    fontSize: 13,
+                                    height: 1.25,
                                   ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
@@ -462,38 +442,42 @@ class _CurrentPlanBanner extends StatelessWidget {
         : 'Renews ${end.day}/${end.month}/${end.year}';
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: colors.cardSurface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadii.card,
         border: Border.all(
           color: colors.premiumActionPrimary.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
         children: [
-          Icon(Icons.verified_rounded, color: colors.premiumActionPrimary, size: 22),
-          const SizedBox(width: 12),
+          Icon(Icons.verified_rounded,
+              color: colors.premiumActionPrimary, size: 18),
+          const SizedBox(width: 10),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  subscription.planName,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: colors.textPrimary,
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: subscription.planName,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: colors.textPrimary,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  endLabel,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: colors.textSecondary,
+                  TextSpan(
+                    text: ' · $endLabel',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: colors.textSecondary,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -645,7 +629,7 @@ class _PlanPicker extends StatelessWidget {
             popular: true,
             onTap: () => onSelect('pro'),
           ),
-        if (proPlan != null && premiumPlan != null) const SizedBox(height: 10),
+        if (proPlan != null && premiumPlan != null) const SizedBox(height: 8),
         if (premiumPlan != null)
           _PlanOption(
             title: 'Premium',
@@ -690,40 +674,41 @@ class _PlanOption extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: selected
               ? colors.premiumActionPrimary.withValues(alpha: 0.12)
               : colors.cardSurface,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: AppRadii.card,
           border: Border.all(
             color: selected
                 ? colors.premiumActionPrimary
-                : colors.divider,
-            width: selected ? 1.8 : 1,
+                : colors.border,
+            width: selected ? 1.5 : 1,
           ),
         ),
         child: Row(
           children: [
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              width: 22,
-              height: 22,
+              width: 18,
+              height: 18,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: selected ? colors.premiumActionPrimary : Colors.transparent,
+                color:
+                    selected ? colors.premiumActionPrimary : Colors.transparent,
                 border: Border.all(
                   color: selected
                       ? colors.premiumActionPrimary
-                      : colors.divider,
+                      : colors.border,
                   width: 2,
                 ),
               ),
               child: selected
-                  ? const Icon(Icons.check, size: 14, color: Colors.white)
+                  ? const Icon(Icons.check, size: 12, color: Colors.white)
                   : null,
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -734,26 +719,26 @@ class _PlanOption extends StatelessWidget {
                         title,
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
-                          fontSize: 16,
+                          fontSize: 14,
                           color: colors.textPrimary,
                         ),
                       ),
                       if (popular) ...[
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
+                            horizontal: 6,
+                            vertical: 2,
                           ),
                           decoration: BoxDecoration(
                             color: colors.premiumActionPrimary,
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Text(
                             'Popular',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 10,
+                              fontSize: 9,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -761,16 +746,18 @@ class _PlanOption extends StatelessWidget {
                       ],
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: colors.textSecondary,
+                  if (subtitle.trim().isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: colors.textSecondary,
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -779,7 +766,7 @@ class _PlanOption extends StatelessWidget {
               priceLabel,
               style: TextStyle(
                 fontWeight: FontWeight.w800,
-                fontSize: 14,
+                fontSize: 13,
                 color: colors.textPrimary,
               ),
             ),
@@ -856,13 +843,9 @@ class _BottomCtaBar extends StatelessWidget {
                     disabledBackgroundColor: colors.divider,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28),
+                      borderRadius: AppRadii.chip,
                     ),
-                    textStyle: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.2,
-                    ),
+                    textStyle: context.text.button(compact: true),
                   ),
                   child: Text(
                     isBusy

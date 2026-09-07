@@ -34,7 +34,6 @@ class AppShell extends StatelessWidget {
           // Empty header/title as requested ("Institute" style is minimal)
           title: null,
           subtitle: null,
-          header: const SizedBox(height: 16),
 
           onThemeToggle: () {
             context.read<ThemeCubit>().toggleTheme();
@@ -44,17 +43,14 @@ class AppShell extends StatelessWidget {
           },
           onLogout: onLogout,
 
-          footer: Padding(
-            padding: const EdgeInsets.all(16),
-            child: SidebarPrimaryAction(
-              title: 'New Trade',
-              icon: Icons.add,
-              accentColor: ModuleColors.portfolio,
-              onTap: () {
-                // Navigate to Basket Creator or Trade
-                context.go('/portfolio/basket/creator');
-              },
-            ),
+          footer: SidebarPrimaryAction(
+            title: 'New Trade',
+            icon: Icons.add,
+            accentColor: ModuleColors.portfolio,
+            onTap: () {
+              // Navigate to Basket Creator or Trade
+              context.go('/portfolio/basket/creator');
+            },
           ),
 
           sections: [

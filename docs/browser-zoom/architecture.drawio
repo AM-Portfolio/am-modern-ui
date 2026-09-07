@@ -1,0 +1,244 @@
+<mxfile host="65bd71144e">
+    <diagram id="context" name="Context">
+        <mxGraphModel dx="530" dy="593" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="n" value="Context (C4): trader uses modern-ui web; zoom is browser-local. Prod APIs unchanged." style="text;html=1;strokeColor=none;fillColor=none;align=left;fontStyle=2" parent="1" vertex="1">
+                    <mxGeometry x="40" y="20" width="720" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="actor" value="Trader" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="200" width="40" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="sys" value="AM modern-ui web&#10;(Flutter HTML renderer)" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="260" y="180" width="220" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="chrome" value="Desktop browser&#10;Chrome zoom + window chrome" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;" parent="1" vertex="1">
+                    <mxGeometry x="560" y="80" width="220" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="ext" value="Prod APIs&#10;(local AM_ENV=prod)&#10;unchanged by this feature" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;" parent="1" vertex="1">
+                    <mxGeometry x="560" y="220" width="220" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1" value="maximize / minimize / Ctrl+/- / HUD" style="endArrow=block;html=1;" parent="1" source="actor" target="sys" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e2" value="resize / visualViewport / devicePixelRatio" style="endArrow=block;html=1;" parent="1" source="chrome" target="sys" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e3" value="existing HTTPS APIs (not zoom)" style="endArrow=block;html=1;dashed=1;" parent="1" source="sys" target="ext" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="business" name="BusinessFlow">
+        <mxGraphModel dx="530" dy="593" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="n" value="BusinessFlow (P0 zoom): desktop chrome stays while zoomed; max/min re-reads zoom; charts keep Ctrl+wheel." style="text;html=1;strokeColor=none;fillColor=none;align=left;fontStyle=2" parent="1" vertex="1">
+                    <mxGeometry x="40" y="20" width="900" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="s1" value="1. Open app&#10;localhost:9000 prod config&#10;HUD shows stored or 100%" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="120" width="200" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="s2" value="2. Chrome zoom 150%&#10;or HUD + / Ctrl+Plus" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="280" y="120" width="180" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="s3" value="3. GlobalSidebar stays&#10;text/icons larger" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="500" y="120" width="180" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="s4" value="4. Maximize / restore&#10;re-read zoom; HUD stable" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="720" y="120" width="200" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="s5" value="Reject: listener miss&#10;zoom=1.0 CSS breakpoints" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;" parent="1" vertex="1">
+                    <mxGeometry x="280" y="260" width="180" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="s6" value="Chart path: Ctrl+wheel&#10;over chart zooms series only" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="500" y="260" width="200" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1" value="continues" style="endArrow=block;html=1;" parent="1" source="s1" target="s2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e2" value="layoutWidth = css * chromeZoom" style="endArrow=block;html=1;" parent="1" source="s2" target="s3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e3" value="resize / visualViewport" style="endArrow=block;html=1;" parent="1" source="s3" target="s4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e4" value="platform API missing" style="endArrow=block;html=1;dashed=1;" parent="1" source="s2" target="s5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e5" value="AppZoomScrollGuard" style="endArrow=block;html=1;" parent="1" source="s3" target="s6" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="containers" name="Containers">
+        <mxGraphModel dx="530" dy="593" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="n" value="Containers: client-only. Every edge labeled. No new backend." style="text;html=1;strokeColor=none;fillColor=none;align=left;fontStyle=2" parent="1" vertex="1">
+                    <mxGeometry x="40" y="20" width="640" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="ui" value="am_app&#10;MaterialApp.builder" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="160" width="160" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="host" value="BrowserZoomHost&#10;am_design_system" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="300" y="160" width="180" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="shell" value="AppShell / GlobalSidebar&#10;UnifiedSidebarScaffold" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="560" y="80" width="200" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="store" value="browser localStorage&#10;key am_ui_zoom" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="560" y="200" width="200" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="chart" value="ChartFactory / MultiIndexChart" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="300" y="320" width="200" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1" value="wraps child with MediaQuery size+textScaler" style="endArrow=block;html=1;" parent="1" source="ui" target="host" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e2" value="layoutWidth via MediaQuery.sizeOf" style="endArrow=block;html=1;" parent="1" source="host" target="shell" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e3" value="GET/SET am_ui_zoom" style="endArrow=block;html=1;" parent="1" source="host" target="store" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e4" value="AppZoomScrollGuard enter/exit" style="endArrow=block;html=1;" parent="1" source="chart" target="host" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="sequence" name="Sequence">
+        <mxGraphModel dx="530" dy="593" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="n" value="Sequence: Load stored zoom → Happy max/min re-read → Reject listener miss." style="text;html=1;strokeColor=none;fillColor=none;align=left;fontStyle=2" parent="1" vertex="1">
+                    <mxGeometry x="40" y="20" width="720" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="a_ui" value="Trader" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="80" width="30" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="a_host" value="BrowserZoomHost" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="280" y="80" width="150" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="a_ls" value="localStorage" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="520" y="80" width="140" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="a_shell" value="AppShell" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="740" y="80" width="140" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="s1" value="1 GET am_ui_zoom" style="endArrow=block;html=1;" parent="1" source="a_host" target="a_ls" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="355" y="200" as="sourcePoint"/>
+                        <mxPoint x="590" y="200" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="s2" value="2 MediaQuery layoutWidth" style="endArrow=block;html=1;" parent="1" source="a_host" target="a_shell" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="355" y="250" as="sourcePoint"/>
+                        <mxPoint x="810" y="250" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="s3" value="3 Happy: maximize → resize → re-read chromeZoom" style="endArrow=block;html=1;" parent="1" source="a_ui" target="a_host" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="95" y="320" as="sourcePoint"/>
+                        <mxPoint x="355" y="320" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="s4" value="4 SET am_ui_zoom on HUD +/-" style="endArrow=block;html=1;" parent="1" source="a_host" target="a_ls" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="355" y="370" as="sourcePoint"/>
+                        <mxPoint x="590" y="370" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="s5" value="5 Reject: visualViewport miss → zoom 1.0" style="endArrow=block;html=1;dashed=1;" parent="1" source="a_host" target="a_shell" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="355" y="440" as="sourcePoint"/>
+                        <mxPoint x="810" y="440" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="data" name="DataIdentity">
+        <mxGraphModel dx="530" dy="593" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="n" value="Data / identity: no account id. Device-local zoom only." style="text;html=1;strokeColor=none;fillColor=none;align=left;fontStyle=2" parent="1" vertex="1">
+                    <mxGeometry x="40" y="20" width="560" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="t" value="localStorage&#10;key=am_ui_zoom&#10;value=double string (e.g. 1.25)&#10;owner=this browser profile" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="120" width="260" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="p" value="BrowserZoomHost memory&#10;chromeZoom=detected&#10;appZoom=HUD / stored&#10;textScale=appZoom/chromeZoom" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;" parent="1" vertex="1">
+                    <mxGeometry x="420" y="120" width="280" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="ev" value="No Kafka / no DTO / no user id" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;" parent="1" vertex="1">
+                    <mxGeometry x="250" y="300" width="260" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1" value="GET/SET am_ui_zoom" style="endArrow=block;html=1;" parent="1" source="t" target="p" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="security" name="SecurityTrust">
+        <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="n" value="Security / trust: zoom is not an authz surface. No secrets in localStorage." style="text;html=1;strokeColor=none;fillColor=none;align=left;fontStyle=2" vertex="1" parent="1">
+                    <mxGeometry x="40" y="20" width="680" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="idp" value="Keycloak / existing session" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="80" y="120" width="180" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="api" value="Prod APIs&#10;Bearer unchanged" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="360" y="120" width="180" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="ls" value="am_ui_zoom only&#10;no tokens" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="620" y="120" width="180" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="iso" value="Isolation: web vs mobile stub&#10;kIsWeb HUD/listeners only" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="360" y="260" width="220" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1" value="Bearer (existing)" style="endArrow=block;html=1;" edge="1" parent="1" source="idp" target="api">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e2" value="no auth header" style="endArrow=block;html=1;dashed=1;" edge="1" parent="1" source="api" target="ls">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="failures" name="Failures">
+        <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="n" value="Failures: trigger → system → user sees." style="text;html=1;strokeColor=none;fillColor=none;align=left;fontStyle=2" vertex="1" parent="1">
+                    <mxGeometry x="40" y="20" width="560" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="f1" value="Trigger: visualViewport missing&#10;→ chromeZoom=1.0&#10;→ CSS-width chrome (legacy)" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="100" width="240" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="f2" value="Trigger: localStorage throw&#10;→ in-memory appZoom&#10;→ reload loses HUD" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;" vertex="1" parent="1">
+                    <mxGeometry x="320" y="100" width="240" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="f3" value="Trigger: zoom 50% or 250%&#10;→ clamp 67–200&#10;→ HUD shows clamped %" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;" vertex="1" parent="1">
+                    <mxGeometry x="600" y="100" width="240" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="f4" value="Trigger: Ctrl+wheel on chart&#10;→ AppZoomScrollGuard&#10;→ app HUD unchanged" style="rounded=1;whiteSpace=wrap;html=1;align=left;spacingLeft=8;" vertex="1" parent="1">
+                    <mxGeometry x="320" y="250" width="240" height="100" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

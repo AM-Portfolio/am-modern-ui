@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'dart:ui';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/theme/app_glassmorphism_v2.dart';
 import '../../../core/module/module_color_provider.dart';
 import '../../../core/module/module_type.dart';
@@ -7,6 +9,7 @@ import '../../../core/theme/app_glassmorphism.dart'; // For GradientBorderPainte
 
 import '../navigation/secondary_sidebar.dart';
 import '../navigation/module_bottom_navigation.dart';
+import '../zoom/browser_zoom_host.dart';
 
 /// A unified scaffold that handles the responsive sidebar logic for all AM modules.
 ///
@@ -173,12 +176,14 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
   late AnimationController _mobileTabsController;
   late Animation<double> _mobileTabsFactor;
   late Animation<Offset> _mobileTabsSlide;
-  bool _isManuallyCollapsed = false;
+  bool? _collapsedOverride;
+  double? _lastTargetWidth;
   int _mobileSelectedIndex = 0; // Track selected index for Bottom Nav
   bool _wantMobileTabs = true;
   double _mobileTabScrollAccum = 0;
   static const double _mobileTabScrollThreshold = 12;
   int? _lastEnsuredMobileTabIndex;
+  static const _collapsedPrefKey = 'secondary_sidebar_collapsed';
 
   // Resolved properties from ModuleType or direct overrides
   String? get _resolvedTitle => widget.title ?? widget.module?.title;
@@ -217,6 +222,8 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
       begin: const Offset(0, -0.4),
       end: Offset.zero,
     ).animate(mobileTabsCurve);
+
+    unawaited(_loadCollapsedPref());
   }
 
   @override
@@ -235,15 +242,46 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
     }
   }
 
+  bool _resolveCompact(bool isTablet) {
+    if (widget.forceCompact) return true;
+    if (_collapsedOverride != null) return _collapsedOverride!;
+    return isTablet;
+  }
+
+  Future<void> _loadCollapsedPref() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final collapsed = prefs.getBool(_collapsedPrefKey);
+      if (!mounted || collapsed == null) return;
+      setState(() {
+        _collapsedOverride = collapsed;
+        _animationController.value = collapsed ? 0.0 : 1.0;
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _persistCollapsed(bool collapsed) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_collapsedPrefKey, collapsed);
+    } catch (_) {}
+  }
+
   void _toggleSidebar() {
+    final width = MediaQuery.sizeOf(context).width;
+    final isTablet =
+        width >= widget.tabletBreakpoint && width < widget.desktopBreakpoint;
+    final currentlyCompact = _resolveCompact(isTablet);
+    final nextCollapsed = !currentlyCompact;
     setState(() {
-      _isManuallyCollapsed = !_isManuallyCollapsed;
-      if (_isManuallyCollapsed) {
+      _collapsedOverride = nextCollapsed;
+      if (nextCollapsed) {
         _animationController.reverse();
       } else {
         _animationController.forward();
       }
     });
+    unawaited(_persistCollapsed(nextCollapsed));
   }
 
   void _setMobileTabsVisible(bool visible) {
@@ -461,8 +499,7 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final isDesktop = width >= widget.desktopBreakpoint;
+        final width = BrowserZoomScope.layoutWidthOf(context);
         final isTablet = width >= widget.tabletBreakpoint &&
             width < widget.desktopBreakpoint;
         final isMobile = width < widget.tabletBreakpoint;
@@ -535,26 +572,19 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
         }
 
         // Desktop / Tablet Layout
-        bool isCompact = false;
-        double targetWidth = widget.fullWidth;
+        final isCompact = _resolveCompact(isTablet);
+        final targetWidth =
+            isCompact ? widget.compactWidth : widget.fullWidth;
 
-        if (widget.forceCompact || _isManuallyCollapsed) {
-          isCompact = true;
-          targetWidth = widget.compactWidth;
-        } else if (isTablet) {
-          isCompact = true;
-          targetWidth = widget.compactWidth;
-        } else {
-          // Full Desktop
-          isCompact = false;
-          targetWidth = widget.fullWidth;
-        }
-
-        // Animate to new target
-        if (targetWidth != _widthAnimation.value &&
-            !_animationController.isAnimating) {
-          _animationController.animateTo(isCompact ? 0.0 : 1.0,
-              duration: const Duration(milliseconds: 300));
+        if (_lastTargetWidth != targetWidth) {
+          _lastTargetWidth = targetWidth;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted || _animationController.isAnimating) return;
+            _animationController.animateTo(
+              isCompact ? 0.0 : 1.0,
+              duration: const Duration(milliseconds: 300),
+            );
+          });
         }
 
         // Background Decoration (Glass vs Solid)
@@ -567,97 +597,62 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
             ? Colors.transparent
             : Theme.of(context).scaffoldBackgroundColor;
 
+        final desktopStack = AnimatedBuilder(
+          animation: _widthAnimation,
+          builder: (context, _) {
+            final sidebarWidth = _widthAnimation.value;
+            return _buildDesktopStack(
+              bgDecoration: bgDecoration,
+              bodyColor: bodyColor,
+              sidebarWidth: sidebarWidth,
+              isCompact: isCompact,
+            );
+          },
+        );
+
         return Scaffold(
           resizeToAvoidBottomInset: false,
           floatingActionButton: widget.floatingActionButton,
           body: widget.module != null
               ? ModuleColorProvider(
                   module: widget.module!,
-                  child: Container(
-                    decoration: bgDecoration,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        // Main Content
-                        Positioned(
-                          left: widget.fullWidth, // Static width
-                          top: 0,
-                          right: 0,
-                          bottom: 0,
-                          child: Container(
-                            clipBehavior: Clip.hardEdge,
-                            decoration: BoxDecoration(
-                              color: bodyColor,
-                            ),
-                            child: widget.body,
-                          ),
-                        ),
-
-                        // Sidebar
-                        Positioned(
-                          left: 0,
-                          top: 0,
-                          bottom: 0,
-                          width: widget.fullWidth,
-                          child: Container(
-                            color: Colors.transparent,
-                            child: SizedBox(
-                              width: widget.fullWidth,
-                              child: _buildSidebarContent(
-                                isFull: true,
-                                isCondensed: false,
-                                isCompact: false,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  child: desktopStack,
                 )
-              : Container(
-                  decoration: bgDecoration,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      // Main Content
-                      Positioned(
-                        left: widget.fullWidth, // Static width
-                        top: 0,
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          clipBehavior: Clip.hardEdge,
-                          decoration: BoxDecoration(
-                            color: bodyColor,
-                          ),
-                          child: widget.body,
-                        ),
-                      ),
-
-                      // Sidebar
-                      Positioned(
-                        left: 0,
-                        top: 0,
-                        bottom: 0,
-                        width: widget.fullWidth,
-                        child: Container(
-                          color: Colors.transparent,
-                          child: SizedBox(
-                            width: widget.fullWidth,
-                            child: _buildSidebarContent(
-                              isFull: true,
-                              isCondensed: false,
-                              isCompact: false,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              : desktopStack,
         );
       },
+    );
+  }
+
+  Widget _buildDesktopStack({
+    required BoxDecoration bgDecoration,
+    required Color bodyColor,
+    required double sidebarWidth,
+    required bool isCompact,
+  }) {
+    return Container(
+      decoration: bgDecoration,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: sidebarWidth,
+            child: ClipRect(
+              child: _buildSidebarContent(
+                isCompact: isCompact,
+                width: sidebarWidth,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Container(
+              clipBehavior: Clip.hardEdge,
+              decoration: BoxDecoration(color: bodyColor),
+              child: widget.body,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -939,19 +934,13 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
                                               MainAxisAlignment.center,
                                           children: [
                                             Icon(
-                                              Theme.of(context).brightness ==
-                                                      Brightness.dark
-                                                  ? Icons.light_mode_rounded
-                                                  : Icons.dark_mode_rounded,
+                                              Icons.palette_rounded,
                                               color: _resolvedColor,
                                               size: 20,
                                             ),
                                             const SizedBox(width: 10),
                                             Text(
-                                              Theme.of(context).brightness ==
-                                                      Brightness.dark
-                                                  ? 'Switch to Light Mode'
-                                                  : 'Switch to Dark Mode',
+                                              'Change theme',
                                               style: TextStyle(
                                                 color: _resolvedColor,
                                                 fontSize: 14,
@@ -1076,9 +1065,8 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
   }
 
   Widget _buildSidebarContent({
-    required bool isFull,
-    required bool isCondensed,
     required bool isCompact,
+    required double width,
   }) {
     return Theme(
       data: Theme.of(context).copyWith(
@@ -1093,9 +1081,9 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
         subtitle: _resolvedSubtitle,
         icon: _resolvedIcon ?? Icons.dashboard,
         accentColor: _resolvedColor,
-        // isDark: widget.isDark, // Removed as it's not a valid parameter
-        width: widget
-            .fullWidth, // Internal width is handled by SecondarySidebar logic
+        width: width,
+        isCompact: isCompact,
+        onToggleCollapse: _toggleSidebar,
         items: widget.items,
         sections: widget.sections,
         footer: widget.footer,

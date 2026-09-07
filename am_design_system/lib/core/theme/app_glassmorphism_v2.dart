@@ -133,16 +133,20 @@ class AppGlassmorphismV2 {
     );
   }
 
-  /// Tech/futuristic background (like reference image)
-  static BoxDecoration techBackground({bool isDark = true}) {
+  /// Tech/futuristic background (like reference image).
+  /// Prefer [scaffoldColor] from `context.colors.scaffoldBackground` so themes sync.
+  static BoxDecoration techBackground({
+    bool isDark = true,
+    Color? scaffoldColor,
+  }) {
     if (!isDark) {
-      return const BoxDecoration(
-        color: Colors.white, // Pure white for "Labs" feel
+      return BoxDecoration(
+        color: scaffoldColor ?? Colors.white,
       );
     }
-    
-    return const BoxDecoration(
-      color: AppColors.darkBackground,
+
+    return BoxDecoration(
+      color: scaffoldColor ?? AppColors.darkBackground,
     );
   }
 
@@ -311,12 +315,12 @@ class AppGlassmorphismV2 {
   static Widget glassPrism({
     required Widget child,
     bool isDark = true,
+    Color? surfaceColor,
   }) {
     if (!isDark) {
       return Container(
         decoration: BoxDecoration(
-          color: Colors.transparent, // Transparent for "floating" effect
-          // Right-side shadow for "Prism" effect
+          color: Colors.transparent,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.04),
@@ -329,9 +333,11 @@ class AppGlassmorphismV2 {
       );
     }
 
+    final base = surfaceColor ?? const Color(0xFF1a1a2e);
+
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1a1a2e).withOpacity(0.9), // Dark base
+        color: base.withOpacity(0.92),
         border: Border(
           right: BorderSide(
             color: Colors.white.withOpacity(0.05),
@@ -342,7 +348,7 @@ class AppGlassmorphismV2 {
           BoxShadow(
             color: Colors.black.withOpacity(0.2),
             blurRadius: 20,
-            offset: const Offset(4, 0), // Shadow to the right
+            offset: const Offset(4, 0),
           ),
         ],
       ),

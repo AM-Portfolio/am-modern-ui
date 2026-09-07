@@ -77,11 +77,11 @@ class CustomizeBasketComparisonTab extends StatelessWidget {
               actionWidget = Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                    color: context.colors.actionPrimaryBg.withValues(alpha: 0.1),
+                    color: ModuleColors.portfolio.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4)),
                 child: Text('SUB: ${item.userHoldingSymbol}',
                     style: TextStyle(
-                        color: context.colors.actionPrimaryBg,
+                        color: ModuleColors.portfolio,
                         fontSize: 10,
                         fontWeight: FontWeight.bold)),
               );

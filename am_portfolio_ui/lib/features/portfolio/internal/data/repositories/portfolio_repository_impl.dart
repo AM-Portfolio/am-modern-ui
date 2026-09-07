@@ -120,10 +120,11 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
         metadata: {'status': 'error'},
       );
 
-      // Return cached data if available (Double fallback: In-memory or Local)
-      // Note: Removed silent fallback to stale cache. The UI needs to know
-      // when network fetch fails so it can show appropriate error state.
-      // Stream has already emitted cached data if it existed.
+      _reportOfflineNetworkFailure();
+      if (OfflineSync.shouldServeCache(OfflineWidgetId.portfolioHoldings) &&
+          _cachedHoldings != null) {
+        return _cachedHoldings!;
+      }
       rethrow;
     }
   }
@@ -192,6 +193,12 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
 
       // Note: Removed silent fallback to stale cache. The UI needs to know
       // when network fetch fails so it can show appropriate error state.
+      // Offline reads flag: return in-memory/local cache instead of erroring.
+      _reportOfflineNetworkFailure();
+      if (OfflineSync.shouldServeCache(OfflineWidgetId.portfolioSummary) &&
+          _cachedSummary != null) {
+        return _cachedSummary!;
+      }
       rethrow;
     }
   }
@@ -823,6 +830,10 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       'PortfolioRepository disposed',
       tag: 'PortfolioRepository',
     );
+  }
+
+  void _reportOfflineNetworkFailure() {
+    OfflineSync.reportNetworkFailure();
   }
 }
 

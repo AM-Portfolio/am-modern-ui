@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 import '../../../models/trade_holding_view_model.dart';
 
@@ -155,7 +156,7 @@ class TradeDetailHeader extends StatelessWidget {
                         icon: Icons.factory_rounded,
                         label: 'Industry',
                         value: trade.industry ?? 'N/A',
-                        color: Colors.purple.shade600,
+                        color: ModuleColors.trade,
                       ),
                       _buildInfoBadge(
                         context,
@@ -201,7 +202,7 @@ class TradeDetailHeader extends StatelessWidget {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Theme.of(context).primaryColor),
+                    borderSide: BorderSide(color: ModuleColors.trade),
                   ),
                   isDense: true,
                 ),

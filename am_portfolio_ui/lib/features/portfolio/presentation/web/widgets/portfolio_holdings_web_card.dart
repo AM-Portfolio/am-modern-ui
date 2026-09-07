@@ -166,7 +166,7 @@ class _PortfolioHoldingsWebCardState
                           children: [
                             Icon(
                               Icons.account_balance,
-                              color: theme.colorScheme.primary,
+                              color: ModuleColors.portfolio,
                               size: cardConstraints.maxWidth * 0.02,
                             ),
                             SizedBox(width: cardConstraints.maxWidth * 0.01),
@@ -229,7 +229,7 @@ class _PortfolioHoldingsWebCardState
                                       size: 16,
                                     ),
                                     tooltip: 'Previous page',
-                                    color: theme.colorScheme.primary,
+                                    color: ModuleColors.portfolio,
                                     disabledColor: theme.colorScheme.onSurface
                                         .withValues(alpha: 0.3),
                                     padding: EdgeInsets.zero,
@@ -257,7 +257,7 @@ class _PortfolioHoldingsWebCardState
                                       size: 16,
                                     ),
                                     tooltip: 'Next page',
-                                    color: theme.colorScheme.primary,
+                                    color: ModuleColors.portfolio,
                                     disabledColor: theme.colorScheme.onSurface
                                         .withValues(alpha: 0.3),
                                     padding: EdgeInsets.zero,

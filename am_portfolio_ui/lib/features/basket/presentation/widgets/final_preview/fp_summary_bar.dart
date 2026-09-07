@@ -37,7 +37,9 @@ class FpSummaryBar extends StatelessWidget {
           value,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
-            color: isHighlight ? context.statusSuccess : context.colors.textPrimary,
+            color: isHighlight
+                ? ModuleColors.portfolio
+                : context.colors.textPrimary,
           ),
         ),
       ],
@@ -72,10 +74,10 @@ class FpSummaryBar extends StatelessWidget {
               : const Icon(Icons.check, size: 18),
           label: Text(
             isSubmitting ? 'Creating...' : 'Confirm & Create Basket',
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
           style: FilledButton.styleFrom(
-            backgroundColor: context.statusSuccess,
+            backgroundColor: ModuleColors.portfolio,
             foregroundColor: Colors.white,
             padding: EdgeInsets.symmetric(
               horizontal: isDesktop ? 32 : 16, 

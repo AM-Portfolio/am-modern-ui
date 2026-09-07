@@ -316,6 +316,7 @@ class ConfigService {
     final marketUrl = _services['market'] ?? '$api/market';
     final tradesUrl = _services['trade'] ?? _services['trades'] ?? '$api/trade';
     final analysisUrl = _services['analysis'] ?? '$api/analysis';
+    final newsUrl = _services['news'] ?? '$api/news';
     final gmailUrl = _services['gmail'] ?? '$api/gmail';
     final marketWsUrl =
         _services['marketWs'] ?? '$ws/market/ws/market-data-stream';
@@ -364,6 +365,7 @@ class ConfigService {
           connectEndpoint: '/v1/market-data/stream/connect',
         ),
         analysis: AnalysisApiConfig(baseUrl: analysisUrl),
+        news: NewsApiConfig(baseUrl: newsUrl),
         gmail: GmailApiConfig(
           baseUrl: gmailUrl,
           statusEndpoint: '/v1/gmail/status',

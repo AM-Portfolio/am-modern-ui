@@ -372,21 +372,21 @@ class _FilterPanelState extends ConsumerState<FilterPanel> with SingleTickerProv
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: theme.primaryColor.withOpacity(0.1),
+              color: ModuleColors.trade.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: theme.primaryColor.withOpacity(0.2)),
+              border: Border.all(color: ModuleColors.trade.withOpacity(0.2)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.add_circle_outline_rounded, size: 16, color: theme.primaryColor),
+                Icon(Icons.add_circle_outline_rounded, size: 16, color: ModuleColors.trade),
                 const SizedBox(width: 6),
                 Text(
                   'Add',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: theme.primaryColor,
+                    color: ModuleColors.trade,
                   ),
                 ),
               ],
@@ -455,8 +455,8 @@ class _FilterPanelState extends ConsumerState<FilterPanel> with SingleTickerProv
     children: [
       Container(
         padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(color: theme.primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-        child: Icon(icon, size: 16, color: theme.primaryColor),
+        decoration: BoxDecoration(color: ModuleColors.trade.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+        child: Icon(icon, size: 16, color: ModuleColors.trade),
       ),
       const SizedBox(width: 12),
       Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
@@ -509,17 +509,17 @@ class _FilterPanelState extends ConsumerState<FilterPanel> with SingleTickerProv
     margin: const EdgeInsets.only(top: 12),
     padding: const EdgeInsets.all(24),
     decoration: BoxDecoration(
-      color: theme.primaryColor.withOpacity(0.03),
+      color: ModuleColors.trade.withOpacity(0.03),
       borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: theme.primaryColor.withOpacity(0.1)),
+      border: Border.all(color: ModuleColors.trade.withOpacity(0.1)),
     ),
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(color: theme.primaryColor.withOpacity(0.1), shape: BoxShape.circle),
-          child: Icon(Icons.filter_alt_off_rounded, size: 32, color: theme.primaryColor.withOpacity(0.6)),
+          decoration: BoxDecoration(color: ModuleColors.trade.withOpacity(0.1), shape: BoxShape.circle),
+          child: Icon(Icons.filter_alt_off_rounded, size: 32, color: ModuleColors.trade.withOpacity(0.6)),
         ),
         const SizedBox(height: 12),
         Text(

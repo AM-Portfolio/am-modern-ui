@@ -14,6 +14,8 @@ class BasketEndpoints {
   static String get myBaskets => '$baseUrl/v1/basket/my';
   static String get createPortfolio => '$baseUrl/v1/basket/create-portfolio';
   static String get applySubstitutes => '$baseUrl/v1/basket/apply-substitutes';
+  static String get drafts => '$baseUrl/v1/basket/drafts';
+  static String draftById(String draftId) => '$baseUrl/v1/basket/drafts/$draftId';
   static String deleteBasket(String basketId) => '$baseUrl/v1/basket/$basketId';
   static String getBasketDetail(String basketId) => '$baseUrl/v1/basket/$basketId';
 }

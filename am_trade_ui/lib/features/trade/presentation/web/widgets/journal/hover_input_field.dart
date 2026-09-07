@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 /// Hover input field with purple border effect
 class HoverInputField extends StatefulWidget {
@@ -24,7 +25,7 @@ class _HoverInputFieldState extends State<HoverInputField> {
         decoration: BoxDecoration(
           border: Border.all(
             color: _isHovered
-                ? const Color(0xFF9C27B0) // Purple color
+                ? ModuleColors.trade // Purple color
                 : theme.dividerColor.withOpacity(0.5),
             width: _isHovered ? 2.0 : 1.0,
           ),

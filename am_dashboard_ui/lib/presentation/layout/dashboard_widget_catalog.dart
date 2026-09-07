@@ -4,6 +4,7 @@ import 'package:am_dashboard_ui/presentation/shared/widgets/dashboard_chart_widg
 import 'package:am_dashboard_ui/presentation/shared/widgets/dashboard_portfolio_overview_card.dart';
 import 'package:am_dashboard_ui/presentation/shared/widgets/dashboard_ranking_widget.dart';
 import 'package:am_dashboard_ui/presentation/shared/widgets/dashboard_recent_activity_widget.dart';
+import 'package:am_dashboard_ui/presentation/shared/widgets/dashboard_news_section.dart';
 import 'package:am_dashboard_ui/presentation/shared/widgets/dashboard_summary_widget.dart';
 import 'package:am_dashboard_ui/presentation/shared/widgets/glass_card.dart';
 import 'package:am_design_system/am_design_system.dart';
@@ -50,8 +51,8 @@ class DashboardWidgetCatalog {
       title: DashboardWidgetId.recentActivity.label,
       module: DashboardWidgetId.recentActivity.module,
       defaultVisible: true,
-      defaultOrder: 3,
-      defaultSize: DashboardWidgetSize.half,
+      defaultOrder: 4,
+      defaultSize: DashboardWidgetSize.oneThird,
       build: _buildRecentActivity,
     ),
     DashboardWidgetId.portfolioList: DashboardWidgetDescriptor(
@@ -59,8 +60,8 @@ class DashboardWidgetCatalog {
       title: DashboardWidgetId.portfolioList.label,
       module: DashboardWidgetId.portfolioList.module,
       defaultVisible: true,
-      defaultOrder: 4,
-      defaultSize: DashboardWidgetSize.half,
+      defaultOrder: 5,
+      defaultSize: DashboardWidgetSize.oneThird,
       build: _buildPortfolioList,
     ),
     DashboardWidgetId.allocation: DashboardWidgetDescriptor(
@@ -68,9 +69,18 @@ class DashboardWidgetCatalog {
       title: DashboardWidgetId.allocation.label,
       module: DashboardWidgetId.allocation.module,
       defaultVisible: false,
-      defaultOrder: 5,
+      defaultOrder: 6,
       defaultSize: DashboardWidgetSize.oneThird,
       build: _buildAllocation,
+    ),
+    DashboardWidgetId.news: DashboardWidgetDescriptor(
+      id: DashboardWidgetId.news,
+      title: DashboardWidgetId.news.label,
+      module: DashboardWidgetId.news.module,
+      defaultVisible: true,
+      defaultOrder: 3,
+      defaultSize: DashboardWidgetSize.twoThirds,
+      build: _buildNews,
     ),
   };
 
@@ -127,7 +137,6 @@ class DashboardWidgetCatalog {
     DashboardWidgetContext ctx,
   ) {
     final overviewsAsync = ref.watch(portfolioOverviewsProvider(ctx.userId));
-    final onSurface = Theme.of(context).colorScheme.onSurface;
     return AmGlassCard(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -138,7 +147,7 @@ class DashboardWidgetCatalog {
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 16,
-              color: onSurface,
+              color: ModuleColors.dashboard,
               fontFamily: 'Inter',
             ),
           ),
@@ -202,6 +211,14 @@ class DashboardWidgetCatalog {
     DashboardWidgetContext ctx,
   ) {
     return DashboardChartWidget(userId: ctx.userId);
+  }
+
+  static Widget _buildNews(
+    BuildContext context,
+    WidgetRef ref,
+    DashboardWidgetContext ctx,
+  ) {
+    return const DashboardNewsSection();
   }
 }
 

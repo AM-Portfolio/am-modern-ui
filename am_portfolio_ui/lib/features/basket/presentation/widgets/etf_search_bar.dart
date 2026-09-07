@@ -181,14 +181,14 @@ class _EtfSearchBarState extends State<EtfSearchBar> {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary.withOpacity(0.1),
+                                  color: ModuleColors.portfolio.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
                                   option.marketCapCategory!,
                                   style: TextStyle(
                                     fontSize: 10,
-                                    color: AppColors.primary,
+                                    color: ModuleColors.portfolio,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),

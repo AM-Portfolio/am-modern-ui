@@ -23,7 +23,7 @@ class PreviewSectionHeader extends StatelessWidget {
       case ItemStatus.held:
         return context.statusSuccess;
       case ItemStatus.substitute:
-        return context.colors.actionPrimaryBg;
+        return ModuleColors.portfolio;
       case ItemStatus.missing:
         return context.statusError;
       case ItemStatus.excluded:
@@ -64,9 +64,11 @@ class PreviewSectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = _colorForStatus(context);
-    final compact = BasketResponsive.useCompactPreview(context);
 
-    return Column(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = PreviewTableLayout.useCompactTable(context, constraints);
+        return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Container(
@@ -217,6 +219,8 @@ class PreviewSectionHeader extends StatelessWidget {
             ),
           ),
       ],
+        );
+      },
     );
   }
 }

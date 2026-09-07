@@ -235,7 +235,7 @@ class PortfolioHeatmapConfig {
   }) => getHeatmapConfig(
     title: title,
     showSubCards: showSubCards,
-    accentColor: accentColor ?? Colors.green,
+    accentColor: accentColor ?? ModuleColors.portfolio,
   );
 
   /// Configuration for value portfolio
@@ -246,7 +246,7 @@ class PortfolioHeatmapConfig {
   }) => getHeatmapConfig(
     title: title,
     showSubCards: showSubCards,
-    accentColor: accentColor ?? Colors.blue,
+    accentColor: accentColor ?? ModuleColors.portfolio,
   );
 
   /// Configuration for dividend portfolio
@@ -268,6 +268,6 @@ class PortfolioHeatmapConfig {
   }) => getHeatmapConfig(
     title: title,
     showSubCards: showSubCards,
-    accentColor: accentColor ?? Colors.purple,
+    accentColor: accentColor ?? ModuleColors.portfolio,
   );
 }

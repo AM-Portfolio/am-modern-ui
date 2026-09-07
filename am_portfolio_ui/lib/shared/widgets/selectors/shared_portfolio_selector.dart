@@ -63,9 +63,10 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
             child: PopupMenuButton<String>(
               tooltip: 'Select Portfolio',
               offset: const Offset(40, 0),
-              color: isDark ? const Color(0xFF2C2C3E) : Colors.white,
+              color: context.colors.cardSurface,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: color.withValues(alpha: 0.35)),
               ),
               icon: Container(
                 padding: const EdgeInsets.all(8),
@@ -103,13 +104,13 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                               margin: const EdgeInsets.only(left: 4),
                               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                               decoration: BoxDecoration(
-                                color: Colors.blue.withValues(alpha: 0.1),
+                                color: ModuleColors.portfolio.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(4),
-                                border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                                border: Border.all(color: ModuleColors.portfolio.withValues(alpha: 0.3)),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'BASKET',
-                                style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.blue),
+                                style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: ModuleColors.portfolio),
                               ),
                             ),
                         ],
@@ -125,7 +126,7 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
           accentColor: color,
           isCompact: effectiveCompact,
           child: Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: const EdgeInsets.symmetric(vertical: 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -174,13 +175,13 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: Colors.blue.withValues(alpha: 0.1),
+                                  color: ModuleColors.portfolio.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                                  border: Border.all(color: ModuleColors.portfolio.withValues(alpha: 0.3)),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'BASKET',
-                                  style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.blue),
+                                  style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: ModuleColors.portfolio),
                                 ),
                               ),
                             ),
@@ -201,31 +202,27 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                           : Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.1)
-                            : Colors.grey.shade300,
+                        color: color.withValues(alpha: 0.4),
                       ),
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: currentPortfolioId,
                         isExpanded: true,
-                        dropdownColor: isDark
-                            ? const Color(0xFF2C2C3E)
-                            : Colors.white,
+                        dropdownColor: context.colors.cardSurface,
                         icon: Icon(
                           Icons.keyboard_arrow_down,
                           size: 16,
-                          color: isDark ? Colors.white70 : Colors.black54,
+                          color: context.colors.textSecondary,
                         ),
                         style: TextStyle(
-                          color: isDark ? Colors.white : Colors.black87,
+                          color: context.colors.textPrimary,
                           fontSize: 12,
                         ),
                         hint: Text(
                           'Select Portfolio',
                           style: TextStyle(
-                            color: isDark ? Colors.white54 : Colors.black45,
+                            color: context.colors.textSecondary,
                             fontSize: 12,
                           ),
                         ),
@@ -246,13 +243,13 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                                         margin: const EdgeInsets.only(left: 4),
                                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                                         decoration: BoxDecoration(
-                                          color: Colors.blue.withValues(alpha: 0.1),
+                                          color: ModuleColors.portfolio.withValues(alpha: 0.1),
                                           borderRadius: BorderRadius.circular(4),
-                                          border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                                          border: Border.all(color: ModuleColors.portfolio.withValues(alpha: 0.3)),
                                         ),
-                                        child: const Text(
+                                        child: Text(
                                           'BASKET',
-                                          style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.blue),
+                                          style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: ModuleColors.portfolio),
                                         ),
                                       ),
                                   ],

@@ -91,6 +91,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
           },
         ),
       );
+      unawaited(GetIt.instance<OfflineSyncEngine>().start());
       if (!mounted) return;
       setState(() {
         _app = AMApp(launchUri: widget.launchUri);

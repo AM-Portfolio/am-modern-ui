@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_colors.dart';
+
 /// Configuration for a module
 /// Contains metadata and settings for module display and behavior
 class ModuleConfig {
@@ -96,12 +98,59 @@ class ModuleRoute {
   final bool requiresAuth;
 }
 
-/// Predefined accent colors for modules
+/// Predefined accent colors for modules.
+///
+/// Default / system / light / dark / white keep distinct multi-color accents.
+/// Brand themes sync every module accent to the theme brand via [applyBrandSync].
 class ModuleColors {
-  static const Color market = Color(0xFF06b6d4); // Cyan
-  static const Color trade = Color(0xFF8b5cf6); // Purple
-  static const Color portfolio = Color(0xFFec4899); // Pink
-  static const Color dashboard = Color(0xFF3b82f6); // Blue
-  static const Color analytics = Color(0xFF10b981); // Green
-  static const Color reports = Color(0xFFf59e0b); // Amber
+  static const Color _market = Color(0xFF06b6d4); // Cyan
+  static const Color _trade = Color(0xFF8b5cf6); // Purple
+  static const Color _portfolio = Color(0xFFec4899); // Pink
+  static const Color _dashboard = Color(0xFF3b82f6); // Blue
+  static const Color _analytics = Color(0xFF10b981); // Green
+  static const Color _reports = Color(0xFFf59e0b); // Amber
+  static const Color _aiChat = Color(0xFF6C5DD3); // Indigo / violet
+
+  static Color market = _market;
+  static Color trade = _trade;
+  static Color portfolio = _portfolio;
+  static Color dashboard = _dashboard;
+  static Color analytics = _analytics;
+  static Color reports = _reports;
+  static Color aiChat = _aiChat;
+
+  /// True after a brand theme sync (skyBlue / imperialGold / cyberNeon).
+  static bool isBrandSynced = false;
+
+  /// When [multicolor] is true, restore distinct AM accents; otherwise sync all to [brand].
+  static void applyBrandSync({
+    required bool multicolor,
+    required Color brand,
+  }) {
+    if (multicolor) {
+      market = _market;
+      trade = _trade;
+      portfolio = _portfolio;
+      dashboard = _dashboard;
+      analytics = _analytics;
+      reports = _reports;
+      aiChat = _aiChat;
+      isBrandSynced = false;
+    } else {
+      market = brand;
+      trade = brand;
+      portfolio = brand;
+      dashboard = brand;
+      analytics = Color.lerp(brand, Colors.white, 0.12)!;
+      reports = Color.lerp(brand, Colors.black, 0.08)!;
+      aiChat = brand;
+      isBrandSynced = true;
+    }
+    AppColors.syncModuleAccents(
+      market: market,
+      trade: trade,
+      portfolio: portfolio,
+      dashboard: dashboard,
+    );
+  }
 }

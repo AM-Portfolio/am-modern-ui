@@ -6,21 +6,28 @@ class AmGlassCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
 
+  /// Dark (and optional light) fill opacity. Defaults to near-opaque glass.
+  final double surfaceAlpha;
+
   const AmGlassCard({
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(AppSpacing.lg),
+    this.surfaceAlpha = 0.92,
   });
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final useCustomAlpha = surfaceAlpha < 0.92;
 
     if (!context.isDark) {
       return Container(
         padding: padding,
         decoration: BoxDecoration(
-          color: colors.cardSurface,
+          color: useCustomAlpha
+              ? colors.cardSurface.withValues(alpha: surfaceAlpha)
+              : colors.cardSurface,
           borderRadius: AppRadii.dialog,
           border: Border.all(color: colors.border, width: 1),
           boxShadow: [
@@ -41,14 +48,18 @@ class AmGlassCard extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Container(
           decoration: BoxDecoration(
-            color: context.glassOverlay(0.04),
+            color: colors.cardSurface.withValues(alpha: surfaceAlpha),
             borderRadius: AppRadii.dialog,
             border: Border.all(
-              color: context.glassOverlay(0.08),
+              color: ModuleColors.isBrandSynced
+                  ? ModuleColors.dashboard.withValues(alpha: 0.22)
+                  : context.glassOverlay(0.08),
             ),
             boxShadow: [
               BoxShadow(
-                color: context.shadow(0.2),
+                color: ModuleColors.isBrandSynced
+                    ? ModuleColors.dashboard.withValues(alpha: 0.12)
+                    : context.shadow(0.2),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),

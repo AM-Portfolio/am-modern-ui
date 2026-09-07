@@ -13,15 +13,28 @@ class AppColors {
   static const Color primaryLight = Color(0xFF8B7EE0);
   
   // ============================================================================
-  // MODULE ACCENT COLORS
+  // MODULE ACCENT COLORS (mutable — synced from ModuleColors on theme change)
   // ============================================================================
-  
-  static const Color marketAccent = Color(0xFF06b6d4);      // Cyan
-  static const Color portfolioAccent = Color(0xFFec4899);   // Pink
-  static const Color tradeAccent = Color(0xFF8b5cf6);       // Purple
-  static const Color authAccent = Color(0xFF6C63FF);        // Indigo
-  static const Color userAccent = Color(0xFF8B7EE0);        // Light Purple
-  
+
+  static Color marketAccent = const Color(0xFF06b6d4); // Cyan
+  static Color portfolioAccent = const Color(0xFFec4899); // Pink
+  static Color tradeAccent = const Color(0xFF8b5cf6); // Purple
+  static Color authAccent = const Color(0xFF6C63FF); // Indigo
+  static Color userAccent = const Color(0xFF8B7EE0); // Light Purple
+
+  /// Keep legacy AppColors accents aligned with [ModuleColors].
+  static void syncModuleAccents({
+    required Color market,
+    required Color trade,
+    required Color portfolio,
+    required Color dashboard,
+  }) {
+    marketAccent = market;
+    tradeAccent = trade;
+    portfolioAccent = portfolio;
+    authAccent = dashboard;
+    userAccent = Color.lerp(portfolio, trade, 0.5)!;
+  }
   // ============================================================================
   // FINANCIAL STATUS COLORS
   // ============================================================================
@@ -53,6 +66,10 @@ class AppColors {
   
   static const Color lightBackground = Color(0xFFF5F6FA);
   static const Color lightBackgroundAlt = Color(0xFFF0F3FA);
+  /// Auth page frosted backdrop (light) — matches former Material shade50 ramp.
+  static const Color lightAuthBackdropStart = Color(0xFFEDE7F6);
+  static const Color lightAuthBackdropMid = Color(0xFFE3F2FD);
+  static const Color lightAuthBackdropEnd = Color(0xFFF3E5F5);
   static const Color lightCard = Colors.white;
   static const Color lightSurface = Color(0xFFFAFAFA);
   static const Color lightBorder = Color(0xFFE0E0E0);
@@ -98,6 +115,16 @@ class AppColors {
   
   static const LinearGradient darkBackgroundGradient = LinearGradient(
     colors: [darkBackground, darkBackgroundLight, darkBackgroundDeep],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient lightAuthBackdropGradient = LinearGradient(
+    colors: [
+      lightAuthBackdropStart,
+      lightAuthBackdropMid,
+      lightAuthBackdropEnd,
+    ],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

@@ -12,7 +12,7 @@ abstract final class BasketItemStatusTheme {
     if (isExcluded) return context.textTertiary;
     return switch (status) {
       ItemStatus.held => context.statusSuccess,
-      ItemStatus.substitute => context.colors.actionPrimaryBg,
+      ItemStatus.substitute => ModuleColors.portfolio,
       ItemStatus.missing => context.statusError,
       ItemStatus.excluded => context.textTertiary,
       null => context.textTertiary,
@@ -33,7 +33,7 @@ abstract final class BasketItemStatusTheme {
   static Color heldGroupColor(BuildContext context) => context.statusSuccess;
 
   static Color substituteGroupColor(BuildContext context) =>
-      context.colors.actionPrimaryBg;
+      ModuleColors.portfolio;
 
   static Color missingGroupColor(BuildContext context) => context.statusError;
 

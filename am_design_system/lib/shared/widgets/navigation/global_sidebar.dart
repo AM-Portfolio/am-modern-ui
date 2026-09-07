@@ -1,12 +1,13 @@
-import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import 'package:am_design_system/core/navigation/app_web_navigation.dart';
 import 'package:am_design_system/core/theme/app_glassmorphism_v2.dart';
-import 'package:am_design_system/core/theme/app_colors.dart';
+import 'package:am_design_system/core/theme/app_colors_theme.dart';
+import 'package:am_design_system/core/theme/color_extensions.dart';
 import 'package:am_design_system/shared/widgets/navigation/sidebar_item.dart';
+import 'package:am_design_system/shared/widgets/navigation/sidebar_layout_metrics.dart';
 import 'package:am_design_system/core/utils/conditional_mouse_region.dart';
 import 'package:am_design_system/core/module/module_config.dart';
 import 'package:am_design_system/shared/widgets/share/share_link_button.dart';
@@ -47,20 +48,26 @@ class GlobalSidebar extends StatelessWidget {
   Widget build(BuildContext context) {
     // Thin strip width
     const double width = 80.0; // Slightly wider for better spacing
+    final surface = Theme.of(context).extension<AppColorsTheme>()?.surface ??
+        (isDarkMode ? const Color(0xFF1a1a2e) : Colors.white);
 
     return AppGlassmorphismV2.glassPrism(
       isDark: isDarkMode,
+      surfaceColor: surface,
       child: SizedBox(
         width: width,
         height: double.infinity,
         child: Column(
           children: [
-            const SizedBox(height: 48),
-            
-            // 1. App Logo / Brand Icon
-            _buildAppLogo(),
+            const SizedBox(height: SidebarLayoutMetrics.topInset),
 
-            const SizedBox(height: 48),
+            // 1. App Logo / Brand Icon (shared header band with secondary toggle)
+            SizedBox(
+              height: SidebarLayoutMetrics.headerBandHeight,
+              child: Center(child: _buildAppLogo()),
+            ),
+
+            const SizedBox(height: SidebarLayoutMetrics.afterHeaderGap),
 
             // 2. Main Navigation Icons
             Expanded(
@@ -68,7 +75,9 @@ class GlobalSidebar extends StatelessWidget {
                 child: Column(
                   children: items.map((item) {
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 32),
+                      padding: const EdgeInsets.only(
+                        bottom: SidebarLayoutMetrics.navTileGap,
+                      ),
                       child: _GlobalSidebarItem(
                         item: item,
                         isDark: isDarkMode,
@@ -95,18 +104,18 @@ class GlobalSidebar extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 32),
               child: Column(
                 children: [
-                  // Theme Toggle
+                  // Theme picker (full catalog — same as Profile)
                   if (onThemeToggle != null) ...[
                     _buildActionButton(
-                      icon: isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                      icon: Icons.palette_rounded,
                       onTap: onThemeToggle!,
                       isDarkMode: isDarkMode,
-                      tooltip: 'Toggle Theme',
-                      color: isDarkMode ? Colors.amber : const Color(0xFF6C5DD3),
+                      tooltip: 'Select Theme',
+                      color: Theme.of(context).colorScheme.primary,
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
                   ],
-                  
+
                   // User Profile Avatar (At the very bottom)
                   _buildUserProfile(),
                 ],
@@ -124,8 +133,8 @@ class GlobalSidebar extends StatelessWidget {
       child: GestureDetector(
         onTap: () => onNavigate('Dashboard'),
         child: Container(
-          width: 64,
-          height: 40,
+          width: SidebarLayoutMetrics.logoWidth,
+          height: SidebarLayoutMetrics.logoHeight,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
             color: isDarkMode ? const Color(0xFF0A0F1A) : Colors.white,
@@ -181,100 +190,106 @@ class GlobalSidebar extends StatelessWidget {
   }
 
   Widget _buildUserProfile() {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: PopupMenuButton<String>(
-        offset: const Offset(60, -120), // Open to the right/above roughly
-      tooltip: 'Profile Options',
-      color: isDarkMode ? const Color(0xFF1E1E2C) : Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: isDarkMode ? Colors.white.withOpacity(0.1) : Colors.grey.withOpacity(0.2),
-        ),
-      ),
-      onSelected: (value) {
-        if (value == 'profile') {
-          onProfileTap?.call();
-        } else if (value == 'logout') {
-          onLogout?.call();
-        }
+    return Builder(
+      builder: (context) {
+        final themeColors = context.colors;
+        final accent = Theme.of(context).colorScheme.primary;
+        return MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: PopupMenuButton<String>(
+            offset: const Offset(60, -120),
+            tooltip: 'Profile Options',
+            color: themeColors.cardSurface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(
+                color: themeColors.border.withValues(alpha: 0.35),
+              ),
+            ),
+            onSelected: (value) {
+              if (value == 'profile') {
+                onProfileTap?.call();
+              } else if (value == 'logout') {
+                onLogout?.call();
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'profile',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.person_outline_rounded,
+                      color: themeColors.textPrimary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Profile & Settings',
+                      style: TextStyle(
+                        color: themeColors.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.logout_rounded,
+                      color: themeColors.statusError,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Logout',
+                      style: TextStyle(
+                        color: themeColors.statusError,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: accent.withValues(alpha: 0.5),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: accent.withValues(alpha: 0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ClipOval(
+                child: userAvatarUrl != null
+                    ? Image.network(
+                        userAvatarUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _buildUserInitials(),
+                      )
+                    : _buildUserInitials(),
+              ),
+            ),
+          ),
+        );
       },
-      itemBuilder: (context) => [
-        PopupMenuItem(
-          value: 'profile',
-          child: Row(
-            children: [
-              Icon(
-                Icons.person_outline_rounded,
-                color: isDarkMode ? Colors.white : Colors.black87,
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Profile & Settings',
-                style: TextStyle(
-                  color: isDarkMode ? Colors.white : Colors.black87,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const PopupMenuDivider(),
-        PopupMenuItem(
-          value: 'logout',
-          child: Row(
-            children: [
-              const Icon(
-                Icons.logout_rounded,
-                color: Colors.redAccent,
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Logout',
-                style: TextStyle(
-                  color: Colors.redAccent,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: const Color(0xFF6C5DD3).withOpacity(0.5),
-            width: 2,
-          ),
-          boxShadow: [
-             BoxShadow(
-                color: const Color(0xFF6C5DD3).withOpacity(0.2),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-             ),
-          ],
-        ),
-        child: ClipOval(
-          child: userAvatarUrl != null
-              ? Image.network(
-                  userAvatarUrl!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _buildUserInitials(),
-                )
-              : _buildUserInitials(),
-        ),
-      ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildUserInitials() {
     return Container(
@@ -293,12 +308,20 @@ class GlobalSidebar extends StatelessWidget {
 
   Color? _getIconColor(String title) {
     switch (title.toLowerCase()) {
-      case 'dashboard': return AppColors.primary;
-      case 'market': return AppColors.marketAccent;
-      case 'portfolio': return AppColors.portfolioAccent;
-      case 'trade': return AppColors.tradeAccent;
-      case 'analysis': return AppColors.accentPink; // Analysis often uses red/pink
-      default: return null;
+      case 'dashboard':
+        return ModuleColors.dashboard;
+      case 'market':
+        return ModuleColors.market;
+      case 'portfolio':
+        return ModuleColors.portfolio;
+      case 'trade':
+        return ModuleColors.trade;
+      case 'analysis':
+        return ModuleColors.portfolio;
+      case 'ai chat':
+        return ModuleColors.aiChat;
+      default:
+        return null;
     }
   }
 
@@ -380,24 +403,18 @@ class _GlobalSidebarItemState extends State<_GlobalSidebarItem> {
           cursor: SystemMouseCursors.click,
           onEnter: (_) => setState(() => _isHovered = true),
           onExit: (_) => setState(() => _isHovered = false),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: 56,
-            height: 56,
-            decoration: isSelected
-                ? AppGlassmorphismV2.finDashActiveItem(
-                    accentColor: widget.accentColor,
-                    isDark: widget.isDark,
-                  )
-                : AppGlassmorphismV2.finDashInactiveItem(isDark: widget.isDark),
+          child: SidebarFinDashTile(
+            isActive: isSelected,
+            isDark: widget.isDark,
+            accentColor: widget.accentColor,
+            size: SidebarLayoutMetrics.navTileSize,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
                   widget.item.icon,
-                  // Color Logic: If selected OR hovered, use accent color. Else use inactive color.
                   color: (isSelected || _isHovered)
-                      ? widget.accentColor 
+                      ? widget.accentColor
                       : (widget.isDark ? Colors.white54 : Colors.black87),
                   size: 24,
                 ),
@@ -406,10 +423,11 @@ class _GlobalSidebarItemState extends State<_GlobalSidebarItem> {
                   widget.item.title,
                   style: TextStyle(
                     fontSize: 9,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.normal,
                     color: (isSelected || _isHovered)
-                      ? widget.accentColor 
-                      : (widget.isDark ? Colors.white54 : Colors.black87),
+                        ? widget.accentColor
+                        : (widget.isDark ? Colors.white54 : Colors.black87),
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 1,

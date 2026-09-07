@@ -99,6 +99,18 @@
 
     bootMark('html_loaded');
 
+    // Flutter preventDefault's every wheel event, which blocks Brave/Chrome
+    // Ctrl+wheel page zoom. Stop the event before Flutter except over charts.
+    window.__amChartCtrlWheel = false;
+    window.addEventListener('wheel', function (e) {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      if (window.__amChartCtrlWheel) {
+        e.preventDefault();
+        return;
+      }
+      e.stopImmediatePropagation();
+    }, { capture: true, passive: false });
+
     // Only purge stale service workers when build version changes.
     if ('serviceWorker' in navigator) {
       var storedBuild = null;

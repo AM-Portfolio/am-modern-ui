@@ -8,6 +8,7 @@ import 'package:am_design_system/core/config/design_system_provider.dart';
 import 'chart_types.dart';
 import 'chart_axis_scale.dart';
 import 'candle_chart.dart';
+import '../zoom/app_zoom_scroll_guard.dart';
 
 /// One shared header for a multi-series hover: `26 Aug · 15:15` when labels mix.
 String combineChartTooltipHeader(Iterable<String?> labels) {
@@ -558,10 +559,12 @@ class ChartFactory extends StatelessWidget {
 
     // [Interactive] Wrap with zoom controls when enableZoom is true
     if (config.enableZoom) {
-      return _ZoomableChartWrapper(
-        initialZoomScale: config.initialZoomScale,
-        onZoomChanged: config.onZoomChanged,
-        child: chart,
+      return AppZoomScrollGuard(
+        child: _ZoomableChartWrapper(
+          initialZoomScale: config.initialZoomScale,
+          onZoomChanged: config.onZoomChanged,
+          child: chart,
+        ),
       );
     }
 

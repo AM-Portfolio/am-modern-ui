@@ -501,27 +501,23 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         subtitle: null,
         showModuleBottomNavigation: false,
         headerActions: const [ShareLinkButton()],
-        header: const SizedBox(height: 16),
         onBackToGlobal: widget.onBack,
         onThemeToggle: () {
           context.read<ThemeCubit>().toggleTheme();
         },
-        // Footer: Add Trade Button (Synced with Green Theme)
-        footer: Padding(
-          padding: const EdgeInsets.all(16),
-          child: SidebarPrimaryAction(
-            title: addTradeTitle,
-            icon: Icons.add,
-            accentColor: ModuleColors.trade,
-            onTap: () {
-              // Dispatch directly via _swipeController since NotificationListener is below this context
-              final addTradeIndex = _swipeController.items
-                  .indexWhere((item) => item.title == addTradeTitle);
-              if (addTradeIndex != -1) {
-                _swipeController.navigateTo(addTradeIndex);
-              }
-            },
-          ),
+        // Footer: Add Trade Button (Synced with Trade Theme)
+        footer: SidebarPrimaryAction(
+          title: addTradeTitle,
+          icon: Icons.add,
+          accentColor: ModuleColors.trade,
+          onTap: () {
+            // Dispatch directly via _swipeController since NotificationListener is below this context
+            final addTradeIndex = _swipeController.items
+                .indexWhere((item) => item.title == addTradeTitle);
+            if (addTradeIndex != -1) {
+              _swipeController.navigateTo(addTradeIndex);
+            }
+          },
         ),
         body: SwipeablePageView(
           controller: _swipeController,
@@ -574,6 +570,9 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     return Consumer(
       builder: (context, ref, child) {
         final portfoliosAsyncValue = ref.watch(enrichedTradePortfoliosProvider);
+        // Progressive: stream often has realized cards before enrichment finishes.
+        final streamPortfolios =
+            ref.watch(tradePortfoliosStreamProvider).asData?.value;
 
         return portfoliosAsyncValue.when(
           data: (portfolios) => TradePortfolioDiscoveryTemplate(
@@ -737,16 +736,35 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
               ref.invalidate(enrichedTradePortfoliosProvider);
             },
           ),
-          loading: () => TradePortfolioDiscoveryTemplate(
-            portfolios: const [],
-            isLoading: true,
-            onPortfolioSelected: (_) {},
-          ),
+          loading: () {
+            if (streamPortfolios != null && streamPortfolios.isNotEmpty) {
+              return TradePortfolioDiscoveryTemplate(
+                portfolios: streamPortfolios,
+                isLoading: false,
+                onPortfolioSelected: (portfolio) {
+                  _onPortfolioSelected(portfolio.id, portfolio.name);
+                },
+                onRefresh: () {
+                  ref.invalidate(tradePortfoliosStreamProvider);
+                  ref.invalidate(enrichedTradePortfoliosProvider);
+                },
+              );
+            }
+            return TradePortfolioDiscoveryTemplate(
+              portfolios: const [],
+              isLoading: true,
+              onPortfolioSelected: (_) {},
+            );
+          },
           error: (error, _) => TradePortfolioDiscoveryTemplate(
-            portfolios: const [],
+            portfolios: streamPortfolios ?? const [],
             isLoading: false,
-            errorMessage: 'Failed to load portfolios: $error',
-            onPortfolioSelected: (_) {},
+            errorMessage: streamPortfolios == null || streamPortfolios.isEmpty
+                ? 'Failed to load portfolios: $error'
+                : null,
+            onPortfolioSelected: (portfolio) {
+              _onPortfolioSelected(portfolio.id, portfolio.name);
+            },
             onRefresh: () {
               ref.invalidate(tradePortfoliosStreamProvider);
               ref.invalidate(enrichedTradePortfoliosProvider);

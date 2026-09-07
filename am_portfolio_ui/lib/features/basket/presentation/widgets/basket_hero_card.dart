@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart';
 import 'dart:ui';
 import 'basket_gauge_painter.dart';
 
@@ -85,16 +86,16 @@ class BasketHeroCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.2),
+                      color: ModuleColors.portfolio.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: Colors.green.withOpacity(0.4),
+                        color: ModuleColors.portfolio.withValues(alpha: 0.4),
                       ),
                     ),
                     child: Text(
                       'Perfect Match! You hold all required stocks.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.green[200],
+                            color: ModuleColors.portfolio,
                           ),
                       textAlign: TextAlign.center,
                     ),
@@ -109,9 +110,9 @@ class BasketHeroCard extends StatelessWidget {
 
   Color _getColorForScore(double score) {
     if (score >= 90) {
-      return Colors.greenAccent;
+      return ModuleColors.portfolio;
     } else if (score >= 75) {
-      return Colors.tealAccent;
+      return ModuleColors.portfolio.withValues(alpha: 0.85);
     } else if (score >= 60) {
       return Colors.orangeAccent;
     } else {

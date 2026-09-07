@@ -67,11 +67,9 @@ class _DashboardMobileScreenState
               const SizedBox(height: 12),
               Text(
                 label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade500,
-                  fontFamily: 'Inter',
-                ),
+                style: context.text.caption().copyWith(
+                      color: context.colors.textSecondary,
+                    ),
               ),
               const SizedBox(height: 8),
             ],
@@ -109,7 +107,12 @@ class _DashboardMobileScreenState
     return Material(
       color: Colors.transparent,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md,
+          AppSpacing.sm - 2,
+          AppSpacing.md,
+          AppSpacing.sm + 2,
+        ),
         child: Row(
           children: [
             Expanded(
@@ -117,17 +120,14 @@ class _DashboardMobileScreenState
                 'Dashboard',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: onSurface,
-                  fontFamily: 'Inter',
-                  fontSize: 22,
-                  height: 1.1,
-                  letterSpacing: -0.3,
-                ),
+                style: context.text.pageTitle(compact: true).copyWith(
+                      color: onSurface,
+                      height: 1.1,
+                      letterSpacing: -0.3,
+                    ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
             // Controls hug the trailing edge — equal height, tight gap.
             Row(
               mainAxisSize: MainAxisSize.min,

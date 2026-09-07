@@ -37,15 +37,15 @@ class FpStockRow extends StatelessWidget {
     return Color.fromARGB(255, 100 + (r % 100), 100 + (g % 100), 100 + (b % 100));
   }
 
-  Widget _buildAvatar() {
+  Widget _buildAvatar({double radius = 16}) {
     return CircleAvatar(
-      radius: 16,
+      radius: radius,
       backgroundColor: _getSectorColor(sector),
       child: Text(
         symbol.isNotEmpty ? symbol[0].toUpperCase() : '?',
-        style: const TextStyle(
+        style: TextStyle(
           color: Colors.white,
-          fontSize: 14,
+          fontSize: radius >= 16 ? 14 : 12,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -54,93 +54,67 @@ class FpStockRow extends StatelessWidget {
 
   Widget _buildCompactCard(BuildContext context) {
     final theme = Theme.of(context);
-    final fmtValue = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final colors = context.colors;
+    final fmtValue =
+        NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+
+    final metaParts = <String>[
+      'Wt ${weightage.toStringAsFixed(1)}%',
+      if (showValue)
+        value != null ? fmtValue.format(value) : '—',
+      if (showValue && valueSubLabel != null) valueSubLabel!,
+    ];
+
+    Widget? pill;
+    if (statusPill != null && showStatus) {
+      pill = FpStatusPill(
+        label: statusPill!.label,
+        subLabel: statusPill!.subLabel,
+        color: statusPill!.color,
+        compact: true,
+      );
+    }
 
     return Container(
-      color: isEven ? context.colors.cardSurface : Colors.transparent,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      color: isEven ? colors.cardSurface : Colors.transparent,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      child: Row(
         children: [
-          Row(
-            children: [
-              _buildAvatar(),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Text(
+          _buildAvatar(radius: 14),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
                   symbol,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: context.colors.textPrimary,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: colors.textPrimary,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              if (statusPill != null && showStatus) statusPill!,
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Row(
-            children: [
-              Expanded(
-                child: _compactMetric(
-                  context,
-                  label: 'Weight',
-                  value: '${weightage.toStringAsFixed(1)}%',
-                ),
-              ),
-              if (showValue)
-                Expanded(
-                  child: _compactMetric(
-                    context,
-                    label: 'Allocation',
-                    value: value != null ? fmtValue.format(value) : '—',
-                    sub: valueSubLabel,
-                    alignEnd: true,
+                const SizedBox(height: 2),
+                Text(
+                  metaParts.join(' · '),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: colors.textSecondary,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-            ],
+              ],
+            ),
           ),
+          if (pill != null) ...[
+            const SizedBox(width: AppSpacing.sm),
+            pill,
+          ],
         ],
       ),
-    );
-  }
-
-  Widget _compactMetric(
-    BuildContext context, {
-    required String label,
-    required String value,
-    String? sub,
-    bool alignEnd = false,
-  }) {
-    return Column(
-      crossAxisAlignment: alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: context.colors.textTertiary,
-                fontSize: 10,
-              ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        if (sub != null)
-          Text(
-            sub,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: sub == 'Covered'
-                      ? context.statusSuccess
-                      : context.colors.textSecondary,
-                  fontSize: 10,
-                ),
-          ),
-      ],
     );
   }
 

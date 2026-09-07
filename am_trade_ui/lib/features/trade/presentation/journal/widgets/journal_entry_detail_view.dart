@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 import '../../../internal/domain/entities/journal_entry.dart';
 import '../../cubit/journal/journal_cubit.dart';
@@ -129,7 +130,7 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Template "$templateName" selected! (Content insertion coming soon)'),
-              backgroundColor: const Color(0xFF6C5DD3),
+              backgroundColor: ModuleColors.trade,
               duration: const Duration(seconds: 3),
             ),
           );
@@ -169,7 +170,7 @@ class _HoverButtonState extends State<_HoverButton> {
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: _isHovered
-                ? const Color(0xFF9C27B0) // Purple color
+                ? ModuleColors.trade // Purple color
                 : Theme.of(context).colorScheme.outline,
             width: 1.5,
           ),
@@ -188,7 +189,7 @@ class _HoverButtonState extends State<_HoverButton> {
                     IconTheme(
                       data: IconThemeData(
                         color: _isHovered
-                            ? const Color(0xFF9C27B0)
+                            ? ModuleColors.trade
                             : Theme.of(context).colorScheme.onSurface,
                       ),
                       child: widget.icon!,
@@ -198,7 +199,7 @@ class _HoverButtonState extends State<_HoverButton> {
                   DefaultTextStyle(
                     style: Theme.of(context).textTheme.labelLarge!.copyWith(
                           color: _isHovered
-                              ? const Color(0xFF9C27B0)
+                              ? ModuleColors.trade
                               : Theme.of(context).colorScheme.onSurface,
                         ),
                     child: widget.child,

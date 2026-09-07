@@ -81,6 +81,13 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         widget.portfolios != oldWidget.portfolios) {
       _syncPortfolioSelection();
     }
+    if (oldWidget.initialTab == 'baskets' &&
+        widget.initialTab != 'baskets') {
+      final portfolioId = _resolvedPortfolioId;
+      if (portfolioId != null) {
+        context.read<PortfolioCubit>().loadPortfolioById(portfolioId);
+      }
+    }
   }
 
   String? get _resolvedPortfolioId {
@@ -109,11 +116,11 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
     });
 
     try {
-      // Use the global wrapper extension to sync URL if it exists
       context.selectPortfolio(portfolioId, portfolioName);
     } catch (_) {
-      // Fallback if not inside the wrapper
-      context.read<PortfolioCubit>().loadPortfolioById(portfolioId);
+      if (widget.initialTab != 'baskets') {
+        context.read<PortfolioCubit>().loadPortfolioById(portfolioId);
+      }
     }
   }
 
@@ -201,7 +208,6 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         subtitle: null,
         showModuleBottomNavigation: false,
         headerActions: const [],
-        header: const SizedBox(height: 16),
         onBackToGlobal: widget.onBack,
         onThemeToggle: () {
           context.read<ThemeCubit>().toggleTheme();
@@ -245,16 +251,17 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
                       builder: (context, ref, _) {
                         final selected = ref.watch(appTimeFrameProvider);
                         final screenWidth = MediaQuery.of(context).size.width;
-                        
-                        // Limit width to 40% of screen on large screens, up to a max of 400 pixels
+
                         return ConstrainedBox(
                           constraints: BoxConstraints(
                             maxWidth: screenWidth > 800 ? 400 : screenWidth * 0.45,
                           ),
                           child: TimeFrameSelector(
                             compact: true,
+                            primaryColor: ModuleColors.portfolio,
                             selectedTimeFrame: selected,
-                            onTimeFrameChanged: (tf) => ref.read(appTimeFrameProvider.notifier).setTimeFrame(tf),
+                            onTimeFrameChanged: (tf) =>
+                                ref.read(appTimeFrameProvider.notifier).setTimeFrame(tf),
                             availableTimeFrames: const [
                               TimeFrame.oneDay,
                               TimeFrame.oneWeek,
@@ -281,7 +288,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
                         setState(() {
                           _isAddingTrade = false;
                         });
-                      }
+                      },
                     )
                   : activePage,
             ),
@@ -289,25 +296,22 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         ),
         footer: (_currentPortfolioId == null || _currentPortfolioId == 'all')
             ? const SizedBox.shrink()
-            : Padding(
-                padding: const EdgeInsets.all(16),
-                child: SidebarPrimaryAction(
-                  title: 'New Trade',
-                  icon: Icons.add,
-                  accentColor: ModuleColors.portfolio,
-                  onTap: () {
-                    if (widget.addTradeBuilder != null) {
-                      setState(() {
-                        _isAddingTrade = true;
-                      });
-                    }
-                  },
-                ),
+            : SidebarPrimaryAction(
+                title: 'New Trade',
+                icon: Icons.add,
+                accentColor: ModuleColors.portfolio,
+                onTap: () {
+                  if (widget.addTradeBuilder != null) {
+                    setState(() {
+                      _isAddingTrade = true;
+                    });
+                  }
+                },
               ),
         sections: [
           if (widget.portfolios != null && widget.portfolios!.isNotEmpty)
             SecondarySidebarSection(
-              title: '', // No title as requested ("Institute of account") style
+              title: '',
               customWidget: SharedPortfolioSelector<PortfolioItem>(
                 currentPortfolioId: _currentPortfolioId,
                 currentPortfolioName:

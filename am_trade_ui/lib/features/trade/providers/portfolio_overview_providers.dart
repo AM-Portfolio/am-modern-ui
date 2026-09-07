@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_common/core/di/network_providers.dart';
 
 import '../internal/data/datasources/portfolio_overview_data_source.dart';
 import '../internal/data/dtos/portfolio_summary_response_dto.dart';
+import '../internal/domain/entities/trade_portfolio.dart';
 import '../presentation/models/trade_portfolio_view_model.dart';
 import 'trade_internal_providers.dart';
 
@@ -80,39 +83,64 @@ final portfolioLiveSummaryProvider =
 /// call and the null-safe `_mergeViewModel` function.
 final enrichedTradePortfoliosProvider =
     FutureProvider<List<TradePortfolioViewModel>>((ref) async {
-  // Step 1: Get the realized trade data (always required — if this fails,
-  // the page already shows an error via its own AsyncValue handling)
-  final tradePortfolioList = await ref.watch(tradePortfoliosProvider.future);
+  // Step 1: Realized trade portfolios (required). Timeout so the page cannot
+  // sit on skeletons forever if the trade API hangs.
+  final TradePortfolioList tradePortfolioList;
+  try {
+    tradePortfolioList = await ref
+        .watch(tradePortfoliosProvider.future)
+        .timeout(const Duration(seconds: 20));
+  } on TimeoutException {
+    throw Exception('Timed out loading trade portfolios');
+  }
 
   if (tradePortfolioList.portfolios.isEmpty) return [];
 
-  // Step 2: Concurrently fetch live summary for every portfolio.
-  // We use Future.wait with individual catchErrors so one failure never
-  // prevents other portfolios from showing live data.
-  final summaryFutures = tradePortfolioList.portfolios.map((portfolio) {
-    return ref
-        .watch(portfolioLiveSummaryProvider(portfolio.id).future)
-        .catchError((Object e) {
-      // Fail open: treat network errors as "no live data available"
-      return null as PortfolioSummaryResponseDto?;
-    });
-  });
+  final realized = tradePortfolioList.portfolios
+      .map(TradePortfolioViewModel.fromEntity)
+      .toList();
 
-  final summaries = await Future.wait(summaryFutures);
-
-  // Step 3: Merge realized + unrealized into the final view models
-  final enriched = <TradePortfolioViewModel>[];
-  for (int i = 0; i < tradePortfolioList.portfolios.length; i++) {
-    final tradePortfolio = tradePortfolioList.portfolios[i];
-    final liveSummary = summaries[i]; // may be null
-
-    enriched.add(_mergeViewModel(
-      TradePortfolioViewModel.fromEntity(tradePortfolio),
-      liveSummary,
-    ));
+  // Step 2: Live am-portfolio summaries — fail open, never block the landing.
+  // Call the data source directly (with timeouts) instead of watching
+  // portfolioLiveSummaryProvider.future per id, which can leave this provider
+  // in AsyncLoading indefinitely when any child hangs.
+  PortfolioOverviewDataSource? dataSource;
+  try {
+    dataSource = await ref
+        .watch(_portfolioOverviewDataSourceProvider.future)
+        .timeout(const Duration(seconds: 8));
+  } catch (_) {
+    return realized;
   }
 
-  return enriched;
+  // Cap enrichment wait so Portfolios never sits behind slow am-portfolio calls.
+  List<PortfolioSummaryResponseDto?> summaries;
+  try {
+    summaries = await Future.wait(
+      tradePortfolioList.portfolios.map((portfolio) async {
+        try {
+          return await dataSource!
+              .getPortfolioSummary(portfolio.id)
+              .timeout(const Duration(seconds: 4));
+        } catch (_) {
+          return null;
+        }
+      }),
+    ).timeout(
+      const Duration(seconds: 6),
+      onTimeout: () => List<PortfolioSummaryResponseDto?>.filled(
+        realized.length,
+        null,
+      ),
+    );
+  } catch (_) {
+    return realized;
+  }
+
+  return [
+    for (var i = 0; i < realized.length; i++)
+      _mergeViewModel(realized[i], summaries[i]),
+  ];
 });
 
 // ============================================================================

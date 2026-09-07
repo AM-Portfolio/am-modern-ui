@@ -1,84 +1,95 @@
 import 'package:flutter/material.dart';
 // import 'package:google_fonts/google_fonts.dart';  // Temporarily disabled
 import 'app_colors.dart';
+import 'app_type_scale.dart';
 
 /// Centralized text styles using Google Fonts (Inter)
 class AppTypography {
-  static const String fontFamily = 'Inter'; // Ensure GoogleFonts.inter() is used or pubspec.yaml updated
-  
-  // Use GoogleFonts for easy integration if package is available, 
-  // otherwise fallback to standard TextStyle
-  
-  static TextTheme getTextTheme({required bool isDark}) {
-    final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
-    final secondaryColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+  static const String fontFamily = 'Inter';
 
-    // Using GoogleFonts.inter if available, else standard
-    // Ideally we assume google_fonts is in pubspec
+  static TextTheme getTextTheme({required bool isDark}) {
+    final textColor =
+        isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+    final secondaryColor =
+        isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+
     return TextTheme(
-      // Display: Large headers
       displayLarge: TextStyle(
-        fontSize: 32,
+        fontSize: AppTypeScale.display,
         fontWeight: FontWeight.bold,
         color: textColor,
         letterSpacing: -1.0,
       ),
       displayMedium: TextStyle(
-        fontSize: 28,
+        fontSize: AppTypeScale.h1,
         fontWeight: FontWeight.bold,
         color: textColor,
         letterSpacing: -0.5,
       ),
       displaySmall: TextStyle(
-        fontSize: 24,
+        fontSize: AppTypeScale.h2,
         fontWeight: FontWeight.bold,
         color: textColor,
       ),
-      
-      // Headlines: Section headers
+      headlineLarge: TextStyle(
+        fontSize: AppTypeScale.h3,
+        fontWeight: FontWeight.w700,
+        color: textColor,
+      ),
       headlineMedium: TextStyle(
-        fontSize: 20,
+        fontSize: AppTypeScale.h4,
         fontWeight: FontWeight.w600,
         color: textColor,
       ),
       headlineSmall: TextStyle(
-        fontSize: 18,
+        fontSize: AppTypeScale.h5,
         fontWeight: FontWeight.w600,
         color: textColor,
       ),
-      
-      // Body: Standard text
+      titleLarge: TextStyle(
+        fontSize: AppTypeScale.xl,
+        fontWeight: FontWeight.w600,
+        color: textColor,
+      ),
+      titleMedium: TextStyle(
+        fontSize: AppTypeScale.base,
+        fontWeight: FontWeight.w600,
+        color: textColor,
+      ),
+      titleSmall: TextStyle(
+        fontSize: AppTypeScale.md,
+        fontWeight: FontWeight.w600,
+        color: textColor,
+      ),
       bodyLarge: TextStyle(
-        fontSize: 16,
+        fontSize: AppTypeScale.xl,
         fontWeight: FontWeight.normal,
         color: textColor,
       ),
       bodyMedium: TextStyle(
-        fontSize: 14,
+        fontSize: AppTypeScale.base,
         fontWeight: FontWeight.normal,
         color: textColor,
       ),
       bodySmall: TextStyle(
-        fontSize: 12,
+        fontSize: AppTypeScale.sm,
         fontWeight: FontWeight.normal,
         color: secondaryColor,
       ),
-      
-      // Labels: Buttons, Tags
       labelLarge: TextStyle(
-        fontSize: 14,
+        fontSize: AppTypeScale.base,
         fontWeight: FontWeight.w600,
         color: textColor,
         letterSpacing: 0.5,
       ),
       labelMedium: TextStyle(
-        fontSize: 12,
+        fontSize: AppTypeScale.sm,
         fontWeight: FontWeight.w500,
         color: textColor,
         letterSpacing: 0.25,
       ),
       labelSmall: TextStyle(
-        fontSize: 10,
+        fontSize: AppTypeScale.xs,
         fontWeight: FontWeight.w500,
         color: secondaryColor,
         letterSpacing: 0.5,

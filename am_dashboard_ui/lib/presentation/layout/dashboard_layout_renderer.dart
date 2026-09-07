@@ -1,3 +1,4 @@
+import 'package:am_common/am_common.dart';
 import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_model.dart';
 import 'package:am_dashboard_ui/presentation/layout/dashboard_widget_catalog.dart';
 import 'package:am_dashboard_ui/presentation/layout/dashboard_widget_id.dart';
@@ -70,12 +71,20 @@ class DashboardLayoutRenderer extends ConsumerWidget {
     if (slots.isEmpty) return const SizedBox.shrink();
 
     final isCompact = MediaQuery.sizeOf(context).width < compactBreakpoint;
+    final newsEnabled = ref.watch(newsUiEnabledProvider);
+    final renderSlots = isCompact
+        ? compactDashboardSlots(slots, newsEnabled: newsEnabled)
+        : [
+            for (final slot in slots)
+              if (newsEnabled || slot.id != DashboardWidgetId.news) slot,
+          ];
     final children = <Widget>[];
     var i = 0;
 
-    while (i < slots.length) {
-      final slot = slots[i];
-      final next = i + 1 < slots.length ? slots[i + 1] : null;
+    while (i < renderSlots.length) {
+      final slot = renderSlots[i];
+      final next = i + 1 < renderSlots.length ? renderSlots[i + 1] : null;
+      final afterNext = i + 2 < renderSlots.length ? renderSlots[i + 2] : null;
 
       if (!isCompact &&
           _isComparisonChartSlot(slot.id) &&
@@ -106,6 +115,39 @@ class DashboardLayoutRenderer extends ConsumerWidget {
           ),
         );
         i += 2;
+        continue;
+      }
+
+      if (!isCompact &&
+          slot.id == DashboardWidgetId.news &&
+          next?.id == DashboardWidgetId.recentActivity &&
+          afterNext?.id == DashboardWidgetId.portfolioList) {
+        _appendSlot(
+          children,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 70,
+                child: _buildSlot(context, ref, slot.id),
+              ),
+              const SizedBox(width: _slotGap),
+              Expanded(
+                flex: 30,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildSlot(context, ref, next!.id),
+                    const SizedBox(height: _slotGap),
+                    _buildSlot(context, ref, afterNext!.id),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+        i += 3;
         continue;
       }
 
