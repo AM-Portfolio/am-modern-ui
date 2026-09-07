@@ -25,7 +25,7 @@ class BasketExplorer extends ConsumerStatefulWidget {
   final String userId;
   final String portfolioId;
 
-  /// When false, Discover/My Baskets lives in the portfolio sticky header.
+  /// When false, hide the inline Discover/My Baskets control (rare hosts).
   final bool showInlineToggle;
 
   const BasketExplorer({

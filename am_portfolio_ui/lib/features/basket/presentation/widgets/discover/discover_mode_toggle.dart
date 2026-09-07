@@ -7,7 +7,7 @@ import 'discover_view_mode.dart';
 
 export 'discover_view_mode.dart';
 
-/// Discover / My Baskets segmented control (portfolio sticky header + explorer).
+/// Discover / My Baskets segmented control (owned by BasketExplorer).
 class BasketModeToggle extends StatelessWidget {
   const BasketModeToggle({
     super.key,

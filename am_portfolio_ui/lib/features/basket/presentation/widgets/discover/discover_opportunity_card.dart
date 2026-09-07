@@ -368,7 +368,7 @@ class _DiscoverCtaButton extends StatelessWidget {
         visualDensity: VisualDensity.compact,
       ),
       child: const Text(
-        'Create basket',
+        'Preview →',
         style: TextStyle(
           fontWeight: FontWeight.w700,
           fontSize: 12.5,
