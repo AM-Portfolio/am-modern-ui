@@ -2,65 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_library/am_library.dart';
+
 import '../providers/basket_providers.dart';
 import '../utils/basket_api_errors.dart';
+import '../utils/discover_view_state.dart';
 import '../basket_navigation.dart';
 import '../../domain/models/basket_opportunity.dart';
-import '../shared/basket_panel_styles.dart';
-import 'etf_search_bar.dart';
 import '../pages/my_baskets_view.dart';
+import 'etf_search_bar.dart';
+import 'discover/discover_baskets_table.dart';
+import 'discover/discover_filter_bar.dart';
+import 'discover/discover_layout.dart';
+import 'discover/discover_mode_toggle.dart';
+import 'discover/discover_opportunity_card.dart';
+import 'discover/discover_section_headers.dart';
+import 'discover/discover_states.dart';
 
-enum BasketViewMode { discover, myBaskets }
-
-/// Discover / My Baskets segmented control (portfolio sticky header + explorer).
-class BasketModeToggle extends StatelessWidget {
-  const BasketModeToggle({
-    super.key,
-    this.compact = true,
-  });
-
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<BasketViewMode>(
-      valueListenable: BasketNavigation.viewMode,
-      builder: (context, mode, _) {
-        return Theme(
-          data: BasketPanelStyles.accentTheme(context),
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              AppSpacing.md,
-              compact ? 0 : AppSpacing.sm,
-              AppSpacing.md,
-              compact ? 4 : AppSpacing.xs,
-            ),
-            child: SizedBox(
-              width: compact ? double.infinity : null,
-              child: SegmentedButton<BasketViewMode>(
-                segments: const [
-                  ButtonSegment(
-                    value: BasketViewMode.discover,
-                    label: Text('Discover'),
-                  ),
-                  ButtonSegment(
-                    value: BasketViewMode.myBaskets,
-                    label: Text('My Baskets'),
-                  ),
-                ],
-                selected: {mode},
-                onSelectionChanged: (Set<BasketViewMode> next) {
-                  BasketNavigation.setViewMode(next.first);
-                },
-                showSelectedIcon: false,
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
+export 'discover/discover_mode_toggle.dart';
+export 'discover/discover_view_mode.dart';
 
 class BasketExplorer extends ConsumerStatefulWidget {
   final String userId;
@@ -84,6 +43,10 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
   String? _query;
   String? _lastEmptyTelemetryQuery;
   String? _selectedThemeId;
+  DiscoverViewState _discoverState = const DiscoverViewState();
+  final ScrollController _discoverScroll = ScrollController();
+  final GlobalKey _allBasketsKey = GlobalKey();
+  final GlobalKey<EtfSearchBarState> _searchKey = GlobalKey<EtfSearchBarState>();
 
   bool get _watchOpportunities {
     final nested = BasketNavigation.navigatorKey.currentState;
@@ -99,6 +62,7 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
 
   @override
   void dispose() {
+    _discoverScroll.dispose();
     BasketNavigation.viewMode.removeListener(_onViewModeChanged);
     BasketNavigation.unregisterMyBasketsListener();
     super.dispose();
@@ -120,6 +84,43 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
     });
   }
 
+  void _clearAll() {
+    _searchKey.currentState?.clear(notify: false);
+    setState(() {
+      _query = null;
+      _selectedThemeId = null;
+      _lastEmptyTelemetryQuery = null;
+      _discoverState = const DiscoverViewState();
+    });
+  }
+
+  void _scrollToAllBaskets() {
+    final ctx = _allBasketsKey.currentContext;
+    if (ctx != null) {
+      Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 380),
+        curve: Curves.easeOutCubic,
+        alignment: 0.05,
+      );
+    }
+  }
+
+  void _openPreview(BasketOpportunity opp) {
+    ProductTelemetry.instance.featureAction(
+      'basket_open_preview',
+      tag: 'basket',
+      metadata: {'etf_isin': opp.etfIsin},
+    );
+    BasketNavigation.openPreview(
+      context,
+      etfIsin: opp.etfIsin,
+      userId: widget.userId,
+      portfolioId: widget.portfolioId,
+      opportunity: opp,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -127,7 +128,7 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
 
     return catalogAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, _) => _ErrorState(
+      error: (err, _) => DiscoverErrorState(
         title: 'Couldn’t load baskets',
         message: basketApiErrorMessage(err),
         onRetry: () => ref.invalidate(basketCatalogProvider),
@@ -137,7 +138,7 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
             ? _query!
             : catalog.defaultQuery;
         if (activeQuery.isEmpty) {
-          return _ErrorState(
+          return DiscoverErrorState(
             title: 'Couldn’t load baskets',
             message: 'No default basket query is configured yet.',
             onRetry: () => ref.invalidate(basketCatalogProvider),
@@ -173,8 +174,9 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
             ? ref.watch(opportunitiesProvider)
             : ref.read(opportunitiesProvider);
 
-        final themes =
-            catalog.themes.where((t) => t.featured && t.query.isNotEmpty).toList();
+        final themes = catalog.themes
+            .where((t) => t.featured && t.query.isNotEmpty)
+            .toList();
         final viewMode = BasketNavigation.viewMode.value;
 
         return Column(
@@ -183,35 +185,110 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
             if (widget.showInlineToggle)
               LayoutBuilder(
                 builder: (context, constraints) {
-                  final stackHeader =
+                  final isMobileWidth =
                       constraints.maxWidth < AmBreakpoints.mobile;
-                  if (stackHeader) {
-                    return const BasketModeToggle();
+                  // Mobile shell owns sticky toggle. Narrow web still needs
+                  // exactly one toggle here (no sticky).
+                  if (isMobileWidth) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const BasketModeToggle(),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.md,
+                            0,
+                            AppSpacing.md,
+                            AppSpacing.xs,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Smart Baskets',
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Discover pre-built ETF portfolios and invest in market themes with one click.',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: context.colors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
                   }
                   return Padding(
                     padding: const EdgeInsets.fromLTRB(
                       AppSpacing.md,
                       AppSpacing.sm,
                       AppSpacing.md,
-                      AppSpacing.xs,
+                      AppSpacing.sm,
                     ),
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
-                          child: Text(
-                            'Smart Baskets',
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -0.3,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Smart Baskets',
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Discover pre-built ETF portfolios and invest in market themes with one click.',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: context.colors.textSecondary,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: AppSpacing.sm),
-                        const Flexible(child: BasketModeToggle(compact: false)),
+                        const SizedBox(width: AppSpacing.md),
+                        const BasketModeToggle(compact: false),
                       ],
                     ),
                   );
                 },
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.xs,
+                  AppSpacing.md,
+                  AppSpacing.xs,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Smart Baskets',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Discover pre-built ETF portfolios and invest in market themes with one click.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: context.colors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             if (viewMode == BasketViewMode.myBaskets)
               Expanded(
@@ -229,6 +306,7 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                   AppSpacing.sm,
                 ),
                 child: EtfSearchBar(
+                  key: _searchKey,
                   onEtfSelected: (selection) {
                     if (selection.isin != null) {
                       if (selection.isin!.contains(',')) {
@@ -243,7 +321,9 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                       }
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Selected ETF has no ISIN')),
+                        const SnackBar(
+                          content: Text('Selected ETF has no ISIN'),
+                        ),
                       );
                     }
                   },
@@ -252,48 +332,31 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                   },
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                child: _ThemeChipScroller(
-                  child: Row(
-                    children: [
-                      _ThemeChip(
-                        label: 'Top picks',
-                        selected: _selectedThemeId == null,
-                        onTap: () {
-                          _updateQuery(query: catalog.defaultQuery, themeId: null);
-                        },
-                      ),
-                      ...themes.map((entry) {
-                        final isSelected = _selectedThemeId == entry.id;
-                        return Padding(
-                          padding: const EdgeInsets.only(left: AppSpacing.sm),
-                          child: _ThemeChip(
-                            label: entry.label,
-                            selected: isSelected,
-                            onTap: () {
-                              if (isSelected) {
-                                _updateQuery(
-                                  query: catalog.defaultQuery,
-                                  themeId: null,
-                                );
-                              } else {
-                                _updateQuery(query: entry.query, themeId: entry.id);
-                              }
-                            },
-                          ),
-                        );
-                      }),
-                    ],
-                  ),
-                ),
+              DiscoverFilterBar(
+                themes: themes,
+                defaultQuery: catalog.defaultQuery,
+                selectedThemeId: _selectedThemeId,
+                discoverState: _discoverState,
+                onThemeSelect: ({query, themeId}) =>
+                    _updateQuery(query: query, themeId: themeId),
+                onPeriodChanged: (p) {
+                  setState(() {
+                    _discoverState = _discoverState.copyWith(period: p);
+                  });
+                },
+                onSortChanged: (mode) {
+                  setState(() {
+                    _discoverState = _discoverState.copyWith(sort: mode);
+                  });
+                },
+                onClearAll: _clearAll,
               ),
-              const SizedBox(height: AppSpacing.sm + AppSpacing.xs),
+              const SizedBox(height: DiscoverLayout.filtersToContentGap),
               Expanded(
                 child: opportunitiesAsync.when(
                   data: (opportunities) {
                     if (opportunities.isEmpty) {
-                      return _EmptyState(
+                      return DiscoverEmptyState(
                         themeSelected: _selectedThemeId != null,
                         onReset: () {
                           _updateQuery(
@@ -304,100 +367,128 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                         onRetry: () => ref.invalidate(opportunitiesProvider),
                       );
                     }
+                    final displayList = _discoverState.apply(opportunities);
                     return LayoutBuilder(
                       builder: (context, constraints) {
                         final isMobile =
                             constraints.maxWidth < AmBreakpoints.mobile;
                         if (isMobile) {
-                          return ListView.builder(
-                            padding: const EdgeInsets.fromLTRB(
-                              AppSpacing.md,
-                              AppSpacing.xs,
-                              AppSpacing.md,
-                              AppSpacing.md,
-                            ),
-                            itemCount: opportunities.length,
-                            itemBuilder: (context, index) {
-                              final opp = opportunities[index];
-                              return _BasketOpportunityCard(
-                                opportunity: opp,
-                                compactList: true,
-                                onTap: () {
-                                  ProductTelemetry.instance.featureAction(
-                                    'basket_open_preview',
-                                    tag: 'basket',
-                                    metadata: {'etf_isin': opp.etfIsin},
-                                  );
-                                  BasketNavigation.openPreview(
+                          final bottomInset =
+                              PlatformConstants.globalBottomNavReserve(
                                     context,
-                                    etfIsin: opp.etfIsin,
-                                    userId: widget.userId,
-                                    portfolioId: widget.portfolioId,
-                                    opportunity: opp,
-                                  );
-                                },
+                                  ) +
+                                  AppSpacing.sm;
+                          return ListView.builder(
+                            padding: EdgeInsets.fromLTRB(
+                              AppSpacing.md,
+                              0,
+                              AppSpacing.md,
+                              bottomInset,
+                            ),
+                            itemCount: displayList.length + 1,
+                            itemBuilder: (context, index) {
+                              if (index == 0) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(
+                                    bottom: DiscoverLayout.mobileListGap,
+                                  ),
+                                  child: Text(
+                                    '${displayList.length} baskets',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: context.colors.textSecondary,
+                                    ),
+                                  ),
+                                );
+                              }
+                              final opp = displayList[index - 1];
+                              return DiscoverOpportunityCard(
+                                opportunity: opp,
+                                period: _discoverState.period,
+                                compactList: true,
+                                onTap: () => _openPreview(opp),
                               );
                             },
                           );
                         }
-                        return GridView.builder(
-                          padding: const EdgeInsets.fromLTRB(
-                            AppSpacing.md,
-                            AppSpacing.xs,
-                            AppSpacing.md,
-                            AppSpacing.md,
-                          ),
-                          gridDelegate:
-                              const SliverGridDelegateWithMaxCrossAxisExtent(
-                            maxCrossAxisExtent: 340,
-                            mainAxisExtent: 220,
-                            crossAxisSpacing: AppSpacing.md,
-                            mainAxisSpacing: AppSpacing.md,
-                          ),
-                          itemCount: opportunities.length,
-                          itemBuilder: (context, index) {
-                            final opp = opportunities[index];
-                            return TweenAnimationBuilder<double>(
-                              tween: Tween(begin: 0, end: 1),
-                              duration: Duration(
-                                milliseconds:
-                                    280 + (index * 40).clamp(0, 200),
+
+                        // Single Top picks row: 3 by default, 5 on wide desktop.
+                        final topCount =
+                            constraints.maxWidth >= AmBreakpoints.wideDesktop
+                                ? 5
+                                : 3;
+                        final top = _discoverState.topPicks(
+                          displayList,
+                          limit: topCount,
+                        );
+
+                        return CustomScrollView(
+                          controller: _discoverScroll,
+                          slivers: [
+                            SliverToBoxAdapter(
+                              child: DiscoverTopPicksHeader(
+                                onViewAll: _scrollToAllBaskets,
                               ),
-                              curve: Curves.easeOutCubic,
-                              builder: (context, value, child) {
-                                return Opacity(
-                                  opacity: value,
-                                  child: Transform.translate(
-                                    offset: Offset(0, 12 * (1 - value)),
-                                    child: child,
-                                  ),
-                                );
-                              },
-                              child: _BasketOpportunityCard(
-                                opportunity: opp,
-                                onTap: () {
-                                  ProductTelemetry.instance.featureAction(
-                                    'basket_open_preview',
-                                    tag: 'basket',
-                                    metadata: {'etf_isin': opp.etfIsin},
-                                  );
-                                  BasketNavigation.openPreview(
-                                    context,
-                                    etfIsin: opp.etfIsin,
-                                    userId: widget.userId,
-                                    portfolioId: widget.portfolioId,
-                                    opportunity: opp,
-                                  );
-                                },
+                            ),
+                            SliverPadding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.md,
                               ),
-                            );
-                          },
+                              sliver: SliverGrid(
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: top.length.clamp(1, topCount),
+                                  mainAxisExtent: DiscoverLayout.cardHeight,
+                                  crossAxisSpacing: DiscoverLayout.gridGap,
+                                  mainAxisSpacing: DiscoverLayout.gridGap,
+                                ),
+                                delegate: SliverChildBuilderDelegate(
+                                  (context, index) {
+                                    final opp = top[index];
+                                    return DiscoverOpportunityCard(
+                                      opportunity: opp,
+                                      period: _discoverState.period,
+                                      onTap: () => _openPreview(opp),
+                                    );
+                                  },
+                                  childCount: top.length,
+                                ),
+                              ),
+                            ),
+                            SliverToBoxAdapter(
+                              child: SizedBox(height: DiscoverLayout.sectionGap),
+                            ),
+                            SliverToBoxAdapter(
+                              child: KeyedSubtree(
+                                key: _allBasketsKey,
+                                child: DiscoverAllBasketsHeader(
+                                  count: displayList.length,
+                                ),
+                              ),
+                            ),
+                            SliverToBoxAdapter(
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  AppSpacing.md,
+                                  0,
+                                  AppSpacing.md,
+                                  AppSpacing.lg,
+                                ),
+                                child: DiscoverBasketsTable(
+                                  opportunities: displayList,
+                                  period: _discoverState.period,
+                                  periodColumnLabel:
+                                      _discoverState.periodReturnColumnLabel,
+                                  onPreview: _openPreview,
+                                ),
+                              ),
+                            ),
+                          ],
                         );
                       },
                     );
                   },
-                  loading: () => const _SkeletonGrid(),
-                  error: (err, stack) => _ErrorState(
+                  loading: () => const DiscoverSkeletonGrid(),
+                  error: (err, stack) => DiscoverErrorState(
                     title: 'Couldn’t load opportunities',
                     message: basketApiErrorMessage(err),
                     onRetry: () => ref.invalidate(opportunitiesProvider),
@@ -406,587 +497,6 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
               ),
             ],
           ],
-        );
-      },
-    );
-  }
-}
-
-class _ThemeChip extends StatelessWidget {
-  const _ThemeChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final accent = ModuleColors.portfolio;
-    return Material(
-      color: selected
-          ? accent.withValues(alpha: 0.18)
-          : context.colors.cardSurface,
-      borderRadius: AppRadii.button,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadii.button,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md - 2,
-            vertical: AppSpacing.sm,
-          ),
-          decoration: BoxDecoration(
-            borderRadius: AppRadii.button,
-            border: Border.all(
-              color: selected
-                  ? accent.withValues(alpha: 0.45)
-                  : context.colors.border,
-            ),
-          ),
-          child: Text(
-            label,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: selected ? accent : context.colors.textSecondary,
-              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _BasketOpportunityCard extends StatelessWidget {
-  final BasketOpportunity opportunity;
-  final VoidCallback onTap;
-  final bool compactList;
-
-  /// Compact score ring — must stay small inside fixed-height grid cards.
-  static const double _scoreRingSize = AppSpacing.xxl + AppSpacing.xs; // 52
-
-  const _BasketOpportunityCard({
-    required this.opportunity,
-    required this.onTap,
-    this.compactList = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (compactList) {
-      return _buildHoldingsStyleListCard(context);
-    }
-    return _buildGridCard(context);
-  }
-
-  Widget _buildHoldingsStyleListCard(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = context.colors;
-    final accent = ModuleColors.portfolio;
-    final coverage = (opportunity.replicaScore > 0
-            ? opportunity.replicaScore
-            : opportunity.matchScore)
-        .clamp(0, 100);
-    final coverageColor = coverage >= 70
-        ? context.statusSuccess
-        : coverage >= 40
-            ? context.statusWarning
-            : context.statusError;
-    final initial = opportunity.etfName.isNotEmpty
-        ? opportunity.etfName[0].toUpperCase()
-        : '?';
-    final metaParts = <String>[
-      if (opportunity.totalItems > 0) '${opportunity.totalItems} stocks',
-      if (opportunity.readyToReplicate) 'Ready',
-    ];
-
-    Widget metric({
-      required String label,
-      required String value,
-      Color? valueColor,
-    }) {
-      return Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: colors.textTertiary,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              value,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: valueColor ?? colors.textPrimary,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Material(
-        color: colors.cardSurface,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: AppRadii.card,
-          side: BorderSide(color: colors.border),
-        ),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: AppRadii.card,
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 18,
-                      backgroundColor: accent.withValues(alpha: 0.15),
-                      child: Text(
-                        initial,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: accent,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm + 2),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            opportunity.etfName,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          if (metaParts.isNotEmpty) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              metaParts.join(' · '),
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: colors.textSecondary,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.sm + 2),
-                Row(
-                  children: [
-                    metric(
-                      label: 'Coverage',
-                      value: '${coverage.toStringAsFixed(0)}%',
-                      valueColor: coverageColor,
-                    ),
-                    metric(
-                      label: 'Held',
-                      value: '${opportunity.heldCount}',
-                    ),
-                    metric(
-                      label: 'Missing',
-                      value: '${opportunity.missingCount}',
-                      valueColor: opportunity.missingCount > 0
-                          ? context.statusWarning
-                          : context.statusSuccess,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Preview basket',
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: accent,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    Icon(
-                      Icons.chevron_right,
-                      color: accent,
-                      size: 20,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGridCard(BuildContext context) {
-    final theme = Theme.of(context);
-    final score = opportunity.matchScore.clamp(0, 100);
-    final scoreColor = score >= 70
-        ? context.statusSuccess
-        : score >= 40
-            ? context.statusWarning
-            : context.statusError;
-
-    return Material(
-      color: context.cardColor,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadii.card,
-        side: BorderSide(color: context.dividerColor.withValues(alpha: 0.4)),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadii.card,
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      opportunity.etfName,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        height: 1.25,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (opportunity.readyToReplicate)
-                    Container(
-                      margin: const EdgeInsets.only(left: AppSpacing.sm),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.sm,
-                        vertical: AppSpacing.xs,
-                      ),
-                      decoration: BoxDecoration(
-                        color: context.statusSuccess.withValues(alpha: 0.12),
-                        borderRadius: AppRadii.button,
-                      ),
-                      child: Text(
-                        'Ready',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: context.statusSuccess,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: _scoreRingSize,
-                    height: _scoreRingSize,
-                    child: TweenAnimationBuilder<double>(
-                      tween: Tween(begin: 0, end: score / 100),
-                      duration: const Duration(milliseconds: 700),
-                      curve: Curves.easeOutCubic,
-                      builder: (context, value, _) {
-                        return Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            CircularProgressIndicator(
-                              value: value,
-                              strokeWidth: 5,
-                              backgroundColor:
-                                  scoreColor.withValues(alpha: 0.15),
-                              color: scoreColor,
-                            ),
-                            Text(
-                              '${score.toStringAsFixed(0)}%',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                fontWeight: FontWeight.w800,
-                                color: scoreColor,
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Portfolio match',
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: context.textSecondary,
-                            height: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          '${opportunity.heldCount} held · ${opportunity.missingCount} missing',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            height: 1.3,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (opportunity.totalItems > 0) ...[
-                          const SizedBox(height: AppSpacing.xxs),
-                          Text(
-                            '${opportunity.totalItems} constituents',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: context.textTertiary,
-                              height: 1.3,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: onTap,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: ModuleColors.portfolio,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size.fromHeight(AppSpacing.xl),
-                    padding:
-                        const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: AppRadii.button,
-                    ),
-                  ),
-                  child: const Text('Preview basket'),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SkeletonGrid extends StatelessWidget {
-  const _SkeletonGrid();
-
-  @override
-  Widget build(BuildContext context) {
-    return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 340,
-        mainAxisExtent: 220,
-        crossAxisSpacing: AppSpacing.md,
-        mainAxisSpacing: AppSpacing.md,
-      ),
-      itemCount: 6,
-      itemBuilder: (context, index) {
-        return Container(
-          decoration: BoxDecoration(
-            color: context.colors.surface.withValues(alpha: 0.45),
-            borderRadius: AppRadii.card,
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _ThemeChipScroller extends StatelessWidget {
-  const _ThemeChipScroller({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.only(right: 28),
-          child: child,
-        ),
-        Positioned(
-          right: 0,
-          top: 0,
-          bottom: 0,
-          child: IgnorePointer(
-            child: Container(
-              width: 36,
-              alignment: Alignment.centerRight,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [
-                    context.backgroundColor.withValues(alpha: 0),
-                    context.backgroundColor.withValues(alpha: 0.92),
-                  ],
-                ),
-              ),
-              child: Icon(
-                Icons.chevron_right,
-                size: 20,
-                color: context.textTertiary,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({
-    required this.onReset,
-    this.onRetry,
-    this.themeSelected = false,
-  });
-
-  final VoidCallback onReset;
-  final VoidCallback? onRetry;
-  final bool themeSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final title =
-        themeSelected ? 'No baskets for this theme' : 'No baskets matched';
-    final body = themeSelected
-        ? 'Holdings data may be unavailable for this ETF theme yet. Try Top picks, another theme, or search by symbol/ISIN.'
-        : 'Try Top picks or search for an ETF by name or ISIN.';
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.shopping_basket_outlined,
-                      size: 48, color: context.textTertiary),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    title,
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    body,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: context.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg - 4),
-                  Wrap(
-                    spacing: AppSpacing.sm,
-                    runSpacing: AppSpacing.sm,
-                    alignment: WrapAlignment.center,
-                    children: [
-                      OutlinedButton(
-                          onPressed: onReset,
-                          child: const Text('Reset filters')),
-                      if (onRetry != null)
-                        FilledButton(
-                            onPressed: onRetry, child: const Text('Retry')),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _ErrorState extends StatelessWidget {
-  const _ErrorState({
-    required this.message,
-    required this.onRetry,
-    this.title = 'Couldn’t load opportunities',
-  });
-
-  final String title;
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 44, color: context.statusError),
-                  const SizedBox(height: AppSpacing.sm + AppSpacing.xs),
-                  Text(
-                    title,
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    message,
-                    textAlign: TextAlign.center,
-                    maxLines: 4,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: context.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  FilledButton(onPressed: onRetry, child: const Text('Retry')),
-                ],
-              ),
-            ),
-          ),
         );
       },
     );

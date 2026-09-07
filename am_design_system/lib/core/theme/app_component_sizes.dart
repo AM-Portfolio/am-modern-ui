@@ -13,6 +13,9 @@ class AppComponentSizes {
   static const double iconButtonSize = 40;
   static const double iconButtonSizeCompact = 34;
 
+  /// Dense data tables (Discover All baskets, similar lists).
+  static const double tableRowHeightDense = 56;
+
   static const double cardPadding = AppSpacing.cardPadding;
   static const double fieldGap = AppSpacing.listGap;
   static const double sectionGap = AppSpacing.md;

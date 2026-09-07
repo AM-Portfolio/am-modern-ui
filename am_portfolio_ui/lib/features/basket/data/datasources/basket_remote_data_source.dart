@@ -10,6 +10,7 @@ abstract class BasketRemoteDataSource {
     required String userId,
     required String portfolioId,
     String? query,
+    String mode = 'DISCOVER',
   });
 
   Future<BasketOpportunity> getPreview({
@@ -78,6 +79,7 @@ class BasketRemoteDataSourceImpl implements BasketRemoteDataSource {
     required String userId,
     required String portfolioId,
     String? query,
+    String mode = 'DISCOVER',
   }) async {
     final response = await apiClient.post(
       BasketEndpoints.opportunities,
@@ -86,6 +88,7 @@ class BasketRemoteDataSourceImpl implements BasketRemoteDataSource {
         'userId': userId,
         'portfolioId': portfolioId,
         'etfQuery': query,
+        'mode': mode,
       },
     );
 

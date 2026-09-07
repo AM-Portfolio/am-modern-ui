@@ -39,6 +39,7 @@ Future<List<BasketOpportunity>> basketOpportunities(
     userId: userId,
     portfolioId: portfolioId,
     query: query,
+    mode: 'DISCOVER',
   );
 }
 
