@@ -537,7 +537,7 @@ final userId =
 
           final shell = LayoutBuilder(
             builder: (context, constraints) {
-              final isDesktop = constraints.maxWidth > 1100;
+              final isDesktop = BrowserZoomScope.layoutWidthOf(context) > 1100;
 
               return PopScope(
                 canPop: _history.length <= 1,
