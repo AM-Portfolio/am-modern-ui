@@ -86,8 +86,17 @@ class SwipeNavigationController extends ChangeNotifier {
     notifyListeners();
   }
 
+  int? _targetIndex;
+  bool _isProgrammaticNavigation = false;
+
   /// Called when page changes via swipe or programmatic navigation
   void onPageChanged(int index) {
+    if (_isProgrammaticNavigation && _targetIndex != null && index != _targetIndex) {
+      // Ignore intermediate page transition callbacks while navigating programmatically
+      return;
+    }
+    _isProgrammaticNavigation = false;
+    _targetIndex = null;
     if (_currentIndex != index) {
       _currentIndex = index;
       notifyListeners();
@@ -98,15 +107,43 @@ class SwipeNavigationController extends ChangeNotifier {
   void navigateTo(int index, {bool animate = true}) {
     if (index < 0 || index >= items.length) return;
     if (!items[index].isEnabled) return;
+    if (index == _currentIndex) return;
 
-    if (animate) {
-      pageController.animateToPage(
-        index,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOutCubic,
-      );
-    } else {
+    _targetIndex = index;
+    _currentIndex = index;
+    notifyListeners();
+
+    if (!pageController.hasClients) {
+      _targetIndex = null;
+      return;
+    }
+
+    final currentPage = pageController.page?.round() ?? _currentIndex;
+    final distance = (index - currentPage).abs();
+
+    if (distance > 1 || !animate) {
+      // When jumping across multiple pages (>1 step), jump directly to avoid
+      // scrolling through intermediate pages and triggering unwanted lifecycle/render overhead
+      _isProgrammaticNavigation = true;
       pageController.jumpToPage(index);
+      _isProgrammaticNavigation = false;
+      _targetIndex = null;
+    } else {
+      _isProgrammaticNavigation = true;
+      pageController
+          .animateToPage(
+            index,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOutCubic,
+          )
+          .then((_) {
+            _isProgrammaticNavigation = false;
+            _targetIndex = null;
+          })
+          .catchError((_) {
+            _isProgrammaticNavigation = false;
+            _targetIndex = null;
+          });
     }
   }
 

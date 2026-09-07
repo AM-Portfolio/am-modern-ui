@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import '../../../core/theme/color_extensions.dart';
 import '../../../shared/models/am_mover_item.dart';
 import 'am_mover_tile.dart';
 
@@ -122,8 +123,8 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
       widget.headerAccent ?? const Color(0xFF00C896);
 
   // ── Card border color via theme ───────────────────────────────────────────
-  Color _borderColor(bool isDark) =>
-      isDark ? const Color(0xFF2A3347) : const Color(0xFFCBD5E1);
+  Color _borderColor(BuildContext context, bool isDark) =>
+      context.colors.border;
 
   double _borderWidth(bool isDark) => isDark ? 1.0 : 1.5;
 
@@ -140,22 +141,22 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           decoration: BoxDecoration(
-            // Gradient: dark = navy tones, light = white/light-slate
+            // Dynamic theme-adaptive gradient using centralized cardSurface and surface tokens
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: isDark
                   ? [
-                      const Color(0xFF0F1117).withOpacity(0.92),
-                      const Color(0xFF1A1F2E).withOpacity(0.85),
+                      context.colors.cardSurface.withValues(alpha: 0.85),
+                      context.colors.surface.withValues(alpha: 0.75),
                     ]
                   : [
-                      Colors.white.withOpacity(0.95),
-                      const Color(0xFFF8FAFC).withOpacity(0.90),
+                      context.colors.cardSurface.withValues(alpha: 0.95),
+                      context.colors.surface.withValues(alpha: 0.90),
                     ],
             ),
             border: Border.all(
-              color: _borderColor(isDark),
+              color: _borderColor(context, isDark),
               width: _borderWidth(isDark),
             ),
             borderRadius: BorderRadius.circular(widget.borderRadius),
@@ -176,7 +177,7 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
 
   // ── Header ─────────────────────────────────────────────────────────────────
   Widget _buildHeader(BuildContext context, Color accent, bool isDark) {
-    final titleColor = isDark ? Colors.white.withOpacity(0.92) : const Color(0xFF0F172A);
+    final titleColor = context.colors.textPrimary;
 
     return Row(
       children: [

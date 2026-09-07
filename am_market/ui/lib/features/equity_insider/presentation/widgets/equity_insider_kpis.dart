@@ -27,7 +27,7 @@ class EquityInsiderKpis extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncData = ref.watch(fundamentalRatiosProvider(symbol));
+    final asyncData = ref.watch(fundamentalUnifiedProvider(symbol));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -47,8 +47,70 @@ class EquityInsiderKpis extends ConsumerWidget {
 
             final isBank = data.casa != null || data.nim != null || data.netNpa != null;
 
+            double? yoyRevGrowth;
+            double? yoyProfitGrowth;
+
+            if (data.incomeStatement != null && data.incomeStatement!.length >= 2) {
+              try {
+                final curr = data.incomeStatement![0];
+                final prev = data.incomeStatement![1];
+
+                final currRev = (curr['revenue'] as num?)?.toDouble() ?? (curr['totalRevenue'] as num?)?.toDouble();
+                final prevRev = (prev['revenue'] as num?)?.toDouble() ?? (prev['totalRevenue'] as num?)?.toDouble();
+                if (currRev != null && prevRev != null && prevRev != 0) {
+                  yoyRevGrowth = ((currRev - prevRev) / prevRev.abs()) * 100;
+                }
+
+                final currNet = (curr['netIncome'] as num?)?.toDouble() ?? (curr['netProfit'] as num?)?.toDouble();
+                final prevNet = (prev['netIncome'] as num?)?.toDouble() ?? (prev['netProfit'] as num?)?.toDouble();
+                if (currNet != null && prevNet != null && prevNet != 0) {
+                  yoyProfitGrowth = ((currNet - prevNet) / prevNet.abs()) * 100;
+                }
+              } catch (_) {}
+            }
+
             // Build candidate list of metrics in logical priority order
             final List<_KpiMetric> candidates = [
+              if (yoyRevGrowth != null)
+                _KpiMetric(
+                  label: 'YoY Rev Growth %',
+                  value: yoyRevGrowth,
+                  subtitle: 'Growth',
+                  isPositive: yoyRevGrowth > 0,
+                  isNegative: yoyRevGrowth < 0,
+                ),
+              if (yoyProfitGrowth != null)
+                _KpiMetric(
+                  label: 'YoY PAT Growth %',
+                  value: yoyProfitGrowth,
+                  subtitle: 'Growth',
+                  isPositive: yoyProfitGrowth > 0,
+                  isNegative: yoyProfitGrowth < 0,
+                ),
+              if (data.operatingMarginPercent != null)
+                _KpiMetric(
+                  label: 'OPM %',
+                  value: data.operatingMarginPercent,
+                  subtitle: 'Profitability',
+                  isPositive: data.operatingMarginPercent! > 15,
+                  isNegative: data.operatingMarginPercent! < 5,
+                ),
+              if (data.netProfitMarginPercent != null)
+                _KpiMetric(
+                  label: 'NPM %',
+                  value: data.netProfitMarginPercent,
+                  subtitle: 'Profitability',
+                  isPositive: data.netProfitMarginPercent! > 10,
+                  isNegative: data.netProfitMarginPercent! < 0,
+                ),
+              if (data.cfoPat != null)
+                _KpiMetric(
+                  label: 'CFO / PAT',
+                  value: data.cfoPat,
+                  subtitle: 'Cash Quality',
+                  isPositive: data.cfoPat! >= 1.0,
+                  isNegative: data.cfoPat! < 0.5,
+                ),
               _KpiMetric(
                 label: 'P/E',
                 value: data.peRatio,
@@ -152,12 +214,37 @@ class EquityInsiderKpis extends ConsumerWidget {
             return LayoutBuilder(
               builder: (context, constraints) {
                 final double totalWidth = constraints.maxWidth;
-                int cols = 7;
-                if (totalWidth < 380) {
+                if (totalWidth < 420) {
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                      mainAxisExtent: 96,
+                    ),
+                    itemCount: validMetrics.length,
+                    itemBuilder: (context, i) {
+                      final metric = validMetrics[i];
+                      return _buildKpi(
+                        context,
+                        label: metric.label,
+                        value: metric.value!,
+                        subtitle: metric.subtitle,
+                        isPositive: metric.isPositive,
+                        isNegative: metric.isNegative,
+                      );
+                    },
+                  );
+                }
+
+                int cols = 5;
+                if (totalWidth < 480) {
                   cols = 2;
-                } else if (totalWidth < 650) {
+                } else if (totalWidth < 700) {
                   cols = 3;
-                } else if (totalWidth < 900) {
+                } else if (totalWidth < 950) {
                   cols = 4;
                 }
 
@@ -165,12 +252,13 @@ class EquityInsiderKpis extends ConsumerWidget {
                 final double itemWidth = (totalWidth - (spacing * (cols - 1))) / cols;
 
                 return Wrap(
+                  alignment: WrapAlignment.center,
                   spacing: spacing,
                   runSpacing: spacing,
-                  children: validMetrics.map((metric) {
+                  children: validMetrics.take(15).map((metric) {
                     return SizedBox(
                       width: itemWidth.clamp(100.0, 200.0),
-                      height: 95,
+                      height: 90,
                       child: _buildKpi(
                         context,
                         label: metric.label,
@@ -197,24 +285,21 @@ class EquityInsiderKpis extends ConsumerWidget {
 
   Widget _buildSectionHeader(BuildContext context, String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            title.toUpperCase(),
-            style: TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.8,
-              color: context.textTertiary,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Container(
-              height: 1,
-              color: context.borderColor,
-            ),
+          Row(
+            children: [
+              Text(
+                'Valuation & Key Metrics',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: context.textPrimary,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -233,42 +318,55 @@ class EquityInsiderKpis extends ConsumerWidget {
     if (isPositive) valColor = context.marketTheme.positive;
     if (isNegative) valColor = context.marketTheme.negative;
 
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: context.cardColor,
-        border: Border.all(color: context.borderColor),
-        borderRadius: BorderRadius.circular(10),
-      ),
+    return GlassCard(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      borderRadius: 12,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
             label.toUpperCase(),
-            style: TextStyle(
-              fontSize: 9,
-              color: context.textTertiary,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.4,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value.toStringAsFixed(2),
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: valColor,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            subtitle,
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 10,
-              color: context.textSecondary,
+              color: context.textTertiary,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Expanded(
+            child: Center(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  value.toStringAsFixed(2),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: valColor,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11,
+              color: ModuleColors.market,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
