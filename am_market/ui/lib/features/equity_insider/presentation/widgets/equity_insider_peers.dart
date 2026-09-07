@@ -182,9 +182,30 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
     final isPriceActive = _activeSortColumn == 'currentPrice';
     final isDayChgActive = _activeSortColumn == 'dayChangePercent';
 
+    // Major fundamental ratios to display initially in 4 columns
+    const initialRatioKeys = ['pe', 'pb', 'roa', 'evEbitda'];
+
+    final List<PeerColumnDef> initialCols = [];
+    for (final key in initialRatioKeys) {
+      for (final c in activeCols) {
+        if (c.key == key) {
+          initialCols.add(c);
+          break;
+        }
+      }
+    }
+    // Fallback if none of the standard keys match (e.g. specialized industry)
+    if (initialCols.isEmpty && activeCols.isNotEmpty) {
+      initialCols.addAll(activeCols.take(4));
+    }
+
+    final additionalCols = activeCols.where((c) => !initialCols.contains(c)).toList();
+    final isSortInAdditional = additionalCols.any((c) => c.key == _activeSortColumn);
+
     return AmEntityMobileCard(
       isSelected: isCurrent,
       accentColor: ModuleColors.market,
+      onHeaderTap: isClickable ? () => widget.onPeerSelected?.call(targetSymbol) : null,
       onTap: isClickable ? () => widget.onPeerSelected?.call(targetSymbol) : null,
       leading: AmLetterAvatar(
         text: displayName,
@@ -244,8 +265,8 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
           fontSize: 10,
         ),
       ),
-      metricsColumns: 3,
-      metrics: activeCols.map((col) {
+      metricsColumns: 4,
+      metrics: initialCols.map((col) {
         final isColActive = _activeSortColumn == col.key;
         return AmCardMetricItem(
           label: col.label,
@@ -253,6 +274,19 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
           isHighlighted: isColActive,
         );
       }).toList(),
+      additionalMetrics: additionalCols.map((col) {
+        final isColActive = _activeSortColumn == col.key;
+        return AmCardMetricItem(
+          label: col.label,
+          valueWidget: col.cellBuilder(context, peer, maxRoe),
+          isHighlighted: isColActive,
+        );
+      }).toList(),
+      expandableMetrics: additionalCols.isNotEmpty,
+      initiallyExpanded: isSortInAdditional,
+      expandLabel: 'View more ratios',
+      collapseLabel: 'Show less',
+      additionalMetricsTitle: 'Additional Ratios',
     );
   }
 

@@ -165,9 +165,10 @@ class AmMetricBadge extends StatelessWidget {
 /// - Letter avatar leading.
 /// - Primary symbol / name with subtitle and optional tags/badges.
 /// - Right-aligned primary metric (e.g. Price) and secondary metric (e.g. Day change pill).
-/// - Structured key-value metrics grid for all remaining columns.
-/// - Full card touch target with ripple.
-class AmEntityMobileCard extends StatelessWidget {
+/// - Structured key-value metrics grid for remaining columns.
+/// - Dual touch targets: [onHeaderTap] for stock selection and [onMetricsTap] / expansion toggle for metrics.
+/// - Expandable metrics with smooth animation ("View more ratios" / "Show less").
+class AmEntityMobileCard extends StatefulWidget {
   const AmEntityMobileCard({
     super.key,
     this.leading,
@@ -178,8 +179,16 @@ class AmEntityMobileCard extends StatelessWidget {
     this.primaryMetric,
     this.secondaryMetric,
     this.metrics = const [],
+    this.additionalMetrics = const [],
     this.metricsColumns = 2,
     this.onTap,
+    this.onHeaderTap,
+    this.onMetricsTap,
+    this.expandableMetrics = false,
+    this.initiallyExpanded = false,
+    this.expandLabel = 'View more ratios',
+    this.collapseLabel = 'Show less',
+    this.additionalMetricsTitle = 'Additional Ratios',
     this.isSelected = false,
     this.accentColor,
     this.cardColor,
@@ -208,14 +217,38 @@ class AmEntityMobileCard extends StatelessWidget {
   /// Secondary top-right metric (e.g. Day change pill).
   final Widget? secondaryMetric;
 
-  /// Structured fundamental metrics displayed in a grid below the header.
+  /// Structured fundamental metrics displayed in the primary grid below the header.
   final List<AmCardMetricItem> metrics;
 
-  /// Number of columns in the metrics grid (defaults to 2).
+  /// Additional fundamental metrics displayed in the expandable drawer.
+  final List<AmCardMetricItem> additionalMetrics;
+
+  /// Number of columns in the metrics grid (defaults to 2, supports up to 4).
   final int metricsColumns;
 
-  /// Tap callback for the entire card.
+  /// Fallback tap callback for the entire card.
   final VoidCallback? onTap;
+
+  /// Specific tap callback for the header row (e.g. navigate to stock detail or fundamental analysis).
+  final VoidCallback? onHeaderTap;
+
+  /// Specific tap callback for the metrics body. Defaults to expanding/collapsing when [expandableMetrics] is true.
+  final VoidCallback? onMetricsTap;
+
+  /// When true, displays an expandable toggle ("View more ratios") for [additionalMetrics].
+  final bool expandableMetrics;
+
+  /// Initial expansion state (e.g. when an active sort column belongs to additional metrics).
+  final bool initiallyExpanded;
+
+  /// Button label when collapsed. Defaults to 'View more ratios'.
+  final String expandLabel;
+
+  /// Button label when expanded. Defaults to 'Show less'.
+  final String collapseLabel;
+
+  /// Section heading above [additionalMetrics]. Defaults to 'Additional Ratios'.
+  final String? additionalMetricsTitle;
 
   /// When true, renders a highlighted border indicating selection.
   final bool isSelected;
@@ -233,121 +266,277 @@ class AmEntityMobileCard extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
 
   @override
+  State<AmEntityMobileCard> createState() => _AmEntityMobileCardState();
+}
+
+class _AmEntityMobileCardState extends State<AmEntityMobileCard> {
+  late bool _isExpanded;
+
+  @override
+  void initState() {
+    super.initState();
+    _isExpanded = widget.initiallyExpanded;
+  }
+
+  @override
+  void didUpdateWidget(covariant AmEntityMobileCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initiallyExpanded != oldWidget.initiallyExpanded && widget.initiallyExpanded) {
+      _isExpanded = true;
+    }
+  }
+
+  void _toggleExpanded() {
+    setState(() {
+      _isExpanded = !_isExpanded;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final effectiveAccent = accentColor ?? colors.actionPrimaryBg;
-    final bg = cardColor ?? colors.cardSurface;
-    final effectiveBorderColor = borderColor ??
-        (isSelected
+    final effectiveAccent = widget.accentColor ?? colors.actionPrimaryBg;
+    final bg = widget.cardColor ?? colors.cardSurface;
+    final effectiveBorderColor = widget.borderColor ??
+        (widget.isSelected
             ? effectiveAccent
             : colors.border.withValues(alpha: context.isDark ? 0.35 : 0.7));
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
+    final hasMetrics = widget.metrics.isNotEmpty;
+    final hasAdditional = widget.additionalMetrics.isNotEmpty;
+    final isExpandable = widget.expandableMetrics && hasAdditional;
+
+    final headerTap = widget.onHeaderTap ?? widget.onTap;
+    final metricsTap = widget.onMetricsTap ?? (isExpandable ? _toggleExpanded : widget.onTap);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bg,
         borderRadius: AppRadii.card,
-        child: Container(
-          padding: padding ?? const EdgeInsets.all(AppSpacing.sm + 4),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: AppRadii.card,
-            border: Border.all(
-              color: effectiveBorderColor,
-              width: isSelected ? 1.5 : 1.0,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: isSelected
-                    ? effectiveAccent.withValues(alpha: 0.12)
-                    : context.shadow(0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+        border: Border.all(
+          color: effectiveBorderColor,
+          width: widget.isSelected ? 1.5 : 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: widget.isSelected
+                ? effectiveAccent.withValues(alpha: 0.12)
+                : context.shadow(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header Row: [Avatar] [Title + Badge + Subtitle] [Price + Day Chg]
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  if (leading != null) ...[
-                    leading!,
-                    const SizedBox(width: AppSpacing.sm + 2),
-                  ],
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: AppRadii.card,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header Row: [Avatar] [Title + Badge + Subtitle] [Price + Day Chg]
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: headerTap,
+                borderRadius: hasMetrics ? const BorderRadius.vertical(top: Radius.circular(AppRadii.lg)) : AppRadii.card,
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.sm + 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      if (widget.leading != null) ...[
+                        widget.leading!,
+                        const SizedBox(width: AppSpacing.sm + 2),
+                      ],
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Flexible(child: title),
-                            if (titleBadge != null) ...[
-                              const SizedBox(width: AppSpacing.xs + 2),
-                              titleBadge!,
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(child: widget.title),
+                                if (widget.titleBadge != null) ...[
+                                  const SizedBox(width: AppSpacing.xs + 2),
+                                  widget.titleBadge!,
+                                ],
+                              ],
+                            ),
+                            if (widget.subtitle != null && widget.subtitle!.isNotEmpty) ...[
+                              const SizedBox(height: AppSpacing.xxs + 1),
+                              Text(
+                                widget.subtitle!,
+                                style: TextStyle(
+                                  fontSize: AppTypeScale.xs,
+                                  color: colors.textSecondary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ],
                           ],
                         ),
-                        if (subtitle != null && subtitle!.isNotEmpty) ...[
-                          const SizedBox(height: AppSpacing.xxs + 1),
-                          Text(
-                            subtitle!,
-                            style: TextStyle(
-                              fontSize: AppTypeScale.xs,
-                              color: colors.textSecondary,
+                      ),
+                      if (widget.primaryMetric != null || widget.secondaryMetric != null) ...[
+                        const SizedBox(width: AppSpacing.sm),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            if (widget.primaryMetric != null) widget.primaryMetric!,
+                            if (widget.secondaryMetric != null) ...[
+                              const SizedBox(height: AppSpacing.xxs + 2),
+                              widget.secondaryMetric!,
+                            ],
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Metrics Section (Body)
+            if (hasMetrics || hasAdditional) ...[
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm + 4),
+                height: 1,
+                color: colors.border.withValues(alpha: 0.35),
+              ),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: metricsTap,
+                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(AppRadii.lg)),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.sm + 4,
+                      AppSpacing.sm,
+                      AppSpacing.sm + 4,
+                      AppSpacing.xs + 2,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Primary Metrics Grid
+                        if (hasMetrics)
+                          _buildMetricsGrid(context, effectiveAccent, widget.metrics),
+
+                        // If collapsed, show "View more ratios" button
+                        if (isExpandable && !_isExpanded) ...[
+                          const SizedBox(height: 6),
+                          Center(
+                            child: InkWell(
+                              onTap: _toggleExpanded,
+                              borderRadius: BorderRadius.circular(AppRadii.xs),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      widget.expandLabel,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: effectiveAccent,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Icon(
+                                      Icons.keyboard_arrow_down,
+                                      size: 16,
+                                      color: effectiveAccent,
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
+
+                        // Expandable Animated Section
+                        if (isExpandable)
+                          AnimatedCrossFade(
+                            duration: const Duration(milliseconds: 220),
+                            firstCurve: Curves.easeOutCubic,
+                            secondCurve: Curves.easeInCubic,
+                            sizeCurve: Curves.easeOutCubic,
+                            crossFadeState: _isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                            firstChild: const SizedBox(width: double.infinity, height: 0),
+                            secondChild: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (widget.additionalMetricsTitle != null &&
+                                    widget.additionalMetricsTitle!.isNotEmpty) ...[
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 8, bottom: 6),
+                                    child: Text(
+                                      widget.additionalMetricsTitle!,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.3,
+                                        color: colors.textSecondary.withValues(alpha: 0.8),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                                _buildMetricsGrid(context, effectiveAccent, widget.additionalMetrics),
+                                const SizedBox(height: 6),
+                                Center(
+                                  child: InkWell(
+                                    onTap: _toggleExpanded,
+                                    borderRadius: BorderRadius.circular(AppRadii.xs),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            widget.collapseLabel,
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                              color: effectiveAccent,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Icon(
+                                            Icons.keyboard_arrow_up,
+                                            size: 16,
+                                            color: effectiveAccent,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                       ],
                     ),
                   ),
-                  if (primaryMetric != null || secondaryMetric != null) ...[
-                    const SizedBox(width: AppSpacing.sm),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        if (primaryMetric != null) primaryMetric!,
-                        if (secondaryMetric != null) ...[
-                          const SizedBox(height: AppSpacing.xxs + 2),
-                          secondaryMetric!,
-                        ],
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-
-              // Metrics Grid (Body)
-              if (metrics.isNotEmpty) ...[
-                Container(
-                  margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                  height: 1,
-                  color: colors.border.withValues(alpha: 0.35),
                 ),
-                _buildMetricsGrid(context, effectiveAccent),
-              ],
+              ),
             ],
-          ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildMetricsGrid(BuildContext context, Color accent) {
+  Widget _buildMetricsGrid(BuildContext context, Color accent, List<AmCardMetricItem> itemsList) {
     final colors = context.colors;
-    final int cols = metricsColumns.clamp(1, 4);
+    final int cols = widget.metricsColumns.clamp(1, 4);
     final List<Widget> rows = [];
 
-    for (int i = 0; i < metrics.length; i += cols) {
-      final end = (i + cols).clamp(0, metrics.length);
-      final chunk = metrics.sublist(i, end);
+    for (int i = 0; i < itemsList.length; i += cols) {
+      final end = (i + cols).clamp(0, itemsList.length);
+      final chunk = itemsList.sublist(i, end);
 
       final rowChildren = <Widget>[];
+
       for (int c = 0; c < chunk.length; c++) {
         final item = chunk[c];
         final isHi = item.isHighlighted;
