@@ -3,6 +3,7 @@ import 'package:am_design_system/am_design_system.dart';
 
 import '../../../domain/models/basket_opportunity.dart';
 import '../../utils/discover_view_state.dart';
+import 'discover_copy.dart';
 import 'discover_layout.dart';
 import 'discover_match_ring.dart';
 import 'discover_sparkline.dart';
@@ -55,7 +56,7 @@ class DiscoverOpportunityCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: AppRadii.card,
           child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.sm + 2),
+            padding: const EdgeInsets.all(AppSpacing.sm + AppSpacing.xxs),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -94,7 +95,6 @@ class DiscoverOpportunityCard extends StatelessWidget {
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w700,
                               height: 1.2,
-                              fontSize: 13.5,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -103,7 +103,6 @@ class DiscoverOpportunityCard extends StatelessWidget {
                             opportunity.displayTicker,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: context.colors.textSecondary,
-                              fontSize: 11.5,
                             ),
                           ),
                         ],
@@ -137,7 +136,6 @@ class DiscoverOpportunityCard extends StatelessWidget {
                             '${opportunity.heldCount} held · ${opportunity.missingCount} missing',
                             style: theme.textTheme.bodySmall?.copyWith(
                               fontWeight: FontWeight.w600,
-                              fontSize: 12,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -185,7 +183,11 @@ class DiscoverOpportunityCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    _DiscoverCtaButton(onPressed: onTap, compact: true),
+                    _DiscoverCtaButton(
+                      onPressed: onTap,
+                      compact: true,
+                      label: DiscoverCopy.previewCta,
+                    ),
                   ],
                 ),
               ],
@@ -205,6 +207,12 @@ class DiscoverOpportunityCard extends StatelessWidget {
     final cat = opportunity.categoryLabel?.trim();
     final score = opportunity.matchScore.clamp(0, 100);
     final subtitle = DiscoverViewState(period: period).periodReturnSubtitle;
+    final tileText = opportunity.displayTicker.isNotEmpty
+        ? opportunity.displayTicker
+        : opportunity.etfName;
+    final requiredLabel = DiscoverViewState.formatRequiredInr(
+      opportunity.minimumInvestmentAmount,
+    );
 
     return Padding(
       padding: const EdgeInsets.only(bottom: DiscoverLayout.mobileListGap),
@@ -226,48 +234,59 @@ class DiscoverOpportunityCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    AmLetterAvatar(
+                      text: tileText,
+                      size: DiscoverLayout.mobileTileSize,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           if (cat != null && cat.isNotEmpty)
-                            Text(
-                              cat,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: accent,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 10,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                            _CategoryPill(label: cat, accent: accent),
+                          if (cat != null && cat.isNotEmpty)
+                            const SizedBox(height: AppSpacing.xxs),
                           Text(
                             opportunity.etfName,
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w700,
-                              fontSize: 13.5,
-                              height: 1.2,
+                              height: 1.15,
                             ),
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            opportunity.displayTicker,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colors.textSecondary,
-                              fontSize: 11,
-                            ),
                           ),
                         ],
                       ),
                     ),
-                    DiscoverSparkline(
-                      data: opportunity.sparklineCloses,
-                      color: retColor,
+                    const SizedBox(width: AppSpacing.xs),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        DiscoverSparkline(
+                          data: opportunity.sparklineCloses,
+                          color: retColor,
+                        ),
+                        const SizedBox(height: AppSpacing.xxs),
+                        Text(
+                          DiscoverViewState.formatReturn(ret),
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: retColor,
+                            height: 1.1,
+                          ),
+                        ),
+                        Text(
+                          subtitle,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: colors.textTertiary,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: DiscoverLayout.mobileListGap),
+                const SizedBox(height: AppSpacing.sm),
                 Row(
                   children: [
                     DiscoverMatchRing(
@@ -280,31 +299,11 @@ class DiscoverOpportunityCard extends StatelessWidget {
                         '${opportunity.heldCount} held · ${opportunity.missingCount} missing',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colors.textSecondary,
-                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          DiscoverViewState.formatReturn(ret),
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            color: retColor,
-                            fontSize: 14,
-                          ),
-                        ),
-                        Text(
-                          subtitle,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: colors.textTertiary,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ],
                     ),
                   ],
                 ),
@@ -312,22 +311,62 @@ class DiscoverOpportunityCard extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(
-                        [
-                          if (opportunity.totalItems > 0)
-                            '${opportunity.totalItems} constituents',
-                          DiscoverViewState.formatRequiredInr(
-                            opportunity.minimumInvestmentAmount,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.groups_outlined,
+                            size: AppSpacing.md,
+                            color: colors.textTertiary,
                           ),
-                        ].join(' · '),
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: colors.textTertiary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                          const SizedBox(width: AppSpacing.xxs),
+                          Flexible(
+                            child: Text(
+                              opportunity.totalItems > 0
+                                  ? '${opportunity.totalItems} constituents'
+                                  : '—',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: colors.textTertiary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.xs,
+                            ),
+                            child: Text(
+                              '|',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: colors.border,
+                              ),
+                            ),
+                          ),
+                          Icon(
+                            Icons.payments_outlined,
+                            size: AppSpacing.md,
+                            color: colors.textTertiary,
+                          ),
+                          const SizedBox(width: AppSpacing.xxs),
+                          Flexible(
+                            child: Text(
+                              '$requiredLabel required',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: colors.textTertiary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    _DiscoverCtaButton(onPressed: onTap, compact: true),
+                    const SizedBox(width: AppSpacing.xs),
+                    _DiscoverCtaButton(
+                      onPressed: onTap,
+                      compact: true,
+                      label: DiscoverCopy.createBasketCta,
+                    ),
                   ],
                 ),
               ],
@@ -339,23 +378,61 @@ class DiscoverOpportunityCard extends StatelessWidget {
   }
 }
 
+class _CategoryPill extends StatelessWidget {
+  const _CategoryPill({
+    required this.label,
+    required this.accent,
+  });
+
+  final String label;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xs,
+        vertical: AppSpacing.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppRadii.sm),
+        border: Border.all(color: accent.withValues(alpha: 0.35)),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: accent,
+              fontWeight: FontWeight.w700,
+              height: 1.1,
+            ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+}
+
 class _DiscoverCtaButton extends StatelessWidget {
   const _DiscoverCtaButton({
     required this.onPressed,
+    required this.label,
     this.compact = false,
   });
 
   final VoidCallback onPressed;
+  final String label;
   final bool compact;
 
   @override
   Widget build(BuildContext context) {
+    final onPrimary = Theme.of(context).colorScheme.onPrimary;
     return FilledButton(
       onPressed: onPressed,
       style: FilledButton.styleFrom(
         backgroundColor: ModuleColors.portfolio,
-        foregroundColor: Colors.white,
-        disabledForegroundColor: Colors.white70,
+        foregroundColor: onPrimary,
+        disabledForegroundColor: onPrimary.withValues(alpha: 0.7),
         minimumSize: Size(
           compact ? 0 : DiscoverLayout.actionMinWidth,
           DiscoverLayout.ctaMinHeight,
@@ -367,13 +444,12 @@ class _DiscoverCtaButton extends StatelessWidget {
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         visualDensity: VisualDensity.compact,
       ),
-      child: const Text(
-        'Preview →',
-        style: TextStyle(
-          fontWeight: FontWeight.w700,
-          fontSize: 12.5,
-          color: Colors.white,
-        ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: onPrimary,
+            ),
       ),
     );
   }

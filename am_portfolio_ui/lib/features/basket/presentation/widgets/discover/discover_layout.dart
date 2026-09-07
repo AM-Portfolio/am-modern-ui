@@ -1,3 +1,5 @@
+import 'package:am_design_system/am_design_system.dart';
+
 /// Discover layout constants (DS tokens used elsewhere).
 class DiscoverLayout {
   DiscoverLayout._();
@@ -6,15 +8,17 @@ class DiscoverLayout {
   static const double gridGap = 12;
   static const double sectionGap = 20;
   static const double filterInternalGap = 0;
-  static const double filtersToContentGap = 16;
+  static const double filtersToContentGap = AppSpacing.md;
   static const double actionMinWidth = 96;
   static const double ctaMinHeight = 36;
   static const double tableMinScrollWidth = 720;
 
-  /// Mobile dense card (PreviewLayout-like).
-  static const double mobileCardPadding = 12;
-  static const double mobileListGap = 8;
+  /// Mobile dense list (AppSpacing compositions only).
+  static const double mobileCardPadding = AppSpacing.sm + AppSpacing.xxs;
+  static const double mobileListGap = AppSpacing.sm;
+  static const double mobileTileSize = 36;
   static const double matchRingMobile = 36;
+  static const double mobileMetaGap = AppSpacing.xs;
 
   static const double matchRingCard = 44;
   static const double matchRingTable = 26;

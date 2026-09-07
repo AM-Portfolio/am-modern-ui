@@ -11,6 +11,7 @@ import '../../domain/models/basket_opportunity.dart';
 import '../pages/my_baskets_view.dart';
 import 'etf_search_bar.dart';
 import 'discover/discover_baskets_table.dart';
+import 'discover/discover_copy.dart';
 import 'discover/discover_filter_bar.dart';
 import 'discover/discover_layout.dart';
 import 'discover/discover_mode_toggle.dart';
@@ -103,6 +104,14 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
         curve: Curves.easeOutCubic,
         alignment: 0.05,
       );
+      return;
+    }
+    if (_discoverScroll.hasClients) {
+      _discoverScroll.animateTo(
+        0,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+      );
     }
   }
 
@@ -187,42 +196,10 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                 builder: (context, constraints) {
                   final isMobileWidth =
                       constraints.maxWidth < AmBreakpoints.mobile;
-                  // Mobile shell owns sticky toggle. Narrow web still needs
-                  // exactly one toggle here (no sticky).
+                  // Mobile: one inline toggle (no title). Desktop: title + toggle.
                   if (isMobileWidth) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const BasketModeToggle(),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(
-                            AppSpacing.md,
-                            0,
-                            AppSpacing.md,
-                            AppSpacing.xs,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Smart Baskets',
-                                style: theme.textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: -0.3,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'Discover pre-built ETF portfolios and invest in market themes with one click.',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: context.colors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    );
+                    // Image-1 chrome: toggle only — search follows immediately.
+                    return const BasketModeToggle();
                   }
                   return Padding(
                     padding: const EdgeInsets.fromLTRB(
@@ -298,39 +275,50 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                 ),
               )
             else ...[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.md,
-                  AppSpacing.sm,
-                  AppSpacing.md,
-                  AppSpacing.sm,
-                ),
-                child: EtfSearchBar(
-                  key: _searchKey,
-                  onEtfSelected: (selection) {
-                    if (selection.isin != null) {
-                      if (selection.isin!.contains(',')) {
-                        _updateQuery(query: selection.isin!, themeId: null);
-                      } else {
-                        BasketNavigation.openPreview(
-                          context,
-                          etfIsin: selection.isin!,
-                          userId: widget.userId,
-                          portfolioId: widget.portfolioId,
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isMobileWidth =
+                      constraints.maxWidth < AmBreakpoints.mobile;
+                  final vPad =
+                      isMobileWidth ? AppSpacing.xs : AppSpacing.sm;
+                  return Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      vPad,
+                      AppSpacing.md,
+                      vPad,
+                    ),
+                    child: EtfSearchBar(
+                      key: _searchKey,
+                      onEtfSelected: (selection) {
+                        if (selection.isin != null) {
+                          if (selection.isin!.contains(',')) {
+                            _updateQuery(query: selection.isin!, themeId: null);
+                          } else {
+                            BasketNavigation.openPreview(
+                              context,
+                              etfIsin: selection.isin!,
+                              userId: widget.userId,
+                              portfolioId: widget.portfolioId,
+                            );
+                          }
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Selected ETF has no ISIN'),
+                            ),
+                          );
+                        }
+                      },
+                      onCleared: () {
+                        _updateQuery(
+                          query: catalog.defaultQuery,
+                          themeId: null,
                         );
-                      }
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Selected ETF has no ISIN'),
-                        ),
-                      );
-                    }
-                  },
-                  onCleared: () {
-                    _updateQuery(query: catalog.defaultQuery, themeId: null);
-                  },
-                ),
+                      },
+                    ),
+                  );
+                },
               ),
               DiscoverFilterBar(
                 themes: themes,
@@ -351,7 +339,17 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                 },
                 onClearAll: _clearAll,
               ),
-              const SizedBox(height: DiscoverLayout.filtersToContentGap),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isMobileWidth =
+                      constraints.maxWidth < AmBreakpoints.mobile;
+                  return SizedBox(
+                    height: isMobileWidth
+                        ? DiscoverLayout.mobileMetaGap
+                        : DiscoverLayout.filtersToContentGap,
+                  );
+                },
+              ),
               Expanded(
                 child: opportunitiesAsync.when(
                   data: (opportunities) {
@@ -377,8 +375,9 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                               PlatformConstants.globalBottomNavReserve(
                                     context,
                                   ) +
-                                  AppSpacing.sm;
+                                  AppSpacing.md;
                           return ListView.builder(
+                            controller: _discoverScroll,
                             padding: EdgeInsets.fromLTRB(
                               AppSpacing.md,
                               0,
@@ -390,13 +389,44 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                               if (index == 0) {
                                 return Padding(
                                   padding: const EdgeInsets.only(
-                                    bottom: DiscoverLayout.mobileListGap,
+                                    bottom: DiscoverLayout.mobileMetaGap,
                                   ),
-                                  child: Text(
-                                    '${displayList.length} baskets',
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: context.colors.textSecondary,
-                                    ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          DiscoverCopy.basketsCount(
+                                            displayList.length,
+                                          ),
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                            color:
+                                                context.colors.textSecondary,
+                                          ),
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: _scrollToAllBaskets,
+                                        style: TextButton.styleFrom(
+                                          foregroundColor:
+                                              ModuleColors.portfolio,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: AppSpacing.xs,
+                                          ),
+                                          minimumSize: Size.zero,
+                                          tapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
+                                        ),
+                                        child: Text(
+                                          DiscoverCopy.viewAll,
+                                          style: theme.textTheme.labelLarge
+                                              ?.copyWith(
+                                            color: ModuleColors.portfolio,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 );
                               }
