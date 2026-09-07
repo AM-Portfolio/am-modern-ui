@@ -9,6 +9,7 @@ import '../../../core/navigation/app_web_navigation.dart';
 import '../am_click_capsule.dart';
 import 'comparison_chart_colors.dart';
 import 'multi_series_chart_data.dart';
+import '../zoom/app_zoom_scroll_guard.dart';
 
 const double kComparisonChartHeaderRowHeight = 36.0;
 
@@ -849,11 +850,13 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
           },
         ),
       },
-      child: Listener(
-        behavior: HitTestBehavior.translucent,
-        onPointerSignal: (event) =>
-            _handlePointerSignal(event, viewportWidth),
-        child: child,
+      child: AppZoomScrollGuard(
+        child: Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerSignal: (event) =>
+              _handlePointerSignal(event, viewportWidth),
+          child: child,
+        ),
       ),
     );
   }

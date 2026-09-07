@@ -33,6 +33,10 @@ export 'core/utils/common_logger.dart';
 export 'core/utils/device_utils.dart';
 export 'core/utils/validators.dart';
 export 'core/utils/conditional_mouse_region.dart';
+export 'core/utils/browser_zoom.dart';
+export 'core/utils/browser_zoom_platform.dart';
+export 'shared/widgets/zoom/browser_zoom_host.dart';
+export 'shared/widgets/zoom/app_zoom_scroll_guard.dart';
 
 // Constants & API Endpoints
 export 'core/constants/app_constants.dart';

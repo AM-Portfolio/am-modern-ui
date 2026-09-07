@@ -113,9 +113,9 @@ class GlobalSidebar extends StatelessWidget {
                       tooltip: 'Select Theme',
                       color: Theme.of(context).colorScheme.primary,
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
                   ],
-                  
+
                   // User Profile Avatar (At the very bottom)
                   _buildUserProfile(),
                 ],

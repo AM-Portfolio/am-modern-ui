@@ -9,6 +9,7 @@ import '../../../core/theme/app_glassmorphism.dart'; // For GradientBorderPainte
 
 import '../navigation/secondary_sidebar.dart';
 import '../navigation/module_bottom_navigation.dart';
+import '../zoom/browser_zoom_host.dart';
 
 /// A unified scaffold that handles the responsive sidebar logic for all AM modules.
 ///
@@ -498,7 +499,7 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = constraints.maxWidth;
+        final width = BrowserZoomScope.layoutWidthOf(context);
         final isTablet = width >= widget.tabletBreakpoint &&
             width < widget.desktopBreakpoint;
         final isMobile = width < widget.tabletBreakpoint;
