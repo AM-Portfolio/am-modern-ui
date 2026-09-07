@@ -651,12 +651,15 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
   }
 
   Widget _buildTabs() {
+    final track = _isDark
+        ? context.colors.cardSurface.withValues(alpha: 0.55)
+        : context.colors.surface;
     return Container(
       decoration: BoxDecoration(
-        color: _isDark ? const Color(0xFF132337) : const Color(0xFFF0F4FA),
+        color: track,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+          color: context.colors.border.withValues(alpha: 0.45),
         ),
       ),
       padding: const EdgeInsets.all(2),

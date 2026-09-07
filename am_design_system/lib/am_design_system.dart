@@ -33,6 +33,10 @@ export 'core/utils/common_logger.dart';
 export 'core/utils/device_utils.dart';
 export 'core/utils/validators.dart';
 export 'core/utils/conditional_mouse_region.dart';
+export 'core/utils/browser_zoom.dart';
+export 'core/utils/browser_zoom_platform.dart';
+export 'shared/widgets/zoom/browser_zoom_host.dart';
+export 'shared/widgets/zoom/app_zoom_scroll_guard.dart';
 
 // Constants & API Endpoints
 export 'core/constants/app_constants.dart';
@@ -68,6 +72,7 @@ export 'shared/widgets/share/share_link_button.dart';
 export 'shared/widgets/navigation/module_bottom_navigation.dart';
 export 'shared/widgets/navigation/secondary_sidebar.dart';
 export 'shared/widgets/navigation/sidebar_item.dart';
+export 'shared/widgets/navigation/sidebar_layout_metrics.dart';
 export 'shared/widgets/navigation/sidebar_nav_item.dart';
 export 'shared/widgets/navigation/sidebar_primary_action.dart';
 export 'shared/widgets/navigation/swipeable_page_view.dart';

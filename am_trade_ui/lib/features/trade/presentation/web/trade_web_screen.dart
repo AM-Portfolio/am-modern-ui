@@ -501,27 +501,23 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         subtitle: null,
         showModuleBottomNavigation: false,
         headerActions: const [ShareLinkButton()],
-        header: const SizedBox(height: 16),
         onBackToGlobal: widget.onBack,
         onThemeToggle: () {
           context.read<ThemeCubit>().toggleTheme();
         },
         // Footer: Add Trade Button (Synced with Trade Theme)
-        footer: Padding(
-          padding: const EdgeInsets.all(16),
-          child: SidebarPrimaryAction(
-            title: addTradeTitle,
-            icon: Icons.add,
-            accentColor: ModuleColors.trade,
-            onTap: () {
-              // Dispatch directly via _swipeController since NotificationListener is below this context
-              final addTradeIndex = _swipeController.items
-                  .indexWhere((item) => item.title == addTradeTitle);
-              if (addTradeIndex != -1) {
-                _swipeController.navigateTo(addTradeIndex);
-              }
-            },
-          ),
+        footer: SidebarPrimaryAction(
+          title: addTradeTitle,
+          icon: Icons.add,
+          accentColor: ModuleColors.trade,
+          onTap: () {
+            // Dispatch directly via _swipeController since NotificationListener is below this context
+            final addTradeIndex = _swipeController.items
+                .indexWhere((item) => item.title == addTradeTitle);
+            if (addTradeIndex != -1) {
+              _swipeController.navigateTo(addTradeIndex);
+            }
+          },
         ),
         body: SwipeablePageView(
           controller: _swipeController,

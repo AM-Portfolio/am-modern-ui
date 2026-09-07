@@ -101,9 +101,17 @@ class _AddSeriesButton extends StatelessWidget {
       },
       child: Chip(
         visualDensity: VisualDensity.compact,
-        label: const Text('+'),
-        backgroundColor: colors.actionPrimaryBg.withValues(alpha: 0.08),
-        side: BorderSide(color: colors.border),
+        label: Text(
+          '+',
+          style: TextStyle(
+            color: ModuleColors.dashboard,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        backgroundColor: colors.cardSurface.withValues(alpha: 0.55),
+        side: BorderSide(
+          color: ModuleColors.dashboard.withValues(alpha: 0.35),
+        ),
       ),
     );
   }

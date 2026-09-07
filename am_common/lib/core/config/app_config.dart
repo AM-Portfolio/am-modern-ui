@@ -52,6 +52,7 @@ class ApiConfig {
     this.user,
     this.gmail,
     this.analysis,
+    this.news,
   });
   final String baseUrl;
   final int timeout;
@@ -65,6 +66,7 @@ class ApiConfig {
   final UserApiConfig? user;
   final GmailApiConfig? gmail;
   final AnalysisApiConfig? analysis;
+  final NewsApiConfig? news;
 }
 
 /// Analysis & Dashboard API configuration
@@ -91,6 +93,19 @@ class AnalysisApiConfig {
   final int receiveTimeout;
   final int sendTimeout;
   final bool enabled;
+}
+
+class NewsApiConfig {
+  const NewsApiConfig({
+    required this.baseUrl,
+    this.insightResource = '/v1/insight',
+    this.currentAffairsResource = '/v1/current-affairs',
+    this.connectTimeoutMs = 800,
+  });
+  final String baseUrl;
+  final String insightResource;
+  final String currentAffairsResource;
+  final int connectTimeoutMs;
 }
 
 /// Gmail Sync API configuration
