@@ -1,33 +1,78 @@
-import '../../../../core/styles/market_theme_extension.dart';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/core/services/market_data_sdk_service.dart';
 
+import '../../providers/equity_insider_provider.dart';
 import '../widgets/equity_insider_hero.dart';
 import '../widgets/equity_insider_kpis.dart';
 import '../widgets/equity_insider_chart.dart';
 import '../widgets/equity_insider_financials.dart';
 import '../widgets/equity_insider_shareholding.dart';
 import '../widgets/equity_insider_peers.dart';
+import '../widgets/equity_insider_section_nav_bar.dart';
+import '../widgets/equity_insider_empty_view.dart';
 
 /// Equity Insider – Fundamental Analysis.
 class EquityInsiderPage extends ConsumerStatefulWidget {
   const EquityInsiderPage({super.key});
 
   @override
-  ConsumerState<EquityInsiderPage> createState() => _EquityInsiderPageState();
+  ConsumerState<EquityInsiderPage> createState() => EquityInsiderPageState();
 }
 
-class _EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
+class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
   final TextEditingController _controller = TextEditingController();
   final MarketDataSdkService _sdkService = MarketDataSdkService();
+
+  void resetToLanding() {
+    setState(() {
+      _submittedSymbol = null;
+      _controller.clear();
+      _symbolHistory.clear();
+    });
+  }
+  final List<String> _symbolHistory = [];
   String? _submittedSymbol;
+
+  static const List<String> _typewriterHints = [
+    'HDFC',
+    'TCS',
+    'RELIANCE',
+    'INFY',
+    'ICICIBANK',
+    'WIPRO',
+    'TATAMOTORS',
+    'BHARTIARTL',
+  ];
+
+  void _navigateToSymbol(String newSymbol) {
+    final text = newSymbol.trim().toUpperCase();
+    if (text.isEmpty) return;
+
+    if (_submittedSymbol != null && _submittedSymbol != text) {
+      _symbolHistory.add(_submittedSymbol!);
+    }
+
+    _controller.text = text;
+    setState(() => _submittedSymbol = text);
+  }
 
   void _search() {
     final text = _controller.text.trim().toUpperCase();
     if (text.isEmpty) return;
-    setState(() => _submittedSymbol = text);
+    _navigateToSymbol(text);
+  }
+
+  void _handleBack() {
+    if (_symbolHistory.isNotEmpty) {
+      final prevSymbol = _symbolHistory.removeLast();
+      _controller.text = prevSymbol;
+      setState(() => _submittedSymbol = prevSymbol);
+    } else {
+      setState(() => _submittedSymbol = null);
+    }
   }
 
   @override
@@ -38,14 +83,17 @@ class _EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
 
   @override
   Widget build(BuildContext context) {
+    final marketCyan = ModuleColors.market;
+    final scaffoldBg = context.colors.scaffoldBackground;
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              context.colors.scaffoldBackground,
-              context.marketTheme.background,
-              context.marketTheme.surface,
+              scaffoldBg,
+              Color.alphaBlend(marketCyan.withValues(alpha: 0.05), scaffoldBg),
+              context.colors.surface,
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -62,105 +110,12 @@ class _EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
   }
 
   Widget _buildEmptySearch() {
-    final chartBlue = context.marketTheme.chartBlue;
-    final surfaceColor = context.marketTheme.surface;
-    final borderColor = context.marketTheme.border;
-
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: surfaceColor.withValues(alpha: 0.7),
-                  border: Border.all(color: borderColor, width: 1.5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: chartBlue.withValues(alpha: 0.15),
-                      blurRadius: 20,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-                alignment: Alignment.center,
-                child: Icon(
-                  Icons.analytics_outlined,
-                  size: 38,
-                  color: chartBlue,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'EQUITY INSIDER',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: context.textPrimary,
-                  letterSpacing: 1.5,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Enter a stock symbol for deep fundamental analysis, valuation & peers.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: context.textSecondary,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 28),
-              SmartSearchAnchor(
-                controller: _controller,
-                searchHandler: (q) => _sdkService.securityApi.search(
-                  q,
-                  smartRecommendations: true,
-                  category: 'STOCKS',
-                  limit: 8,
-                ),
-                onSelected: (symbol) {
-                  _controller.text = symbol;
-                  setState(() => _submittedSymbol = symbol);
-                },
-                onSubmit: _search,
-              ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                alignment: WrapAlignment.center,
-                children: ['TCS', 'RELIANCE', 'INFY', 'HDFCBANK', 'WIPRO', 'RAILTEL']
-                    .map(
-                      (s) => ActionChip(
-                        label: Text(
-                          s,
-                          style: TextStyle(
-                            color: context.textPrimary,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
-                        ),
-                        backgroundColor: context.cardColor,
-                        side: BorderSide(color: context.borderColor),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        onPressed: () {
-                          _controller.text = s;
-                          _search();
-                        },
-                      ),
-                    )
-                    .toList(),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return EquityInsiderEmptyView(
+      controller: _controller,
+      sdkService: _sdkService,
+      typewriterHints: _typewriterHints,
+      onSelectSymbol: _navigateToSymbol,
+      onSearch: _search,
     );
   }
 
@@ -170,16 +125,13 @@ class _EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
       controller: _controller,
       sdkService: _sdkService,
       onSearch: _search,
-      onSelectSymbol: (newSymbol) {
-        _controller.text = newSymbol;
-        setState(() => _submittedSymbol = newSymbol);
-      },
-      onBack: () => setState(() => _submittedSymbol = null),
+      onSelectSymbol: _navigateToSymbol,
+      onBack: _handleBack,
     );
   }
 }
 
-class _FundamentalsBody extends ConsumerWidget {
+class _FundamentalsBody extends ConsumerStatefulWidget {
   const _FundamentalsBody({
     required this.symbol,
     required this.controller,
@@ -196,180 +148,325 @@ class _FundamentalsBody extends ConsumerWidget {
   final ValueChanged<String> onSelectSymbol;
   final VoidCallback onBack;
 
-  Widget _buildSectionCard({
-    required BuildContext context,
-    required Widget child,
-    bool isMobile = false,
-  }) {
-    return Container(
-      padding: EdgeInsets.all(isMobile ? 14 : 22),
-      decoration: BoxDecoration(
-        color: context.marketTheme.surface.withValues(alpha: 0.85),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.marketTheme.border, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: child,
-    );
+  @override
+  ConsumerState<_FundamentalsBody> createState() => _FundamentalsBodyState();
+}
+
+class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
+  final ScrollController _scrollController = ScrollController();
+  final List<GlobalKey> _sectionKeys = List.generate(5, (_) => GlobalKey());
+  int _activeIndex = 0;
+  bool _isManualScrolling = false;
+  bool _isSearchOverlayOpen = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(recentlyViewedStocksProvider.notifier).recordView(widget.symbol);
+    });
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
-    final chartBlue = context.marketTheme.chartBlue;
+  void didUpdateWidget(covariant _FundamentalsBody oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.symbol != oldWidget.symbol) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref.read(recentlyViewedStocksProvider.notifier).recordView(widget.symbol);
+        }
+      });
+    }
+  }
 
-    return ListView(
-      physics: const BouncingScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(
-        isMobile ? 12 : 24,
-        isMobile ? 12 : 20,
-        isMobile ? 12 : 24,
-        40,
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_isManualScrolling) return;
+
+    for (int i = _sectionKeys.length - 1; i >= 0; i--) {
+      final key = _sectionKeys[i];
+      if (key.currentContext != null) {
+        final renderBox = key.currentContext!.findRenderObject() as RenderBox;
+        final position = renderBox.localToGlobal(Offset.zero).dy;
+        if (position < 300) {
+          if (_activeIndex != i) {
+            setState(() => _activeIndex = i);
+          }
+          break;
+        }
+      }
+    }
+  }
+
+  void _scrollToSection(int index) async {
+    final key = _sectionKeys[index];
+    if (key.currentContext != null) {
+      setState(() {
+        _activeIndex = index;
+        _isManualScrolling = true;
+      });
+      await Scrollable.ensureVisible(
+        key.currentContext!,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+        alignment: 0.05,
+      );
+      _isManualScrolling = false;
+    }
+  }
+
+  Widget _buildSectionCard({
+    required BuildContext context,
+    required Widget child,
+    GlobalKey? sectionKey,
+    bool isMobile = false,
+  }) {
+    return Container(
+      key: sectionKey,
+      child: GlassCard(
+        padding: EdgeInsets.all(isMobile ? 16 : 24),
+        child: child,
       ),
+    );
+  }
+
+  void _openSearchOverlay() {
+    setState(() {
+      _isSearchOverlayOpen = true;
+    });
+  }
+
+  void _closeSearchOverlay() {
+    setState(() {
+      _isSearchOverlayOpen = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 800;
+    final recent = ref.watch(recentlyViewedStocksProvider);
+
+    return Stack(
       children: [
-        // Top Navigation Header Bar matching Market Analysis style
-        if (isMobile) ...[
-          Row(
-            children: [
-              IconButton(
-                onPressed: onBack,
-                icon: Icon(Icons.arrow_back, color: chartBlue),
-                tooltip: 'Back to Search',
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  'EQUITY INSIDER',
-                  style: TextStyle(
-                    color: context.textPrimary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                    letterSpacing: 0.5,
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 800;
+
+            return Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    physics: const BouncingScrollPhysics(),
+                    padding: EdgeInsets.fromLTRB(
+                      isMobile ? 12 : 16,
+                      isMobile ? 12 : 16,
+                      isMobile ? 12 : 16,
+                      32,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Section 0: Header (Company Hero + Section Nav Bar without card wrapper)
+                        Column(
+                          key: _sectionKeys[0],
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            EquityInsiderHero(
+                              symbol: widget.symbol,
+                              onSearchTap: _openSearchOverlay,
+                            ),
+                            const SizedBox(height: 24),
+                            EquityInsiderSectionNavBar(
+                              activeIndex: _activeIndex,
+                              onTabSelected: _scrollToSection,
+                              isMobile: isMobile,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Row 1: Valuation & Key Metrics (Left 60%) + Price Performance & Chart (Right 40%)
+                        if (isMobile) ...[
+                          _buildSectionCard(
+                            context: context,
+                            isMobile: isMobile,
+                            child: EquityInsiderKpis(symbol: widget.symbol),
+                          ),
+                          const SizedBox(height: 14),
+                          _buildSectionCard(
+                            sectionKey: _sectionKeys[1],
+                            context: context,
+                            isMobile: isMobile,
+                            child: EquityInsiderChart(symbol: widget.symbol),
+                          ),
+                        ] else ...[
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                flex: 60,
+                                child: _buildSectionCard(
+                                  context: context,
+                                  isMobile: false,
+                                  child: EquityInsiderKpis(symbol: widget.symbol),
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                flex: 40,
+                                child: _buildSectionCard(
+                                  sectionKey: _sectionKeys[1],
+                                  context: context,
+                                  isMobile: false,
+                                  child: EquityInsiderChart(symbol: widget.symbol),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        const SizedBox(height: 14),
+
+                        // Row 2: Financial Performance (Left 60%) + Shareholding Pattern (Right 40%)
+                        if (isMobile) ...[
+                          _buildSectionCard(
+                            sectionKey: _sectionKeys[2],
+                            context: context,
+                            isMobile: isMobile,
+                            child: EquityInsiderFinancials(symbol: widget.symbol),
+                          ),
+                          const SizedBox(height: 14),
+                          _buildSectionCard(
+                            sectionKey: _sectionKeys[3],
+                            context: context,
+                            isMobile: isMobile,
+                            child: EquityInsiderShareholding(symbol: widget.symbol),
+                          ),
+                        ] else ...[
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                flex: 60,
+                                child: _buildSectionCard(
+                                  sectionKey: _sectionKeys[2],
+                                  context: context,
+                                  isMobile: false,
+                                  child: EquityInsiderFinancials(symbol: widget.symbol),
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                flex: 40,
+                                child: _buildSectionCard(
+                                  sectionKey: _sectionKeys[3],
+                                  context: context,
+                                  isMobile: false,
+                                  child: EquityInsiderShareholding(symbol: widget.symbol),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        const SizedBox(height: 14),
+
+                        // Row 3: Full-width Peer Comparison Section
+                        _buildSectionCard(
+                          sectionKey: _sectionKeys[4],
+                          context: context,
+                          isMobile: isMobile,
+                          child: EquityInsiderPeers(
+                            symbol: widget.symbol,
+                            onPeerSelected: widget.onSelectSymbol,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+
+        // Full Screen Search Overlay with Soft Backdrop Blur
+        if (_isSearchOverlayOpen)
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: _closeSearchOverlay,
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                child: Container(
+                  color: Colors.black.withValues(alpha: 0.55),
+                  alignment: Alignment.topCenter,
+                  padding: EdgeInsets.only(
+                    top: isMobile ? 40 : 80,
+                    left: 20,
+                    right: 20,
+                  ),
+                  child: GestureDetector(
+                    onTap: () {}, // Prevent backdrop tap from dismissing when tapping dialog
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 580),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              IconButton(
+                                onPressed: _closeSearchOverlay,
+                                icon: Icon(
+                                  Icons.close_rounded,
+                                  color: context.colors.textSecondary,
+                                  size: 24,
+                                ),
+                                tooltip: 'Close Search',
+                              ),
+                            ],
+                          ),
+                          SmartSearchAnchor(
+                            controller: widget.controller,
+                            recentSearches: recent,
+                            onRemoveRecent: (sym) {
+                              ref.read(recentlyViewedStocksProvider.notifier).removeView(sym);
+                            },
+                            onClearRecent: () {
+                              ref.read(recentlyViewedStocksProvider.notifier).clear();
+                            },
+                            accentColor: ModuleColors.market,
+                            searchHandler: (q) => widget.sdkService.securityApi.search(
+                              q,
+                              smartRecommendations: true,
+                              category: 'STOCKS',
+                              limit: 8,
+                            ),
+                            onSelected: (sym) {
+                              _closeSearchOverlay();
+                              widget.onSelectSymbol(sym);
+                            },
+                            onSubmit: () {
+                              _closeSearchOverlay();
+                              widget.onSearch();
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          SmartSearchAnchor(
-            controller: controller,
-            compact: true,
-            searchHandler: (q) => sdkService.securityApi.search(
-              q,
-              smartRecommendations: true,
-              category: 'STOCKS',
-              limit: 8,
             ),
-            onSelected: onSelectSymbol,
-            onSubmit: onSearch,
           ),
-        ] else ...[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  IconButton(
-                    onPressed: onBack,
-                    icon: Icon(Icons.arrow_back, color: chartBlue, size: 24),
-                    tooltip: 'Back to Search',
-                  ),
-                  const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'EQUITY INSIDER',
-                        style: TextStyle(
-                          color: context.textPrimary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 24,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      Text(
-                        'Deep fundamental analysis, valuation & peers',
-                        style: TextStyle(
-                          color: context.textSecondary,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              SizedBox(
-                width: 260,
-                child: SmartSearchAnchor(
-                  controller: controller,
-                  compact: true,
-                  searchHandler: (q) => sdkService.securityApi.search(
-                    q,
-                    smartRecommendations: true,
-                    category: 'STOCKS',
-                    limit: 8,
-                  ),
-                  onSelected: onSelectSymbol,
-                  onSubmit: onSearch,
-                ),
-              ),
-            ],
-          ),
-        ],
-        const SizedBox(height: 20),
-
-        // 1. Hero Summary & KPI Metrics Card
-        _buildSectionCard(
-          context: context,
-          isMobile: isMobile,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              EquityInsiderHero(symbol: symbol),
-              const SizedBox(height: 20),
-              EquityInsiderKpis(symbol: symbol),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-
-        // 2. Price Performance & Dynamic Chart Card
-        _buildSectionCard(
-          context: context,
-          isMobile: isMobile,
-          child: EquityInsiderChart(symbol: symbol),
-        ),
-        const SizedBox(height: 20),
-
-        // 3. Financial Statements Card (Income Statement, Balance Sheet, Cash Flow)
-        _buildSectionCard(
-          context: context,
-          isMobile: isMobile,
-          child: EquityInsiderFinancials(symbol: symbol),
-        ),
-        const SizedBox(height: 20),
-
-        // 4. Shareholding Pattern Card
-        _buildSectionCard(
-          context: context,
-          isMobile: isMobile,
-          child: EquityInsiderShareholding(symbol: symbol),
-        ),
-        const SizedBox(height: 20),
-
-        // 5. Peer Valuation & Metric Comparison Card
-        _buildSectionCard(
-          context: context,
-          isMobile: isMobile,
-          child: EquityInsiderPeers(symbol: symbol),
-        ),
       ],
     );
   }
 }
+

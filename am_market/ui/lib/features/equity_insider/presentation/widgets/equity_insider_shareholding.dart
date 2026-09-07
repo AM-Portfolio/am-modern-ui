@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../../../../core/styles/market_theme_extension.dart';
 import '../../providers/equity_insider_provider.dart';
+import 'equity_insider_shareholding_table.dart';
 
 class EquityInsiderShareholding extends ConsumerStatefulWidget {
   final String symbol;
@@ -16,6 +17,7 @@ class EquityInsiderShareholding extends ConsumerStatefulWidget {
 
 class _EquityInsiderShareholdingState extends ConsumerState<EquityInsiderShareholding> {
   int _activeIndex = -1;
+  int _selectedQuarterIndex = 0;
 
   void _onClick(int index) {
     setState(() {
@@ -34,30 +36,62 @@ class _EquityInsiderShareholdingState extends ConsumerState<EquityInsiderShareho
           data: (shareholding) {
             if (shareholding == null || shareholding.isEmpty) return const SizedBox.shrink();
 
-            final latest = shareholding.first as Map;
-            final period = latest['period'] ?? 'Latest';
-            
-            final slices = _getSlices(context, latest);
+            _selectedQuarterIndex = _selectedQuarterIndex.clamp(0, shareholding.length - 1);
+            final selected = shareholding[_selectedQuarterIndex] as Map;
+            final slices = _getSlices(context, selected);
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildSectionHeader(context, 'Shareholding pattern — $period'),
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: context.cardColor,
-                    border: Border.all(color: context.borderColor),
-                    borderRadius: BorderRadius.circular(10),
+                _buildSectionHeader(context, 'Shareholding pattern'),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: List.generate(shareholding.length, (idx) {
+                      final q = shareholding[idx] as Map;
+                      final p = q['period'] ?? 'Q$idx';
+                      final isSelected = idx == _selectedQuarterIndex;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0, bottom: 12.0),
+                        child: InkWell(
+                          onTap: () => setState(() {
+                            _selectedQuarterIndex = idx;
+                            _activeIndex = -1;
+                          }),
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: isSelected ? ModuleColors.market : Colors.transparent,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isSelected ? ModuleColors.market : context.borderColor,
+                              ),
+                            ),
+                            child: Text(
+                              p,
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : context.textSecondary,
+                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
                   ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8, bottom: 16),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      final isMobile = constraints.maxWidth < 500;
+                      final isMobile = constraints.maxWidth < 350;
                       if (isMobile) {
                         return Column(
                           children: [
                             _buildChart(slices),
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 16),
                             _buildLegend(slices),
                           ],
                         );
@@ -65,14 +99,16 @@ class _EquityInsiderShareholdingState extends ConsumerState<EquityInsiderShareho
                       return Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          SizedBox(width: 220, child: _buildChart(slices)),
-                          const SizedBox(width: 60),
-                          SizedBox(width: 250, child: _buildLegend(slices)),
+                          Expanded(flex: 40, child: _buildChart(slices)),
+                          const SizedBox(width: 16),
+                          Expanded(flex: 60, child: _buildLegend(slices)),
                         ],
                       );
                     },
                   ),
                 ),
+                const SizedBox(height: 12),
+                ShareholdingTrendTable(shareholding: shareholding),
               ],
             );
           },
@@ -85,23 +121,24 @@ class _EquityInsiderShareholdingState extends ConsumerState<EquityInsiderShareho
 
   Widget _buildSectionHeader(BuildContext context, String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            title.toUpperCase(),
+            'Shareholding Pattern',
             style: TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.8,
-              color: context.textTertiary,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: context.textPrimary,
             ),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Container(
-              height: 1,
-              color: context.borderColor,
+          const SizedBox(height: 2),
+          Text(
+            'See how ownership has evolved over time.',
+            style: TextStyle(
+              fontSize: 11,
+              color: context.textSecondary,
             ),
           ),
         ],
@@ -119,8 +156,8 @@ class _EquityInsiderShareholdingState extends ConsumerState<EquityInsiderShareho
       }
     }
 
-    add('FII / Foreign', 'fiiPercent', context.marketTheme.chartBlue);
     add('Promoters', 'promotersPercent', context.marketTheme.positive);
+    add('FII / Foreign', 'fiiPercent', ModuleColors.market);
     add('Mutual Funds', 'mutualFundsPercent', context.marketTheme.chartPurple);
     add('Retail / Public', 'retailAndOtherPercent', context.marketTheme.textMuted);
     add('DII / Others', 'diiPercent', context.marketTheme.textSecondary);
@@ -131,7 +168,7 @@ class _EquityInsiderShareholdingState extends ConsumerState<EquityInsiderShareho
 
   Widget _buildChart(List<_SliceData> slices) {
     return SizedBox(
-      height: 220,
+      height: 140,
       child: Stack(
         alignment: Alignment.center,
         children: [
@@ -148,23 +185,22 @@ class _EquityInsiderShareholdingState extends ConsumerState<EquityInsiderShareho
                 },
               ),
               borderData: FlBorderData(show: false),
-              sectionsSpace: 3,
-              centerSpaceRadius: 65,
+              sectionsSpace: 2.0,
+              centerSpaceRadius: 40,
               sections: slices.asMap().entries.map((entry) {
                 final idx = entry.key;
                 final data = entry.value;
                 final isTouch = _activeIndex == idx;
-                final radius = isTouch ? 40.0 : 30.0;
+                final radius = isTouch ? 30.0 : 20.0;
                 return PieChartSectionData(
                   color: data.color,
                   value: data.value,
-                  title: '', // We don't show title on chart itself
+                  title: '',
                   radius: radius,
                 );
               }).toList(),
             ),
           ),
-          // Center Text
           if (_activeIndex >= 0 && _activeIndex < slices.length)
             Column(
               mainAxisSize: MainAxisSize.min,
@@ -173,14 +209,14 @@ class _EquityInsiderShareholdingState extends ConsumerState<EquityInsiderShareho
                   slices[_activeIndex].label,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 9,
                     color: context.textSecondary,
                   ),
                 ),
                 Text(
                   '${slices[_activeIndex].value.toStringAsFixed(1)}%',
                   style: TextStyle(
-                    fontSize: 22,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: context.textPrimary,
                     letterSpacing: -0.5,
@@ -192,7 +228,7 @@ class _EquityInsiderShareholdingState extends ConsumerState<EquityInsiderShareho
             Text(
               'Holdings',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 10,
                 color: context.textTertiary,
               ),
             ),
@@ -217,28 +253,28 @@ class _EquityInsiderShareholdingState extends ConsumerState<EquityInsiderShareho
             onTap: () => _onClick(idx),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              margin: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              margin: const EdgeInsets.only(bottom: 4),
               decoration: BoxDecoration(
-                color: isTouch ? context.textPrimary.withValues(alpha: 0.04) : context.cardColor.withValues(alpha: 0),
-                borderRadius: BorderRadius.circular(8),
+                color: isTouch ? context.textPrimary.withValues(alpha: 0.04) : Colors.transparent,
+                borderRadius: BorderRadius.circular(6),
               ),
               child: Row(
                 children: [
                   Container(
-                    width: 12,
-                    height: 12,
+                    width: 10,
+                    height: 10,
                     decoration: BoxDecoration(
                       color: data.color,
-                      borderRadius: BorderRadius.circular(3),
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       data.label,
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 12,
                         color: isTouch ? context.textPrimary : context.textSecondary,
                       ),
                     ),
@@ -246,8 +282,8 @@ class _EquityInsiderShareholdingState extends ConsumerState<EquityInsiderShareho
                   Text(
                     '${data.value.toStringAsFixed(1)}%',
                     style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
                       color: context.textPrimary,
                     ),
                   ),
