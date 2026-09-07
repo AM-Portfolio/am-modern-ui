@@ -10,6 +10,8 @@ class BrowserZoomPlatform {
 
   static void writeStoredZoom(String value) {}
 
+  static void setChartOwnsCtrlWheel(bool value) {}
+
   static void listen(
     void Function() onChange, {
     bool Function()? blockBrowserCtrlWheel,

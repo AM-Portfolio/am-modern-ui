@@ -1,5 +1,7 @@
 import 'package:flutter/widgets.dart';
 
+import '../../../core/utils/browser_zoom_platform.dart';
+
 /// Hit-test depth for charts that own Ctrl+wheel zoom.
 class AppZoomPointer {
   AppZoomPointer._();
@@ -8,14 +10,21 @@ class AppZoomPointer {
 
   static bool get overChart => _depth > 0;
 
-  static void enter() => _depth++;
+  static void enter() {
+    _depth++;
+    BrowserZoomPlatform.setChartOwnsCtrlWheel(overChart);
+  }
 
   static void exit() {
     if (_depth > 0) _depth--;
+    BrowserZoomPlatform.setChartOwnsCtrlWheel(overChart);
   }
 
   @visibleForTesting
-  static void reset() => _depth = 0;
+  static void reset() {
+    _depth = 0;
+    BrowserZoomPlatform.setChartOwnsCtrlWheel(false);
+  }
 }
 
 /// Wrap chart widgets that handle Ctrl+wheel so the app-level zoom host skips them.

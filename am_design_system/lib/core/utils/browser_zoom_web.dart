@@ -42,6 +42,13 @@ class BrowserZoomPlatform {
     } catch (_) {}
   }
 
+  /// Charts set this so Ctrl+wheel zooms the chart, not the browser page.
+  static void setChartOwnsCtrlWheel(bool value) {
+    try {
+      js_util.setProperty(html.window, '__amChartCtrlWheel', value);
+    } catch (_) {}
+  }
+
   static void listen(
     void Function() onChange, {
     bool Function()? blockBrowserCtrlWheel,
@@ -59,14 +66,18 @@ class BrowserZoomPlatform {
     _attachChartWheelGuard();
   }
 
-  /// Let the browser zoom everywhere except over charts (Ctrl+wheel).
+  /// Let the browser zoom on Ctrl+wheel. Flutter must not see the event or it
+  /// calls preventDefault. Over a chart, block the browser and let Flutter run.
   static void _attachChartWheelGuard() {
     _wheelListener = js_util.allowInterop((dynamic raw) {
       try {
         final e = raw as html.WheelEvent;
         if (!(e.ctrlKey || e.metaKey)) return;
-        if (_blockBrowserCtrlWheel?.call() != true) return;
-        e.preventDefault();
+        if (_blockBrowserCtrlWheel?.call() == true) {
+          e.preventDefault();
+          return;
+        }
+        e.stopImmediatePropagation();
       } catch (_) {}
     });
     js_util.callMethod(html.window, 'addEventListener', [
