@@ -238,6 +238,7 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
             title: 'Portfolio',
             icon: Icons.account_balance_wallet_rounded),
         const SidebarItem(title: 'Trade', icon: Icons.swap_horiz_rounded),
+        const SidebarItem(title: 'Paper', icon: Icons.science_outlined),
         const SidebarItem(title: 'Market', icon: Icons.show_chart_rounded),
         const SidebarItem(
             title: 'AI Chat', icon: Icons.auto_awesome_rounded),
@@ -687,6 +688,10 @@ final userId =
                                     const SidebarItem(
                                       title: 'Trade',
                                       icon: Icons.swap_horiz_rounded,
+                                    ),
+                                    const SidebarItem(
+                                      title: 'Paper',
+                                      icon: Icons.science_outlined,
                                     ),
                                     const SidebarItem(
                                       title: 'Market',

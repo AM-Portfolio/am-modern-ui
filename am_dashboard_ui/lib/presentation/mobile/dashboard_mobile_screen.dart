@@ -18,11 +18,13 @@ bool _dashboardDataMarkedMobile = false;
 class DashboardMobileScreen extends ConsumerStatefulWidget {
   final String userId;
   final VoidCallback? onOpenDocIntel;
+  final VoidCallback? onOpenPaper;
 
   const DashboardMobileScreen({
     super.key,
     required this.userId,
     this.onOpenDocIntel,
+    this.onOpenPaper,
   });
 
   @override
@@ -151,6 +153,16 @@ class _DashboardMobileScreenState
                   ),
                   const SizedBox(width: 8),
                 ],
+                if (widget.onOpenPaper != null) ...[
+                  IconButton(
+                    tooltip: 'Paper trading',
+                    onPressed: widget.onOpenPaper,
+                    icon: Icon(Icons.science_outlined, color: onSurface, size: 22),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 const GlobalTimeFrameBar(
                   variant: GlobalTimeFrameVariant.dropdown,
                 ),
@@ -270,6 +282,7 @@ class _DashboardMobileScreenState
                             layout: layout,
                             timeFrameCode: tfCode,
                             onOpenDocIntel: widget.onOpenDocIntel,
+                            onOpenPaper: widget.onOpenPaper,
                             compactBreakpoint: 99999,
                             chartHeight: 350,
                             mobileChartHeight: 350,

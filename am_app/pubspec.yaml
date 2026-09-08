@@ -31,6 +31,8 @@ dependencies:
     path: ../am_portfolio_ui
   am_trade_ui:
     path: ../am_trade_ui
+  am_paper_ui:
+    path: ../am_paper_ui
   am_ai_ui:
     path: ../am_ai_ui
   am_doc_intelligence_ui:
@@ -65,7 +67,7 @@ dependencies:
   # webview_flutter_web: ^0.2.3+4
   flutter_localizations:
     sdk: flutter
-  flutter_quill: ^11.5.0
+  flutter_quill: 11.5.0
 
 dev_dependencies:
   flutter_test:

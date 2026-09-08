@@ -10,8 +10,13 @@ import '../../providers/portfolio_overview_providers.dart';
 import '../../providers/trade_internal_providers.dart';
 import '../../trade_calendar_providers.dart';
 import '../components/templates/trade_portfolio_discovery_template.dart';
+import '../cubit/oms_cubit.dart';
 import '../cubit/trade_controller_cubit.dart';
 import '../models/trade_portfolio_view_model.dart';
+import '../paper/paper_portfolio.dart';
+import '../paper/paper_wallet_banner.dart';
+import '../paper/place_order_web_page.dart';
+import '../../providers/oms_providers.dart';
 import 'pages/add_trade_mobile_page.dart';
 import 'pages/trade_calendar_analytics_mobile_page.dart';
 import 'pages/trade_holdings_dashboard_mobile_page.dart';
@@ -280,9 +285,19 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
         if (_currentPortfolioId == null) {
           return _buildSelectPortfolioPrompt(MobileTradeViewType.holdings);
         }
-        return TradeHoldingsDashboardMobilePage(
+        final paper = ref.watch(omsCubitProvider).asData?.value?.state.paperWallet;
+        final holdings = TradeHoldingsDashboardMobilePage(
           portfolioId: _currentPortfolioId!,
         );
+        if (paper != null && _currentPortfolioId == paper.portfolioUuid) {
+          return Column(
+            children: [
+              PaperWalletBanner(wallet: paper),
+              Expanded(child: holdings),
+            ],
+          );
+        }
+        return holdings;
 
       case MobileTradeViewType.calendar:
         if (_currentPortfolioId == null) {
@@ -357,12 +372,17 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
           }
 
           return portfoliosAsync.when(
-            data: (portfolios) => TradePortfolioDiscoveryTemplate(
-              portfolios: portfolios,
+            data: (portfolios) {
+              final omsCubit = ref.watch(omsCubitProvider).asData?.value;
+              final paper = omsCubit?.state.paperWallet;
+              return TradePortfolioDiscoveryTemplate(
+              portfolios: mergePaperWallet(portfolios, paper),
               isLoading: false,
+              hasPaperWallet: paper != null,
               onPortfolioSelected: (portfolio) {
                 _onPortfolioSelected(portfolio.id, portfolio.name);
               },
+              onCreatePaperWallet: null,
               onCreatePortfolio: () {
                 PortfolioFormModal.show(
                   context: context,
@@ -393,6 +413,7 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
                 );
               },
               onEditPortfolio: (portfolio) {
+                if (portfolio.isPaper) return;
                 final portfolioItem = PortfolioItem(
                   portfolioId: portfolio.id,
                   portfolioName: portfolio.name,
@@ -526,7 +547,8 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
               },
               onRefresh: handleRefresh,
               isWebView: false,
-            ),
+            );
+            },
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, stack) => TradePortfolioDiscoveryTemplate(
               portfolios: const <TradePortfolioViewModel>[],

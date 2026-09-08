@@ -16,7 +16,10 @@ import '../widgets/equity_insider_empty_view.dart';
 
 /// Equity Insider – Fundamental Analysis.
 class EquityInsiderPage extends ConsumerStatefulWidget {
-  const EquityInsiderPage({super.key});
+  const EquityInsiderPage({super.key, this.initialSymbol});
+
+  /// When set (e.g. paper desk watchlist), loads this symbol instead of empty search.
+  final String? initialSymbol;
 
   @override
   ConsumerState<EquityInsiderPage> createState() => EquityInsiderPageState();
@@ -35,6 +38,26 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
   }
   final List<String> _symbolHistory = [];
   String? _submittedSymbol;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialSymbol?.trim().toUpperCase();
+    if (initial != null && initial.isNotEmpty) {
+      _controller.text = initial;
+      _submittedSymbol = initial;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant EquityInsiderPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final next = widget.initialSymbol?.trim().toUpperCase();
+    final prev = oldWidget.initialSymbol?.trim().toUpperCase();
+    if (next != null && next.isNotEmpty && next != prev && next != _submittedSymbol) {
+      _navigateToSymbol(next);
+    }
+  }
 
   static const List<String> _typewriterHints = [
     'HDFC',

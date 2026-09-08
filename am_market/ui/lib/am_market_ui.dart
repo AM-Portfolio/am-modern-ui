@@ -5,6 +5,7 @@ library am_market_ui;
 
 // Export core pages
 export 'features/dashboard/presentation/pages/dashboard_page.dart' show MarketPage;
+export 'features/equity_insider/presentation/pages/equity_insider_page.dart';
 
 // Export providers for Trade UI integration
 // Export providers for Trade UI integration

@@ -12,6 +12,7 @@ class AppRoutes {
   static const portfolio = '/app/portfolio';
   static const trade = '/app/trade';
   static const tradeDiscovery = '/app/trade/portfolios';
+  static const paper = '/app/paper';
   static const market = '/app/market';
   static const aiChat = '/app/ai-chat';
   static const lab = '/app/lab';
@@ -151,6 +152,7 @@ class AppRoutes {
     'Dashboard': dashboard,
     'Portfolio': '/app/portfolio/overview',
     'Trade': tradeDiscovery,
+    'Paper': paper,
     'Market': '/app/market/dashboard',
     'AI Chat': aiChat,
     'Lab': lab,
@@ -174,6 +176,7 @@ class AppRoutes {
   static String activeNavTitleForLocation(String location) {
     if (location.startsWith(portfolio)) return 'Portfolio';
     if (location.startsWith(trade)) return 'Trade';
+    if (location.startsWith(paper)) return 'Paper';
     if (location.startsWith(market)) return 'Market';
     if (location.startsWith(aiChat)) return 'AI Chat';
     if (location.startsWith(lab)) return 'Lab';
