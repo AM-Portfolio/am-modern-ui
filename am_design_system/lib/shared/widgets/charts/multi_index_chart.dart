@@ -180,18 +180,17 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
       _activeIndices.length >= 2 &&
       !widget.isBarChart;
 
-  /// Narrow left gutter so the plot sits flush toward the left.
-  /// Multi-axis uses stacked labels (not "24K | 58K" side-by-side).
+  /// Dynamic left gutter width so values like "2,255.50" or "2255" fit cleanly without truncating.
   double _leftAxisReserve(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 700;
     if (compact) {
-      if (_useMultiYAxis) return 44.0;
-      return _showAbsoluteValues ? 40.0 : 40.0;
+      if (_useMultiYAxis) return 46.0;
+      return _showAbsoluteValues ? 54.0 : 42.0;
     }
     if (!_useMultiYAxis) {
-      return _showAbsoluteValues ? 48.0 : 48.0;
+      return _showAbsoluteValues ? 58.0 : 48.0;
     }
-    return 48.0;
+    return 54.0;
   }
 
   Widget _leftAxisTitle(TitleMeta meta, Widget child) {
@@ -202,13 +201,26 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     );
   }
 
-  String _formatAxisTick(double value) {
+  String _formatAxisTick(double value, {double? range}) {
     if (!_showAbsoluteValues) {
       return '${value.toStringAsFixed(1)}%';
     }
     final abs = value.abs();
-    if (abs >= 1000) {
+    // When the visible range or step is small (e.g. intraday 1D price moves like 2250 to 2260),
+    // formatting as "2.3K" rounds every tick to the exact same value.
+    // Only abbreviate to "K" if the overall range is large (>= 1,500) or value is high (>= 50,000).
+    final effectiveRange = range ?? 10000.0;
+    if (abs >= 100000) {
+      return '${(value / 1000).toStringAsFixed(0)}K';
+    }
+    if (effectiveRange >= 1500 && abs >= 10000) {
       return '${(value / 1000).toStringAsFixed(1)}K';
+    }
+    if (effectiveRange < 5) {
+      return value.toStringAsFixed(2);
+    }
+    if (effectiveRange < 20) {
+      return value.toStringAsFixed(1);
     }
     return value.toStringAsFixed(0);
   }
@@ -232,6 +244,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
       for (int i = 0; i < _activeIndices.length; i++) {
         final String symbol = _activeIndices[i];
         double tickVal = value;
+        final double rangeI = (cleanMax[symbol] ?? 100) - (cleanMin[symbol] ?? 0);
         if (i > 0) {
           final double denI = cleanMax[symbol]! - cleanMin[symbol]!;
           tickVal = denominator0.abs() < 0.01
@@ -242,7 +255,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
         final color = widget.colorForSeriesIndex(i);
         rows.add(
           Text(
-            _formatAxisTick(tickVal),
+            _formatAxisTick(tickVal, range: rangeI),
             textAlign: TextAlign.right,
             style: TextStyle(
               color: color,
@@ -264,10 +277,13 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
       );
     }
 
+    final String firstSymbol = _activeIndices.isNotEmpty ? _activeIndices.first : '';
+    final double range0 = (cleanMax[firstSymbol] ?? 10000.0) - (cleanMin[firstSymbol] ?? 0.0);
+
     return _leftAxisTitle(
       meta,
       Text(
-        _formatAxisTick(value),
+        _formatAxisTick(value, range: range0.abs()),
         textAlign: TextAlign.right,
         style: TextStyle(
           color: theme.textTheme.bodySmall?.color,
