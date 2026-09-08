@@ -20,6 +20,14 @@ class _AppLockScreenState extends State<AppLockScreen> {
   String? _error;
   int _failedAttempts = 0;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _unlock();
+    });
+  }
+
   Future<void> _unlock() async {
     setState(() {
       _unlocking = true;
