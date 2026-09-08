@@ -52,18 +52,22 @@ class AppLockService {
       return _authenticate();
     }
 
-    final canCheck = await _localAuth.canCheckBiometrics;
-    final isSupported = await _localAuth.isDeviceSupported();
-    if (!canCheck && !isSupported) {
-      return true;
-    }
+    try {
+      final canCheck = await _localAuth.canCheckBiometrics;
+      final isSupported = await _localAuth.isDeviceSupported();
+      if (!canCheck && !isSupported) {
+        return true;
+      }
 
-    return _localAuth.authenticate(
-      localizedReason: 'Unlock AM to continue',
-      options: const AuthenticationOptions(
-        stickyAuth: true,
-        biometricOnly: false,
-      ),
-    );
+      return await _localAuth.authenticate(
+        localizedReason: 'Unlock AM to continue',
+        options: const AuthenticationOptions(
+          stickyAuth: true,
+          biometricOnly: false,
+        ),
+      );
+    } catch (e) {
+      return false;
+    }
   }
 }
