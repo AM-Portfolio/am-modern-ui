@@ -70,7 +70,7 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
     'BHARTIARTL',
   ];
 
-  void _navigateToSymbol(String newSymbol) {
+  void navigateToSymbol(String newSymbol) {
     final text = newSymbol.trim().toUpperCase();
     if (text.isEmpty) return;
 
@@ -85,7 +85,7 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
   void _search() {
     final text = _controller.text.trim().toUpperCase();
     if (text.isEmpty) return;
-    _navigateToSymbol(text);
+    navigateToSymbol(text);
   }
 
   void _handleBack() {
@@ -137,7 +137,7 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
       controller: _controller,
       sdkService: _sdkService,
       typewriterHints: _typewriterHints,
-      onSelectSymbol: _navigateToSymbol,
+      onSelectSymbol: navigateToSymbol,
       onSearch: _search,
     );
   }
@@ -148,7 +148,7 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
       controller: _controller,
       sdkService: _sdkService,
       onSearch: _search,
-      onSelectSymbol: _navigateToSymbol,
+      onSelectSymbol: navigateToSymbol,
       onBack: _handleBack,
     );
   }
