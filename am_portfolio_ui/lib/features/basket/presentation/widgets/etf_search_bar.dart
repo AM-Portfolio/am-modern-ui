@@ -16,14 +16,25 @@ class EtfSearchBar extends StatefulWidget {
   });
 
   @override
-  State<EtfSearchBar> createState() => _EtfSearchBarState();
+  State<EtfSearchBar> createState() => EtfSearchBarState();
 }
 
-class _EtfSearchBarState extends State<EtfSearchBar> {
+class EtfSearchBarState extends State<EtfSearchBar> {
   final EtfSearchService _etfSearchService = EtfSearchService();
   TextEditingController? _fieldController;
+  FocusNode? _fieldFocusNode;
   VoidCallback? _fieldListener;
   bool _hasText = false;
+
+  /// Clears the field. When [notify] is true, calls [EtfSearchBar.onCleared].
+  void clear({bool notify = true}) {
+    final controller = _fieldController;
+    if (controller == null) {
+      if (notify) widget.onCleared?.call();
+      return;
+    }
+    _clearSearch(controller, _fieldFocusNode, notify: notify);
+  }
 
   @override
   void dispose() {
@@ -36,13 +47,21 @@ class _EtfSearchBarState extends State<EtfSearchBar> {
       _fieldController!.removeListener(_fieldListener!);
     }
     _fieldController = null;
+    _fieldFocusNode = null;
     _fieldListener = null;
   }
 
-  void _attachFieldListener(TextEditingController controller) {
-    if (_fieldController == controller) return;
+  void _attachFieldListener(
+    TextEditingController controller,
+    FocusNode focusNode,
+  ) {
+    if (_fieldController == controller) {
+      _fieldFocusNode = focusNode;
+      return;
+    }
     _detachFieldListener();
     _fieldController = controller;
+    _fieldFocusNode = focusNode;
     _fieldListener = () {
       final hasText = controller.text.isNotEmpty;
       if (hasText != _hasText && mounted) {
@@ -53,11 +72,15 @@ class _EtfSearchBarState extends State<EtfSearchBar> {
     _hasText = controller.text.isNotEmpty;
   }
 
-  void _clearSearch(TextEditingController controller, FocusNode focusNode) {
+  void _clearSearch(
+    TextEditingController controller,
+    FocusNode? focusNode, {
+    bool notify = true,
+  }) {
     controller.clear();
-    focusNode.unfocus();
+    focusNode?.unfocus();
     setState(() => _hasText = false);
-    widget.onCleared?.call();
+    if (notify) widget.onCleared?.call();
   }
 
   @override
@@ -86,58 +109,65 @@ class _EtfSearchBarState extends State<EtfSearchBar> {
             FocusNode fieldFocusNode,
             VoidCallback onFieldSubmitted,
           ) {
-            _attachFieldListener(fieldTextEditingController);
+            _attachFieldListener(fieldTextEditingController, fieldFocusNode);
 
-            return TextField(
-              controller: fieldTextEditingController,
-              focusNode: fieldFocusNode,
-              style: Theme.of(context).textTheme.bodyMedium,
-              decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search),
-                hintText: 'Search ETF by symbol or name...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: Theme.of(context).dividerColor.withOpacity(0.5),
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: Theme.of(context).dividerColor.withOpacity(0.5),
-                  ),
-                ),
-                filled: true,
-                fillColor: Theme.of(context).cardColor,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-                suffixIcon: _hasText
-                    ? IconButton(
-                        tooltip: 'Clear search',
-                        icon: const Icon(Icons.close, size: 20),
-                        onPressed: () => _clearSearch(
-                          fieldTextEditingController,
-                          fieldFocusNode,
-                        ),
-                      )
-                    : null,
-              ),
-              onSubmitted: (value) {
-                if (value.contains(',')) {
-                  widget.onEtfSelected(
-                    EtfSearchResult(
-                      symbol: value,
-                      name: 'Custom List',
-                      isin: value,
+            return SizedBox(
+              height: AppComponentSizes.inputHeight,
+              child: TextField(
+                controller: fieldTextEditingController,
+                focusNode: fieldFocusNode,
+                style: Theme.of(context).textTheme.bodyMedium,
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.search),
+                  hintText: 'Search ETFs, baskets or themes...',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadii.md),
+                    borderSide: BorderSide(
+                      color: Theme.of(context)
+                          .dividerColor
+                          .withValues(alpha: 0.5),
                     ),
-                  );
-                  fieldFocusNode.unfocus();
-                } else {
-                  onFieldSubmitted();
-                }
-              },
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadii.md),
+                    borderSide: BorderSide(
+                      color: Theme.of(context)
+                          .dividerColor
+                          .withValues(alpha: 0.5),
+                    ),
+                  ),
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.sm + 2,
+                  ),
+                  suffixIcon: _hasText
+                      ? IconButton(
+                          tooltip: 'Clear search',
+                          icon: const Icon(Icons.close, size: 20),
+                          onPressed: () => _clearSearch(
+                            fieldTextEditingController,
+                            fieldFocusNode,
+                          ),
+                        )
+                      : null,
+                ),
+                onSubmitted: (value) {
+                  if (value.contains(',')) {
+                    widget.onEtfSelected(
+                      EtfSearchResult(
+                        symbol: value,
+                        name: 'Custom List',
+                        isin: value,
+                      ),
+                    );
+                    fieldFocusNode.unfocus();
+                  } else {
+                    onFieldSubmitted();
+                  }
+                },
+              ),
             );
           },
           optionsViewBuilder: (
@@ -152,7 +182,7 @@ class _EtfSearchBarState extends State<EtfSearchBar> {
                 color: Theme.of(context).cardColor,
                 shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.vertical(
-                    bottom: Radius.circular(12),
+                    bottom: Radius.circular(AppRadii.md),
                   ),
                 ),
                 child: Container(
@@ -181,7 +211,8 @@ class _EtfSearchBarState extends State<EtfSearchBar> {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: ModuleColors.portfolio.withOpacity(0.1),
+                                  color: ModuleColors.portfolio
+                                      .withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(

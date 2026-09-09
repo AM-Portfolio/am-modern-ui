@@ -11,6 +11,7 @@ abstract class BasketRepository {
     required String userId,
     required String portfolioId,
     String? query,
+    String mode = 'DISCOVER',
   });
 
   Future<BasketOpportunity> getBasketPreview({

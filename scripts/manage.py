@@ -90,22 +90,14 @@ def load_env(env_name):
     return env_vars
 
 def get_available_device(env_vars=None):
-    """Prefer Chrome/Edge so Flutter launches the browser; fall back to web-server."""
+    """Prefer web-server (stable). Chrome/Edge DWDS often fails on Windows firewalls.
+
+    Override with FLUTTER_DEVICE=chrome|edge|web-server in env or .env.* files.
+    """
     if env_vars and "FLUTTER_DEVICE" in env_vars:
         return env_vars["FLUTTER_DEVICE"]
     if os.environ.get("FLUTTER_DEVICE"):
         return os.environ.get("FLUTTER_DEVICE")
-    try:
-        is_windows = os.name == "nt"
-        res = subprocess.run(["flutter", "devices"], capture_output=True, text=True, encoding="utf-8", shell=is_windows, timeout=5)
-        if res.returncode == 0:
-            output = res.stdout.lower()
-            if "chrome" in output:
-                return "chrome"
-            if "edge" in output:
-                return "edge"
-    except Exception:
-        pass
     return "web-server"
 
 def run_cmd(package, cmd_parts, env_vars=None):
@@ -250,9 +242,17 @@ def handle_run(pkg, env_name, flags):
         f"--web-hostname={web_host}",
         f"--web-port={port}",
         "--no-web-resources-cdn",
-        "--web-browser-flag=--disable-web-security",
-        f"--web-launch-url={launch_url}",
-    ] + defines
+    ]
+    if device in ("chrome", "edge"):
+        cmd += [
+            "--web-browser-flag=--disable-web-security",
+            f"--web-launch-url={launch_url}",
+        ]
+    else:
+        cmd += [f"--web-hostname=localhost"]
+        print(f"[Web] Serving on {launch_url} (open this URL in your browser)")
+
+    cmd += defines
     run_cmd(package, cmd, env_vars)
 
 

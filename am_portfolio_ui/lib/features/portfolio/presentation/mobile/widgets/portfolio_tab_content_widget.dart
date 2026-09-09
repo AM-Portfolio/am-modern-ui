@@ -230,6 +230,7 @@ class _BasketsTab extends StatelessWidget {
       body: BasketSectionNavigator(
         userId: userId,
         portfolioId: currentPortfolioId,
+        showInlineToggle: true,
       ),
     );
   }

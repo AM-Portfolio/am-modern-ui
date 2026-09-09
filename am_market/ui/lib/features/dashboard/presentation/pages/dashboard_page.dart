@@ -12,6 +12,7 @@ import 'package:am_market_ui/features/instrument/instrument_explorer_page.dart';
 
 import 'package:am_market_ui/features/security/security_explorer_page.dart';
 import 'package:am_market_dev/am_market_dev.dart';
+import 'package:am_market_ui/features/watchlists/presentation/pages/watchlists_page.dart';
 import 'package:am_market_ui/features/market_analysis/presentation/widgets/indices_performance_view_v2.dart';
 import 'package:provider/provider.dart' hide Consumer;
 import 'package:flutter_riverpod/flutter_riverpod.dart' hide Provider;
@@ -482,6 +483,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
       _createSidebarItem(0, 'Dashboard', Icons.home_rounded, 'Overview'),
       _createSidebarItem(1, 'Market Analysis', Icons.analytics_rounded, 'Detailed charts'),
       _createSidebarItem(2, 'Equity Insider', Icons.insights_rounded, 'Fundamental analysis'),
+      _createSidebarItem(3, 'Watch List', Icons.star_border_rounded, 'Custom tracking'),
     ];
 
     return [
@@ -652,6 +654,23 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         subtitle: 'Fundamental analysis',
         icon: Icons.insights_rounded,
         page: _wrapPage(EquityInsiderPage(key: _equityInsiderKey)),
+        accentColor: accentColor,
+      ),
+      NavigationItem(
+        title: 'Watch List',
+        subtitle: 'Custom tracking',
+        icon: Icons.star_border_rounded,
+        page: _wrapPage(WatchlistsPage(
+          onStockSelected: (symbol) {
+            final items = _swipeController.items;
+            final index = _indexForSlug('equity-insider', items);
+            _swipeController.navigateTo(index);
+            // Delay slightly to ensure page is built if it was not in view
+            Future.delayed(const Duration(milliseconds: 100), () {
+              _equityInsiderKey.currentState?.navigateToSymbol(symbol);
+            });
+          },
+        )),
         accentColor: accentColor,
       ),
     ];

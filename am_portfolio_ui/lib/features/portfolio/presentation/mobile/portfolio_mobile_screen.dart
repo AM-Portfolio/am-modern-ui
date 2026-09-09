@@ -14,7 +14,6 @@ import '../../internal/data/dtos/portfolio_create_request_dto.dart';
 import '../../internal/data/dtos/portfolio_update_request_dto.dart';
 import 'widgets/portfolio_tab_content_widget.dart';
 import 'widgets/portfolio_form_modal.dart';
-import '../../../basket/presentation/widgets/basket_explorer.dart';
 
 /// Mobile-optimized portfolio screen with bottom navigation and portfolio selection
 class PortfolioMobileScreen extends ConsumerStatefulWidget {
@@ -452,7 +451,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
         autoHideMobileTabsOnScroll: true,
         onBackToGlobal: widget.onBack,
         mobileStickyHeader: _tabController.index == 3
-            ? const BasketModeToggle()
+            ? null // BasketExplorer owns Discover / My Baskets (avoid duplicate)
             : _buildStickyControlsRow(context, currentName),
         items: [
           SecondarySidebarItem(

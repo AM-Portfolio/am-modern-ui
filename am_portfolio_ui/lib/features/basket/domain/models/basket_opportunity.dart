@@ -1,6 +1,8 @@
 class BasketOpportunity {
   final String etfIsin;
   final String etfName;
+  final String? etfSymbol;
+  final String? categoryLabel;
   final double matchScore;
   final double replicaScore;
   final bool readyToReplicate;
@@ -19,6 +21,11 @@ class BasketOpportunity {
   final double? residualCash;
   final double? budgetUtilization;
   final double? heldCoverageValue;
+  final double? return1Y;
+  final double? return3Y;
+  final double? return5Y;
+  final String? returnsAsOf;
+  final List<double>? sparklineCloses;
   final List<String> excludedSymbols;
   final bool? sectorialBasket;
   final String? dominantSector;
@@ -31,6 +38,8 @@ class BasketOpportunity {
   const BasketOpportunity({
     required this.etfIsin,
     required this.etfName,
+    this.etfSymbol,
+    this.categoryLabel,
     this.matchScore = 0.0,
     this.replicaScore = 0.0,
     this.readyToReplicate = false,
@@ -49,6 +58,11 @@ class BasketOpportunity {
     this.residualCash,
     this.budgetUtilization,
     this.heldCoverageValue,
+    this.return1Y,
+    this.return3Y,
+    this.return5Y,
+    this.returnsAsOf,
+    this.sparklineCloses,
     this.excludedSymbols = const [],
     this.sectorialBasket,
     this.dominantSector,
@@ -59,10 +73,34 @@ class BasketOpportunity {
     this.buyList = const [],
   });
 
+  /// Display ticker: symbol when present, else first token of name.
+  String get displayTicker {
+    final s = etfSymbol?.trim();
+    if (s != null && s.isNotEmpty) return s.toUpperCase();
+    if (etfName.isEmpty) return '—';
+    return etfName.split(RegExp(r'\s+')).first.toUpperCase();
+  }
+
+  /// Period return for Discover chips; null → UI shows em dash (never fake 0).
+  double? returnForPeriod(DiscoverPerformancePeriod period) {
+    switch (period) {
+      case DiscoverPerformancePeriod.oneY:
+        return return1Y;
+      case DiscoverPerformancePeriod.threeY:
+        return return3Y;
+      case DiscoverPerformancePeriod.fiveY:
+        return return5Y;
+      case DiscoverPerformancePeriod.all:
+        return return5Y ?? return3Y ?? return1Y;
+    }
+  }
+
   factory BasketOpportunity.fromJson(Map<String, dynamic> json) {
     return BasketOpportunity(
       etfIsin: json['etfIsin'] as String,
       etfName: json['etfName'] as String,
+      etfSymbol: json['etfSymbol'] as String?,
+      categoryLabel: json['categoryLabel'] as String?,
       matchScore: (json['matchScore'] as num?)?.toDouble() ?? 0.0,
       replicaScore: (json['replicaScore'] as num?)?.toDouble() ?? 0.0,
       readyToReplicate: json['readyToReplicate'] as bool? ?? false,
@@ -81,6 +119,13 @@ class BasketOpportunity {
       residualCash: (json['residualCash'] as num?)?.toDouble(),
       budgetUtilization: (json['budgetUtilization'] as num?)?.toDouble(),
       heldCoverageValue: (json['heldCoverageValue'] as num?)?.toDouble(),
+      return1Y: (json['return1Y'] as num?)?.toDouble(),
+      return3Y: (json['return3Y'] as num?)?.toDouble(),
+      return5Y: (json['return5Y'] as num?)?.toDouble(),
+      returnsAsOf: json['returnsAsOf'] as String?,
+      sparklineCloses: (json['sparklineCloses'] as List<dynamic>?)
+          ?.map((e) => (e as num).toDouble())
+          .toList(),
       excludedSymbols: (json['excludedSymbols'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
@@ -165,6 +210,8 @@ class BasketOpportunity {
     return {
       'etfIsin': etfIsin,
       'etfName': etfName,
+      'etfSymbol': etfSymbol,
+      'categoryLabel': categoryLabel,
       'matchScore': matchScore,
       'replicaScore': replicaScore,
       'readyToReplicate': readyToReplicate,
@@ -183,6 +230,11 @@ class BasketOpportunity {
       'residualCash': residualCash,
       'budgetUtilization': budgetUtilization,
       'heldCoverageValue': heldCoverageValue,
+      'return1Y': return1Y,
+      'return3Y': return3Y,
+      'return5Y': return5Y,
+      'returnsAsOf': returnsAsOf,
+      'sparklineCloses': sparklineCloses,
       'excludedSymbols': excludedSymbols,
       'sectorialBasket': sectorialBasket,
       'dominantSector': dominantSector,
@@ -197,6 +249,8 @@ class BasketOpportunity {
   BasketOpportunity copyWith({
     String? etfIsin,
     String? etfName,
+    String? etfSymbol,
+    String? categoryLabel,
     double? matchScore,
     double? replicaScore,
     bool? readyToReplicate,
@@ -215,6 +269,11 @@ class BasketOpportunity {
     double? residualCash,
     double? budgetUtilization,
     double? heldCoverageValue,
+    double? return1Y,
+    double? return3Y,
+    double? return5Y,
+    String? returnsAsOf,
+    List<double>? sparklineCloses,
     List<String>? excludedSymbols,
     bool? sectorialBasket,
     String? dominantSector,
@@ -227,6 +286,8 @@ class BasketOpportunity {
     return BasketOpportunity(
       etfIsin: etfIsin ?? this.etfIsin,
       etfName: etfName ?? this.etfName,
+      etfSymbol: etfSymbol ?? this.etfSymbol,
+      categoryLabel: categoryLabel ?? this.categoryLabel,
       matchScore: matchScore ?? this.matchScore,
       replicaScore: replicaScore ?? this.replicaScore,
       readyToReplicate: readyToReplicate ?? this.readyToReplicate,
@@ -245,6 +306,11 @@ class BasketOpportunity {
       residualCash: residualCash ?? this.residualCash,
       budgetUtilization: budgetUtilization ?? this.budgetUtilization,
       heldCoverageValue: heldCoverageValue ?? this.heldCoverageValue,
+      return1Y: return1Y ?? this.return1Y,
+      return3Y: return3Y ?? this.return3Y,
+      return5Y: return5Y ?? this.return5Y,
+      returnsAsOf: returnsAsOf ?? this.returnsAsOf,
+      sparklineCloses: sparklineCloses ?? this.sparklineCloses,
       excludedSymbols: excludedSymbols ?? this.excludedSymbols,
       sectorialBasket: sectorialBasket ?? this.sectorialBasket,
       dominantSector: dominantSector ?? this.dominantSector,
@@ -256,6 +322,11 @@ class BasketOpportunity {
     );
   }
 }
+
+/// Client-only Discover period filter (no opportunities refetch).
+enum DiscoverPerformancePeriod { oneY, threeY, fiveY, all }
+
+enum DiscoverSortMode { matchDesc, returnDesc, requiredAsc }
 
 class BasketItem {
   final String stockSymbol;
