@@ -1,6 +1,8 @@
 {
-  "_comment": "Copy to config.local.json (gitignored, like .env). Merged last over config.{env}.json. Missing file is fine. Example: prod UI + local portfolio.",
-  "services": {
-    "portfolio": "http://localhost:8072"
+  "_comment": "Copy to config.local.json (gitignored). Merged last over config.{env}.json. For local UI + preprod APIs + Google on localhost:9000, use domain + webClientId below.",
+  "domain": "am-preprod.asrax.in",
+  "services": {},
+  "google": {
+    "webClientId": "307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com"
   }
 }

@@ -54,7 +54,10 @@ class ApiService {
 
     return {
       'Authorization': 'Bearer $finalToken',
-      'X-User-ID': finalUserId,
+      // X-User-ID is redundant with JWT on the server. Sending it from a
+      // localhost UI to preprod/prod trips CORS (header not allow-listed) and
+      // surfaces as ClientException: Failed to fetch on multipart upload.
+      if (!kIsWeb) 'X-User-ID': finalUserId,
     };
   }
 
@@ -85,13 +88,14 @@ class ApiService {
 
   Future<Map<String, dynamic>> processDocument(
       Uint8List fileBytes, String filename, String docType,
-      {String brokerType = 'ZERODHA'}) async {
+      {String brokerType = 'ZERODHA', String? portfolioId}) async {
     // Same ingress pattern as types (/doc/processor) and other modules
     // (/portfolio, /market): Traefik → service with Keycloak Bearer.
     // Do NOT use /am/... here — asrax-proxy is a separate auth path and
     // is what returned 401 while Keycloak worked everywhere else.
     final url = '$_docBase/documents/process';
-    debugPrint('[ApiService] POST $url (type=$docType, broker=$brokerType)');
+    debugPrint(
+        '[ApiService] POST $url (type=$docType, broker=$brokerType, portfolio=$portfolioId)');
     var request = http.MultipartRequest('POST', Uri.parse(url));
     final headers = await _getHeaders();
     request.headers.addAll(headers);
@@ -108,7 +112,11 @@ class ApiService {
       apiDocType = 'STOCK_PORTFOLIO';
     }
     request.fields['documentType'] = apiDocType;
-    
+    final trimmedPortfolio = portfolioId?.trim();
+    if (trimmedPortfolio != null && trimmedPortfolio.isNotEmpty) {
+      request.fields['portfolioId'] = trimmedPortfolio;
+    }
+
     request.files
         .add(http.MultipartFile.fromBytes('file', fileBytes, filename: filename));
 
