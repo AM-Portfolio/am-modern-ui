@@ -2,7 +2,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-/// Mobile card for a single open paper position.
+/// Compact single-row mobile card for an open paper position.
 class PaperPositionMobileCard extends StatelessWidget {
   const PaperPositionMobileCard({
     super.key,
@@ -33,50 +33,65 @@ class PaperPositionMobileCard extends StatelessWidget {
     final colors = context.colors;
     final fmt = NumberFormat('#,##0.00');
     final pnlColor = _pnlColor(context, unrealized);
+    final textTheme = Theme.of(context).textTheme;
 
-    return AmEntityMobileCard(
-      leading: AmLetterAvatar(text: symbol),
-      title: Text(
-        symbol,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: colors.cardSurface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: colors.divider),
       ),
-      primaryMetric: Text(
-        '₹${fmt.format(unrealized)}',
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: pnlColor,
-              fontWeight: FontWeight.w700,
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  symbol,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Qty ${qty.toStringAsFixed(0)} · Avg ${avg > 0 ? fmt.format(avg) : '—'}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ],
             ),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '₹${fmt.format(unrealized)}',
+                style: textTheme.titleSmall?.copyWith(
+                  color: pnlColor,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'LTP ${ltp > 0 ? fmt.format(ltp) : '—'}',
+                style: textTheme.bodySmall?.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
-      secondaryMetric: Text(
-        '${unrealizedPct.toStringAsFixed(2)}%',
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: _pnlColor(context, unrealizedPct),
-            ),
-      ),
-      metrics: [
-        AmCardMetricItem(
-          label: 'Qty',
-          valueText: qty.toStringAsFixed(0),
-        ),
-        AmCardMetricItem(
-          label: 'Avg',
-          valueText: avg > 0 ? fmt.format(avg) : '—',
-        ),
-        AmCardMetricItem(
-          label: 'LTP',
-          valueText: ltp > 0 ? fmt.format(ltp) : '—',
-        ),
-        AmCardMetricItem(
-          label: 'P&L',
-          valueText: '₹${fmt.format(unrealized)}',
-          valueColor: pnlColor,
-          isHighlighted: true,
-        ),
-      ],
-      cardColor: colors.cardSurface,
-      borderColor: colors.divider,
     );
   }
 }

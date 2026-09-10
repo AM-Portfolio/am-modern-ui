@@ -2,7 +2,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-/// Mobile card for a single today's filled paper order.
+/// Compact single-row mobile card for a today's paper order.
 class PaperOrderMobileCard extends StatelessWidget {
   const PaperOrderMobileCard({
     super.key,
@@ -26,8 +26,8 @@ class PaperOrderMobileCard extends StatelessWidget {
   Color _sideColor(BuildContext context) {
     final colors = context.colors;
     return side == 'SELL'
-        ? colors.statusError
-        : colors.marketPositiveIndicator;
+        ? colors.marketNegativeIndicator
+        : colors.actionPrimaryBg;
   }
 
   @override
@@ -37,41 +37,79 @@ class PaperOrderMobileCard extends StatelessWidget {
     final qtyLabel =
         qty.toStringAsFixed(qty == qty.roundToDouble() ? 0 : 2);
     final priceLabel = price > 0 ? '₹${fmt.format(price)}' : '—';
+    final textTheme = Theme.of(context).textTheme;
+    final sideColor = _sideColor(context);
 
-    return AmEntityMobileCard(
-      leading: AmLetterAvatar(text: symbol),
-      title: Text(
-        symbol,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: colors.cardSurface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: colors.divider),
       ),
-      titleBadge: Text(
-        side,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: _sideColor(context),
-              fontWeight: FontWeight.w700,
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        symbol,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      side,
+                      style: textTheme.labelSmall?.copyWith(
+                        color: sideColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$orderType · Qty $qtyLabel · $status',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ],
             ),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                priceLabel,
+                style: textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                timeLabel,
+                style: textTheme.bodySmall?.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
-      subtitle: timeLabel,
-      primaryMetric: Text(
-        priceLabel,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-      ),
-      metrics: [
-        AmCardMetricItem(label: 'Type', valueText: orderType),
-        AmCardMetricItem(label: 'Qty', valueText: qtyLabel),
-        AmCardMetricItem(label: 'Status', valueText: status),
-        AmCardMetricItem(
-          label: 'Side',
-          valueText: side,
-          valueColor: _sideColor(context),
-        ),
-      ],
-      cardColor: colors.cardSurface,
-      borderColor: colors.divider,
     );
   }
 }

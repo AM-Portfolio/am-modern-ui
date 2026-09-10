@@ -24,6 +24,7 @@ class QuoteDetail {
     this.high,
     this.low,
     this.previousClose,
+    this.volume,
     this.buyDepth = const [],
     this.sellDepth = const [],
   });
@@ -38,10 +39,26 @@ class QuoteDetail {
   final double? high;
   final double? low;
   final double? previousClose;
+
+  /// Total quantity traded so far (session volume).
+  final int? volume;
   final List<DepthLevel> buyDepth;
   final List<DepthLevel> sellDepth;
 
   bool get isPositive => change > 0;
   bool get isNegative => change < 0;
   bool get hasDepth => buyDepth.isNotEmpty || sellDepth.isNotEmpty;
+
+  int get totalBuyQty =>
+      buyDepth.fold<int>(0, (sum, e) => sum + e.quantity);
+  int get totalSellQty =>
+      sellDepth.fold<int>(0, (sum, e) => sum + e.quantity);
+  int get totalBuyOrders => buyDepth.fold<int>(
+        0,
+        (sum, e) => sum + (e.orders ?? 0),
+      );
+  int get totalSellOrders => sellDepth.fold<int>(
+        0,
+        (sum, e) => sum + (e.orders ?? 0),
+      );
 }

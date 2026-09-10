@@ -555,6 +555,15 @@ class PaperMarketClient {
     final depth = item['marketDepth'] ?? item['depth'] ?? item['market_depth'];
     final buy = _parseDepthSide(depth, isBuy: true);
     final sell = _parseDepthSide(depth, isBuy: false);
+    final volume = (_asDouble(item['volume'] ??
+                item['totalTradedQuantity'] ??
+                item['total_traded_quantity'] ??
+                item['totalTradedVolume'] ??
+                item['tradedQuantity'] ??
+                item['vtt'] ??
+                item['vol']) ??
+            0)
+        .round();
 
     return QuoteDetail(
       symbol: sym,
@@ -567,6 +576,7 @@ class PaperMarketClient {
       high: high,
       low: low,
       previousClose: prev,
+      volume: volume > 0 ? volume : null,
       buyDepth: buy.take(5).toList(),
       sellDepth: sell.take(5).toList(),
     );

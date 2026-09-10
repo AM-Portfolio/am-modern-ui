@@ -53,7 +53,7 @@ class PaperWalletPane extends StatelessWidget {
                     _WalletCard(
                       label: 'Available',
                       value: '₹${fmt.format(available)}',
-                      accent: colors.marketPositiveIndicator,
+                      accent: colors.actionPrimaryBg,
                     ),
                     _WalletCard(
                       label: 'Reserved',

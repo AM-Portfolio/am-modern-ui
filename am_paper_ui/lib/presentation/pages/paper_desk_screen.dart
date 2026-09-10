@@ -5,7 +5,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../paper_oms_cubit.dart';
 import '../paper_oms_state.dart';
 import '../widgets/paper_analyser_pane.dart';
-import '../widgets/paper_holdings_pane.dart';
 import '../widgets/paper_order_ticket.dart';
 import '../widgets/paper_order_ticket_sheet.dart';
 import '../widgets/paper_orders_pane.dart';
@@ -19,7 +18,7 @@ enum _TicketPlacement {
   free,
 }
 
-enum _MidTab { wallet, overview, orders, holdings, positions }
+enum _MidTab { wallet, overview, orders, positions }
 
 class PaperDeskScreen extends StatefulWidget {
   const PaperDeskScreen({super.key});
@@ -225,7 +224,6 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
                   (_MidTab.wallet, 'Wallet'),
                   (_MidTab.overview, 'Overview'),
                   (_MidTab.orders, 'Orders'),
-                  (_MidTab.holdings, 'Holdings'),
                   (_MidTab.positions, 'Positions'),
                 ])
                   _MidTabChip(
@@ -265,8 +263,6 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
         return PaperAnalyserPane(symbol: _symbol);
       case _MidTab.orders:
         return const PaperOrdersPane();
-      case _MidTab.holdings:
-        return const PaperHoldingsPane();
       case _MidTab.positions:
         return const PaperPositionsPnlPane();
     }
