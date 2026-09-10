@@ -37,12 +37,16 @@ class MarketPage extends StatelessWidget {
     this.initialTab = 'all-indices',
     this.onTabChanged,
     this.onBack,
+    this.paperDesk,
   });
 
   final String userId;
   final String initialTab;
   final ValueChanged<String>? onTabChanged;
   final VoidCallback? onBack;
+
+  /// Host-injected paper trading desk (avoids am_market_ui → am_paper_ui cycle).
+  final Widget? paperDesk;
 
   @override
   Widget build(BuildContext context) {
@@ -80,6 +84,7 @@ class MarketPage extends StatelessWidget {
         isAdmin: isAdmin,
         onTabChanged: onTabChanged,
         onBack: onBack,
+        paperDesk: paperDesk,
       ),
     );
   }
@@ -108,6 +113,7 @@ class MarketContent extends ConsumerStatefulWidget {
     this.isAdmin = false,
     this.onTabChanged,
     this.onBack,
+    this.paperDesk,
   });
 
   final String userId;
@@ -115,6 +121,7 @@ class MarketContent extends ConsumerStatefulWidget {
   final bool isAdmin;
   final ValueChanged<String>? onTabChanged;
   final VoidCallback? onBack;
+  final Widget? paperDesk;
 
   @override
   ConsumerState<MarketContent> createState() => _MarketContentState();
@@ -128,6 +135,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
       GlobalKey<EquityInsiderPageState>();
 
   static const _staticTitleToSlug = {
+    'Paper': 'paper',
     'All Indices': 'all-indices',
     'Streamer': 'streamer',
     'Instrument Explorer': 'instrument-explorer',
@@ -140,6 +148,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     'Dashboard': 'dashboard',
     'Heatmap Explorer': 'heatmap-explorer',
     'Equity Insider': 'equity-insider',
+    'Watch List': 'watch-list',
   };
 
   String _slugForTitle(String title) {
@@ -274,8 +283,9 @@ class _MarketContentState extends ConsumerState<MarketContent> {
           dash.openAllIndicesPanel();
           return;
         }
-        if (_swipeController.currentIndex != 0) {
-          _swipeController.navigateTo(0);
+        final dashboardIndex = _indexForSlug('dashboard', _swipeController.items);
+        if (_swipeController.currentIndex != dashboardIndex) {
+          _swipeController.navigateTo(dashboardIndex);
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _dashboardKey.currentState?.openAllIndicesPanel();
           });
@@ -403,14 +413,22 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         Icons.insights_rounded,
         'Fundamental analysis',
       ),
+      if (widget.paperDesk != null)
+        _createSidebarItem(
+          8,
+          'Paper',
+          Icons.science_outlined,
+          'Paper trading desk',
+        ),
     ];
 
-    // Dynamic Indices
+    // Dynamic Indices (shift when Paper tab is present)
+    final paperOffset = widget.paperDesk != null ? 1 : 0;
     final dynamicIndicesCount =
         provider.availableIndices?.broad.take(5).length ?? 0;
     final indexItems = <SecondarySidebarItem>[];
     if (provider.availableIndices != null) {
-      var baseIndex = 8;
+      var baseIndex = 8 + paperOffset;
       for (final indexName in provider.availableIndices!.broad.take(5)) {
         final i = baseIndex;
         indexItems.add(
@@ -432,7 +450,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
       }
     }
 
-    final adminIndex = 8 + dynamicIndicesCount;
+    final adminIndex = 8 + paperOffset + dynamicIndicesCount;
     final developerIndex = adminIndex + 1;
 
     final adminItem = SecondarySidebarItem(
@@ -474,16 +492,17 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     return sections;
   }
 
-  // User Mode - Simplified Navigation (Dashboard, Overview, Heatmap)
+  // User Mode - Simplified Navigation (Paper desk first when injected)
   List<SecondarySidebarSection> _buildUserModeSections(MarketProvider provider) {
-    final accentColor = ModuleColors.market;
-    final currentIndex = _swipeController.currentIndex;
-
-    final userItems = [
-      _createSidebarItem(0, 'Dashboard', Icons.home_rounded, 'Overview'),
-      _createSidebarItem(1, 'Market Analysis', Icons.analytics_rounded, 'Detailed charts'),
-      _createSidebarItem(2, 'Equity Insider', Icons.insights_rounded, 'Fundamental analysis'),
-      _createSidebarItem(3, 'Watch List', Icons.star_border_rounded, 'Custom tracking'),
+    final hasPaper = widget.paperDesk != null;
+    var i = 0;
+    final userItems = <SecondarySidebarItem>[
+      if (hasPaper)
+        _createSidebarItem(i++, 'Paper', Icons.science_outlined, 'Paper trading desk'),
+      _createSidebarItem(i++, 'Dashboard', Icons.home_rounded, 'Overview'),
+      _createSidebarItem(i++, 'Market Analysis', Icons.analytics_rounded, 'Detailed charts'),
+      _createSidebarItem(i++, 'Equity Insider', Icons.insights_rounded, 'Fundamental analysis'),
+      _createSidebarItem(i++, 'Watch List', Icons.star_border_rounded, 'Custom tracking'),
     ];
 
     return [
@@ -589,6 +608,19 @@ class _MarketContentState extends ConsumerState<MarketContent> {
       ),
     ];
 
+    final paperDesk = widget.paperDesk;
+    if (paperDesk != null) {
+      items.add(
+        NavigationItem(
+          title: 'Paper',
+          subtitle: 'Paper trading desk',
+          icon: Icons.science_outlined,
+          page: paperDesk,
+          accentColor: accentColor,
+        ),
+      );
+    }
+
     // Dynamic Indices
     if (provider.availableIndices != null) {
       for (final indexName in provider.availableIndices!.broad.take(5)) {
@@ -633,8 +665,18 @@ class _MarketContentState extends ConsumerState<MarketContent> {
 
   List<NavigationItem> _buildUserModeNavigationItems(MarketProvider provider) {
     final accentColor = ModuleColors.market;
+    final paperDesk = widget.paperDesk;
 
     return [
+      if (paperDesk != null)
+        NavigationItem(
+          title: 'Paper',
+          subtitle: 'Paper trading desk',
+          icon: Icons.science_outlined,
+          // Do not wrap — desk owns its scroll/layout.
+          page: paperDesk,
+          accentColor: accentColor,
+        ),
       NavigationItem(
         title: 'Dashboard',
         subtitle: 'Overview',

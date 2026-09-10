@@ -70,6 +70,7 @@ class AppRoutes {
   ];
 
   static const marketStaticSlugs = {
+    'Paper': 'paper',
     'All Indices': 'all-indices',
     'Streamer': 'streamer',
     'Instrument Explorer': 'instrument-explorer',
@@ -81,6 +82,8 @@ class AppRoutes {
     'Developer Dashboard': 'developer-dashboard',
     'Dashboard': 'dashboard',
     'Heatmap Explorer': 'heatmap-explorer',
+    'Equity Insider': 'equity-insider',
+    'Watch List': 'watch-list',
   };
 
   static bool isPortfolioTab(String slug) => portfolioTabs.contains(slug);
@@ -152,8 +155,9 @@ class AppRoutes {
     'Dashboard': dashboard,
     'Portfolio': '/app/portfolio/overview',
     'Trade': tradeDiscovery,
-    'Paper': paper,
-    'Market': '/app/market/dashboard',
+    // Legacy session title — Paper is now a Market tab.
+    'Paper': '/app/market/paper',
+    'Market': '/app/market/paper',
     'AI Chat': aiChat,
     'Lab': lab,
     'Analysis': analysis,
@@ -176,7 +180,8 @@ class AppRoutes {
   static String activeNavTitleForLocation(String location) {
     if (location.startsWith(portfolio)) return 'Portfolio';
     if (location.startsWith(trade)) return 'Trade';
-    if (location.startsWith(paper)) return 'Paper';
+    // Legacy /app/paper redirects to Market; keep Market highlighted.
+    if (location.startsWith(paper)) return 'Market';
     if (location.startsWith(market)) return 'Market';
     if (location.startsWith(aiChat)) return 'AI Chat';
     if (location.startsWith(lab)) return 'Lab';

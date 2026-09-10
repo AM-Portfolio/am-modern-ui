@@ -238,7 +238,6 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
             title: 'Portfolio',
             icon: Icons.account_balance_wallet_rounded),
         const SidebarItem(title: 'Trade', icon: Icons.swap_horiz_rounded),
-        const SidebarItem(title: 'Paper', icon: Icons.science_outlined),
         const SidebarItem(title: 'Market', icon: Icons.show_chart_rounded),
         const SidebarItem(
             title: 'AI Chat', icon: Icons.auto_awesome_rounded),
@@ -296,6 +295,10 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
     if (session.globalNav == 'Doc Intel') {
       savedPath = AppRoutes.dashboard;
     }
+    // Paper is now a Market tab (legacy sessions used primary "Paper").
+    if (session.globalNav == 'Paper') {
+      savedPath = AppRoutes.marketPath('paper');
+    }
 
     final portfolioId = session.portfolioId;
     final restoredPortfolioId =
@@ -320,7 +323,9 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
     }
 
     if (current == AppRoutes.dashboard && savedPath != AppRoutes.dashboard) {
-      _applyStreamingTabCoordinator(session.globalNav);
+      final streamingNav =
+          session.globalNav == 'Paper' ? 'Market' : session.globalNav;
+      _applyStreamingTabCoordinator(streamingNav);
       context.go(savedPath);
     }
   }
@@ -688,10 +693,6 @@ final userId =
                                     const SidebarItem(
                                       title: 'Trade',
                                       icon: Icons.swap_horiz_rounded,
-                                    ),
-                                    const SidebarItem(
-                                      title: 'Paper',
-                                      icon: Icons.science_outlined,
                                     ),
                                     const SidebarItem(
                                       title: 'Market',

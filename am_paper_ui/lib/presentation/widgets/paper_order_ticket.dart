@@ -16,12 +16,28 @@ class PaperOrderTicket extends StatefulWidget {
     this.side = 'BUY',
     this.onSymbolChanged,
     this.onSideChanged,
+    this.onOrderPlaced,
+    this.floating = false,
+    this.onToggleFloat,
+    this.onCloseFloat,
+    this.onHeaderDragUpdate,
+    this.onHeaderDragEnd,
   });
 
   final String symbol;
   final String side;
   final ValueChanged<String>? onSymbolChanged;
   final ValueChanged<String>? onSideChanged;
+
+  /// Called after a successful place (filled or working), before toast.
+  final VoidCallback? onOrderPlaced;
+
+  /// When true, show float/close controls and enable header drag.
+  final bool floating;
+  final VoidCallback? onToggleFloat;
+  final VoidCallback? onCloseFloat;
+  final GestureDragUpdateCallback? onHeaderDragUpdate;
+  final GestureDragEndCallback? onHeaderDragEnd;
 
   @override
   State<PaperOrderTicket> createState() => _PaperOrderTicketState();
@@ -46,6 +62,7 @@ class _PaperOrderTicketState extends State<PaperOrderTicket> {
   bool _showTrigger = false;
   bool _bookProfitsOpen = true;
   bool _quoteLoading = false;
+  bool _localSubmitting = false;
   QuoteDetail? _quote;
   String _displayName = '';
 
@@ -89,7 +106,11 @@ class _PaperOrderTicketState extends State<PaperOrderTicket> {
       _quoteLoading = true;
       _displayName = sym;
     });
-    final detail = await _client.fetchQuoteDetail(sym, name: _displayName);
+    final detail = await _client.fetchQuoteDetail(
+      sym,
+      name: _displayName,
+      forceRefresh: true,
+    );
     if (!mounted) return;
     setState(() {
       _quote = detail;
@@ -152,44 +173,75 @@ class _PaperOrderTicketState extends State<PaperOrderTicket> {
       );
       return;
     }
+    if (_localSubmitting) return;
     widget.onSymbolChanged?.call(sym);
 
-    final needsLimit = _orderType == 'LIMIT' ||
-        (_orderType == 'SUPER' && _useLimit && _entryType == 'LIMIT');
-    String? target;
-    String? stop;
-    if (_orderType == 'SUPER') {
-      if (_useTarget && _target.text.trim().isNotEmpty) {
-        target = _target.text.trim();
-      }
-      if (_useStop && _stop.text.trim().isNotEmpty) {
-        stop = _stop.text.trim();
-      }
-      if (target == null && stop == null) {
+    setState(() => _localSubmitting = true);
+    try {
+      final live = await _client.fetchQuoteDetail(
+        sym,
+        name: _displayName,
+        forceRefresh: true,
+      );
+      if (!mounted) return;
+      setState(() {
+        _quote = live;
+        if (live?.name != null && live!.name!.isNotEmpty) {
+          _displayName = live.name!;
+        }
+      });
+      final ltp = live?.ltp ?? 0;
+      if (ltp <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Enable Target and/or Stop Loss for SUPER'),
-          ),
+          const SnackBar(content: Text('Live quote unavailable — try again')),
         );
         return;
       }
-    }
 
-    await context.read<PaperOmsCubit>().placeOrder(
-          symbol: sym,
-          side: _side,
-          orderType: _orderType,
-          quantity: _qty.text.trim(),
-          limitPrice: needsLimit ? _limit.text.trim() : null,
-          targetPrice: target,
-          stopLoss: stop,
-          trailJump: _orderType == 'TRAIL' ? _trail.text.trim() : null,
-          entryType:
-              _orderType == 'SUPER' ? (_useLimit ? 'LIMIT' : 'MARKET') : null,
-          triggerPrice: _showTrigger && _trigger.text.trim().isNotEmpty
-              ? _trigger.text.trim()
-              : null,
-        );
+      final needsLimit = _orderType == 'LIMIT' ||
+          (_orderType == 'SUPER' && _useLimit && _entryType == 'LIMIT');
+      String? target;
+      String? stop;
+      if (_orderType == 'SUPER') {
+        if (_useTarget && _target.text.trim().isNotEmpty) {
+          target = _target.text.trim();
+        }
+        if (_useStop && _stop.text.trim().isNotEmpty) {
+          stop = _stop.text.trim();
+        }
+        if (target == null && stop == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Enable Target and/or Stop Loss for SUPER'),
+            ),
+          );
+          return;
+        }
+      }
+
+      final order = await context.read<PaperOmsCubit>().placeOrder(
+            symbol: sym,
+            side: _side,
+            orderType: _orderType,
+            quantity: _qty.text.trim(),
+            limitPrice: needsLimit ? _limit.text.trim() : null,
+            targetPrice: target,
+            stopLoss: stop,
+            trailJump: _orderType == 'TRAIL' ? _trail.text.trim() : null,
+            entryType: _orderType == 'SUPER'
+                ? (_useLimit ? 'LIMIT' : 'MARKET')
+                : null,
+            triggerPrice: _showTrigger && _trigger.text.trim().isNotEmpty
+                ? _trigger.text.trim()
+                : null,
+          );
+      if (!mounted) return;
+      if (order != null && !order.isRejected) {
+        widget.onOrderPlaced?.call();
+      }
+    } finally {
+      if (mounted) setState(() => _localSubmitting = false);
+    }
   }
 
   @override
@@ -236,6 +288,11 @@ class _PaperOrderTicketState extends State<PaperOrderTicket> {
                         isBuy: isBuy,
                         onBuy: () => _setSide('BUY'),
                         onSell: () => _setSide('SELL'),
+                        floating: widget.floating,
+                        onToggleFloat: widget.onToggleFloat,
+                        onCloseFloat: widget.onCloseFloat,
+                        onHeaderDragUpdate: widget.onHeaderDragUpdate,
+                        onHeaderDragEnd: widget.onHeaderDragEnd,
                       ),
                       if (wallet != null) ...[
                         const SizedBox(height: 10),
@@ -293,18 +350,19 @@ class _PaperOrderTicketState extends State<PaperOrderTicket> {
                             Row(
                               children: [
                                 for (final t in const [
-                                  ('MARKET', 'Market', false),
-                                  ('LIMIT', 'Limit', false),
-                                  ('SUPER', 'SUPER', true),
-                                  ('TRAIL', 'Trail', false),
+                                  ('MARKET', 'Market', 'M', false),
+                                  ('LIMIT', 'Limit', 'L', false),
+                                  ('SUPER', 'SUPER', 'S', true),
+                                  ('TRAIL', 'Trail', 'T', false),
                                 ]) ...[
                                   if (t.$1 != 'MARKET')
                                     const SizedBox(width: 6),
                                   Expanded(
                                     child: _TypeTab(
                                       label: t.$2,
+                                      badge: t.$3,
                                       selected: _orderType == t.$1,
-                                      superStyle: t.$3,
+                                      superStyle: t.$4,
                                       onTap: () => _setOrderType(t.$1),
                                     ),
                                   ),
@@ -614,9 +672,13 @@ class _PaperOrderTicketState extends State<PaperOrderTicket> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  onPressed: state.submitting || sym.isEmpty ? null : _submit,
+                  onPressed: state.submitting ||
+                          _localSubmitting ||
+                          sym.isEmpty
+                      ? null
+                      : _submit,
                   child: Text(
-                    state.submitting
+                    state.submitting || _localSubmitting
                         ? 'Submitting…'
                         : 'Instant ${isBuy ? 'Buy' : 'Sell'}',
                     style: const TextStyle(
@@ -647,6 +709,11 @@ class _HeaderBlock extends StatelessWidget {
     required this.isBuy,
     required this.onBuy,
     required this.onSell,
+    this.floating = false,
+    this.onToggleFloat,
+    this.onCloseFloat,
+    this.onHeaderDragUpdate,
+    this.onHeaderDragEnd,
   });
 
   final String title;
@@ -660,29 +727,66 @@ class _HeaderBlock extends StatelessWidget {
   final bool isBuy;
   final VoidCallback onBuy;
   final VoidCallback onSell;
+  final bool floating;
+  final VoidCallback? onToggleFloat;
+  final VoidCallback? onCloseFloat;
+  final GestureDragUpdateCallback? onHeaderDragUpdate;
+  final GestureDragEndCallback? onHeaderDragEnd;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final titleRow = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Text(
+            title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  height: 1.15,
+                ),
+          ),
+        ),
+        if (onToggleFloat != null)
+          IconButton(
+            tooltip: floating ? 'Cycle float position' : 'Float order ticket',
+            visualDensity: VisualDensity.compact,
+            iconSize: 18,
+            onPressed: onToggleFloat,
+            icon: Icon(
+              floating ? Icons.filter_none : Icons.open_in_full,
+              color: colors.textTertiary,
+            ),
+          ),
+        if (floating && onCloseFloat != null)
+          IconButton(
+            tooltip: 'Dock order ticket',
+            visualDensity: VisualDensity.compact,
+            iconSize: 18,
+            onPressed: onCloseFloat,
+            icon: Icon(Icons.close, color: colors.textTertiary),
+          )
+        else
+          Icon(Icons.open_in_new, size: 18, color: colors.textTertiary),
+      ],
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Text(
-                title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      height: 1.15,
-                    ),
-              ),
-            ),
-            Icon(Icons.open_in_new, size: 18, color: colors.textTertiary),
-          ],
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onPanUpdate: onHeaderDragUpdate,
+          onPanEnd: onHeaderDragEnd,
+          child: MouseRegion(
+            cursor: onHeaderDragUpdate != null
+                ? SystemMouseCursors.move
+                : SystemMouseCursors.basic,
+            child: titleRow,
+          ),
         ),
         const SizedBox(height: 8),
         if (loading)
@@ -1066,12 +1170,14 @@ class _OrderCard extends StatelessWidget {
 class _TypeTab extends StatelessWidget {
   const _TypeTab({
     required this.label,
+    required this.badge,
     required this.selected,
     required this.onTap,
     this.superStyle = false,
   });
 
   final String label;
+  final String badge;
   final bool selected;
   final bool superStyle;
   final VoidCallback onTap;
@@ -1107,28 +1213,27 @@ class _TypeTab extends StatelessWidget {
           ),
           child: Column(
             children: [
-              if (superStyle)
-                Container(
-                  width: 22,
-                  height: 22,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: selected ? 1 : 0.15),
-                    borderRadius: BorderRadius.circular(6),
+              Container(
+                width: 22,
+                height: 22,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: selected ? 1 : 0.15),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  badge,
+                  style: TextStyle(
+                    color: selected
+                        ? (superStyle
+                            ? colors.actionPrimaryFg
+                            : colors.scaffoldBackground)
+                        : accent,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12,
                   ),
-                  child: Text(
-                    'S',
-                    style: TextStyle(
-                      color: selected
-                          ? colors.actionPrimaryFg
-                          : accent,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 12,
-                    ),
-                  ),
-                )
-              else
-                const SizedBox(height: 22),
+                ),
+              ),
               const SizedBox(height: 4),
               Text(
                 label,

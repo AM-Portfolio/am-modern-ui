@@ -66,10 +66,16 @@ class OmsOrder {
     this.trailJump,
     this.available,
     this.reserved,
+    this.createdAt,
   });
 
   factory OmsOrder.fromJson(Map<String, dynamic> json) {
     final snap = json['walletSnapshot'];
+    DateTime? created;
+    final rawCreated = json['createdAt'] ?? json['created_at'];
+    if (rawCreated != null) {
+      created = DateTime.tryParse(rawCreated.toString());
+    }
     return OmsOrder(
       orderId: json['orderId'] as String,
       walletId: json['walletId'] as String,
@@ -88,6 +94,7 @@ class OmsOrder {
       trailJump: json['trailJump']?.toString(),
       available: snap is Map ? '${snap['available'] ?? ''}' : null,
       reserved: snap is Map ? '${snap['reserved'] ?? ''}' : null,
+      createdAt: created,
     );
   }
 
@@ -111,10 +118,23 @@ class OmsOrder {
   final String? trailJump;
   final String? available;
   final String? reserved;
+  final DateTime? createdAt;
 
   bool get isFilled => status == 'FILLED';
   bool get isRejected => status == 'REJECTED';
   bool get isWorking => status == 'ACCEPTED';
+
+  bool get isCreatedToday {
+    if (createdAt == null) return false;
+    final d = createdAt!.toLocal();
+    final now = DateTime.now();
+    return d.year == now.year && d.month == now.month && d.day == now.day;
+  }
+
+  double get quantityAsDouble => double.tryParse(quantity) ?? 0;
+  double get filledQuantityAsDouble =>
+      double.tryParse(filledQuantity ?? '') ?? quantityAsDouble;
+  double get fillPriceAsDouble => double.tryParse(fillPrice ?? '') ?? 0;
 
   static List<OmsOrder> listFromEnvelope(dynamic raw) {
     final data = _envelope(raw);
@@ -167,6 +187,13 @@ String omsRejectMessage(String? code) {
       return 'Live broker orders are not enabled.';
     case 'VALIDATION':
       return 'Check price / quantity fields.';
+    case 'JOURNAL_UNAVAILABLE':
+      return 'Trade journal unavailable — try again shortly.';
+    case 'SERVICE_UNAVAILABLE':
+    case '503':
+      return 'Paper trading service temporarily unavailable (503). Retry in a moment.';
+    case '502':
+      return 'Paper trading gateway error (502). Retry in a moment.';
     default:
       return code == null || code.isEmpty ? 'Order rejected.' : code;
   }
@@ -174,10 +201,23 @@ String omsRejectMessage(String? code) {
 
 String? omsErrorCode(Object error) {
   try {
-    final data = (error as dynamic).data;
+    final dynamic err = error;
+    final status = err.statusCode ?? err.status;
+    if (status == 503) return '503';
+    if (status == 502) return '502';
+    final data = err.data;
     if (data is Map) {
-      return (data['error_code'] ?? data['errorCode'])?.toString();
+      final code = (data['error_code'] ?? data['errorCode'])?.toString();
+      if (code != null && code.isNotEmpty) return code;
+      final detail = data['detail'];
+      if (detail is Map) {
+        final nested = (detail['error_code'] ?? detail['errorCode'])?.toString();
+        if (nested != null && nested.isNotEmpty) return nested;
+      }
     }
+    final msg = err.toString();
+    if (msg.contains('503')) return '503';
+    if (msg.contains('502')) return '502';
   } catch (_) {}
   return null;
 }

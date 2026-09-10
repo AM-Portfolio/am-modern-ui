@@ -16,10 +16,17 @@ import '../widgets/equity_insider_empty_view.dart';
 
 /// Equity Insider – Fundamental Analysis.
 class EquityInsiderPage extends ConsumerStatefulWidget {
-  const EquityInsiderPage({super.key, this.initialSymbol});
+  const EquityInsiderPage({
+    super.key,
+    this.initialSymbol,
+    this.showPeers = true,
+  });
 
   /// When set (e.g. paper desk watchlist), loads this symbol instead of empty search.
   final String? initialSymbol;
+
+  /// Paper desk hides Peers; Market Equity Insider keeps it (default true).
+  final bool showPeers;
 
   @override
   ConsumerState<EquityInsiderPage> createState() => EquityInsiderPageState();
@@ -55,7 +62,7 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
     final next = widget.initialSymbol?.trim().toUpperCase();
     final prev = oldWidget.initialSymbol?.trim().toUpperCase();
     if (next != null && next.isNotEmpty && next != prev && next != _submittedSymbol) {
-      _navigateToSymbol(next);
+      navigateToSymbol(next);
     }
   }
 
@@ -150,6 +157,7 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
       onSearch: _search,
       onSelectSymbol: navigateToSymbol,
       onBack: _handleBack,
+      showPeers: widget.showPeers,
     );
   }
 }
@@ -162,6 +170,7 @@ class _FundamentalsBody extends ConsumerStatefulWidget {
     required this.onSearch,
     required this.onSelectSymbol,
     required this.onBack,
+    this.showPeers = true,
   });
 
   final String symbol;
@@ -170,6 +179,7 @@ class _FundamentalsBody extends ConsumerStatefulWidget {
   final VoidCallback onSearch;
   final ValueChanged<String> onSelectSymbol;
   final VoidCallback onBack;
+  final bool showPeers;
 
   @override
   ConsumerState<_FundamentalsBody> createState() => _FundamentalsBodyState();
@@ -177,7 +187,8 @@ class _FundamentalsBody extends ConsumerStatefulWidget {
 
 class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
   final ScrollController _scrollController = ScrollController();
-  final List<GlobalKey> _sectionKeys = List.generate(5, (_) => GlobalKey());
+  late final List<GlobalKey> _sectionKeys =
+      List.generate(widget.showPeers ? 5 : 4, (_) => GlobalKey());
   int _activeIndex = 0;
   bool _isManualScrolling = false;
   bool _isSearchOverlayOpen = false;
@@ -311,6 +322,7 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                               activeIndex: _activeIndex,
                               onTabSelected: _scrollToSection,
                               isMobile: isMobile,
+                              showPeers: widget.showPeers,
                             ),
                           ],
                         ),
@@ -401,15 +413,16 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                         const SizedBox(height: 14),
 
                         // Row 3: Full-width Peer Comparison Section
-                        _buildSectionCard(
-                          sectionKey: _sectionKeys[4],
-                          context: context,
-                          isMobile: isMobile,
-                          child: EquityInsiderPeers(
-                            symbol: widget.symbol,
-                            onPeerSelected: widget.onSelectSymbol,
+                        if (widget.showPeers)
+                          _buildSectionCard(
+                            sectionKey: _sectionKeys[4],
+                            context: context,
+                            isMobile: isMobile,
+                            child: EquityInsiderPeers(
+                              symbol: widget.symbol,
+                              onPeerSelected: widget.onSelectSymbol,
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ),

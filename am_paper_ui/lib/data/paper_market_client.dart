@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:am_common/am_common.dart';
 import 'package:am_market_sdk/market/api.dart';
 import 'package:am_market_ui/core/services/market_data_sdk_service.dart';
 import 'package:get_it/get_it.dart';
+import 'package:http/http.dart' as http;
 
 import 'quote_models.dart';
 import 'watchlist_models.dart';
@@ -12,19 +15,92 @@ class PaperMarketClient {
       : _sdk = sdk ?? MarketDataSdkService();
 
   final MarketDataSdkService _sdk;
-  bool _authAttempted = false;
+  String? _bearer;
 
-  Future<void> _ensureAuth() async {
-    if (_authAttempted) return;
-    _authAttempted = true;
+  /// Re-read access token; skip SecureStorage when already cached unless [force].
+  Future<void> _ensureAuth({bool force = false}) async {
+    if (!force && _bearer != null && _bearer!.isNotEmpty) {
+      _sdk.setAuthentication(_bearer!);
+      return;
+    }
     try {
       if (GetIt.I.isRegistered<SecureStorageService>()) {
         final token = await GetIt.I<SecureStorageService>().getAccessToken();
         if (token != null && token.isNotEmpty) {
+          _bearer = token;
           _sdk.setAuthentication(token);
+          return;
         }
       }
     } catch (_) {}
+  }
+
+  /// Clear cached bearer (e.g. after 401).
+  void clearAuthCache() {
+    _bearer = null;
+  }
+
+  static bool _isIndexSymbol(String symbol) {
+    final s = symbol.trim().toUpperCase();
+    return s == 'NIFTY 50' ||
+        s == 'NIFTY50' ||
+        s.startsWith('NIFTY ') ||
+        s == 'BANK NIFTY' ||
+        s == 'BANKNIFTY' ||
+        s == 'SENSEX';
+  }
+
+  /// Nifty 50 constituents via indices batch (same path as Market dashboard).
+  Future<List<WatchlistStock>> fetchNifty50Constituents() async {
+    await _ensureAuth();
+    try {
+      final result =
+          await _sdk.marketIndexApi.getLatestIndicesData(const ['NIFTY 50']);
+      if (result != null && result.data.isNotEmpty) {
+        return _mapIndexStocks(result.data);
+      }
+    } catch (_) {}
+
+    try {
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        if (_bearer != null && _bearer!.isNotEmpty)
+          'Authorization': 'Bearer $_bearer',
+      };
+      final response = await http.post(
+        Uri.parse('${EnvDomains.market}/v1/indices/batch?forceRefresh=false'),
+        headers: headers,
+        body: jsonEncode(const ['NIFTY 50']),
+      );
+      if (response.statusCode != 200) return const [];
+      final decoded = jsonDecode(response.body);
+      if (decoded is! List || decoded.isEmpty) return const [];
+      final first = decoded.first;
+      if (first is! Map) return const [];
+      final list = first['data'] as List? ?? first['stocks'] as List? ?? const [];
+      final out = <WatchlistStock>[];
+      for (final row in list) {
+        if (row is! Map) continue;
+        final sym = (row['symbol'] ?? '').toString().trim().toUpperCase();
+        if (sym.isEmpty) continue;
+        final name = (row['companyName'] ?? row['name'] ?? sym).toString().trim();
+        out.add(stockFromSymbol(sym, name: name.isEmpty ? sym : name));
+      }
+      return out;
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  List<WatchlistStock> _mapIndexStocks(List<StockData> data) {
+    final out = <WatchlistStock>[];
+    for (final s in data) {
+      final sym = (s.symbol ?? '').trim().toUpperCase();
+      if (sym.isEmpty) continue;
+      final name = (s.companyName ?? s.name ?? sym).trim();
+      out.add(stockFromSymbol(sym, name: name.isEmpty ? sym : name));
+    }
+    return out;
   }
 
   Future<List<SecurityDocument>?> search(
@@ -72,53 +148,181 @@ class PaperMarketClient {
   Future<List<WatchlistStock>> enrichQuotes(List<WatchlistStock> rows) async {
     if (rows.isEmpty) return rows;
     await _ensureAuth();
-    final symbols = rows.map((r) => r.symbol).where((s) => s.isNotEmpty).toList();
+    final symbols =
+        rows.map((r) => r.symbol).where((s) => s.isNotEmpty).toList();
     if (symbols.isEmpty) return rows;
 
-    try {
-      final ltpRes = await _sdk.marketDataApi.getLiveLTP(
-        symbols.join(','),
-        isIndexSymbol: false,
-      );
-      if (ltpRes == null || ltpRes['data'] is! Map) return rows;
-      final dataMap = ltpRes['data'] as Map;
+    final equity = <String>[];
+    final indices = <String>[];
+    for (final s in symbols) {
+      if (_isIndexSymbol(s)) {
+        indices.add(s);
+      } else {
+        equity.add(s);
+      }
+    }
 
-      return rows.map((row) {
-        final item = _findSymbolMap(dataMap, row.symbol);
-        if (item == null) return row;
-        final parsed = _parsePriceFields(item);
-        if (parsed.ltp <= 0) return row;
-        return row.copyWith(
-          ltp: parsed.ltp,
-          change: parsed.change,
-          changePercent: parsed.changePercent,
-        );
-      }).toList();
-    } catch (_) {
-      return rows;
+    final futures = <Future<Map<String, Map<String, dynamic>>>>[];
+    if (equity.isNotEmpty) {
+      futures.add(_fetchLiveLtpMap(equity, isIndexSymbol: false));
+    }
+    if (indices.isNotEmpty) {
+      futures.add(_fetchLiveLtpMap(indices, isIndexSymbol: true));
+    }
+    final parts = await Future.wait(futures);
+    final dataMap = <String, Map<String, dynamic>>{};
+    for (final p in parts) {
+      dataMap.addAll(p);
+    }
+    if (dataMap.isEmpty) return rows;
+
+    return rows.map((row) {
+      final item = dataMap[row.symbol.toUpperCase()];
+      if (item == null) return row;
+      final parsed = _parsePriceFields(item);
+      if (parsed.ltp <= 0) return row;
+      return row.copyWith(
+        ltp: parsed.ltp,
+        change: parsed.change,
+        changePercent: parsed.changePercent,
+      );
+    }).toList();
+  }
+
+  /// Enrich in chunks so callers can paint progressive LTP.
+  Stream<List<WatchlistStock>> enrichQuotesChunked(
+    List<WatchlistStock> rows, {
+    int chunkSize = 8,
+  }) async* {
+    if (rows.isEmpty) return;
+    await _ensureAuth();
+    final size = chunkSize.clamp(1, 50);
+    for (var i = 0; i < rows.length; i += size) {
+      final end = (i + size).clamp(0, rows.length);
+      final chunk = rows.sublist(i, end);
+      yield await enrichQuotes(chunk);
     }
   }
 
+  Future<Map<String, Map<String, dynamic>>> _fetchLiveLtpMap(
+    List<String> symbols, {
+    required bool isIndexSymbol,
+    bool refresh = false,
+  }) async {
+    if (symbols.isEmpty) return {};
+    final joined = symbols.join(',');
+
+    var parsed = <String, Map<String, dynamic>>{};
+    try {
+      final ltpRes = await _sdk.marketDataApi.getLiveLTP(
+        joined,
+        timeframe: '1D',
+        isIndexSymbol: isIndexSymbol,
+        refresh: refresh,
+      );
+      parsed = _parseLiveLtpData(ltpRes);
+    } catch (_) {}
+
+    if (parsed.isEmpty) {
+      parsed = await _fetchLiveLtpHttp(
+        joined,
+        isIndexSymbol: isIndexSymbol,
+        refresh: refresh,
+      );
+    }
+
+    // Remap single-symbol bare quote payloads onto the requested symbol.
+    if (parsed.containsKey('_') && symbols.length == 1) {
+      parsed[symbols.first.toUpperCase()] = parsed.remove('_')!;
+    }
+    return parsed;
+  }
+
+  Future<Map<String, Map<String, dynamic>>> _fetchLiveLtpHttp(
+    String symbols, {
+    required bool isIndexSymbol,
+    bool refresh = false,
+  }) async {
+    try {
+      final uri = Uri.parse('${EnvDomains.market}/v1/market-data/live-ltp')
+          .replace(queryParameters: {
+        'symbols': symbols,
+        'isIndexSymbol': isIndexSymbol.toString(),
+        'timeframe': '1D',
+        'refresh': refresh.toString(),
+      });
+      final headers = <String, String>{
+        'Accept': 'application/json',
+        if (_bearer != null && _bearer!.isNotEmpty)
+          'Authorization': 'Bearer $_bearer',
+      };
+      final response = await http.get(uri, headers: headers);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        return {};
+      }
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map) return {};
+      final asObjects = <String, Object>{};
+      decoded.forEach((k, v) {
+        if (v != null) asObjects[k.toString()] = v as Object;
+      });
+      return _parseLiveLtpData(asObjects);
+    } catch (_) {
+      return {};
+    }
+  }
+
+  Map<String, Map<String, dynamic>> _parseLiveLtpData(
+    Map<String, Object>? root,
+  ) {
+    if (root == null) return {};
+    Map data = root;
+    if (root['data'] is Map) {
+      data = root['data'] as Map;
+    }
+    final out = <String, Map<String, dynamic>>{};
+    data.forEach((key, value) {
+      if (value is! Map) return;
+      final sym = key.toString().trim().toUpperCase();
+      if (sym.isEmpty) return;
+      out[sym] = Map<String, dynamic>.from(value);
+    });
+    // Single-symbol payload shaped as the quote itself.
+    if (out.isEmpty &&
+        (data.containsKey('lastPrice') ||
+            data.containsKey('last_price') ||
+            data.containsKey('ltp'))) {
+      out['_'] = Map<String, dynamic>.from(data);
+    }
+    return out;
+  }
+
   /// Full quote + optional market depth for one symbol.
-  Future<QuoteDetail?> fetchQuoteDetail(String symbol, {String? name}) async {
+  Future<QuoteDetail?> fetchQuoteDetail(
+    String symbol, {
+    String? name,
+    bool forceRefresh = false,
+  }) async {
     final sym = symbol.trim().toUpperCase();
     if (sym.isEmpty) return null;
     await _ensureAuth();
 
     Map<String, dynamic>? item;
     try {
-      final quotes = await _sdk.marketDataApi.getQuotes(sym);
+      final quotes = await _sdk.marketDataApi.getQuotes(
+        sym,
+        refresh: forceRefresh,
+      );
       item = _extractQuoteItem(quotes, sym);
     } catch (_) {}
 
     if (item == null) {
-      try {
-        final ltpRes = await _sdk.marketDataApi.getLiveLTP(
-          sym,
-          isIndexSymbol: false,
-        );
-        item = _extractQuoteItem(ltpRes, sym);
-      } catch (_) {}
+      final map = await _fetchLiveLtpMap(
+        [sym],
+        isIndexSymbol: _isIndexSymbol(sym),
+        refresh: forceRefresh,
+      );
+      item = map[sym] ?? map['_'];
     }
 
     if (item == null) {
@@ -185,7 +389,9 @@ class PaperMarketClient {
     );
     if (key == '' || data[key] is! Map) {
       // Sometimes payload is the quote itself (single-symbol).
-      if (data.containsKey('lastPrice') || data.containsKey('last_price')) {
+      if (data.containsKey('lastPrice') ||
+          data.containsKey('last_price') ||
+          data.containsKey('ltp')) {
         return Map<String, dynamic>.from(data);
       }
       return null;
@@ -194,13 +400,30 @@ class PaperMarketClient {
   }
 
   _PriceFields _parsePriceFields(Map item) {
-    final lp = _asDouble(item['lastPrice'] ?? item['last_price'] ?? item['ltp']) ??
+    final lp = _asDouble(
+          item['lastPrice'] ??
+              item['last_price'] ??
+              item['ltp'] ??
+              item['price'] ??
+              item['currentPrice'],
+        ) ??
         0;
     final prev = _asDouble(item['previousClose'] ?? item['previous_close']);
-    final change = _asDouble(item['change'] ?? item['net_change']) ??
+    final change = _asDouble(
+          item['change'] ??
+              item['net_change'] ??
+              item['dayChange'] ??
+              item['netChange'] ??
+              item['chg'],
+        ) ??
         (prev != null && prev > 0 && lp > 0 ? lp - prev : 0.0);
     final changePct = _asDouble(
-          item['changePercent'] ?? item['change_percent'] ?? item['pChange'],
+          item['changePercent'] ??
+              item['change_percent'] ??
+              item['pChange'] ??
+              item['dayChangePercent'] ??
+              item['percentChange'] ??
+              item['pctChange'],
         ) ??
         (prev != null && prev > 0 && lp > 0 ? ((lp - prev) / prev) * 100 : 0.0);
     return _PriceFields(

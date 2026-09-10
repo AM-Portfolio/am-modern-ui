@@ -1,6 +1,5 @@
 import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_dashboard_ui/am_dashboard_ui.dart' as dashboard;
-import 'package:am_paper_ui/am_paper_ui.dart' as paper_ui;
 import 'package:am_common/am_common.dart' as common;
 import 'package:am_subscription_ui/am_subscription_ui.dart' as am_sub;
 import 'package:am_user_ui/am_user_ui.dart' as am_user;
@@ -256,13 +255,13 @@ GoRouter createAppRouter({
                 userId: userId,
                 onOpenDocIntel: () =>
                     context.go(AppRoutes.docIntelPath('doc-processor')),
-                onOpenPaper: () => context.go(AppRoutes.paper),
+                onOpenPaper: () => context.go(AppRoutes.marketPath('paper')),
               );
             },
           ),
           GoRoute(
             path: AppRoutes.paper,
-            builder: (context, state) => const paper_ui.PaperGateScreen(),
+            redirect: (context, state) => AppRoutes.marketPath('paper'),
           ),
           GoRoute(
             path: AppRoutes.chartCompare,

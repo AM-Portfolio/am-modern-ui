@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_market_ui/features/watchlists/data/watchlist_api_client.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -8,7 +11,16 @@ import '../../data/watchlist_models.dart';
 
 typedef WatchlistSideCallback = void Function(String symbol, String side);
 
-/// Session watchlist: search via Market SDK, hover shows B/S, depth expands below row.
+const _kNifty50Id = 'nifty-50';
+const _kPageSize = 20;
+
+class _WatchlistSource {
+  const _WatchlistSource({required this.id, required this.name});
+  final String id;
+  final String name;
+}
+
+/// Watchlist with Nifty 50 default, user lists, 20/page, auto LTP for visible page.
 class PaperWatchlistPane extends StatefulWidget {
   const PaperWatchlistPane({
     super.key,
@@ -27,13 +39,51 @@ class PaperWatchlistPane extends StatefulWidget {
 
 class _PaperWatchlistPaneState extends State<PaperWatchlistPane> {
   final _client = PaperMarketClient();
+  final _watchlistApi = WatchlistApiClient();
   final _searchController = TextEditingController();
-  final List<WatchlistStock> _rows = [];
+
+  final List<_WatchlistSource> _sources = [
+    const _WatchlistSource(id: _kNifty50Id, name: 'Nifty 50'),
+  ];
+  String _selectedSourceId = _kNifty50Id;
+  List<WatchlistStock> _allRows = [];
+  int _pageIndex = 0;
   String? _hoveredSymbol;
   String? _expandedDepthSymbol;
   QuoteDetail? _depthQuote;
   bool _depthLoading = false;
   bool _refreshing = false;
+  int _quoteGen = 0;
+  int? _inflightPage;
+  bool _loadingList = false;
+  String? _listError;
+  bool _quotesUnavailable = false;
+
+  bool get _isNifty => _selectedSourceId == _kNifty50Id;
+
+  bool get _pageNeedsQuoteSpinner {
+    final page = _pageRows;
+    return page.isNotEmpty && page.every((r) => r.ltp <= 0);
+  }
+
+  int get _pageCount {
+    if (_allRows.isEmpty) return 1;
+    return ((_allRows.length - 1) ~/ _kPageSize) + 1;
+  }
+
+  List<WatchlistStock> get _pageRows {
+    if (_allRows.isEmpty) return const [];
+    final start = _pageIndex * _kPageSize;
+    if (start >= _allRows.length) return const [];
+    final end = (start + _kPageSize).clamp(0, _allRows.length);
+    return _allRows.sublist(start, end);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _bootstrap();
+  }
 
   @override
   void dispose() {
@@ -41,12 +91,176 @@ class _PaperWatchlistPaneState extends State<PaperWatchlistPane> {
     super.dispose();
   }
 
+  Future<void> _bootstrap() async {
+    // Load Nifty 50 immediately; user watchlists load in parallel.
+    unawaited(_loadSources());
+    await _selectSource(_kNifty50Id);
+  }
+
+  Future<void> _loadSources() async {
+    try {
+      final lists = await _watchlistApi.getWatchlists();
+      if (!mounted) return;
+      setState(() {
+        _sources
+          ..clear()
+          ..add(const _WatchlistSource(id: _kNifty50Id, name: 'Nifty 50'));
+        for (final w in lists) {
+          if (w.id.isEmpty) continue;
+          _sources.add(_WatchlistSource(id: w.id, name: w.name));
+        }
+      });
+    } catch (_) {
+      // Keep Nifty 50 only when API fails.
+      if (!mounted) return;
+      setState(() {
+        _sources
+          ..clear()
+          ..add(const _WatchlistSource(id: _kNifty50Id, name: 'Nifty 50'));
+      });
+    }
+  }
+
+  Future<void> _selectSource(String id) async {
+    _quoteGen++;
+    _inflightPage = null;
+    setState(() {
+      _selectedSourceId = id;
+      _allRows = [];
+      _pageIndex = 0;
+      _loadingList = true;
+      _listError = null;
+      _hoveredSymbol = null;
+      _expandedDepthSymbol = null;
+      _depthQuote = null;
+      _refreshing = false;
+      _quotesUnavailable = false;
+    });
+
+    try {
+      List<WatchlistStock> rows;
+      if (id == _kNifty50Id) {
+        rows = await _client.fetchNifty50Constituents();
+        if (rows.isEmpty) {
+          throw Exception('Could not load Nifty 50 constituents');
+        }
+      } else {
+        final items = await _watchlistApi.getWatchlistItems(id);
+        rows = items
+            .map((i) => _client.stockFromSymbol(i.symbol))
+            .where((s) => s.symbol.isNotEmpty)
+            .toList();
+      }
+      if (!mounted) return;
+      setState(() {
+        _allRows = rows;
+        _loadingList = false;
+        _listError = null;
+        _pageIndex = 0;
+      });
+      await _refreshVisibleQuotes();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _allRows = [];
+        _loadingList = false;
+        _listError = e.toString();
+      });
+    }
+  }
+
+  Future<void> _refreshVisibleQuotes() async {
+    final pageIndex = _pageIndex;
+    final page = _pageRows;
+    if (page.isEmpty) return;
+    if (_inflightPage == pageIndex) return;
+
+    final gen = ++_quoteGen;
+    _inflightPage = pageIndex;
+    final needSpinner = _pageNeedsQuoteSpinner;
+    setState(() {
+      _refreshing = needSpinner;
+      _quotesUnavailable = false;
+    });
+
+    // Progressive chunk enrich so first LTPs paint quickly.
+    await for (final chunk in _client.enrichQuotesChunked(List.of(page))) {
+      if (!mounted || gen != _quoteGen) {
+        if (_inflightPage == pageIndex) _inflightPage = null;
+        return;
+      }
+      setState(() {
+        final bySymbol = {for (final r in chunk) r.symbol: r};
+        _allRows = [
+          for (final r in _allRows) _mergeQuoteRow(r, bySymbol[r.symbol]),
+        ];
+        _refreshing = false;
+      });
+    }
+
+    if (!mounted || gen != _quoteGen) {
+      if (_inflightPage == pageIndex) _inflightPage = null;
+      return;
+    }
+
+    setState(() {
+      _inflightPage = null;
+      final visible = _pageRows;
+      _quotesUnavailable =
+          visible.isNotEmpty && visible.every((r) => r.ltp <= 0);
+    });
+
+    // Prefetch next page in background (SWR).
+    final next = pageIndex + 1;
+    if (next < _pageCount && gen == _quoteGen) {
+      unawaited(_prefetchPage(next, gen));
+    }
+  }
+
+  Future<void> _prefetchPage(int pageIndex, int gen) async {
+    if (_allRows.isEmpty) return;
+    final start = pageIndex * _kPageSize;
+    if (start >= _allRows.length) return;
+    final end = (start + _kPageSize).clamp(0, _allRows.length);
+    final page = _allRows.sublist(start, end);
+    if (page.every((r) => r.ltp > 0)) return;
+    final enriched = await _client.enrichQuotes(List.of(page));
+    if (!mounted || gen != _quoteGen) return;
+    setState(() {
+      final bySymbol = {for (final r in enriched) r.symbol: r};
+      _allRows = [
+        for (final r in _allRows) _mergeQuoteRow(r, bySymbol[r.symbol]),
+      ];
+    });
+  }
+
+  WatchlistStock _mergeQuoteRow(WatchlistStock current, WatchlistStock? next) {
+    if (next == null) return current;
+    // Never wipe a good LTP with an empty enrich result.
+    if (next.ltp <= 0 && current.ltp > 0) return current;
+    return next;
+  }
+
+  Future<void> _setPage(int index) async {
+    final clamped = index.clamp(0, _pageCount - 1);
+    if (clamped == _pageIndex) return;
+    setState(() {
+      _pageIndex = clamped;
+      _expandedDepthSymbol = null;
+      _depthQuote = null;
+      // Paint cached LTP immediately; spinner only if page has no LTP yet.
+      _refreshing = _pageRows.every((r) => r.ltp <= 0) && _pageRows.isNotEmpty;
+      _quotesUnavailable = false;
+    });
+    await _refreshVisibleQuotes();
+  }
+
   Future<void> _addSymbol(String raw) async {
     final symbol = raw.trim().toUpperCase();
     if (symbol.isEmpty) return;
 
     WatchlistStock? existing;
-    for (final r in _rows) {
+    for (final r in _allRows) {
       if (r.symbol == symbol) {
         existing = r;
         break;
@@ -54,6 +268,8 @@ class _PaperWatchlistPaneState extends State<PaperWatchlistPane> {
     }
     if (existing != null) {
       widget.onSelectSymbol(symbol);
+      final idx = _allRows.indexWhere((r) => r.symbol == symbol);
+      if (idx >= 0) await _setPage(idx ~/ _kPageSize);
       return;
     }
 
@@ -72,35 +288,37 @@ class _PaperWatchlistPaneState extends State<PaperWatchlistPane> {
       row = _client.stockFromSymbol(symbol);
     }
 
+    if (!_isNifty) {
+      try {
+        await _watchlistApi.addStock(_selectedSourceId, row.symbol);
+      } catch (_) {
+        // Still show in session if persist fails.
+      }
+    }
+
     setState(() {
-      _rows.insert(0, row);
+      _allRows.insert(0, row);
+      _pageIndex = 0;
     });
     widget.onSelectSymbol(row.symbol);
-    await _refreshQuotes();
-  }
-
-  Future<void> _refreshQuotes() async {
-    if (_rows.isEmpty || _refreshing) return;
-    setState(() => _refreshing = true);
-    final enriched = await _client.enrichQuotes(List.of(_rows));
-    if (!mounted) return;
-    setState(() {
-      _rows
-        ..clear()
-        ..addAll(enriched);
-      _refreshing = false;
-    });
+    await _refreshVisibleQuotes();
   }
 
   void _remove(String symbol) {
     setState(() {
-      _rows.removeWhere((r) => r.symbol == symbol);
+      _allRows.removeWhere((r) => r.symbol == symbol);
       if (_hoveredSymbol == symbol) _hoveredSymbol = null;
       if (_expandedDepthSymbol == symbol) {
         _expandedDepthSymbol = null;
         _depthQuote = null;
       }
+      if (_pageIndex >= _pageCount) {
+        _pageIndex = (_pageCount - 1).clamp(0, 9999);
+      }
     });
+    if (!_isNifty) {
+      unawaited(_watchlistApi.removeStock(_selectedSourceId, symbol));
+    }
   }
 
   Future<void> _toggleDepth(WatchlistStock stock) async {
@@ -133,6 +351,12 @@ class _PaperWatchlistPaneState extends State<PaperWatchlistPane> {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final selectedSource = _sources.firstWhere(
+      (s) => s.id == _selectedSourceId,
+      orElse: () => _sources.first,
+    );
+    final pageRows = _pageRows;
+
     return Material(
       color: colors.surface,
       child: Column(
@@ -147,7 +371,7 @@ class _PaperWatchlistPaneState extends State<PaperWatchlistPane> {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const Spacer(),
-                if (_refreshing)
+                if ((_refreshing && _pageNeedsQuoteSpinner) || _loadingList)
                   SizedBox(
                     width: 14,
                     height: 14,
@@ -161,7 +385,7 @@ class _PaperWatchlistPaneState extends State<PaperWatchlistPane> {
                     tooltip: 'Refresh quotes',
                     iconSize: 18,
                     visualDensity: VisualDensity.compact,
-                    onPressed: _rows.isEmpty ? null : _refreshQuotes,
+                    onPressed: pageRows.isEmpty ? null : _refreshVisibleQuotes,
                     icon: Icon(Icons.refresh, color: colors.textSecondary),
                   ),
               ],
@@ -188,67 +412,241 @@ class _PaperWatchlistPaneState extends State<PaperWatchlistPane> {
             ),
           ),
           const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: _WatchlistSourceDropdown(
+              selected: selectedSource,
+              sources: List.of(_sources),
+              onSelected: (id) => _selectSource(id),
+            ),
+          ),
+          if (_pageCount > 1) ...[
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: _PageChips(
+                pageCount: _pageCount,
+                pageIndex: _pageIndex,
+                onSelect: _setPage,
+              ),
+            ),
+          ],
+          if (_quotesUnavailable && !_loadingList && !_refreshing) ...[
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Text(
+                'Quotes unavailable — tap refresh',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: colors.textSecondary,
+                    ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
           Divider(height: 1, color: colors.divider),
           Expanded(
-            child: _rows.isEmpty
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Text(
-                        'Search by symbol or name to add stocks',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: colors.textSecondary,
-                            ),
-                      ),
-                    ),
-                  )
-                : ListView.builder(
-                    itemCount: _rows.length,
-                    itemBuilder: (context, index) {
-                      final stock = _rows[index];
-                      final selected =
-                          stock.symbol == widget.selectedSymbol.toUpperCase();
-                      final hovered = _hoveredSymbol == stock.symbol;
-                      final expanded = _expandedDepthSymbol == stock.symbol;
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          if (index > 0)
-                            Divider(height: 1, color: colors.divider),
-                          _WatchlistRow(
-                            stock: stock,
-                            selected: selected,
-                            showActions: hovered || selected || expanded,
-                            depthExpanded: expanded,
-                            onHover: (h) => setState(
-                              () => _hoveredSymbol = h ? stock.symbol : null,
-                            ),
-                            onTap: () => widget.onSelectSymbol(stock.symbol),
-                            onBuy: () =>
-                                widget.onBuySell(stock.symbol, 'BUY'),
-                            onSell: () =>
-                                widget.onBuySell(stock.symbol, 'SELL'),
-                            onDepth: () => _toggleDepth(stock),
-                            onRemove: () => _remove(stock.symbol),
+            child: _loadingList
+                ? const Center(child: CircularProgressIndicator())
+                : _listError != null
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _listError!,
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(color: colors.statusError),
+                              ),
+                              const SizedBox(height: 12),
+                              TextButton(
+                                onPressed: () =>
+                                    _selectSource(_selectedSourceId),
+                                child: const Text('Retry'),
+                              ),
+                            ],
                           ),
-                          AnimatedCrossFade(
-                            firstChild: const SizedBox.shrink(),
-                            secondChild: _DepthExpandPanel(
-                              loading: _depthLoading && expanded,
-                              quote: expanded ? _depthQuote : null,
-                              fallbackName: stock.name,
+                        ),
+                      )
+                    : pageRows.isEmpty
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Text(
+                                _isNifty
+                                    ? 'No Nifty 50 stocks loaded'
+                                    : 'Search by symbol or name to add stocks',
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(color: colors.textSecondary),
+                              ),
                             ),
-                            crossFadeState: expanded
-                                ? CrossFadeState.showSecond
-                                : CrossFadeState.showFirst,
-                            duration: const Duration(milliseconds: 200),
+                          )
+                        : ListView.builder(
+                            itemCount: pageRows.length,
+                            itemBuilder: (context, index) {
+                              final stock = pageRows[index];
+                              final selected = stock.symbol ==
+                                  widget.selectedSymbol.toUpperCase();
+                              final hovered = _hoveredSymbol == stock.symbol;
+                              final expanded =
+                                  _expandedDepthSymbol == stock.symbol;
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  if (index > 0)
+                                    Divider(height: 1, color: colors.divider),
+                                  _WatchlistRow(
+                                    stock: stock,
+                                    selected: selected,
+                                    showActions:
+                                        hovered || selected || expanded,
+                                    depthExpanded: expanded,
+                                    onHover: (h) => setState(
+                                      () => _hoveredSymbol =
+                                          h ? stock.symbol : null,
+                                    ),
+                                    onTap: () =>
+                                        widget.onSelectSymbol(stock.symbol),
+                                    onBuy: () =>
+                                        widget.onBuySell(stock.symbol, 'BUY'),
+                                    onSell: () =>
+                                        widget.onBuySell(stock.symbol, 'SELL'),
+                                    onDepth: () => _toggleDepth(stock),
+                                    onRemove: () => _remove(stock.symbol),
+                                  ),
+                                  AnimatedCrossFade(
+                                    firstChild: const SizedBox.shrink(),
+                                    secondChild: _DepthExpandPanel(
+                                      loading: _depthLoading && expanded,
+                                      quote: expanded ? _depthQuote : null,
+                                    ),
+                                    crossFadeState: expanded
+                                        ? CrossFadeState.showSecond
+                                        : CrossFadeState.showFirst,
+                                    duration: const Duration(milliseconds: 200),
+                                  ),
+                                ],
+                              );
+                            },
                           ),
-                        ],
-                      );
-                    },
-                  ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WatchlistSourceDropdown extends StatelessWidget {
+  const _WatchlistSourceDropdown({
+    required this.selected,
+    required this.sources,
+    required this.onSelected,
+  });
+
+  final _WatchlistSource selected;
+  final List<_WatchlistSource> sources;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return PopupMenuButton<String>(
+      tooltip: 'Choose watchlist',
+      onSelected: onSelected,
+      offset: const Offset(0, 40),
+      itemBuilder: (context) => [
+        for (final s in sources)
+          PopupMenuItem(
+            value: s.id,
+            child: Text(s.name),
+          ),
+      ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: colors.actionPrimaryBg.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: colors.actionPrimaryBg.withValues(alpha: 0.35),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.bookmark, size: 18, color: colors.actionPrimaryBg),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                selected.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ),
+            Icon(Icons.arrow_drop_down, color: colors.actionPrimaryBg),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PageChips extends StatelessWidget {
+  const _PageChips({
+    required this.pageCount,
+    required this.pageIndex,
+    required this.onSelect,
+  });
+
+  final int pageCount;
+  final int pageIndex;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (var i = 0; i < pageCount; i++) ...[
+            if (i > 0) const SizedBox(width: 6),
+            InkWell(
+              onTap: () => onSelect(i),
+              borderRadius: BorderRadius.circular(6),
+              child: Container(
+                width: 28,
+                height: 28,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: i == pageIndex
+                        ? colors.marketPositiveIndicator
+                        : colors.border,
+                  ),
+                ),
+                child: Text(
+                  '${i + 1}',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: i == pageIndex
+                            ? colors.marketPositiveIndicator
+                            : colors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -308,7 +706,7 @@ class _WatchlistRow extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        stock.name,
+                        stock.symbol,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -415,13 +813,6 @@ class _ActionToolbar extends StatelessWidget {
         ),
         const SizedBox(width: 2),
         IconButton(
-          tooltip: 'Chart',
-          iconSize: 18,
-          visualDensity: VisualDensity.compact,
-          onPressed: () {},
-          icon: Icon(Icons.show_chart, color: colors.textSecondary),
-        ),
-        IconButton(
           tooltip: depthExpanded ? 'Hide depth' : 'Depth',
           iconSize: 18,
           visualDensity: VisualDensity.compact,
@@ -449,12 +840,10 @@ class _DepthExpandPanel extends StatelessWidget {
   const _DepthExpandPanel({
     required this.loading,
     required this.quote,
-    required this.fallbackName,
   });
 
   final bool loading;
   final QuoteDetail? quote;
-  final String fallbackName;
 
   @override
   Widget build(BuildContext context) {
@@ -464,7 +853,7 @@ class _DepthExpandPanel extends StatelessWidget {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
       decoration: BoxDecoration(
         color: colors.scaffoldBackground,
         borderRadius: BorderRadius.circular(8),
@@ -495,12 +884,17 @@ class _DepthExpandPanel extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      quote!.name ?? fallbackName,
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
+                      'Market depth',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
                           ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
+                    _DepthTable(quote: quote!, fmt: fmt),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Divider(height: 1, color: colors.divider),
+                    ),
                     Wrap(
                       spacing: 12,
                       runSpacing: 8,
@@ -534,21 +928,6 @@ class _DepthExpandPanel extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Market depth',
-                      style: Theme.of(context).textTheme.labelMedium,
-                    ),
-                    const SizedBox(height: 6),
-                    if (!quote!.hasDepth)
-                      Text(
-                        'Depth unavailable for this symbol',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: colors.textSecondary,
-                            ),
-                      )
-                    else
-                      _DepthTable(quote: quote!, fmt: fmt),
                   ],
                 ),
     );
@@ -588,17 +967,19 @@ class _Stat extends StatelessWidget {
 }
 
 class _DepthTable extends StatelessWidget {
-  const _DepthTable({required this.quote, required this.fmt});
+  const _DepthTable({
+    required this.quote,
+    required this.fmt,
+  });
 
   final QuoteDetail quote;
   final NumberFormat fmt;
+  static const _rowCount = 5;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final rows = quote.buyDepth.length > quote.sellDepth.length
-        ? quote.buyDepth.length
-        : quote.sellDepth.length;
+    final rows = _rowCount;
     return Column(
       children: [
         Row(
@@ -650,7 +1031,7 @@ class _DepthTable extends StatelessWidget {
                   child: Text(
                     i < quote.buyDepth.length
                         ? '${quote.buyDepth[i].quantity}'
-                        : '—',
+                        : '0',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ),
@@ -658,7 +1039,7 @@ class _DepthTable extends StatelessWidget {
                   child: Text(
                     i < quote.buyDepth.length
                         ? fmt.format(quote.buyDepth[i].price)
-                        : '—',
+                        : fmt.format(0),
                     textAlign: TextAlign.end,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: colors.marketPositiveIndicator,
@@ -671,7 +1052,7 @@ class _DepthTable extends StatelessWidget {
                   child: Text(
                     i < quote.sellDepth.length
                         ? fmt.format(quote.sellDepth[i].price)
-                        : '—',
+                        : fmt.format(0),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: colors.statusError,
                           fontWeight: FontWeight.w600,
@@ -682,7 +1063,7 @@ class _DepthTable extends StatelessWidget {
                   child: Text(
                     i < quote.sellDepth.length
                         ? '${quote.sellDepth[i].quantity}'
-                        : '—',
+                        : '0',
                     textAlign: TextAlign.end,
                     style: Theme.of(context).textTheme.bodySmall,
                   ),

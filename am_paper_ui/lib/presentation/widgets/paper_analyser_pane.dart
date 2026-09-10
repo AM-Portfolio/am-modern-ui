@@ -12,24 +12,10 @@ class PaperAnalyserPane extends StatelessWidget {
     final sym = symbol?.trim().toUpperCase();
     final hasSymbol = sym != null && sym.isNotEmpty;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (hasSymbol)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-            child: Text(
-              'Analyser · $sym',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-          ),
-        Expanded(
-          child: EquityInsiderPage(
-            key: ValueKey(hasSymbol ? 'ei-$sym' : 'ei-empty'),
-            initialSymbol: hasSymbol ? sym : null,
-          ),
-        ),
-      ],
+    return EquityInsiderPage(
+      key: ValueKey(hasSymbol ? 'ei-$sym' : 'ei-empty'),
+      initialSymbol: hasSymbol ? sym : null,
+      showPeers: false,
     );
   }
 }

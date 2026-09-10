@@ -28,6 +28,7 @@ class CrossModuleSectionSequence {
 
   /// Market user-mode pages in swipe order.
   static const marketSwipeTabs = [
+    'paper',
     'dashboard',
     'market-analysis',
   ];
@@ -110,13 +111,13 @@ class CrossModuleSectionSequence {
       return steps.indexWhere((s) => s.contains('/trade'));
     }
     if (normalized.startsWith(AppRoutes.market)) {
-      final tab = ShareUrlBuilder.marketTabFromLocation(location) ?? 'dashboard';
-      // Map legacy / alternate user landings onto the first market swipe step.
+      final tab = ShareUrlBuilder.marketTabFromLocation(location) ?? 'paper';
+      // Map legacy / alternate user landings onto a market swipe step.
       final resolved = (tab == 'all-indices' || tab == 'heatmap-explorer')
           ? (tab == 'heatmap-explorer' ? 'market-analysis' : 'dashboard')
           : tab;
       final target = marketStepPath(
-        marketSwipeTabs.contains(resolved) ? resolved : 'dashboard',
+        marketSwipeTabs.contains(resolved) ? resolved : 'paper',
       );
       final i = steps.indexWhere((s) => _normalize(s) == _normalize(target));
       if (i >= 0) return i;
