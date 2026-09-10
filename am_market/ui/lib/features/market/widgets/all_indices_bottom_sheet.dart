@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_common/models/indices_region.dart';
 import 'package:am_market_common/models/market_data.dart';
 import 'package:am_market_ui/features/market/widgets/market_colors.dart';
@@ -123,9 +124,20 @@ class _AllIndicesBottomSheetState extends State<AllIndicesBottomSheet> {
           const SizedBox(height: 10),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: MarketRegionToggle(
-              value: widget.region,
-              onChanged: widget.onRegionChanged,
+            child: Row(
+              children: [
+                Expanded(
+                  child: MarketRegionToggle(
+                    value: widget.region,
+                    onChanged: widget.onRegionChanged,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const GlobalTimeFrameBar(
+                  variant: GlobalTimeFrameVariant.dropdown,
+                  dropdownWidth: 72,
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 10),

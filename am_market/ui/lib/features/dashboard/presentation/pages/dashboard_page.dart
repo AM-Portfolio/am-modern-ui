@@ -3,7 +3,6 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
-import 'package:am_market_ui/features/market_analysis/presentation/pages/analysis_page.dart';
 import 'package:am_market_common/providers/market_provider.dart';
 
 
@@ -14,6 +13,7 @@ import 'package:am_market_ui/features/security/security_explorer_page.dart';
 import 'package:am_market_dev/am_market_dev.dart';
 import 'package:am_market_ui/features/watchlists/presentation/pages/watchlists_page.dart';
 import 'package:am_market_ui/features/market_analysis/presentation/widgets/indices_performance_view_v2.dart';
+import 'package:am_market_ui/features/market/widgets/all_indices_page.dart';
 import 'package:provider/provider.dart' hide Consumer;
 import 'package:flutter_riverpod/flutter_riverpod.dart' hide Provider;
 import 'package:am_common/core/di/price_providers.dart';
@@ -21,11 +21,9 @@ import 'package:am_common/core/services/price_service.dart';
 
 import 'package:am_market_ui/features/market_analysis/presentation/widgets/market_index_detail_view.dart';
 
-import 'package:am_market_ui/core/providers/view_mode_provider.dart';
 import 'package:am_market_ui/shared/widgets/mode_toggle_widget.dart';
 import 'user_dashboard_page.dart';
 import 'package:am_market_ui/features/market_analysis/presentation/widgets/heatmap_explorer_view.dart';
-import 'package:am_market_ui/features/market/widgets/market_header.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_market_ui/features/equity_insider/presentation/pages/equity_insider_page.dart';
 
@@ -275,54 +273,16 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         });
       }
 
-      final isMobile = MediaQuery.sizeOf(context).width < 900;
-
-      void openAllIndices() {
-        final dash = _dashboardKey.currentState;
-        if (dash != null) {
-          dash.openAllIndicesPanel();
-          return;
-        }
-        final dashboardIndex = _indexForSlug('dashboard', _swipeController.items);
-        if (_swipeController.currentIndex != dashboardIndex) {
-          _swipeController.navigateTo(dashboardIndex);
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _dashboardKey.currentState?.openAllIndicesPanel();
-          });
-        }
-      }
-
       return UnifiedSidebarScaffold(
         module: ModuleType.market,
         onBackToGlobal: widget.onBack,
         showModuleBottomNavigation: false,
-        // Keep Dashboard / Market Analysis pills always visible so users can
-        // switch back from Analysis without relying on hidden scroll chrome.
+        // Portfolio-style: pills at top, no Market Data title / grid AppBar.
+        showAppBarOnMobile: false,
+        // Keep pills always visible so users can switch sections without
+        // relying on hidden scroll chrome.
         autoHideMobileTabsOnScroll: false,
         showMobileMenuButton: false,
-        // Compact grid icon left of "Market Data".
-        mobileLeading: isMobile
-            ? Padding(
-                padding: const EdgeInsets.only(left: 4),
-                child: Center(
-                  child: AllIndicesChip(
-                    iconOnly: true,
-                    onPressed: openAllIndices,
-                  ),
-                ),
-              )
-            : null,
-        mobileLeadingWidth: isMobile ? 44 : null,
-        headerActions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 8),
-            child: GlobalTimeFrameBar(
-              variant: GlobalTimeFrameVariant.dropdown,
-              dropdownWidth: 72,
-            ),
-          ),
-        ],
-        // Dashboard / Market Analysis pills for switching sections.
         sections: _buildSidebarSections(provider, viewModeProvider),
         body: SwipeablePageView(
           key: const PageStorageKey('market_page_info'),
@@ -492,11 +452,17 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     return sections;
   }
 
-  // User Mode - Simplified Navigation (Paper desk first when injected)
+  // User Mode - All Indices first, then Paper (if injected) + other tabs
   List<SecondarySidebarSection> _buildUserModeSections(MarketProvider provider) {
     final hasPaper = widget.paperDesk != null;
     var i = 0;
     final userItems = <SecondarySidebarItem>[
+      _createSidebarItem(
+        i++,
+        'All Indices',
+        Icons.grid_view_rounded,
+        'Market Overview',
+      ),
       if (hasPaper)
         _createSidebarItem(i++, 'Paper', Icons.science_outlined, 'Paper trading desk'),
       _createSidebarItem(i++, 'Dashboard', Icons.home_rounded, 'Overview'),
@@ -668,6 +634,13 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     final paperDesk = widget.paperDesk;
 
     return [
+      NavigationItem(
+        title: 'All Indices',
+        subtitle: 'Market Overview',
+        icon: Icons.grid_view_rounded,
+        page: _wrapPage(const AllIndicesPage()),
+        accentColor: accentColor,
+      ),
       if (paperDesk != null)
         NavigationItem(
           title: 'Paper',
@@ -681,14 +654,14 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         title: 'Dashboard',
         subtitle: 'Overview',
         icon: Icons.home_rounded,
-        page: _wrapPage(UserDashboardPage(key: _dashboardKey)), // User Dashboard with cards + chart
+        page: _wrapPage(UserDashboardPage(key: _dashboardKey)),
         accentColor: accentColor,
       ),
       NavigationItem(
         title: 'Market Analysis',
         subtitle: 'Heatmap & Details',
         icon: Icons.analytics_rounded,
-        page: _wrapPage(const HeatmapExplorerView()), // Was AnalysisPage(), now consolidated
+        page: _wrapPage(const HeatmapExplorerView()),
         accentColor: accentColor,
       ),
       NavigationItem(
