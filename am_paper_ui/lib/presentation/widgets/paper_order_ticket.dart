@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
 import '../../data/paper_market_client.dart';
@@ -17,6 +20,8 @@ class PaperOrderTicket extends StatefulWidget {
     this.onSymbolChanged,
     this.onSideChanged,
     this.onOrderPlaced,
+    this.onOpenFundamentalAnalysis,
+    this.compact = false,
     this.floating = false,
     this.onToggleFloat,
     this.onCloseFloat,
@@ -31,6 +36,12 @@ class PaperOrderTicket extends StatefulWidget {
 
   /// Called after a successful place (filled or working), before toast.
   final VoidCallback? onOrderPlaced;
+
+  /// Opens full fundamental analysis (Desk → Overview) for the ticket symbol.
+  final VoidCallback? onOpenFundamentalAnalysis;
+
+  /// Mobile half-sheet: denser layout, fewer chrome blocks.
+  final bool compact;
 
   /// When true, show float/close controls and enable header drag.
   final bool floating;
@@ -56,6 +67,7 @@ class _PaperOrderTicketState extends State<PaperOrderTicket> {
   String _orderType = 'SUPER';
   String _entryType = 'LIMIT';
   String _productMode = 'Investing';
+  String _exchange = 'NSE';
   bool _useLimit = true;
   bool _useTarget = true;
   bool _useStop = true;
@@ -71,6 +83,13 @@ class _PaperOrderTicketState extends State<PaperOrderTicket> {
     super.initState();
     _side = widget.side.toUpperCase() == 'SELL' ? 'SELL' : 'BUY';
     _displayName = widget.symbol;
+    _bookProfitsOpen = !widget.compact;
+    if (widget.compact) {
+      // Faster mobile default — Market fills without extra SUPER fields.
+      _orderType = 'MARKET';
+      _useLimit = false;
+      _entryType = 'MARKET';
+    }
     if (widget.symbol.trim().isNotEmpty) {
       _loadQuote(widget.symbol);
     }
@@ -102,6 +121,28 @@ class _PaperOrderTicketState extends State<PaperOrderTicket> {
   Future<void> _loadQuote(String symbol) async {
     final sym = symbol.trim().toUpperCase();
     if (sym.isEmpty) return;
+    // #region agent log
+    http
+        .post(
+          Uri.parse(
+            'http://127.0.0.1:7626/ingest/0d1c8c7b-9f69-4195-beee-fbf3af51620e',
+          ),
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Debug-Session-Id': 'c7037f',
+          },
+          body: jsonEncode({
+            'sessionId': 'c7037f',
+            'runId': 'post-fix',
+            'hypothesisId': 'A',
+            'location': 'paper_order_ticket.dart:_loadQuote',
+            'message': 'ticket loadQuote with forceRefresh=false (cache)',
+            'data': {'symbol': sym},
+            'timestamp': DateTime.now().millisecondsSinceEpoch,
+          }),
+        )
+        .catchError((_) => http.Response('', 599));
+    // #endregion
     setState(() {
       _quoteLoading = true;
       _displayName = sym;
@@ -109,7 +150,7 @@ class _PaperOrderTicketState extends State<PaperOrderTicket> {
     final detail = await _client.fetchQuoteDetail(
       sym,
       name: _displayName,
-      forceRefresh: true,
+      forceRefresh: false,
     );
     if (!mounted) return;
     setState(() {
@@ -118,6 +159,8 @@ class _PaperOrderTicketState extends State<PaperOrderTicket> {
       if (detail?.name != null && detail!.name!.isNotEmpty) {
         _displayName = detail.name!;
       }
+      final ex = (detail?.exchange ?? 'NSE').toUpperCase();
+      _exchange = ex == 'BSE' ? 'BSE' : 'NSE';
       _seedPricesFromLtp(force: true);
     });
   }
@@ -174,23 +217,36 @@ class _PaperOrderTicketState extends State<PaperOrderTicket> {
       return;
     }
     if (_localSubmitting) return;
-    widget.onSymbolChanged?.call(sym);
+    // Do not call onSymbolChanged here — parent setState remounts mid-pane
+    // (Equity Insider) and floods the network while the order is in flight.
 
     setState(() => _localSubmitting = true);
     try {
-      final live = await _client.fetchQuoteDetail(
-        sym,
-        name: _displayName,
-        forceRefresh: true,
-      );
-      if (!mounted) return;
-      setState(() {
-        _quote = live;
-        if (live?.name != null && live!.name!.isNotEmpty) {
-          _displayName = live.name!;
+      // Prefer ticket LTP already on screen; otherwise one live-ltp only
+      // (not quotes + live-ltp) so Instant Buy is not stalled by watchlist.
+      var ltp = _quote?.ltp ?? 0;
+      if (ltp <= 0) {
+        ltp = await _client.fetchLiveLtp(sym, forceRefresh: false);
+        if (!mounted) return;
+        if (ltp > 0) {
+          setState(() {
+            _quote = QuoteDetail(
+              symbol: sym,
+              name: _displayName,
+              exchange: _quote?.exchange ?? 'NSE',
+              ltp: ltp,
+              change: _quote?.change ?? 0,
+              changePercent: _quote?.changePercent ?? 0,
+              open: _quote?.open,
+              high: _quote?.high,
+              low: _quote?.low,
+              previousClose: _quote?.previousClose,
+              buyDepth: _quote?.buyDepth ?? const [],
+              sellDepth: _quote?.sellDepth ?? const [],
+            );
+          });
         }
-      });
-      final ltp = live?.ltp ?? 0;
+      }
       if (ltp <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Live quote unavailable — try again')),
@@ -249,7 +305,7 @@ class _PaperOrderTicketState extends State<PaperOrderTicket> {
     final colors = context.colors;
     final isBuy = _side == 'BUY';
     final ctaColor =
-        isBuy ? colors.marketPositiveIndicator : colors.statusError;
+        isBuy ? colors.marketPositiveIndicator : colors.marketNegativeIndicator;
     final fmt = NumberFormat('#,##0.00');
     final ltp = _quote?.ltp ?? 0;
     final change = _quote?.change ?? 0;
@@ -264,13 +320,17 @@ class _PaperOrderTicketState extends State<PaperOrderTicket> {
     return BlocBuilder<PaperOmsCubit, PaperOmsState>(
       builder: (context, state) {
         final wallet = state.wallet;
+        final compact = widget.compact;
+        final pad = compact
+            ? const EdgeInsets.fromLTRB(12, 6, 12, 4)
+            : const EdgeInsets.fromLTRB(14, 12, 14, 8);
         return Material(
           color: colors.scaffoldBackground,
           child: Column(
             children: [
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+                  padding: pad,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -286,6 +346,10 @@ class _PaperOrderTicketState extends State<PaperOrderTicket> {
                         fmt: fmt,
                         quote: _quote,
                         isBuy: isBuy,
+                        compact: compact,
+                        exchange: _exchange,
+                        onExchangeChanged: (ex) =>
+                            setState(() => _exchange = ex),
                         onBuy: () => _setSide('BUY'),
                         onSell: () => _setSide('SELL'),
                         floating: widget.floating,
@@ -294,56 +358,84 @@ class _PaperOrderTicketState extends State<PaperOrderTicket> {
                         onHeaderDragUpdate: widget.onHeaderDragUpdate,
                         onHeaderDragEnd: widget.onHeaderDragEnd,
                       ),
-                      if (wallet != null) ...[
-                        const SizedBox(height: 10),
-                        _BalanceBar(available: wallet.available),
-                      ],
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _ProductTile(
-                              title: 'Trading',
-                              subtitle: 'Intraday',
-                              selected: _productMode == 'Trading',
-                              onTap: () =>
-                                  setState(() => _productMode = 'Trading'),
+                      if (widget.onOpenFundamentalAnalysis != null &&
+                          sym.isNotEmpty) ...[
+                        SizedBox(height: compact ? 2 : 8),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: widget.onOpenFundamentalAnalysis,
+                            icon: Icon(
+                              Icons.analytics_outlined,
+                              size: compact ? 16 : 18,
+                            ),
+                            label: Text(
+                              compact ? 'Fundamentals' : 'Full fundamental analysis',
+                            ),
+                            style: TextButton.styleFrom(
+                              foregroundColor: colors.actionPrimaryBg,
+                              padding: EdgeInsets.zero,
+                              visualDensity: VisualDensity.compact,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _ProductTile(
-                              title: 'Pay Later',
-                              subtitle: 'via MTF',
-                              selected: _productMode == 'MTF',
-                              onTap: () =>
-                                  setState(() => _productMode = 'MTF'),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _ProductTile(
-                              title: 'Investing',
-                              subtitle: 'Delivery',
-                              selected: _productMode == 'Investing',
-                              onTap: () =>
-                                  setState(() => _productMode = 'Investing'),
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (_productMode == 'MTF') ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          'MTF is cosmetic for paper — order still goes to OMS as equity.',
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: colors.textSecondary,
-                                  ),
                         ),
                       ],
-                      const SizedBox(height: 14),
+                      if (wallet != null) ...[
+                        SizedBox(height: compact ? 6 : 10),
+                        _BalanceBar(available: wallet.available, compact: compact),
+                      ],
+                      if (!compact) ...[
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _ProductTile(
+                                title: 'Trading',
+                                subtitle: 'Intraday',
+                                selected: _productMode == 'Trading',
+                                onTap: () =>
+                                    setState(() => _productMode = 'Trading'),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _ProductTile(
+                                title: 'Pay Later',
+                                subtitle: 'via MTF',
+                                selected: _productMode == 'MTF',
+                                onTap: () =>
+                                    setState(() => _productMode = 'MTF'),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _ProductTile(
+                                title: 'Investing',
+                                subtitle: 'Delivery',
+                                selected: _productMode == 'Investing',
+                                onTap: () =>
+                                    setState(() => _productMode = 'Investing'),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (_productMode == 'MTF') ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            'MTF is cosmetic for paper — order still goes to OMS as equity.',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                  color: colors.textSecondary,
+                                ),
+                          ),
+                        ],
+                      ],
+                      SizedBox(height: compact ? 8 : 14),
                       _OrderCard(
+                        compact: compact,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
@@ -356,35 +448,39 @@ class _PaperOrderTicketState extends State<PaperOrderTicket> {
                                   ('TRAIL', 'Trail', 'T', false),
                                 ]) ...[
                                   if (t.$1 != 'MARKET')
-                                    const SizedBox(width: 6),
+                                    SizedBox(width: compact ? 4 : 6),
                                   Expanded(
                                     child: _TypeTab(
                                       label: t.$2,
                                       badge: t.$3,
                                       selected: _orderType == t.$1,
                                       superStyle: t.$4,
+                                      compact: compact,
                                       onTap: () => _setOrderType(t.$1),
                                     ),
                                   ),
                                 ],
                               ],
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: compact ? 10 : 16),
                             _FieldRow(
                               label: 'Shares',
+                              compact: compact,
                               child: _PriceStepper(
                                 controller: _qty,
                                 onMinus: () => _bumpQty(-1),
                                 onPlus: () => _bumpQty(1),
                                 keyboardType: TextInputType.number,
+                                compact: compact,
                               ),
                             ),
                             if (_orderType == 'LIMIT' ||
                                 (_orderType == 'SUPER' && _useLimit)) ...[
-                              const SizedBox(height: 14),
+                              SizedBox(height: compact ? 8 : 14),
                               if (_orderType == 'SUPER')
                                 _FieldRow(
                                   label: 'Limit Price',
+                                  compact: compact,
                                   trailing: Switch.adaptive(
                                     value: _useLimit,
                                     activeThumbColor:
@@ -404,23 +500,26 @@ class _PaperOrderTicketState extends State<PaperOrderTicket> {
                                               _bump(_limit, -0.05),
                                           onPlus: () =>
                                               _bump(_limit, 0.05),
+                                          compact: compact,
                                         )
                                       : null,
                                 )
                               else
                                 _FieldRow(
                                   label: 'Limit Price',
+                                  compact: compact,
                                   child: _PriceStepper(
                                     controller: _limit,
                                     onMinus: () => _bump(_limit, -0.05),
                                     onPlus: () => _bump(_limit, 0.05),
+                                    compact: compact,
                                   ),
                                 ),
                             ],
                             if (_orderType == 'MARKET') ...[
-                              const SizedBox(height: 8),
+                              SizedBox(height: compact ? 4 : 8),
                               Text(
-                                'Order executes at live market price.',
+                                'Executes at live market price.',
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodySmall
@@ -487,24 +586,28 @@ class _PaperOrderTicketState extends State<PaperOrderTicket> {
                                 const SizedBox(height: 8),
                                 _FieldRow(
                                   label: 'Trigger',
+                                  compact: compact,
                                   child: _PriceStepper(
                                     controller: _trigger,
                                     onMinus: () =>
                                         _bump(_trigger, -0.05),
                                     onPlus: () =>
                                         _bump(_trigger, 0.05),
+                                    compact: compact,
                                   ),
                                 ),
                               ],
                             ],
                             if (_orderType == 'TRAIL') ...[
-                              const SizedBox(height: 14),
+                              SizedBox(height: compact ? 8 : 14),
                               _FieldRow(
                                 label: 'Trail jump',
+                                compact: compact,
                                 child: _PriceStepper(
                                   controller: _trail,
                                   onMinus: () => _bump(_trail, -0.5),
                                   onPlus: () => _bump(_trail, 0.5),
+                                  compact: compact,
                                 ),
                               ),
                             ],
@@ -512,8 +615,9 @@ class _PaperOrderTicketState extends State<PaperOrderTicket> {
                         ),
                       ),
                       if (_orderType == 'SUPER') ...[
-                        const SizedBox(height: 12),
+                        SizedBox(height: compact ? 8 : 12),
                         _OrderCard(
+                          compact: compact,
                           child: Column(
                             children: [
                               InkWell(
@@ -651,7 +755,12 @@ class _PaperOrderTicketState extends State<PaperOrderTicket> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+                padding: EdgeInsets.fromLTRB(
+                  compact ? 12 : 14,
+                  compact ? 8 : 10,
+                  compact ? 12 : 14,
+                  compact ? 10 : 14,
+                ),
                 decoration: BoxDecoration(
                   color: colors.cardSurface,
                   border: Border(top: BorderSide(color: colors.divider)),
@@ -667,9 +776,9 @@ class _PaperOrderTicketState extends State<PaperOrderTicket> {
                   style: FilledButton.styleFrom(
                     backgroundColor: ctaColor,
                     foregroundColor: colors.actionPrimaryFg,
-                    minimumSize: const Size.fromHeight(48),
+                    minimumSize: Size.fromHeight(compact ? 44 : 48),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(compact ? 10 : 12),
                     ),
                   ),
                   onPressed: state.submitting ||
@@ -681,9 +790,9 @@ class _PaperOrderTicketState extends State<PaperOrderTicket> {
                     state.submitting || _localSubmitting
                         ? 'Submitting…'
                         : 'Instant ${isBuy ? 'Buy' : 'Sell'}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      fontSize: 16,
+                      fontSize: compact ? 15 : 16,
                     ),
                   ),
                 ),
@@ -709,6 +818,9 @@ class _HeaderBlock extends StatelessWidget {
     required this.isBuy,
     required this.onBuy,
     required this.onSell,
+    this.compact = false,
+    this.exchange = 'NSE',
+    this.onExchangeChanged,
     this.floating = false,
     this.onToggleFloat,
     this.onCloseFloat,
@@ -727,6 +839,9 @@ class _HeaderBlock extends StatelessWidget {
   final bool isBuy;
   final VoidCallback onBuy;
   final VoidCallback onSell;
+  final bool compact;
+  final String exchange;
+  final ValueChanged<String>? onExchangeChanged;
   final bool floating;
   final VoidCallback? onToggleFloat;
   final VoidCallback? onCloseFloat;
@@ -742,15 +857,18 @@ class _HeaderBlock extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            maxLines: 2,
+            maxLines: compact ? 1 : 2,
             overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  height: 1.15,
-                ),
+            style: (compact
+                    ? Theme.of(context).textTheme.titleMedium
+                    : Theme.of(context).textTheme.titleLarge)
+                ?.copyWith(
+              fontWeight: FontWeight.w800,
+              height: 1.15,
+            ),
           ),
         ),
-        if (onToggleFloat != null)
+        if (!compact && onToggleFloat != null)
           IconButton(
             tooltip: floating ? 'Cycle float position' : 'Float order ticket',
             visualDensity: VisualDensity.compact,
@@ -761,15 +879,15 @@ class _HeaderBlock extends StatelessWidget {
               color: colors.textTertiary,
             ),
           ),
-        if (floating && onCloseFloat != null)
+        if (onCloseFloat != null)
           IconButton(
-            tooltip: 'Dock order ticket',
+            tooltip: floating ? 'Dock order ticket' : 'Close',
             visualDensity: VisualDensity.compact,
-            iconSize: 18,
+            iconSize: compact ? 20 : 18,
             onPressed: onCloseFloat,
             icon: Icon(Icons.close, color: colors.textTertiary),
           )
-        else
+        else if (!compact)
           Icon(Icons.open_in_new, size: 18, color: colors.textTertiary),
       ],
     );
@@ -788,7 +906,7 @@ class _HeaderBlock extends StatelessWidget {
             child: titleRow,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: compact ? 4 : 8),
         if (loading)
           LinearProgressIndicator(
             minHeight: 2,
@@ -805,41 +923,43 @@ class _HeaderBlock extends StatelessWidget {
                 fmt.format(ltp),
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w800,
-                      fontSize: 22,
+                      fontSize: compact ? 18 : 22,
                     ),
               ),
               Icon(
                 change < 0 ? Icons.arrow_drop_down : Icons.arrow_drop_up,
                 color: priceColor,
-                size: 22,
+                size: compact ? 18 : 22,
               ),
               Text(
                 '${change >= 0 ? '+' : ''}${fmt.format(change)} (${changePct.toStringAsFixed(2)}%)',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       color: priceColor,
                       fontWeight: FontWeight.w600,
+                      fontSize: compact ? 12 : null,
                     ),
               ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: colors.textTertiary,
-                      shape: BoxShape.circle,
+              if (!compact)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: colors.textTertiary,
+                        shape: BoxShape.circle,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Live',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: colors.textTertiary,
-                        ),
-                  ),
-                ],
-              ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Live',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: colors.textTertiary,
+                          ),
+                    ),
+                  ],
+                ),
             ],
           )
         else
@@ -849,7 +969,7 @@ class _HeaderBlock extends StatelessWidget {
                   color: colors.textSecondary,
                 ),
           ),
-        if (quote != null && ltp > 0) ...[
+        if (!compact && quote != null && ltp > 0) ...[
           const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -882,19 +1002,14 @@ class _HeaderBlock extends StatelessWidget {
             ),
           ),
         ],
-        const SizedBox(height: 12),
+        SizedBox(height: compact ? 8 : 12),
         Row(
           children: [
             _BuySellToggle(isBuy: isBuy, onBuy: onBuy, onSell: onSell),
             const Spacer(),
-            _OutlineChip(
-              label: 'MTF',
-              color: colors.actionPrimaryBg,
-            ),
-            const SizedBox(width: 6),
-            _OutlineChip(
-              label: quote?.exchange ?? 'NSE',
-              color: colors.textSecondary,
+            _ExchangeToggle(
+              exchange: exchange,
+              onChanged: onExchangeChanged,
             ),
           ],
         ),
@@ -935,24 +1050,28 @@ class _MiniStat extends StatelessWidget {
 }
 
 class _BalanceBar extends StatelessWidget {
-  const _BalanceBar({required this.available});
+  const _BalanceBar({required this.available, this.compact = false});
 
   final String available;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 10 : 12,
+        vertical: compact ? 6 : 8,
+      ),
       decoration: BoxDecoration(
         color: colors.cardSurface,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(compact ? 8 : 10),
         border: Border.all(color: colors.divider),
       ),
       child: Row(
         children: [
           Icon(Icons.account_balance_wallet_outlined,
-              size: 16, color: colors.textSecondary),
+              size: compact ? 14 : 16, color: colors.textSecondary),
           const SizedBox(width: 8),
           Text(
             'Paper cash',
@@ -965,6 +1084,7 @@ class _BalanceBar extends StatelessWidget {
             '₹$available',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
+                  fontSize: compact ? 13 : null,
                 ),
           ),
         ],
@@ -1006,8 +1126,49 @@ class _BuySellToggle extends StatelessWidget {
           _Seg(
             label: 'Sell',
             selected: !isBuy,
-            color: colors.statusError,
+            color: colors.marketNegativeIndicator,
             onTap: onSell,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExchangeToggle extends StatelessWidget {
+  const _ExchangeToggle({
+    required this.exchange,
+    this.onChanged,
+  });
+
+  final String exchange;
+  final ValueChanged<String>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final isNse = exchange.toUpperCase() != 'BSE';
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: colors.scaffoldBackground,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: colors.marketBorderDefault),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _Seg(
+            label: 'NSE',
+            selected: isNse,
+            color: colors.actionPrimaryBg,
+            onTap: () => onChanged?.call('NSE'),
+          ),
+          _Seg(
+            label: 'BSE',
+            selected: !isNse,
+            color: colors.actionPrimaryBg,
+            onTap: () => onChanged?.call('BSE'),
           ),
         ],
       ),
@@ -1048,31 +1209,6 @@ class _Seg extends StatelessWidget {
                 ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _OutlineChip extends StatelessWidget {
-  const _OutlineChip({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.55)),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
       ),
     );
   }
@@ -1141,26 +1277,29 @@ class _ProductTile extends StatelessWidget {
 }
 
 class _OrderCard extends StatelessWidget {
-  const _OrderCard({required this.child});
+  const _OrderCard({required this.child, this.compact = false});
 
   final Widget child;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(compact ? 10 : 14),
       decoration: BoxDecoration(
         color: colors.cardSurface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(compact ? 10 : 14),
         border: Border.all(color: colors.marketBorderDefault),
-        boxShadow: [
-          BoxShadow(
-            color: colors.textPrimary.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: compact
+            ? null
+            : [
+                BoxShadow(
+                  color: colors.textPrimary.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: child,
     );
@@ -1174,12 +1313,14 @@ class _TypeTab extends StatelessWidget {
     required this.selected,
     required this.onTap,
     this.superStyle = false,
+    this.compact = false,
   });
 
   final String label;
   final String badge;
   final bool selected;
   final bool superStyle;
+  final bool compact;
   final VoidCallback onTap;
 
   @override
@@ -1187,63 +1328,71 @@ class _TypeTab extends StatelessWidget {
     final colors = context.colors;
     final accent = superStyle
         ? colors.marketPositiveIndicator
-        : colors.textPrimary;
+        : colors.actionPrimaryBg;
     return Material(
       color: selected
           ? (superStyle
               ? colors.marketPositiveBg
-              : colors.scaffoldBackground)
+              : colors.actionPrimaryBg.withValues(alpha: 0.12))
           : colors.cardSurface,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(compact ? 8 : 10),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(compact ? 8 : 10),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: EdgeInsets.symmetric(vertical: compact ? 6 : 10),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(compact ? 8 : 10),
             border: Border.all(
               color: selected
-                  ? (superStyle
-                      ? colors.marketPositiveIndicator
-                      : colors.marketBorderDefault)
+                  ? accent
                   : colors.divider,
-              width: selected && superStyle ? 1.6 : 1,
+              width: selected ? 1.6 : 1,
             ),
           ),
-          child: Column(
-            children: [
-              Container(
-                width: 22,
-                height: 22,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: selected ? 1 : 0.15),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  badge,
-                  style: TextStyle(
-                    color: selected
-                        ? (superStyle
-                            ? colors.actionPrimaryFg
-                            : colors.scaffoldBackground)
-                        : accent,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: selected ? accent : colors.textSecondary,
-                      fontWeight: FontWeight.w700,
+          child: compact
+              ? Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: selected ? accent : colors.textSecondary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                      ),
+                )
+              : Column(
+                  children: [
+                    Container(
+                      width: 22,
+                      height: 22,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: selected ? 1 : 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        badge,
+                        style: TextStyle(
+                          color: selected
+                              ? colors.actionPrimaryFg
+                              : accent,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
-              ),
-            ],
-          ),
+                    const SizedBox(height: 4),
+                    Text(
+                      label,
+                      style:
+                          Theme.of(context).textTheme.labelMedium?.copyWith(
+                                color:
+                                    selected ? accent : colors.textSecondary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                    ),
+                  ],
+                ),
         ),
       ),
     );
@@ -1255,11 +1404,13 @@ class _FieldRow extends StatelessWidget {
     required this.label,
     this.child,
     this.trailing,
+    this.compact = false,
   });
 
   final String label;
   final Widget? child;
   final Widget? trailing;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -1272,13 +1423,14 @@ class _FieldRow extends StatelessWidget {
                 label,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
+                      fontSize: compact ? 13 : null,
                     ),
               ),
             ),
             if (trailing != null) trailing!,
             if (child != null) ...[
               const SizedBox(width: 8),
-              SizedBox(width: 132, child: child),
+              SizedBox(width: compact ? 118 : 132, child: child),
             ],
           ],
         ),
@@ -1352,26 +1504,29 @@ class _PriceStepper extends StatelessWidget {
     required this.onMinus,
     required this.onPlus,
     this.keyboardType = const TextInputType.numberWithOptions(decimal: true),
+    this.compact = false,
   });
 
   final TextEditingController controller;
   final VoidCallback onMinus;
   final VoidCallback onPlus;
   final TextInputType keyboardType;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final h = compact ? 36.0 : 42.0;
     return Container(
-      height: 42,
+      height: h,
       decoration: BoxDecoration(
         color: colors.scaffoldBackground,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(compact ? 8 : 10),
         border: Border.all(color: colors.marketBorderDefault),
       ),
       child: Row(
         children: [
-          _StepBtn(icon: Icons.remove, onTap: onMinus),
+          _StepBtn(icon: Icons.remove, onTap: onMinus, height: h),
           Expanded(
             child: TextField(
               controller: controller,
@@ -1379,6 +1534,7 @@ class _PriceStepper extends StatelessWidget {
               keyboardType: keyboardType,
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w700,
+                    fontSize: compact ? 13 : null,
                   ),
               decoration: const InputDecoration(
                 border: InputBorder.none,
@@ -1387,7 +1543,7 @@ class _PriceStepper extends StatelessWidget {
               ),
             ),
           ),
-          _StepBtn(icon: Icons.add, onTap: onPlus),
+          _StepBtn(icon: Icons.add, onTap: onPlus, height: h),
         ],
       ),
     );
@@ -1395,10 +1551,15 @@ class _PriceStepper extends StatelessWidget {
 }
 
 class _StepBtn extends StatelessWidget {
-  const _StepBtn({required this.icon, required this.onTap});
+  const _StepBtn({
+    required this.icon,
+    required this.onTap,
+    this.height = 42,
+  });
 
   final IconData icon;
   final VoidCallback onTap;
+  final double height;
 
   @override
   Widget build(BuildContext context) {
@@ -1407,7 +1568,7 @@ class _StepBtn extends StatelessWidget {
       borderRadius: BorderRadius.circular(8),
       child: SizedBox(
         width: 36,
-        height: 42,
+        height: height,
         child: Icon(icon, size: 18, color: context.colors.textSecondary),
       ),
     );

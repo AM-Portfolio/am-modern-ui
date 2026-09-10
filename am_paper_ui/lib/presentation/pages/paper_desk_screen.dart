@@ -7,6 +7,7 @@ import '../paper_oms_state.dart';
 import '../widgets/paper_analyser_pane.dart';
 import '../widgets/paper_holdings_pane.dart';
 import '../widgets/paper_order_ticket.dart';
+import '../widgets/paper_order_ticket_sheet.dart';
 import '../widgets/paper_orders_pane.dart';
 import '../widgets/paper_positions_pnl_pane.dart';
 import '../widgets/paper_wallet_pane.dart';
@@ -29,6 +30,7 @@ class PaperDeskScreen extends StatefulWidget {
 
 class _PaperDeskScreenState extends State<PaperDeskScreen> {
   static const _ticketWidth = 340.0;
+  static const _wideBreakpoint = 1100.0;
 
   String _symbol = '';
   String _side = 'BUY';
@@ -38,10 +40,14 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
   Offset _ticketOffset = Offset.zero;
   Size _deskSize = Size.zero;
 
-  /// Narrow layout: sync Trade tab when B/S opens order.
-  final _narrowTabs = GlobalKey<_NarrowDeskTabsState>();
+  /// Narrow layout: show Desk (FA / orders) without Watchlist|Desk tabs.
+  final _narrowTabs = GlobalKey<_NarrowDeskBodyState>();
+  bool _narrowShowDesk = false;
 
   bool get _hasSymbol => _symbol.trim().isNotEmpty;
+
+  bool _isWide(BuildContext context) =>
+      MediaQuery.sizeOf(context).width >= _wideBreakpoint;
 
   void _selectSymbol(String symbol) {
     final sym = symbol.trim().toUpperCase();
@@ -52,12 +58,50 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
     });
   }
 
-  void _buySell(String symbol, String side) {
-    final sym = symbol.trim().toUpperCase();
+  void _openFundamentalAnalysis([String? symbol]) {
+    final sym = (symbol ?? _symbol).trim().toUpperCase();
     if (sym.isEmpty) return;
     setState(() {
       _symbol = sym;
-      _side = side.toUpperCase() == 'SELL' ? 'SELL' : 'BUY';
+      _midTab = _MidTab.overview;
+      _orderOpen = false;
+      _narrowShowDesk = true;
+    });
+    _narrowTabs.currentState?.showDesk();
+  }
+
+  void _buySell(String symbol, String side) {
+    final sym = symbol.trim().toUpperCase();
+    if (sym.isEmpty) return;
+    final nextSide = side.toUpperCase() == 'SELL' ? 'SELL' : 'BUY';
+
+    if (!_isWide(context)) {
+      setState(() {
+        _symbol = sym;
+        _side = nextSide;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        showPaperOrderTicketSheet(
+          context: context,
+          symbol: sym,
+          side: nextSide,
+          onSymbolChanged: (s) {
+            final next = s.trim().toUpperCase();
+            if (next.isEmpty) return;
+            setState(() => _symbol = next);
+          },
+          onSideChanged: (s) => setState(() => _side = s),
+          onOrderPlaced: _onOrderPlaced,
+          onOpenFundamentalAnalysis: _openFundamentalAnalysis,
+        );
+      });
+      return;
+    }
+
+    setState(() {
+      _symbol = sym;
+      _side = nextSide;
       _orderOpen = true;
       if (_ticketOffset == Offset.zero && _deskSize != Size.zero) {
         _placement = _TicketPlacement.floatTopRight;
@@ -67,7 +111,6 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
         _ticketOffset = _snapTopRight(_deskSize);
       }
     });
-    _narrowTabs.currentState?.goToTrade();
   }
 
   void _closeOrderPopup() {
@@ -130,8 +173,9 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
   void _onOrderPlaced() {
     setState(() {
       _midTab = _MidTab.orders;
-      // Keep popup open so user sees confirmation toast; they can close it.
+      _narrowShowDesk = true;
     });
+    _narrowTabs.currentState?.showDesk();
   }
 
   Widget _ticket({required bool floating}) {
@@ -145,6 +189,7 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
       },
       onSideChanged: (s) => setState(() => _side = s),
       onOrderPlaced: _onOrderPlaced,
+      onOpenFundamentalAnalysis: _openFundamentalAnalysis,
       floating: floating,
       onToggleFloat: floating ? _cycleFloat : null,
       onCloseFloat: floating ? _closeOrderPopup : null,
@@ -239,25 +284,18 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
       },
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final wide = constraints.maxWidth >= 1100;
+          final wide = constraints.maxWidth >= _wideBreakpoint;
           if (!wide) {
-            return _NarrowDeskTabs(
+            return _NarrowDeskBody(
               key: _narrowTabs,
-              header: _header(context),
               symbol: _symbol,
               hasSymbol: _hasSymbol,
+              midTab: _midTab,
+              showDesk: _narrowShowDesk,
+              onShowDeskChanged: (v) => setState(() => _narrowShowDesk = v),
               onSelectSymbol: _selectSymbol,
               onBuySell: _buySell,
-              ticket: _hasSymbol
-                  ? _ticket(floating: false)
-                  : Center(
-                      child: Text(
-                        'Select a symbol from the watchlist',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: context.colors.textSecondary,
-                            ),
-                      ),
-                    ),
+              onOpenFundamentals: _openFundamentalAnalysis,
               midTabBar: _midPane,
             );
           }
@@ -308,6 +346,7 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
                                     selectedSymbol: _symbol,
                                     onSelectSymbol: _selectSymbol,
                                     onBuySell: _buySell,
+                                    onOpenFundamentals: _openFundamentalAnalysis,
                                   ),
                                 ),
                               ),
@@ -346,114 +385,108 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
   }
 
   Widget _header(BuildContext context) {
-    return BlocBuilder<PaperOmsCubit, PaperOmsState>(
-      builder: (context, state) {
-        final w = state.wallet;
-        return Material(
-          color: context.colors.surface,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(
-              children: [
-                Text(
-                  'Paper desk',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(width: 16),
-                if (w != null)
-                  Expanded(
-                    child: Text(
-                      'Virtual cash ₹${w.available} (reserved ₹${w.reserved}) · not live money',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: context.colors.textSecondary,
-                          ),
-                    ),
-                  ),
-              ],
-            ),
+    return Material(
+      color: context.colors.surface,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'Paper desk',
+            style: Theme.of(context).textTheme.titleLarge,
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
 
-/// Narrow: Watchlist | Trade | Desk (Wallet/Overview/…)
-class _NarrowDeskTabs extends StatefulWidget {
-  const _NarrowDeskTabs({
+/// Narrow: watchlist only (no Paper desk / Watchlist|Desk chrome).
+/// Desk mid-pane opens when FA or a placed order needs it.
+class _NarrowDeskBody extends StatefulWidget {
+  const _NarrowDeskBody({
     super.key,
-    required this.header,
     required this.symbol,
     required this.hasSymbol,
+    required this.midTab,
+    required this.showDesk,
+    required this.onShowDeskChanged,
     required this.onSelectSymbol,
     required this.onBuySell,
-    required this.ticket,
+    required this.onOpenFundamentals,
     required this.midTabBar,
   });
 
-  final Widget header;
   final String symbol;
   final bool hasSymbol;
+  final _MidTab midTab;
+  final bool showDesk;
+  final ValueChanged<bool> onShowDeskChanged;
   final ValueChanged<String> onSelectSymbol;
   final void Function(String symbol, String side) onBuySell;
-  final Widget ticket;
+  final ValueChanged<String> onOpenFundamentals;
   final Widget Function(BuildContext context) midTabBar;
 
   @override
-  State<_NarrowDeskTabs> createState() => _NarrowDeskTabsState();
+  State<_NarrowDeskBody> createState() => _NarrowDeskBodyState();
 }
 
-class _NarrowDeskTabsState extends State<_NarrowDeskTabs>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabs;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabs = TabController(length: 3, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabs.dispose();
-    super.dispose();
-  }
-
-  void goToTrade() {
-    if (_tabs.index != 1) _tabs.animateTo(1);
+class _NarrowDeskBodyState extends State<_NarrowDeskBody> {
+  void showDesk() {
+    widget.onShowDeskChanged(true);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    final colors = context.colors;
+    final showOverview = widget.midTab == _MidTab.overview;
+    return Stack(
       children: [
-        widget.header,
-        TabBar(
-          controller: _tabs,
-          isScrollable: true,
-          tabs: const [
-            Tab(text: 'Watchlist'),
-            Tab(text: 'Trade'),
-            Tab(text: 'Desk'),
-          ],
-        ),
-        Expanded(
-          child: TabBarView(
-            controller: _tabs,
+        if (!widget.showDesk)
+          PaperWatchlistPane(
+            selectedSymbol: widget.symbol,
+            onSelectSymbol: widget.onSelectSymbol,
+            onBuySell: widget.onBuySell,
+            onOpenFundamentals: widget.onOpenFundamentals,
+            compactChrome: true,
+          )
+        else
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              PaperWatchlistPane(
-                selectedSymbol: widget.symbol,
-                onSelectSymbol: widget.onSelectSymbol,
-                onBuySell: widget.onBuySell,
+              Material(
+                color: colors.surface,
+                child: Row(
+                  children: [
+                    IconButton(
+                      tooltip: 'Back to watchlist',
+                      onPressed: () => widget.onShowDeskChanged(false),
+                      icon: const Icon(Icons.arrow_back),
+                    ),
+                    Text(
+                      'Desk',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                  ],
+                ),
               ),
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: widget.ticket,
-              ),
-              widget.midTabBar(context),
+              Expanded(child: widget.midTabBar(context)),
             ],
           ),
-        ),
+        if (widget.hasSymbol)
+          Offstage(
+            offstage: true,
+            child: TickerMode(
+              enabled: !showOverview || !widget.showDesk,
+              child: SizedBox(
+                width: MediaQuery.sizeOf(context).width,
+                height: MediaQuery.sizeOf(context).height,
+                child: PaperAnalyserPane(symbol: widget.symbol),
+              ),
+            ),
+          ),
       ],
     );
   }

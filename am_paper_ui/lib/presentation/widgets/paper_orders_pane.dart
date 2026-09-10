@@ -3,29 +3,168 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import '../../data/oms_models.dart';
 import '../paper_oms_cubit.dart';
 import '../paper_oms_state.dart';
+import 'paper_order_mobile_card.dart';
 
-/// Today's executed paper orders (+ working with cancel).
+class _OrderRow {
+  const _OrderRow({
+    required this.order,
+    required this.side,
+    required this.symbol,
+    required this.orderType,
+    required this.qty,
+    required this.price,
+    required this.status,
+    required this.time,
+    required this.timeLabel,
+  });
+
+  final OmsOrder order;
+  final String side;
+  final String symbol;
+  final String orderType;
+  final double qty;
+  final double price;
+  final String status;
+  final DateTime time;
+  final String timeLabel;
+}
+
+/// Today's executed paper orders (+ working with cancel) — adaptive table/card.
 class PaperOrdersPane extends StatelessWidget {
   const PaperOrdersPane({super.key});
+
+  List<_OrderRow> _todayRows(PaperOmsState state) {
+    final timeFmt = DateFormat('HH:mm:ss');
+    final todayFilled = state.orders
+        .where((o) => o.isFilled && o.isCreatedToday)
+        .toList()
+      ..sort((a, b) {
+        final ac = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bc = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bc.compareTo(ac);
+      });
+
+    return [
+      for (final o in todayFilled)
+        _OrderRow(
+          order: o,
+          side: o.side.toUpperCase(),
+          symbol: o.symbol.trim().toUpperCase(),
+          orderType: o.orderType.toUpperCase(),
+          qty: o.filledQuantityAsDouble,
+          price: o.fillPriceAsDouble,
+          status: o.status,
+          time: o.createdAt?.toLocal() ??
+              DateTime.fromMillisecondsSinceEpoch(0),
+          timeLabel: o.createdAt != null
+              ? timeFmt.format(o.createdAt!.toLocal())
+              : '—',
+        ),
+    ];
+  }
+
+  Color _sideColor(BuildContext context, String side) {
+    final colors = context.colors;
+    return side == 'SELL'
+        ? colors.statusError
+        : colors.marketPositiveIndicator;
+  }
+
+  Widget _buildTable(BuildContext context, List<_OrderRow> items) {
+    final fmt = NumberFormat('#,##0.00');
+    return SortableTable<_OrderRow>(
+      items: items,
+      initialSortColumnIndex: 0,
+      initialSortDirection: SortDirection.descending,
+      columns: [
+        SortableColumn(
+          title: 'Time',
+          sortBy: (r) => r.time.millisecondsSinceEpoch,
+          builder: (r) => Text(r.timeLabel),
+        ),
+        SortableColumn(
+          title: 'Side',
+          sortBy: (r) => r.side,
+          builder: (r) => Text(
+            r.side,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: _sideColor(context, r.side),
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+        ),
+        SortableColumn(
+          title: 'Symbol',
+          flex: 2,
+          sortBy: (r) => r.symbol,
+          builder: (r) => Text(
+            r.symbol,
+            style: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ),
+        SortableColumn(
+          title: 'Type',
+          sortBy: (r) => r.orderType,
+          builder: (r) => Text(r.orderType),
+        ),
+        SortableColumn(
+          title: 'Qty',
+          sortBy: (r) => r.qty,
+          textAlign: TextAlign.end,
+          builder: (r) => Text(
+            r.qty.toStringAsFixed(r.qty == r.qty.roundToDouble() ? 0 : 2),
+            textAlign: TextAlign.end,
+          ),
+        ),
+        SortableColumn(
+          title: 'Price',
+          sortBy: (r) => r.price,
+          textAlign: TextAlign.end,
+          builder: (r) => Text(
+            r.price > 0 ? '₹${fmt.format(r.price)}' : '—',
+            textAlign: TextAlign.end,
+          ),
+        ),
+        SortableColumn(
+          title: 'Status',
+          sortBy: (r) => r.status,
+          builder: (r) => Text(
+            r.status,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: context.colors.textSecondary,
+                ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCard(BuildContext context, _OrderRow r, int index) {
+    return PaperOrderMobileCard(
+      side: r.side,
+      symbol: r.symbol,
+      orderType: r.orderType,
+      qty: r.qty,
+      price: r.price,
+      status: r.status,
+      timeLabel: r.timeLabel,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final timeFmt = DateFormat('HH:mm:ss');
     final priceFmt = NumberFormat('#,##0.00');
 
     return BlocBuilder<PaperOmsCubit, PaperOmsState>(
       builder: (context, state) {
-        final todayFilled = state.orders
-            .where((o) => o.isFilled && o.isCreatedToday)
-            .toList()
-          ..sort((a, b) {
-            final ac = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-            final bc = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-            return bc.compareTo(ac);
-          });
+        final rows = _todayRows(state);
         final working = state.orders.where((o) => o.isWorking).toList();
 
         return Column(
@@ -62,54 +201,24 @@ class PaperOrdersPane extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Expanded(
-              child: todayFilled.isEmpty
-                  ? Center(
-                      child: Text(
-                        'No executed orders today.',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: colors.textSecondary,
-                            ),
-                      ),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: todayFilled.length,
-                      separatorBuilder: (_, __) =>
-                          Divider(height: 1, color: colors.divider),
-                      itemBuilder: (context, i) {
-                        final o = todayFilled[i];
-                        final sideColor = o.side.toUpperCase() == 'SELL'
-                            ? colors.statusError
-                            : colors.marketPositiveIndicator;
-                        final qty = o.filledQuantity ?? o.quantity;
-                        final px = o.fillPrice;
-                        return ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            '${o.side} ${o.symbol}',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: sideColor,
-                                ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: AmAdaptiveTableCardView<_OrderRow>(
+                  items: rows,
+                  breakpoint: 720,
+                  spacing: 10,
+                  emptyWidget: Center(
+                    child: Text(
+                      'No executed orders today.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: colors.textSecondary,
                           ),
-                          subtitle: Text(
-                            '${o.orderType} · qty $qty'
-                            '${px != null ? ' @ ₹${priceFmt.format(double.tryParse(px) ?? 0)}' : ''}'
-                            '${o.createdAt != null ? ' · ${timeFmt.format(o.createdAt!.toLocal())}' : ''}',
-                          ),
-                          trailing: Text(
-                            o.status,
-                            style:
-                                Theme.of(context).textTheme.labelSmall?.copyWith(
-                                      color: colors.textSecondary,
-                                    ),
-                          ),
-                        );
-                      },
                     ),
+                  ),
+                  tableBuilder: _buildTable,
+                  cardBuilder: _buildCard,
+                ),
+              ),
             ),
             Divider(height: 1, color: colors.divider),
             Padding(
@@ -139,13 +248,14 @@ class PaperOrdersPane extends StatelessWidget {
                   itemCount: working.length,
                   itemBuilder: (context, i) {
                     final o = working[i];
+                    final lim = double.tryParse(o.limitPrice ?? '') ?? 0;
                     return ListTile(
                       dense: true,
                       contentPadding: EdgeInsets.zero,
                       title: Text('${o.orderType} ${o.side} ${o.symbol}'),
                       subtitle: Text(
                         'Qty ${o.quantity}'
-                        '${o.limitPrice != null ? ' @ ${o.limitPrice}' : ''}',
+                        '${lim > 0 ? ' @ ₹${priceFmt.format(lim)}' : ''}',
                       ),
                       trailing: TextButton(
                         onPressed: state.submitting

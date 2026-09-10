@@ -17,6 +17,10 @@ class PaperMarketClient {
   final MarketDataSdkService _sdk;
   String? _bearer;
 
+  /// Coalesce identical in-flight live-ltp requests (watchlist + ticket).
+  final Map<String, Future<Map<String, Map<String, dynamic>>>> _inflightLtp =
+      {};
+
   /// Re-read access token; skip SecureStorage when already cached unless [force].
   Future<void> _ensureAuth({bool force = false}) async {
     if (!force && _bearer != null && _bearer!.isNotEmpty) {
@@ -151,6 +155,9 @@ class PaperMarketClient {
     final symbols =
         rows.map((r) => r.symbol).where((s) => s.isNotEmpty).toList();
     if (symbols.isEmpty) return rows;
+    // #region agent log
+    final _dbgStart = DateTime.now().millisecondsSinceEpoch;
+    // #endregion
 
     final equity = <String>[];
     final indices = <String>[];
@@ -170,6 +177,33 @@ class PaperMarketClient {
       futures.add(_fetchLiveLtpMap(indices, isIndexSymbol: true));
     }
     final parts = await Future.wait(futures);
+    // #region agent log
+    http
+        .post(
+          Uri.parse(
+            'http://127.0.0.1:7626/ingest/0d1c8c7b-9f69-4195-beee-fbf3af51620e',
+          ),
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Debug-Session-Id': 'c7037f',
+          },
+          body: jsonEncode({
+            'sessionId': 'c7037f',
+            'runId': 'pre-fix',
+            'hypothesisId': 'C',
+            'location': 'paper_market_client.dart:enrichQuotes',
+            'message': 'watchlist enrich done (refresh=false)',
+            'data': {
+              'equityCount': equity.length,
+              'indexCount': indices.length,
+              'elapsedMs':
+                  DateTime.now().millisecondsSinceEpoch - _dbgStart,
+            },
+            'timestamp': DateTime.now().millisecondsSinceEpoch,
+          }),
+        )
+        .catchError((_) => http.Response('', 599));
+    // #endregion
     final dataMap = <String, Map<String, dynamic>>{};
     for (final p in parts) {
       dataMap.addAll(p);
@@ -210,25 +244,53 @@ class PaperMarketClient {
     bool refresh = false,
   }) async {
     if (symbols.isEmpty) return {};
+    final normalized = symbols
+        .map((s) => s.trim().toUpperCase())
+        .where((s) => s.isNotEmpty)
+        .toList();
+    if (normalized.isEmpty) return {};
+    normalized.sort();
+    final cacheKey = '$isIndexSymbol|$refresh|${normalized.join(',')}';
+    final inflight = _inflightLtp[cacheKey];
+    if (inflight != null) return inflight;
+
+    final future = _fetchLiveLtpMapUncached(
+      normalized,
+      isIndexSymbol: isIndexSymbol,
+      refresh: refresh,
+    );
+    _inflightLtp[cacheKey] = future;
+    try {
+      return await future;
+    } finally {
+      _inflightLtp.remove(cacheKey);
+    }
+  }
+
+  Future<Map<String, Map<String, dynamic>>> _fetchLiveLtpMapUncached(
+    List<String> symbols, {
+    required bool isIndexSymbol,
+    required bool refresh,
+  }) async {
     final joined = symbols.join(',');
 
-    var parsed = <String, Map<String, dynamic>>{};
-    try {
-      final ltpRes = await _sdk.marketDataApi.getLiveLTP(
-        joined,
-        timeframe: '1D',
-        isIndexSymbol: isIndexSymbol,
-        refresh: refresh,
-      );
-      parsed = _parseLiveLtpData(ltpRes);
-    } catch (_) {}
+    // One HTTP call only — avoid SDK then HTTP double-hit (same URL twice).
+    var parsed = await _fetchLiveLtpHttp(
+      joined,
+      isIndexSymbol: isIndexSymbol,
+      refresh: refresh,
+    );
 
     if (parsed.isEmpty) {
-      parsed = await _fetchLiveLtpHttp(
-        joined,
-        isIndexSymbol: isIndexSymbol,
-        refresh: refresh,
-      );
+      try {
+        final ltpRes = await _sdk.marketDataApi.getLiveLTP(
+          joined,
+          timeframe: '1D',
+          isIndexSymbol: isIndexSymbol,
+          refresh: refresh,
+        );
+        parsed = _parseLiveLtpData(ltpRes);
+      } catch (_) {}
     }
 
     // Remap single-symbol bare quote payloads onto the requested symbol.
@@ -238,11 +300,33 @@ class PaperMarketClient {
     return parsed;
   }
 
+  /// Single-symbol LTP for Instant Buy — one live-ltp, no quotes round-trip.
+  Future<double> fetchLiveLtp(
+    String symbol, {
+    bool forceRefresh = false,
+  }) async {
+    final sym = symbol.trim().toUpperCase();
+    if (sym.isEmpty) return 0;
+    await _ensureAuth();
+    final map = await _fetchLiveLtpMap(
+      [sym],
+      isIndexSymbol: _isIndexSymbol(sym),
+      refresh: forceRefresh,
+    );
+    final item = map[sym] ?? map['_'];
+    if (item == null) return 0;
+    return _parsePriceFields(item).ltp;
+  }
+
   Future<Map<String, Map<String, dynamic>>> _fetchLiveLtpHttp(
     String symbols, {
     required bool isIndexSymbol,
     bool refresh = false,
   }) async {
+    // #region agent log
+    final _dbgStart = DateTime.now().millisecondsSinceEpoch;
+    final _symCount = symbols.split(',').where((s) => s.trim().isNotEmpty).length;
+    // #endregion
     try {
       final uri = Uri.parse('${EnvDomains.market}/v1/market-data/live-ltp')
           .replace(queryParameters: {
@@ -257,6 +341,38 @@ class PaperMarketClient {
           'Authorization': 'Bearer $_bearer',
       };
       final response = await http.get(uri, headers: headers);
+      // #region agent log
+      final _dbgMs = DateTime.now().millisecondsSinceEpoch - _dbgStart;
+      http
+          .post(
+            Uri.parse(
+              'http://127.0.0.1:7626/ingest/0d1c8c7b-9f69-4195-beee-fbf3af51620e',
+            ),
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Debug-Session-Id': 'c7037f',
+            },
+            body: jsonEncode({
+              'sessionId': 'c7037f',
+              'runId': 'pre-fix',
+              'hypothesisId': 'A',
+              'location': 'paper_market_client.dart:_fetchLiveLtpHttp',
+              'message': 'live-ltp http completed',
+              'data': {
+                'refresh': refresh,
+                'isIndexSymbol': isIndexSymbol,
+                'symbolCount': _symCount,
+                'symbolsPreview': symbols.length > 80
+                    ? '${symbols.substring(0, 80)}…'
+                    : symbols,
+                'status': response.statusCode,
+                'elapsedMs': _dbgMs,
+              },
+              'timestamp': DateTime.now().millisecondsSinceEpoch,
+            }),
+          )
+          .catchError((_) => http.Response('', 599));
+      // #endregion
       if (response.statusCode < 200 || response.statusCode >= 300) {
         return {};
       }
@@ -267,7 +383,34 @@ class PaperMarketClient {
         if (v != null) asObjects[k.toString()] = v as Object;
       });
       return _parseLiveLtpData(asObjects);
-    } catch (_) {
+    } catch (e) {
+      // #region agent log
+      http
+          .post(
+            Uri.parse(
+              'http://127.0.0.1:7626/ingest/0d1c8c7b-9f69-4195-beee-fbf3af51620e',
+            ),
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Debug-Session-Id': 'c7037f',
+            },
+            body: jsonEncode({
+              'sessionId': 'c7037f',
+              'runId': 'pre-fix',
+              'hypothesisId': 'A',
+              'location': 'paper_market_client.dart:_fetchLiveLtpHttp',
+              'message': 'live-ltp http error',
+              'data': {
+                'refresh': refresh,
+                'elapsedMs':
+                    DateTime.now().millisecondsSinceEpoch - _dbgStart,
+                'error': e.toString(),
+              },
+              'timestamp': DateTime.now().millisecondsSinceEpoch,
+            }),
+          )
+          .catchError((_) => http.Response('', 599));
+      // #endregion
       return {};
     }
   }
@@ -306,6 +449,9 @@ class PaperMarketClient {
     final sym = symbol.trim().toUpperCase();
     if (sym.isEmpty) return null;
     await _ensureAuth();
+    // #region agent log
+    final _dbgStart = DateTime.now().millisecondsSinceEpoch;
+    // #endregion
 
     Map<String, dynamic>? item;
     try {
@@ -314,6 +460,34 @@ class PaperMarketClient {
         refresh: forceRefresh,
       );
       item = _extractQuoteItem(quotes, sym);
+      // #region agent log
+      http
+          .post(
+            Uri.parse(
+              'http://127.0.0.1:7626/ingest/0d1c8c7b-9f69-4195-beee-fbf3af51620e',
+            ),
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Debug-Session-Id': 'c7037f',
+            },
+            body: jsonEncode({
+              'sessionId': 'c7037f',
+              'runId': 'pre-fix',
+              'hypothesisId': 'D',
+              'location': 'paper_market_client.dart:fetchQuoteDetail',
+              'message': 'quotes leg done',
+              'data': {
+                'symbol': sym,
+                'forceRefresh': forceRefresh,
+                'quotesHit': item != null,
+                'elapsedMs':
+                    DateTime.now().millisecondsSinceEpoch - _dbgStart,
+              },
+              'timestamp': DateTime.now().millisecondsSinceEpoch,
+            }),
+          )
+          .catchError((_) => http.Response('', 599));
+      // #endregion
     } catch (_) {}
 
     if (item == null) {
@@ -323,6 +497,34 @@ class PaperMarketClient {
         refresh: forceRefresh,
       );
       item = map[sym] ?? map['_'];
+      // #region agent log
+      http
+          .post(
+            Uri.parse(
+              'http://127.0.0.1:7626/ingest/0d1c8c7b-9f69-4195-beee-fbf3af51620e',
+            ),
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Debug-Session-Id': 'c7037f',
+            },
+            body: jsonEncode({
+              'sessionId': 'c7037f',
+              'runId': 'pre-fix',
+              'hypothesisId': 'D',
+              'location': 'paper_market_client.dart:fetchQuoteDetail',
+              'message': 'fell back to live-ltp',
+              'data': {
+                'symbol': sym,
+                'forceRefresh': forceRefresh,
+                'ltpHit': item != null,
+                'elapsedMs':
+                    DateTime.now().millisecondsSinceEpoch - _dbgStart,
+              },
+              'timestamp': DateTime.now().millisecondsSinceEpoch,
+            }),
+          )
+          .catchError((_) => http.Response('', 599));
+      // #endregion
     }
 
     if (item == null) {

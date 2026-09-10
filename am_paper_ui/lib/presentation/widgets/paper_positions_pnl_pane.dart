@@ -5,8 +5,10 @@ import 'package:intl/intl.dart';
 
 import '../../data/oms_models.dart';
 import '../../data/paper_market_client.dart';
+import '../../data/watchlist_models.dart';
 import '../paper_oms_cubit.dart';
 import '../paper_oms_state.dart';
+import 'paper_position_mobile_card.dart';
 
 class _PosRow {
   const _PosRow({
@@ -65,16 +67,24 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
       return;
     }
     setState(() => _loadingLtp = true);
-    final next = <String, double>{};
-    await Future.wait(positions.map((p) async {
-      final sym = p.symbol.trim().toUpperCase();
-      if (sym.isEmpty) return;
-      final q = await _market.fetchQuoteDetail(sym, forceRefresh: true);
-      if (q != null && q.ltp > 0) {
-        next[sym] = q.ltp;
-      }
-    }));
+    final stubs = [
+      for (final p in positions)
+        if (p.symbol.trim().isNotEmpty)
+          WatchlistStock(
+            symbol: p.symbol.trim().toUpperCase(),
+            name: p.symbol.trim().toUpperCase(),
+            exchange: 'NSE',
+            ltp: 0,
+            change: 0,
+            changePercent: 0,
+          ),
+    ];
+    final enriched = await _market.enrichQuotes(stubs);
     if (!mounted) return;
+    final next = <String, double>{
+      for (final r in enriched)
+        if (r.ltp > 0) r.symbol: r.ltp,
+    };
     setState(() {
       _ltpBySymbol
         ..clear()
@@ -239,46 +249,13 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
   }
 
   Widget _buildCard(BuildContext context, _PosRow p, int index) {
-    final colors = context.colors;
-    final fmt = NumberFormat('#,##0.00');
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: colors.cardSurface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: colors.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  p.symbol,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
-              ),
-              Text(
-                '₹${fmt.format(p.unrealized)}',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: _pnlColor(context, p.unrealized),
-                      fontWeight: FontWeight.w700,
-                    ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Qty ${p.qty.toStringAsFixed(0)} · Avg ${p.avg > 0 ? fmt.format(p.avg) : '—'} · LTP ${p.ltp > 0 ? fmt.format(p.ltp) : '—'} · ${p.unrealizedPct.toStringAsFixed(2)}%',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: colors.textSecondary,
-                ),
-          ),
-        ],
-      ),
+    return PaperPositionMobileCard(
+      symbol: p.symbol,
+      qty: p.qty,
+      avg: p.avg,
+      ltp: p.ltp,
+      unrealized: p.unrealized,
+      unrealizedPct: p.unrealizedPct,
     );
   }
 

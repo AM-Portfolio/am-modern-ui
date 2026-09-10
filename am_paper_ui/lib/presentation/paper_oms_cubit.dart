@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../data/oms_models.dart';
@@ -123,7 +125,8 @@ class PaperOmsCubit extends Cubit<PaperOmsState> {
         submitting: false,
         toast: toast,
       ));
-      await refreshBooks();
+      // Refresh books in background — do not block Instant Buy UI.
+      unawaited(refreshBooks());
       return order;
     } catch (e) {
       final msg = omsRejectMessage(omsErrorCode(e));

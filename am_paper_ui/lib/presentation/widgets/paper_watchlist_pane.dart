@@ -27,11 +27,19 @@ class PaperWatchlistPane extends StatefulWidget {
     required this.selectedSymbol,
     required this.onSelectSymbol,
     required this.onBuySell,
+    this.onOpenFundamentals,
+    this.compactChrome = false,
   });
 
   final String selectedSymbol;
   final ValueChanged<String> onSelectSymbol;
   final WatchlistSideCallback onBuySell;
+
+  /// Opens Equity Insider / fundamental analysis for the symbol.
+  final ValueChanged<String>? onOpenFundamentals;
+
+  /// Mobile: hide title/refresh row; search sits at the top; pull-to-refresh.
+  final bool compactChrome;
 
   @override
   State<PaperWatchlistPane> createState() => _PaperWatchlistPaneState();
@@ -50,6 +58,8 @@ class _PaperWatchlistPaneState extends State<PaperWatchlistPane> {
   int _pageIndex = 0;
   String? _hoveredSymbol;
   String? _expandedDepthSymbol;
+  /// Mobile: which row shows B/S/FA (tap only — not hover).
+  String? _actionSymbol;
   QuoteDetail? _depthQuote;
   bool _depthLoading = false;
   bool _refreshing = false;
@@ -132,6 +142,7 @@ class _PaperWatchlistPaneState extends State<PaperWatchlistPane> {
       _listError = null;
       _hoveredSymbol = null;
       _expandedDepthSymbol = null;
+      _actionSymbol = null;
       _depthQuote = null;
       _refreshing = false;
       _quotesUnavailable = false;
@@ -308,6 +319,7 @@ class _PaperWatchlistPaneState extends State<PaperWatchlistPane> {
     setState(() {
       _allRows.removeWhere((r) => r.symbol == symbol);
       if (_hoveredSymbol == symbol) _hoveredSymbol = null;
+      if (_actionSymbol == symbol) _actionSymbol = null;
       if (_expandedDepthSymbol == symbol) {
         _expandedDepthSymbol = null;
         _depthQuote = null;
@@ -321,16 +333,17 @@ class _PaperWatchlistPaneState extends State<PaperWatchlistPane> {
     }
   }
 
-  Future<void> _toggleDepth(WatchlistStock stock) async {
+  /// Card tap: select, reveal actions, and ensure depth is open.
+  Future<void> _onCardTap(WatchlistStock stock) async {
+    setState(() => _actionSymbol = stock.symbol);
     widget.onSelectSymbol(stock.symbol);
     if (_expandedDepthSymbol == stock.symbol) {
-      setState(() {
-        _expandedDepthSymbol = null;
-        _depthQuote = null;
-        _depthLoading = false;
-      });
       return;
     }
+    await _openDepth(stock);
+  }
+
+  Future<void> _openDepth(WatchlistStock stock) async {
     setState(() {
       _expandedDepthSymbol = stock.symbol;
       _depthQuote = null;
@@ -348,6 +361,10 @@ class _PaperWatchlistPaneState extends State<PaperWatchlistPane> {
     });
   }
 
+  Future<void> _pullToRefresh() async {
+    await _selectSource(_selectedSourceId);
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -356,43 +373,46 @@ class _PaperWatchlistPaneState extends State<PaperWatchlistPane> {
       orElse: () => _sources.first,
     );
     final pageRows = _pageRows;
+    final compact = widget.compactChrome;
 
     return Material(
       color: colors.surface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-            child: Row(
-              children: [
-                Text(
-                  'Watchlist',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const Spacer(),
-                if ((_refreshing && _pageNeedsQuoteSpinner) || _loadingList)
-                  SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: colors.actionPrimaryBg,
-                    ),
-                  )
-                else
-                  IconButton(
-                    tooltip: 'Refresh quotes',
-                    iconSize: 18,
-                    visualDensity: VisualDensity.compact,
-                    onPressed: pageRows.isEmpty ? null : _refreshVisibleQuotes,
-                    icon: Icon(Icons.refresh, color: colors.textSecondary),
+          if (!compact)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+              child: Row(
+                children: [
+                  Text(
+                    'Watchlist',
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
-              ],
+                  const Spacer(),
+                  if ((_refreshing && _pageNeedsQuoteSpinner) || _loadingList)
+                    SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: colors.actionPrimaryBg,
+                      ),
+                    )
+                  else
+                    IconButton(
+                      tooltip: 'Refresh quotes',
+                      iconSize: 18,
+                      visualDensity: VisualDensity.compact,
+                      onPressed:
+                          pageRows.isEmpty ? null : _refreshVisibleQuotes,
+                      icon: Icon(Icons.refresh, color: colors.textSecondary),
+                    ),
+                ],
+              ),
             ),
-          ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: EdgeInsets.fromLTRB(12, compact ? 12 : 0, 12, 0),
             child: SmartSearchAnchor(
               controller: _searchController,
               compact: true,
@@ -436,7 +456,9 @@ class _PaperWatchlistPaneState extends State<PaperWatchlistPane> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Text(
-                'Quotes unavailable — tap refresh',
+                compact
+                    ? 'Quotes unavailable — pull down to refresh'
+                    : 'Quotes unavailable — tap refresh',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: colors.textSecondary,
                     ),
@@ -446,97 +468,152 @@ class _PaperWatchlistPaneState extends State<PaperWatchlistPane> {
           const SizedBox(height: 8),
           Divider(height: 1, color: colors.divider),
           Expanded(
-            child: _loadingList
-                ? const Center(child: CircularProgressIndicator())
-                : _listError != null
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                _listError!,
-                                textAlign: TextAlign.center,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(color: colors.statusError),
-                              ),
-                              const SizedBox(height: 12),
-                              TextButton(
-                                onPressed: () =>
-                                    _selectSource(_selectedSourceId),
-                                child: const Text('Retry'),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    : pageRows.isEmpty
-                        ? Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(24),
-                              child: Text(
-                                _isNifty
-                                    ? 'No Nifty 50 stocks loaded'
-                                    : 'Search by symbol or name to add stocks',
-                                textAlign: TextAlign.center,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(color: colors.textSecondary),
+            child: RefreshIndicator(
+              color: colors.actionPrimaryBg,
+              onRefresh: _pullToRefresh,
+              child: _loadingList
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: const [
+                        SizedBox(height: 120),
+                        Center(child: CircularProgressIndicator()),
+                      ],
+                    )
+                  : _listError != null
+                      ? ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          children: [
+                            SizedBox(
+                              height: 200,
+                              child: Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(24),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        _listError!,
+                                        textAlign: TextAlign.center,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(
+                                              color: colors.statusError,
+                                            ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      TextButton(
+                                        onPressed: () =>
+                                            _selectSource(_selectedSourceId),
+                                        child: const Text('Retry'),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
-                          )
-                        : ListView.builder(
-                            itemCount: pageRows.length,
-                            itemBuilder: (context, index) {
-                              final stock = pageRows[index];
-                              final selected = stock.symbol ==
-                                  widget.selectedSymbol.toUpperCase();
-                              final hovered = _hoveredSymbol == stock.symbol;
-                              final expanded =
-                                  _expandedDepthSymbol == stock.symbol;
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  if (index > 0)
-                                    Divider(height: 1, color: colors.divider),
-                                  _WatchlistRow(
-                                    stock: stock,
-                                    selected: selected,
-                                    showActions:
-                                        hovered || selected || expanded,
-                                    depthExpanded: expanded,
-                                    onHover: (h) => setState(
-                                      () => _hoveredSymbol =
-                                          h ? stock.symbol : null,
+                          ],
+                        )
+                      : pageRows.isEmpty
+                          ? ListView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              children: [
+                                SizedBox(
+                                  height: 200,
+                                  child: Center(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(24),
+                                      child: Text(
+                                        _isNifty
+                                            ? 'No Nifty 50 stocks loaded'
+                                            : 'Search by symbol or name to add stocks',
+                                        textAlign: TextAlign.center,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(
+                                              color: colors.textSecondary,
+                                            ),
+                                      ),
                                     ),
-                                    onTap: () =>
-                                        widget.onSelectSymbol(stock.symbol),
-                                    onBuy: () =>
-                                        widget.onBuySell(stock.symbol, 'BUY'),
-                                    onSell: () =>
-                                        widget.onBuySell(stock.symbol, 'SELL'),
-                                    onDepth: () => _toggleDepth(stock),
-                                    onRemove: () => _remove(stock.symbol),
                                   ),
-                                  AnimatedCrossFade(
-                                    firstChild: const SizedBox.shrink(),
-                                    secondChild: _DepthExpandPanel(
-                                      loading: _depthLoading && expanded,
-                                      quote: expanded ? _depthQuote : null,
+                                ),
+                              ],
+                            )
+                          : ListView.builder(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              itemCount: pageRows.length,
+                              itemBuilder: (context, index) {
+                                final stock = pageRows[index];
+                                final selected = stock.symbol ==
+                                    widget.selectedSymbol.toUpperCase();
+                                final hovered =
+                                    !compact && _hoveredSymbol == stock.symbol;
+                                final expanded =
+                                    _expandedDepthSymbol == stock.symbol;
+                                // Mobile: icons only for the tapped card.
+                                // Desktop: hover / selected / depth.
+                                final showActions = compact
+                                    ? _actionSymbol == stock.symbol
+                                    : (hovered || selected || expanded);
+                                return Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    if (index > 0)
+                                      Divider(
+                                        height: 1,
+                                        color: colors.divider,
+                                      ),
+                                    _WatchlistRow(
+                                      stock: stock,
+                                      selected: selected ||
+                                          _actionSymbol == stock.symbol,
+                                      showActions: showActions,
+                                      depthExpanded: expanded,
+                                      enableHover: !compact,
+                                      onHover: (h) => setState(
+                                        () => _hoveredSymbol =
+                                            h ? stock.symbol : null,
+                                      ),
+                                      onTap: () {
+                                        unawaited(_onCardTap(stock));
+                                      },
+                                      onBuy: () => widget.onBuySell(
+                                        stock.symbol,
+                                        'BUY',
+                                      ),
+                                      onSell: () => widget.onBuySell(
+                                        stock.symbol,
+                                        'SELL',
+                                      ),
+                                      onFundamentals: () {
+                                        final cb = widget.onOpenFundamentals;
+                                        if (cb != null) {
+                                          cb(stock.symbol);
+                                        } else {
+                                          widget.onSelectSymbol(stock.symbol);
+                                        }
+                                      },
+                                      onRemove: () => _remove(stock.symbol),
                                     ),
-                                    crossFadeState: expanded
-                                        ? CrossFadeState.showSecond
-                                        : CrossFadeState.showFirst,
-                                    duration: const Duration(milliseconds: 200),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
+                                    AnimatedCrossFade(
+                                      firstChild: const SizedBox.shrink(),
+                                      secondChild: _DepthExpandPanel(
+                                        loading: _depthLoading && expanded,
+                                        quote: expanded ? _depthQuote : null,
+                                      ),
+                                      crossFadeState: expanded
+                                          ? CrossFadeState.showSecond
+                                          : CrossFadeState.showFirst,
+                                      duration:
+                                          const Duration(milliseconds: 200),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+            ),
           ),
         ],
       ),
@@ -659,11 +736,12 @@ class _WatchlistRow extends StatelessWidget {
     required this.selected,
     required this.showActions,
     required this.depthExpanded,
+    required this.enableHover,
     required this.onHover,
     required this.onTap,
     required this.onBuy,
     required this.onSell,
-    required this.onDepth,
+    required this.onFundamentals,
     required this.onRemove,
   });
 
@@ -671,127 +749,126 @@ class _WatchlistRow extends StatelessWidget {
   final bool selected;
   final bool showActions;
   final bool depthExpanded;
+  final bool enableHover;
   final ValueChanged<bool> onHover;
   final VoidCallback onTap;
   final VoidCallback onBuy;
   final VoidCallback onSell;
-  final VoidCallback onDepth;
+  final VoidCallback onFundamentals;
   final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final priceColor = stock.isNegative
-        ? colors.statusError
+        ? colors.marketNegativeIndicator
         : stock.isPositive
             ? colors.marketPositiveIndicator
             : colors.textPrimary;
     final fmt = NumberFormat('#,##0.00');
 
-    return MouseRegion(
-      onEnter: (_) => onHover(true),
-      onExit: (_) => onHover(false),
-      child: Material(
-        color: selected || depthExpanded
-            ? colors.actionPrimaryBg.withValues(alpha: 0.08)
-            : colors.surface,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        stock.symbol,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        stock.exchange,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: colors.textSecondary,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (showActions)
-                  _ActionToolbar(
-                    depthExpanded: depthExpanded,
-                    onBuy: onBuy,
-                    onSell: onSell,
-                    onDepth: onDepth,
-                    onRemove: onRemove,
-                  )
-                else
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            stock.ltp > 0 ? fmt.format(stock.ltp) : '—',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  color: priceColor,
-                                  fontWeight: FontWeight.w600,
-                                ),
+    final row = Material(
+      color: selected || depthExpanded
+          ? colors.actionPrimaryBg.withValues(alpha: 0.08)
+          : colors.surface,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      stock.symbol,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
                           ),
-                          if (stock.ltp > 0) ...[
-                            const SizedBox(width: 4),
-                            Icon(
-                              stock.isNegative
-                                  ? Icons.arrow_drop_down
-                                  : Icons.arrow_drop_up,
-                              size: 18,
-                              color: priceColor,
-                            ),
-                          ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      stock.exchange,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: colors.textSecondary,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              if (showActions)
+                _ActionToolbar(
+                  onBuy: onBuy,
+                  onSell: onSell,
+                  onFundamentals: onFundamentals,
+                  onRemove: onRemove,
+                )
+              else
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          stock.ltp > 0 ? fmt.format(stock.ltp) : '—',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: priceColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                        ),
+                        if (stock.ltp > 0) ...[
+                          const SizedBox(width: 4),
+                          Icon(
+                            stock.isNegative
+                                ? Icons.arrow_drop_down
+                                : Icons.arrow_drop_up,
+                            size: 18,
+                            color: priceColor,
+                          ),
                         ],
-                      ),
-                      Text(
-                        stock.ltp > 0
-                            ? '${fmt.format(stock.change)} (${stock.changePercent.toStringAsFixed(2)}%)'
-                            : '',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: priceColor,
-                            ),
-                      ),
-                    ],
-                  ),
-              ],
-            ),
+                      ],
+                    ),
+                    Text(
+                      stock.ltp > 0
+                          ? '${fmt.format(stock.change)} (${stock.changePercent.toStringAsFixed(2)}%)'
+                          : '',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: priceColor,
+                          ),
+                    ),
+                  ],
+                ),
+            ],
           ),
         ),
       ),
+    );
+
+    if (!enableHover) return row;
+    return MouseRegion(
+      onEnter: (_) => onHover(true),
+      onExit: (_) => onHover(false),
+      child: row,
     );
   }
 }
 
 class _ActionToolbar extends StatelessWidget {
   const _ActionToolbar({
-    required this.depthExpanded,
     required this.onBuy,
     required this.onSell,
-    required this.onDepth,
+    required this.onFundamentals,
     required this.onRemove,
   });
 
-  final bool depthExpanded;
   final VoidCallback onBuy;
   final VoidCallback onSell;
-  final VoidCallback onDepth;
+  final VoidCallback onFundamentals;
   final VoidCallback onRemove;
 
   @override
@@ -808,20 +885,18 @@ class _ActionToolbar extends StatelessWidget {
         const SizedBox(width: 4),
         _Sq(
           label: 'S',
-          bg: colors.statusError,
+          bg: colors.marketNegativeIndicator,
           onTap: onSell,
         ),
         const SizedBox(width: 2),
         IconButton(
-          tooltip: depthExpanded ? 'Hide depth' : 'Depth',
+          tooltip: 'Fundamental analysis',
           iconSize: 18,
           visualDensity: VisualDensity.compact,
-          onPressed: onDepth,
+          onPressed: onFundamentals,
           icon: Icon(
-            Icons.candlestick_chart_outlined,
-            color: depthExpanded
-                ? colors.actionPrimaryBg
-                : colors.textSecondary,
+            Icons.analytics_outlined,
+            color: colors.actionPrimaryBg,
           ),
         ),
         IconButton(
@@ -829,7 +904,7 @@ class _ActionToolbar extends StatelessWidget {
           iconSize: 18,
           visualDensity: VisualDensity.compact,
           onPressed: onRemove,
-          icon: Icon(Icons.close, color: colors.actionPrimaryBg),
+          icon: Icon(Icons.close, color: colors.textSecondary),
         ),
       ],
     );
