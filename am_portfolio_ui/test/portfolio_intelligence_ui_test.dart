@@ -1,6 +1,7 @@
 import 'package:am_portfolio_ui/features/portfolio/internal/domain/entities/portfolio_analytics.dart';
 import 'package:am_portfolio_ui/features/portfolio/internal/domain/entities/portfolio_intelligence.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intelligence/intelligence_donut.dart';
+import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intelligence/intelligence_glass_card.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intelligence/portfolio_risk_radar_card.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intelligence/portfolio_stress_card.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intelligence/portfolio_what_if_card.dart';
@@ -200,16 +201,31 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.text('No material risk findings'), findsNothing);
     expect(find.text('Volatility'), findsWidgets);
     expect(find.text('72'), findsOneWidget);
-    expect(find.text('High'), findsOneWidget);
+    expect(find.text('High'), findsWidgets);
     expect(find.text('Medium'), findsWidgets);
     expect(find.text('Good'), findsWidgets);
     expect(find.text('Score'), findsNothing);
-    expect(find.text('View Risk Analysis →'), findsOneWidget);
+    expect(find.text('View Risk Analysis →'), findsNothing);
+    expect(find.textContaining('Key insight'), findsOneWidget);
+    expect(find.textContaining('largest risk factor (72)'), findsOneWidget);
+    expect(
+      find.text('How your portfolio risk is distributed'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Volatility').first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(find.text('What it means'), findsOneWidget);
+    expect(find.text('Good to know'), findsOneWidget);
+    expect(find.text('How we calculate it'), findsNothing);
+    expect(find.textContaining('volatility health'), findsNothing);
   });
 
   testWidgets('Risk real HIGH finding shows High pill', (tester) async {
@@ -248,11 +264,17 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.text('Financial Services'), findsOneWidget);
     expect(find.text('31.4%'), findsOneWidget);
-    expect(find.text('High'), findsOneWidget);
+    expect(find.text('High'), findsWidgets);
+    expect(find.textContaining('Key insight'), findsOneWidget);
+    expect(
+      find.textContaining('largest risk factor (31.4%)'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('What-If shows compact After Simulation placeholder before run',
@@ -325,5 +347,39 @@ void main() {
     await tester.tap(find.text('Simulate'));
     await tester.pump();
     expect(find.text('Target weight % must be ≤ 100'), findsOneWidget);
+  });
+
+  testWidgets('Intelligence sheet Close pops dialog, keeps home', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: TextButton(
+                onPressed: () => showIntelligenceSheet(
+                  context: context,
+                  title: 'Risk Analysis',
+                  body: const Text('Sheet body content'),
+                ),
+                child: const Text('Open sheet'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Open sheet'), findsOneWidget);
+    await tester.tap(find.text('Open sheet'));
+    await tester.pumpAndSettle();
+    expect(find.text('Risk Analysis'), findsOneWidget);
+    expect(find.text('Sheet body content'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Close'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Risk Analysis'), findsNothing);
+    expect(find.text('Sheet body content'), findsNothing);
+    expect(find.text('Open sheet'), findsOneWidget);
   });
 }

@@ -286,7 +286,17 @@ void showIntelligenceSheet({
   final isPhone = width < 600;
   final isDark = Theme.of(context).brightness == Brightness.dark;
 
-  Widget chrome({ScrollController? controller, required bool expandBody}) {
+  Widget chrome({
+    required BuildContext routeContext,
+    ScrollController? controller,
+    required bool expandBody,
+  }) {
+    void close() {
+      // MUST use the dialog/sheet route context. Using the Overview card
+      // context pops the ShellRoute page under a root dialog → blank page.
+      Navigator.of(routeContext).pop();
+    }
+
     return Material(
       color: isDark
           ? const Color(0xFF121820)
@@ -325,7 +335,7 @@ void showIntelligenceSheet({
                 ),
                 IconButton(
                   tooltip: 'Close',
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: close,
                   icon: const Icon(Icons.close_rounded, size: 20),
                 ),
               ],
@@ -350,7 +360,7 @@ void showIntelligenceSheet({
               alignment: Alignment.centerRight,
               child: IntelligenceTextLink(
                 label: 'Close',
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: close,
               ),
             ),
           ],
@@ -365,13 +375,16 @@ void showIntelligenceSheet({
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => DraggableScrollableSheet(
+      builder: (routeContext) => DraggableScrollableSheet(
         expand: false,
         initialChildSize: 0.9,
         minChildSize: 0.5,
         maxChildSize: 0.95,
-        builder: (_, controller) =>
-            chrome(controller: controller, expandBody: true),
+        builder: (_, controller) => chrome(
+          routeContext: routeContext,
+          controller: controller,
+          expandBody: true,
+        ),
       ),
     );
     return;
@@ -379,15 +392,15 @@ void showIntelligenceSheet({
 
   showDialog<void>(
     context: context,
-    builder: (ctx) {
-      final maxH = MediaQuery.sizeOf(ctx).height * 0.78;
+    builder: (routeContext) {
+      final maxH = MediaQuery.sizeOf(routeContext).height * 0.78;
       return Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
         child: SizedBox(
           width: 560,
           height: maxH,
-          child: chrome(expandBody: true),
+          child: chrome(routeContext: routeContext, expandBody: true),
         ),
       );
     },
