@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
+import '../../../../core/styles/market_theme_extension.dart';
 import '../../providers/equity_insider_provider.dart';
 
 /// Equity Insider Interactive Stock Price Chart.
@@ -54,8 +55,9 @@ class _EquityInsiderChartState extends ConsumerState<EquityInsiderChart> {
 
   @override
   Widget build(BuildContext context) {
+    final activeExchange = ref.watch(selectedExchangeProvider);
     final tfCode = _timeFrameToCode(_selectedTimeFrame);
-    final query = EquityChartQuery(symbol: widget.symbol, timeframe: tfCode);
+    final query = EquityChartQuery(symbol: widget.symbol, timeframe: tfCode, exchange: activeExchange);
     final chartDataAsync = ref.watch(equityStockChartDataProvider(query));
 
     return LayoutBuilder(
@@ -69,13 +71,33 @@ class _EquityInsiderChartState extends ConsumerState<EquityInsiderChart> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Price Performance & Chart',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: context.textPrimary,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        'Price Performance & Chart',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: context.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: (activeExchange == 'BSE' ? Colors.orange : context.marketTheme.chartBlue).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          activeExchange,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: activeExchange == 'BSE' ? Colors.orange : context.marketTheme.chartBlue,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,

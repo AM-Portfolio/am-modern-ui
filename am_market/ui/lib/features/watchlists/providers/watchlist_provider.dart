@@ -128,7 +128,7 @@ final watchlistQuotesProvider = FutureProvider.family<Map<String, WatchlistStock
     // enrich from fundamentalProfileProvider
     if (lastPrice == 0.0 || (change == 0.0 && changePercent == 0.0) || companyName == symUpper) {
       try {
-        final profile = await ref.watch(fundamentalProfileProvider(symUpper).future);
+        final profile = await ref.watch(fundamentalProfileProvider(EquityFundamentalQuery(symbol: symUpper)).future);
         if (profile != null) {
           if (lastPrice == 0.0 && profile.currentPrice != null && profile.currentPrice! > 0) {
             lastPrice = profile.currentPrice!;

@@ -14,14 +14,18 @@ class FundamentalAnalysisApi {
   // ─── Unified Endpoint: GET /v1/fundamentals/{symbol} ───────────────────────
   // Returns company profile + valuation + profitability + financials in one call.
 
-  Future<Response> getFundamentalsWithHttpInfo(String symbol) async {
+  Future<Response> getFundamentalsWithHttpInfo(String symbol, {String? exchange}) async {
     final path = r'/v1/fundamentals/{symbol}'.replaceAll('{symbol}', symbol);
-    return apiClient.invokeAPI(path, 'GET', [], null, {}, {}, null);
+    final queryParams = <QueryParam>[];
+    if (exchange != null && exchange.isNotEmpty) {
+      queryParams.add(QueryParam('exchange', exchange));
+    }
+    return apiClient.invokeAPI(path, 'GET', queryParams, null, {}, {}, null);
   }
 
   /// Get unified fundamental analysis (company profile + ratios + financials).
-  Future<FundamentalRatiosResponse?> getFundamentals(String symbol) async {
-    final response = await getFundamentalsWithHttpInfo(symbol);
+  Future<FundamentalRatiosResponse?> getFundamentals(String symbol, {String? exchange}) async {
+    final response = await getFundamentalsWithHttpInfo(symbol, exchange: exchange);
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
@@ -35,14 +39,18 @@ class FundamentalAnalysisApi {
 
   // ─── Ratios Only: GET /v1/fundamentals/{symbol}/ratios ─────────────────────
 
-  Future<Response> getRatiosWithHttpInfo(String symbol) async {
+  Future<Response> getRatiosWithHttpInfo(String symbol, {String? exchange}) async {
     final path = r'/v1/fundamentals/{symbol}/ratios'.replaceAll('{symbol}', symbol);
-    return apiClient.invokeAPI(path, 'GET', [], null, {}, {}, null);
+    final queryParams = <QueryParam>[];
+    if (exchange != null && exchange.isNotEmpty) {
+      queryParams.add(QueryParam('exchange', exchange));
+    }
+    return apiClient.invokeAPI(path, 'GET', queryParams, null, {}, {}, null);
   }
 
   /// Get valuation & profitability ratios for a given symbol.
-  Future<FundamentalRatiosResponse?> getRatios(String symbol) async {
-    final response = await getRatiosWithHttpInfo(symbol);
+  Future<FundamentalRatiosResponse?> getRatios(String symbol, {String? exchange}) async {
+    final response = await getRatiosWithHttpInfo(symbol, exchange: exchange);
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
@@ -56,13 +64,17 @@ class FundamentalAnalysisApi {
 
   // ─── Profile: GET /v1/fundamentals/{symbol}/profile ────────────────────────
 
-  Future<Response> getProfileWithHttpInfo(String symbol) async {
+  Future<Response> getProfileWithHttpInfo(String symbol, {String? exchange}) async {
     final path = r'/v1/fundamentals/{symbol}/profile'.replaceAll('{symbol}', symbol);
-    return apiClient.invokeAPI(path, 'GET', [], null, {}, {}, null);
+    final queryParams = <QueryParam>[];
+    if (exchange != null && exchange.isNotEmpty) {
+      queryParams.add(QueryParam('exchange', exchange));
+    }
+    return apiClient.invokeAPI(path, 'GET', queryParams, null, {}, {}, null);
   }
 
-  Future<FundamentalRatiosResponse?> getProfile(String symbol) async {
-    final response = await getProfileWithHttpInfo(symbol);
+  Future<FundamentalRatiosResponse?> getProfile(String symbol, {String? exchange}) async {
+    final response = await getProfileWithHttpInfo(symbol, exchange: exchange);
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
@@ -115,13 +127,17 @@ class FundamentalAnalysisApi {
 
   // ─── Peers: GET /v1/fundamentals/{symbol}/peers ────────────────────────────
 
-  Future<Response> getPeersWithHttpInfo(String symbol) async {
+  Future<Response> getPeersWithHttpInfo(String symbol, {String? exchange}) async {
     final path = r'/v1/fundamentals/{symbol}/peers'.replaceAll('{symbol}', symbol);
-    return apiClient.invokeAPI(path, 'GET', [], null, {}, {}, null);
+    final queryParams = <QueryParam>[];
+    if (exchange != null && exchange.isNotEmpty) {
+      queryParams.add(QueryParam('exchange', exchange));
+    }
+    return apiClient.invokeAPI(path, 'GET', queryParams, null, {}, {}, null);
   }
 
-  Future<List<CompetitorPeer>?> getPeers(String symbol) async {
-    final response = await getPeersWithHttpInfo(symbol);
+  Future<List<CompetitorPeer>?> getPeers(String symbol, {String? exchange}) async {
+    final response = await getPeersWithHttpInfo(symbol, exchange: exchange);
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }

@@ -45,13 +45,51 @@ class RecentlyViewedStocksNotifier extends Notifier<List<String>> {
   }
 }
 
+/// Active selected exchange provider ('NSE' vs 'BSE')
+final selectedExchangeProvider =
+    NotifierProvider<SelectedExchangeNotifier, String>(
+  SelectedExchangeNotifier.new,
+);
+
+class SelectedExchangeNotifier extends Notifier<String> {
+  @override
+  String build() => 'NSE';
+
+  void setExchange(String exchange) {
+    state = exchange;
+  }
+}
+
+class EquityFundamentalQuery {
+  final String symbol;
+  final String exchange;
+
+  const EquityFundamentalQuery({
+    required this.symbol,
+    this.exchange = 'NSE',
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EquityFundamentalQuery &&
+          runtimeType == other.runtimeType &&
+          symbol.toUpperCase() == other.symbol.toUpperCase() &&
+          exchange.toUpperCase() == other.exchange.toUpperCase();
+
+  @override
+  int get hashCode => symbol.toUpperCase().hashCode ^ exchange.toUpperCase().hashCode;
+}
+
 class EquityChartQuery {
   final String symbol;
   final String timeframe;
+  final String exchange;
 
   const EquityChartQuery({
     required this.symbol,
     required this.timeframe,
+    this.exchange = 'NSE',
   });
 
   @override
@@ -60,10 +98,14 @@ class EquityChartQuery {
       other is EquityChartQuery &&
           runtimeType == other.runtimeType &&
           symbol.toUpperCase() == other.symbol.toUpperCase() &&
-          timeframe.toUpperCase() == other.timeframe.toUpperCase();
+          timeframe.toUpperCase() == other.timeframe.toUpperCase() &&
+          exchange.toUpperCase() == other.exchange.toUpperCase();
 
   @override
-  int get hashCode => symbol.toUpperCase().hashCode ^ timeframe.toUpperCase().hashCode;
+  int get hashCode =>
+      symbol.toUpperCase().hashCode ^
+      timeframe.toUpperCase().hashCode ^
+      exchange.toUpperCase().hashCode;
 }
 
 final equityStockChartDataProvider =
@@ -79,8 +121,11 @@ final equityStockChartDataProvider =
   } catch (_) {}
 
   try {
+    final chartSymbol = (query.exchange.toUpperCase() == 'BSE' && !query.symbol.contains(':'))
+        ? 'BSE:${query.symbol}'
+        : query.symbol;
     final response = await sdkService.analyticsApi.getHistoricalCharts(
-      query.symbol,
+      chartSymbol,
       range: query.timeframe,
       isIndexSymbol: false,
     );
@@ -89,7 +134,7 @@ final equityStockChartDataProvider =
 
     if (response != null && response.data.isNotEmpty) {
       final symKey = response.data.keys.firstWhere(
-        (k) => k.toUpperCase() == query.symbol.toUpperCase(),
+        (k) => k.toUpperCase() == chartSymbol.toUpperCase() || k.toUpperCase() == query.symbol.toUpperCase(),
         orElse: () => response.data.keys.first,
       );
       final historical = response.data[symKey];
@@ -102,13 +147,13 @@ final equityStockChartDataProvider =
     if (dataPoints.isEmpty && query.timeframe.toUpperCase() == '1W') {
       try {
         final mResponse = await sdkService.analyticsApi.getHistoricalCharts(
-          query.symbol,
+          chartSymbol,
           range: '1M',
           isIndexSymbol: false,
         );
         if (mResponse != null && mResponse.data.isNotEmpty) {
           final symKey = mResponse.data.keys.firstWhere(
-            (k) => k.toUpperCase() == query.symbol.toUpperCase(),
+            (k) => k.toUpperCase() == chartSymbol.toUpperCase() || k.toUpperCase() == query.symbol.toUpperCase(),
             orElse: () => mResponse.data.keys.first,
           );
           final mHist = mResponse.data[symKey];
@@ -125,13 +170,13 @@ final equityStockChartDataProvider =
     if (dataPoints.isEmpty && query.timeframe.toUpperCase() == '1D') {
       try {
         final ltpRes = await sdkService.marketDataApi.getLiveLTP(
-          query.symbol,
+          chartSymbol,
           isIndexSymbol: false,
         );
         if (ltpRes != null && ltpRes.containsKey('data') && ltpRes['data'] is Map) {
           final dataMap = ltpRes['data'] as Map;
           final symKey = dataMap.keys.firstWhere(
-            (k) => k.toString().toUpperCase() == query.symbol.toUpperCase(),
+            (k) => k.toString().toUpperCase() == chartSymbol.toUpperCase() || k.toString().toUpperCase() == query.symbol.toUpperCase(),
             orElse: () => null,
           );
           if (symKey != null) {
@@ -202,7 +247,7 @@ final equityStockChartDataProvider =
 });
 
 final fundamentalProfileProvider =
-    FutureProvider.family<FundamentalRatiosResponse?, String>((ref, symbol) async {
+    FutureProvider.family<FundamentalRatiosResponse?, EquityFundamentalQuery>((ref, query) async {
   final sdkService = MarketDataSdkService();
   try {
     if (GetIt.I.isRegistered<SecureStorageService>()) {
@@ -213,14 +258,14 @@ final fundamentalProfileProvider =
     }
   } catch (_) {}
   try {
-    return await sdkService.fundamentalApi.getProfile(symbol);
+    return await sdkService.fundamentalApi.getProfile(query.symbol, exchange: query.exchange);
   } catch (e) {
-    throw Exception('Failed to load profile for $symbol: $e');
+    throw Exception('Failed to load profile for ${query.symbol}: $e');
   }
 });
 
 final fundamentalRatiosProvider =
-    FutureProvider.family<FundamentalRatiosResponse?, String>((ref, symbol) async {
+    FutureProvider.family<FundamentalRatiosResponse?, EquityFundamentalQuery>((ref, query) async {
   final sdkService = MarketDataSdkService();
   try {
     if (GetIt.I.isRegistered<SecureStorageService>()) {
@@ -231,14 +276,14 @@ final fundamentalRatiosProvider =
     }
   } catch (_) {}
   try {
-    return await sdkService.fundamentalApi.getRatios(symbol);
+    return await sdkService.fundamentalApi.getRatios(query.symbol, exchange: query.exchange);
   } catch (e) {
-    throw Exception('Failed to load ratios for $symbol: $e');
+    throw Exception('Failed to load ratios for ${query.symbol}: $e');
   }
 });
 
 final fundamentalUnifiedProvider =
-    FutureProvider.family<FundamentalRatiosResponse?, String>((ref, symbol) async {
+    FutureProvider.family<FundamentalRatiosResponse?, EquityFundamentalQuery>((ref, query) async {
   final sdkService = MarketDataSdkService();
   try {
     if (GetIt.I.isRegistered<SecureStorageService>()) {
@@ -249,9 +294,9 @@ final fundamentalUnifiedProvider =
     }
   } catch (_) {}
   try {
-    return await sdkService.fundamentalApi.getFundamentals(symbol);
+    return await sdkService.fundamentalApi.getFundamentals(query.symbol, exchange: query.exchange);
   } catch (e) {
-    throw Exception('Failed to load fundamentals for $symbol: $e');
+    throw Exception('Failed to load fundamentals for ${query.symbol}: $e');
   }
 });
 
@@ -292,7 +337,7 @@ final fundamentalShareholdingProvider =
 });
 
 final fundamentalPeersProvider =
-    FutureProvider.family<List<CompetitorPeer>?, String>((ref, symbol) async {
+    FutureProvider.family<List<CompetitorPeer>?, EquityFundamentalQuery>((ref, query) async {
   final sdkService = MarketDataSdkService();
   try {
     if (GetIt.I.isRegistered<SecureStorageService>()) {
@@ -304,20 +349,22 @@ final fundamentalPeersProvider =
   } catch (_) {}
 
   try {
-    final peers = await sdkService.fundamentalApi.getPeers(symbol);
+    final peers = await sdkService.fundamentalApi.getPeers(query.symbol, exchange: query.exchange);
 
     if (peers != null && peers.isNotEmpty) {
       final symbolsToFetch = <String>{};
-      symbolsToFetch.add(symbol); // main symbol
+      symbolsToFetch.add(query.symbol); // main symbol
       for (final p in peers) {
         if (p.symbol != null && p.symbol!.isNotEmpty) symbolsToFetch.add(p.symbol!);
       }
 
       if (symbolsToFetch.isNotEmpty) {
         try {
+          final prefix = query.exchange.toUpperCase() == 'BSE' ? 'BSE:' : '';
+          final qualifiedSymbols = symbolsToFetch.map((s) => s.contains(':') ? s : prefix + s).join(',');
           // Fetch accurate live LTP and day change percentages from /v1/market-data/live-ltp
           final ltpRes = await sdkService.marketDataApi.getLiveLTP(
-            symbolsToFetch.join(','),
+            qualifiedSymbols,
             isIndexSymbol: false,
           );
 
@@ -326,8 +373,10 @@ final fundamentalPeersProvider =
 
             for (final p in peers) {
               final sym = p.symbol?.toUpperCase();
-              if (sym != null && dataMap.containsKey(sym)) {
-                final item = dataMap[sym] is Map ? dataMap[sym] as Map : null;
+              final qualSym = (prefix + (sym ?? '')).toUpperCase();
+              final itemKey = dataMap.containsKey(qualSym) ? qualSym : (dataMap.containsKey(sym) ? sym : null);
+              if (itemKey != null) {
+                final item = dataMap[itemKey] is Map ? dataMap[itemKey] as Map : null;
                 if (item != null) {
                   if (item['lastPrice'] != null) {
                     final lp = (item['lastPrice'] as num).toDouble();
@@ -350,6 +399,6 @@ final fundamentalPeersProvider =
     }
     return peers;
   } catch (e) {
-    throw Exception('Failed to load peers for $symbol: $e');
+    throw Exception('Failed to load peers for ${query.symbol}: $e');
   }
 });
