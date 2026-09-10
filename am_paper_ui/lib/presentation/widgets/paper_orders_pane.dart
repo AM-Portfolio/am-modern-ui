@@ -157,15 +157,102 @@ class PaperOrdersPane extends StatelessWidget {
     );
   }
 
+  Widget _workingSection(
+    BuildContext context,
+    PaperOmsState state,
+    List<OmsOrder> working,
+    NumberFormat priceFmt,
+  ) {
+    final colors = context.colors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Divider(height: 1, color: colors.divider),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(0, 12, 0, 4),
+          child: Text(
+            'Working orders',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+        ),
+        if (working.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              'No open Limit / Super / Trail orders.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colors.textSecondary,
+                  ),
+            ),
+          )
+        else
+          for (final o in working)
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              title: Text('${o.orderType} ${o.side} ${o.symbol}'),
+              subtitle: Text(
+                'Qty ${o.quantity}'
+                '${(double.tryParse(o.limitPrice ?? '') ?? 0) > 0 ? ' @ ₹${priceFmt.format(double.tryParse(o.limitPrice ?? '') ?? 0)}' : ''}',
+              ),
+              trailing: TextButton(
+                onPressed: state.submitting
+                    ? null
+                    : () => context.read<PaperOmsCubit>().cancel(o.orderId),
+                child: const Text('Cancel'),
+              ),
+            ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final priceFmt = NumberFormat('#,##0.00');
+    final isMobile = MediaQuery.sizeOf(context).width < 720;
 
     return BlocBuilder<PaperOmsCubit, PaperOmsState>(
       builder: (context, state) {
         final rows = _todayRows(state);
         final working = state.orders.where((o) => o.isWorking).toList();
+
+        Future<void> refresh() =>
+            context.read<PaperOmsCubit>().refreshBooks();
+
+        if (isMobile) {
+          return RefreshIndicator(
+            color: colors.actionPrimaryBg,
+            onRefresh: refresh,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              children: [
+                if (rows.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: Text(
+                        'No executed orders today.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: colors.textSecondary,
+                            ),
+                      ),
+                    ),
+                  )
+                else
+                  for (var i = 0; i < rows.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 10),
+                    _buildCard(context, rows[i], i),
+                  ],
+                const SizedBox(height: 8),
+                _workingSection(context, state, working, priceFmt),
+              ],
+            ),
+          );
+        }
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -183,8 +270,7 @@ class PaperOrdersPane extends StatelessWidget {
                   const Spacer(),
                   IconButton(
                     tooltip: 'Refresh',
-                    onPressed: () =>
-                        context.read<PaperOmsCubit>().refreshBooks(),
+                    onPressed: refresh,
                     icon: const Icon(Icons.refresh),
                   ),
                 ],
@@ -220,55 +306,10 @@ class PaperOrdersPane extends StatelessWidget {
                 ),
               ),
             ),
-            Divider(height: 1, color: colors.divider),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: Text(
-                'Working orders',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _workingSection(context, state, working, priceFmt),
             ),
-            if (working.isEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: Text(
-                  'No open Limit / Super / Trail orders.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colors.textSecondary,
-                      ),
-                ),
-              )
-            else
-              SizedBox(
-                height: 140,
-                child: ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  itemCount: working.length,
-                  itemBuilder: (context, i) {
-                    final o = working[i];
-                    final lim = double.tryParse(o.limitPrice ?? '') ?? 0;
-                    return ListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      title: Text('${o.orderType} ${o.side} ${o.symbol}'),
-                      subtitle: Text(
-                        'Qty ${o.quantity}'
-                        '${lim > 0 ? ' @ ₹${priceFmt.format(lim)}' : ''}',
-                      ),
-                      trailing: TextButton(
-                        onPressed: state.submitting
-                            ? null
-                            : () => context
-                                .read<PaperOmsCubit>()
-                                .cancel(o.orderId),
-                        child: const Text('Cancel'),
-                      ),
-                    );
-                  },
-                ),
-              ),
           ],
         );
       },

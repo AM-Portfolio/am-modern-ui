@@ -263,6 +263,7 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final fmt = NumberFormat('#,##0.00');
+    final isMobile = MediaQuery.sizeOf(context).width < 720;
 
     return BlocConsumer<PaperOmsCubit, PaperOmsState>(
       listenWhen: (p, c) => p.positions != c.positions || p.orders != c.orders,
@@ -276,6 +277,103 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
         final unrealizedTotal =
             rows.fold<double>(0, (s, r) => s + r.unrealized);
         final todayPnl = computed.todayRealized + unrealizedTotal;
+
+        Future<void> refresh() async {
+          await context.read<PaperOmsCubit>().refreshBooks();
+          _lastPosKey = null;
+          _maybeRefreshLtps();
+        }
+
+        final pnlCard = Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: colors.cardSurface,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: colors.divider),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Today's P&L",
+                      style: Theme.of(context)
+                          .textTheme
+                          .labelMedium
+                          ?.copyWith(color: colors.textSecondary),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '₹${fmt.format(todayPnl)}',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            color: _pnlColor(context, todayPnl),
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    'Realized ₹${fmt.format(computed.todayRealized)}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  Text(
+                    'Unrealized ₹${fmt.format(unrealizedTotal)}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+
+        if (isMobile) {
+          return RefreshIndicator(
+            color: colors.actionPrimaryBg,
+            onRefresh: refresh,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              children: [
+                pnlCard,
+                const SizedBox(height: 12),
+                if (_loadingLtp)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 8),
+                    child: Center(
+                      child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  ),
+                if (rows.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: Text(
+                        'No open positions.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: colors.textSecondary,
+                            ),
+                      ),
+                    ),
+                  )
+                else
+                  for (var i = 0; i < rows.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 10),
+                    _buildCard(context, rows[i], i),
+                  ],
+              ],
+            ),
+          );
+        }
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -303,11 +401,7 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
                   else
                     IconButton(
                       tooltip: 'Refresh',
-                      onPressed: () {
-                        context.read<PaperOmsCubit>().refreshBooks();
-                        _lastPosKey = null;
-                        _maybeRefreshLtps();
-                      },
+                      onPressed: refresh,
                       icon: const Icon(Icons.refresh),
                     ),
                 ],
@@ -315,56 +409,7 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: colors.cardSurface,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: colors.divider),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Today's P&L",
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelMedium
-                                ?.copyWith(color: colors.textSecondary),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '₹${fmt.format(todayPnl)}',
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineSmall
-                                ?.copyWith(
-                                  color: _pnlColor(context, todayPnl),
-                                  fontWeight: FontWeight.w700,
-                                ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          'Realized ₹${fmt.format(computed.todayRealized)}',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                        Text(
-                          'Unrealized ₹${fmt.format(unrealizedTotal)}',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+              child: pnlCard,
             ),
             Expanded(
               child: Padding(

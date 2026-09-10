@@ -14,6 +14,7 @@ class PaperWalletPane extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final fmt = NumberFormat('#,##0.00');
+    final isMobile = MediaQuery.sizeOf(context).width < 720;
 
     return BlocBuilder<PaperOmsCubit, PaperOmsState>(
       builder: (context, state) {
@@ -21,9 +22,57 @@ class PaperWalletPane extends StatelessWidget {
         final available = double.tryParse(w?.available ?? '') ?? 0;
         final reserved = double.tryParse(w?.reserved ?? '') ?? 0;
 
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
+        Future<void> refresh() =>
+            context.read<PaperOmsCubit>().refreshBooks();
+
+        Widget cards() {
+          if (w == null) {
+            return Text(
+              'No paper wallet loaded.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: colors.textSecondary,
+                  ),
+            );
+          }
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final wide = constraints.maxWidth >= 520;
+              final items = [
+                _WalletCard(
+                  label: 'Available',
+                  value: '₹${fmt.format(available)}',
+                  accent: colors.actionPrimaryBg,
+                ),
+                _WalletCard(
+                  label: 'Reserved',
+                  value: '₹${fmt.format(reserved)}',
+                  accent: colors.actionPrimaryBg,
+                ),
+              ];
+              if (wide) {
+                return Row(
+                  children: [
+                    for (var i = 0; i < items.length; i++) ...[
+                      if (i > 0) const SizedBox(width: 12),
+                      Expanded(child: items[i]),
+                    ],
+                  ],
+                );
+              }
+              return Column(
+                children: [
+                  for (var i = 0; i < items.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 12),
+                    items[i],
+                  ],
+                ],
+              );
+            },
+          );
+        }
+
+        final body = <Widget>[
+          if (!isMobile) ...[
             Text(
               'Paper wallet',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -38,59 +87,34 @@ class PaperWalletPane extends StatelessWidget {
                   ),
             ),
             const SizedBox(height: 16),
-            if (w == null)
-              Text(
-                'No paper wallet loaded.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: colors.textSecondary,
-                    ),
-              )
-            else
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final wide = constraints.maxWidth >= 520;
-                  final cards = [
-                    _WalletCard(
-                      label: 'Available',
-                      value: '₹${fmt.format(available)}',
-                      accent: colors.actionPrimaryBg,
-                    ),
-                    _WalletCard(
-                      label: 'Reserved',
-                      value: '₹${fmt.format(reserved)}',
-                      accent: colors.actionPrimaryBg,
-                    ),
-                  ];
-                  if (wide) {
-                    return Row(
-                      children: [
-                        for (var i = 0; i < cards.length; i++) ...[
-                          if (i > 0) const SizedBox(width: 12),
-                          Expanded(child: cards[i]),
-                        ],
-                      ],
-                    );
-                  }
-                  return Column(
-                    children: [
-                      for (var i = 0; i < cards.length; i++) ...[
-                        if (i > 0) const SizedBox(height: 12),
-                        cards[i],
-                      ],
-                    ],
-                  );
-                },
-              ),
-            if (w != null) ...[
-              const SizedBox(height: 16),
-              Text(
-                'Currency ${w.currency} · ${w.kind}',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: colors.textSecondary,
-                    ),
-              ),
-            ],
           ],
+          cards(),
+          if (w != null) ...[
+            const SizedBox(height: 16),
+            Text(
+              'Currency ${w.currency} · ${w.kind}',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: colors.textSecondary,
+                  ),
+            ),
+          ],
+        ];
+
+        if (isMobile) {
+          return RefreshIndicator(
+            color: colors.actionPrimaryBg,
+            onRefresh: refresh,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              children: body,
+            ),
+          );
+        }
+
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: body,
         );
       },
     );

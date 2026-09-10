@@ -209,30 +209,43 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
     );
   }
 
-  Widget _midPane(BuildContext context) {
+  Widget _midPane(BuildContext context, {VoidCallback? onBack}) {
     final colors = context.colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Material(
           color: colors.surface,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                for (final t in const [
-                  (_MidTab.wallet, 'Wallet'),
-                  (_MidTab.overview, 'Overview'),
-                  (_MidTab.orders, 'Orders'),
-                  (_MidTab.positions, 'Positions'),
-                ])
-                  _MidTabChip(
-                    label: t.$2,
-                    selected: _midTab == t.$1,
-                    onTap: () => setState(() => _midTab = t.$1),
+          child: Row(
+            children: [
+              if (onBack != null)
+                IconButton(
+                  tooltip: 'Back to watchlist',
+                  onPressed: onBack,
+                  icon: const Icon(Icons.arrow_back),
+                  visualDensity: VisualDensity.compact,
+                ),
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      for (final t in const [
+                        (_MidTab.wallet, 'Wallet'),
+                        (_MidTab.overview, 'Overview'),
+                        (_MidTab.orders, 'Orders'),
+                        (_MidTab.positions, 'Positions'),
+                      ])
+                        _MidTabChip(
+                          label: t.$2,
+                          selected: _midTab == t.$1,
+                          onTap: () => setState(() => _midTab = t.$1),
+                        ),
+                    ],
                   ),
-              ],
-            ),
+                ),
+              ),
+            ],
           ),
         ),
         Divider(height: 1, color: colors.divider),
@@ -292,7 +305,10 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
               onSelectSymbol: _selectSymbol,
               onBuySell: _buySell,
               onOpenFundamentals: _openFundamentalAnalysis,
-              midTabBar: _midPane,
+              midTabBar: (ctx) => _midPane(
+                ctx,
+                onBack: () => setState(() => _narrowShowDesk = false),
+              ),
             );
           }
 
@@ -434,7 +450,6 @@ class _NarrowDeskBodyState extends State<_NarrowDeskBody> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
     final showOverview = widget.midTab == _MidTab.overview;
     return Stack(
       children: [
@@ -447,30 +462,7 @@ class _NarrowDeskBodyState extends State<_NarrowDeskBody> {
             compactChrome: true,
           )
         else
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Material(
-                color: colors.surface,
-                child: Row(
-                  children: [
-                    IconButton(
-                      tooltip: 'Back to watchlist',
-                      onPressed: () => widget.onShowDeskChanged(false),
-                      icon: const Icon(Icons.arrow_back),
-                    ),
-                    Text(
-                      'Desk',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(child: widget.midTabBar(context)),
-            ],
-          ),
+          widget.midTabBar(context),
         if (widget.hasSymbol)
           Offstage(
             offstage: true,
