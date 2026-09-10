@@ -12,7 +12,6 @@ import 'package:am_market_ui/features/instrument/instrument_explorer_page.dart';
 import 'package:am_market_ui/features/security/security_explorer_page.dart';
 import 'package:am_market_dev/am_market_dev.dart';
 import 'package:am_market_ui/features/watchlists/presentation/pages/watchlists_page.dart';
-import 'package:am_market_ui/features/market_analysis/presentation/widgets/indices_performance_view_v2.dart';
 import 'package:am_market_ui/features/market/widgets/all_indices_page.dart';
 import 'package:provider/provider.dart' hide Consumer;
 import 'package:flutter_riverpod/flutter_riverpod.dart' hide Provider;
@@ -520,7 +519,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         title: 'All Indices',
         subtitle: 'Market Overview',
         icon: Icons.dashboard_rounded,
-        page: _wrapPage(const IndicesPerformanceViewV2()),
+        page: _wrapPage(const AllIndicesPage()),
         accentColor: accentColor,
       ),
       NavigationItem(
