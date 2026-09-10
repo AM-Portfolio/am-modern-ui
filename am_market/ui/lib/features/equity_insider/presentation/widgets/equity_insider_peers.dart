@@ -61,12 +61,15 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
 
   @override
   Widget build(BuildContext context) {
-    final asyncData = ref.watch(fundamentalPeersProvider(widget.symbol));
+    final activeExchange = ref.watch(selectedExchangeProvider);
+    final asyncData = ref.watch(fundamentalPeersProvider(
+      EquityFundamentalQuery(symbol: widget.symbol, exchange: activeExchange),
+    ));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(context),
+        _buildSectionHeader(context, activeExchange),
         const SizedBox(height: 12),
         asyncData.when(
           data: (peers) {
@@ -547,14 +550,34 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context) {
-    return Text(
-      'Peer Comparison',
-      style: TextStyle(
-        fontSize: 15,
-        fontWeight: FontWeight.w700,
-        color: context.textPrimary,
-      ),
+  Widget _buildSectionHeader(BuildContext context, String activeExchange) {
+    return Row(
+      children: [
+        Text(
+          'Peer Comparison',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: context.textPrimary,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: (activeExchange == 'BSE' ? Colors.orange : context.marketTheme.chartBlue).withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            '$activeExchange Prices',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: activeExchange == 'BSE' ? Colors.orange : context.marketTheme.chartBlue,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

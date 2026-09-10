@@ -27,12 +27,15 @@ class EquityInsiderKpis extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncData = ref.watch(fundamentalUnifiedProvider(symbol));
+    final activeExchange = ref.watch(selectedExchangeProvider);
+    final asyncData = ref.watch(fundamentalUnifiedProvider(
+      EquityFundamentalQuery(symbol: symbol, exchange: activeExchange),
+    ));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(context, 'Valuation & key metrics'),
+        _buildSectionHeader(context, 'Valuation & Key Metrics', activeExchange),
         asyncData.when(
           data: (data) {
             if (data == null) {
@@ -283,7 +286,7 @@ class EquityInsiderKpis extends ConsumerWidget {
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title) {
+  Widget _buildSectionHeader(BuildContext context, String title, String exchange) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -292,11 +295,27 @@ class EquityInsiderKpis extends ConsumerWidget {
           Row(
             children: [
               Text(
-                'Valuation & Key Metrics',
+                title,
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: context.textPrimary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: (exchange == 'BSE' ? Colors.orange : context.marketTheme.chartBlue).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'computed using $exchange LTP',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: exchange == 'BSE' ? Colors.orange : context.marketTheme.chartBlue,
+                  ),
                 ),
               ),
             ],

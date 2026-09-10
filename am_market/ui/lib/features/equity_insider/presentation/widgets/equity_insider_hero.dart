@@ -18,7 +18,10 @@ class EquityInsiderHero extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncData = ref.watch(fundamentalProfileProvider(symbol));
+    final activeExchange = ref.watch(selectedExchangeProvider);
+    final asyncData = ref.watch(fundamentalProfileProvider(
+      EquityFundamentalQuery(symbol: symbol, exchange: activeExchange),
+    ));
 
     return asyncData.when(
       data: (data) {
@@ -29,6 +32,7 @@ class EquityInsiderHero extends ConsumerWidget {
         final arrow = isPos ? '▲' : '▼';
         final absChange = data.dayChange != null ? data.dayChange!.abs().toStringAsFixed(2) : '0.00';
         final pctChange = data.dayChangePercent != null ? data.dayChangePercent!.abs().toStringAsFixed(2) : '0.00';
+        final exchangeBadgeColor = activeExchange == 'BSE' ? Colors.orange : context.marketTheme.chartBlue;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,16 +60,19 @@ class EquityInsiderHero extends ConsumerWidget {
                               letterSpacing: -0.5,
                             ),
                           ),
-                          _buildBadge(context, data.sector ?? 'NSE', isNeutral: true),
+                          _buildBadge(context, activeExchange, customColor: exchangeBadgeColor),
+                          if (data.sector != null && data.sector!.isNotEmpty)
+                            _buildBadge(context, data.sector!, isNeutral: true),
                           if (data.industry != null && data.industry!.isNotEmpty)
                             _buildBadge(context, data.industry!, isNeutral: true),
                           if (onSearchTap != null)
                             _buildSearchCapsule(context),
+                          _buildExchangeToggle(context, ref),
                         ],
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        data.companyName ?? 'National Stock Exchange · Live',
+                        '${data.companyName ?? symbol} · ${activeExchange == 'BSE' ? 'Bombay Stock Exchange' : 'National Stock Exchange'} · Live',
                         style: TextStyle(
                           fontSize: 12,
                           color: context.textSecondary,
@@ -114,6 +121,77 @@ class EquityInsiderHero extends ConsumerWidget {
       },
       loading: () => const SizedBox(height: 80, child: Center(child: CircularProgressIndicator())),
       error: (e, st) => Text('Error loading profile: $e', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+    );
+  }
+
+  Widget _buildExchangeToggle(BuildContext context, WidgetRef ref) {
+    final activeExchange = ref.watch(selectedExchangeProvider);
+    final isBse = activeExchange == 'BSE';
+
+    return Container(
+      height: 26,
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isBse
+              ? Colors.orange.withValues(alpha: 0.5)
+              : context.marketTheme.chartBlue.withValues(alpha: 0.5),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildToggleSegment(
+            context,
+            ref,
+            label: 'NSE',
+            isSelected: !isBse,
+            activeColor: context.marketTheme.chartBlue,
+          ),
+          _buildToggleSegment(
+            context,
+            ref,
+            label: 'BSE',
+            isSelected: isBse,
+            activeColor: Colors.orange,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToggleSegment(
+    BuildContext context,
+    WidgetRef ref, {
+    required String label,
+    required bool isSelected,
+    required Color activeColor,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        if (!isSelected) {
+          ref.read(selectedExchangeProvider.notifier).setExchange(label);
+        }
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+        decoration: BoxDecoration(
+          color: isSelected ? activeColor.withValues(alpha: 0.2) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected ? activeColor : context.textTertiary,
+          ),
+        ),
+      ),
     );
   }
 
@@ -270,11 +348,20 @@ class EquityInsiderHero extends ConsumerWidget {
     return formatter.format(val);
   }
 
-
-  Widget _buildBadge(BuildContext context, String text, {bool isPos = false, bool isNeg = false, bool isNeutral = false}) {
+  Widget _buildBadge(
+    BuildContext context,
+    String text, {
+    bool isPos = false,
+    bool isNeg = false,
+    bool isNeutral = false,
+    Color? customColor,
+  }) {
     Color bg;
     Color fg;
-    if (isPos) {
+    if (customColor != null) {
+      fg = customColor;
+      bg = fg.withValues(alpha: 0.15);
+    } else if (isPos) {
       fg = context.marketTheme.positive;
       bg = fg.withValues(alpha: 0.10);
     } else if (isNeg) {
