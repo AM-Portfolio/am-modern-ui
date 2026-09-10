@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'allocation_panel_widget.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/sections/portfolio_comparison_chart_section.dart';
-import 'package:am_analysis_core/am_analysis_core.dart' hide TimeFrame;
 import 'portfolio_top_movers_panel.dart';
 import 'package:am_design_system/am_design_system.dart' as ds;
 import 'package:intl/intl.dart';
@@ -16,8 +15,12 @@ import '../cubit/portfolio_analytics_state.dart';
 import '../cubit/portfolio_intraday_cubit.dart';
 import 'package:am_common/am_common.dart';
 import 'portfolio_metric_card.dart';
-import '../../internal/data/datasources/portfolio_remote_data_source.dart';
 import '../../providers/portfolio_providers.dart';
+import 'intelligence/portfolio_health_card.dart';
+import 'intelligence/portfolio_risk_radar_card.dart';
+import 'intelligence/portfolio_xray_panel.dart';
+import 'intelligence/portfolio_stress_card.dart';
+import 'intelligence/portfolio_what_if_card.dart';
 
 /// Portfolio overview widget showing summary and key metrics
 class PortfolioOverviewWidget extends ConsumerStatefulWidget {
@@ -234,8 +237,22 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
             ),
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final isMobile = constraints.maxWidth < 800;
-                final isSmallMobile = constraints.maxWidth < 600;
+                final width = constraints.maxWidth;
+                final isPhone = width < 600;
+                final isTablet = width >= 600 && width < 1100;
+                final isWeb = width >= 1100;
+
+                final masterOn =
+                    ref.watch(portfolioIntelligenceOverviewEnabledProvider);
+                final showHealth =
+                    ref.watch(portfolioIntelHealthEnabledProvider);
+                final showRisk = ref.watch(portfolioIntelRiskEnabledProvider);
+                final showXray = ref.watch(portfolioIntelXrayEnabledProvider);
+                final showStress =
+                    ref.watch(portfolioIntelStressEnabledProvider);
+                final showWhatIf =
+                    ref.watch(portfolioIntelWhatIfEnabledProvider);
+                final showAllocation = !masterOn || !showXray;
 
                 return Stack(
                   children: [
@@ -292,8 +309,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // ── ROW 1: 4 Metric Cards ──────────────────────────
-                          if (isSmallMobile)
-                            // Intrinsic rows avoid GridView aspect-ratio blank space.
+                          if (isPhone)
                             Builder(
                               builder: (context) {
                                 final cards = _buildMetricCards(
@@ -358,57 +374,29 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                                 ),
                               ],
                             ),
-                          SizedBox(height: isSmallMobile ? 12 : 20),
+                          SizedBox(height: isPhone ? 12 : 20),
 
-                          // ── ROW 2: Chart + Allocation (or stacked on mobile) ──
-                          if (isMobile) ...[
-                              PortfolioComparisonChartSection(
-                                key: ValueKey('compare_${portfolioId}_${selectedTimeFrame.code}'),
-                                height: 320,
-                              ),
-                            const SizedBox(height: 16),
-                            PortfolioTopMoversPanel(
-                              portfolioId: portfolioId,
-                              timeFrame: selectedTimeFrame,
-                              showTimeFrameSelector: false,
-                            ),
-                            const SizedBox(height: 16),
-                            SizedBox(
-                              height: isSmallMobile ? 650 : 700, // Increased significantly so the sector list doesn't get clipped
-                              child: BlocBuilder<PortfolioCubit, PortfolioState>(
-                                builder: (context, portfolioState) {
-                                  final holdings = portfolioState is PortfolioLoaded ? portfolioState.holdings : null;
-                                  return BlocBuilder<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
-                                    builder: (context, state) {
-                                      if (state is PortfolioAnalyticsLoading) {
-                                        return const AllocationPanelWidget(isLoading: true);
-                                      } else if (state is PortfolioAnalyticsLoaded) {
-                                        final isLoading =
-                                            state.isLoadingType(AnalyticsDataType.sectorAllocation);
-                                        final error =
-                                            state.getErrorForType(AnalyticsDataType.sectorAllocation);
-                                        return AllocationPanelWidget(
-                                          sectorAllocation: state.sectorAllocation,
-                                          marketCapAllocation: state.marketCapAllocation,
-                                          holdings: holdings,
-                                          isLoading: isLoading,
-                                          error: error,
-                                        );
-                                      } else if (state is PortfolioAnalyticsError) {
-                                        return AllocationPanelWidget(error: state.message);
-                                      }
-                                      return const AllocationPanelWidget(isLoading: true);
-                                    },
-                                  );
-                                },
-                              ),
-                            ),
-                          ] else ...[
-                            _MoversAllocationRow(
+                          if (masterOn)
+                            ..._buildIntelBody(
                               portfolioId: portfolioId,
                               selectedTimeFrame: selectedTimeFrame,
+                              isPhone: isPhone,
+                              isTablet: isTablet,
+                              isWeb: isWeb,
+                              showHealth: showHealth,
+                              showRisk: showRisk,
+                              showXray: showXray,
+                              showStress: showStress,
+                              showWhatIf: showWhatIf,
+                              showAllocation: showAllocation,
+                            )
+                          else
+                            ..._buildLegacyBody(
+                              portfolioId: portfolioId,
+                              selectedTimeFrame: selectedTimeFrame,
+                              isPhone: isPhone,
+                              isCompact: !isWeb,
                             ),
-                          ],
                           const SizedBox(height: 20),
                         ],
                       ),
@@ -423,6 +411,169 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         // ── Loading / Skeleton State ──
         return _buildOverviewSkeleton(context);
       },
+    );
+  }
+
+  /// Legacy Overview when master intel flag is OFF.
+  List<Widget> _buildLegacyBody({
+    required String portfolioId,
+    required ds.TimeFrame selectedTimeFrame,
+    required bool isPhone,
+    required bool isCompact,
+  }) {
+    if (isCompact) {
+      return [
+        PortfolioComparisonChartSection(
+          key: ValueKey('compare_${portfolioId}_${selectedTimeFrame.code}'),
+          height: 320,
+        ),
+        const SizedBox(height: 16),
+        PortfolioTopMoversPanel(
+          portfolioId: portfolioId,
+          timeFrame: selectedTimeFrame,
+          showTimeFrameSelector: false,
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: isPhone ? 650 : 700,
+          child: _AllocationPanelHost(),
+        ),
+      ];
+    }
+
+    return [
+      _ChartMoversAllocationRow(
+        portfolioId: portfolioId,
+        selectedTimeFrame: selectedTimeFrame,
+      ),
+    ];
+  }
+
+  /// Flag-gated intelligence layout (UI_SPEC three bands).
+  List<Widget> _buildIntelBody({
+    required String portfolioId,
+    required ds.TimeFrame selectedTimeFrame,
+    required bool isPhone,
+    required bool isTablet,
+    required bool isWeb,
+    required bool showHealth,
+    required bool showRisk,
+    required bool showXray,
+    required bool showStress,
+    required bool showWhatIf,
+    required bool showAllocation,
+  }) {
+    final chart = PortfolioComparisonChartSection(
+      key: ValueKey('compare_${portfolioId}_${selectedTimeFrame.code}'),
+      height: isPhone ? 320 : (isTablet ? 340 : 360),
+    );
+    final movers = PortfolioTopMoversPanel(
+      portfolioId: portfolioId,
+      timeFrame: selectedTimeFrame,
+      showTimeFrameSelector: false,
+    );
+    final health = showHealth
+        ? PortfolioHealthCard(
+            portfolioId: portfolioId,
+            compact: isPhone,
+            maxComponents: isPhone ? 4 : 8,
+          )
+        : null;
+    final risk =
+        showRisk ? PortfolioRiskRadarCard(portfolioId: portfolioId) : null;
+    final xray = showXray ? PortfolioXrayPanel(portfolioId: portfolioId) : null;
+    final stress = showStress
+        ? PortfolioStressCard(
+            portfolioId: portfolioId,
+            initiallyExpanded: !isPhone,
+          )
+        : null;
+    final whatIf = showWhatIf
+        ? PortfolioWhatIfCard(
+            portfolioId: portfolioId,
+            initiallyExpanded: !isPhone,
+          )
+        : null;
+    final allocation = showAllocation
+        ? SizedBox(
+            height: isPhone ? 650 : 420,
+            child: const _AllocationPanelHost(),
+          )
+        : null;
+
+    if (isPhone) {
+      return [
+        if (health != null) ...[health, const SizedBox(height: 12)],
+        chart,
+        const SizedBox(height: 12),
+        if (risk != null) ...[risk, const SizedBox(height: 12)],
+        movers,
+        const SizedBox(height: 12),
+        if (xray != null) ...[xray, const SizedBox(height: 12)],
+        if (allocation != null) ...[allocation, const SizedBox(height: 12)],
+        if (stress != null) ...[stress, const SizedBox(height: 12)],
+        ?whatIf,
+      ];
+    }
+
+    // Tablet + Web share Chart|Health and Movers|Risk pairs.
+    final rows = <Widget>[
+      _twoCol(chart, health),
+      const SizedBox(height: 16),
+      _twoCol(movers, risk),
+    ];
+
+    if (isWeb) {
+      // Row4: X-Ray | Stress | What-If (or Allocation if X-Ray off)
+      final bottom = <Widget>[
+        if (xray != null) Expanded(child: xray),
+        if (allocation != null && xray == null) Expanded(child: allocation),
+        if (stress != null) ...[
+          if (xray != null || allocation != null) const SizedBox(width: 16),
+          Expanded(child: stress),
+        ],
+        if (whatIf != null) ...[
+          if (xray != null || allocation != null || stress != null)
+            const SizedBox(width: 16),
+          Expanded(child: whatIf),
+        ],
+      ];
+      if (bottom.isNotEmpty) {
+        rows.addAll([
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: bottom,
+          ),
+        ]);
+      }
+      return rows;
+    }
+
+    // Tablet: X-Ray full width, then Stress|What-If
+    if (xray != null) {
+      rows.addAll([const SizedBox(height: 16), xray]);
+    } else if (allocation != null) {
+      rows.addAll([const SizedBox(height: 16), allocation]);
+    }
+    if (stress != null || whatIf != null) {
+      rows.add(const SizedBox(height: 16));
+      rows.add(_twoCol(stress, whatIf));
+    }
+    return rows;
+  }
+
+  Widget _twoCol(Widget? left, Widget? right) {
+    if (left == null && right == null) return const SizedBox.shrink();
+    if (left == null) return right!;
+    if (right == null) return left;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: left),
+        const SizedBox(width: 16),
+        Expanded(child: right),
+      ],
     );
   }
 
@@ -641,12 +792,46 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
 }
 
 // ---------------------------------------------------------------------------
-// _MoversAllocationRow
-// Measures the left column height after layout and sizes the right column
-// to match, avoiding IntrinsicHeight which breaks with scrollable children.
+// Allocation host + legacy desktop row (chart+movers | allocation)
 // ---------------------------------------------------------------------------
-class _MoversAllocationRow extends StatelessWidget {
-  const _MoversAllocationRow({
+class _AllocationPanelHost extends StatelessWidget {
+  const _AllocationPanelHost();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<PortfolioCubit, PortfolioState>(
+      builder: (context, portfolioState) {
+        final holdings =
+            portfolioState is PortfolioLoaded ? portfolioState.holdings : null;
+        return BlocBuilder<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
+          builder: (context, state) {
+            if (state is PortfolioAnalyticsLoading) {
+              return const AllocationPanelWidget(isLoading: true);
+            } else if (state is PortfolioAnalyticsLoaded) {
+              final isLoading =
+                  state.isLoadingType(AnalyticsDataType.sectorAllocation);
+              final error =
+                  state.getErrorForType(AnalyticsDataType.sectorAllocation);
+              return AllocationPanelWidget(
+                sectorAllocation: state.sectorAllocation,
+                marketCapAllocation: state.marketCapAllocation,
+                holdings: holdings,
+                isLoading: isLoading,
+                error: error,
+              );
+            } else if (state is PortfolioAnalyticsError) {
+              return AllocationPanelWidget(error: state.message);
+            }
+            return const AllocationPanelWidget(isLoading: true);
+          },
+        );
+      },
+    );
+  }
+}
+
+class _ChartMoversAllocationRow extends StatelessWidget {
+  const _ChartMoversAllocationRow({
     required this.portfolioId,
     required this.selectedTimeFrame,
   });
@@ -659,14 +844,15 @@ class _MoversAllocationRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Left column: Chart + Movers ──
         Expanded(
           flex: 2,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               PortfolioComparisonChartSection(
-                key: ValueKey('compare_${portfolioId}_${selectedTimeFrame.code}'),
+                key: ValueKey(
+                  'compare_${portfolioId}_${selectedTimeFrame.code}',
+                ),
                 height: 360,
               ),
               const SizedBox(height: 16),
@@ -679,38 +865,11 @@ class _MoversAllocationRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 16),
-        // ── Right column: Allocation panel with fixed bounded height ──
-        Expanded(
+        const Expanded(
           flex: 1,
           child: SizedBox(
-            height: 720, // Fixed height avoids IntrinsicHeight multi-pass measurement crashes with animated LayoutBuilders
-            child: BlocBuilder<PortfolioCubit, PortfolioState>(
-              builder: (context, portfolioState) {
-                final holdings = portfolioState is PortfolioLoaded ? portfolioState.holdings : null;
-                return BlocBuilder<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
-                  builder: (context, state) {
-                    if (state is PortfolioAnalyticsLoading) {
-                      return const AllocationPanelWidget(isLoading: true);
-                    } else if (state is PortfolioAnalyticsLoaded) {
-                      final isLoading =
-                          state.isLoadingType(AnalyticsDataType.sectorAllocation);
-                      final error =
-                          state.getErrorForType(AnalyticsDataType.sectorAllocation);
-                      return AllocationPanelWidget(
-                        sectorAllocation: state.sectorAllocation,
-                        marketCapAllocation: state.marketCapAllocation,
-                        holdings: holdings,
-                        isLoading: isLoading,
-                        error: error,
-                      );
-                    } else if (state is PortfolioAnalyticsError) {
-                      return AllocationPanelWidget(error: state.message);
-                    }
-                    return const AllocationPanelWidget(isLoading: true);
-                  },
-                );
-              },
-            ),
+            height: 720,
+            child: _AllocationPanelHost(),
           ),
         ),
       ],

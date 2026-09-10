@@ -52,3 +52,45 @@ final offlineWritesEnabledProvider = Provider<bool>((ref) {
   if (!reads) return false;
   return ref.watch(featureFlagProvider(FeatureFlagKeys.offlineWritesV1));
 });
+
+/// Fail-closed intel flags (default false when GB down / unset).
+bool _intelFlag(Ref ref, String key) {
+  try {
+    ref.watch(featureFlagsReadyProvider);
+    return ref.watch(featureFlagServiceProvider).isOn(
+          key,
+          defaultValue: false,
+        );
+  } catch (_) {
+    return false;
+  }
+}
+
+final portfolioIntelligenceOverviewEnabledProvider = Provider<bool>((ref) {
+  return _intelFlag(ref, FeatureFlagKeys.portfolioIntelligenceOverviewV1);
+});
+
+final portfolioIntelHealthEnabledProvider = Provider<bool>((ref) {
+  if (!ref.watch(portfolioIntelligenceOverviewEnabledProvider)) return false;
+  return _intelFlag(ref, FeatureFlagKeys.portfolioIntelHealthV1);
+});
+
+final portfolioIntelRiskEnabledProvider = Provider<bool>((ref) {
+  if (!ref.watch(portfolioIntelligenceOverviewEnabledProvider)) return false;
+  return _intelFlag(ref, FeatureFlagKeys.portfolioIntelRiskV1);
+});
+
+final portfolioIntelXrayEnabledProvider = Provider<bool>((ref) {
+  if (!ref.watch(portfolioIntelligenceOverviewEnabledProvider)) return false;
+  return _intelFlag(ref, FeatureFlagKeys.portfolioIntelXrayV1);
+});
+
+final portfolioIntelStressEnabledProvider = Provider<bool>((ref) {
+  if (!ref.watch(portfolioIntelligenceOverviewEnabledProvider)) return false;
+  return _intelFlag(ref, FeatureFlagKeys.portfolioIntelStressV1);
+});
+
+final portfolioIntelWhatIfEnabledProvider = Provider<bool>((ref) {
+  if (!ref.watch(portfolioIntelligenceOverviewEnabledProvider)) return false;
+  return _intelFlag(ref, FeatureFlagKeys.portfolioIntelWhatIfV1);
+});

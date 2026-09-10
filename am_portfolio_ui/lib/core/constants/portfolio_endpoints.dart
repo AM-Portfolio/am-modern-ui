@@ -15,6 +15,18 @@ class PortfolioEndpoints {
   static String advancedAnalytics(String portfolioId) =>
       '/v1/analytics/portfolio/$portfolioId/advanced';
 
+  /// Portfolio Intelligence (Health + Risk + X-Ray summary)
+  static String intelligence(String portfolioId) =>
+      '/v1/analytics/portfolio/$portfolioId/intelligence';
+
+  /// Stress scenario estimates
+  static String stress(String portfolioId) =>
+      '/v1/analytics/portfolio/$portfolioId/stress';
+
+  /// What-If simulation (stateless)
+  static String whatIf(String portfolioId) =>
+      '/v1/analytics/portfolio/$portfolioId/what-if';
+
   /// Get user portfolio holdings
   static String userHoldings() => holdings;
 

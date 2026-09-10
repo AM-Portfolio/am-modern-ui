@@ -38,6 +38,13 @@ void main() {
       service.isOn(FeatureFlagKeys.newsUiEnabled, defaultValue: false),
       isFalse,
     );
+    expect(
+      service.isOn(
+        FeatureFlagKeys.portfolioIntelligenceOverviewV1,
+        defaultValue: false,
+      ),
+      isFalse,
+    );
     service.dispose();
   });
 }
