@@ -13,24 +13,28 @@ class PortfolioHealthCard extends ConsumerWidget {
     required this.portfolioId,
     this.compact = false,
     this.maxComponents,
+    this.minHeight,
+    this.fillHeight = false,
     super.key,
   });
 
   final String portfolioId;
   final bool compact;
-
-  /// Phone shows top N; null = all (up to 8).
   final int? maxComponents;
+  final double? minHeight;
+  final bool fillHeight;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(portfolioIntelligenceProvider(portfolioId));
 
     return async.when(
-      loading: () => const IntelligenceCardSkeleton(height: 280),
+      loading: () => IntelligenceCardSkeleton(height: minHeight ?? (fillHeight ? 340 : 220)),
       error: (e, _) => IntelligenceGlassCard(
         title: 'Health Score',
         icon: Icons.favorite_rounded,
+        minHeight: minHeight,
+        fillHeight: fillHeight,
         child: IntelligenceRetryRow(
           message: 'Could not load health score',
           onRetry: () =>
@@ -43,6 +47,8 @@ class PortfolioHealthCard extends ConsumerWidget {
           return IntelligenceGlassCard(
             title: 'Health Score',
             icon: Icons.favorite_rounded,
+            minHeight: minHeight,
+            fillHeight: fillHeight,
             child: Text(
               'Health data unavailable',
               style: Theme.of(context).textTheme.bodySmall,
@@ -52,90 +58,41 @@ class PortfolioHealthCard extends ConsumerWidget {
 
         final limit = maxComponents ?? (compact ? 4 : 8);
         final shown = health.components.take(limit).toList();
+        final focus = [...health.components]
+          ..sort((a, b) => a.score.compareTo(b.score));
+        final focusNames = focus.take(2).map((c) => c.displayName).join(' · ');
 
         return IntelligenceGlassCard(
           title: 'Health Score',
           icon: Icons.favorite_rounded,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+          minHeight: minHeight,
+          fillHeight: fillHeight,
+          footer: IntelligenceTextLink(
+            label: 'View Details →',
+            onPressed: () => showIntelligenceSheet(
+              context: context,
+              title: 'Health Details',
+              subtitle: 'Score ${health.score.toStringAsFixed(0)} / 100 · ${health.band}',
+              body: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _HealthGauge(score: health.score, band: health.band),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          health.score.toStringAsFixed(0),
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: ModuleColors.portfolio,
-                              ),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _bandColor(health.band).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            health.band,
-                            style: TextStyle(
-                              color: _bandColor(health.band),
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      ],
+                  ...health.components.map(
+                    (c) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _ComponentTile(component: c, detailed: true),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              ...shown.map(
-                (c) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: _ComponentRow(component: c),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton(
-                  onPressed: () => showIntelligenceSheet(
-                    context: context,
-                    title: 'Health Details',
-                    body: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Score ${health.score.toStringAsFixed(0)} · ${health.band}',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 12),
-                        ...health.components.map(
-                          (c) => Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: _ComponentRow(component: c, detailed: true),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  child: const Text('View Details'),
-                ),
-              ),
-            ],
+            ),
+          ),
+          child: _HealthBody(
+            fillHeight: fillHeight,
+            score: health.score,
+            band: health.band,
+            focusNames: focusNames,
+            components: shown,
+            bandColor: _bandColor(health.band),
           ),
         );
       },
@@ -157,23 +114,171 @@ class PortfolioHealthCard extends ConsumerWidget {
   }
 }
 
-class _ComponentRow extends StatelessWidget {
-  const _ComponentRow({required this.component, this.detailed = false});
+class _HealthBody extends StatelessWidget {
+  const _HealthBody({
+    required this.fillHeight,
+    required this.score,
+    required this.band,
+    required this.focusNames,
+    required this.components,
+    required this.bandColor,
+  });
+
+  final bool fillHeight;
+  final double score;
+  final String band;
+  final String focusNames;
+  final List<HealthComponent> components;
+  final Color bandColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final column = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            _HealthGauge(score: score, band: band),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: score.toStringAsFixed(0),
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: ModuleColors.portfolio,
+                              ),
+                        ),
+                        TextSpan(
+                          text: ' / 100',
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    color: Theme.of(context).hintColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: bandColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      band,
+                      style: TextStyle(
+                        color: bandColor,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  if (focusNames.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      'Focus: $focusNames',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: Theme.of(context).hintColor,
+                          ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _ComponentGrid(components: components),
+      ],
+    );
+
+    // Peer stretch gives a tight body height; scroll instead of overflowing.
+    if (fillHeight) {
+      return SingleChildScrollView(child: column);
+    }
+    return column;
+  }
+}
+
+class _ComponentGrid extends StatelessWidget {
+  const _ComponentGrid({required this.components});
+
+  final List<HealthComponent> components;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxW = constraints.maxWidth.isFinite && constraints.maxWidth > 0
+            ? constraints.maxWidth
+            : 280.0;
+        final colW = (maxW - 8) / 2;
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: components
+              .map(
+                (c) => SizedBox(
+                  width: colW,
+                  child: _ComponentTile(component: c),
+                ),
+              )
+              .toList(),
+        );
+      },
+    );
+  }
+}
+
+class _ComponentTile extends StatelessWidget {
+  const _ComponentTile({required this.component, this.detailed = false});
 
   final HealthComponent component;
   final bool detailed;
 
   @override
   Widget build(BuildContext context) {
-    final score = component.score.clamp(0, 100) / 100;
+    final severity = (component.severity ?? '').toUpperCase();
+    final dot = switch (severity) {
+      'HIGH' || 'CRITICAL' => const Color(0xFFFF7675),
+      'MEDIUM' || 'WATCH' => const Color(0xFFFDCB6E),
+      'GOOD' || 'OK' || 'LOW' => const Color(0xFF00B894),
+      _ => ModuleColors.portfolio,
+    };
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
+            Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 6),
             Expanded(
               child: Text(
                 component.displayName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -181,19 +286,11 @@ class _ComponentRow extends StatelessWidget {
             ),
             Text(
               component.score.toStringAsFixed(0),
-              style: Theme.of(context).textTheme.bodySmall,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
             ),
           ],
-        ),
-        const SizedBox(height: 4),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: score,
-            minHeight: 6,
-            backgroundColor: ModuleColors.portfolio.withValues(alpha: 0.12),
-            color: ModuleColors.portfolio,
-          ),
         ),
         if (detailed && (component.reason?.isNotEmpty ?? false)) ...[
           const SizedBox(height: 4),
@@ -218,8 +315,8 @@ class _HealthGauge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 72,
-      height: 72,
+      width: 88,
+      height: 88,
       child: CustomPaint(
         painter: _GaugePainter(
           progress: (score.clamp(0, 100)) / 100,
@@ -229,7 +326,7 @@ class _HealthGauge extends StatelessWidget {
           child: Icon(
             Icons.monitor_heart_outlined,
             color: ModuleColors.portfolio,
-            size: 22,
+            size: 26,
           ),
         ),
       ),
@@ -250,12 +347,12 @@ class _GaugePainter extends CustomPainter {
     final bg = Paint()
       ..color = color.withValues(alpha: 0.15)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 8
+      ..strokeWidth = 9
       ..strokeCap = StrokeCap.round;
     final fg = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 8
+      ..strokeWidth = 9
       ..strokeCap = StrokeCap.round;
 
     canvas.drawArc(

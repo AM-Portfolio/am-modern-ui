@@ -1,5 +1,4 @@
 import 'dart:ui';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../../internal/domain/entities/portfolio_analytics.dart';
@@ -13,11 +12,16 @@ class MoversWidget extends StatefulWidget {
     this.isLoading = false,
     this.error,
     this.onViewAll,
+    this.compact = false,
+    this.onRetry,
   });
   final Movers? movers;
   final bool isLoading;
   final String? error;
   final ValueChanged<Movers>? onViewAll;
+  /// When true, use Gainers|Losers tabs and fewer rows (Overview intel layout).
+  final bool compact;
+  final VoidCallback? onRetry;
 
   @override
   State<MoversWidget> createState() => _MoversWidgetState();
@@ -49,15 +53,16 @@ class _MoversWidgetState extends State<MoversWidget> {
             ),
             borderRadius: BorderRadius.circular(18),
           ),
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(widget.compact ? 14 : 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               // ── Header ──
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(7),
+                    padding: EdgeInsets.all(widget.compact ? 5 : 7),
                     decoration: BoxDecoration(
                       color: Theme.of(context)
                           .primaryColor
@@ -67,7 +72,7 @@ class _MoversWidgetState extends State<MoversWidget> {
                     child: Icon(
                       Icons.auto_graph_rounded,
                       color: ModuleColors.portfolio,
-                      size: 18,
+                      size: widget.compact ? 16 : 18,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -75,12 +80,15 @@ class _MoversWidgetState extends State<MoversWidget> {
                     'Top Movers',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: widget.compact ? 14 : 16,
                           letterSpacing: -0.3,
                         ),
                   ),
                   const Spacer(),
-                  if (widget.onViewAll != null && widget.movers != null && (widget.movers!.topGainers.length > 5 || widget.movers!.topLosers.length > 5))
+                  if (widget.onViewAll != null &&
+                      widget.movers != null &&
+                      (widget.movers!.topGainers.length > 3 ||
+                          widget.movers!.topLosers.length > 3))
                     TextButton(
                       onPressed: () => widget.onViewAll!(widget.movers!),
                       style: TextButton.styleFrom(
@@ -101,7 +109,7 @@ class _MoversWidgetState extends State<MoversWidget> {
                     ),
                 ],
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: widget.compact ? 12 : 16),
               _buildContent(context),
             ],
           ),
@@ -111,22 +119,24 @@ class _MoversWidgetState extends State<MoversWidget> {
   }
 
   Widget _buildContent(BuildContext context) {
+    final placeholderH = widget.compact ? 72.0 : 200.0;
     if (widget.isLoading) {
-      return const SizedBox(
-        height: 200,
-        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      return SizedBox(
+        height: placeholderH,
+        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
       );
     }
 
     if (widget.error != null) {
       return SizedBox(
-        height: 200,
+        height: placeholderH,
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.error_outline,
-                  color: Theme.of(context).colorScheme.error, size: 48),
+                  color: Theme.of(context).colorScheme.error,
+                  size: widget.compact ? 32 : 48),
               const SizedBox(height: 8),
               Text('Failed to load movers data',
                   style: TextStyle(
@@ -138,6 +148,13 @@ class _MoversWidgetState extends State<MoversWidget> {
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 12),
                   textAlign: TextAlign.center),
+              if (widget.onRetry != null) ...[
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: widget.onRetry,
+                  child: const Text('Retry'),
+                ),
+              ],
             ],
           ),
         ),
@@ -146,7 +163,7 @@ class _MoversWidgetState extends State<MoversWidget> {
 
     if (widget.movers == null) {
       return SizedBox(
-        height: 200,
+        height: placeholderH,
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -155,7 +172,7 @@ class _MoversWidgetState extends State<MoversWidget> {
                   color: Theme.of(context)
                       .colorScheme
                       .onSurfaceVariant,
-                  size: 48),
+                  size: widget.compact ? 32 : 48),
               const SizedBox(height: 8),
               Text('No movers data available',
                   style: TextStyle(
@@ -167,14 +184,14 @@ class _MoversWidgetState extends State<MoversWidget> {
       );
     }
 
-    final isMobile = MediaQuery.of(context).size.width < 600;
+    final useTabs =
+        widget.compact || MediaQuery.of(context).size.width < 600;
 
-
-    if (isMobile) {
+    if (useTabs) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // ── Mobile Toggle ──
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
@@ -232,8 +249,7 @@ class _MoversWidgetState extends State<MoversWidget> {
               ],
             ),
           ),
-          const SizedBox(height: 20),
-          // ── Active List ──
+          SizedBox(height: widget.compact ? 12 : 20),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
             child: _showGainers
@@ -269,33 +285,37 @@ class _MoversWidgetState extends State<MoversWidget> {
     final color = isGainers
         ? ModuleColors.portfolio
         : context.colors.marketNegativeIndicator;
+    final take = 5;
+    final hideTitle = widget.compact; // tabs already label Gainers/Losers
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          children: [
-            Icon(
-              isGainers
-                  ? Icons.trending_up_rounded
-                  : Icons.trending_down_rounded,
-              color: color,
-              size: 15,
-            ),
-            const SizedBox(width: 5),
-            Text(
-              '$title (${stocks.length})',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                    color: color,
-                  ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
+        if (!hideTitle)
+          Row(
+            children: [
+              Icon(
+                isGainers
+                    ? Icons.trending_up_rounded
+                    : Icons.trending_down_rounded,
+                color: color,
+                size: 15,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                '$title (${stocks.length})',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: color,
+                    ),
+              ),
+            ],
+          ),
+        if (!hideTitle) const SizedBox(height: 12),
         if (stocks.isEmpty)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20.0),
+            padding: EdgeInsets.symmetric(vertical: widget.compact ? 12.0 : 20.0),
             child: Center(
               child: Text(
                 'No ${isGainers ? 'gainers' : 'losers'} found',
@@ -310,7 +330,7 @@ class _MoversWidgetState extends State<MoversWidget> {
             ),
           )
         else
-          ...stocks.take(5).map(
+          ...stocks.take(take).map(
             (stock) => MoverTile(stock: stock, isGainer: isGainers),
           ),
       ],

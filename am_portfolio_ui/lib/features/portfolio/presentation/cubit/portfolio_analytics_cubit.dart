@@ -396,4 +396,12 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
       emit(currentState.copyWith(errors: {}));
     }
   }
+
+  /// Drop cached analytics (e.g. switching to All Portfolios).
+  void reset() {
+    _currentPortfolioId = null;
+    _lastLoadedTimeFrame = null;
+    _loadingFuture = null;
+    emit(PortfolioAnalyticsInitial());
+  }
 }

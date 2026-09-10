@@ -1,9 +1,16 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
 
 import '../config/config_service.dart';
 import 'feature_flag_keys.dart';
 import 'feature_flag_service.dart';
+
+/// Debug-only dogfood: `--dart-define=AM_INTEL_FORCE_ON=true`
+/// Forces all portfolio intelligence flags ON. Ignored in release builds.
+bool get intelFlagsForcedOn =>
+    kDebugMode &&
+    const bool.fromEnvironment('AM_INTEL_FORCE_ON', defaultValue: false);
 
 final featureFlagServiceProvider = Provider<FeatureFlagService>((ref) {
   if (!GetIt.instance.isRegistered<FeatureFlagService>()) {
@@ -55,6 +62,7 @@ final offlineWritesEnabledProvider = Provider<bool>((ref) {
 
 /// Fail-closed intel flags (default false when GB down / unset).
 bool _intelFlag(Ref ref, String key) {
+  if (intelFlagsForcedOn) return true;
   try {
     ref.watch(featureFlagsReadyProvider);
     return ref.watch(featureFlagServiceProvider).isOn(
