@@ -47,7 +47,7 @@ class TradeResponsiveLayout extends ConsumerStatefulWidget {
 
   /// Index of the hidden "Add Trade" NavigationItem in TradeWebScreen's
   /// SwipeNavigationController (beyond the TradeViewType enum range).
-  static const int _webAddTradeIndex = 7;
+  static const int _webAddTradeIndex = 8;
 
   static const _tabSlugs = [
     'portfolios',
@@ -55,7 +55,8 @@ class TradeResponsiveLayout extends ConsumerStatefulWidget {
     'calendar',
     'trades',
     'journal',
-    'report',
+    'analysis',
+    'metrics',
     'unified',
     'templates',
   ];
