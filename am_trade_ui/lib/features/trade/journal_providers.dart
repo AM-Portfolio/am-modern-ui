@@ -47,10 +47,12 @@ final _journalRemoteDataSourceProvider = FutureProvider<JournalRemoteDataSource>
 });
 
 /// Provider for JournalRepository
-final _journalRepositoryProvider = FutureProvider<JournalRepository>((ref) async {
+final journalRepositoryProvider = FutureProvider<JournalRepository>((ref) async {
   final remoteDataSource = await ref.watch(_journalRemoteDataSourceProvider.future);
   return JournalRepositoryImpl(remoteDataSource: remoteDataSource);
 });
+
+final _journalRepositoryProvider = journalRepositoryProvider;
 
 // Use Case Providers
 
@@ -87,5 +89,6 @@ final journalCubitProvider = FutureProvider<JournalCubit>(
     createJournalEntry: await ref.watch(_createJournalEntryUseCaseProvider.future),
     updateJournalEntry: await ref.watch(_updateJournalEntryUseCaseProvider.future),
     deleteJournalEntry: await ref.watch(_deleteJournalEntryUseCaseProvider.future),
+    repository: await ref.watch(_journalRepositoryProvider.future),
   ),
 );

@@ -117,7 +117,8 @@ class _AllIndicesChipState extends State<AllIndicesChip> {
   }
 }
 
-/// Desktop/tablet header — All Indices + timeframe. Hidden on mobile (lives in app bar).
+/// Desktop/tablet header — All Indices chip only.
+/// Timeframe lives in All Indices panel / Market Heatmap section (not duplicated here).
 class MarketHeader extends StatelessWidget {
   final VoidCallback onAllIndicesPressed;
 
@@ -130,7 +131,7 @@ class MarketHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 768;
 
-    // Mobile: All Indices sits in the app bar left of "Market Data".
+    // Mobile: All Indices is a top pill tab; no app-bar chip.
     if (isMobile) return const SizedBox.shrink();
 
     return Row(
@@ -140,7 +141,6 @@ class MarketHeader extends StatelessWidget {
         const SizedBox(width: 12),
         const MarketClosedChip(),
         const Spacer(),
-        const GlobalTimeFrameBar(),
       ],
     );
   }

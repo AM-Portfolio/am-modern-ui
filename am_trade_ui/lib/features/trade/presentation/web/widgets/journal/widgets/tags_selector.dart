@@ -1,58 +1,50 @@
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
 import '../models/journal_mood_options.dart';
 
 class TagsSelector extends StatelessWidget {
-  const TagsSelector({required this.selectedTags, required this.onTagToggled, super.key});
+  const TagsSelector({
+    required this.selectedTags,
+    required this.onTagToggled,
+    super.key,
+  });
 
   final Set<String> selectedTags;
   final ValueChanged<String> onTagToggled;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final catalog = JournalMoodOptions.getTags(context);
+    final catalogLabels = catalog.map((t) => t['label'] as String).toSet();
+    // Keep template-applied tags visible even if not in the static catalog.
+    final extras = selectedTags.where((t) => !catalogLabels.contains(t));
 
     return Wrap(
-      spacing: 3,
-      runSpacing: 3,
-      children: JournalMoodOptions.getTags(context).map((tagData) {
-        final tag = tagData['label'] as String;
-        final color = tagData['color'] as Color;
-        final isSelected = selectedTags.contains(tag);
-        return InkWell(
-          onTap: () => onTagToggled(tag),
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-            decoration: BoxDecoration(
-              color: isSelected ? color.withOpacity(0.15) : theme.colorScheme.surfaceContainerHighest.withOpacity(0.8),
-              border: Border.all(
-                color: isSelected ? color : theme.colorScheme.outline.withOpacity(0.3),
-                width: isSelected ? 1.5 : 1,
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isSelected)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 2),
-                    child: Icon(Icons.check, size: 9, color: color),
-                  ),
-                Text(
-                  tag,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    color: isSelected ? color : theme.colorScheme.onSurface.withOpacity(0.75),
-                  ),
-                ),
-              ],
-            ),
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.sm,
+      children: [
+        ...catalog.map((tagData) {
+          final tag = tagData['label'] as String;
+          final color = tagData['color'] as Color;
+          return AmToggleChip(
+            label: tag,
+            selected: selectedTags.contains(tag),
+            compact: true,
+            accentColor: color,
+            onTap: () => onTagToggled(tag),
+          );
+        }),
+        ...extras.map(
+          (tag) => AmToggleChip(
+            label: tag,
+            selected: true,
+            compact: true,
+            accentColor: ModuleColors.trade,
+            onTap: () => onTagToggled(tag),
           ),
-        );
-      }).toList(),
+        ),
+      ],
     );
   }
 }

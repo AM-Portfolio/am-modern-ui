@@ -2,6 +2,7 @@
 import 'dart:html' as html;
 import 'dart:ui_web' as ui_web;
 
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -111,7 +112,7 @@ class _UrlPreviewWidgetState extends State<UrlPreviewWidget> {
   );
 
   Widget _buildLoadingIndicator(ImageChunkEvent loadingProgress) => Container(
-    color: Colors.black12,
+    color: context.glassOverlay(0.12),
     child: Center(
       child: CircularProgressIndicator(
         value: loadingProgress.expectedTotalBytes != null
@@ -128,14 +129,18 @@ class _UrlPreviewWidgetState extends State<UrlPreviewWidget> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Material(
-          color: Colors.black54,
+          color: context.shadow(0.54),
           borderRadius: BorderRadius.circular(8),
           child: InkWell(
             onTap: () => _launchUrl(widget.url),
             borderRadius: BorderRadius.circular(8),
             child: Container(
               padding: const EdgeInsets.all(8),
-              child: const Icon(Icons.open_in_new, size: 20, color: Colors.white),
+              child: Icon(
+                Icons.open_in_new,
+                size: 20,
+                color: context.colors.actionPrimaryFg,
+              ),
             ),
           ),
         ),

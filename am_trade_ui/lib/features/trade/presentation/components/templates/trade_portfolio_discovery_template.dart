@@ -45,6 +45,8 @@ class TradePortfolioDiscoveryTemplate extends StatefulWidget {
     this.onEditPortfolio,
     this.onDeletePortfolio,
     this.onCreatePortfolio,
+    this.onCreatePaperWallet,
+    this.hasPaperWallet = false,
     this.onRefresh,
     this.isWebView = true,
   });
@@ -55,6 +57,8 @@ class TradePortfolioDiscoveryTemplate extends StatefulWidget {
   final Function(TradePortfolioViewModel)? onEditPortfolio;
   final Function(TradePortfolioViewModel)? onDeletePortfolio;
   final VoidCallback? onCreatePortfolio;
+  final VoidCallback? onCreatePaperWallet;
+  final bool hasPaperWallet;
   final VoidCallback? onRefresh;
   final bool isWebView;
 
@@ -82,10 +86,10 @@ class _TradePortfolioDiscoveryTemplateState
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            Icon(Icons.error_outline, size: 48, color: context.statusError),
             const SizedBox(height: 16),
             Text(widget.errorMessage!,
-                style: const TextStyle(color: Colors.red)),
+                style: TextStyle(color: context.statusError)),
             if (widget.onRefresh != null) ...[
               const SizedBox(height: 16),
               ElevatedButton(
@@ -146,36 +150,49 @@ class _TradePortfolioDiscoveryTemplateState
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.account_balance_wallet_outlined,
-                size: 80, color: Colors.grey[400]),
+                size: 80, color: context.colors.textSecondary),
             const SizedBox(height: 16),
             Text('No portfolios found',
                 style: Theme.of(context)
                     .textTheme
                     .titleLarge
-                    ?.copyWith(color: Colors.grey[600])),
+                    ?.copyWith(color: context.colors.textSecondary)),
             const SizedBox(height: 8),
             Text(
               'Create your first portfolio to start tracking trades',
               style: Theme.of(context)
                   .textTheme
                   .bodyMedium
-                  ?.copyWith(color: Colors.grey[500]),
+                  ?.copyWith(color: context.colors.textSecondary),
             ),
-            if (widget.onCreatePortfolio != null) ...[
+            if (widget.onCreatePaperWallet != null && !widget.hasPaperWallet) ...[
               const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: widget.onCreatePortfolio,
-                icon: Icon(Icons.add_rounded),
-                label: Text('Create Portfolio'),
-                style: ElevatedButton.styleFrom(
+              FilledButton.icon(
+                onPressed: widget.onCreatePaperWallet,
+                icon: const Icon(Icons.science_outlined),
+                label: const Text('Create paper wallet'),
+                style: FilledButton.styleFrom(
                   backgroundColor: ModuleColors.trade,
                   foregroundColor: Colors.white,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
                 ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Practice with ₹10,00,000 virtual cash — not a live broker order.',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: context.colors.textSecondary),
+              ),
+            ],
+            if (widget.onCreatePortfolio != null) ...[
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: widget.onCreatePortfolio,
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Create Portfolio'),
               ),
             ],
           ],
@@ -250,6 +267,20 @@ class _TradePortfolioDiscoveryTemplateState
                     ],
                   ),
                   const Spacer(),
+                  if (widget.onCreatePaperWallet != null && !widget.hasPaperWallet)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: OutlinedButton.icon(
+                        onPressed: widget.onCreatePaperWallet,
+                        icon: const Icon(Icons.science_outlined, size: 18),
+                        label: const Text('Create paper wallet'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: ModuleColors.trade,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 10),
+                        ),
+                      ),
+                    ),
                   if (widget.onCreatePortfolio != null)
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
@@ -304,8 +335,8 @@ class _TradePortfolioDiscoveryTemplateState
                       value: '$profitableCount/${widget.portfolios.length}',
                       icon: Icons.trending_up_rounded,
                       iconColor: Colors.white,
-                      iconBgColor: const Color(0xFF10B981),
-                      valueColor: const Color(0xFF10B981),
+                      iconBgColor: context.statusSuccess,
+                      valueColor: context.statusSuccess,
                     ),
                     const SizedBox(width: 8),
                     _buildStatBadge(
@@ -325,11 +356,11 @@ class _TradePortfolioDiscoveryTemplateState
                           : Icons.arrow_downward_rounded,
                       iconColor: Colors.white,
                       iconBgColor: totalNetProfitLoss >= 0
-                          ? const Color(0xFF10B981)
-                          : const Color(0xFFEF4444),
+                          ? context.statusSuccess
+                          : context.statusError,
                       valueColor: totalNetProfitLoss >= 0
-                          ? const Color(0xFF10B981)
-                          : const Color(0xFFEF4444),
+                          ? context.statusSuccess
+                          : context.statusError,
                     ),
                     const SizedBox(width: 8),
                     _buildStatBadge(
@@ -341,11 +372,11 @@ class _TradePortfolioDiscoveryTemplateState
                           : Icons.trending_down_rounded,
                       iconColor: Colors.white,
                       iconBgColor: totalUnrealizedPnL >= 0
-                          ? const Color(0xFF10B981)
-                          : const Color(0xFFEF4444),
+                          ? context.statusSuccess
+                          : context.statusError,
                       valueColor: totalUnrealizedPnL >= 0
-                          ? const Color(0xFF10B981)
-                          : const Color(0xFFEF4444),
+                          ? context.statusSuccess
+                          : context.statusError,
                     ),
                     const SizedBox(width: 8),
                     _buildStatBadge(
@@ -789,7 +820,7 @@ class _TradePortfolioDiscoveryTemplateState
             size: 18,
             color: enabled
                 ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)
-                : Colors.grey.withValues(alpha: 0.25),
+                : context.colors.textSecondary.withValues(alpha: 0.25),
           ),
         ),
       );
@@ -1037,6 +1068,18 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
+                          if (p.isPaper) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              'PAPER',
+                              style: TextStyle(
+                                color: ModuleColors.trade,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: 4),
                           Text(
                             p.description ?? 'No description',
@@ -1053,7 +1096,8 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                         ],
                       ),
                     ),
-                    if (widget.onEdit != null || widget.onDelete != null)
+                    if (!p.isPaper &&
+                        (widget.onEdit != null || widget.onDelete != null))
                       PopupMenuButton<String>(
                         icon: Icon(Icons.more_vert,
                             size: 20,
@@ -1079,15 +1123,16 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                               ),
                             ),
                           if (widget.onDelete != null)
-                            const PopupMenuItem(
+                            PopupMenuItem(
                               value: 'delete',
                               child: Row(
                                 children: [
                                   Icon(Icons.delete,
-                                      size: 16, color: Colors.red),
+                                      size: 16, color: context.statusError),
                                   const SizedBox(width: 8),
-                                  const Text('Delete',
-                                      style: TextStyle(color: Colors.red)),
+                                  Text('Delete',
+                                      style: TextStyle(
+                                          color: context.statusError)),
                                 ],
                               ),
                             ),

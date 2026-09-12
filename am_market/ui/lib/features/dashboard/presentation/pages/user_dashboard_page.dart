@@ -340,30 +340,39 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
         return ListenableBuilder(
           listenable: provider,
           builder: (context, _) {
-            return DraggableScrollableSheet(
-              initialChildSize: 0.75,
-              minChildSize: 0.4,
-              maxChildSize: 0.92,
-              expand: false,
-              builder: (context, scrollController) => AllIndicesBottomSheet(
-                scrollController: scrollController,
-                initialTimeframe: _selectedTimeframe,
-                indices: provider.allIndicesData,
-                globalIndices: provider.globalIndicesData,
-                region: provider.indicesRegion,
-                onRegionChanged: provider.setIndicesRegion,
-                selectedIndexSymbol: selectedIndexForMovers,
-                onIndexSelected: (data) {
-                  if (!provider.isGlobalSymbol(data.indexSymbol)) {
-                    setState(() {
-                      selectedIndexForMovers = data.indexSymbol;
-                    });
-                    _loadTopMovers();
-                  }
-                  Navigator.pop(context);
-                },
-                allTimeframeBasePrices: allTimeframeBasePrices,
-              ),
+            return Consumer(
+              builder: (context, ref, _) {
+                final tf = ref.watch(appTimeFrameProvider).code;
+                return DraggableScrollableSheet(
+                  initialChildSize: 0.75,
+                  minChildSize: 0.4,
+                  maxChildSize: 0.92,
+                  expand: false,
+                  builder: (context, scrollController) => AllIndicesBottomSheet(
+                    scrollController: scrollController,
+                    initialTimeframe: tf,
+                    indices: provider.allIndicesData,
+                    globalIndices: provider.globalIndicesData,
+                    availableIndices: provider.availableIndices,
+                    selectedIndexSymbol: selectedIndexForMovers,
+                    onNeedGlobal: () {
+                      if (provider.globalIndicesData.isEmpty) {
+                        provider.loadGlobalIndicesData();
+                      }
+                    },
+                    onIndexSelected: (data) {
+                      if (!provider.isGlobalSymbol(data.indexSymbol)) {
+                        setState(() {
+                          selectedIndexForMovers = data.indexSymbol;
+                        });
+                        _loadTopMovers();
+                      }
+                      Navigator.pop(context);
+                    },
+                    allTimeframeBasePrices: allTimeframeBasePrices,
+                  ),
+                );
+              },
             );
           },
         );
@@ -1131,8 +1140,14 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                 indices: marketProvider.allIndicesData,
                 globalIndices: marketProvider.globalIndicesData,
                 region: marketProvider.indicesRegion,
-                onRegionChanged: marketProvider.setIndicesRegion,
-                initialTimeframe: _selectedTimeframe,
+                onRegionChanged: (region) {
+                  marketProvider.setIndicesRegion(region);
+                  if (region == IndicesRegion.global &&
+                      marketProvider.globalIndicesData.isEmpty) {
+                    marketProvider.loadGlobalIndicesData();
+                  }
+                },
+                initialTimeframe: selectedTimeframe,
                 selectedIndexSymbol: selectedIndexForMovers,
                 onIndexSelected: (data) {
                   if (!marketProvider.isGlobalSymbol(data.indexSymbol)) {

@@ -3,6 +3,24 @@ import 'app_colors.dart';
 
 /// Glass morphism and modern UI styles with V2 enhancements
 class AppGlassmorphism {
+  // --- Centralized Glassmorphism Tuning (Single Source of Truth) ---
+  /// Base surface color for dark mode glassmorphism (deep slate surface).
+  static const Color darkGlassBaseColor = Color(0xFF161922);
+  /// Starting opacity for dark mode glass gradient (solid enough to obscure raw text behind, but frosted).
+  static double darkGlassOpacityStart = 0.88;
+  /// Ending opacity for dark mode glass gradient.
+  static double darkGlassOpacityEnd = 0.82;
+
+  /// Base surface color for light mode glassmorphism.
+  static const Color lightGlassBaseColor = Colors.white;
+  /// Starting opacity for light mode glass gradient.
+  static double lightGlassOpacityStart = 0.92;
+  /// Ending opacity for light mode glass gradient.
+  static double lightGlassOpacityEnd = 0.85;
+
+  /// Global backdrop blur sigma.
+  static double defaultGlassBlur = 16.0;
+
   // Color schemes for V2 (like reference image)
   static const colorSchemes = {
     'primary': [Color(0xFF6C5DD3), Color(0xFF8B7EE0)], // Purple
@@ -24,18 +42,18 @@ class AppGlassmorphism {
     return BoxDecoration(
       gradient: LinearGradient(
         colors: gradientColors ?? (isDark ? [
-          Colors.white.withOpacity(0.05),
-          Colors.white.withOpacity(0.02),
+          darkGlassBaseColor.withOpacity(darkGlassOpacityStart),
+          darkGlassBaseColor.withOpacity(darkGlassOpacityEnd),
         ] : [
-          Colors.white.withOpacity(0.85),
-          Colors.white.withOpacity(0.65),
+          lightGlassBaseColor.withOpacity(lightGlassOpacityStart),
+          lightGlassBaseColor.withOpacity(lightGlassOpacityEnd),
         ]),
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
       borderRadius: BorderRadius.circular(borderRadius),
       border: Border.all(
-        color: borderColor ?? (isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.08)),
+        color: borderColor ?? (isDark ? Colors.white.withOpacity(0.12) : Colors.black.withOpacity(0.08)),
         width: borderWidth,
       ),
       boxShadow: [

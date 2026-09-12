@@ -1,3 +1,4 @@
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
 class JournalFormActions extends StatelessWidget {
@@ -21,42 +22,41 @@ class JournalFormActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!isEditMode && !isNewEntry) {
-      // View mode - show Edit button
       return Align(
         alignment: Alignment.centerRight,
-        child: FilledButton.icon(
+        child: AppButton(
+          text: 'Edit Journal',
+          icon: Icons.edit_outlined,
+          backgroundColor: ModuleColors.trade,
           onPressed: onToggleEditMode,
-          icon: const Icon(Icons.edit, size: 18),
-          label: const Text('Edit Journal'),
-          style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 17)),
+          height: 44,
         ),
       );
     }
 
-    // Edit mode or new entry - show Update/Create and Cancel buttons
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         if (!isNewEntry && onCancel != null) ...[
-          OutlinedButton.icon(
+          AppButton(
+            text: 'Cancel',
+            type: AppButtonType.secondary,
+            isOutlined: true,
+            icon: Icons.close,
             onPressed: onCancel,
-            icon: const Icon(Icons.close, size: 18),
-            label: const Text('Cancel'),
-            style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 17)),
+            height: 44,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.sm),
         ],
-        FilledButton.icon(
+        AppButton(
+          text: isSubmitting
+              ? 'Saving...'
+              : (isNewEntry ? 'Create Journal' : 'Update Journal'),
+          icon: isNewEntry ? Icons.add_rounded : Icons.save_outlined,
+          backgroundColor: ModuleColors.trade,
+          isLoading: isSubmitting,
           onPressed: isSubmitting ? null : onSubmit,
-          icon: isSubmitting
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                )
-              : Icon(isNewEntry ? Icons.add : Icons.save, size: 18),
-          label: Text(isSubmitting ? 'Saving...' : (isNewEntry ? 'Create Journal' : 'Update Journal')),
-          style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 17)),
+          height: 44,
         ),
       ],
     );

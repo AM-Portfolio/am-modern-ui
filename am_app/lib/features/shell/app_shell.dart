@@ -295,6 +295,10 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
     if (session.globalNav == 'Doc Intel') {
       savedPath = AppRoutes.dashboard;
     }
+    // Paper is now a Market tab (legacy sessions used primary "Paper").
+    if (session.globalNav == 'Paper') {
+      savedPath = AppRoutes.marketPath('paper');
+    }
 
     final portfolioId = session.portfolioId;
     final restoredPortfolioId =
@@ -319,7 +323,9 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
     }
 
     if (current == AppRoutes.dashboard && savedPath != AppRoutes.dashboard) {
-      _applyStreamingTabCoordinator(session.globalNav);
+      final streamingNav =
+          session.globalNav == 'Paper' ? 'Market' : session.globalNav;
+      _applyStreamingTabCoordinator(streamingNav);
       context.go(savedPath);
     }
   }
