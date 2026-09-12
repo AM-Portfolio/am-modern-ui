@@ -174,17 +174,21 @@ class PortfolioXray {
     this.sectorWeights = const [],
     this.industryWeights = const [],
     this.marketCapWeights = const [],
+    this.totalValueInr,
   });
 
   final List<XrayWeight> sectorWeights;
   final List<XrayWeight> industryWeights;
   final List<XrayWeight> marketCapWeights;
+  /// Book NAV denominator from intelligence API (`xray.totalValue`).
+  final double? totalValueInr;
 
   factory PortfolioXray.fromJson(Map<String, dynamic> json) {
     return PortfolioXray(
       sectorWeights: _parseWeights(json['sectorWeights']),
       industryWeights: _parseWeights(json['industryWeights']),
       marketCapWeights: _parseWeights(json['marketCapWeights']),
+      totalValueInr: _asDouble(json['totalValue']),
     );
   }
 
@@ -201,15 +205,19 @@ class XrayWeight {
   const XrayWeight({
     required this.name,
     required this.weightPct,
+    this.valueInr,
   });
 
   final String name;
   final double weightPct;
+  /// Absolute INR exposure for this slice (`value` on API).
+  final double? valueInr;
 
   factory XrayWeight.fromJson(Map<String, dynamic> json) {
     return XrayWeight(
       name: json['name']?.toString() ?? '',
       weightPct: _asDouble(json['weightPct']) ?? 0,
+      valueInr: _asDouble(json['value']),
     );
   }
 }

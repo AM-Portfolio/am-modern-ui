@@ -3,10 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../internal/domain/entities/portfolio_holding.dart';
 import '../../../internal/domain/entities/portfolio_intelligence.dart';
+import '../../../providers/portfolio_intelligence_providers.dart';
 import '../../../providers/portfolio_providers.dart';
 import 'intelligence_glass_card.dart';
+import 'intelligence_sector_label.dart';
+import 'intelligence_suggest_search.dart';
 
+/// API preset id → display label. Impact / P&L always come from the stress API.
 const kStressPresets = <String, String>{
   'NIFTY_DOWN_10': 'NIFTY −10%',
   'NIFTY_DOWN_20': 'NIFTY −20%',
@@ -14,6 +19,21 @@ const kStressPresets = <String, String>{
   'IT_DOWN_15': 'IT −15%',
   'CRASH_2008': 'Market Crash 2008',
 };
+
+const _kScenarioFlex = 5;
+const _kImpactFlex = 2;
+const _kPnlFlex = 3;
+const _kRowMinHeight = 36.0;
+const _kCustomControlHeight = 36.0;
+
+IconData _presetIcon(String presetId) {
+  if (presetId.startsWith('NIFTY')) return Icons.trending_down_rounded;
+  if (presetId.startsWith('BANKING')) return Icons.account_balance_rounded;
+  if (presetId.startsWith('IT')) return Icons.laptop_mac_rounded;
+  if (presetId.startsWith('CRASH')) return Icons.thunderstorm_rounded;
+  if (presetId.startsWith('CUSTOM')) return Icons.tune_rounded;
+  return Icons.bolt_rounded;
+}
 
 class PortfolioStressCard extends ConsumerStatefulWidget {
   const PortfolioStressCard({
@@ -33,7 +53,6 @@ class PortfolioStressCard extends ConsumerStatefulWidget {
 }
 
 class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
-  bool _showCustom = false;
   final _sectorCtrl = TextEditingController();
   final _shockCtrl = TextEditingController();
   bool _loading = false;
@@ -60,6 +79,24 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
     super.dispose();
   }
 
+  List<String> _sectorSuggestions() {
+    final names = <String>{};
+    final intel =
+        ref.watch(portfolioIntelligenceProvider(widget.portfolioId)).asData?.value;
+    for (final w in intel?.xray?.sectorWeights ?? const <XrayWeight>[]) {
+      if (isUsableIntelligenceSectorLabel(w.name)) names.add(w.name.trim());
+    }
+    final holdings =
+        ref.watch(portfolioHoldingsProvider(widget.portfolioId)).asData?.value;
+    for (final h in holdings?.holdings ?? const <PortfolioHolding>[]) {
+      if (isUsableIntelligenceSectorLabel(h.sector)) {
+        names.add(h.sector.trim());
+      }
+    }
+    final list = names.toList()..sort();
+    return list;
+  }
+
   Future<void> _loadAllPresets() async {
     if (_loading) return;
     setState(() {
@@ -69,30 +106,22 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
     try {
       final remote =
           await ref.read(portfolioRemoteDataSourceProvider.future);
-      final futures = kStressPresets.keys.map((preset) async {
-        try {
-          final result = await remote.getPortfolioStress(
-            widget.portfolioId,
-            preset: preset,
-            custom: null,
-          );
-          if (result.scenarios.isEmpty) {
-            return MapEntry(preset, null);
-          }
-          return MapEntry(preset, result.scenarios.first);
-        } catch (_) {
-          return MapEntry(preset, null);
-        }
-      });
-      final results = await Future.wait(futures);
+      final result = await remote.getPortfolioStress(
+        widget.portfolioId,
+        presets: kStressPresets.keys.toList(),
+      );
       if (!mounted) return;
       final next = <String, StressScenario>{};
       final failed = <String>{};
-      for (final e in results) {
-        if (e.value != null) {
-          next[e.key] = e.value!;
+      final byId = {
+        for (final s in result.scenarios) s.id: s,
+      };
+      for (final key in kStressPresets.keys) {
+        final s = byId[key];
+        if (s != null) {
+          next[key] = s;
         } else {
-          failed.add(e.key);
+          failed.add(key);
         }
       }
       setState(() {
@@ -104,7 +133,7 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
           ..addAll(failed);
         _loadedOnce = true;
         _loading = false;
-        if (next.isEmpty && failed.length == kStressPresets.length) {
+        if (next.isEmpty) {
           _error = 'Could not load stress scenarios';
         }
       });
@@ -128,6 +157,10 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
       setState(() => _error = 'Enter a shock %');
       return;
     }
+    if (shock == 0) {
+      setState(() => _error = 'Shock % must be non-zero');
+      return;
+    }
     setState(() {
       _customLoading = true;
       _error = null;
@@ -138,7 +171,6 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
           await ref.read(portfolioRemoteDataSourceProvider.future);
       final result = await remote.getPortfolioStress(
         widget.portfolioId,
-        preset: null,
         custom: {
           'sector': sector,
           'shockPct': shock,
@@ -181,12 +213,12 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
           child: ExpansionTile(
             initiallyExpanded: false,
             tilePadding: EdgeInsets.zero,
-            childrenPadding: const EdgeInsets.only(bottom: 8),
+            childrenPadding: const EdgeInsets.only(bottom: 4),
             onExpansionChanged: (open) {
               if (open && !_loadedOnce) _loadAllPresets();
             },
             title: Text(
-              'What happens if…',
+              'Scenarios',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             children: [content],
@@ -209,21 +241,13 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
       symbol: '₹',
       decimalDigits: 0,
     );
+    final sectors = _sectorSuggestions();
+    final narrow = MediaQuery.sizeOf(context).width < 600;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (widget.initiallyExpanded) ...[
-          Text(
-            'What happens if…',
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: ModuleColors.portfolio,
-                ),
-          ),
-          const SizedBox(height: 8),
-        ],
         if (_loading && _rows.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 16),
@@ -235,87 +259,261 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
               ),
             ),
           )
-        else ...[
-          _tableHeader(context),
-          ...kStressPresets.entries.map((e) {
-            final failed = _failed.contains(e.key);
-            final s = _rows[e.key];
-            return _tableRow(
-              context,
-              label: e.value,
-              scenario: failed ? null : s,
-              currency: currency,
-              failed: failed,
-            );
-          }),
-          if (_customRow != null || _customFailed)
-            _tableRow(
-              context,
-              label: 'Custom (${_sectorCtrl.text.trim().isEmpty ? '…' : _sectorCtrl.text.trim()})',
-              scenario: _customFailed ? null : _customRow,
-              currency: currency,
-              failed: _customFailed,
-            ),
-        ],
+        else if (narrow)
+          _mobileScenarios(context, currency)
+        else
+          _desktopScenarios(context, currency),
         if (_error != null) ...[
           const SizedBox(height: 6),
           Text(
             _error!,
             style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
-          TextButton(
-            onPressed: _loadAllPresets,
-            child: const Text('Retry'),
-          ),
+          IntelligenceTextLink(label: 'Retry →', onPressed: _loadAllPresets),
         ],
-        const SizedBox(height: 4),
-        IntelligenceTextLink(
-          label: _showCustom ? 'Hide custom scenario' : 'Run Custom Scenario →',
-          onPressed: () => setState(() => _showCustom = !_showCustom),
-        ),
-        if (_showCustom) ...[
-          const SizedBox(height: 8),
-          TextField(
-            controller: _sectorCtrl,
-            decoration: intelligenceFieldDecoration(
-              context,
-              label: 'Sector',
-              hint: 'e.g. Information Technology',
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _shockCtrl,
-            keyboardType: const TextInputType.numberWithOptions(
-              signed: true,
-              decimal: true,
-            ),
-            decoration: intelligenceFieldDecoration(
-              context,
-              label: 'Shock %',
-              hint: 'e.g. -15',
-            ),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            height: 44,
-            child: FilledButton(
-              onPressed: _customLoading ? null : _runCustom,
-              style: FilledButton.styleFrom(
-                backgroundColor: ModuleColors.portfolio,
-              ),
-              child: _customLoading
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Run custom'),
-            ),
-          ),
-        ],
+        const SizedBox(height: 8),
+        _customPanel(context, sectors, narrow: narrow),
       ],
+    );
+  }
+
+  Widget _desktopScenarios(BuildContext context, NumberFormat currency) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _tableHeader(context),
+        ...kStressPresets.entries.map((e) {
+          final failed = _failed.contains(e.key);
+          return _tableRow(
+            context,
+            presetId: e.key,
+            label: e.value,
+            scenario: failed ? null : _rows[e.key],
+            currency: currency,
+            failed: failed,
+            showDivider: true,
+          );
+        }),
+        if (_customRow != null || _customFailed)
+          _tableRow(
+            context,
+            presetId: 'CUSTOM',
+            label:
+                'Custom (${_sectorCtrl.text.trim().isEmpty ? '…' : _sectorCtrl.text.trim()})',
+            scenario: _customFailed ? null : _customRow,
+            currency: currency,
+            failed: _customFailed,
+            showDivider: false,
+          ),
+      ],
+    );
+  }
+
+  Widget _mobileScenarios(BuildContext context, NumberFormat currency) {
+    return Column(
+      children: [
+        for (final e in kStressPresets.entries) ...[
+          _mobileScenarioCard(
+            context,
+            presetId: e.key,
+            label: e.value,
+            scenario: _failed.contains(e.key) ? null : _rows[e.key],
+            currency: currency,
+            failed: _failed.contains(e.key),
+          ),
+          const SizedBox(height: 6),
+        ],
+        if (_customRow != null || _customFailed)
+          _mobileScenarioCard(
+            context,
+            presetId: 'CUSTOM',
+            label:
+                'Custom (${_sectorCtrl.text.trim().isEmpty ? '…' : _sectorCtrl.text.trim()})',
+            scenario: _customFailed ? null : _customRow,
+            currency: currency,
+            failed: _customFailed,
+          ),
+      ],
+    );
+  }
+
+  Widget _mobileScenarioCard(
+    BuildContext context, {
+    required String presetId,
+    required String label,
+    required StressScenario? scenario,
+    required NumberFormat currency,
+    required bool failed,
+  }) {
+    final pct = failed ? null : scenario?.pctImpact;
+    final abs = failed ? null : scenario?.absImpact;
+    final pctColor = _impactColor(context, pct);
+
+    return IntelligenceInsetPanel(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _ScenarioIcon(presetId: presetId),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Text(
+                'Impact',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context).hintColor,
+                    ),
+              ),
+              const Spacer(),
+              Text(
+                pct == null
+                    ? '—'
+                    : '${pct >= 0 ? '+' : ''}${pct.toStringAsFixed(1)}%',
+                style: TextStyle(
+                  color: pctColor,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Row(
+            children: [
+              Text(
+                'Est. P&L',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context).hintColor,
+                    ),
+              ),
+              const Spacer(),
+              Text(
+                abs == null ? '—' : currency.format(abs),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _customPanel(
+    BuildContext context,
+    List<String> sectors, {
+    required bool narrow,
+  }) {
+    final sectorField = SmartSearchAnchor(
+      controller: _sectorCtrl,
+      compact: true,
+      hintText: 'Sector',
+      accentColor: ModuleColors.portfolio,
+      forceUppercase: false,
+      resultBadge: null,
+      onSelected: (label) => setState(() => _sectorCtrl.text = label),
+      searchHandler: (q) => searchSectorsHoldingsFirst(
+        query: q,
+        holdingsSectors: sectors,
+      ),
+    );
+
+    final shockField = SizedBox(
+      height: _kCustomControlHeight + 8,
+      width: narrow ? double.infinity : 96,
+      child: TextField(
+        controller: _shockCtrl,
+        keyboardType: const TextInputType.numberWithOptions(
+          signed: true,
+          decimal: true,
+        ),
+        style: Theme.of(context).textTheme.bodySmall,
+        decoration: intelligenceFieldDecoration(
+          context,
+          label: 'Shock %',
+          hint: '-15',
+        ),
+      ),
+    );
+
+    final runButton = SizedBox(
+      height: _kCustomControlHeight,
+      child: FilledButton.icon(
+        onPressed: _customLoading ? null : _runCustom,
+        style: FilledButton.styleFrom(
+          backgroundColor: ModuleColors.portfolio,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          visualDensity: VisualDensity.compact,
+        ),
+        icon: _customLoading
+            ? const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.play_arrow_rounded, size: 18),
+        label: const Text('Run custom'),
+      ),
+    );
+
+    return IntelligenceInsetPanel(
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.tune_rounded,
+                size: 14,
+                color: ModuleColors.portfolio,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Custom scenario',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: ModuleColors.portfolio,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (narrow) ...[
+            sectorField,
+            const SizedBox(height: 8),
+            shockField,
+            const SizedBox(height: 8),
+            SizedBox(width: double.infinity, child: runButton),
+          ] else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(child: sectorField),
+                const SizedBox(width: 8),
+                shockField,
+                const SizedBox(width: 8),
+                runButton,
+              ],
+            ),
+        ],
+      ),
     );
   }
 
@@ -325,16 +523,17 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
           fontWeight: FontWeight.w600,
         );
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.only(bottom: 2),
       child: Row(
         children: [
-          Expanded(flex: 5, child: Text('Scenario', style: style)),
+          const SizedBox(width: 32),
+          Expanded(flex: _kScenarioFlex, child: Text('Scenario', style: style)),
           Expanded(
-            flex: 2,
+            flex: _kImpactFlex,
             child: Text('Impact', style: style, textAlign: TextAlign.right),
           ),
           Expanded(
-            flex: 3,
+            flex: _kPnlFlex,
             child: Text('Est. P&L', style: style, textAlign: TextAlign.right),
           ),
         ],
@@ -344,57 +543,102 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
 
   Widget _tableRow(
     BuildContext context, {
+    required String presetId,
     required String label,
     required StressScenario? scenario,
     required NumberFormat currency,
-    bool failed = false,
+    required bool failed,
+    required bool showDivider,
   }) {
     final pct = failed ? null : scenario?.pctImpact;
     final abs = failed ? null : scenario?.absImpact;
-    final pctColor = pct == null
-        ? Theme.of(context).hintColor
-        : (pct < 0 ? const Color(0xFFFF7675) : const Color(0xFF00B894));
+    final pctColor = _impactColor(context, pct);
+    final dividerColor = Theme.of(context).brightness == Brightness.dark
+        ? Colors.white.withValues(alpha: 0.06)
+        : Colors.black.withValues(alpha: 0.06);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 5,
-            child: Text(
-              label,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
+    return Column(
+      children: [
+        ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: _kRowMinHeight),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Row(
+              children: [
+                _ScenarioIcon(presetId: presetId),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: _kScenarioFlex,
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                   ),
+                ),
+                Expanded(
+                  flex: _kImpactFlex,
+                  child: Text(
+                    pct == null
+                        ? '—'
+                        : '${pct >= 0 ? '+' : ''}${pct.toStringAsFixed(1)}%',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      color: pctColor,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: _kPnlFlex,
+                  child: Text(
+                    abs == null ? '—' : currency.format(abs),
+                    textAlign: TextAlign.right,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ),
+              ],
             ),
           ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              pct == null
-                  ? '—'
-                  : '${pct >= 0 ? '+' : ''}${pct.toStringAsFixed(1)}%',
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                color: pctColor,
-                fontWeight: FontWeight.w700,
-                fontSize: 12,
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Text(
-              abs == null ? '—' : currency.format(abs),
-              textAlign: TextAlign.right,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ),
-        ],
+        ),
+        if (showDivider) Divider(height: 1, thickness: 1, color: dividerColor),
+      ],
+    );
+  }
+
+  Color _impactColor(BuildContext context, double? pct) {
+    if (pct == null) return Theme.of(context).hintColor;
+    if (pct < 0) return ModuleColors.portfolio;
+    return ModuleColors.analytics;
+  }
+}
+
+class _ScenarioIcon extends StatelessWidget {
+  const _ScenarioIcon({required this.presetId});
+
+  final String presetId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 24,
+      height: 24,
+      decoration: BoxDecoration(
+        color: ModuleColors.portfolio.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      alignment: Alignment.center,
+      child: Icon(
+        _presetIcon(presetId),
+        size: 14,
+        color: ModuleColors.portfolio,
       ),
     );
   }

@@ -137,6 +137,41 @@ class IntelligenceGlassCard extends StatelessWidget {
   }
 }
 
+/// Light inset surface for panes inside an [IntelligenceGlassCard] (e.g. X-Ray legend).
+class IntelligenceInsetPanel extends StatelessWidget {
+  const IntelligenceInsetPanel({
+    required this.child,
+    this.padding = const EdgeInsets.all(8),
+    this.borderRadius = 12,
+    super.key,
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final double borderRadius;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.04)
+            : Colors.black.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(borderRadius),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.07)
+              : Colors.black.withValues(alpha: 0.06),
+        ),
+      ),
+      padding: padding,
+      child: child,
+    );
+  }
+}
+
 /// Gold text CTA used on intel card footers.
 class IntelligenceTextLink extends StatelessWidget {
   const IntelligenceTextLink({

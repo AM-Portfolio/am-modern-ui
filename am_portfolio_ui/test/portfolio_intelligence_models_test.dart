@@ -28,8 +28,9 @@ void main() {
         ],
       },
       'xray': {
+        'totalValue': 1000000,
         'sectorWeights': [
-          {'name': 'Financial Services', 'weightPct': 31.4},
+          {'name': 'Financial Services', 'weightPct': 31.4, 'value': 314000},
         ],
         'industryWeights': [],
         'marketCapWeights': [],
@@ -42,6 +43,8 @@ void main() {
     expect(intel.health?.components.first.displayName, 'Diversification');
     expect(intel.risk?.axes.first.riskScore, 40);
     expect(intel.xray?.sectorWeights.first.weightPct, 31.4);
+    expect(intel.xray?.sectorWeights.first.valueInr, 314000);
+    expect(intel.xray?.totalValueInr, 1000000);
   });
 
   test('StressResult and WhatIfResult parse impacts', () {

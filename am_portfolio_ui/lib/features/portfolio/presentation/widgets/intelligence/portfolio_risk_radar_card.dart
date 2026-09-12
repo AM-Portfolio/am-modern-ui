@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,12 +15,14 @@ class PortfolioRiskRadarCard extends ConsumerWidget {
     required this.portfolioId,
     this.minHeight,
     this.fillHeight = false,
+    this.padding = const EdgeInsets.all(20),
     super.key,
   });
 
   final String portfolioId;
   final double? minHeight;
   final bool fillHeight;
+  final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -32,6 +36,7 @@ class PortfolioRiskRadarCard extends ConsumerWidget {
         icon: Icons.radar_rounded,
         minHeight: minHeight,
         fillHeight: fillHeight,
+        padding: padding,
         child: IntelligenceRetryRow(
           message: 'Could not load risk radar',
           onRetry: () =>
@@ -46,6 +51,7 @@ class PortfolioRiskRadarCard extends ConsumerWidget {
             icon: Icons.radar_rounded,
             minHeight: minHeight,
             fillHeight: fillHeight,
+            padding: padding,
             child: const IntelligenceEmptyHint(message: 'Risk data unavailable'),
           );
         }
@@ -54,6 +60,7 @@ class PortfolioRiskRadarCard extends ConsumerWidget {
           risk: risk,
           minHeight: minHeight,
           fillHeight: fillHeight,
+          padding: padding,
         );
       },
     );
@@ -63,6 +70,7 @@ class PortfolioRiskRadarCard extends ConsumerWidget {
 class _RiskRadarLoadedBody extends StatefulWidget {
   const _RiskRadarLoadedBody({
     required this.risk,
+    required this.padding,
     this.minHeight,
     this.fillHeight = false,
   });
@@ -70,6 +78,7 @@ class _RiskRadarLoadedBody extends StatefulWidget {
   final PortfolioRisk risk;
   final double? minHeight;
   final bool fillHeight;
+  final EdgeInsetsGeometry padding;
 
   @override
   State<_RiskRadarLoadedBody> createState() => _RiskRadarLoadedBodyState();
@@ -78,55 +87,47 @@ class _RiskRadarLoadedBody extends StatefulWidget {
 class _RiskRadarLoadedBodyState extends State<_RiskRadarLoadedBody> {
   String? _selectedAxisId;
   String? _expandedKey;
-  /// User pinned a row; sweep must not override until cleared.
+  String? _sweepFocusId;
+  /// User pinned a row; sweep must not clear pin.
   bool _userPinned = false;
 
-  String _rowKey(_DisplayFinding r) =>
-      r.axisId ?? 'finding:${r.label}:${r.value}';
-
-  void _selectAxis(String? id, {required bool fromUser}) {
+  void _onUserSelectAxis(String? id) {
     setState(() {
-      if (fromUser) {
-        if (id == null ||
-            (_selectedAxisId != null &&
-                id.toUpperCase() == _selectedAxisId!.toUpperCase() &&
-                _userPinned)) {
-          _selectedAxisId = null;
-          _userPinned = false;
-        } else {
-          _selectedAxisId = id;
-          _userPinned = id != null;
-        }
-      } else {
-        if (_userPinned) return;
-        _selectedAxisId = id;
-        // Sweep highlights radar/callout only — do not auto-expand rows.
-      }
-      if (fromUser && _selectedAxisId != null) {
-        _expandedKey = _selectedAxisId;
-      } else if (fromUser && _selectedAxisId == null) {
+      if (id == null ||
+          (_selectedAxisId != null &&
+              id.toUpperCase() == _selectedAxisId!.toUpperCase() &&
+              _userPinned)) {
+        _selectedAxisId = null;
+        _userPinned = false;
         _expandedKey = null;
+      } else {
+        _selectedAxisId = id;
+        _userPinned = true;
+        _expandedKey = id;
       }
     });
   }
 
-  void _toggleRow(_DisplayFinding r) {
-    final key = _rowKey(r);
+  void _onSweepFocus(String id) {
+    if (_userPinned) return;
+    if (_sweepFocusId?.toUpperCase() == id.toUpperCase()) return;
+    setState(() => _sweepFocusId = id);
+  }
+
+  void _toggleFactor(_RiskFactorRow r) {
     setState(() {
-      if (_expandedKey == key) {
+      if (_expandedKey != null &&
+          _expandedKey!.toUpperCase() == r.axisId.toUpperCase()) {
         _expandedKey = null;
-        if (r.axisId != null &&
-            _selectedAxisId?.toUpperCase() == r.axisId!.toUpperCase()) {
+        if (_selectedAxisId?.toUpperCase() == r.axisId.toUpperCase()) {
           _selectedAxisId = null;
           _userPinned = false;
         }
         return;
       }
-      _expandedKey = key;
-      if (r.axisId != null) {
-        _selectedAxisId = r.axisId;
-        _userPinned = true;
-      }
+      _expandedKey = r.axisId;
+      _selectedAxisId = r.axisId;
+      _userPinned = true;
     });
   }
 
@@ -134,84 +135,80 @@ class _RiskRadarLoadedBodyState extends State<_RiskRadarLoadedBody> {
   Widget build(BuildContext context) {
     final risk = widget.risk;
     final isPhone = MediaQuery.sizeOf(context).width < 600;
-    final rows = _displayFindings(risk);
-    final insight = _keyInsight(rows);
-    final overall = _worstBandLabel(rows);
+    final primaryAxes = riskRadarPrimaryAxes(risk.axes);
+    final chartAxes =
+        primaryAxes.length >= 3 ? primaryAxes : risk.axes.take(4).toList();
+    final factors = _riskFactorRows(risk, chartAxes);
+    final overall = _worstBandLabel(factors);
     final overallColor = _severityColor(overall);
-    final topAxisId = risk.axes.isEmpty
-        ? null
-        : ([...risk.axes]..sort((a, b) => b.riskScore.compareTo(a.riskScore)))
-            .first
-            .id;
-    final focusAxisId = _selectedAxisId ?? topAxisId;
-    // Sized so collapsed 4 factors + insight fit the peer band without page scroll.
-    final spiderSize = isPhone ? 200.0 : (widget.fillHeight ? 210.0 : 220.0);
-
-    Widget buildSpider(double side) => SizedBox(
-          width: side,
-          height: side,
-          child: RiskRadarLiveView(
-            axes: risk.axes,
-            color: ModuleColors.portfolio,
-            selectedAxisId: _selectedAxisId,
-            focusAxisId: focusAxisId,
-            semanticsLabel: 'Risk radar. $insight',
-            onAxisSelected: (id) => _selectAxis(id, fromUser: true),
-            onSweepAxis: (id) => _selectAxis(id, fromUser: false),
-          ),
-        );
+    final semanticsBand = '$overall Risk';
+    // Soft painter focus from sweep only; strong selection only when pinned.
+    final focusAxisId = _userPinned ? null : _sweepFocusId;
+    final pinnedAxisId = _userPinned ? _selectedAxisId : null;
 
     final spider = LayoutBuilder(
       builder: (context, constraints) {
-        final maxW = constraints.maxWidth.isFinite
-            ? constraints.maxWidth
-            : spiderSize;
-        final side = spiderSize.clamp(140.0, maxW);
-        return buildSpider(side);
+        final maxW =
+            constraints.maxWidth.isFinite ? constraints.maxWidth : 260.0;
+        final maxH =
+            constraints.maxHeight.isFinite ? constraints.maxHeight : 260.0;
+        // Prefer a readable size, but never exceed the pane (caption eats height).
+        final available = math.min(maxW, maxH);
+        final lo = isPhone ? 176.0 : 200.0;
+        final side = available >= lo
+            ? available.clamp(lo, 320.0)
+            : available.clamp(120.0, 320.0);
+        return Center(
+          child: SizedBox(
+            width: side,
+            height: side,
+            child: RiskRadarLiveView(
+              axes: chartAxes,
+              color: ModuleColors.portfolio,
+              selectedAxisId: pinnedAxisId,
+              focusAxisId: focusAxisId,
+              semanticsLabel: 'Risk radar. Overall $semanticsBand.',
+              onAxisSelected: _onUserSelectAxis,
+              onSweepAxis: _onSweepFocus,
+            ),
+          ),
+        );
       },
     );
 
-    Widget metricList({required bool scroll}) {
-      final hint = Text(
-        'Tap a factor to learn what it means. Higher score = more risk.',
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Theme.of(context).hintColor,
-              height: 1.3,
-            ),
-      );
-      final rowWidgets = rows.map((r) {
-        final key = _rowKey(r);
-        final selected = r.axisId != null &&
+    Widget factorList({required bool scroll}) {
+      final cards = factors.map((r) {
+        final expanded = _expandedKey != null &&
+            _expandedKey!.toUpperCase() == r.axisId.toUpperCase();
+        final selected = _userPinned &&
             _selectedAxisId != null &&
-            r.axisId!.toUpperCase() == _selectedAxisId!.toUpperCase();
-        final expanded = _expandedKey == key;
-        return _ExpandableMetricRow(
-          row: r,
-          selected: selected,
-          expanded: expanded,
-          onTap: () => _toggleRow(r),
+            r.axisId.toUpperCase() == _selectedAxisId!.toUpperCase();
+        return Semantics(
+          button: true,
+          label:
+              '${r.label}, score ${r.scoreLabel}, ${r.severity.toLowerCase()}',
+          child: _RiskFactorCard(
+            row: r,
+            selected: selected,
+            expanded: expanded,
+            onTap: () => _toggleFactor(r),
+          ),
         );
       }).toList();
 
       if (!scroll) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [hint, const SizedBox(height: 6), ...rowWidgets],
+        return Padding(
+          padding: const EdgeInsets.only(top: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: cards,
+          ),
         );
       }
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          hint,
-          const SizedBox(height: 6),
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: rowWidgets,
-            ),
-          ),
-        ],
+      return ListView(
+        padding: const EdgeInsets.only(top: 24, bottom: 8),
+        children: cards,
       );
     }
 
@@ -219,57 +216,45 @@ class _RiskRadarLoadedBodyState extends State<_RiskRadarLoadedBody> {
         ? (widget.fillHeight
             ? Column(
                 children: [
-                  Center(child: spider),
-                  const SizedBox(height: 8),
-                  Expanded(child: metricList(scroll: true)),
+                  Expanded(flex: 6, child: spider),
+                  const SizedBox(height: 4),
+                  Expanded(flex: 4, child: factorList(scroll: true)),
                 ],
               )
             : Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Center(child: spider),
-                  const SizedBox(height: 8),
-                  metricList(scroll: false),
+                  spider,
+                  const SizedBox(height: 4),
+                  factorList(scroll: false),
                 ],
               ))
         : (widget.fillHeight
             ? Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Flexible(
-                    flex: 5,
-                    child: Align(
-                      alignment: Alignment.topCenter,
-                      child: spider,
-                    ),
-                  ),
+                  Expanded(flex: 6, child: spider),
                   const SizedBox(width: 8),
-                  Expanded(flex: 5, child: metricList(scroll: true)),
+                  Expanded(flex: 4, child: factorList(scroll: true)),
                 ],
               )
             : Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Flexible(
-                    flex: 5,
-                    child: Align(
-                      alignment: Alignment.topCenter,
-                      child: spider,
-                    ),
-                  ),
+                  Expanded(flex: 6, child: spider),
                   const SizedBox(width: 8),
-                  Expanded(flex: 5, child: metricList(scroll: false)),
+                  Expanded(flex: 4, child: factorList(scroll: false)),
                 ],
               ));
 
     final body = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: widget.fillHeight ? MainAxisSize.max : MainAxisSize.min,
       children: [
         Text(
-          'How your portfolio risk is distributed',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          'Scores are 0–100. Higher means more risk.',
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: Theme.of(context).hintColor,
-                fontWeight: FontWeight.w500,
               ),
         ),
         const SizedBox(height: 8),
@@ -282,6 +267,7 @@ class _RiskRadarLoadedBodyState extends State<_RiskRadarLoadedBody> {
       icon: Icons.radar_rounded,
       minHeight: widget.minHeight,
       fillHeight: widget.fillHeight,
+      padding: widget.padding,
       scrollable: false,
       trailing: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -290,124 +276,60 @@ class _RiskRadarLoadedBodyState extends State<_RiskRadarLoadedBody> {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: overallColor.withValues(alpha: 0.45)),
         ),
-        child: Text(
-          overall,
-          style: TextStyle(
-            color: overallColor,
-            fontWeight: FontWeight.w700,
-            fontSize: 12,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.shield_rounded, size: 14, color: overallColor),
+            const SizedBox(width: 4),
+            Text(
+              '$overall Risk',
+              style: TextStyle(
+                color: overallColor,
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
+            ),
+          ],
         ),
       ),
-      footer: _KeyInsightBanner(message: insight),
       child: body,
     );
   }
 }
 
-class _KeyInsightBanner extends StatelessWidget {
-  const _KeyInsightBanner({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-      decoration: BoxDecoration(
-        color: ModuleColors.portfolio.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: ModuleColors.portfolio.withValues(alpha: 0.22),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.lightbulb_outline_rounded,
-            size: 16,
-            color: ModuleColors.portfolio,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text: 'Key insight  ',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: ModuleColors.portfolio,
-                        ),
-                  ),
-                  TextSpan(
-                    text: message,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          height: 1.3,
-                        ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DisplayFinding {
-  const _DisplayFinding({
+class _RiskFactorRow {
+  const _RiskFactorRow({
+    required this.axisId,
     required this.label,
-    required this.value,
+    required this.scoreLabel,
     required this.severity,
-    this.axisId,
+    this.findingLabel,
   });
 
+  final String axisId;
   final String label;
-  final String value;
+  final String scoreLabel;
   final String severity;
-  final String? axisId;
+  final String? findingLabel;
 }
 
-List<_DisplayFinding> _displayFindings(PortfolioRisk risk) {
-  if (risk.findings.isNotEmpty) {
-    return risk.findings.take(4).map((f) {
-      final sev = (f.severity ?? 'GOOD').toUpperCase();
-      final valueMatch = RegExp(r'([\d.]+%?)\s*$').firstMatch(f.label.trim());
-      final value = valueMatch?.group(1) ?? '—';
-      var label = f.label.trim();
-      if (valueMatch != null) {
-        label = label.substring(0, valueMatch.start).trim();
-      }
-      if (label.isEmpty) label = f.code;
-      return _DisplayFinding(label: label, value: value, severity: sev);
-    }).toList();
-  }
-
-  final sorted = [...risk.axes]
-    ..sort((a, b) => b.riskScore.compareTo(a.riskScore));
-  return sorted.take(4).map((a) {
-    return _DisplayFinding(
-      label: riskRadarAxisLabel(a),
-      value: a.riskScore.toStringAsFixed(0),
-      severity: riskRadarBandSeverity(a.riskScore),
+List<_RiskFactorRow> _riskFactorRows(
+  PortfolioRisk risk,
+  List<RiskAxis> chartAxes,
+) {
+  return chartAxes.map((a) {
+    final finding = riskRadarFindingForAxis(risk.findings, a.id);
+    return _RiskFactorRow(
       axisId: a.id,
+      label: riskRadarAxisLabel(a),
+      scoreLabel: riskRadarScoreLabel(a.riskScore),
+      severity: riskRadarBandSeverity(a.riskScore),
+      findingLabel: finding?.label,
     );
   }).toList();
 }
 
-String _keyInsight(List<_DisplayFinding> rows) {
-  if (rows.isEmpty) {
-    return 'No material risk signals right now.';
-  }
-  final top = rows.first;
-  return '${top.label} is currently your largest risk factor (${top.value}).';
-}
-
-String _worstBandLabel(List<_DisplayFinding> rows) {
+String _worstBandLabel(List<_RiskFactorRow> rows) {
   if (rows.isEmpty) return 'Good';
   var rank = 0;
   for (final r in rows) {
@@ -426,136 +348,157 @@ String _worstBandLabel(List<_DisplayFinding> rows) {
   };
 }
 
-class _ExpandableMetricRow extends StatelessWidget {
-  const _ExpandableMetricRow({
+class _RiskFactorCard extends StatefulWidget {
+  const _RiskFactorCard({
     required this.row,
     required this.selected,
     required this.expanded,
     required this.onTap,
   });
 
-  final _DisplayFinding row;
+  final _RiskFactorRow row;
   final bool selected;
   final bool expanded;
   final VoidCallback onTap;
 
   @override
+  State<_RiskFactorCard> createState() => _RiskFactorCardState();
+}
+
+class _RiskFactorCardState extends State<_RiskFactorCard> {
+  bool _hovered = false;
+
+  @override
   Widget build(BuildContext context) {
+    final row = widget.row;
     final pill = switch (row.severity.toUpperCase()) {
       'HIGH' || 'CRITICAL' => 'High',
       'MEDIUM' || 'WATCH' => 'Medium',
       _ => 'Good',
     };
-    final color = _severityColor(row.severity);
-    final edu = row.axisId != null
-        ? riskRadarAxisEducation(row.axisId!)
-        : (
-            meaning:
-                'This is a notable risk signal from your current portfolio.',
-            tip:
-                'Open related factors on the radar to see how risk is '
-                'distributed across your book.',
-          );
+    final severityColor = _severityColor(row.severity);
+    final accent = riskRadarAxisAccent(row.axisId);
+    final goldFocus = widget.selected || widget.expanded || _hovered;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final insight = riskRadarKeyInsightParagraph(row.axisId);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 2),
-      child: Material(
-        color: (expanded || selected)
-            ? ModuleColors.portfolio.withValues(alpha: 0.1)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(8),
-        child: InkWell(
-          onTap: onTap,
+      padding: const EdgeInsets.only(bottom: 3),
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: Material(
+          color: widget.expanded || widget.selected
+              ? accent.withValues(alpha: 0.08)
+              : Theme.of(context).colorScheme.surface.withValues(alpha: 0.35),
           borderRadius: BorderRadius.circular(8),
-          child: AnimatedSize(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutCubic,
-            alignment: Alignment.topCenter,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(4, 4, 4, 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+          child: InkWell(
+            onTap: widget.onTap,
+            borderRadius: BorderRadius.circular(8),
+            child: AnimatedContainer(
+              duration: reduceMotion
+                  ? Duration.zero
+                  : const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: goldFocus
+                      ? kRiskRadarPolygonGold.withValues(alpha: 0.85)
+                      : accent.withValues(alpha: 0.28),
+                  width: goldFocus ? 1.6 : 1,
+                ),
+              ),
+              child: AnimatedSize(
+                duration: reduceMotion
+                    ? Duration.zero
+                    : const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                alignment: Alignment.topCenter,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 7, 4, 7),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 7,
-                        height: 7,
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          row.label,
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    fontWeight: expanded
-                                        ? FontWeight.w700
-                                        : FontWeight.w500,
-                                  ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerRight,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                      LayoutBuilder(
+                        builder: (context, rowConstraints) {
+                          final showPill = rowConstraints.maxWidth >= 120;
+                          return Row(
                             children: [
-                              Text(
-                                row.value,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(fontWeight: FontWeight.w700),
+                              Icon(riskRadarAxisIcon(row.axisId),
+                                  size: 17, color: accent),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  row.label,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
+                                        fontSize: 13,
+                                        fontWeight: widget.expanded
+                                            ? FontWeight.w700
+                                            : FontWeight.w600,
+                                        height: 1.15,
+                                      ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                               const SizedBox(width: 4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 5,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: color.withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(
-                                    color: color.withValues(alpha: 0.45),
+                              Text(
+                                row.scoreLabel,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w800,
+                                      height: 1.15,
+                                    ),
+                              ),
+                              if (showPill) ...[
+                                const SizedBox(width: 5),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        severityColor.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: severityColor.withValues(
+                                        alpha: 0.45,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    pill,
+                                    style: TextStyle(
+                                      color: severityColor,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                 ),
-                                child: Text(
-                                  pill,
-                                  style: TextStyle(
-                                    color: color,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                              Icon(
-                                expanded
-                                    ? Icons.expand_less_rounded
-                                    : Icons.expand_more_rounded,
-                                size: 16,
-                                color: Theme.of(context).hintColor,
-                              ),
+                              ],
                             ],
-                          ),
-                        ),
+                          );
+                        },
                       ),
+                      if (widget.expanded) ...[
+                        const SizedBox(height: 6),
+                        _KeyInsightPanel(
+                          insight: insight,
+                          findingLabel: row.findingLabel,
+                          accent: accent,
+                        ),
+                      ],
                     ],
                   ),
-                  if (expanded) ...[
-                    const SizedBox(height: 6),
-                    _EduLine(title: 'What it means', body: edu.meaning),
-                    _EduLine(title: 'Good to know', body: edu.tip),
-                  ],
-                ],
+                ),
               ),
             ),
           ),
@@ -565,33 +508,61 @@ class _ExpandableMetricRow extends StatelessWidget {
   }
 }
 
-class _EduLine extends StatelessWidget {
-  const _EduLine({required this.title, required this.body});
+class _KeyInsightPanel extends StatelessWidget {
+  const _KeyInsightPanel({
+    required this.insight,
+    required this.accent,
+    this.findingLabel,
+  });
 
-  final String title;
-  final String body;
+  final String insight;
+  final Color accent;
+  final String? findingLabel;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6, left: 13),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: accent.withValues(alpha: 0.2)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: ModuleColors.portfolio,
-                ),
+          Row(
+            children: [
+              Icon(Icons.lightbulb_outline_rounded, size: 14, color: accent),
+              const SizedBox(width: 6),
+              Text(
+                'Key Insight',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: accent,
+                    ),
+              ),
+            ],
           ),
+          const SizedBox(height: 4),
           Text(
-            body,
+            insight,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  height: 1.35,
+                  height: 1.3,
                   color: Theme.of(context).hintColor,
                 ),
           ),
+          if (findingLabel != null && findingLabel!.trim().isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              findingLabel!.trim(),
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+            ),
+          ],
         ],
       ),
     );

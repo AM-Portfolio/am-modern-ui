@@ -562,22 +562,22 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
         }
 
         // Desktop / Tablet Layout
-        final isCompact = _resolveCompact(isTablet);
+        final targetCompact = _resolveCompact(isTablet);
         final targetWidth =
-            isCompact ? widget.compactWidth : widget.fullWidth;
+            targetCompact ? widget.compactWidth : widget.fullWidth;
 
         if (_lastTargetWidth != targetWidth) {
           _lastTargetWidth = targetWidth;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted || _animationController.isAnimating) return;
             _animationController.animateTo(
-              isCompact ? 0.0 : 1.0,
+              targetCompact ? 0.0 : 1.0,
               duration: const Duration(milliseconds: 300),
             );
           });
         }
 
-        // Background Decoration (Glass vs Solid)
+        // Background Decorations (Glass vs Solid)
         final bgDecoration = widget.enableGlass
             ? AppGlassmorphismV2.techBackground(isDark: widget.isDark)
             : BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor);
@@ -589,15 +589,19 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
 
         final desktopStack = AnimatedBuilder(
           animation: _widthAnimation,
-          builder: (context, _) {
+          builder: (context, child) {
             final sidebarWidth = _widthAnimation.value;
+            // Track chrome with width mid-tween so labels do not snap on tap.
+            final isCompact = _animationController.value < 0.5;
             return _buildDesktopStack(
               bgDecoration: bgDecoration,
               bodyColor: bodyColor,
               sidebarWidth: sidebarWidth,
               isCompact: isCompact,
+              body: child!,
             );
           },
+          child: widget.body,
         );
 
         return Scaffold(
@@ -619,6 +623,7 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
     required Color bodyColor,
     required double sidebarWidth,
     required bool isCompact,
+    required Widget body,
   }) {
     return Container(
       decoration: bgDecoration,
@@ -638,7 +643,7 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
             child: Container(
               clipBehavior: Clip.hardEdge,
               decoration: BoxDecoration(color: bodyColor),
-              child: widget.body,
+              child: body,
             ),
           ),
         ],

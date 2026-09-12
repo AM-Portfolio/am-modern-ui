@@ -50,6 +50,7 @@ abstract class PortfolioRemoteDataSource {
   Future<StressResult> getPortfolioStress(
     String portfolioId, {
     String? preset,
+    List<String>? presets,
     Map<String, dynamic>? custom,
   });
 
@@ -612,12 +613,17 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
   Future<StressResult> getPortfolioStress(
     String portfolioId, {
     String? preset,
+    List<String>? presets,
     Map<String, dynamic>? custom,
   }) async {
     CommonLogger.methodEntry(
       'getPortfolioStress',
       tag: 'PortfolioRemoteDataSource',
-      metadata: {'portfolioId': portfolioId, 'preset': preset},
+      metadata: {
+        'portfolioId': portfolioId,
+        'preset': preset,
+        'presets': presets?.length,
+      },
     );
 
     try {
@@ -625,10 +631,14 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
         _baseUrl,
         PortfolioEndpoints.stress(portfolioId),
       );
-      final body = <String, dynamic>{
-        'preset': preset,
-        'custom': custom,
-      };
+      final body = <String, dynamic>{};
+      if (custom != null) {
+        body['custom'] = custom;
+      } else if (presets != null && presets.isNotEmpty) {
+        body['presets'] = presets;
+      } else if (preset != null) {
+        body['preset'] = preset;
+      }
       final result = await _apiClient.post<StressResult>(
         baseUri,
         body: body,

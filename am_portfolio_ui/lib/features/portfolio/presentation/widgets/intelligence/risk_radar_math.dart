@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:flutter/painting.dart';
+import 'package:flutter/material.dart';
 
 import '../../../internal/domain/entities/portfolio_intelligence.dart';
 
@@ -13,6 +13,23 @@ const double kRiskRadarSweepSeconds = 7;
 /// Half-width of the sweep wedge in radians (~18°).
 const double kRiskRadarSweepHalfWidth = 0.32;
 
+/// Gold used for polygon glow, pedestal, and factor-card focus border.
+const Color kRiskRadarPolygonGold = Color(0xFFF5C542);
+
+/// Primary shout-radar paint order (top → right → bottom → left).
+/// Vol/Beta omitted this pass so the 4-spoke chart stays readable.
+const List<String> kRiskRadarPrimaryAxisIds = [
+  'CONCENTRATION',
+  'SECTOR',
+  'DIVERSIFICATION',
+  'LIQUIDITY',
+];
+
+const Color _kConcentrationAccent = Color(0xFFE91E8C);
+const Color _kSectorAccent = Color(0xFF00D4FF);
+const Color _kDiversificationAccent = Color(0xFF3DDC97);
+const Color _kLiquidityAccent = Color(0xFFF5C542);
+
 double riskRadarAxisAngle(int index, int n, {double yaw = 0}) {
   return -math.pi / 2 + (2 * math.pi * index / n) + yaw;
 }
@@ -23,9 +40,48 @@ double riskRadarVisualT(double riskScore) {
 }
 
 String riskRadarAxisLabel(RiskAxis axis) {
-  if (axis.id.toUpperCase() == 'SECTOR') return 'Sector Risk';
-  return axis.displayName;
+  switch (axis.id.toUpperCase()) {
+    case 'CONCENTRATION':
+      return 'Concentration risk';
+    case 'SECTOR':
+      return 'Sector risk';
+    case 'DIVERSIFICATION':
+      return 'Diversification risk';
+    case 'LIQUIDITY':
+      return 'Liquidity risk';
+    default:
+      return axis.displayName;
+  }
 }
+
+/// Explicit chart name lines — never mid-word wrap on the radar canvas.
+({String line1, String line2}) riskRadarChartNameLines(RiskAxis axis) {
+  switch (axis.id.toUpperCase()) {
+    case 'CONCENTRATION':
+      return (line1: 'Concentration', line2: 'risk');
+    case 'SECTOR':
+      return (line1: 'Sector', line2: 'risk');
+    case 'DIVERSIFICATION':
+      return (line1: 'Diversification', line2: 'risk');
+    case 'LIQUIDITY':
+      return (line1: 'Liquidity', line2: 'risk');
+    default:
+      final parts = riskRadarAxisLabel(axis).split(' ');
+      if (parts.length >= 2 && parts.last.toLowerCase() == 'risk') {
+        return (
+          line1: parts.sublist(0, parts.length - 1).join(' '),
+          line2: 'risk',
+        );
+      }
+      return (line1: riskRadarAxisLabel(axis), line2: '');
+  }
+}
+
+/// Risk score display on chart + list (0–100 scale, not a %).
+String riskRadarScoreLabel(num score) => '${score.round()} / 100';
+
+/// Compact chart tip score; full `n / 100` stays on the right-hand list.
+String riskRadarChartScoreLabel(num score) => '(${score.round()})';
 
 String riskRadarBandLabel(double riskScore) {
   if (riskScore >= 70) return 'High';
@@ -37,6 +93,76 @@ String riskRadarBandSeverity(double riskScore) {
   if (riskScore >= 70) return 'HIGH';
   if (riskScore >= 40) return 'MEDIUM';
   return 'GOOD';
+}
+
+/// Accent color for chart spokes/vertices and matching factor cards.
+Color riskRadarAxisAccent(String axisId) {
+  switch (axisId.toUpperCase()) {
+    case 'CONCENTRATION':
+      return _kConcentrationAccent;
+    case 'SECTOR':
+      return _kSectorAccent;
+    case 'DIVERSIFICATION':
+      return _kDiversificationAccent;
+    case 'LIQUIDITY':
+      return _kLiquidityAccent;
+    default:
+      return kRiskRadarPolygonGold;
+  }
+}
+
+IconData riskRadarAxisIcon(String axisId) {
+  switch (axisId.toUpperCase()) {
+    case 'CONCENTRATION':
+      return Icons.filter_center_focus_rounded;
+    case 'SECTOR':
+      return Icons.donut_large_rounded;
+    case 'DIVERSIFICATION':
+      return Icons.hub_rounded;
+    case 'LIQUIDITY':
+      return Icons.water_drop_rounded;
+    default:
+      return Icons.radar_rounded;
+  }
+}
+
+/// Ordered primary axes present in [axes] (Vol/Beta excluded from shout UI).
+List<RiskAxis> riskRadarPrimaryAxes(List<RiskAxis> axes) {
+  final byId = <String, RiskAxis>{
+    for (final a in axes) a.id.toUpperCase(): a,
+  };
+  return [
+    for (final id in kRiskRadarPrimaryAxisIds)
+      if (byId.containsKey(id)) byId[id]!,
+  ];
+}
+
+/// Finding code → axis id for expand-body enrichment only.
+String? riskRadarFindingAxisId(String code) {
+  switch (code.toUpperCase()) {
+    case 'TOP1_HIGH':
+      return 'CONCENTRATION';
+    case 'SECTOR_HIGH':
+    case 'SECTOR_MEDIUM':
+      return 'SECTOR';
+    case 'BETA_HIGH':
+    case 'BETA_MEDIUM':
+      return 'BETA';
+    default:
+      return null;
+  }
+}
+
+RiskFinding? riskRadarFindingForAxis(
+  List<RiskFinding> findings,
+  String axisId,
+) {
+  final want = axisId.toUpperCase();
+  for (final f in findings) {
+    final mapped = riskRadarFindingAxisId(f.code);
+    if (mapped != null && mapped.toUpperCase() == want) return f;
+  }
+  return null;
 }
 
 /// Flat radar point (y up in math space → screen y down).
@@ -125,6 +251,12 @@ int riskRadarHitTestFlat({
   return best;
 }
 
+/// One-paragraph Key Insight for the accordion expand body.
+String riskRadarKeyInsightParagraph(String axisId) {
+  final edu = riskRadarAxisEducation(axisId);
+  return '${edu.meaning} ${edu.tip}';
+}
+
 /// User-facing education (plain language — no engine formulas).
 ({String meaning, String tip}) riskRadarAxisEducation(String axisId) {
   switch (axisId.toUpperCase()) {
@@ -171,7 +303,7 @@ int riskRadarHitTestFlat({
             'swing up and down.',
         tip:
             'A higher score means larger swings. That can mean more '
-            'opportunity — and more stress — for your returns.',
+            'opportunity and more stress for your returns.',
       );
     case 'BETA':
       return (

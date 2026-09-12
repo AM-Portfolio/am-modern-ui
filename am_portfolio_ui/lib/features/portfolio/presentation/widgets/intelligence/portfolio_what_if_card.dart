@@ -1,12 +1,36 @@
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../internal/domain/entities/portfolio_holding.dart';
 import '../../../internal/domain/entities/portfolio_intelligence.dart';
+import '../../../providers/portfolio_intelligence_providers.dart';
 import '../../../providers/portfolio_providers.dart';
 import 'intelligence_glass_card.dart';
+import 'intelligence_sector_label.dart';
+import 'intelligence_suggest_search.dart';
 
 enum _WhatIfMode { add, modify, switchAlloc }
+
+/// Switch-allocation input checks (empty, same sector, move %).
+@visibleForTesting
+String? validateWhatIfSwitchAllocation({
+  required String fromSector,
+  required String toSector,
+  required String moveWeightPct,
+}) {
+  final from = fromSector.trim();
+  final to = toSector.trim();
+  if (from.isEmpty || to.isEmpty) return 'Enter from and to sectors';
+  if (from.toLowerCase() == to.toLowerCase()) {
+    return 'From and to sectors must differ';
+  }
+  final move = double.tryParse(moveWeightPct.trim());
+  if (move == null || move <= 0) return 'Enter a positive move weight %';
+  if (move > 100) return 'Move weight % must be ≤ 100';
+  return null;
+}
 
 class PortfolioWhatIfCard extends ConsumerStatefulWidget {
   const PortfolioWhatIfCard({
@@ -48,6 +72,40 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
     super.dispose();
   }
 
+  List<PortfolioHolding> _holdings() {
+    return ref
+            .watch(portfolioHoldingsProvider(widget.portfolioId))
+            .asData
+            ?.value
+            .holdings ??
+        const [];
+  }
+
+  List<String> _sectors() {
+    final set = <String>{};
+    final intel = ref
+        .watch(portfolioIntelligenceProvider(widget.portfolioId))
+        .asData
+        ?.value;
+    for (final w in intel?.xray?.sectorWeights ?? const <XrayWeight>[]) {
+      if (isUsableIntelligenceSectorLabel(w.name)) set.add(w.name.trim());
+    }
+    for (final h in _holdings()) {
+      if (isUsableIntelligenceSectorLabel(h.sector)) set.add(h.sector.trim());
+    }
+    final list = set.toList()..sort();
+    return list;
+  }
+
+  void _setMode(_WhatIfMode mode) {
+    if (_mode == mode) return;
+    setState(() {
+      _mode = mode;
+      _result = null;
+      _error = null;
+    });
+  }
+
   Map<String, dynamic> _body() {
     switch (_mode) {
       case _WhatIfMode.add:
@@ -72,6 +130,21 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
     }
   }
 
+  String _errorMessage(Object error) {
+    if (error is ApiException) {
+      final msg = error.message.trim();
+      if (msg.isNotEmpty && !msg.startsWith('ApiException')) return msg;
+      if (error.statusCode == 400) return 'Invalid simulation inputs';
+      if (error.statusCode == 404) return 'Portfolio not found';
+      if ((error.statusCode ?? 0) >= 500) {
+        return 'Server error — please retry';
+      }
+    }
+    final raw = error.toString().replaceFirst('ApiException: ', '').trim();
+    if (raw.isEmpty) return 'Simulation failed';
+    return raw.length > 160 ? '${raw.substring(0, 157)}…' : raw;
+  }
+
   Future<void> _simulate() async {
     final mode = _mode;
     String? validation;
@@ -92,17 +165,11 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
         }
       }
     } else {
-      if (_fromSectorCtrl.text.trim().isEmpty ||
-          _toSectorCtrl.text.trim().isEmpty) {
-        validation = 'Enter from and to sectors';
-      } else {
-        final move = double.tryParse(_movePctCtrl.text.trim());
-        if (move == null || move <= 0) {
-          validation = 'Enter a positive move weight %';
-        } else if (move > 100) {
-          validation = 'Move weight % must be ≤ 100';
-        }
-      }
+      validation = validateWhatIfSwitchAllocation(
+        fromSector: _fromSectorCtrl.text,
+        toSector: _toSectorCtrl.text,
+        moveWeightPct: _movePctCtrl.text,
+      );
     }
     if (validation != null) {
       setState(() => _error = validation);
@@ -123,13 +190,27 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
         _result = result;
         _loading = false;
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = 'Simulation failed';
+        _error = _errorMessage(e);
       });
     }
+  }
+
+  void _pickSymbol(String symbol) {
+    setState(() {
+      _symbolCtrl.text = symbol;
+      if (_mode == _WhatIfMode.modify && _weightCtrl.text.trim().isEmpty) {
+        for (final h in _holdings()) {
+          if (h.symbol.toUpperCase() == symbol.toUpperCase()) {
+            _weightCtrl.text = h.portfolioWeight.toStringAsFixed(1);
+            break;
+          }
+        }
+      }
+    });
   }
 
   @override
@@ -167,6 +248,8 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
   }
 
   Widget _buildBody(BuildContext context) {
+    final sectors = _sectors();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -177,28 +260,34 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
             _ModeChip(
               label: 'Add Investment',
               selected: _mode == _WhatIfMode.add,
-              onTap: () => setState(() => _mode = _WhatIfMode.add),
+              onTap: () => _setMode(_WhatIfMode.add),
             ),
             _ModeChip(
               label: 'Modify Holding',
               selected: _mode == _WhatIfMode.modify,
-              onTap: () => setState(() => _mode = _WhatIfMode.modify),
+              onTap: () => _setMode(_WhatIfMode.modify),
             ),
             _ModeChip(
               label: 'Switch Allocation',
               selected: _mode == _WhatIfMode.switchAlloc,
-              onTap: () => setState(() => _mode = _WhatIfMode.switchAlloc),
+              onTap: () => _setMode(_WhatIfMode.switchAlloc),
             ),
           ],
         ),
         const SizedBox(height: 12),
         if (_mode == _WhatIfMode.add || _mode == _WhatIfMode.modify) ...[
-          TextField(
+          SmartSearchAnchor(
             controller: _symbolCtrl,
-            decoration: intelligenceFieldDecoration(
-              context,
-              label: 'Stock / ETF',
-              hint: 'e.g. RELIANCE',
+            compact: true,
+            hintText: 'Stock / ETF',
+            accentColor: ModuleColors.portfolio,
+            onSelected: _pickSymbol,
+            searchHandler: (q) => searchSymbolsHoldingsFirst(
+              query: q,
+              holdings: [
+                for (final h in _holdings())
+                  (symbol: h.symbol, name: h.name),
+              ],
             ),
           ),
           const SizedBox(height: 8),
@@ -225,21 +314,31 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
               ),
             ),
         ] else ...[
-          TextField(
+          SmartSearchAnchor(
             controller: _fromSectorCtrl,
-            decoration: intelligenceFieldDecoration(
-              context,
-              label: 'From sector',
-              hint: 'e.g. Financial Services',
+            compact: true,
+            hintText: 'From sector',
+            accentColor: ModuleColors.portfolio,
+            forceUppercase: false,
+            resultBadge: null,
+            onSelected: (label) => setState(() => _fromSectorCtrl.text = label),
+            searchHandler: (q) => searchSectorsHoldingsFirst(
+              query: q,
+              holdingsSectors: sectors,
             ),
           ),
           const SizedBox(height: 8),
-          TextField(
+          SmartSearchAnchor(
             controller: _toSectorCtrl,
-            decoration: intelligenceFieldDecoration(
-              context,
-              label: 'To sector',
-              hint: 'e.g. Information Technology',
+            compact: true,
+            hintText: 'To sector',
+            accentColor: ModuleColors.portfolio,
+            forceUppercase: false,
+            resultBadge: null,
+            onSelected: (label) => setState(() => _toSectorCtrl.text = label),
+            searchHandler: (q) => searchSectorsHoldingsFirst(
+              query: q,
+              holdingsSectors: sectors,
             ),
           ),
           const SizedBox(height: 8),
@@ -280,9 +379,17 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
           ),
         ],
         const SizedBox(height: 10),
-        if (_result != null)
-          _BeforeAfter(result: _result!)
-        else
+        if (_result != null) ...[
+          Text(
+            'Simulation only — not saved',
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: Theme.of(context).hintColor,
+                  fontStyle: FontStyle.italic,
+                ),
+          ),
+          const SizedBox(height: 6),
+          _BeforeAfter(result: _result!),
+        ] else
           Padding(
             padding: const EdgeInsets.only(top: 2),
             child: Column(
@@ -322,14 +429,47 @@ class _ModeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChoiceChip(
-      label: Text(label, style: const TextStyle(fontSize: 11)),
-      selected: selected,
-      onSelected: (_) => onTap(),
-      selectedColor: ModuleColors.portfolio.withValues(alpha: 0.25),
-      labelStyle: TextStyle(
-        color: selected ? ModuleColors.portfolio : null,
-        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+    final accent = ModuleColors.portfolio;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+          decoration: BoxDecoration(
+            color: selected
+                ? accent.withValues(alpha: 0.22)
+                : Theme.of(context).colorScheme.surface.withValues(alpha: 0.35),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: selected
+                  ? accent
+                  : Theme.of(context).dividerColor.withValues(alpha: 0.55),
+              width: selected ? 1.4 : 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (selected) ...[
+                Icon(Icons.check_rounded, size: 14, color: accent),
+                const SizedBox(width: 5),
+              ],
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: selected
+                      ? accent
+                      : Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

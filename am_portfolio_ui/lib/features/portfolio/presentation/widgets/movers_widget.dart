@@ -1,7 +1,7 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../../internal/domain/entities/portfolio_analytics.dart';
+import 'intelligence/intelligence_glass_card.dart';
 
 /// Top movers panel — Gainers left, Losers right.
 /// Each tile uses the Stitch design: colored squircle arrow + ticker + price + pill badge.
@@ -32,89 +32,40 @@ class _MoversWidgetState extends State<MoversWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final showSeeAll = widget.onViewAll != null &&
+        widget.movers != null &&
+        (widget.movers!.topGainers.isNotEmpty ||
+            widget.movers!.topLosers.isNotEmpty);
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                context.colors.marketCardSurface.withValues(alpha: 0.9),
-                context.colors.marketCardSurface.withValues(alpha: 0.75),
-              ],
-            ),
-            border: Border.all(
-              color: context.colors.marketBorderDefault,
-              width: 1,
-            ),
-            borderRadius: BorderRadius.circular(18),
-          ),
-          padding: EdgeInsets.all(widget.compact ? 14 : 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // ── Header ──
-              Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(widget.compact ? 5 : 7),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .primaryColor
-                          .withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.auto_graph_rounded,
-                      color: ModuleColors.portfolio,
-                      size: widget.compact ? 16 : 18,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'Top Movers',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: widget.compact ? 14 : 16,
-                          letterSpacing: -0.3,
-                        ),
-                  ),
-                  const Spacer(),
-                  if (widget.onViewAll != null &&
-                      widget.movers != null &&
-                      (widget.movers!.topGainers.length > 3 ||
-                          widget.movers!.topLosers.length > 3))
-                    TextButton(
-                      onPressed: () => widget.onViewAll!(widget.movers!),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        backgroundColor: ModuleColors.portfolio.withValues(alpha: 0.1),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      ),
-                      child: Text(
-                        'See Top 10',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: ModuleColors.portfolio,
-                        ),
-                      ),
-                    ),
-                ],
+    return IntelligenceGlassCard(
+      title: 'Top Movers',
+      icon: Icons.auto_graph_rounded,
+      padding: EdgeInsets.all(widget.compact ? 14 : 20),
+      trailing: showSeeAll
+          ? TextButton(
+              onPressed: () => widget.onViewAll!(widget.movers!),
+              style: TextButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                backgroundColor:
+                    ModuleColors.portfolio.withValues(alpha: 0.1),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
               ),
-              SizedBox(height: widget.compact ? 12 : 16),
-              _buildContent(context),
-            ],
-          ),
-        ),
-      ),
+              child: Text(
+                'See Top 10',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: ModuleColors.portfolio,
+                ),
+              ),
+            )
+          : null,
+      child: _buildContent(context),
     );
   }
 
@@ -212,7 +163,7 @@ class _MoversWidgetState extends State<MoversWidget> {
                       ),
                       child: Center(
                         child: Text(
-                          'Gainers',
+                          'Gainers (${widget.movers!.topGainers.length})',
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: _showGainers ? FontWeight.bold : FontWeight.w500,
@@ -235,7 +186,7 @@ class _MoversWidgetState extends State<MoversWidget> {
                       ),
                       child: Center(
                         child: Text(
-                          'Losers',
+                          'Losers (${widget.movers!.topLosers.length})',
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: !_showGainers ? FontWeight.bold : FontWeight.w500,
@@ -285,8 +236,9 @@ class _MoversWidgetState extends State<MoversWidget> {
     final color = isGainers
         ? ModuleColors.portfolio
         : context.colors.marketNegativeIndicator;
-    final take = 5;
+    const take = 5;
     final hideTitle = widget.compact; // tabs already label Gainers/Losers
+    final shown = stocks.take(take).toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -318,7 +270,7 @@ class _MoversWidgetState extends State<MoversWidget> {
             padding: EdgeInsets.symmetric(vertical: widget.compact ? 12.0 : 20.0),
             child: Center(
               child: Text(
-                'No ${isGainers ? 'gainers' : 'losers'} found',
+                'No ${isGainers ? 'gainers' : 'losers'} today',
                 style: TextStyle(
                   color: Theme.of(context)
                       .colorScheme
@@ -329,10 +281,21 @@ class _MoversWidgetState extends State<MoversWidget> {
               ),
             ),
           )
-        else
-          ...stocks.take(take).map(
+        else ...[
+          ...shown.map(
             (stock) => MoverTile(stock: stock, isGainer: isGainers),
           ),
+          if (widget.compact && stocks.length < take)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'Only ${stocks.length} holding${stocks.length == 1 ? '' : 's'} moved today',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context).hintColor,
+                    ),
+              ),
+            ),
+        ],
       ],
     );
   }

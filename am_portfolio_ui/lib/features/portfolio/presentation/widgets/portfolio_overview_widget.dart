@@ -406,6 +406,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                             ..._buildIntelBody(
                               portfolioId: portfolioId,
                               selectedTimeFrame: selectedTimeFrame,
+                              width: width,
                               isPhone: isPhone,
                               isTablet: isTablet,
                               isWeb: isWeb,
@@ -479,6 +480,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
   List<Widget> _buildIntelBody({
     required String portfolioId,
     required ds.TimeFrame selectedTimeFrame,
+    required double width,
     required bool isPhone,
     required bool isTablet,
     required bool isWeb,
@@ -492,10 +494,15 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
     // Chart band: slightly tighter on web to reduce loading void risk.
     final chartH = isPhone ? 300.0 : (isTablet ? 320.0 : 340.0);
     const allocationH = 360.0;
+    const peerPadding = EdgeInsets.all(14);
 
+    // Chart|Health peer: shorter band so X-Ray|Risk sits higher.
+    final peerTopH = showHealth
+        ? (isTablet ? 350.0 : 360.0)
+        : chartH;
     final chart = PortfolioComparisonChartSection(
       key: ValueKey('compare_${portfolioId}_${selectedTimeFrame.code}'),
-      height: chartH,
+      height: isPhone ? chartH : peerTopH,
     );
     final movers = PortfolioTopMoversPanel(
       portfolioId: portfolioId,
@@ -509,8 +516,8 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
             key: ValueKey('health_$portfolioId'),
             portfolioId: portfolioId,
             compact: isPhone,
-            maxComponents: isPhone ? 4 : 8,
             fillHeight: fillPeers,
+            padding: peerPadding,
           )
         : null;
     final risk = showRisk
@@ -518,6 +525,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
             key: ValueKey('risk_$portfolioId'),
             portfolioId: portfolioId,
             fillHeight: fillPeers,
+            padding: peerPadding,
           )
         : null;
     final xray = showXray
@@ -525,6 +533,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
             key: ValueKey('xray_$portfolioId'),
             portfolioId: portfolioId,
             fillHeight: fillPeers,
+            padding: peerPadding,
           )
         : null;
     final stress = showStress
@@ -574,10 +583,10 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
       _twoCol(
         chart,
         health,
-        leftFlex: 2,
-        rightFlex: 1,
+        leftFlex: 5,
+        rightFlex: 4,
         stretch: true,
-        forceHeight: chartH,
+        forceHeight: peerTopH,
       ),
       const SizedBox(height: 16),
       if (xray != null || risk != null)
@@ -593,8 +602,10 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         allocation,
     ];
 
-    if (isWeb) {
-      // Row4: compact Movers | Stress | What-If — natural heights
+    // Web always, and tablet ≥900: Movers | Stress | What-If one row.
+    // Narrow tablet 600–899 keeps Movers full-width then Stress|What-If.
+    final useThreeColBottom = isWeb || width >= 900;
+    if (useThreeColBottom) {
       final bottom = <Widget>[
         Expanded(child: movers),
         if (stress != null) ...[
@@ -616,7 +627,6 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
       return rows;
     }
 
-    // Tablet: compact Movers full width, then Stress|What-If
     rows.addAll([const SizedBox(height: 16), movers]);
     if (stress != null || whatIf != null) {
       rows.add(const SizedBox(height: 16));
