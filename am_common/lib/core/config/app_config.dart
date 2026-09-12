@@ -53,6 +53,7 @@ class ApiConfig {
     this.gmail,
     this.analysis,
     this.news,
+    this.oms,
   });
   final String baseUrl;
   final int timeout;
@@ -67,6 +68,7 @@ class ApiConfig {
   final GmailApiConfig? gmail;
   final AnalysisApiConfig? analysis;
   final NewsApiConfig? news;
+  final OmsApiConfig? oms;
 }
 
 /// Analysis & Dashboard API configuration
@@ -172,6 +174,26 @@ class TradeApiConfig {
   final String calendarQuarterResource;
   final String calendarFinancialYearResource;
   final String searchResource;
+  final int connectTimeout;
+  final int receiveTimeout;
+  final int sendTimeout;
+  final bool enabled;
+}
+
+/// Paper / live OMS (am-oms). Same gateway host; paths `/v1/wallets` and `/v1/orders`.
+class OmsApiConfig {
+  const OmsApiConfig({
+    required this.baseUrl,
+    this.walletsResource = '/v1/wallets',
+    this.ordersResource = '/v1/orders',
+    this.connectTimeout = 30,
+    this.receiveTimeout = 60,
+    this.sendTimeout = 60,
+    this.enabled = true,
+  });
+  final String baseUrl;
+  final String walletsResource;
+  final String ordersResource;
   final int connectTimeout;
   final int receiveTimeout;
   final int sendTimeout;

@@ -5,21 +5,26 @@ class EquityInsiderSectionNavBar extends StatelessWidget {
   final int activeIndex;
   final ValueChanged<int> onTabSelected;
   final bool isMobile;
+  final bool showPeers;
 
   const EquityInsiderSectionNavBar({
     super.key,
     required this.activeIndex,
     required this.onTabSelected,
     this.isMobile = false,
+    this.showPeers = true,
   });
 
-  static const List<String> sections = [
+  static const List<String> _allSections = [
     'Overview',
     'Charts',
     'Financials',
     'Shareholding',
     'Peers',
   ];
+
+  List<String> get sections =>
+      showPeers ? _allSections : _allSections.sublist(0, 4);
 
   @override
   Widget build(BuildContext context) {

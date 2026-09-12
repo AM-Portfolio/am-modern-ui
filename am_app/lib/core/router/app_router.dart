@@ -255,8 +255,13 @@ GoRouter createAppRouter({
                 userId: userId,
                 onOpenDocIntel: () =>
                     context.go(AppRoutes.docIntelPath('doc-processor')),
+                onOpenPaper: () => context.go(AppRoutes.marketPath('paper')),
               );
             },
+          ),
+          GoRoute(
+            path: AppRoutes.paper,
+            redirect: (context, state) => AppRoutes.marketPath('paper'),
           ),
           GoRoute(
             path: AppRoutes.chartCompare,

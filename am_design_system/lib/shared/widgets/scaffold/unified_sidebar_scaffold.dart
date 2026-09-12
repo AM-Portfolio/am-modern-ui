@@ -354,9 +354,9 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
     final fillTrack = items.length <= 6;
     final selectedIndex = items.indexWhere((item) => item.isSelected);
     final selectedKey = GlobalKey();
-    // Compact track — between the old thin bar and bottom nav (68).
-    const trackHeight = 48.0;
-    const segmentHeight = 40.0;
+    // Taller track so label sits above icon (not cramped side-by-side).
+    const trackHeight = 58.0;
+    const segmentHeight = 50.0;
     final manyTabs = items.length >= 6;
 
     if (selectedIndex >= 0 && selectedIndex != _lastEnsuredMobileTabIndex) {
@@ -377,6 +377,12 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
     Widget buildSegment(SecondarySidebarItem item, {Key? key}) {
       final isSelected = item.isSelected;
       final itemColor = item.accentColor ?? _resolvedColor;
+      final fg = isSelected
+          ? Colors.white
+          : (isDark ? Colors.white70 : Colors.black87);
+      final iconFg = isSelected
+          ? Colors.white
+          : (isDark ? Colors.white70 : Colors.black54);
 
       return GestureDetector(
         key: key,
@@ -388,7 +394,8 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
           height: segmentHeight,
           margin: const EdgeInsets.symmetric(horizontal: 1),
           padding: EdgeInsets.symmetric(
-            horizontal: fillTrack ? 8 : (manyTabs ? 11 : 14),
+            horizontal: fillTrack ? 4 : (manyTabs ? 10 : 12),
+            vertical: 4,
           ),
           decoration: BoxDecoration(
             color: isSelected
@@ -405,46 +412,29 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
                   ]
                 : null,
           ),
-          child: Row(
+          // Stack like global bottom nav: label above, icon below — not side-by-side.
+          child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: fillTrack ? MainAxisSize.max : MainAxisSize.min,
+            mainAxisSize: MainAxisSize.max,
             children: [
+              Text(
+                item.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: manyTabs ? 9.5 : 10.5,
+                  height: 1.05,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                  color: fg,
+                ),
+              ),
+              const SizedBox(height: 3),
               Icon(
                 item.icon,
-                size: 17,
-                color: isSelected
-                    ? Colors.white
-                    : (isDark ? Colors.white70 : Colors.black54),
+                size: manyTabs ? 16 : 18,
+                color: iconFg,
               ),
-              const SizedBox(width: 5),
-              if (fillTrack)
-                Flexible(
-                  child: Text(
-                    item.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight:
-                          isSelected ? FontWeight.w700 : FontWeight.w600,
-                      color: isSelected
-                          ? Colors.white
-                          : (isDark ? Colors.white70 : Colors.black87),
-                    ),
-                  ),
-                )
-              else
-                Text(
-                  item.title,
-                  maxLines: 1,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                    color: isSelected
-                        ? Colors.white
-                        : (isDark ? Colors.white70 : Colors.black87),
-                  ),
-                ),
             ],
           ),
         ),

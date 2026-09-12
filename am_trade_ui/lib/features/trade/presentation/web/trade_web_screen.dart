@@ -39,6 +39,13 @@ import '../cubit/trade_controller_cubit.dart';
 import '../cubit/trade_controller_state.dart';
 import '../models/trade_holding_view_model.dart';
 import '../add_trade/pages/add_trade_web_page.dart';
+import '../paper/paper_wallet_banner.dart';
+import '../paper/paper_portfolio.dart';
+import '../paper/place_order_web_page.dart';
+import '../cubit/oms_cubit.dart';
+import '../cubit/oms_state.dart';
+import '../../providers/oms_providers.dart';
+import '../../internal/data/dtos/oms_dto.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/mobile/widgets/portfolio_form_modal.dart';
 import 'package:am_portfolio_ui/features/portfolio/internal/data/dtos/portfolio_create_request_dto.dart';
 import 'package:am_portfolio_ui/features/portfolio/internal/data/dtos/portfolio_update_request_dto.dart';
@@ -92,6 +99,7 @@ class TradeWebScreen extends ConsumerStatefulWidget {
 
 class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
   static const String addTradeTitle = 'Add Trade';
+  static const String placeOrderTitle = 'Place order';
   late SwipeNavigationController _swipeController;
   String? _currentPortfolioId;
   String? _currentPortfolioName;
@@ -140,6 +148,14 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         .indexWhere((item) => item.title == addTradeTitle);
     if (addTradeIndex != -1) {
       _swipeController.navigateTo(addTradeIndex);
+    }
+  }
+
+  void openPlaceOrder() {
+    final index = _swipeController.items
+        .indexWhere((item) => item.title == placeOrderTitle);
+    if (index != -1) {
+      _swipeController.navigateTo(index);
     }
   }
 
@@ -343,9 +359,13 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Watch portfolios stream
-    final portfoliosAsyncValue = ref.watch(tradePortfoliosStreamProvider);
-    final portfolios = portfoliosAsyncValue.asData?.value ?? const [];
+    final brokerPortfolios =
+        ref.watch(tradePortfoliosStreamProvider).asData?.value ?? const [];
+    final omsCubit = ref.watch(omsCubitProvider).asData?.value;
+
+    Widget tree(List<TradePortfolioViewModel> portfolios, OmsWallet? paper) {
+    final isPaperSelected =
+        paper != null && _currentPortfolioId == paper.portfolioUuid;
 
     // Automatically select the first portfolio if none is selected
     if (portfolios.isNotEmpty && _currentPortfolioId == null) {
@@ -511,18 +531,24 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
           icon: Icons.add,
           accentColor: ModuleColors.trade,
           onTap: () {
-            // Dispatch directly via _swipeController since NotificationListener is below this context
-            final addTradeIndex = _swipeController.items
+            final index = _swipeController.items
                 .indexWhere((item) => item.title == addTradeTitle);
-            if (addTradeIndex != -1) {
-              _swipeController.navigateTo(addTradeIndex);
+            if (index != -1) {
+              _swipeController.navigateTo(index);
             }
           },
         ),
-        body: SwipeablePageView(
-          controller: _swipeController,
-          showIndicator: false,
-          indicatorPosition: IndicatorPosition.bottom,
+        body: Column(
+          children: [
+            if (isPaperSelected && paper != null) PaperWalletBanner(wallet: paper),
+            Expanded(
+              child: SwipeablePageView(
+                controller: _swipeController,
+                showIndicator: false,
+                indicatorPosition: IndicatorPosition.bottom,
+              ),
+            ),
+          ],
         ),
         sections: [
           // Portfolio Selector (Top Item, No Title)
@@ -546,6 +572,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
             items: _swipeController.items.asMap().entries.where((entry) {
               final title = entry.value.title;
               return title != addTradeTitle &&
+                  title != placeOrderTitle &&
                   title != 'Market' &&
                   title != 'Report' &&
                   title != 'Unified';
@@ -563,6 +590,29 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         ],
       ),
     );
+    }
+
+    if (omsCubit == null) {
+      return tree(brokerPortfolios, null);
+    }
+    return BlocProvider<OmsCubit>.value(
+      value: omsCubit,
+      child: BlocListener<OmsCubit, OmsState>(
+        listenWhen: (prev, next) => next.toast != null && next.toast != prev.toast,
+        listener: (context, state) {
+          final toast = state.toast;
+          if (toast == null) return;
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(toast)));
+        },
+        child: BlocBuilder<OmsCubit, OmsState>(
+          builder: (context, oms) => tree(
+            mergePaperWallet(brokerPortfolios, oms.paperWallet),
+            oms.paperWallet,
+          ),
+        ),
+      ),
+    );
   }
 
   /// Build portfolios view with integrated navigation
@@ -575,12 +625,17 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
             ref.watch(tradePortfoliosStreamProvider).asData?.value;
 
         return portfoliosAsyncValue.when(
-          data: (portfolios) => TradePortfolioDiscoveryTemplate(
-            portfolios: portfolios,
+          data: (portfolios) {
+            final omsCubit = ref.watch(omsCubitProvider).asData?.value;
+            Widget template(List<TradePortfolioViewModel> list, OmsWallet? paper) {
+              return TradePortfolioDiscoveryTemplate(
+            portfolios: mergePaperWallet(list, paper),
             isLoading: false,
+            hasPaperWallet: paper != null,
             onPortfolioSelected: (portfolio) {
               _onPortfolioSelected(portfolio.id, portfolio.name);
             },
+            onCreatePaperWallet: null,
             // ─── CREATE PORTFOLIO ────────────────────────────────────────
             onCreatePortfolio: () {
               PortfolioFormModal.show(
@@ -617,6 +672,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
             },
             // ─── EDIT PORTFOLIO ──────────────────────────────────────────
             onEditPortfolio: (portfolio) {
+              if (portfolio.isPaper) return;
               final portfolioItem = PortfolioItem(
                 portfolioId: portfolio.id,
                 portfolioName: portfolio.name,
@@ -645,6 +701,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
             },
             // ─── DELETE PORTFOLIO ────────────────────────────────────────
             onDeletePortfolio: (portfolio) async {
+              if (portfolio.isPaper) return;
               // Use a StatefulBuilder so the checkbox inside the dialog can
               // rebuild without closing it — standard Flutter pattern.
               bool deleteTrades = false;
@@ -735,7 +792,20 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
               ref.invalidate(tradePortfoliosStreamProvider);
               ref.invalidate(enrichedTradePortfoliosProvider);
             },
-          ),
+              );
+            }
+
+            if (omsCubit == null) {
+              return template(portfolios, null);
+            }
+            return BlocProvider<OmsCubit>.value(
+              value: omsCubit,
+              child: BlocBuilder<OmsCubit, OmsState>(
+                builder: (context, oms) =>
+                    template(portfolios, oms.paperWallet),
+              ),
+            );
+          },
           loading: () {
             if (streamPortfolios != null && streamPortfolios.isNotEmpty) {
               return TradePortfolioDiscoveryTemplate(
@@ -773,5 +843,36 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         );
       },
     );
+  }
+
+  Future<void> _createPaperWallet(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Create paper wallet'),
+        content: const Text(
+          'Practice with ₹10,00,000 virtual cash — not a live broker order. '
+          'You can have one paper wallet.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final cubit = ref.read(omsCubitProvider).asData?.value;
+    if (cubit == null) return;
+    await cubit.createPaperWallet();
+    final wallet = cubit.state.paperWallet;
+    if (wallet != null) {
+      _onPortfolioSelected(wallet.portfolioUuid, 'Paper');
+    }
   }
 }

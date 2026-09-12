@@ -45,6 +45,8 @@ class TradePortfolioDiscoveryTemplate extends StatefulWidget {
     this.onEditPortfolio,
     this.onDeletePortfolio,
     this.onCreatePortfolio,
+    this.onCreatePaperWallet,
+    this.hasPaperWallet = false,
     this.onRefresh,
     this.isWebView = true,
   });
@@ -55,6 +57,8 @@ class TradePortfolioDiscoveryTemplate extends StatefulWidget {
   final Function(TradePortfolioViewModel)? onEditPortfolio;
   final Function(TradePortfolioViewModel)? onDeletePortfolio;
   final VoidCallback? onCreatePortfolio;
+  final VoidCallback? onCreatePaperWallet;
+  final bool hasPaperWallet;
   final VoidCallback? onRefresh;
   final bool isWebView;
 
@@ -161,21 +165,34 @@ class _TradePortfolioDiscoveryTemplateState
                   .bodyMedium
                   ?.copyWith(color: Colors.grey[500]),
             ),
-            if (widget.onCreatePortfolio != null) ...[
+            if (widget.onCreatePaperWallet != null && !widget.hasPaperWallet) ...[
               const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: widget.onCreatePortfolio,
-                icon: Icon(Icons.add_rounded),
-                label: Text('Create Portfolio'),
-                style: ElevatedButton.styleFrom(
+              FilledButton.icon(
+                onPressed: widget.onCreatePaperWallet,
+                icon: const Icon(Icons.science_outlined),
+                label: const Text('Create paper wallet'),
+                style: FilledButton.styleFrom(
                   backgroundColor: ModuleColors.trade,
                   foregroundColor: Colors.white,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
                 ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Practice with ₹10,00,000 virtual cash — not a live broker order.',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: Colors.grey[500]),
+              ),
+            ],
+            if (widget.onCreatePortfolio != null) ...[
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: widget.onCreatePortfolio,
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Create Portfolio'),
               ),
             ],
           ],
@@ -250,6 +267,20 @@ class _TradePortfolioDiscoveryTemplateState
                     ],
                   ),
                   const Spacer(),
+                  if (widget.onCreatePaperWallet != null && !widget.hasPaperWallet)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: OutlinedButton.icon(
+                        onPressed: widget.onCreatePaperWallet,
+                        icon: const Icon(Icons.science_outlined, size: 18),
+                        label: const Text('Create paper wallet'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: ModuleColors.trade,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 10),
+                        ),
+                      ),
+                    ),
                   if (widget.onCreatePortfolio != null)
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
@@ -1037,6 +1068,18 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
+                          if (p.isPaper) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              'PAPER',
+                              style: TextStyle(
+                                color: ModuleColors.trade,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: 4),
                           Text(
                             p.description ?? 'No description',
@@ -1053,7 +1096,8 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                         ],
                       ),
                     ),
-                    if (widget.onEdit != null || widget.onDelete != null)
+                    if (!p.isPaper &&
+                        (widget.onEdit != null || widget.onDelete != null))
                       PopupMenuButton<String>(
                         icon: Icon(Icons.more_vert,
                             size: 20,

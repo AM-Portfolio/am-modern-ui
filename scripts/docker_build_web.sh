@@ -8,7 +8,7 @@ set -e
 cd /app/am_app
 
 # Non-host release flags only — do not set AM_DOMAIN / AM_*_BASE_URL / AM_ENV.
-DEFINES="--dart-define=AM_BOOT_TRACE=false --dart-define=AM_BOOT_RUM=true"
+DEFINES="--dart-define=AM_BOOT_TRACE=false --dart-define=AM_BOOT_RUM=true --dart-define=AM_AGENT_DEBUG=false"
 
 export DART_VM_OPTIONS="--old_gen_heap_size=4096"
 
