@@ -13,12 +13,14 @@ class AllocationPanelWidget extends StatefulWidget {
     this.holdings,
     this.isLoading = false,
     this.error,
+    this.onRetry,
   });
   final SectorAllocation? sectorAllocation;
   final MarketCapAllocation? marketCapAllocation;
   final List<PortfolioHolding>? holdings;
   final bool isLoading;
   final String? error;
+  final VoidCallback? onRetry;
 
   @override
   State<AllocationPanelWidget> createState() => _AllocationPanelWidgetState();
@@ -250,6 +252,13 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 12),
                   textAlign: TextAlign.center),
+              if (widget.onRetry != null) ...[
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: widget.onRetry,
+                  child: const Text('Retry'),
+                ),
+              ],
             ],
           ),
         ),

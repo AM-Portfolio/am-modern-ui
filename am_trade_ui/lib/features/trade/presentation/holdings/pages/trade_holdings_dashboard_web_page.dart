@@ -1,3 +1,4 @@
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,23 +12,38 @@ import '../../widgets/filter_panel.dart';
 import '../components/trade_holdings_advanced_template.dart';
 
 class TradeHoldingsDashboardWebPage extends ConsumerStatefulWidget {
-  const TradeHoldingsDashboardWebPage({ required this.portfolioId, this.onNavigateToChart, super.key});
-    final String portfolioId;
+  const TradeHoldingsDashboardWebPage({
+    required this.portfolioId,
+    this.onNavigateToChart,
+    this.embedded = false,
+    this.accentColor,
+    super.key,
+  });
+
+  final String portfolioId;
   final Function(String symbol)? onNavigateToChart;
 
+  /// When true, omit outer [Scaffold] (e.g. hosted under Portfolio sidebar).
+  final bool embedded;
+
+  /// Accent for filters/table chrome; defaults to [ModuleColors.trade].
+  final Color? accentColor;
+
   @override
-  ConsumerState<TradeHoldingsDashboardWebPage> createState() => _TradeHoldingsDashboardWebPageState();
+  ConsumerState<TradeHoldingsDashboardWebPage> createState() =>
+      _TradeHoldingsDashboardWebPageState();
 }
 
-class _TradeHoldingsDashboardWebPageState extends ConsumerState<TradeHoldingsDashboardWebPage> {
-  // Current active filter configuration
+class _TradeHoldingsDashboardWebPageState
+    extends ConsumerState<TradeHoldingsDashboardWebPage> {
   MetricsFilterConfig _currentFilter = MetricsFilterConfig.empty();
   TradeHoldingViewModel? _selectedTrade;
+
+  Color get _accent => widget.accentColor ?? ModuleColors.trade;
 
   @override
   void initState() {
     super.initState();
-    // Load favorite filters when page initializes
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final cubit = await ref.read(favoriteFilterCubitProvider.future);
       if (!mounted) return;
@@ -36,9 +52,12 @@ class _TradeHoldingsDashboardWebPageState extends ConsumerState<TradeHoldingsDas
   }
 
   @override
-  Widget build(BuildContext context) =>
-      Scaffold(body: _selectedTrade != null ? _buildDetailView() : _buildHoldingsTab());
-
+  Widget build(BuildContext context) {
+    final body =
+        _selectedTrade != null ? _buildDetailView() : _buildHoldingsTab();
+    if (widget.embedded) return body;
+    return Scaffold(body: body);
+  }
   Widget _buildHoldingsTab() {
     final portfolioId = widget.portfolioId;
     final holdingsAsync = ref.watch(tradeHoldingsStreamProvider(portfolioId));
@@ -88,6 +107,7 @@ class _TradeHoldingsDashboardWebPageState extends ConsumerState<TradeHoldingsDas
               return TradeHoldingsAdvancedTemplate(
                 holdings: filteredHoldings,
                 isLoading: false,
+                accentColor: _accent,
                 onHoldingSelected: (holding) => _showHoldingDetails(context, holding),
                 onSymbolTap: widget.onNavigateToChart,
                 onRefresh: () {
@@ -99,6 +119,7 @@ class _TradeHoldingsDashboardWebPageState extends ConsumerState<TradeHoldingsDas
             error: (error, stack) => TradeHoldingsAdvancedTemplate(
               holdings: const [],
               isLoading: false,
+              accentColor: _accent,
               errorMessage: error.toString(),
               onRefresh: () {
                 ref.invalidate(tradeHoldingsStreamProvider(portfolioId));

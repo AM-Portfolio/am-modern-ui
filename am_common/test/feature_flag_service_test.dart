@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:am_common/core/feature_flags/feature_flag_config.dart';
 import 'package:am_common/core/feature_flags/feature_flag_keys.dart';
+import 'package:am_common/core/feature_flags/feature_flag_provider.dart';
 import 'package:am_common/core/feature_flags/feature_flag_service.dart';
 
 void main() {
@@ -38,6 +39,17 @@ void main() {
       service.isOn(FeatureFlagKeys.newsUiEnabled, defaultValue: false),
       isFalse,
     );
+    expect(
+      service.isOn(
+        FeatureFlagKeys.portfolioIntelligenceOverviewV1,
+        defaultValue: false,
+      ),
+      isFalse,
+    );
     service.dispose();
+  });
+
+  test('intelFlagsForcedOn is false without dart-define', () {
+    expect(intelFlagsForcedOn, isFalse);
   });
 }

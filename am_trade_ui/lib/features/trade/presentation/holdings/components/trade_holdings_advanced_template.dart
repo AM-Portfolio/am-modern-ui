@@ -16,6 +16,7 @@ class TradeHoldingsAdvancedTemplate extends StatefulWidget {
     this.onSymbolTap,
     this.onRefresh,
     this.itemsPerPage = 20,
+    this.accentColor,
   });
 
   final List<TradeHoldingViewModel> holdings;
@@ -25,23 +26,26 @@ class TradeHoldingsAdvancedTemplate extends StatefulWidget {
   final Function(String symbol)? onSymbolTap;
   final VoidCallback? onRefresh;
   final int itemsPerPage;
+  final Color? accentColor;
 
   @override
-  State<TradeHoldingsAdvancedTemplate> createState() => _TradeHoldingsAdvancedTemplateState();
+  State<TradeHoldingsAdvancedTemplate> createState() =>
+      _TradeHoldingsAdvancedTemplateState();
 }
 
-class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTemplate> with TickerProviderStateMixin {
+class _TradeHoldingsAdvancedTemplateState
+    extends State<TradeHoldingsAdvancedTemplate> with TickerProviderStateMixin {
   final Set<String> _expandedItems = {};
-  // _hoverControllers removed as AmDataTable handles hover states
   int _currentPage = 0;
   int? _sortColumnIndex;
   bool _sortAscending = true;
   List<TradeHoldingViewModel> _sortedHoldings = [];
   late AnimationController _refreshController;
-  String _viewMode = 'table'; // 'table' or 'card'
-  String _filterStatus = 'all'; // 'all', 'profit', 'loss'
+  String _viewMode = 'table';
+  String _filterStatus = 'all';
   String _searchQuery = '';
 
+  Color get _accent => widget.accentColor ?? ModuleColors.trade;
   @override
   void initState() {
     super.initState();
@@ -242,7 +246,7 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
           spacing: 8,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            _buildFilterPill('all', 'All', ModuleColors.trade),
+            _buildFilterPill('all', 'All', _accent),
             _buildFilterPill('profit', 'Profit', Colors.green),
             _buildFilterPill('loss', 'Loss', Colors.red),
             const SizedBox(width: 4),
@@ -251,10 +255,10 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
               decoration: BoxDecoration(
                 color: _isDarkChrome
                     ? Colors.white.withValues(alpha: 0.06)
-                    : ModuleColors.trade.withValues(alpha: 0.06),
+                    : _accent.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: ModuleColors.trade.withValues(alpha: 0.2),
+                  color: _accent.withValues(alpha: 0.2),
                 ),
               ),
               child: Row(
@@ -294,7 +298,7 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: ModuleColors.trade, width: 1.5),
+                borderSide: BorderSide(color: _accent, width: 1.5),
               ),
             ),
             style: const TextStyle(fontSize: 13),
@@ -332,11 +336,11 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: selected
-              ? ModuleColors.trade.withValues(alpha: isDark ? 0.28 : 0.15)
+              ? _accent.withValues(alpha: isDark ? 0.28 : 0.15)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
           border: selected
-              ? Border.all(color: ModuleColors.trade.withValues(alpha: 0.55))
+              ? Border.all(color: _accent.withValues(alpha: 0.55))
               : null,
         ),
         child: Row(
@@ -346,7 +350,7 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
               icon,
               size: 16,
               color: selected
-                  ? ModuleColors.trade
+                  ? _accent
                   : (isDark ? Colors.white60 : Colors.grey.shade600),
             ),
             const SizedBox(width: 4),
@@ -356,7 +360,7 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
                 color: selected
-                    ? ModuleColors.trade
+                    ? _accent
                     : (isDark ? Colors.white60 : Colors.grey.shade600),
               ),
             ),
@@ -368,7 +372,7 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
 
   Widget _buildFilterPill(String value, String label, Color? color) {
     final selected = _filterStatus == value;
-    final accent = color ?? ModuleColors.trade;
+    final accent = color ?? _accent;
     final isDark = _isDarkChrome;
     return InkWell(
       onTap: () => setState(() => _filterStatus = value),
@@ -382,14 +386,14 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
               ? accent.withValues(alpha: isDark ? 0.22 : 0.15)
               : (isDark
                   ? Colors.white.withValues(alpha: 0.06)
-                  : ModuleColors.trade.withValues(alpha: 0.06)),
+                  : _accent.withValues(alpha: 0.06)),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: selected
                 ? accent
                 : (isDark
                     ? Colors.white.withValues(alpha: 0.14)
-                    : ModuleColors.trade.withValues(alpha: 0.25)),
+                    : _accent.withValues(alpha: 0.25)),
             width: selected ? 1.5 : 1,
           ),
         ),
@@ -633,7 +637,7 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
     final cardBorder = isExpanded
         ? pnlColor.withValues(alpha: 0.45)
         : (isDark
-            ? ModuleColors.trade.withValues(alpha: 0.28)
+            ? _accent.withValues(alpha: 0.28)
             : Colors.grey.shade300);
 
     return Material(
@@ -785,12 +789,12 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
                       decoration: BoxDecoration(
                         color: isDark
                             ? Colors.white.withValues(alpha: 0.04)
-                            : ModuleColors.trade.withValues(alpha: 0.04),
+                            : _accent.withValues(alpha: 0.04),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: isDark
                               ? Colors.white.withValues(alpha: 0.06)
-                              : ModuleColors.trade.withValues(alpha: 0.1),
+                              : _accent.withValues(alpha: 0.1),
                         ),
                       ),
                       child: Row(
@@ -806,7 +810,7 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
                             child: _buildQuickMetric(
                               'Current',
                               holding.displayCurrentPrice,
-                              ModuleColors.trade,
+                              _accent,
                             ),
                           ),
                           Expanded(
@@ -895,7 +899,7 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
                 subValue: holding.entryTimestamp != null
                     ? DateFormat('MMM dd').format(holding.entryTimestamp!)
                     : null,
-                color: ModuleColors.trade,
+                color: _accent,
               );
 
               final exitCard = _buildDetailCard(
@@ -912,14 +916,14 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
                 icon: Icons.access_time,
                 label: 'Period',
                 value: holding.displayHoldingPeriod,
-                color: ModuleColors.trade,
+                color: _accent,
               );
 
               final rrCard = _buildDetailCard(
                 icon: Icons.balance,
                 label: 'R:R',
                 value: holding.displayRiskRewardRatio,
-                color: ModuleColors.trade,
+                color: _accent,
               );
 
               if (isSmall) {
@@ -968,13 +972,13 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
                   _buildDetailChip(
                     holding.sector!,
                     Icons.category_outlined,
-                    ModuleColors.trade,
+                    _accent,
                   ),
                 if (holding.broker != null)
                   _buildDetailChip(
                     holding.broker!,
                     Icons.account_balance_outlined,
-                    ModuleColors.trade,
+                    _accent,
                   ),
                 _buildDetailChip(
                   holding.displayStatus,
@@ -997,9 +1001,9 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
               icon: Icon(Icons.edit, size: 16),
               label: Text('Edit Trade'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: ModuleColors.trade,
+                foregroundColor: _accent,
                 side: BorderSide(
-                  color: ModuleColors.trade.withValues(alpha: 0.45),
+                  color: _accent.withValues(alpha: 0.45),
                 ),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1148,9 +1152,9 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             decoration: BoxDecoration(
-              color: isCurrentPage ? ModuleColors.trade : Colors.transparent,
+              color: isCurrentPage ? _accent : Colors.transparent,
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: isCurrentPage ? ModuleColors.trade : Colors.grey.shade300),
+              border: Border.all(color: isCurrentPage ? _accent : Colors.grey.shade300),
             ),
             child: InkWell(
               onTap: () => _goToPage(pageNumber),

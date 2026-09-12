@@ -1,8 +1,7 @@
-import 'dart:ui';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../../internal/domain/entities/portfolio_analytics.dart';
+import 'intelligence/intelligence_glass_card.dart';
 
 /// Top movers panel — Gainers left, Losers right.
 /// Each tile uses the Stitch design: colored squircle arrow + ticker + price + pill badge.
@@ -13,11 +12,16 @@ class MoversWidget extends StatefulWidget {
     this.isLoading = false,
     this.error,
     this.onViewAll,
+    this.compact = false,
+    this.onRetry,
   });
   final Movers? movers;
   final bool isLoading;
   final String? error;
   final ValueChanged<Movers>? onViewAll;
+  /// When true, use Gainers|Losers tabs and fewer rows (Overview intel layout).
+  final bool compact;
+  final VoidCallback? onRetry;
 
   @override
   State<MoversWidget> createState() => _MoversWidgetState();
@@ -28,105 +32,62 @@ class _MoversWidgetState extends State<MoversWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final showSeeAll = widget.onViewAll != null &&
+        widget.movers != null &&
+        (widget.movers!.topGainers.isNotEmpty ||
+            widget.movers!.topLosers.isNotEmpty);
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                context.colors.marketCardSurface.withValues(alpha: 0.9),
-                context.colors.marketCardSurface.withValues(alpha: 0.75),
-              ],
-            ),
-            border: Border.all(
-              color: context.colors.marketBorderDefault,
-              width: 1,
-            ),
-            borderRadius: BorderRadius.circular(18),
-          ),
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Header ──
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(7),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .primaryColor
-                          .withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.auto_graph_rounded,
-                      color: ModuleColors.portfolio,
-                      size: 18,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'Top Movers',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          letterSpacing: -0.3,
-                        ),
-                  ),
-                  const Spacer(),
-                  if (widget.onViewAll != null && widget.movers != null && (widget.movers!.topGainers.length > 5 || widget.movers!.topLosers.length > 5))
-                    TextButton(
-                      onPressed: () => widget.onViewAll!(widget.movers!),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        backgroundColor: ModuleColors.portfolio.withValues(alpha: 0.1),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      ),
-                      child: Text(
-                        'See Top 10',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: ModuleColors.portfolio,
-                        ),
-                      ),
-                    ),
-                ],
+    return IntelligenceGlassCard(
+      title: 'Top Movers',
+      icon: Icons.auto_graph_rounded,
+      padding: EdgeInsets.all(widget.compact ? 14 : 20),
+      trailing: showSeeAll
+          ? TextButton(
+              onPressed: () => widget.onViewAll!(widget.movers!),
+              style: TextButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                backgroundColor:
+                    ModuleColors.portfolio.withValues(alpha: 0.1),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
               ),
-              const SizedBox(height: 16),
-              _buildContent(context),
-            ],
-          ),
-        ),
-      ),
+              child: Text(
+                'See Top 10',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: ModuleColors.portfolio,
+                ),
+              ),
+            )
+          : null,
+      child: _buildContent(context),
     );
   }
 
   Widget _buildContent(BuildContext context) {
+    final placeholderH = widget.compact ? 72.0 : 200.0;
     if (widget.isLoading) {
-      return const SizedBox(
-        height: 200,
-        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      return SizedBox(
+        height: placeholderH,
+        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
       );
     }
 
     if (widget.error != null) {
       return SizedBox(
-        height: 200,
+        height: placeholderH,
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.error_outline,
-                  color: Theme.of(context).colorScheme.error, size: 48),
+                  color: Theme.of(context).colorScheme.error,
+                  size: widget.compact ? 32 : 48),
               const SizedBox(height: 8),
               Text('Failed to load movers data',
                   style: TextStyle(
@@ -138,6 +99,13 @@ class _MoversWidgetState extends State<MoversWidget> {
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 12),
                   textAlign: TextAlign.center),
+              if (widget.onRetry != null) ...[
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: widget.onRetry,
+                  child: const Text('Retry'),
+                ),
+              ],
             ],
           ),
         ),
@@ -146,7 +114,7 @@ class _MoversWidgetState extends State<MoversWidget> {
 
     if (widget.movers == null) {
       return SizedBox(
-        height: 200,
+        height: placeholderH,
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -155,7 +123,7 @@ class _MoversWidgetState extends State<MoversWidget> {
                   color: Theme.of(context)
                       .colorScheme
                       .onSurfaceVariant,
-                  size: 48),
+                  size: widget.compact ? 32 : 48),
               const SizedBox(height: 8),
               Text('No movers data available',
                   style: TextStyle(
@@ -167,14 +135,14 @@ class _MoversWidgetState extends State<MoversWidget> {
       );
     }
 
-    final isMobile = MediaQuery.of(context).size.width < 600;
+    final useTabs =
+        widget.compact || MediaQuery.of(context).size.width < 600;
 
-
-    if (isMobile) {
+    if (useTabs) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // ── Mobile Toggle ──
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
@@ -195,7 +163,7 @@ class _MoversWidgetState extends State<MoversWidget> {
                       ),
                       child: Center(
                         child: Text(
-                          'Gainers',
+                          'Gainers (${widget.movers!.topGainers.length})',
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: _showGainers ? FontWeight.bold : FontWeight.w500,
@@ -218,7 +186,7 @@ class _MoversWidgetState extends State<MoversWidget> {
                       ),
                       child: Center(
                         child: Text(
-                          'Losers',
+                          'Losers (${widget.movers!.topLosers.length})',
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: !_showGainers ? FontWeight.bold : FontWeight.w500,
@@ -232,8 +200,7 @@ class _MoversWidgetState extends State<MoversWidget> {
               ],
             ),
           ),
-          const SizedBox(height: 20),
-          // ── Active List ──
+          SizedBox(height: widget.compact ? 12 : 20),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
             child: _showGainers
@@ -269,36 +236,41 @@ class _MoversWidgetState extends State<MoversWidget> {
     final color = isGainers
         ? ModuleColors.portfolio
         : context.colors.marketNegativeIndicator;
+    const take = 5;
+    final hideTitle = widget.compact; // tabs already label Gainers/Losers
+    final shown = stocks.take(take).toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          children: [
-            Icon(
-              isGainers
-                  ? Icons.trending_up_rounded
-                  : Icons.trending_down_rounded,
-              color: color,
-              size: 15,
-            ),
-            const SizedBox(width: 5),
-            Text(
-              '$title (${stocks.length})',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                    color: color,
-                  ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
+        if (!hideTitle)
+          Row(
+            children: [
+              Icon(
+                isGainers
+                    ? Icons.trending_up_rounded
+                    : Icons.trending_down_rounded,
+                color: color,
+                size: 15,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                '$title (${stocks.length})',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: color,
+                    ),
+              ),
+            ],
+          ),
+        if (!hideTitle) const SizedBox(height: 12),
         if (stocks.isEmpty)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20.0),
+            padding: EdgeInsets.symmetric(vertical: widget.compact ? 12.0 : 20.0),
             child: Center(
               child: Text(
-                'No ${isGainers ? 'gainers' : 'losers'} found',
+                'No ${isGainers ? 'gainers' : 'losers'} today',
                 style: TextStyle(
                   color: Theme.of(context)
                       .colorScheme
@@ -309,10 +281,21 @@ class _MoversWidgetState extends State<MoversWidget> {
               ),
             ),
           )
-        else
-          ...stocks.take(5).map(
+        else ...[
+          ...shown.map(
             (stock) => MoverTile(stock: stock, isGainer: isGainers),
           ),
+          if (widget.compact && stocks.length < take)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'Only ${stocks.length} holding${stocks.length == 1 ? '' : 's'} moved today',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context).hintColor,
+                    ),
+              ),
+            ),
+        ],
       ],
     );
   }

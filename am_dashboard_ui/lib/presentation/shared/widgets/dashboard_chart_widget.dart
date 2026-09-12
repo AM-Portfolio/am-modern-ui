@@ -136,7 +136,7 @@ class _ChartBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
     if (state.isBootstrapping) {
-      return const Center(child: CircularProgressIndicator());
+      return _ChartBootstrapSkeleton(accent: accentColor ?? ModuleColors.dashboard);
     }
 
     final selectedLabels = overlaySelectedLabels(state);
@@ -175,4 +175,114 @@ class _ChartBody extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Chart-area skeleton while overlay series bootstrap — avoids empty spinner void.
+class _ChartBootstrapSkeleton extends StatelessWidget {
+  const _ChartBootstrapSkeleton({required this.accent});
+
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final base = Theme.of(context).brightness == Brightness.dark
+        ? Colors.white.withValues(alpha: 0.06)
+        : Colors.black.withValues(alpha: 0.06);
+    final line = accent.withValues(alpha: 0.35);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final hasBound =
+            constraints.hasBoundedHeight && constraints.maxHeight.isFinite;
+        final plotH = hasBound
+            ? (constraints.maxHeight - 40).clamp(96.0, 480.0)
+            : 180.0;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 72,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: base,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  width: 56,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: base,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  width: 120,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    color: base,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: plotH,
+              width: double.infinity,
+              child: CustomPaint(
+                painter: _SkeletonChartPainter(base: base, line: line),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _SkeletonChartPainter extends CustomPainter {
+  _SkeletonChartPainter({required this.base, required this.line});
+
+  final Color base;
+  final Color line;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final grid = Paint()
+      ..color = base
+      ..strokeWidth = 1;
+    for (var i = 1; i <= 3; i++) {
+      final y = size.height * (i / 4);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), grid);
+    }
+    final path = Path()
+      ..moveTo(0, size.height * 0.55)
+      ..cubicTo(
+        size.width * 0.25,
+        size.height * 0.35,
+        size.width * 0.55,
+        size.height * 0.7,
+        size.width,
+        size.height * 0.4,
+      );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = line
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _SkeletonChartPainter oldDelegate) =>
+      oldDelegate.base != base || oldDelegate.line != line;
 }
