@@ -127,18 +127,6 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 8),
-        const Text(
-          'Watchlist',
-          style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'Create and manage your custom watchlists to track the stocks that matter to you.',
-          style: TextStyle(color: colors.textSecondary, fontSize: 13),
-        ),
-        const SizedBox(height: 16),
-
         // Search watchlists...
         TextField(
           controller: _watchlistSearchController,

@@ -12,6 +12,7 @@ import 'package:am_market_ui/features/dashboard/presentation/pages/dashboard_pag
     deferred as market_ui;
 import 'package:am_market_ui/features/market_analysis/services/market_analysis_service.dart'
     deferred as market_deps;
+import 'package:am_paper_ui/am_paper_ui.dart' deferred as paper_ui;
 import 'package:am_portfolio_ui/features/portfolio/presentation/pages/portfolio_screen.dart'
     deferred as portfolio_pages;
 import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/global_portfolio_wrapper.dart'
@@ -96,6 +97,7 @@ Future<void> _loadMarket() async {
   await Future.wait([
     market_ui.loadLibrary(),
     market_deps.loadLibrary(),
+    paper_ui.loadLibrary(),
   ]);
   market_deps.registerMarketAnalysisServiceDi();
 }
@@ -218,6 +220,7 @@ Widget buildMarketRoute({
       userId: userId,
       initialTab: tab,
       onTabChanged: onTabChanged,
+      paperDesk: paper_ui.PaperGateScreen(),
     ),
   );
 }

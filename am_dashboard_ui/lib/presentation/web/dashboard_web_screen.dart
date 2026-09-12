@@ -16,11 +16,13 @@ bool _dashboardDataMarked = false;
 class DashboardWebScreen extends ConsumerWidget {
   final String userId;
   final VoidCallback? onOpenDocIntel;
+  final VoidCallback? onOpenPaper;
 
   const DashboardWebScreen({
     super.key,
     required this.userId,
     this.onOpenDocIntel,
+    this.onOpenPaper,
   });
 
   void _listenDashboardFirstData(WidgetRef ref, String tfCode) {
@@ -155,6 +157,23 @@ class DashboardWebScreen extends ConsumerWidget {
                               ),
                             ),
                           ),
+                        if (onOpenPaper != null)
+                          TextButton.icon(
+                            onPressed: onOpenPaper,
+                            icon: Icon(
+                              Icons.science_outlined,
+                              size: 18,
+                              color: context.colors.statusInfo,
+                            ),
+                            label: const Text('Paper trading'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: onSurface,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.sm + 2,
+                                vertical: AppSpacing.sm - 2,
+                              ),
+                            ),
+                          ),
                         const SizedBox(width: AppSpacing.md),
                         const GlobalTimeFrameBar(),
                       ],
@@ -165,6 +184,7 @@ class DashboardWebScreen extends ConsumerWidget {
                       layout: layout,
                       timeFrameCode: tfCode,
                       onOpenDocIntel: onOpenDocIntel,
+                      onOpenPaper: onOpenPaper,
                     ),
                   ],
                 ),

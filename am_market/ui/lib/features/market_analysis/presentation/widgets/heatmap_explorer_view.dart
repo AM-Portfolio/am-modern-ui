@@ -725,44 +725,62 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
           child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                  Wrap(
-                      alignment: WrapAlignment.spaceBetween,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: 8.0,
-                      runSpacing: 4.0,
-                      children: [
-                          Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                  if (!_showingIndices)
-                                    IconButton(
-                                        icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black87, size: 20),
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                        onPressed: _onBackToIndices,
-                                    ),
-                                  if (!_showingIndices) const SizedBox(width: 8),
-                                  Flexible(
-                                    child: Text(
-                                      title,
-                                      style: TextStyle(
-                                          color: isDark ? Colors.white : Colors.black87,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          letterSpacing: 0.3,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  IconButton(
-                                      icon: Icon(_isHeatmapExpanded ? Icons.expand_less : Icons.expand_more, color: isDark ? Colors.white70 : Colors.black54),
-                                      onPressed: () => setState(() => _isHeatmapExpanded = !_isHeatmapExpanded),
-                                      tooltip: _isHeatmapExpanded ? "Minimize Section" : "Expand Section",
-                                      visualDensity: VisualDensity.compact,
-                                  ),
-                              ],
-                          ),
-                      ],
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            if (!_showingIndices)
+                              IconButton(
+                                icon: Icon(
+                                  Icons.arrow_back,
+                                  color: isDark ? Colors.white : Colors.black87,
+                                  size: 20,
+                                ),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                onPressed: _onBackToIndices,
+                              ),
+                            if (!_showingIndices) const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                title,
+                                style: TextStyle(
+                                  color:
+                                      isDark ? Colors.white : Colors.black87,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.3,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                _isHeatmapExpanded
+                                    ? Icons.expand_less
+                                    : Icons.expand_more,
+                                color:
+                                    isDark ? Colors.white70 : Colors.black54,
+                              ),
+                              onPressed: () => setState(
+                                () =>
+                                    _isHeatmapExpanded = !_isHeatmapExpanded,
+                              ),
+                              tooltip: _isHeatmapExpanded
+                                  ? 'Minimize Section'
+                                  : 'Expand Section',
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const GlobalTimeFrameBar(
+                        variant: GlobalTimeFrameVariant.dropdown,
+                        dropdownWidth: 72,
+                      ),
+                    ],
                   ),
                   if (_isHeatmapExpanded) ...[
                       const SizedBox(height: 12),

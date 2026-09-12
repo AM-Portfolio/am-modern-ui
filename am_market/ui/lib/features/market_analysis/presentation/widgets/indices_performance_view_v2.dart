@@ -184,14 +184,24 @@ class _IndicesPerformanceViewV2State extends ConsumerState<IndicesPerformanceVie
                 const SizedBox(height: 40),
 
                 // All Indices
-                Text(
-                  'ALL INDICES',
-                  style: TextStyle(
-                    color: isDark ? Colors.white38 : Colors.black45,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 2,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'ALL INDICES',
+                        style: TextStyle(
+                          color: isDark ? Colors.white38 : Colors.black45,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2,
+                        ),
+                      ),
+                    ),
+                    const GlobalTimeFrameBar(
+                      variant: GlobalTimeFrameVariant.dropdown,
+                      dropdownWidth: 72,
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
 

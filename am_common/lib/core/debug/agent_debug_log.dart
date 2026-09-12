@@ -2,12 +2,21 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+/// Cursor agent local ingest. Off by default; enable with
+/// `--dart-define=AM_AGENT_DEBUG=true`. Helm/Docker builds force false.
+const bool _agentDebugEnabled = bool.fromEnvironment(
+  'AM_AGENT_DEBUG',
+  defaultValue: false,
+);
+
 void agentDebugLog({
   required String location,
   required String message,
   required String hypothesisId,
   Map<String, Object?> data = const {},
 }) {
+  if (!_agentDebugEnabled) return;
+
   // #region agent log
   http
       .post(
