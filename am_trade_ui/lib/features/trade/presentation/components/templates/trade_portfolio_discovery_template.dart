@@ -1123,7 +1123,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                               ),
                             ),
                           if (widget.onDelete != null)
-                            const PopupMenuItem(
+                            PopupMenuItem(
                               value: 'delete',
                               child: Row(
                                 children: [
@@ -1131,7 +1131,8 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                                       size: 16, color: context.statusError),
                                   const SizedBox(width: 8),
                                   Text('Delete',
-                                      style: TextStyle(color: context.statusError)),
+                                      style: TextStyle(
+                                          color: context.statusError)),
                                 ],
                               ),
                             ),

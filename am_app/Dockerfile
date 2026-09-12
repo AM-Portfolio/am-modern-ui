@@ -18,6 +18,7 @@ COPY am_dashboard_ui/ ./am_dashboard_ui/
 COPY am_market/ ./am_market/
 COPY am_portfolio_ui/ ./am_portfolio_ui/
 COPY am_trade_ui/ ./am_trade_ui/
+COPY am_paper_ui/ ./am_paper_ui/
 COPY am_user_ui/ ./am_user_ui/
 COPY am_ai_ui/ ./am_ai_ui/
 COPY am_analysis/ ./am_analysis/
