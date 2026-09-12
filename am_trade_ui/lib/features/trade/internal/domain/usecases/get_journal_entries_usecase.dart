@@ -10,15 +10,18 @@ class GetJournalEntriesUseCase {
     return _repository.getJournalEntry(entryId);
   }
 
-  Future<List<JournalEntry>> getByUser() {
-    return _repository.getJournalEntriesByUser();
+  Future<List<JournalEntry>> getByUser({Map<String, dynamic>? query}) {
+    return _repository.getJournalEntriesByUser(query: query);
   }
 
   Future<List<JournalEntry>> getByTrade(String tradeId) {
     return _repository.getJournalEntriesByTrade(tradeId);
   }
 
-  Future<List<JournalEntry>> getByDateRange(DateTime startDate, DateTime endDate) {
+  Future<List<JournalEntry>> getByDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  ) {
     return _repository.getJournalEntriesByDateRange(startDate, endDate);
   }
 }

@@ -9,6 +9,7 @@ import '../widgets/trade_detail_widgets/similar_trades_section.dart';
 import '../widgets/trade_detail_widgets/trade_detail_summary.dart';
 import '../widgets/trade_detail_widgets/trade_detail_chart_section.dart';
 import '../widgets/trade_detail_widgets/vertical_attachments_feed.dart';
+import '../widgets/trade_detail_widgets/trade_detail_journal_section.dart';
 
 /// Dedicated page for displaying detailed trade information in a modular layout
 class TradeDetailViewPage extends ConsumerStatefulWidget {
@@ -79,6 +80,12 @@ class _TradeDetailViewPageState extends ConsumerState<TradeDetailViewPage> {
                     child: Column(
                       children: [
                         TradeDetailSummary(trade: widget.trade),
+                        const SizedBox(height: 20),
+                        TradeDetailJournalSection(
+                          tradeId: widget.trade.tradeId,
+                          portfolioId: widget.portfolioId,
+                          symbol: widget.trade.symbol,
+                        ),
                         const SizedBox(height: 20),
 
                         // Similar Trades Section

@@ -19,6 +19,7 @@ class JournalNavigationSidebar extends StatelessWidget {
     this.tags = const [],
     this.onAddFolder,
     this.onNewTradeTap,
+    this.onTagTap,
     this.onEntryDropped,
     super.key,
   });
@@ -31,6 +32,7 @@ class JournalNavigationSidebar extends StatelessWidget {
   final List<NotebookTag> tags;
   final VoidCallback? onAddFolder;
   final VoidCallback? onNewTradeTap;
+  final ValueChanged<String>? onTagTap;
   final Function(JournalEntry entry, String folderId)? onEntryDropped;
 
   @override
@@ -168,7 +170,17 @@ class JournalNavigationSidebar extends StatelessWidget {
                     _buildSectionHeader(context, 'Tags'),
                     
                     // Dynamic Tags
-                    ...tags.map((tag) => _buildTagItem(context, tag.name, 0)), // Count placeholder
+                    ...tags.map(
+                      (tag) => _buildTagItem(
+                        context,
+                        tag.name,
+                        0,
+                        onTap: () {
+                          final id = tag.id;
+                          if (id != null) onTagTap?.call(id);
+                        },
+                      ),
+                    ),
                     
                     const SizedBox(height: 16),
                     const SizedBox(height: 16),
@@ -271,30 +283,39 @@ class JournalNavigationSidebar extends StatelessWidget {
     );
   }
 
-  Widget _buildTagItem(BuildContext context, String tag, int count) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(4),
+  Widget _buildTagItem(
+    BuildContext context,
+    String tag,
+    int count, {
+    VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                tag,
+                style: Theme.of(context).textTheme.labelSmall,
+              ),
             ),
-            child: Text(
-              tag,
-              style: Theme.of(context).textTheme.labelSmall,
+            const SizedBox(width: 8),
+            Text(
+              '($count)',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '($count)',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Theme.of(context).colorScheme.secondary,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

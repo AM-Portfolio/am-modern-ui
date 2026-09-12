@@ -1,8 +1,9 @@
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
 import '../widgets/phase_tracking_widget.dart';
 
-/// Section for tracking behavior, mood, and sentiment across all trading phases
+/// Section for tracking behavior, mood, and sentiment across trading phases.
 class BehaviorTrackingSection extends StatefulWidget {
   const BehaviorTrackingSection({
     required this.planningBehaviorController,
@@ -46,10 +47,12 @@ class BehaviorTrackingSection extends StatefulWidget {
   final bool isEditMode;
 
   @override
-  State<BehaviorTrackingSection> createState() => _BehaviorTrackingSectionState();
+  State<BehaviorTrackingSection> createState() =>
+      _BehaviorTrackingSectionState();
 }
 
-class _BehaviorTrackingSectionState extends State<BehaviorTrackingSection> with SingleTickerProviderStateMixin {
+class _BehaviorTrackingSectionState extends State<BehaviorTrackingSection>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -67,112 +70,130 @@ class _BehaviorTrackingSectionState extends State<BehaviorTrackingSection> with 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final hasPlanningBehavior = widget.planningBehaviorController.text.trim().isNotEmpty;
+    final colors = context.colors;
+    final hasPlanningBehavior =
+        widget.planningBehaviorController.text.trim().isNotEmpty;
     final hasMidBehavior = widget.midBehaviorController.text.trim().isNotEmpty;
     final hasEndBehavior = widget.endBehaviorController.text.trim().isNotEmpty;
 
-    // Only show in edit mode or if any behavior data exists
-    if (!widget.isEditMode && !hasPlanningBehavior && !hasMidBehavior && !hasEndBehavior) {
+    if (!widget.isEditMode &&
+        !hasPlanningBehavior &&
+        !hasMidBehavior &&
+        !hasEndBehavior) {
       return const SizedBox.shrink();
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.3)),
-        borderRadius: BorderRadius.circular(12),
-        color: theme.colorScheme.primaryContainer.withOpacity(0.1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
-            child: Row(
-              children: [
-                Icon(Icons.psychology, size: 13, color: theme.colorScheme.primary),
-                const SizedBox(width: 3),
-                Text(
-                  'Daily Behavior & Mood Tracking',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.psychology_alt_outlined,
+              size: 18,
+              color: ModuleColors.trade,
             ),
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              'Behavior & mood',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                height: 1.1,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          'Track planning, mid-session, and end-of-day state',
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: colors.textSecondary,
           ),
-          const SizedBox(height: 4),
-
-          // Tab Bar
-          TabBar(
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: colors.cardSurface.withValues(alpha: 0.4),
+            borderRadius: AppRadii.input,
+          ),
+          child: TabBar(
             controller: _tabController,
-            labelColor: theme.colorScheme.primary,
-            unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
-            indicatorColor: theme.colorScheme.primary,
+            labelColor: colors.textPrimary,
+            unselectedLabelColor: colors.textSecondary,
+            indicator: BoxDecoration(
+              color: ModuleColors.trade.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(AppRadii.sm),
+            ),
             indicatorSize: TabBarIndicatorSize.tab,
-            labelPadding: const EdgeInsets.symmetric(horizontal: 4),
-            padding: EdgeInsets.zero,
-            labelStyle: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w600, fontSize: 10),
-            unselectedLabelStyle: theme.textTheme.labelSmall?.copyWith(fontSize: 10),
+            dividerColor: Colors.transparent,
+            labelPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+            labelStyle: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+            ),
+            unselectedLabelStyle: theme.textTheme.labelLarge?.copyWith(
+              fontSize: 13,
+            ),
             tabs: const [
               Tab(
-                icon: Icon(Icons.lightbulb_outline, size: 12),
+                height: 42,
+                iconMargin: EdgeInsets.only(bottom: 2),
+                icon: Icon(Icons.wb_sunny_outlined, size: 16),
                 text: 'Planning',
-                iconMargin: EdgeInsets.only(bottom: 1),
-                height: 36,
               ),
               Tab(
-                icon: Icon(Icons.access_time, size: 12),
+                height: 42,
+                iconMargin: EdgeInsets.only(bottom: 2),
+                icon: Icon(Icons.timeline_outlined, size: 16),
                 text: 'Mid',
-                iconMargin: EdgeInsets.only(bottom: 1),
-                height: 36,
               ),
               Tab(
-                icon: Icon(Icons.nightlight_outlined, size: 12),
+                height: 42,
+                iconMargin: EdgeInsets.only(bottom: 2),
+                icon: Icon(Icons.nightlight_outlined, size: 16),
                 text: 'End',
-                iconMargin: EdgeInsets.only(bottom: 1),
-                height: 36,
               ),
             ],
           ),
-
-          // Tab Content
-          SizedBox(
-            height: 280,
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildTabContent(
+        ),
+        const SizedBox(height: AppSpacing.sm + AppSpacing.xs),
+        // Natural height — avoid fixed TabBarView which overflowed chips/tags.
+        AnimatedBuilder(
+          animation: _tabController,
+          builder: (context, _) {
+            switch (_tabController.index) {
+              case 1:
+                return _buildTabContent(
+                  behaviorController: widget.midBehaviorController,
+                  mood: widget.midMood,
+                  sentiment: widget.midSentiment,
+                  hint: 'During trading — active execution',
+                  onMoodChanged: widget.onMidMoodChanged,
+                  onSentimentChanged: widget.onMidSentimentChanged,
+                );
+              case 2:
+                return _buildTabContent(
+                  behaviorController: widget.endBehaviorController,
+                  mood: widget.endMood,
+                  sentiment: widget.endSentiment,
+                  hint: 'Market close — reflection',
+                  onMoodChanged: widget.onEndMoodChanged,
+                  onSentimentChanged: widget.onEndSentimentChanged,
+                );
+              case 0:
+              default:
+                return _buildTabContent(
                   behaviorController: widget.planningBehaviorController,
                   mood: widget.planningMood,
                   sentiment: widget.planningSentiment,
                   hint: 'Pre-market preparation and plan',
                   onMoodChanged: widget.onPlanningMoodChanged,
                   onSentimentChanged: widget.onPlanningSentimentChanged,
-                ),
-                _buildTabContent(
-                  behaviorController: widget.midBehaviorController,
-                  mood: widget.midMood,
-                  sentiment: widget.midSentiment,
-                  hint: 'During trading - active execution',
-                  onMoodChanged: widget.onMidMoodChanged,
-                  onSentimentChanged: widget.onMidSentimentChanged,
-                ),
-                _buildTabContent(
-                  behaviorController: widget.endBehaviorController,
-                  mood: widget.endMood,
-                  sentiment: widget.endSentiment,
-                  hint: 'Market close - reflection',
-                  onMoodChanged: widget.onEndMoodChanged,
-                  onSentimentChanged: widget.onEndSentimentChanged,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+                );
+            }
+          },
+        ),
+      ],
     );
   }
 
@@ -185,138 +206,131 @@ class _BehaviorTrackingSectionState extends State<BehaviorTrackingSection> with 
     required Function(String?) onSentimentChanged,
   }) {
     final theme = Theme.of(context);
-    final hasBehavior = behaviorController.text.trim().isNotEmpty;
+    final colors = context.colors;
 
-    return Padding(
-      padding: const EdgeInsets.all(4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Summary label and input
-          Text(
-            'Summary',
-            style: theme.textTheme.labelSmall?.copyWith(
-              fontSize: 9,
-              fontWeight: FontWeight.w600,
-              color: theme.colorScheme.primary.withOpacity(0.7),
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Summary',
+          style: theme.textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: colors.textSecondary,
           ),
-          const SizedBox(height: 2),
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: hasBehavior ? theme.colorScheme.primary.withOpacity(0.3) : theme.dividerColor.withOpacity(0.2),
-              ),
-              borderRadius: BorderRadius.circular(6),
+        ),
+        const SizedBox(height: AppSpacing.xs + AppSpacing.xxs),
+        TextFormField(
+          controller: behaviorController,
+          enabled: widget.isEditMode,
+          maxLines: 3,
+          minLines: 2,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            height: 1.4,
+            color: widget.isEditMode
+                ? null
+                : colors.textPrimary.withValues(alpha: 0.85),
+          ),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: theme.textTheme.bodyMedium?.copyWith(
+              color: colors.textSecondary.withValues(alpha: 0.7),
             ),
-            child: TextFormField(
-              controller: behaviorController,
-              enabled: widget.isEditMode,
-              maxLines: 3,
-              minLines: 2,
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: widget.isEditMode ? null : theme.colorScheme.onSurface.withOpacity(0.85),
-              ),
-              decoration: InputDecoration(
-                hintText: hint,
-                hintStyle: theme.textTheme.bodySmall?.copyWith(
-                  fontSize: 10,
-                  color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
-                ),
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                disabledBorder: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                isDense: true,
+            filled: true,
+            fillColor: colors.cardSurface.withValues(alpha: 0.55),
+            border: OutlineInputBorder(
+              borderRadius: AppRadii.input,
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: AppRadii.input,
+              borderSide: BorderSide(color: colors.border.withValues(alpha: 0.4)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: AppRadii.input,
+              borderSide: BorderSide(
+                color: ModuleColors.trade.withValues(alpha: 0.6),
               ),
             ),
+            disabledBorder: OutlineInputBorder(
+              borderRadius: AppRadii.input,
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm + AppSpacing.xs,
+              vertical: AppSpacing.sm + AppSpacing.xs,
+            ),
           ),
-          const SizedBox(height: 4),
-
-          // Mood and Sentiment with labels
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Mood',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.primary.withOpacity(0.7),
-                      ),
+        ),
+        const SizedBox(height: AppSpacing.sm + AppSpacing.xs),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Mood',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colors.textSecondary,
                     ),
-                    const SizedBox(height: 2),
-                    IgnorePointer(
-                      ignoring: !widget.isEditMode,
-                      child: PhaseTrackingWidget.buildMoodSelector(
-                        mood: mood,
-                        onMoodChanged: onMoodChanged,
-                        isEditMode: widget.isEditMode,
-                      ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs + AppSpacing.xxs),
+                  IgnorePointer(
+                    ignoring: !widget.isEditMode,
+                    child: PhaseTrackingWidget.buildMoodSelector(
+                      mood: mood,
+                      onMoodChanged: onMoodChanged,
+                      isEditMode: widget.isEditMode,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Sentiment',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.primary.withOpacity(0.7),
-                      ),
+            ),
+            const SizedBox(width: AppSpacing.sm + AppSpacing.xs),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Sentiment',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colors.textSecondary,
                     ),
-                    const SizedBox(height: 2),
-                    IgnorePointer(
-                      ignoring: !widget.isEditMode,
-                      child: PhaseTrackingWidget.buildSentimentSelector(
-                        sentiment: sentiment,
-                        onSentimentChanged: onSentimentChanged,
-                        isEditMode: widget.isEditMode,
-                      ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs + AppSpacing.xxs),
+                  IgnorePointer(
+                    ignoring: !widget.isEditMode,
+                    child: PhaseTrackingWidget.buildSentimentSelector(
+                      sentiment: sentiment,
+                      onSentimentChanged: onSentimentChanged,
+                      isEditMode: widget.isEditMode,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm + AppSpacing.xs),
+        Text(
+          'Tags',
+          style: theme.textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: colors.textSecondary,
           ),
-          const SizedBox(height: 4),
-
-          // Tags section with label
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Tags',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.primary.withOpacity(0.7),
-                ),
-              ),
-              const SizedBox(height: 2),
-              IgnorePointer(
-                ignoring: !widget.isEditMode,
-                child: PhaseTrackingWidget.buildTagsSelector(
-                  selectedTags: widget.selectedTags,
-                  onTagToggled: widget.onTagToggled,
-                ),
-              ),
-            ],
+        ),
+        const SizedBox(height: AppSpacing.xs + AppSpacing.xxs),
+        IgnorePointer(
+          ignoring: !widget.isEditMode,
+          child: PhaseTrackingWidget.buildTagsSelector(
+            selectedTags: widget.selectedTags,
+            onTagToggled: widget.onTagToggled,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

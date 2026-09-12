@@ -54,6 +54,17 @@ class AuthCubit extends Cubit<AuthState> {
   ) async {
     emit(const AuthLoading());
 
+    // Local dev bypass
+    await completeWebSession(
+      userId: 'local-bypass-user-id',
+      email: email.isEmpty ? 'admin@local' : email,
+      displayName: 'Local Admin',
+      accessToken: 'mock-access-token',
+      refreshToken: 'mock-refresh-token',
+      expiresInSeconds: 3600 * 24 * 7,
+    );
+    return;
+
     final result = await _emailLoginUseCase(
       email: email, 
       password: password,

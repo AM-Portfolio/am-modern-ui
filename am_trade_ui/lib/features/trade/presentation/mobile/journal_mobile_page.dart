@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,7 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../journal_providers.dart';
 import '../cubit/journal/journal_cubit.dart';
 import '../cubit/journal/journal_state.dart';
-import '../web/widgets/journal/journal_entry_form.dart';
+import '../journal/pages/journal_insights_page.dart';
+import '../journal/pages/trade_journal_workflow_page.dart';
+import '../journal/pages/simple_journal_note_page.dart';
 
 class JournalMobilePage extends ConsumerStatefulWidget {
   const JournalMobilePage({
@@ -16,8 +19,6 @@ class JournalMobilePage extends ConsumerStatefulWidget {
   });
 
   final String? portfolioId;
-
-  /// When true, omits the page AppBar so it can sit inside a parent scaffold.
   final bool embedded;
 
   @override
@@ -40,14 +41,10 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
   }
 
   void _resetFabHideTimer() {
-    if (!_showFab) {
-      setState(() => _showFab = true);
-    }
+    if (!_showFab) setState(() => _showFab = true);
     _fabHideTimer?.cancel();
     _fabHideTimer = Timer(const Duration(seconds: 5), () {
-      if (mounted && _showFab) {
-        setState(() => _showFab = false);
-      }
+      if (mounted && _showFab) setState(() => _showFab = false);
     });
   }
 
@@ -57,174 +54,159 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
     super.dispose();
   }
 
+  void _openNew(JournalCubit cubit) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.candlestick_chart),
+              title: const Text('Trade Journal'),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => TradeJournalWorkflowPage(
+                      journalCubit: cubit,
+                      portfolioId: widget.portfolioId,
+                    ),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.notes),
+              title: const Text('Daily Note'),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => SimpleJournalNotePage(
+                      journalCubit: cubit,
+                      entryType: 'DAILY',
+                    ),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.block),
+              title: const Text('Missed Trade'),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => SimpleJournalNotePage(
+                      journalCubit: cubit,
+                      entryType: 'MISSED',
+                    ),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.insights),
+              title: const Text('Insights'),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => Scaffold(
+                      appBar: AppBar(title: const Text('Journal Insights')),
+                      body: JournalInsightsPage(journalCubit: cubit),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cubitAsync = ref.watch(journalCubitProvider);
-    
+
     return cubitAsync.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (error, stack) => Scaffold(body: Center(child: Text('Error: $error'))),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (error, stack) =>
+          Scaffold(body: Center(child: Text('Error: $error'))),
       data: (cubit) => BlocProvider.value(
         value: cubit,
         child: Listener(
           behavior: HitTestBehavior.translucent,
           onPointerDown: (_) => _resetFabHideTimer(),
           onPointerMove: (_) => _resetFabHideTimer(),
-          child: NotificationListener<ScrollNotification>(
-            onNotification: (notification) {
-              if (notification is ScrollUpdateNotification) {
-                _resetFabHideTimer();
-              }
-              return false;
-            },
-            child: Scaffold(
-              appBar: widget.embedded
-                  ? null
-                  : AppBar(title: const Text('Trade Journal')),
-              floatingActionButton: AnimatedScale(
-                duration: const Duration(milliseconds: 400),
-                scale: _showFab ? 1.0 : 0.0,
-                curve: _showFab ? Curves.elasticOut : Curves.easeInBack,
-                child: AnimatedOpacity(
-                  duration: const Duration(milliseconds: 200),
-                  opacity: _showFab ? 1.0 : 0.0,
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 96.0),
-                    child: FloatingActionButton(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => Scaffold(
-                              appBar: AppBar(
-                                title: const Text('New Journal Entry'),
-                              ),
-                              body: JournalEntryForm(
-                                cubit: cubit,
-                                portfolioId: widget.portfolioId ?? '',
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                      elevation: 4,
-                      shape: const CircleBorder(),
-                      child: const Icon(Icons.add),
-                    ),
-                  ),
-                ),
+          child: Scaffold(
+            appBar: widget.embedded
+                ? null
+                : AppBar(title: const Text('Trade Journal')),
+            floatingActionButton: AnimatedScale(
+              duration: const Duration(milliseconds: 400),
+              scale: _showFab ? 1.0 : 0.0,
+              child: FloatingActionButton(
+                onPressed: () => _openNew(cubit),
+                child: const Icon(Icons.add),
               ),
-              body: BlocBuilder<JournalCubit, JournalState>(
-            builder: (context, state) => state.when(
-              initial: () => const SizedBox.shrink(),
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (message) => Center(child: Text('Error: $message')),
-              success: (message) => const Center(child: CircularProgressIndicator()),
-              loaded: (entries) {
-                if (entries.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.book_outlined,
-                          size: 64,
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No journal entries',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+            ),
+            body: BlocBuilder<JournalCubit, JournalState>(
+              builder: (context, state) => state.when(
+                initial: () => const SizedBox.shrink(),
+                loading: () =>
+                    const Center(child: CircularProgressIndicator()),
+                error: (message) => Center(child: Text('Error: $message')),
+                success: (_) =>
+                    const Center(child: CircularProgressIndicator()),
+                loaded: (entries, summary, status, folder, tags, q, setup) {
+                  if (entries.isEmpty) {
+                    return const Center(child: Text('No journal entries'));
+                  }
+                  return ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: entries.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final entry = entries[index];
+                      return Card(
+                        child: ListTile(
+                          title: Text(entry.symbol ?? entry.title),
+                          subtitle: Text(
+                            entry.postTradeReview?.lessonLearned ??
+                                entry.setup ??
+                                entry.journalStatus ??
+                                '',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete_outline),
+                            onPressed: () =>
+                                cubit.removeJournalEntry(entry.id),
+                          ),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => TradeJournalWorkflowPage(
+                                  journalCubit: cubit,
+                                  initialEntry: entry,
+                                  portfolioId: widget.portfolioId,
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   );
-                }
-                return ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: entries.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final entry = entries[index];
-                    return Card(
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: Theme.of(context).dividerColor),
-                      ),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => Scaffold(
-                                appBar: AppBar(
-                                  title: Text(entry.title),
-                                ),
-                                body: JournalEntryForm(
-                                  cubit: cubit,
-                                  portfolioId: widget.portfolioId ?? '',
-                                  entry: entry,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    entry.entryDate.toString().split(' ')[0],
-                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                      color: Theme.of(context).colorScheme.primary,
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete_outline, size: 20),
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                    onPressed: () {
-                                      cubit.removeJournalEntry(entry.id);
-                                    },
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                entry.title,
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                entry.content,
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                                ),
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
+                },
+              ),
             ),
           ),
-        ),
-      ),
         ),
       ),
     );

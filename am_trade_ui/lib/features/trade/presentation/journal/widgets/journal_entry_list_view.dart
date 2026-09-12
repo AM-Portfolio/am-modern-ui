@@ -1,8 +1,8 @@
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
-import '../../../internal/domain/entities/journal_entry.dart';
 
+import '../../../internal/domain/entities/journal_entry.dart';
 
 class JournalEntryListView extends StatelessWidget {
   const JournalEntryListView({
@@ -11,162 +11,139 @@ class JournalEntryListView extends StatelessWidget {
     required this.selectedEntryId,
     required this.onEntrySelected,
     required this.onLogDayPressed,
+    this.listTitle = 'Log day',
+    this.emptyMessage = 'No journal entries yet.\nTap Log Day to start.',
   });
 
   final List<JournalEntry> entries;
   final String? selectedEntryId;
   final ValueChanged<JournalEntry> onEntrySelected;
   final VoidCallback onLogDayPressed;
+  final String listTitle;
+  final String emptyMessage;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = context.colors;
     final groupedEntries = _groupEntriesByDate(entries);
 
     return Container(
       width: 300,
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor.withOpacity(0.9), // Glassmorphism base
+        color: colors.cardSurface,
         border: Border(
-          right: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.5)),
-          left: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.5)),
+          right: BorderSide(color: colors.border.withValues(alpha: 0.35)),
+          left: BorderSide(color: colors.border.withValues(alpha: 0.35)),
         ),
       ),
       child: Column(
         children: [
-          // Header
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16),
+            padding: const EdgeInsets.all(AppSpacing.md),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Icon(Icons.note_add_outlined, size: 20, color: Theme.of(context).colorScheme.primary),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Log day',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                  ],
+                Icon(
+                  Icons.note_add_outlined,
+                  size: 20,
+                  color: ModuleColors.trade,
                 ),
-                // Delete Option
-                IconButton(
-                  onPressed: () {
-                    // TODO: Implement delete action
-                  },
-                  icon: Icon(Icons.delete_outline, size: 20, color: Theme.of(context).colorScheme.error),
-                  tooltip: 'Delete selected',
-                  style: IconButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    listTitle,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1),
-          
-          const Divider(height: 1),
-          
-          // Log Day Button (Prominent)
+          Divider(height: 1, color: colors.border.withValues(alpha: 0.35)),
           Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: ElevatedButton.icon(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: AppButton(
+              text: 'Log Day',
+              icon: Icons.add_rounded,
+              backgroundColor: ModuleColors.trade,
+              width: double.infinity,
+              height: 44,
               onPressed: onLogDayPressed,
-              icon: const Icon(Icons.add),
-              label: const Text('Log Day'),
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 48),
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              ),
             ),
           ),
-
-          // Select All / Checkbox placeholder
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
             child: Row(
               children: [
-                SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: Checkbox(
-                    value: false, 
-                    onChanged: (v) {},
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                  ),
-                ),
-                const SizedBox(width: 12),
                 Text(
-                  'Select All',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  '${entries.length} entries',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: colors.textSecondary,
                   ),
                 ),
                 const Spacer(),
-                Icon(Icons.sort, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                Icon(
+                  Icons.sort,
+                  size: 18,
+                  color: colors.textSecondary,
+                ),
               ],
             ),
           ),
-
-          // List
+          const SizedBox(height: AppSpacing.sm),
           Expanded(
-            child: ListView.builder(
-              itemCount: groupedEntries.length,
-              itemBuilder: (context, index) {
-                final dateKey = groupedEntries.keys.elementAt(index);
-                final dayEntries = groupedEntries[dateKey]!;
-                
-                // For this UI, we flatten the list or show headers?
-                // The design shows a list of items, each item seems to be a day summary or an entry.
-                // "Thu, Jul 20, 2023"
-                // Let's assume one entry per day for the "Log day" view, or list all entries.
-                // The design looks like a list of days.
-                
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: dayEntries.map((entry) => _buildEntryItem(context, entry)).toList(),
-                ).animate().slideX(begin: -0.1, end: 0, delay: (index * 50).ms, duration: 300.ms).fadeIn();
-              },
-            ),
+            child: entries.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      child: Text(
+                        emptyMessage,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colors.textSecondary,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                    itemCount: groupedEntries.length,
+                    itemBuilder: (context, index) {
+                      final dateKey = groupedEntries.keys.elementAt(index);
+                      final dayEntries = groupedEntries[dateKey]!;
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: dayEntries
+                            .map(
+                              (entry) => JournalEntryItem(
+                                entry: entry,
+                                isSelected: entry.id == selectedEntryId,
+                                onTap: () => onEntrySelected(entry),
+                              ),
+                            )
+                            .toList(),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
     );
   }
 
-  Map<String, List<JournalEntry>> _groupEntriesByDate(List<JournalEntry> entries) {
+  Map<String, List<JournalEntry>> _groupEntriesByDate(
+    List<JournalEntry> entries,
+  ) {
     final grouped = <String, List<JournalEntry>>{};
     for (final entry in entries) {
       final dateKey = DateFormat('yyyy-MM-dd').format(entry.entryDate);
-      if (!grouped.containsKey(dateKey)) {
-        grouped[dateKey] = [];
-      }
-      grouped[dateKey]!.add(entry);
+      grouped.putIfAbsent(dateKey, () => []).add(entry);
     }
-    // Sort keys desc
     final sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
-    final sortedMap = <String, List<JournalEntry>>{};
-    for (final key in sortedKeys) {
-      sortedMap[key] = grouped[key]!;
-    }
-    return sortedMap;
+    return {for (final key in sortedKeys) key: grouped[key]!};
   }
-
-  Widget _buildEntryItem(BuildContext context, JournalEntry entry) {
-    final isSelected = entry.id == selectedEntryId;
-
-    return JournalEntryItem(
-      entry: entry,
-      isSelected: isSelected,
-      onTap: () => onEntrySelected(entry),
-    );
-  }
-
-
 }
 
 class JournalEntryItem extends StatefulWidget {
@@ -187,198 +164,82 @@ class JournalEntryItem extends StatefulWidget {
 
 class _JournalEntryItemState extends State<JournalEntryItem> {
   bool _isHovered = false;
-  bool _isDragging = false;
 
   @override
   Widget build(BuildContext context) {
-    final dateStr = DateFormat('EEE, MMM dd, yyyy').format(widget.entry.entryDate);
-    final subDateStr = DateFormat('MM/dd/yyyy').format(widget.entry.entryDate);
+    final theme = Theme.of(context);
+    final colors = context.colors;
+    final dateStr =
+        DateFormat('EEE, MMM dd, yyyy').format(widget.entry.entryDate);
+    final title = widget.entry.title.trim().isEmpty
+        ? 'Untitled entry'
+        : widget.entry.title;
 
-    return Draggable<JournalEntry>(
-      data: widget.entry,
-      feedback: Material(
-        elevation: 12,
-        borderRadius: BorderRadius.circular(12),
-
-      
-        child: Container(
-          width: 260,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.95),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Theme.of(context).colorScheme.primary,
-              width: 2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                blurRadius: 20,
-                spreadRadius: 2,
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.xs,
+        ),
+        child: Material(
+          color: widget.isSelected
+              ? ModuleColors.trade.withValues(alpha: 0.12)
+              : _isHovered
+                  ? colors.surface.withValues(alpha: 0.55)
+                  : colors.surface.withValues(alpha: 0.28),
+          borderRadius: AppRadii.card,
+          child: InkWell(
+            onTap: widget.onTap,
+            borderRadius: AppRadii.card,
+            child: Container(
+              padding: const EdgeInsets.all(AppSpacing.sm + AppSpacing.xs),
+              decoration: BoxDecoration(
+                borderRadius: AppRadii.card,
+                border: Border.all(
+                  color: widget.isSelected
+                      ? ModuleColors.trade.withValues(alpha: 0.75)
+                      : colors.border.withValues(alpha: 0.3),
+                  width: widget.isSelected ? 1.4 : 1,
+                ),
               ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.drag_indicator, 
-                    color: Theme.of(context).colorScheme.primary, 
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      dateStr,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                      ),
-                      overflow: TextOverflow.ellipsis,
+                  Text(
+                    dateStr,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: widget.isSelected
+                          ? ModuleColors.trade
+                          : colors.textSecondary,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (widget.entry.relatedTradeIds.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      '${widget.entry.relatedTradeIds.length} linked trades',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                subDateStr,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.7),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ).animate().scale(duration: 150.ms),
-      childWhenDragging: Opacity(
-        opacity: 0.3,
-        child: _buildEntryCard(context, dateStr, subDateStr),
-      ),
-      onDragStarted: () {
-        setState(() => _isDragging = true);
-      },
-      onDragEnd: (details) {
-        setState(() => _isDragging = false);
-      },
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _isHovered = true),
-        onExit: (_) => setState(() => _isHovered = false),
-        cursor: SystemMouseCursors.grab,
-        child: GestureDetector(
-          onTap: widget.onTap,
-          child: _buildEntryCard(context, dateStr, subDateStr),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEntryCard(BuildContext context, String dateStr, String subDateStr) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: widget.isSelected
-            ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3)
-            : Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: widget.isSelected
-              ? Theme.of(context).colorScheme.primary.withOpacity(0.5)
-              : _isHovered
-                  ? Theme.of(context).colorScheme.primary.withOpacity(0.5)
-                  : Theme.of(context).dividerColor.withOpacity(0.1),
-          width: widget.isSelected || _isHovered ? 2 : 1,
-        ),
-        boxShadow: [
-          if (_isHovered || widget.isSelected)
-            BoxShadow(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-        ],
-      ),
-      transform: _isHovered ? (Matrix4.identity()..scale(1.02)) : Matrix4.identity(),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Drag handle
-          Icon(
-            Icons.drag_indicator,
-            size: 20,
-            color: _isHovered 
-              ? Theme.of(context).colorScheme.primary
-              : Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        dateStr,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: widget.isSelected || _isHovered
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Theme.of(context).colorScheme.onSurface,
-                            ),
-                      ),
-                    ),
-                    // PNL Placeholder removed as it requires fetching trade stats
-                    const SizedBox.shrink(),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      subDateStr,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                    ),
-                    // Dynamic Trade Stats
-                    Row(
-                      children: [
-                        if (widget.entry.relatedTradeIds.isNotEmpty)
-                          _buildMiniStat(context, '${widget.entry.relatedTradeIds.length} Trades'),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMiniStat(BuildContext context, String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          fontSize: 10,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
       ),
     );
   }
 }
-
