@@ -1139,14 +1139,16 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
               child: AllIndicesDrawer(
                 indices: marketProvider.allIndicesData,
                 globalIndices: marketProvider.globalIndicesData,
-                availableIndices: marketProvider.availableIndices,
-                initialTimeframe: selectedTimeframe,
-                selectedIndexSymbol: selectedIndexForMovers,
-                onNeedGlobal: () {
-                  if (marketProvider.globalIndicesData.isEmpty) {
+                region: marketProvider.indicesRegion,
+                onRegionChanged: (region) {
+                  marketProvider.setIndicesRegion(region);
+                  if (region == IndicesRegion.global &&
+                      marketProvider.globalIndicesData.isEmpty) {
                     marketProvider.loadGlobalIndicesData();
                   }
                 },
+                initialTimeframe: selectedTimeframe,
+                selectedIndexSymbol: selectedIndexForMovers,
                 onIndexSelected: (data) {
                   if (!marketProvider.isGlobalSymbol(data.indexSymbol)) {
                     setState(() {

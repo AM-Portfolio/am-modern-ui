@@ -160,10 +160,16 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     return 0;
   }
 
-  void _syncTabFromUrl({bool notify = false}) {
+  void _syncTabFromUrl({bool notify = false, bool? isMobile}) {
     final items = _swipeController.items;
     if (items.isEmpty) return;
-    final index = _indexForSlug(widget.initialTab, items);
+    var tab = widget.initialTab;
+    final mobile = isMobile ?? MediaQuery.sizeOf(context).width < 1100;
+    // Web has no All Indices secondary tab — land on Dashboard instead.
+    if (!mobile && tab == 'all-indices') {
+      tab = 'dashboard';
+    }
+    final index = _indexForSlug(tab, items);
     if (_swipeController.currentIndex != index) {
       _swipeController.navigateTo(index);
     }
@@ -198,10 +204,13 @@ class _MarketContentState extends ConsumerState<MarketContent> {
   }
 
   void _initializeSwipeController() {
+    // Avoid MediaQuery in initState (InheritedWidget not ready yet).
+    // First build() recalculates includeAllIndices from width.
     _swipeController = SwipeNavigationController(
       items: _buildNavigationItems(
         context.read<MarketProvider>(),
         context.read<view_mode.ViewModeProvider>(),
+        includeAllIndices: true,
       ),
     );
 
@@ -261,13 +270,18 @@ class _MarketContentState extends ConsumerState<MarketContent> {
 
     return Consumer2<MarketProvider, view_mode.ViewModeProvider>(
     builder: (context, provider, viewModeProvider, _) {
+      final isMobile = MediaQuery.sizeOf(context).width < 1100;
       // Update controller items when provider updates (e.g. indices loaded)
-      final newItems = _buildNavigationItems(provider, viewModeProvider);
+      final newItems = _buildNavigationItems(
+        provider,
+        viewModeProvider,
+        includeAllIndices: isMobile,
+      );
       if (_hasItemsChanged(newItems)) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             _swipeController.updateItems(newItems);
-            _syncTabFromUrl();
+            _syncTabFromUrl(isMobile: isMobile);
           }
         });
       }
@@ -282,7 +296,11 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         // relying on hidden scroll chrome.
         autoHideMobileTabsOnScroll: false,
         showMobileMenuButton: false,
-        sections: _buildSidebarSections(provider, viewModeProvider),
+        sections: _buildSidebarSections(
+          provider,
+          viewModeProvider,
+          includeAllIndices: isMobile,
+        ),
         body: SwipeablePageView(
           key: const PageStorageKey('market_page_info'),
           scrollDirection: Axis.vertical,
@@ -305,11 +323,15 @@ class _MarketContentState extends ConsumerState<MarketContent> {
 
   List<SecondarySidebarSection> _buildSidebarSections(
     MarketProvider provider,
-    view_mode.ViewModeProvider viewModeProvider,
-  ) {
+    view_mode.ViewModeProvider viewModeProvider, {
+    required bool includeAllIndices,
+  }) {
     // If User mode, show simplified navigation
     if (viewModeProvider.isUserMode) {
-      return _buildUserModeSections(provider);
+      return _buildUserModeSections(
+        provider,
+        includeAllIndices: includeAllIndices,
+      );
     }
     
     // Developer mode - show all sections (existing behavior)
@@ -328,66 +350,73 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     final accentColor = ModuleColors.market;
     final currentIndex = _swipeController.currentIndex;
 
-    final mainItems = [
+    final mainItems = <SecondarySidebarItem>[
+      if (includeAllIndices)
+        _createSidebarItem(
+          0,
+          'All Indices',
+          Icons.dashboard_rounded,
+          'Market Overview',
+        ),
       _createSidebarItem(
-        0,
-        'All Indices',
-        Icons.dashboard_rounded,
-        'Market Overview',
+        includeAllIndices ? 1 : 0,
+        'Streamer',
+        Icons.waves_rounded,
+        'Real-time data',
       ),
-      _createSidebarItem(1, 'Streamer', Icons.waves_rounded, 'Real-time data'),
       _createSidebarItem(
-        2,
+        includeAllIndices ? 2 : 1,
         'Instrument Explorer',
         Icons.manage_search_rounded,
         'Search instruments',
       ),
       _createSidebarItem(
-        3,
+        includeAllIndices ? 3 : 2,
         'Security Explorer',
         Icons.security_rounded,
         'Security details',
       ),
       _createSidebarItem(
-        4,
+        includeAllIndices ? 4 : 3,
         'ETF Explorer',
         Icons.dashboard_customize_rounded,
         'ETF insights',
       ),
       _createSidebarItem(
-        5,
+        includeAllIndices ? 5 : 4,
         'Price Test',
         Icons.price_check_rounded,
         'Price validation',
       ),
       _createSidebarItem(
-        6,
+        includeAllIndices ? 6 : 5,
         'Market Analysis',
         Icons.analytics_rounded,
         'Detailed charts',
       ),
       _createSidebarItem(
-        7,
+        includeAllIndices ? 7 : 6,
         'Equity Insider',
         Icons.insights_rounded,
         'Fundamental analysis',
       ),
       if (widget.paperDesk != null)
         _createSidebarItem(
-          8,
+          includeAllIndices ? 8 : 7,
           'Paper',
           Icons.science_outlined,
           'Paper trading desk',
         ),
     ];
 
-    // Dynamic Indices (shift when Paper tab is present)
+    // Dynamic Indices (shift when Paper tab / All Indices present)
     final paperOffset = widget.paperDesk != null ? 1 : 0;
+    final allIndicesOffset = includeAllIndices ? 1 : 0;
     final dynamicIndicesCount =
         provider.availableIndices?.broad.take(5).length ?? 0;
     final indexItems = <SecondarySidebarItem>[];
     if (provider.availableIndices != null) {
-      var baseIndex = 8 + paperOffset;
+      var baseIndex = 7 + allIndicesOffset + paperOffset;
       for (final indexName in provider.availableIndices!.broad.take(5)) {
         final i = baseIndex;
         indexItems.add(
@@ -409,7 +438,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
       }
     }
 
-    final adminIndex = 8 + paperOffset + dynamicIndicesCount;
+    final adminIndex = 7 + allIndicesOffset + paperOffset + dynamicIndicesCount;
     final developerIndex = adminIndex + 1;
 
     final adminItem = SecondarySidebarItem(
@@ -451,17 +480,21 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     return sections;
   }
 
-  // User Mode - All Indices first, then Paper (if injected) + other tabs
-  List<SecondarySidebarSection> _buildUserModeSections(MarketProvider provider) {
+  // User Mode - All Indices first on mobile only; web starts at Paper/Dashboard
+  List<SecondarySidebarSection> _buildUserModeSections(
+    MarketProvider provider, {
+    required bool includeAllIndices,
+  }) {
     final hasPaper = widget.paperDesk != null;
     var i = 0;
     final userItems = <SecondarySidebarItem>[
-      _createSidebarItem(
-        i++,
-        'All Indices',
-        Icons.grid_view_rounded,
-        'Market Overview',
-      ),
+      if (includeAllIndices)
+        _createSidebarItem(
+          i++,
+          'All Indices',
+          Icons.grid_view_rounded,
+          'Market Overview',
+        ),
       if (hasPaper)
         _createSidebarItem(i++, 'Paper', Icons.science_outlined, 'Paper trading desk'),
       _createSidebarItem(i++, 'Dashboard', Icons.home_rounded, 'Overview'),
@@ -504,24 +537,29 @@ class _MarketContentState extends ConsumerState<MarketContent> {
 
   List<NavigationItem> _buildNavigationItems(
     MarketProvider provider,
-    view_mode.ViewModeProvider viewModeProvider,
-  ) {
+    view_mode.ViewModeProvider viewModeProvider, {
+    required bool includeAllIndices,
+  }) {
     // If User mode, show only 3 pages: Dashboard, Market Analysis, Heatmap
     if (viewModeProvider.isUserMode) {
-      return _buildUserModeNavigationItems(provider);
+      return _buildUserModeNavigationItems(
+        provider,
+        includeAllIndices: includeAllIndices,
+      );
     }
     
     // Developer mode - show all items
     final accentColor = ModuleColors.market;
 
-    final items = [
-      NavigationItem(
-        title: 'All Indices',
-        subtitle: 'Market Overview',
-        icon: Icons.dashboard_rounded,
-        page: _wrapPage(const AllIndicesPage()),
-        accentColor: accentColor,
-      ),
+    final items = <NavigationItem>[
+      if (includeAllIndices)
+        NavigationItem(
+          title: 'All Indices',
+          subtitle: 'Market Overview',
+          icon: Icons.dashboard_rounded,
+          page: _wrapPage(const AllIndicesPage()),
+          accentColor: accentColor,
+        ),
       NavigationItem(
         title: 'Streamer',
         subtitle: 'Real-time data',
@@ -628,18 +666,22 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     return items;
   }
 
-  List<NavigationItem> _buildUserModeNavigationItems(MarketProvider provider) {
+  List<NavigationItem> _buildUserModeNavigationItems(
+    MarketProvider provider, {
+    required bool includeAllIndices,
+  }) {
     final accentColor = ModuleColors.market;
     final paperDesk = widget.paperDesk;
 
     return [
-      NavigationItem(
-        title: 'All Indices',
-        subtitle: 'Market Overview',
-        icon: Icons.grid_view_rounded,
-        page: _wrapPage(const AllIndicesPage()),
-        accentColor: accentColor,
-      ),
+      if (includeAllIndices)
+        NavigationItem(
+          title: 'All Indices',
+          subtitle: 'Market Overview',
+          icon: Icons.grid_view_rounded,
+          page: _wrapPage(const AllIndicesPage()),
+          accentColor: accentColor,
+        ),
       if (paperDesk != null)
         NavigationItem(
           title: 'Paper',

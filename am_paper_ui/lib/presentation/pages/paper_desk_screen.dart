@@ -314,7 +314,6 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
 
           return Column(
             children: [
-              _header(context),
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(12),
@@ -392,22 +391,6 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
             ],
           );
         },
-      ),
-    );
-  }
-
-  Widget _header(BuildContext context) {
-    return Material(
-      color: context.colors.surface,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            'Paper desk',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-        ),
       ),
     );
   }
