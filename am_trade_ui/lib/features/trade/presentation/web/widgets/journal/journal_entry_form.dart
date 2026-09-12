@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,24 +21,38 @@ import 'widgets/rich_text_editor.dart';
 import 'widgets/trade_overview_selector.dart';
 import 'widgets/trade_preview_dialog.dart';
 import 'hover_input_field.dart';
+import '../../../journal/widgets/simple_template_dialog.dart';
 
 class JournalEntryForm extends ConsumerStatefulWidget {
   const JournalEntryForm({
-        required this.cubit,
+    required this.cubit,
     required this.portfolioId,
     super.key,
     this.entry,
+    this.showTemplateActions = false,
+    this.defaultEntryType,
+    this.defaultFolderId,
+    this.onCreated,
+    this.onBrowseTemplates,
   });
 
-    final JournalCubit cubit;
+  final JournalCubit cubit;
   final String portfolioId;
   final JournalEntry? entry;
+  /// When true, form shows its own template CTA (prefer header CTA in layout).
+  final bool showTemplateActions;
+  /// Used when creating a new entry (e.g. DAILY / TRADE_NOTE / SESSION).
+  final String? defaultEntryType;
+  /// Custom notebook folder id when creating from a user folder.
+  final String? defaultFolderId;
+  final ValueChanged<String>? onCreated;
+  final VoidCallback? onBrowseTemplates;
 
   @override
-  ConsumerState<JournalEntryForm> createState() => _JournalEntryFormState();
+  ConsumerState<JournalEntryForm> createState() => JournalEntryFormState();
 }
 
-class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
+class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _titleController;
   late quill.QuillController _quillController;
@@ -72,6 +87,7 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
   List<String> _relatedTradeIds = [];
   List<TradeHoldingViewModel> _availableTrades = [];
   bool _isEditMode = false; // View mode by default when editing existing entry
+  String? _appliedTemplateName;
 
   @override
   void initState() {
@@ -100,11 +116,27 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     });
   }
 
+  @override
+  void didUpdateWidget(covariant JournalEntryForm oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.entry?.id != widget.entry?.id) {
+      _isEditMode = widget.entry == null;
+      _appliedTemplateName = null;
+      _initFormFields();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _loadTradesForPeriod(_tradeOverviewDate, _tradePeriod);
+        }
+      });
+      setState(() {});
+    }
+  }
+
   void _initFormFields() {
     _titleController.text = widget.entry?.title ?? '';
 
-    final doc = widget.entry?.content != null && widget.entry!.content.isNotEmpty
-        ? quill.Document.fromJson(jsonDecode(widget.entry!.content))
+    final doc = widget.entry?.content != null && widget.entry!.content!.isNotEmpty
+        ? quill.Document.fromJson(jsonDecode(widget.entry!.content!))
         : quill.Document();
     _quillController.document = doc;
 
@@ -151,6 +183,54 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     }
 
     _tradeOverviewDate = widget.entry?.entryDate ?? DateTime.now();
+  }
+
+  /// Applies a template into the classic journal form (title, Quill body, tags, planning).
+  void applyTemplate(JournalTemplateSelection selection) {
+    setState(() {
+      if (selection.isBlank) {
+        _titleController.clear();
+        _quillController.document = quill.Document();
+        _quillController.updateSelection(
+          const TextSelection.collapsed(offset: 0),
+          quill.ChangeSource.local,
+        );
+        _appliedTemplateName = null;
+        _isEditMode = true;
+        return;
+      }
+
+      _titleController.text = selection.name;
+      final doc = buildTemplateDocument(selection);
+      _quillController.document = doc;
+      _quillController.updateSelection(
+        const TextSelection.collapsed(offset: 0),
+        quill.ChangeSource.local,
+      );
+      if (selection.tags.isNotEmpty) {
+        _selectedTags
+          ..clear()
+          ..addAll(selection.tags);
+      }
+      if (selection.planningSummary != null &&
+          selection.planningSummary!.trim().isNotEmpty) {
+        _planningBehaviorController.text = selection.planningSummary!;
+      }
+      _planningMood ??= 'focused';
+      _appliedTemplateName = selection.name;
+      _isEditMode = true;
+    });
+  }
+
+  Future<void> browseTemplates() async {
+    if (widget.onBrowseTemplates != null) {
+      widget.onBrowseTemplates!();
+      return;
+    }
+    await EnhancedTemplateDialog.show(
+      context: context,
+      onTemplateSelected: applyTemplate,
+    );
   }
 
   @override
@@ -243,7 +323,7 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to load trades: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: context.statusError,
             duration: const Duration(seconds: 3),
           ),
         );
@@ -296,7 +376,7 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Failed to load linked trades: ${e.toString()}'),
-              backgroundColor: Colors.red,
+              backgroundColor: context.statusError,
               duration: const Duration(seconds: 3),
             ),
           );
@@ -334,11 +414,13 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
         final behaviorPatternSummaries = _buildBehaviorPatternSummaries();
 
         if (widget.entry == null) {
-          await widget.cubit.addJournalEntry(
+          final saved = await widget.cubit.addJournalEntry(
             title: _titleController.text,
             content: content,
             entryDate: _entryDate,
             tradeId: _tradeIdController.text.isEmpty ? null : _tradeIdController.text,
+            entryType: widget.defaultEntryType,
+            folderId: widget.defaultFolderId,
             behaviorPatternSummaries: behaviorPatternSummaries,
             imageUrls: _imageUrls.isEmpty ? null : _imageUrls,
             attachments: _imageUrls.isEmpty ? null : JournalFormHelpers.convertImageUrlsToAttachments(_imageUrls),
@@ -358,36 +440,61 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
 
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Journal entry created successfully'), backgroundColor: Colors.green),
+              SnackBar(
+                content: const Text('Journal entry created successfully'),
+                backgroundColor: context.colors.statusSuccess,
+              ),
             );
-            // Reset form for a new entry
-            _titleController.clear();
-            _quillController.document = quill.Document();
-            _tradeIdController.clear();
-            _urlController.clear();
-            _planningBehaviorController.clear();
-            _midBehaviorController.clear();
-            _endBehaviorController.clear();
-            setState(() {
-              _planningMood = null;
-              _planningSentiment = null;
-              _midMood = null;
-              _midSentiment = null;
-              _endMood = null;
-              _endSentiment = null;
-              _selectedTags.clear();
-              _imageUrls = [];
-              _relatedTradeIds = [];
-              _entryDate = DateTime.now();
-            });
+            widget.onCreated?.call(saved.id);
+            if (widget.onCreated == null) {
+              // Legacy standalone form: reset in place.
+              _titleController.clear();
+              _quillController.document = quill.Document();
+              _tradeIdController.clear();
+              _urlController.clear();
+              _planningBehaviorController.clear();
+              _midBehaviorController.clear();
+              _endBehaviorController.clear();
+              setState(() {
+                _planningMood = null;
+                _planningSentiment = null;
+                _midMood = null;
+                _midSentiment = null;
+                _endMood = null;
+                _endSentiment = null;
+                _selectedTags.clear();
+                _imageUrls = [];
+                _relatedTradeIds = [];
+                _entryDate = DateTime.now();
+                _appliedTemplateName = null;
+              });
+            }
           }
         } else {
+          final existing = widget.entry!;
           await widget.cubit.editJournalEntry(
-            entryId: widget.entry!.id,
+            entryId: existing.id,
             title: _titleController.text,
             content: content,
             entryDate: _entryDate,
             tradeId: _tradeIdController.text.isEmpty ? null : _tradeIdController.text,
+            entryType: existing.entryType,
+            journalStatus: existing.journalStatus,
+            symbol: existing.symbol,
+            setup: existing.setup,
+            tradeDirection: existing.tradeDirection,
+            folderId: existing.folderId,
+            playbookId: existing.playbookId,
+            preTradePlan: existing.preTradePlan,
+            tradeExecution: existing.tradeExecution,
+            postTradeReview: existing.postTradeReview,
+            tagIds: existing.tagIds.isEmpty ? null : existing.tagIds,
+            chartUrls: existing.chartUrls.isEmpty ? null : existing.chartUrls,
+            documentUrls:
+                existing.documentUrls.isEmpty ? null : existing.documentUrls,
+            videoUrls: existing.videoUrls.isEmpty ? null : existing.videoUrls,
+            externalUrls:
+                existing.externalUrls.isEmpty ? null : existing.externalUrls,
             behaviorPatternSummaries: behaviorPatternSummaries,
             imageUrls: _imageUrls.isEmpty ? null : _imageUrls,
             attachments: _imageUrls.isEmpty ? null : JournalFormHelpers.convertImageUrlsToAttachments(_imageUrls),
@@ -407,7 +514,10 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
           
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Journal entry updated successfully'), backgroundColor: Colors.green),
+              SnackBar(
+                content: const Text('Journal entry updated successfully'),
+                backgroundColor: context.statusSuccess,
+              ),
             );
             setState(() => _isEditMode = false);
           }
@@ -415,7 +525,10 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to save entry: $e'), backgroundColor: Colors.red),
+            SnackBar(
+              content: Text('Failed to save entry: $e'),
+              backgroundColor: context.statusError,
+            ),
           );
         }
       } finally {
@@ -478,7 +591,12 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 650;
         return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.md,
+            AppSpacing.xs,
+            AppSpacing.md,
+            AppSpacing.md,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -486,9 +604,9 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(flex: 2, child: _buildLeftColumn(context)),
-                    const SizedBox(width: 20),
-                    Expanded(child: _buildRightColumn()),
+                    Expanded(flex: 5, child: _buildLeftColumn(context)),
+                    const SizedBox(width: AppSpacing.lg),
+                    Expanded(flex: 3, child: _buildRightColumn()),
                   ],
                 )
               else
@@ -496,11 +614,11 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _buildLeftColumn(context),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: AppSpacing.lg),
                     _buildRightColumn(),
                   ],
                 ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.md),
               JournalFormActions(
                 isEditMode: _isEditMode,
                 isSubmitting: _isSubmitting,
@@ -521,16 +639,55 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     ),
   );
 
-  Widget _buildLeftColumn(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      _buildTitleField(),
-      const SizedBox(height: 12),
-      _buildBehaviorTracking(),
-      const SizedBox(height: 12),
-      RichTextEditor(controller: _quillController, readOnly: !_isEditMode),
-    ],
-  );
+  Widget _buildLeftColumn(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildTitleField(),
+        // Status only — primary "Use template" lives in the page header.
+        if (_isEditMode && _appliedTemplateName != null) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm + AppSpacing.xs,
+              vertical: AppSpacing.sm,
+            ),
+            decoration: BoxDecoration(
+              color: ModuleColors.trade.withValues(alpha: 0.08),
+              borderRadius: AppRadii.input,
+              border: Border.all(
+                color: ModuleColors.trade.withValues(alpha: 0.22),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.description_outlined,
+                  size: 16,
+                  color: ModuleColors.trade,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    'Using template: $_appliedTemplateName',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: ModuleColors.trade,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: AppSpacing.md),
+        _buildBehaviorTracking(),
+        const SizedBox(height: AppSpacing.md),
+        RichTextEditor(controller: _quillController, readOnly: !_isEditMode),
+      ],
+    );
+  }
 
   Widget _buildTitleField() {
     final theme = Theme.of(context);
@@ -587,6 +744,7 @@ class _JournalEntryFormState extends ConsumerState<JournalEntryForm> {
 
       // Attachment Section - clickable in view mode for viewing images
       JournalAttachmentSection(
+        userId: widget.entry?.userId ?? '',
         imageUrls: _imageUrls,
         onAttachmentsChanged: (urls) => setState(() => _imageUrls = urls),
         featureName: 'journal',

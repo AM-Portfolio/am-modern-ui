@@ -1,54 +1,47 @@
+import 'package:am_common/am_common.dart';
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
-
+import '../../../internal/data/dtos/journal_entry_dto.dart';
+import '../../../internal/domain/entities/journal_entry.dart';
+import '../../../internal/domain/entities/notebook_item.dart';
+import '../../../internal/domain/enums/notebook_item_type.dart';
 import '../../../journal_providers.dart';
 import '../../../notebook_providers.dart';
-import '../../../internal/domain/enums/notebook_item_type.dart';
-import '../../../internal/domain/entities/notebook_item.dart';
-import '../../../internal/domain/entities/journal_entry.dart';
-import 'package:am_common/am_common.dart';
 import '../../cubit/journal/journal_cubit.dart';
 import '../../cubit/journal/journal_state.dart';
 import '../../notebook/cubit/notebook_cubit.dart';
-import '../../notebook/cubit/notebook_state.dart';
-import '../widgets/journal_three_column_layout.dart';
+import '../../journal_template/pages/template_browser_page.dart';
+import '../models/journal_folder_filter.dart';
 import '../widgets/add_folder_dialog.dart';
-import '../../trade_navigation.dart';
+import '../widgets/journal_import_dialog.dart';
+import '../widgets/journal_metrics_header.dart';
+import '../widgets/journal_three_column_layout.dart';
+import 'journal_insights_page.dart';
+import 'weekly_review_page.dart';
 
+/// Journal hub: Entries | Playbooks | Insights | Weekly Review.
 class JournalWebPage extends ConsumerStatefulWidget {
-  const JournalWebPage({ this.portfolioId, super.key});
+  const JournalWebPage({this.portfolioId, super.key});
 
-    final String? portfolioId;
+  final String? portfolioId;
 
   @override
   ConsumerState<JournalWebPage> createState() => _JournalWebPageState();
 }
 
+enum _JournalTab { entries, playbooks, insights, weekly }
+
 class _JournalWebPageState extends ConsumerState<JournalWebPage> {
-  // Cubits are now managed via Riverpod FutureProviders
+  List<JournalEntry> _entries = const [];
+  _JournalTab _tab = _JournalTab.entries;
 
   @override
   void initState() {
     super.initState();
-    
-    // Mode Logger
-    AppLogger.info(
-      'Initializing Journal Web Page', 
-      tag: 'JournalWebPage'
-    );
-    AppLogger.info(
-      'Current Mode: ${EnvironmentConfig.environment.name}', 
-      tag: 'JournalWebPage'
-    );
-    AppLogger.info(
-      'Mock Data Enabled: ${EnvironmentConfig.settings['useMockData']}', 
-      tag: 'JournalWebPage'
-    );
-    
-    // Load data after cubits are initialized
+    AppLogger.info('Initializing Journal Web Page', tag: 'JournalWebPage');
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final journalCubit = await ref.read(journalCubitProvider.future);
       final notebookCubit = await ref.read(notebookCubitProvider.future);
@@ -58,105 +51,45 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
     });
   }
 
-  Future<void> _handleAddFolder() async {
-    final result = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (context) => AddFolderDialog(),
-    );
-
-    if (result != null && mounted) {
-      final folderName = result['name'] as String;
-      final color = result['color'] as Color;
-      final icon = result['icon'] as IconData;
-
-      // Create metadata to store color and icon
-      final metadata = {
-        'color': color.value.toRadixString(16),
-        'icon': icon.codePoint,
-      };
-
-      // Create NotebookItem for the folder
-      final folder = NotebookItem(
-        type: NotebookItemType.FOLDER,
-        title: folderName,
-        metadata: metadata,
-      );
-
-      // Call cubit to create folder
-      final notebookCubit = await ref.read(notebookCubitProvider.future);
-      await notebookCubit.createItem(folder);
-
-      // Show success message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Folder "$folderName" created successfully'),
-            backgroundColor: color,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
+  Future<void> _exportCsv(JournalCubit cubit) async {
+    try {
+      final csv = await cubit.exportCsv();
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Export CSV'),
+          content: SizedBox(
+            width: 560,
+            height: 360,
+            child: SingleChildScrollView(child: SelectableText(csv)),
           ),
-        );
-      }
-    }
-  }
-
-  Future<void> _handleEntryDropped(JournalEntry entry, String folderId, NotebookCubit notebookCubit) async {
-    // Create a NOTE item in the folder that references the journal entry
-    final note = NotebookItem(
-      type: NotebookItemType.FOLDER, // Should this be folder or note? The original was NOTE but uses type FOLDER? 
-      // Wait, original line 79 said type: NotebookItemType.FOLDER for _handleAddFolder
-      // Line 105 said type: NotebookItemType.NOTE.
-      // Re-checking...
-      title: 'Journal Entry - ${DateFormat('MMM dd, yyyy').format(entry.entryDate)}',
-      parentId: folderId,
-      content: entry.content ?? '',
-      metadata: {
-        'journalEntryId': entry.id,
-        'linkedAt': DateTime.now().toIso8601String(),
-        'entryDate': entry.entryDate.toIso8601String(),
-      },
-      tagIds: entry.tagIds,
-    );
-    // Actually using NOTE for entry links
-    final noteCorrected = note.copyWith(type: NotebookItemType.NOTE);
-
-    // Call cubit to create note
-    await notebookCubit.createItem(noteCorrected);
-    
-    // Refresh notebook to show updated folder structure
-    await notebookCubit.loadNotebook();
-
-    // Show success message
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.white, size: 20),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text('Journal entry added to folder'),
-              ),
-            ],
-          ),
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 2),
-          action: SnackBarAction(
-            label: 'Undo',
-            textColor: Colors.white,
-            onPressed: () {
-              // TODO: Implement undo
-            },
-          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Close'),
+            ),
+          ],
         ),
       );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Export failed: $e')),
+      );
     }
   }
 
+  Future<void> _import(JournalCubit cubit) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => JournalImportDialog(journalCubit: cubit),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final journalCubitAsync = ref.watch(journalCubitProvider);
     final notebookCubitAsync = ref.watch(notebookCubitProvider);
 
@@ -167,57 +100,273 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
             BlocProvider.value(value: journalCubit),
             BlocProvider.value(value: notebookCubit),
           ],
-          child: MultiBlocListener(
-            listeners: [
-              BlocListener<JournalCubit, JournalState>(
-                listener: (context, state) {
-                  // Handle journal success/error messages if needed
-                },
-              ),
-              BlocListener<NotebookCubit, NotebookState>(
-                listener: (context, state) {
-                  // Handle notebook success/error messages if needed
-                },
-              ),
-            ],
-            child: Scaffold(
-              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-              body: BlocBuilder<JournalCubit, JournalState>(
-                builder: (context, journalState) {
-                  return BlocBuilder<NotebookCubit, NotebookState>(
-                    builder: (context, notebookState) {
-                      // Combine states or handle loading separately?
-                      // For now, let's show layout if journal is loaded, notebook can load in background or show loading in sidebar
-                      
-                      return journalState.when(
-                        initial: () => const SizedBox.shrink(),
-                        loading: () => const Center(child: CircularProgressIndicator()),
-                        error: (message) => Center(child: Text('Error: $message')),
-                        success: (message) => const Center(child: CircularProgressIndicator()),
-                        loaded: (entries) => JournalThreeColumnLayout(
-                            entries: entries,
-                            journalCubit: journalCubit,
-                            notebookCubit: notebookCubit,
-                            onAddFolder: _handleAddFolder,
-                            onNewTradeTap: widget.portfolioId != null 
-                                ? () => openAddTradeWebPage(context, portfolioId: widget.portfolioId!)
-                                : null,
-                            onEntryDropped: (entry, folderId) => _handleEntryDropped(entry, folderId, notebookCubit),
-                          ),
+          child: Scaffold(
+            backgroundColor: colors.surface,
+            body: Column(
+              children: [
+                _buildSubnav(context, journalCubit),
+                Expanded(
+                  child: BlocConsumer<JournalCubit, JournalState>(
+                    listener: (context, state) {
+                      state.maybeWhen(
+                        loaded: (entries, summary, status, folder, tags, q, setup) {
+                          setState(() => _entries = entries);
+                        },
+                        orElse: () {},
                       );
                     },
-                  );
-                },
-              ),
+                    builder: (context, state) {
+                      final loadedEntries = state.maybeWhen(
+                        loaded: (e, summary, status, folder, tags, q, setup) => e,
+                        orElse: () => _entries,
+                      );
+                      final summary = state.maybeWhen(
+                        loaded: (e, s, status, folder, tags, q, setup) => s,
+                        orElse: () => null,
+                      );
+                      final loadError = state.maybeWhen(
+                        error: (message) => message,
+                        orElse: () => null,
+                      );
+                      final isInitialLoading = state.maybeWhen(
+                            loading: () => true,
+                            orElse: () => false,
+                          ) &&
+                          loadedEntries.isEmpty &&
+                          _tab == _JournalTab.entries;
+
+                      if (isInitialLoading) {
+                        return Center(
+                          child: CircularProgressIndicator(
+                            color: ModuleColors.trade,
+                          ),
+                        );
+                      }
+
+                      if (loadError != null &&
+                          loadedEntries.isEmpty &&
+                          _tab == _JournalTab.entries) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(AppSpacing.lg),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Could not load journal entries',
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: AppSpacing.sm),
+                                Text(
+                                  loadError,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: AppSpacing.md),
+                                AppButton(
+                                  text: 'Retry',
+                                  type: AppButtonType.primary,
+                                  onPressed: () =>
+                                      journalCubit.loadJournalEntries(),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
+                      return IndexedStack(
+                        index: _tab.index,
+                        children: [
+                          _buildEntries(
+                            journalCubit,
+                            notebookCubit,
+                            loadedEntries,
+                            summary,
+                          ),
+                          TemplateBrowserPage(
+                            embedded: true,
+                            onTemplateSelected: (_) async {
+                              await journalCubit.loadJournalEntries();
+                              if (!context.mounted) return;
+                              setState(() => _tab = _JournalTab.entries);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text(
+                                    'Playbook applied — continue in Entries',
+                                  ),
+                                  backgroundColor: ModuleColors.trade,
+                                ),
+                              );
+                            },
+                          ),
+                          JournalInsightsPage(journalCubit: journalCubit),
+                          WeeklyReviewPage(journalCubit: journalCubit),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Error initializing notebook: $error')),
+        loading: () => Center(
+          child: CircularProgressIndicator(color: ModuleColors.trade),
+        ),
+        error: (error, stack) =>
+            Center(child: Text('Error initializing notebook: $error')),
       ),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(child: Text('Error initializing journal: $error')),
+      loading: () => Center(
+        child: CircularProgressIndicator(color: ModuleColors.trade),
+      ),
+      error: (error, stack) =>
+          Center(child: Text('Error initializing journal: $error')),
+    );
+  }
+
+  Widget _buildSubnav(BuildContext context, JournalCubit cubit) {
+    final colors = context.colors;
+    return Material(
+      color: colors.cardSurface,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+        child: Row(
+          children: [
+            for (final tab in _JournalTab.values) ...[
+              if (tab.index > 0) const SizedBox(width: AppSpacing.sm),
+              ChoiceChip(
+                label: Text(_tabLabel(tab)),
+                selected: _tab == tab,
+                onSelected: (_) {
+                  setState(() => _tab = tab);
+                  if (tab == _JournalTab.entries) {
+                    cubit.setFilters(status: 'ALL', reload: true);
+                  }
+                },
+                selectedColor: ModuleColors.trade.withValues(alpha: 0.25),
+              ),
+            ],
+            const Spacer(),
+            if (_tab == _JournalTab.entries) ...[
+              AppButton(
+                text: 'Import',
+                type: AppButtonType.secondary,
+                isOutlined: true,
+                icon: Icons.upload_file_outlined,
+                onPressed: () => _import(cubit),
+                height: 36,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              AppButton(
+                text: 'Export',
+                type: AppButtonType.secondary,
+                isOutlined: true,
+                icon: Icons.download_outlined,
+                onPressed: () => _exportCsv(cubit),
+                height: 36,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _tabLabel(_JournalTab tab) => switch (tab) {
+        _JournalTab.entries => 'Entries',
+        _JournalTab.playbooks => 'Playbooks',
+        _JournalTab.insights => 'Insights',
+        _JournalTab.weekly => 'Weekly Review',
+      };
+
+  Widget _buildEntries(
+    JournalCubit journalCubit,
+    NotebookCubit notebookCubit,
+    List<JournalEntry> loadedEntries,
+    JournalSummaryDto? summary,
+  ) {
+    return Column(
+      children: [
+        JournalMetricsHeader(summary: summary),
+        Expanded(
+          child: JournalThreeColumnLayout(
+            entries: loadedEntries,
+            journalCubit: journalCubit,
+            notebookCubit: notebookCubit,
+            portfolioId: widget.portfolioId ?? '',
+            onAddFolder: () async {
+              final result = await showDialog<Map<String, dynamic>>(
+                context: context,
+                builder: (_) => const AddFolderDialog(),
+              );
+              if (result == null) return;
+              final name = result['name'] as String? ?? '';
+              if (name.isEmpty) return;
+              final color = result['color'] as Color?;
+              await notebookCubit.createItem(
+                NotebookItem(
+                  type: NotebookItemType.FOLDER,
+                  title: name,
+                  metadata: {
+                    if (color != null)
+                      'color':
+                          '#${color.toARGB32().toRadixString(16).padLeft(8, '0')}',
+                  },
+                ),
+              );
+            },
+            onEntryDropped: (entry, targetId) async {
+              final mapping = JournalFolderFilter.dropTargetMapping(targetId);
+              try {
+                await journalCubit.editJournalEntry(
+                  entryId: entry.id,
+                  title: entry.title,
+                  content: entry.content ?? '',
+                  entryDate: entry.entryDate,
+                  tradeId: entry.tradeId,
+                  entryType: mapping.entryType ?? entry.entryType,
+                  journalStatus: entry.journalStatus,
+                  symbol: entry.symbol,
+                  setup: entry.setup,
+                  tradeDirection: entry.tradeDirection,
+                  folderId: mapping.folderId,
+                  playbookId: entry.playbookId,
+                  preTradePlan: entry.preTradePlan,
+                  tradeExecution: entry.tradeExecution,
+                  postTradeReview: entry.postTradeReview,
+                  behaviorPatternSummaries: entry.behaviorPatternSummaries,
+                  customFields: entry.customFields,
+                  imageUrls: entry.imageUrls,
+                  attachments: entry.attachments,
+                  relatedTradeIds: entry.relatedTradeIds,
+                  tagIds: entry.tagIds,
+                  chartUrls: entry.chartUrls,
+                  documentUrls: entry.documentUrls,
+                  videoUrls: entry.videoUrls,
+                  externalUrls: entry.externalUrls,
+                );
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Moved "${entry.title}"'),
+                    backgroundColor: ModuleColors.trade,
+                  ),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Failed to move entry: $e'),
+                    backgroundColor: context.statusError,
+                  ),
+                );
+              }
+            },
+          ),
+        ),
+      ],
     );
   }
 }
-
