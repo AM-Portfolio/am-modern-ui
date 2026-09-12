@@ -86,10 +86,10 @@ class _TradePortfolioDiscoveryTemplateState
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            Icon(Icons.error_outline, size: 48, color: context.statusError),
             const SizedBox(height: 16),
             Text(widget.errorMessage!,
-                style: const TextStyle(color: Colors.red)),
+                style: TextStyle(color: context.statusError)),
             if (widget.onRefresh != null) ...[
               const SizedBox(height: 16),
               ElevatedButton(
@@ -150,20 +150,20 @@ class _TradePortfolioDiscoveryTemplateState
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.account_balance_wallet_outlined,
-                size: 80, color: Colors.grey[400]),
+                size: 80, color: context.colors.textSecondary),
             const SizedBox(height: 16),
             Text('No portfolios found',
                 style: Theme.of(context)
                     .textTheme
                     .titleLarge
-                    ?.copyWith(color: Colors.grey[600])),
+                    ?.copyWith(color: context.colors.textSecondary)),
             const SizedBox(height: 8),
             Text(
               'Create your first portfolio to start tracking trades',
               style: Theme.of(context)
                   .textTheme
                   .bodyMedium
-                  ?.copyWith(color: Colors.grey[500]),
+                  ?.copyWith(color: context.colors.textSecondary)),
             ),
             if (widget.onCreatePaperWallet != null && !widget.hasPaperWallet) ...[
               const SizedBox(height: 24),
@@ -184,7 +184,7 @@ class _TradePortfolioDiscoveryTemplateState
                 style: Theme.of(context)
                     .textTheme
                     .bodySmall
-                    ?.copyWith(color: Colors.grey[500]),
+                    ?.copyWith(color: context.colors.textSecondary),
               ),
             ],
             if (widget.onCreatePortfolio != null) ...[
@@ -335,8 +335,8 @@ class _TradePortfolioDiscoveryTemplateState
                       value: '$profitableCount/${widget.portfolios.length}',
                       icon: Icons.trending_up_rounded,
                       iconColor: Colors.white,
-                      iconBgColor: const Color(0xFF10B981),
-                      valueColor: const Color(0xFF10B981),
+                      iconBgColor: context.statusSuccess,
+                      valueColor: context.statusSuccess,
                     ),
                     const SizedBox(width: 8),
                     _buildStatBadge(
@@ -356,11 +356,11 @@ class _TradePortfolioDiscoveryTemplateState
                           : Icons.arrow_downward_rounded,
                       iconColor: Colors.white,
                       iconBgColor: totalNetProfitLoss >= 0
-                          ? const Color(0xFF10B981)
-                          : const Color(0xFFEF4444),
+                          ? context.statusSuccess
+                          : context.statusError,
                       valueColor: totalNetProfitLoss >= 0
-                          ? const Color(0xFF10B981)
-                          : const Color(0xFFEF4444),
+                          ? context.statusSuccess
+                          : context.statusError,
                     ),
                     const SizedBox(width: 8),
                     _buildStatBadge(
@@ -372,11 +372,11 @@ class _TradePortfolioDiscoveryTemplateState
                           : Icons.trending_down_rounded,
                       iconColor: Colors.white,
                       iconBgColor: totalUnrealizedPnL >= 0
-                          ? const Color(0xFF10B981)
-                          : const Color(0xFFEF4444),
+                          ? context.statusSuccess
+                          : context.statusError,
                       valueColor: totalUnrealizedPnL >= 0
-                          ? const Color(0xFF10B981)
-                          : const Color(0xFFEF4444),
+                          ? context.statusSuccess
+                          : context.statusError,
                     ),
                     const SizedBox(width: 8),
                     _buildStatBadge(
@@ -820,7 +820,7 @@ class _TradePortfolioDiscoveryTemplateState
             size: 18,
             color: enabled
                 ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)
-                : Colors.grey.withValues(alpha: 0.25),
+                : context.colors.textSecondary.withValues(alpha: 0.25),
           ),
         ),
       );
@@ -1128,10 +1128,10 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                               child: Row(
                                 children: [
                                   Icon(Icons.delete,
-                                      size: 16, color: Colors.red),
+                                      size: 16, color: context.statusError),
                                   const SizedBox(width: 8),
-                                  const Text('Delete',
-                                      style: TextStyle(color: Colors.red)),
+                                  Text('Delete',
+                                      style: TextStyle(color: context.statusError)),
                                 ],
                               ),
                             ),
