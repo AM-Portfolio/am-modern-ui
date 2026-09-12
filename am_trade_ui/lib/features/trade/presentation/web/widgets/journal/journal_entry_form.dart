@@ -323,7 +323,7 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to load trades: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: context.statusError,
             duration: const Duration(seconds: 3),
           ),
         );
@@ -376,7 +376,7 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Failed to load linked trades: ${e.toString()}'),
-              backgroundColor: Colors.red,
+              backgroundColor: context.statusError,
               duration: const Duration(seconds: 3),
             ),
           );
@@ -514,7 +514,10 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
           
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Journal entry updated successfully'), backgroundColor: Colors.green),
+              SnackBar(
+                content: const Text('Journal entry updated successfully'),
+                backgroundColor: context.statusSuccess,
+              ),
             );
             setState(() => _isEditMode = false);
           }
@@ -522,7 +525,10 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to save entry: $e'), backgroundColor: Colors.red),
+            SnackBar(
+              content: Text('Failed to save entry: $e'),
+              backgroundColor: context.statusError,
+            ),
           );
         }
       } finally {

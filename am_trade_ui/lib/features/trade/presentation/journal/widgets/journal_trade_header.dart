@@ -1,4 +1,6 @@
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
+
 import '../../../internal/domain/entities/journal_entry.dart';
 
 class JournalTradeHeader extends StatelessWidget {
@@ -68,15 +70,19 @@ class JournalTradeHeader extends StatelessWidget {
   Color _getStatusColor(BuildContext context, String? status) {
     switch (status) {
       case 'PLANNED':
-        return Colors.blue;
+        return context.statusInfo;
       case 'OPEN':
-        return Colors.orange;
+        return context.statusWarning;
       case 'COMPLETED':
-        return Colors.green;
+        return context.statusSuccess;
       case 'ARCHIVED':
-        return Colors.grey;
+        return context.statusNeutral;
+      case 'DRAFT':
+        return ModuleColors.trade;
+      case 'MISSED':
+        return context.statusError;
       default:
-        return Theme.of(context).colorScheme.primary;
+        return ModuleColors.trade;
     }
   }
 }

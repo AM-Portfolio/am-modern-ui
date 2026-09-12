@@ -1,3 +1,4 @@
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -72,15 +73,12 @@ class MetricCard extends StatelessWidget {
   Widget build(BuildContext context) {
     Color? valueColor;
     if (isPositive != null) {
-      valueColor = isPositive! ? Colors.green : Colors.red;
+      valueColor = isPositive! ? context.statusSuccess : context.statusError;
     }
 
     return Card(
       elevation: 0,
-      color: Theme.of(context)
-          .colorScheme
-          .surfaceContainerHighest
-          .withValues(alpha: 0.3),
+      color: context.colors.cardSurface.withValues(alpha: 0.3),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -90,7 +88,7 @@ class MetricCard extends StatelessWidget {
             Text(
               title,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    color: context.textSecondary,
                   ),
             ),
             const SizedBox(height: 8),

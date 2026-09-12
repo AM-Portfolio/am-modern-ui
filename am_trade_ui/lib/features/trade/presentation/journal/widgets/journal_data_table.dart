@@ -1,3 +1,4 @@
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -102,9 +103,9 @@ class JournalDataTable extends StatelessWidget {
                           direction.isEmpty ? '—' : direction,
                           style: TextStyle(
                             color: direction == 'SHORT'
-                                ? Colors.red
+                                ? context.statusError
                                 : direction == 'LONG'
-                                    ? Colors.green
+                                    ? context.statusSuccess
                                     : null,
                             fontWeight: FontWeight.w600,
                           ),
@@ -128,8 +129,8 @@ class JournalDataTable extends StatelessWidget {
                             color: r == null
                                 ? null
                                 : r >= 0
-                                    ? Colors.green
-                                    : Colors.red,
+                                    ? context.statusSuccess
+                                    : context.statusError,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -142,8 +143,8 @@ class JournalDataTable extends StatelessWidget {
                             color: pnl == null
                                 ? null
                                 : pnl >= 0
-                                    ? Colors.green
-                                    : Colors.red,
+                                    ? context.statusSuccess
+                                    : context.statusError,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -184,13 +185,13 @@ class JournalDataTable extends StatelessWidget {
 
   Widget _statusBadge(BuildContext context, String status) {
     final color = switch (status.toUpperCase()) {
-      'OPEN' => Colors.blue,
-      'COMPLETED' => Colors.green,
-      'PLANNED' => Colors.orange,
-      'ARCHIVED' => Colors.grey,
-      'DRAFT' => Colors.purple,
-      'MISSED' => Colors.deepOrange,
-      _ => Colors.grey,
+      'OPEN' => context.statusInfo,
+      'COMPLETED' => context.statusSuccess,
+      'PLANNED' => context.statusWarning,
+      'ARCHIVED' => context.statusNeutral,
+      'DRAFT' => ModuleColors.trade,
+      'MISSED' => context.statusError,
+      _ => context.statusNeutral,
     };
 
     return Align(

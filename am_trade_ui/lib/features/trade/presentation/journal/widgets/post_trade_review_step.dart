@@ -1,3 +1,4 @@
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
 import '../../../internal/domain/entities/journal_entry.dart';
@@ -121,8 +122,8 @@ class PostTradeReviewStep extends StatelessWidget {
                       : review.actualPnl!.toStringAsFixed(2),
                   style: TextStyle(
                     color: (review.actualPnl ?? 0) >= 0
-                        ? Colors.green
-                        : Colors.red,
+                        ? context.statusSuccess
+                        : context.statusError,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

@@ -359,7 +359,7 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Failed to move entry: $e'),
-                    backgroundColor: Colors.red,
+                    backgroundColor: context.statusError,
                   ),
                 );
               }

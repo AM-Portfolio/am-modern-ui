@@ -48,12 +48,12 @@ class _EnhancedTemplateDialogState extends State<EnhancedTemplateDialog> {
   _TemplateFilter _filter = _TemplateFilter.all;
   final FocusNode _searchFocus = FocusNode();
 
-  static const _sectionColors = [
-    Color(0xFF8B5CF6),
-    Color(0xFF3B82F6),
-    Color(0xFF22C55E),
-    Color(0xFFF59E0B),
-  ];
+  List<Color> get _sectionColors => [
+        ModuleColors.trade,
+        ModuleColors.dashboard,
+        ModuleColors.analytics,
+        ModuleColors.reports,
+      ];
 
   @override
   void initState() {
@@ -122,33 +122,33 @@ class _EnhancedTemplateDialogState extends State<EnhancedTemplateDialog> {
   Color _iconColorFor(String key) {
     switch (key) {
       case 'breakout':
-        return const Color(0xFF3B82F6);
+        return ModuleColors.dashboard;
       case 'pullback':
-        return const Color(0xFF22C55E);
+        return ModuleColors.analytics;
       case 'reversal':
-        return const Color(0xFFF59E0B);
+        return ModuleColors.reports;
       case 'opening':
-        return const Color(0xFF06B6D4);
+        return ModuleColors.market;
       case 'options':
-        return const Color(0xFFA855F7);
+        return ModuleColors.trade;
       case 'scalp':
-        return const Color(0xFFEF4444);
+        return ModuleColors.portfolio;
       case 'review':
-        return const Color(0xFF94A3B8);
+        return context.statusNeutral;
       case 'calendar':
       default:
-        return const Color(0xFFFBBF24);
+        return ModuleColors.reports;
     }
   }
 
   Color _tagColor(String tag, int index) {
-    const palette = [
-      Color(0xFF8B5CF6),
-      Color(0xFF3B82F6),
-      Color(0xFF22C55E),
-      Color(0xFF94A3B8),
-      Color(0xFFF59E0B),
-      Color(0xFFEF4444),
+    final palette = [
+      ModuleColors.trade,
+      ModuleColors.dashboard,
+      ModuleColors.analytics,
+      context.statusNeutral,
+      ModuleColors.reports,
+      ModuleColors.portfolio,
     ];
     return palette[index % palette.length];
   }
@@ -190,7 +190,7 @@ class _EnhancedTemplateDialogState extends State<EnhancedTemplateDialog> {
               border: Border.all(color: colors.border.withValues(alpha: 0.4)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.45),
+                  color: context.shadow(0.45),
                   blurRadius: 32,
                   offset: const Offset(0, 12),
                 ),
@@ -516,7 +516,7 @@ class _EnhancedTemplateDialogState extends State<EnhancedTemplateDialog> {
                           _MetaItem(
                             icon: Icons.star_rounded,
                             label: 'Recommended',
-                            color: const Color(0xFFFBBF24),
+                            color: ModuleColors.reports,
                           ),
                       ],
                     ),
@@ -1020,8 +1020,8 @@ class _PreviewSectionBlock extends StatelessWidget {
           ),
           child: Text(
             '$index',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: colors.actionPrimaryFg,
               fontWeight: FontWeight.w700,
               fontSize: 13,
             ),

@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import '../../../internal/domain/entities/journal_template.dart';
 
@@ -258,8 +259,8 @@ class _TemplateCardState extends State<TemplateCard>
             icon: Icon(
               widget.template.isFavorite ? Icons.favorite : Icons.favorite_border,
               color: widget.template.isFavorite
-                  ? Colors.red
-                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  ? context.statusError
+                  : context.textSecondary,
             ),
             onPressed: widget.onFavoriteToggle,
             iconSize: 20,

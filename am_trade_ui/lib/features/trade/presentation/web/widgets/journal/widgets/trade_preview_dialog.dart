@@ -1,3 +1,4 @@
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -174,7 +175,7 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
     final profitLoss = trade.profitLoss ?? 0.0;
     final profitLossPercentage = trade.profitLossPercentage ?? 0.0;
     final isProfitable = profitLoss >= 0;
-    final statusColor = _getStatusColor(theme, trade.status);
+    final statusColor = _getStatusColor(context, trade.status);
 
     return Material(
       color: Colors.transparent,
@@ -272,12 +273,12 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
                             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             visualDensity: VisualDensity.compact,
                             backgroundColor: trade.tradePositionType == 'LONG'
-                                ? Colors.green.withOpacity(0.15)
-                                : Colors.red.withOpacity(0.15),
+                                ? context.statusSuccess.withOpacity(0.15)
+                                : context.statusError.withOpacity(0.15),
                             side: BorderSide(
                               color: trade.tradePositionType == 'LONG'
-                                  ? Colors.green.withOpacity(0.3)
-                                  : Colors.red.withOpacity(0.3),
+                                  ? context.statusSuccess.withOpacity(0.3)
+                                  : context.statusError.withOpacity(0.3),
                             ),
                           ),
                       ],
@@ -311,7 +312,9 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
-                  color: isProfitable ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                  color: isProfitable
+                      ? context.statusSuccess.withOpacity(0.1)
+                      : context.statusError.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
@@ -321,13 +324,17 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
                       '${isProfitable ? '+' : ''}${profitLoss.toStringAsFixed(2)}',
                       style: theme.textTheme.labelMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: isProfitable ? Colors.green[700] : Colors.red[700],
+                        color: isProfitable
+                            ? context.statusSuccess
+                            : context.statusError,
                       ),
                     ),
                     Text(
                       '${isProfitable ? '+' : ''}${profitLossPercentage.toStringAsFixed(2)}%',
                       style: theme.textTheme.labelSmall?.copyWith(
-                        color: isProfitable ? Colors.green[600] : Colors.red[600],
+                        color: isProfitable
+                            ? context.statusSuccess
+                            : context.statusError,
                       ),
                     ),
                   ],
@@ -359,18 +366,18 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
     ),
   );
 
-  Color _getStatusColor(ThemeData theme, String? status) {
-    if (status == null) return theme.colorScheme.onSurfaceVariant;
+  Color _getStatusColor(BuildContext context, String? status) {
+    if (status == null) return context.textSecondary;
 
     switch (status.toUpperCase()) {
       case 'WIN':
-        return Colors.green[700]!;
+        return context.statusSuccess;
       case 'LOSS':
-        return Colors.red[700]!;
+        return context.statusError;
       case 'BREAK_EVEN':
-        return Colors.orange[700]!;
+        return context.statusWarning;
       default:
-        return theme.colorScheme.primary;
+        return ModuleColors.trade;
     }
   }
 }
