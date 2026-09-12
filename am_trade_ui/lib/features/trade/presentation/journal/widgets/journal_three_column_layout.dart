@@ -11,6 +11,7 @@ import '../../notebook/cubit/notebook_cubit.dart';
 import '../../notebook/cubit/notebook_state.dart';
 import '../../web/widgets/journal/journal_entry_form.dart';
 import '../models/journal_folder_filter.dart';
+import '../pages/trade_journal_workflow_page.dart';
 import 'journal_entry_detail_view.dart';
 import 'journal_entry_list_view.dart';
 import 'journal_navigation_sidebar.dart';
@@ -45,6 +46,8 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
   String _selectedFolder = JournalFolderFilter.dailyJournal;
   String? _selectedEntryId;
   bool _isCreatingNew = false;
+  /// When creating or viewing a trade-discipline entry, show workflow.
+  bool _useTradeWorkflow = false;
   bool _isLeftSidebarCollapsed = false;
   GlobalKey<JournalEntryFormState> _newFormKey =
       GlobalKey<JournalEntryFormState>();

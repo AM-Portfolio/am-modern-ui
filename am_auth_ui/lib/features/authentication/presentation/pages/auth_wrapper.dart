@@ -40,20 +40,16 @@ class _AuthWrapperState extends State<AuthWrapper> {
       }
 
       if (state is! Authenticated) {
-        // BYPASS LOGIN FOR LOCAL DEV
-        // return const LoginPage();
-        return widget.child;
+        return const LoginPage();
       }
 
       final userId = state.user.id;
       if (userId.isEmpty) {
-        // BYPASS LOGIN FOR LOCAL DEV
-        // WidgetsBinding.instance.addPostFrameCallback((_) {
-        //   if (!mounted) return;
-        //   context.read<AuthCubit>().logout();
-        // });
-        // return const LoginPage();
-        return widget.child;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          context.read<AuthCubit>().logout();
+        });
+        return const LoginPage();
       }
 
       return widget.child;
