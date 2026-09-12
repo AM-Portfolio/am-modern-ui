@@ -163,7 +163,7 @@ class _TradePortfolioDiscoveryTemplateState
               style: Theme.of(context)
                   .textTheme
                   .bodyMedium
-                  ?.copyWith(color: context.colors.textSecondary)),
+                  ?.copyWith(color: context.colors.textSecondary),
             ),
             if (widget.onCreatePaperWallet != null && !widget.hasPaperWallet) ...[
               const SizedBox(height: 24),
