@@ -10,6 +10,7 @@ import '../cubit/journal/journal_state.dart';
 import '../journal/pages/journal_insights_page.dart';
 import '../journal/pages/trade_journal_workflow_page.dart';
 import '../journal/pages/simple_journal_note_page.dart';
+import '../journal/pages/weekly_review_page.dart';
 
 class JournalMobilePage extends ConsumerStatefulWidget {
   const JournalMobilePage({
@@ -145,7 +146,43 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
           child: Scaffold(
             appBar: widget.embedded
                 ? null
-                : AppBar(title: const Text('Trade Journal')),
+                : AppBar(
+                    title: const Text('Trade Journal'),
+                    actions: [
+                      IconButton(
+                        tooltip: 'Insights',
+                        icon: const Icon(Icons.insights_outlined),
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => Scaffold(
+                                appBar: AppBar(
+                                  title: const Text('Journal Insights'),
+                                ),
+                                body: JournalInsightsPage(journalCubit: cubit),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      IconButton(
+                        tooltip: 'Weekly review',
+                        icon: const Icon(Icons.event_note_outlined),
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => Scaffold(
+                                appBar: AppBar(
+                                  title: const Text('Weekly Review'),
+                                ),
+                                body: WeeklyReviewPage(journalCubit: cubit),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
             floatingActionButton: AnimatedScale(
               duration: const Duration(milliseconds: 400),
               scale: _showFab ? 1.0 : 0.0,

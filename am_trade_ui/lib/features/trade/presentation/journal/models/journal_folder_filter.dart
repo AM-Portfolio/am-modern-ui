@@ -144,6 +144,9 @@ class JournalFolderFilter {
     return e.relatedTradeIds.isNotEmpty;
   }
 
+  /// Trade-discipline entries open the Pre/Execute/Post workflow.
+  static bool isTradeLikeEntry(JournalEntry e) => _isTradeNote(e);
+
   static bool _isDaily(JournalEntry e) {
     final type = (e.entryType ?? '').toUpperCase();
     return type == 'DAILY' || type == 'GENERAL' || type.isEmpty;

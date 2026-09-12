@@ -124,6 +124,10 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
                         loaded: (e, s, status, folder, tags, q, setup) => s,
                         orElse: () => null,
                       );
+                      final loadError = state.maybeWhen(
+                        error: (message) => message,
+                        orElse: () => null,
+                      );
                       final isInitialLoading = state.maybeWhen(
                             loading: () => true,
                             orElse: () => false,
@@ -139,6 +143,39 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
                         );
                       }
 
+                      if (loadError != null &&
+                          loadedEntries.isEmpty &&
+                          _tab == _JournalTab.entries) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(AppSpacing.lg),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Could not load journal entries',
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: AppSpacing.sm),
+                                Text(
+                                  loadError,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: AppSpacing.md),
+                                AppButton(
+                                  text: 'Retry',
+                                  type: AppButtonType.primary,
+                                  onPressed: () =>
+                                      journalCubit.loadJournalEntries(),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
                       return IndexedStack(
                         index: _tab.index,
                         children: [
@@ -148,7 +185,22 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
                             loadedEntries,
                             summary,
                           ),
-                          const TemplateBrowserPage(embedded: true),
+                          TemplateBrowserPage(
+                            embedded: true,
+                            onTemplateSelected: (_) async {
+                              await journalCubit.loadJournalEntries();
+                              if (!context.mounted) return;
+                              setState(() => _tab = _JournalTab.entries);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text(
+                                    'Playbook applied — continue in Entries',
+                                  ),
+                                  backgroundColor: ModuleColors.trade,
+                                ),
+                              );
+                            },
+                          ),
                           JournalInsightsPage(journalCubit: journalCubit),
                           WeeklyReviewPage(journalCubit: journalCubit),
                         ],

@@ -31,18 +31,54 @@ class ExecuteTradeStep extends StatelessWidget {
 
   Future<void> _showLinkDialog(BuildContext context) async {
     final controller = TextEditingController(text: entry.tradeId ?? '');
+    final related = entry.relatedTradeIds;
     final tradeId = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Link Trade'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Trade ID',
-            hintText: 'Paste the tradeId from Trade module',
-            border: OutlineInputBorder(),
+        content: SizedBox(
+          width: 420,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Pick a related trade or paste a trade ID from the Trade module / Calendar.',
+                style: Theme.of(ctx).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 12),
+              if (related.isNotEmpty) ...[
+                Text('Related trades', style: Theme.of(ctx).textTheme.labelLarge),
+                const SizedBox(height: 8),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 160),
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: related
+                        .map(
+                          (id) => ListTile(
+                            dense: true,
+                            title: Text(id),
+                            trailing: const Icon(Icons.link),
+                            onTap: () => Navigator.pop(ctx, id),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
+                const Divider(),
+              ],
+              TextField(
+                controller: controller,
+                decoration: const InputDecoration(
+                  labelText: 'Trade ID',
+                  hintText: 'Paste tradeId',
+                  border: OutlineInputBorder(),
+                ),
+                autofocus: related.isEmpty,
+              ),
+            ],
           ),
-          autofocus: true,
         ),
         actions: [
           TextButton(

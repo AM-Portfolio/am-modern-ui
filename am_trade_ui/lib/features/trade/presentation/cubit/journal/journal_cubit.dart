@@ -355,6 +355,35 @@ class JournalCubit extends Cubit<JournalState> {
   Future<JournalEntry> removeAttachment(String entryId, String fileUrl) =>
       repository.removeAttachment(entryId, fileUrl);
 
+  Future<JournalEntry> updatePrePlan(String entryId, PreTradePlan plan) async {
+    final saved = await repository.updatePrePlan(entryId, plan);
+    await loadJournalEntries();
+    return saved;
+  }
+
+  Future<JournalEntry> updateExecution(
+    String entryId,
+    TradeExecution execution,
+  ) async {
+    final saved = await repository.updateExecution(entryId, execution);
+    await loadJournalEntries();
+    return saved;
+  }
+
+  Future<JournalEntry> updatePostReview(
+    String entryId,
+    PostTradeReview review, {
+    bool markCompleted = false,
+  }) async {
+    final saved = await repository.updatePostReview(
+      entryId,
+      review,
+      markCompleted: markCompleted,
+    );
+    await loadJournalEntries();
+    return saved;
+  }
+
   Future<JournalEntry> addJournalEntry({
     required String title,
     required String content,

@@ -738,6 +738,7 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
 
       // Attachment Section - clickable in view mode for viewing images
       JournalAttachmentSection(
+        userId: widget.entry?.userId ?? '',
         imageUrls: _imageUrls,
         onAttachmentsChanged: (urls) => setState(() => _imageUrls = urls),
         featureName: 'journal',

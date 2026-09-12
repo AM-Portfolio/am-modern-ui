@@ -195,11 +195,45 @@ class _JournalInsightsPageState extends State<JournalInsightsPage> {
                 ),
               ),
             ),
-          if (_report?.summary != null) ...[
-            const SizedBox(height: 24),
+          if (_report != null) ...[
+            const SizedBox(height: 32),
             Text(
-              'Report card window: ${_report!.from ?? '—'} → ${_report!.to ?? '—'}',
+              'Weekly report card',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Window: ${_report!.from ?? '—'} → ${_report!.to ?? '—'}',
               style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 16,
+              runSpacing: 16,
+              children: [
+                _statCard(
+                  context,
+                  'Report adherence',
+                  _report!.adherence?.avgPlanAdherenceScore == null
+                      ? '—'
+                      : '${_report!.adherence!.avgPlanAdherenceScore!.toStringAsFixed(0)}%',
+                ),
+                _statCard(
+                  context,
+                  'Top mistake',
+                  (_report!.mistakes?.isNotEmpty ?? false)
+                      ? (_report!.mistakes!.first.mistakeCategory ?? '—')
+                      : '—',
+                ),
+                _statCard(
+                  context,
+                  'Lessons logged',
+                  '${_report!.topLessons?.length ?? 0}',
+                ),
+              ],
             ),
           ],
         ],

@@ -11,6 +11,7 @@ class JournalEntryListView extends StatelessWidget {
     required this.selectedEntryId,
     required this.onEntrySelected,
     required this.onLogDayPressed,
+    this.onTradeJournalPressed,
     this.listTitle = 'Log day',
     this.emptyMessage = 'No journal entries yet.\nTap Log Day to start.',
   });
@@ -19,6 +20,7 @@ class JournalEntryListView extends StatelessWidget {
   final String? selectedEntryId;
   final ValueChanged<JournalEntry> onEntrySelected;
   final VoidCallback onLogDayPressed;
+  final VoidCallback? onTradeJournalPressed;
   final String listTitle;
   final String emptyMessage;
 
@@ -63,13 +65,29 @@ class JournalEntryListView extends StatelessWidget {
           Divider(height: 1, color: colors.border.withValues(alpha: 0.35)),
           Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
-            child: AppButton(
-              text: 'Log Day',
-              icon: Icons.add_rounded,
-              backgroundColor: ModuleColors.trade,
-              width: double.infinity,
-              height: 44,
-              onPressed: onLogDayPressed,
+            child: Column(
+              children: [
+                AppButton(
+                  text: 'Log Day',
+                  icon: Icons.add_rounded,
+                  backgroundColor: ModuleColors.trade,
+                  width: double.infinity,
+                  height: 44,
+                  onPressed: onLogDayPressed,
+                ),
+                if (onTradeJournalPressed != null) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  AppButton(
+                    text: 'Trade journal',
+                    icon: Icons.candlestick_chart_outlined,
+                    type: AppButtonType.secondary,
+                    isOutlined: true,
+                    width: double.infinity,
+                    height: 40,
+                    onPressed: onTradeJournalPressed,
+                  ),
+                ],
+              ],
             ),
           ),
           Padding(

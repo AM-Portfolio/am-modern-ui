@@ -1,3 +1,4 @@
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -15,11 +16,18 @@ class TradeJournalWorkflowPage extends ConsumerStatefulWidget {
     required this.journalCubit,
     this.initialEntry,
     this.portfolioId,
+    this.embedded = false,
+    this.onEmbeddedDone,
+    this.onEmbeddedCancel,
   });
 
   final JournalCubit journalCubit;
   final JournalEntry? initialEntry;
   final String? portfolioId;
+  /// When true, render without Scaffold/AppBar for classic Entries pane.
+  final bool embedded;
+  final ValueChanged<String>? onEmbeddedDone;
+  final VoidCallback? onEmbeddedCancel;
 
   @override
   ConsumerState<TradeJournalWorkflowPage> createState() =>
@@ -161,8 +169,15 @@ class _TradeJournalWorkflowPageState
         _saving = false;
       });
       if (complete) {
-        Navigator.of(context).pop();
+        if (widget.embedded) {
+          widget.onEmbeddedDone?.call(saved.id);
+        } else {
+          Navigator.of(context).pop();
+        }
       } else {
+        if (widget.embedded) {
+          widget.onEmbeddedDone?.call(saved.id);
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Draft saved')),
         );
@@ -192,6 +207,136 @@ class _TradeJournalWorkflowPageState
   @override
   Widget build(BuildContext context) {
     final wide = MediaQuery.sizeOf(context).width >= 1100;
+    final status = (_entry.journalStatus ?? 'DRAFT').toUpperCase();
+
+    final body = Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          child: Row(
+            children: [
+              Chip(
+                label: Text(status),
+                backgroundColor: ModuleColors.trade.withValues(alpha: 0.2),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'PLANNED → OPEN → COMPLETED',
+                style: Theme.of(context).textTheme.labelSmall,
+              ),
+            ],
+          ),
+        ),
+        JournalTradeHeader(entry: _entry),
+        Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 3,
+                child: Stepper(
+                  type: StepperType.horizontal,
+                  currentStep: _currentStep,
+                  onStepTapped: (s) => setState(() => _currentStep = s),
+                  controlsBuilder: (context, details) => const SizedBox.shrink(),
+                  steps: [
+                    Step(
+                      title: const Text('Pre-Trade'),
+                      isActive: _currentStep >= 0,
+                      state: _currentStep > 0
+                          ? StepState.complete
+                          : StepState.editing,
+                      content: PreTradePlanStep(
+                        entry: _entry,
+                        onUpdate: _updateEntry,
+                      ),
+                    ),
+                    Step(
+                      title: const Text('Execute'),
+                      isActive: _currentStep >= 1,
+                      state: _currentStep > 1
+                          ? StepState.complete
+                          : (_currentStep == 1
+                              ? StepState.editing
+                              : StepState.indexed),
+                      content: ExecuteTradeStep(
+                        entry: _entry,
+                        onUpdate: _updateEntry,
+                        portfolioId: widget.portfolioId,
+                        onLinkTrade: _linkTrade,
+                      ),
+                    ),
+                    Step(
+                      title: const Text('Post-Trade'),
+                      isActive: _currentStep >= 2,
+                      state: _currentStep == 2
+                          ? StepState.editing
+                          : StepState.indexed,
+                      content: PostTradeReviewStep(
+                        entry: _entry,
+                        onUpdate: _updateEntry,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (wide)
+                SizedBox(
+                  width: 280,
+                  child: _HelpSidebar(step: _currentStep),
+                ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              TextButton(
+                onPressed: () {
+                  if (widget.embedded) {
+                    widget.onEmbeddedCancel?.call();
+                  } else {
+                    Navigator.pop(context);
+                  }
+                },
+                child: const Text('Cancel'),
+              ),
+              if (_currentStep > 0)
+                TextButton(
+                  onPressed: () => setState(() => _currentStep--),
+                  child: const Text('Back'),
+                ),
+              const Spacer(),
+              OutlinedButton(
+                onPressed: _saving ? null : () => _save(complete: false),
+                child: const Text('Save Draft'),
+              ),
+              const SizedBox(width: 8),
+              FilledButton(
+                onPressed: _saving
+                    ? null
+                    : () {
+                        if (_currentStep < 2) {
+                          setState(() => _currentStep++);
+                        } else {
+                          _save(complete: true);
+                        }
+                      },
+                child: Text(_currentStep == 2 ? 'Save Journal' : 'Next'),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+
+    if (widget.embedded) {
+      return ColoredBox(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: body,
+      );
+    }
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -222,105 +367,7 @@ class _TradeJournalWorkflowPageState
           const SizedBox(width: 16),
         ],
       ),
-      body: Column(
-        children: [
-          JournalTradeHeader(entry: _entry),
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: Stepper(
-                    type: StepperType.horizontal,
-                    currentStep: _currentStep,
-                    onStepTapped: (s) => setState(() => _currentStep = s),
-                    controlsBuilder: (context, details) => const SizedBox.shrink(),
-                    steps: [
-                      Step(
-                        title: const Text('Pre-Trade'),
-                        isActive: _currentStep >= 0,
-                        state: _currentStep > 0
-                            ? StepState.complete
-                            : StepState.editing,
-                        content: PreTradePlanStep(
-                          entry: _entry,
-                          onUpdate: _updateEntry,
-                        ),
-                      ),
-                      Step(
-                        title: const Text('Execute'),
-                        isActive: _currentStep >= 1,
-                        state: _currentStep > 1
-                            ? StepState.complete
-                            : (_currentStep == 1
-                                ? StepState.editing
-                                : StepState.indexed),
-                        content: ExecuteTradeStep(
-                          entry: _entry,
-                          onUpdate: _updateEntry,
-                          portfolioId: widget.portfolioId,
-                          onLinkTrade: _linkTrade,
-                        ),
-                      ),
-                      Step(
-                        title: const Text('Post-Trade'),
-                        isActive: _currentStep >= 2,
-                        state: _currentStep == 2
-                            ? StepState.editing
-                            : StepState.indexed,
-                        content: PostTradeReviewStep(
-                          entry: _entry,
-                          onUpdate: _updateEntry,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (wide)
-                  SizedBox(
-                    width: 280,
-                    child: _HelpSidebar(step: _currentStep),
-                  ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
-                ),
-                if (_currentStep > 0)
-                  TextButton(
-                    onPressed: () => setState(() => _currentStep--),
-                    child: const Text('Back'),
-                  ),
-                const Spacer(),
-                OutlinedButton(
-                  onPressed: _saving ? null : () => _save(complete: false),
-                  child: const Text('Save Draft'),
-                ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  onPressed: _saving
-                      ? null
-                      : () {
-                          if (_currentStep < 2) {
-                            setState(() => _currentStep++);
-                          } else {
-                            _save(complete: true);
-                          }
-                        },
-                  child: Text(_currentStep == 2 ? 'Save Journal' : 'Next'),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+      body: body,
     );
   }
 }

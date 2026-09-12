@@ -94,16 +94,27 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
     setState(() {
       _selectedFolder = folder;
       _isCreatingNew = false;
+      _useTradeWorkflow = false;
       _selectedEntryId = filtered.isNotEmpty ? filtered.first.id : null;
     });
+    if (_selectedEntryId != null) {
+      final entry = filtered.first;
+      _useTradeWorkflow = _isTradeLike(entry);
+    }
   }
 
-  void _startNewEntry() {
+  void _startNewEntry({bool tradeWorkflow = false}) {
     setState(() {
       _selectedEntryId = null;
       _isCreatingNew = true;
+      _useTradeWorkflow = tradeWorkflow;
       _newFormKey = GlobalKey<JournalEntryFormState>();
     });
+  }
+
+  bool _isTradeLike(JournalEntry? entry) {
+    if (entry == null) return false;
+    return JournalFolderFilter.isTradeLikeEntry(entry);
   }
 
   Future<void> _browseTemplates(
@@ -167,7 +178,7 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
                   widget.journalCubit.setFilters(tagIds: next);
                 },
                 onNewTradeTap: () {
-                  _startNewEntry();
+                  _startNewEntry(tradeWorkflow: true);
                   widget.onNewTradeTap?.call();
                 },
                 onEntryDropped: widget.onEntryDropped,
@@ -186,110 +197,148 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
             onEntrySelected: (entry) => setState(() {
               _selectedEntryId = entry.id;
               _isCreatingNew = false;
+              _useTradeWorkflow = _isTradeLike(entry);
             }),
-            onLogDayPressed: _startNewEntry,
+            onLogDayPressed: () => _startNewEntry(tradeWorkflow: false),
+            onTradeJournalPressed: () => _startNewEntry(tradeWorkflow: true),
           ),
           VerticalDivider(
             width: 1,
             color: colors.border.withValues(alpha: 0.35),
           ),
           Expanded(
-            child: _isCreatingNew
-                ? ColoredBox(
-                    color: colors.cardSurface.withValues(alpha: 0.35),
-                    child: Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(
-                            AppSpacing.lg,
-                            AppSpacing.lg,
-                            AppSpacing.lg,
-                            AppSpacing.sm + AppSpacing.xs,
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.edit_document,
-                                size: 22,
-                                color: ModuleColors.trade,
-                              ),
-                              const SizedBox(
-                                width: AppSpacing.sm + AppSpacing.xs,
-                              ),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'New Journal Entry',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleLarge
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                    ),
-                                    Text(
-                                      'Folder: $_selectedFolder',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            color: colors.textSecondary,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              AppButton(
-                                text: 'Use template',
-                                icon: Icons.auto_awesome_outlined,
-                                backgroundColor: ModuleColors.trade,
-                                onPressed: () =>
-                                    _browseTemplates(_newFormKey),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Divider(
-                          height: 1,
-                          color: colors.border.withValues(alpha: 0.35),
-                        ),
-                        Expanded(
-                          child: JournalEntryForm(
-                            key: _newFormKey,
-                            cubit: widget.journalCubit,
-                            portfolioId: widget.portfolioId,
-                            defaultEntryType:
-                                JournalFolderFilter.createEntryType(
-                              _selectedFolder,
-                            ),
-                            defaultFolderId: JournalFolderFilter.createFolderId(
-                              _selectedFolder,
-                              notebookFolders: _notebookFolders,
-                            ),
-                            onCreated: (entryId) {
-                              setState(() {
-                                _isCreatingNew = false;
-                                _selectedEntryId = entryId;
-                              });
-                            },
-                            onBrowseTemplates: () =>
-                                _browseTemplates(_newFormKey),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : JournalEntryDetailView(
-                    key: ValueKey(selectedEntry?.id ?? 'none'),
-                    entry: selectedEntry,
-                    cubit: widget.journalCubit,
-                    portfolioId: widget.portfolioId,
-                  ),
+            child: _buildRightPane(colors, selectedEntry),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildRightPane(dynamic colors, JournalEntry? selectedEntry) {
+    if (_isCreatingNew && _useTradeWorkflow) {
+      return TradeJournalWorkflowPage(
+        key: const ValueKey('new-trade-workflow'),
+        journalCubit: widget.journalCubit,
+        portfolioId: widget.portfolioId,
+        embedded: true,
+        onEmbeddedDone: (entryId) {
+          setState(() {
+            _isCreatingNew = false;
+            _useTradeWorkflow = true;
+            _selectedEntryId = entryId;
+          });
+        },
+        onEmbeddedCancel: () {
+          setState(() {
+            _isCreatingNew = false;
+            _useTradeWorkflow = false;
+          });
+        },
+      );
+    }
+
+    if (!_isCreatingNew &&
+        selectedEntry != null &&
+        (_useTradeWorkflow || _isTradeLike(selectedEntry))) {
+      return TradeJournalWorkflowPage(
+        key: ValueKey('wf-${selectedEntry.id}'),
+        journalCubit: widget.journalCubit,
+        initialEntry: selectedEntry,
+        portfolioId: widget.portfolioId,
+        embedded: true,
+        onEmbeddedDone: (entryId) {
+          setState(() {
+            _selectedEntryId = entryId;
+            _useTradeWorkflow = true;
+          });
+        },
+        onEmbeddedCancel: () {
+          setState(() => _useTradeWorkflow = false);
+        },
+      );
+    }
+
+    if (_isCreatingNew) {
+      return ColoredBox(
+        color: colors.cardSurface.withValues(alpha: 0.35),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.sm + AppSpacing.xs,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.edit_document,
+                    size: 22,
+                    color: ModuleColors.trade,
+                  ),
+                  const SizedBox(width: AppSpacing.sm + AppSpacing.xs),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'New Journal Entry',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                        Text(
+                          'Folder: $_selectedFolder',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: colors.textSecondary,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  AppButton(
+                    text: 'Use template',
+                    icon: Icons.auto_awesome_outlined,
+                    backgroundColor: ModuleColors.trade,
+                    onPressed: () => _browseTemplates(_newFormKey),
+                  ),
+                ],
+              ),
+            ),
+            Divider(height: 1, color: colors.border.withValues(alpha: 0.35)),
+            Expanded(
+              child: JournalEntryForm(
+                key: _newFormKey,
+                cubit: widget.journalCubit,
+                portfolioId: widget.portfolioId,
+                defaultEntryType: JournalFolderFilter.createEntryType(
+                  _selectedFolder,
+                ),
+                defaultFolderId: JournalFolderFilter.createFolderId(
+                  _selectedFolder,
+                  notebookFolders: _notebookFolders,
+                ),
+                onCreated: (entryId) {
+                  setState(() {
+                    _isCreatingNew = false;
+                    _selectedEntryId = entryId;
+                    _useTradeWorkflow = false;
+                  });
+                },
+                onBrowseTemplates: () => _browseTemplates(_newFormKey),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return JournalEntryDetailView(
+      key: ValueKey(selectedEntry?.id ?? 'none'),
+      entry: selectedEntry,
+      cubit: widget.journalCubit,
+      portfolioId: widget.portfolioId,
     );
   }
 }
