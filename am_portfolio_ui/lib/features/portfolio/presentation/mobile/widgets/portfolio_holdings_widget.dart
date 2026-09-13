@@ -48,6 +48,7 @@ class _PortfolioHoldingsWidgetState
 
               // Sort holdings based on selected criteria
               final sortedHoldings = _sortHoldings(portfolioHoldings.holdings);
+              final priceLabel = portfolioHoldings.priceLabel;
 
               return RefreshIndicator(
                 onRefresh: () async {
@@ -96,6 +97,7 @@ class _PortfolioHoldingsWidgetState
                         changeValue,
                         changePercent,
                         isPositive,
+                        priceLabel,
                       ),
                     );
                   },
@@ -205,6 +207,7 @@ class _PortfolioHoldingsWidgetState
     double changeValue,
     double changePercent,
     bool isPositive,
+    String priceLabel,
   ) => Row(
     mainAxisAlignment: MainAxisAlignment.spaceBetween,
     children: [
@@ -297,7 +300,7 @@ class _PortfolioHoldingsWidgetState
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Live ',
+                '$priceLabel ',
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
               ),
               Text(

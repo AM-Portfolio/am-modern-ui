@@ -175,9 +175,41 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
       }
       if (moversEmpty) {
         ProductTelemetry.instance.emptyState('portfolio_movers_empty');
-      }
-      if (analytics.analytics.heatmap == null) {
-        ProductTelemetry.instance.emptyState('heatmap_empty');
+        try {
+          final retryMovers = await _analyticsService.getPortfolioMovers(
+            portfolioId,
+          );
+          if (retryMovers != null &&
+              (retryMovers.topGainers.isNotEmpty ||
+                  retryMovers.topLosers.isNotEmpty) &&
+              !isClosed &&
+              gen == _loadGeneration) {
+            emit(
+              PortfolioAnalyticsLoaded(
+                sectorAllocation:
+                    analytics.analytics.sectorAllocation ?? fastSectorAllocation,
+                marketCapAllocation: analytics.analytics.marketCapAllocation ??
+                    fastMarketCapAllocation,
+                heatmap: analytics.analytics.heatmap,
+                movers: retryMovers,
+              ),
+            );
+            CommonLogger.info(
+              'Portfolio movers recovered via dedicated movers endpoint',
+              tag: 'PortfolioAnalyticsCubit',
+            );
+            CommonLogger.methodExit(
+              'loadAnalytics',
+              tag: 'PortfolioAnalyticsCubit',
+            );
+            return;
+          }
+        } catch (e) {
+          CommonLogger.warn(
+            'Movers fallback fetch failed: $e',
+            tag: 'PortfolioAnalyticsCubit',
+          );
+        }
       }
       
       _lastLoadedTimeFrame = timeFrame;

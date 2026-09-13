@@ -4,22 +4,36 @@ import 'broker_holding_dto.dart';
 /// This model directly maps to the API response structure
 class PortfolioHoldingsDto {
   /// Constructor
-  const PortfolioHoldingsDto({required this.equityHoldings});
+  const PortfolioHoldingsDto({
+    required this.equityHoldings,
+    this.asOf,
+    this.priceFreshness,
+    this.priceSource,
+  });
 
   /// Create from JSON response
   factory PortfolioHoldingsDto.fromJson(Map<String, dynamic> json) =>
       PortfolioHoldingsDto(
         equityHoldings: (json['equityHoldings'] as List? ?? [])
-            .map((e) => EquityHoldingDto.fromJson(e))
+            .map((e) => EquityHoldingDto.fromJson(e as Map<String, dynamic>))
             .toList(),
+        asOf: json['asOf'] as String?,
+        priceFreshness: json['priceFreshness'] as String?,
+        priceSource: json['priceSource'] as String?,
       );
 
   /// List of equity holdings from API
   final List<EquityHoldingDto> equityHoldings;
+  final String? asOf;
+  final String? priceFreshness;
+  final String? priceSource;
 
   /// Convert to JSON for API requests
   Map<String, dynamic> toJson() => {
     'equityHoldings': equityHoldings.map((e) => e.toJson()).toList(),
+    if (asOf != null) 'asOf': asOf,
+    if (priceFreshness != null) 'priceFreshness': priceFreshness,
+    if (priceSource != null) 'priceSource': priceSource,
   };
 }
 

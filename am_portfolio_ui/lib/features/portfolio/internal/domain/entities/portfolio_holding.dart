@@ -66,6 +66,9 @@ abstract class PortfolioHoldings with _$PortfolioHoldings {
   const factory PortfolioHoldings({
     required List<PortfolioHolding> holdings,
     required DateTime lastUpdated,
+    DateTime? asOf,
+    @Default('AS_OF') String priceFreshness,
+    String? priceSource,
   }) = _PortfolioHoldings;
   const PortfolioHoldings._();
 
@@ -75,7 +78,18 @@ abstract class PortfolioHoldings with _$PortfolioHoldings {
   factory PortfolioHoldings.empty() => PortfolioHoldings(
     holdings: const [],
     lastUpdated: DateTime.now(),
+    priceFreshness: 'AS_OF',
   );
+
+  bool get isLivePrices => priceFreshness == 'LIVE';
+
+  String get priceLabel {
+    if (isLivePrices) return 'Live';
+    final stamp = asOf ?? lastUpdated;
+    final hh = stamp.hour.toString().padLeft(2, '0');
+    final mm = stamp.minute.toString().padLeft(2, '0');
+    return 'As of $hh:$mm';
+  }
 
   /// Check if portfolio is empty
   bool get isEmpty => holdings.isEmpty;
