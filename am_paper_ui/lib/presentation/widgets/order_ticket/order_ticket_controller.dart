@@ -1,11 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../data/paper_market_client.dart';
 import '../../../data/quote_models.dart';
 import '../../paper_oms_cubit.dart';
 
 class OrderTicketController extends ChangeNotifier {
+  static const _favoritePrefKey = 'paper_order_type_favorite';
+
   final _client = PaperMarketClient();
   final qty = TextEditingController(text: '1');
   final limit = TextEditingController();
@@ -15,7 +20,7 @@ class OrderTicketController extends ChangeNotifier {
   final trigger = TextEditingController();
 
   String side = 'BUY';
-  String orderType = 'SUPER';
+  String orderType = 'MARKET';
   String entryType = 'LIMIT';
   String productMode = 'Investing';
   String exchange = 'NSE';
@@ -34,6 +39,15 @@ class OrderTicketController extends ChangeNotifier {
 
   String _lastSyncedSymbol = '';
   bool _disposed = false;
+  bool _favoriteLoaded = false;
+
+  String get ctaLabel {
+    final isBuy = side == 'BUY';
+    if (orderType == 'MARKET') {
+      return isBuy ? 'Buy at market' : 'Sell at market';
+    }
+    return isBuy ? 'Place buy' : 'Place sell';
+  }
 
   @override
   void dispose() {
@@ -46,14 +60,39 @@ class OrderTicketController extends ChangeNotifier {
     this.side = side.toUpperCase() == 'SELL' ? 'SELL' : 'BUY';
     displayName = symbol;
     bookProfitsOpen = !compact;
+    orderType = 'MARKET';
     if (compact) {
-      orderType = 'MARKET';
       useLimit = false;
       entryType = 'MARKET';
     }
     if (symbol.trim().isNotEmpty) {
       loadQuote(symbol);
     }
+  }
+
+  Future<void> loadFavorite(BuildContext context) async {
+    if (_favoriteLoaded || _disposed) return;
+    _favoriteLoaded = true;
+    var fav = 'MARKET';
+    try {
+      final local = await SharedPreferences.getInstance();
+      fav = (local.getString(_favoritePrefKey) ?? fav).toUpperCase();
+    } catch (_) {}
+    if (!context.mounted || _disposed) return;
+    try {
+      final remote = context.read<PaperOmsCubit>().state.orderTypeFavorite.trim().toUpperCase();
+      if (remote.isNotEmpty) fav = remote;
+    } catch (_) {}
+    if (_disposed) return;
+    orderType = fav;
+    if (orderType == 'SUPER') {
+      useLimit = true;
+      entryType = 'LIMIT';
+    } else if (orderType == 'MARKET') {
+      useLimit = false;
+      entryType = 'MARKET';
+    }
+    notifyListeners();
   }
 
   void syncFromWidget({required String symbol, required String side}) {
@@ -65,7 +104,7 @@ class OrderTicketController extends ChangeNotifier {
     final next = side.toUpperCase() == 'SELL' ? 'SELL' : 'BUY';
     if (next != this.side) {
       this.side = next;
-      notifyListeners(); // prop sync — do not call onSideChanged
+      notifyListeners();
     }
   }
 
@@ -121,7 +160,7 @@ class OrderTicketController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setOrderType(String type) {
+  void setOrderType(String type, {BuildContext? context}) {
     orderType = type;
     if (type == 'SUPER') {
       useLimit = true;
@@ -129,8 +168,23 @@ class OrderTicketController extends ChangeNotifier {
       seedPricesFromLtp(force: false);
     } else if (type == 'LIMIT') {
       seedPricesFromLtp(force: false);
+    } else if (type == 'MARKET') {
+      useLimit = false;
+      entryType = 'MARKET';
     }
     notifyListeners();
+    unawaited(_persistFavorite(type, context: context));
+  }
+
+  Future<void> _persistFavorite(String type, {BuildContext? context}) async {
+    try {
+      final local = await SharedPreferences.getInstance();
+      await local.setString(_favoritePrefKey, type);
+    } catch (_) {}
+    if (context == null || !context.mounted) return;
+    try {
+      await context.read<PaperOmsCubit>().saveOrderTypeFavorite(type);
+    } catch (_) {}
   }
 
   void bump(TextEditingController c, double delta) {

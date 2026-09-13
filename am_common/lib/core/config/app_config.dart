@@ -186,6 +186,7 @@ class OmsApiConfig {
     required this.baseUrl,
     this.walletsResource = '/v1/wallets',
     this.ordersResource = '/v1/orders',
+    this.prefsResource = '/v1/prefs',
     this.connectTimeout = 30,
     this.receiveTimeout = 60,
     this.sendTimeout = 60,
@@ -194,6 +195,7 @@ class OmsApiConfig {
   final String baseUrl;
   final String walletsResource;
   final String ordersResource;
+  final String prefsResource;
   final int connectTimeout;
   final int receiveTimeout;
   final int sendTimeout;
