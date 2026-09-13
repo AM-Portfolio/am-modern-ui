@@ -200,7 +200,6 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
               _useTradeWorkflow = _isTradeLike(entry);
             }),
             onLogDayPressed: () => _startNewEntry(tradeWorkflow: false),
-            onTradeJournalPressed: () => _startNewEntry(tradeWorkflow: true),
           ),
           VerticalDivider(
             width: 1,
