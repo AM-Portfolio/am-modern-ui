@@ -22,7 +22,7 @@ class CrossModuleSectionSequence {
     'holdings',
     'calendar',
     'journal',
-    'metrics',
+    'analysis',
     'templates',
   ];
 

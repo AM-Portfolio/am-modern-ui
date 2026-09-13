@@ -24,9 +24,20 @@ import 'weekly_review_page.dart';
 
 /// Journal hub: Entries | Playbooks | Insights | Weekly Review.
 class JournalWebPage extends ConsumerStatefulWidget {
-  const JournalWebPage({this.portfolioId, super.key});
+  const JournalWebPage({
+    this.portfolioId,
+    this.initialTab = 'entries',
+    this.onOpenAnalysis,
+    this.onInitialTabApplied,
+    super.key,
+  });
 
   final String? portfolioId;
+
+  /// `entries` | `playbooks` | `insights` | `weekly`
+  final String initialTab;
+  final VoidCallback? onOpenAnalysis;
+  final VoidCallback? onInitialTabApplied;
 
   @override
   ConsumerState<JournalWebPage> createState() => _JournalWebPageState();
@@ -34,15 +45,24 @@ class JournalWebPage extends ConsumerStatefulWidget {
 
 enum _JournalTab { entries, playbooks, insights, weekly }
 
+_JournalTab _journalTabFromSlug(String slug) => switch (slug.toLowerCase()) {
+      'playbooks' => _JournalTab.playbooks,
+      'insights' => _JournalTab.insights,
+      'weekly' => _JournalTab.weekly,
+      _ => _JournalTab.entries,
+    };
+
 class _JournalWebPageState extends ConsumerState<JournalWebPage> {
   List<JournalEntry> _entries = const [];
-  _JournalTab _tab = _JournalTab.entries;
+  late _JournalTab _tab;
 
   @override
   void initState() {
     super.initState();
+    _tab = _journalTabFromSlug(widget.initialTab);
     AppLogger.info('Initializing Journal Web Page', tag: 'JournalWebPage');
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      widget.onInitialTabApplied?.call();
       final journalCubit = await ref.read(journalCubitProvider.future);
       final notebookCubit = await ref.read(notebookCubitProvider.future);
       if (!mounted) return;
@@ -289,7 +309,10 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
   ) {
     return Column(
       children: [
-        JournalMetricsHeader(summary: summary),
+        JournalMetricsHeader(
+          summary: summary,
+          onOpenAnalysis: widget.onOpenAnalysis,
+        ),
         Expanded(
           child: JournalThreeColumnLayout(
             entries: loadedEntries,

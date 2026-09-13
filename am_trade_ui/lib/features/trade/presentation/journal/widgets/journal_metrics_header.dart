@@ -5,9 +5,14 @@ import 'package:intl/intl.dart';
 import '../../../internal/data/dtos/journal_entry_dto.dart';
 
 class JournalMetricsHeader extends StatelessWidget {
-  const JournalMetricsHeader({super.key, this.summary});
+  const JournalMetricsHeader({
+    super.key,
+    this.summary,
+    this.onOpenAnalysis,
+  });
 
   final JournalSummaryDto? summary;
+  final VoidCallback? onOpenAnalysis;
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +56,16 @@ class JournalMetricsHeader extends StatelessWidget {
               isPositive: pnl == null ? null : pnl >= 0,
             ),
           ),
+          if (onOpenAnalysis != null) ...[
+            const SizedBox(width: AppSpacing.md),
+            AppButton(
+              text: 'Open Analysis',
+              type: AppButtonType.text,
+              onPressed: onOpenAnalysis,
+              height: 40,
+              textColor: ModuleColors.trade,
+            ),
+          ],
         ],
       ),
     );
