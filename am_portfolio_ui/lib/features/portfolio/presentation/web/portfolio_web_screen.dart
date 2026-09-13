@@ -30,6 +30,7 @@ class PortfolioWebScreen extends ConsumerStatefulWidget {
     this.onToggleSidebar,
     this.onBack,
     this.addTradeBuilder,
+    this.holdingsPageBuilder,
     this.onOpenDocIntel,
   });
   final String? selectedPortfolioId;
@@ -42,6 +43,8 @@ class PortfolioWebScreen extends ConsumerStatefulWidget {
   final VoidCallback? onToggleSidebar;
   final VoidCallback? onBack;
   final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
+  /// Optional web Holdings tab body (e.g. Trade holdings dashboard from am_app).
+  final Widget Function(BuildContext context, String portfolioId)? holdingsPageBuilder;
   final VoidCallback? onOpenDocIntel;
 
   @override
@@ -159,9 +162,10 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         subtitle: 'Assets',
         icon: Icons.account_balance_wallet_outlined,
         accentColor: ModuleColors.portfolio,
-        page: PortfolioHoldingsWebPage(
-          portfolioId: portfolioId,
-        ),
+        page: widget.holdingsPageBuilder?.call(context, portfolioId) ??
+            PortfolioHoldingsWebPage(
+              portfolioId: portfolioId,
+            ),
       ),
       NavigationItem(
         title: 'Heatmap',

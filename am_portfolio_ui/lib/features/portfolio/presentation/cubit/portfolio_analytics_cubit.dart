@@ -16,6 +16,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
   Future<void>? _loadingFuture;
   String? _currentPortfolioId;
   TimeFrame? _lastLoadedTimeFrame;
+  int _loadGeneration = 0;
 
   /// Load all analytics data for a portfolio
   Future<void> loadAnalytics(String portfolioId, {TimeFrame? timeFrame}) async {
@@ -38,7 +39,8 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
     }
 
     _currentPortfolioId = portfolioId;
-    _loadingFuture = _doLoadAnalytics(portfolioId, timeFrame: timeFrame);
+    final gen = ++_loadGeneration;
+    _loadingFuture = _doLoadAnalytics(portfolioId, timeFrame: timeFrame, gen: gen);
 
     try {
       await _loadingFuture;
@@ -47,7 +49,11 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
     }
   }
 
-  Future<void> _doLoadAnalytics(String portfolioId, {TimeFrame? timeFrame}) async {
+  Future<void> _doLoadAnalytics(
+    String portfolioId, {
+    TimeFrame? timeFrame,
+    required int gen,
+  }) async {
     CommonLogger.debug(
       '🔍 PortfolioAnalyticsCubit: loadAnalytics called with portfolioId: $portfolioId, timeFrame: ${timeFrame?.name}',
       tag: 'PortfolioAnalyticsCubit',
@@ -87,7 +93,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
       fastSectorAllocation = allocations.sectorAllocation;
       fastMarketCapAllocation = allocations.marketCapAllocation;
       
-      if (!isClosed) {
+      if (!isClosed && gen == _loadGeneration) {
         CommonLogger.debug(
           '🔍 Fast allocations loaded, emitting partial state',
           tag: 'PortfolioAnalyticsCubit',
@@ -147,7 +153,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
         tag: 'PortfolioAnalyticsCubit',
       );
 
-      if (isClosed) return;
+      if (isClosed || gen != _loadGeneration) return;
 
       sw.stop();
       ProductTelemetry.instance.widgetTiming(
@@ -205,7 +211,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
         stackTrace: StackTrace.current,
       );
 
-      if (isClosed) return;
+      if (isClosed || gen != _loadGeneration) return;
 
       if (fastSectorAllocation != null || fastMarketCapAllocation != null) {
         _lastLoadedTimeFrame = timeFrame;
@@ -395,5 +401,14 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
         currentState.errors.isNotEmpty) {
       emit(currentState.copyWith(errors: {}));
     }
+  }
+
+  /// Drop cached analytics (e.g. switching to All Portfolios).
+  void reset() {
+    _loadGeneration++;
+    _currentPortfolioId = null;
+    _lastLoadedTimeFrame = null;
+    _loadingFuture = null;
+    emit(PortfolioAnalyticsInitial());
   }
 }
