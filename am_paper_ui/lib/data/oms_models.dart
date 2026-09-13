@@ -71,19 +71,14 @@ class OmsOrder {
 
   factory OmsOrder.fromJson(Map<String, dynamic> json) {
     final snap = json['walletSnapshot'];
-    DateTime? created;
-    final rawCreated = json['createdAt'] ?? json['created_at'];
-    if (rawCreated != null) {
-      created = DateTime.tryParse(rawCreated.toString());
-    }
     return OmsOrder(
       orderId: json['orderId'] as String,
       walletId: json['walletId'] as String,
       symbol: json['symbol'] as String? ?? '',
-      side: json['side'] as String? ?? '',
-      orderType: json['orderType'] as String? ?? 'MARKET',
+      side: (json['side'] as String? ?? '').toUpperCase(),
+      orderType: (json['orderType'] as String? ?? 'MARKET').toUpperCase(),
       quantity: '${json['quantity'] ?? ''}',
-      status: json['status'] as String? ?? '',
+      status: (json['status'] as String? ?? '').toUpperCase(),
       fillPrice: json['fillPrice']?.toString(),
       filledQuantity: json['filledQuantity']?.toString(),
       rejectReason: json['rejectReason'] as String?,
@@ -94,7 +89,7 @@ class OmsOrder {
       trailJump: json['trailJump']?.toString(),
       available: snap is Map ? '${snap['available'] ?? ''}' : null,
       reserved: snap is Map ? '${snap['reserved'] ?? ''}' : null,
-      createdAt: created,
+      createdAt: parseOmsDateTime(json['createdAt'] ?? json['created_at']),
     );
   }
 
@@ -131,12 +126,17 @@ class OmsOrder {
     return status;
   }
 
+  /// Local calendar day for "today's orders". Naive OMS timestamps are UTC.
   bool get isCreatedToday {
-    if (createdAt == null) return false;
+    // Missing stamp (optimistic create) — keep visible in today's book.
+    if (createdAt == null) return true;
     final d = createdAt!.toLocal();
     final now = DateTime.now();
     return d.year == now.year && d.month == now.month && d.day == now.day;
   }
+
+  /// Prefer local wall-clock for the Time column.
+  DateTime? get createdAtLocal => createdAt?.toLocal();
 
   double get quantityAsDouble => double.tryParse(quantity) ?? 0;
   double get filledQuantityAsDouble {
@@ -205,6 +205,41 @@ class OmsPosition {
         .map((e) => OmsPosition.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
   }
+}
+
+/// OMS stores UTC; naive ISO strings must not be treated as local (breaks IST "today").
+DateTime? parseOmsDateTime(Object? raw) {
+  if (raw == null) return null;
+  if (raw is DateTime) {
+    return raw.isUtc
+        ? raw
+        : DateTime.utc(
+            raw.year,
+            raw.month,
+            raw.day,
+            raw.hour,
+            raw.minute,
+            raw.second,
+            raw.millisecond,
+            raw.microsecond,
+          );
+  }
+  final s = raw.toString().trim();
+  if (s.isEmpty) return null;
+  final parsed = DateTime.tryParse(s);
+  if (parsed == null) return null;
+  if (parsed.isUtc) return parsed;
+  // No offset in string → API meant UTC.
+  return DateTime.utc(
+    parsed.year,
+    parsed.month,
+    parsed.day,
+    parsed.hour,
+    parsed.minute,
+    parsed.second,
+    parsed.millisecond,
+    parsed.microsecond,
+  );
 }
 
 String omsRejectMessage(String? code) {

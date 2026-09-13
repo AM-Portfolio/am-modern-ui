@@ -10,6 +10,8 @@ import 'paper_order_mobile_card.dart';
 
 enum _OrdersFilter { all, pending, executed, failed }
 
+const _typeOptions = <String>['ALL', 'MARKET', 'LIMIT', 'SUPER', 'TRAIL', 'STOP'];
+
 class _OrderRow {
   const _OrderRow({
     required this.order,
@@ -46,14 +48,90 @@ class PaperOrdersPane extends StatefulWidget {
 }
 
 class _PaperOrdersPaneState extends State<PaperOrdersPane> {
+  static const _defaultPageSize = 25;
+  static const _pageSizeOptions = <int>[25, 50];
+
   _OrdersFilter _filter = _OrdersFilter.all;
   String _typeFilter = 'ALL';
   final _search = TextEditingController();
+  int _pageSize = _defaultPageSize;
+  int _page = 0;
 
   @override
   void dispose() {
     _search.dispose();
     super.dispose();
+  }
+
+  void _resetPage() => _page = 0;
+
+  List<_OrderRow> _pageSlice(List<_OrderRow> rows) {
+    if (rows.isEmpty) return const [];
+    final pages = (rows.length / _pageSize).ceil().clamp(1, 0x7fffffff);
+    final page = _page.clamp(0, pages - 1);
+    final start = page * _pageSize;
+    final end = (start + _pageSize).clamp(0, rows.length);
+    return rows.sublist(start, end);
+  }
+
+  Widget _paginationFooter(BuildContext context, int totalItems) {
+    if (totalItems == 0) return const SizedBox.shrink();
+    final colors = context.colors;
+    final totalPages = (totalItems / _pageSize).ceil().clamp(1, 0x7fffffff);
+    final page = _page.clamp(0, totalPages - 1);
+    final labelStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: colors.textSecondary,
+        );
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 8, 8),
+      child: Row(
+        children: [
+          Text('${page + 1}/$totalPages · $totalItems', style: labelStyle),
+          const Spacer(),
+          Text('Rows', style: labelStyle),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 88,
+            child: CustomDropdown<int>(
+              value: _pageSize,
+              height: 32,
+              fontSize: 12,
+              iconSize: 16,
+              borderRadius: 6,
+              isExpanded: true,
+              primaryColor: colors.actionPrimaryBg,
+              backgroundColor: colors.cardSurface,
+              borderColor: colors.divider,
+              textColor: colors.textPrimary,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+              items: [
+                for (final s in _pageSizeOptions)
+                  s.toSimpleDropdownItem(text: '$s', fontSize: 12),
+              ],
+              onChanged: (v) {
+                if (v == null) return;
+                setState(() {
+                  _pageSize = v;
+                  _resetPage();
+                });
+              },
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.chevron_left, size: 20),
+            onPressed: page > 0
+                ? () => setState(() => _page = page - 1)
+                : null,
+          ),
+          IconButton(
+            icon: const Icon(Icons.chevron_right, size: 20),
+            onPressed: page < totalPages - 1
+                ? () => setState(() => _page = page + 1)
+                : null,
+          ),
+        ],
+      ),
+    );
   }
 
   List<_OrderRow> _todayRows(PaperOmsState state) {
@@ -78,10 +156,9 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
           qtyLabel: o.qtyDisplayLabel,
           price: o.displayPrice,
           displayStatus: o.displayStatus,
-          time: o.createdAt?.toLocal() ??
-              DateTime.fromMillisecondsSinceEpoch(0),
-          timeLabel: o.createdAt != null
-              ? timeFmt.format(o.createdAt!.toLocal())
+          time: o.createdAtLocal ?? DateTime.fromMillisecondsSinceEpoch(0),
+          timeLabel: o.createdAtLocal != null
+              ? timeFmt.format(o.createdAtLocal!)
               : '—',
         ),
     ];
@@ -121,6 +198,7 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
       case 'FILLED':
         return colors.marketPositiveIndicator;
       case 'REJECTED':
+      case 'CANCELLED':
         return colors.statusError;
       default:
         return colors.textSecondary;
@@ -130,10 +208,11 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
   Widget _sideChip(BuildContext context, String side) {
     final c = _sideColor(context, side);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
+        color: c.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: c.withValues(alpha: 0.7)),
+        border: Border.all(color: c.withValues(alpha: 0.55)),
       ),
       child: Text(
         side,
@@ -147,23 +226,30 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
 
   Widget _statusPill(BuildContext context, String displayStatus) {
     final c = _statusColor(context, displayStatus);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 7,
-          height: 7,
-          decoration: BoxDecoration(color: c, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          displayStatus,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: c,
-                fontWeight: FontWeight.w600,
-              ),
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: c.withValues(alpha: 0.65)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            displayStatus,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: c,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -189,6 +275,21 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
           ),
           child: Text(
             'NSE',
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: context.colors.textSecondary,
+                  fontSize: 10,
+                ),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+          decoration: BoxDecoration(
+            color: context.colors.divider.withValues(alpha: 0.35),
+            borderRadius: BorderRadius.circular(3),
+          ),
+          child: Text(
+            'CNC',
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: context.colors.textSecondary,
                   fontSize: 10,
@@ -232,30 +333,51 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
   Widget _filterChip(
     BuildContext context, {
     required String label,
+    required int count,
     required bool selected,
     required VoidCallback onTap,
+    Color? countColor,
   }) {
     final colors = context.colors;
+    final accent = colors.actionPrimaryBg;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(6),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: selected
-              ? colors.actionPrimaryBg.withValues(alpha: 0.15)
-              : Colors.transparent,
+          color: selected ? accent.withValues(alpha: 0.12) : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            color: selected ? colors.actionPrimaryBg : colors.divider,
-          ),
+          border: Border.all(color: selected ? accent : colors.divider),
         ),
-        child: Text(
-          label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: selected ? colors.actionPrimaryBg : colors.textSecondary,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (countColor != null) ...[
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(color: countColor, shape: BoxShape.circle),
               ),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected ? accent : colors.textSecondary,
+                  ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              '$count',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: countColor ??
+                        (selected ? accent : colors.textSecondary),
+                  ),
+            ),
+          ],
         ),
       ),
     );
@@ -337,10 +459,13 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
 
   Widget _buildTable(BuildContext context, PaperOmsState state, List<_OrderRow> items) {
     final fmt = NumberFormat('#,##0.00');
-    return SortableTable<_OrderRow>(
+    return PaginatedSortableTable<_OrderRow>(
       items: items,
+      pageSize: _defaultPageSize,
+      pageSizeOptions: _pageSizeOptions,
       initialSortColumnIndex: 0,
       initialSortDirection: SortDirection.descending,
+      emptyMessage: 'No orders today.',
       columns: [
         SortableColumn(
           title: 'Time',
@@ -405,6 +530,72 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
     );
   }
 
+  Widget _typeDropdown(BuildContext context) {
+    final colors = context.colors;
+    final primary = colors.actionPrimaryBg;
+    return SizedBox(
+      width: 140,
+      child: CustomDropdown<String>(
+        value: _typeFilter,
+        height: 34,
+        fontSize: 12,
+        iconSize: 16,
+        borderRadius: 6,
+        isExpanded: true,
+        primaryColor: primary,
+        backgroundColor: colors.cardSurface,
+        borderColor: colors.divider,
+        textColor: colors.textPrimary,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+        items: [
+          for (final t in _typeOptions)
+            t.toSimpleDropdownItem(
+              text: t == 'ALL' ? 'All Types' : t,
+              fontSize: 12,
+            ),
+        ],
+        onChanged: (v) {
+          if (v == null) return;
+          setState(() {
+            _typeFilter = v;
+            _resetPage();
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _searchField(BuildContext context) {
+    final colors = context.colors;
+    return SizedBox(
+      width: 220,
+      height: 34,
+      child: TextField(
+        controller: _search,
+        onChanged: (_) => setState(() {
+          _resetPage();
+        }),
+        style: Theme.of(context).textTheme.bodySmall,
+        decoration: InputDecoration(
+          hintText: 'Search symbol',
+          isDense: true,
+          prefixIcon: Icon(Icons.search, size: 18, color: colors.textSecondary),
+          prefixIconConstraints: const BoxConstraints(minWidth: 36, minHeight: 34),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(6),
+            borderSide: BorderSide(color: colors.divider),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(6),
+            borderSide: BorderSide(color: colors.actionPrimaryBg),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -417,24 +608,35 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
         final filled = all.where((r) => r.order.isFilled).length;
         final failed = all.where((r) => r.order.isRejected || r.order.isCancelled).length;
         final filtered = _applyFilters(all);
+        final pageItems = _pageSlice(filtered);
 
         Future<void> refresh() => context.read<PaperOmsCubit>().refreshBooks();
 
         final header = Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 8, 0),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      "Today's orders",
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
+                    Row(
+                      children: [
+                        Text(
+                          "Today's orders",
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                        IconButton(
+                          tooltip: 'Refresh',
+                          onPressed: refresh,
+                          icon: const Icon(Icons.refresh, size: 20),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 2),
                     Text(
                       'Executed, pending, and failed for today',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -459,88 +661,50 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
                 pending,
                 valueColor: colors.statusWarning,
               ),
-              IconButton(
-                tooltip: 'Refresh',
-                onPressed: refresh,
-                icon: const Icon(Icons.refresh),
-              ),
-            ],
-          ),
-        );
-
-        final filters = Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              _filterChip(
-                context,
-                label: 'All (${all.length})',
-                selected: _filter == _OrdersFilter.all,
-                onTap: () => setState(() => _filter = _OrdersFilter.all),
-              ),
-              _filterChip(
-                context,
-                label: 'Pending / Working ($pending)',
-                selected: _filter == _OrdersFilter.pending,
-                onTap: () => setState(() => _filter = _OrdersFilter.pending),
-              ),
-              _filterChip(
-                context,
-                label: 'Executed ($filled)',
-                selected: _filter == _OrdersFilter.executed,
-                onTap: () => setState(() => _filter = _OrdersFilter.executed),
-              ),
-              _filterChip(
-                context,
-                label: 'Failed / Cancelled ($failed)',
-                selected: _filter == _OrdersFilter.failed,
-                onTap: () => setState(() => _filter = _OrdersFilter.failed),
-              ),
-              SizedBox(
-                width: 180,
-                height: 34,
-                child: TextField(
-                  controller: _search,
-                  onChanged: (_) => setState(() {}),
-                  style: Theme.of(context).textTheme.bodySmall,
-                  decoration: InputDecoration(
-                    hintText: 'Search symbol',
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
-                  ),
-                ),
-              ),
-              DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _typeFilter,
-                  isDense: true,
-                  items: const [
-                    DropdownMenuItem(value: 'ALL', child: Text('All Types')),
-                    DropdownMenuItem(value: 'MARKET', child: Text('MARKET')),
-                    DropdownMenuItem(value: 'LIMIT', child: Text('LIMIT')),
-                    DropdownMenuItem(value: 'SUPER', child: Text('SUPER')),
-                    DropdownMenuItem(value: 'TRAIL', child: Text('TRAIL')),
-                    DropdownMenuItem(value: 'STOP', child: Text('STOP')),
-                  ],
-                  onChanged: (v) {
-                    if (v == null) return;
-                    setState(() => _typeFilter = v);
-                  },
-                ),
-              ),
-              if (pending > 0)
+              if (pending > 0) ...[
+                const SizedBox(width: 8),
                 TextButton(
                   onPressed: state.submitting
                       ? null
                       : () => context.read<PaperOmsCubit>().cancelAllPending(),
                   child: const Text('Cancel all'),
                 ),
+              ],
             ],
           ),
+        );
+
+        final filters = Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+          child: isMobile
+              ? Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    ..._filterChips(context, all.length, pending, filled, failed),
+                    _searchField(context),
+                    _typeDropdown(context),
+                  ],
+                )
+              : Row(
+                  children: [
+                    for (final chip in _filterChips(
+                      context,
+                      all.length,
+                      pending,
+                      filled,
+                      failed,
+                    )) ...[
+                      chip,
+                      const SizedBox(width: 8),
+                    ],
+                    const Spacer(),
+                    _searchField(context),
+                    const SizedBox(width: 8),
+                    _typeDropdown(context),
+                  ],
+                ),
         );
 
         final empty = Center(
@@ -569,14 +733,16 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
                     padding: const EdgeInsets.symmetric(vertical: 32),
                     child: empty,
                   )
-                else
-                  for (var i = 0; i < filtered.length; i++) ...[
+                else ...[
+                  for (final row in pageItems) ...[
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _buildCard(context, state, filtered[i]),
+                      child: _buildCard(context, state, row),
                     ),
                     const SizedBox(height: 10),
                   ],
+                  _paginationFooter(context, filtered.length),
+                ],
               ],
             ),
           );
@@ -604,5 +770,60 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
         );
       },
     );
+  }
+
+  List<Widget> _filterChips(
+    BuildContext context,
+    int total,
+    int pending,
+    int filled,
+    int failed,
+  ) {
+    final colors = context.colors;
+    return [
+      _filterChip(
+        context,
+        label: 'All',
+        count: total,
+        selected: _filter == _OrdersFilter.all,
+        onTap: () => setState(() {
+          _filter = _OrdersFilter.all;
+          _resetPage();
+        }),
+      ),
+      _filterChip(
+        context,
+        label: 'Pending / Working',
+        count: pending,
+        countColor: colors.statusWarning,
+        selected: _filter == _OrdersFilter.pending,
+        onTap: () => setState(() {
+          _filter = _OrdersFilter.pending;
+          _resetPage();
+        }),
+      ),
+      _filterChip(
+        context,
+        label: 'Executed',
+        count: filled,
+        countColor: colors.marketPositiveIndicator,
+        selected: _filter == _OrdersFilter.executed,
+        onTap: () => setState(() {
+          _filter = _OrdersFilter.executed;
+          _resetPage();
+        }),
+      ),
+      _filterChip(
+        context,
+        label: 'Failed / Cancelled',
+        count: failed,
+        countColor: colors.statusError,
+        selected: _filter == _OrdersFilter.failed,
+        onTap: () => setState(() {
+          _filter = _OrdersFilter.failed;
+          _resetPage();
+        }),
+      ),
+    ];
   }
 }

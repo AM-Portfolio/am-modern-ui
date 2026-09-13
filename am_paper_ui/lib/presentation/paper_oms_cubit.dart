@@ -25,13 +25,8 @@ class PaperOmsCubit extends Cubit<PaperOmsState> {
       List<OmsOrder> orders = const [];
       List<OmsPosition> positions = const [];
       if (paper != null) {
-        final to = DateTime.now().toUtc();
-        final from = to.subtract(const Duration(days: 7));
-        orders = await _source.listOrders(
-          walletId: paper.walletId,
-          from: from,
-          to: to,
-        );
+        // No from/to — client filters "today"; avoids empty books on TZ edge cases.
+        orders = await _source.listOrders(walletId: paper.walletId);
         positions = await _source.listPositions(paper.walletId);
       }
       final favorite = await _source.getOrderTypeFavorite();
@@ -70,13 +65,7 @@ class PaperOmsCubit extends Cubit<PaperOmsState> {
     if (wallet == null) return;
     try {
       final fresh = await _source.getWallet(wallet.walletId);
-      final to = DateTime.now().toUtc();
-      final from = to.subtract(const Duration(days: 7));
-      final orders = await _source.listOrders(
-        walletId: wallet.walletId,
-        from: from,
-        to: to,
-      );
+      final orders = await _source.listOrders(walletId: wallet.walletId);
       final positions = await _source.listPositions(wallet.walletId);
       emit(state.copyWith(wallet: fresh, orders: orders, positions: positions));
     } catch (_) {}

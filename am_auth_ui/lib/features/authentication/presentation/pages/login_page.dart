@@ -1,16 +1,11 @@
 import 'dart:async';
 
+import 'package:am_design_system/am_design_system.dart';
+import 'package:am_design_system/core/config/feature_flags.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-
-import 'package:am_design_system/core/config/feature_flags.dart';
-import 'package:am_design_system/core/constants/app_config.dart';
-import 'package:am_design_system/core/theme/app_spacing.dart';
-import 'package:am_design_system/core/theme/app_text_styles.dart';
-import 'package:am_design_system/core/theme/color_extensions.dart';
-import 'package:am_design_system/core/theme/cubit/theme_cubit.dart';
 
 import '../../../../core/utils/auth_redirect.dart';
 import '../../../../di/auth_providers.dart';
@@ -124,16 +119,21 @@ class _LoginPageState extends State<LoginPage> {
                       state is AuthLoading ||
                       state is AuthRestoreFailed);
               if (restoringSession) {
-                return const Scaffold(
-                  body: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 16),
-                        Text('Restoring your session…'),
-                      ],
-                    ),
+                final failed = state is AuthRestoreFailed;
+                return Scaffold(
+                  body: AmSessionStatusView(
+                    title: failed
+                        ? 'Connection issue — retrying session…'
+                        : 'Restoring your session…',
+                    subtitle: failed
+                        ? 'We could not reach the auth service. You can retry now.'
+                        : 'Signing you back into AM securely',
+                    tone: failed
+                        ? AmSessionStatusTone.retrying
+                        : AmSessionStatusTone.restoring,
+                    onRetry: failed
+                        ? () => context.read<AuthCubit>().checkAuthStatus()
+                        : null,
                   ),
                 );
               }
