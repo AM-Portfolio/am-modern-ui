@@ -62,12 +62,16 @@ class AppRoutes {
     'trades',
     'journal',
     'analysis',
-    'market-analysis',
-    'report',
     'unified',
-    'metrics',
     'templates',
   ];
+
+  /// Legacy trade hub slugs that still appear in bookmarks / share URLs.
+  static const tradeTabAliases = {
+    'report': 'analysis',
+    'metrics': 'analysis',
+    'market-analysis': 'analysis',
+  };
 
   static const marketStaticSlugs = {
     'Paper': 'paper',
@@ -88,7 +92,10 @@ class AppRoutes {
 
   static bool isPortfolioTab(String slug) => portfolioTabs.contains(slug);
 
-  static bool isTradeTab(String slug) => tradeTabs.contains(slug);
+  static bool isTradeTab(String slug) =>
+      tradeTabs.contains(slug) || tradeTabAliases.containsKey(slug);
+
+  static String normalizeTradeTab(String tab) => tradeTabAliases[tab] ?? tab;
 
   static String portfolioTab(int index) =>
       portfolioTabs[index.clamp(0, portfolioTabs.length - 1)];
@@ -102,7 +109,7 @@ class AppRoutes {
       tradeTabs[index.clamp(0, tradeTabs.length - 1)];
 
   static int tradeTabIndex(String tab) {
-    final index = tradeTabs.indexOf(tab);
+    final index = tradeTabs.indexOf(normalizeTradeTab(tab));
     return index >= 0 ? index : 0;
   }
 

@@ -15,7 +15,6 @@ import '../journal/pages/journal_web_page.dart';
 import '../models/trade_portfolio_view_model.dart';
 import '../trades/pages/trade_list_web_page.dart';
 import '../analysis/trade_analysis_page.dart';
-import '../metrics/trade_metrics_page.dart';
 import 'package:am_market_ui/shared/widgets/trading_view_chart_widget.dart';
 import 'package:am_market_ui/am_market_ui.dart';
 import '../pages/trade_market_page.dart';
@@ -59,7 +58,6 @@ enum TradeViewType {
   trades,
   journal,
   analysis,
-  metrics,
   unified
 }
 
@@ -158,6 +156,21 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     }
   }
 
+  /// Journal hub sub-tab requested by Analysis context strip (Insights).
+  String? _journalInitialTab;
+
+  void _openJournalInsights() {
+    setState(() {
+      _journalInitialTab = 'insights';
+      _swipeController.updateItems(_buildNavigationItems());
+    });
+    _swipeController.navigateTo(4);
+  }
+
+  void _openAnalysis() {
+    _swipeController.navigateTo(5);
+  }
+
   int _getInitialIndex() {
     if (widget.initialTabIndex != null) return widget.initialTabIndex!;
     switch (widget.initialView) {
@@ -173,10 +186,8 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         return 4;
       case TradeViewType.analysis:
         return 5;
-      case TradeViewType.metrics:
-        return 6;
       case TradeViewType.unified:
-        return 7;
+        return 6;
     }
   }
 
@@ -243,7 +254,17 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         title: 'Journal',
         subtitle: 'Trade journal',
         icon: Icons.book_outlined,
-        page: JournalWebPage(portfolioId: _currentPortfolioId),
+        page: JournalWebPage(
+          key: ValueKey('journal_${_currentPortfolioId}_$_journalInitialTab'),
+          portfolioId: _currentPortfolioId,
+          initialTab: _journalInitialTab ?? 'entries',
+          onOpenAnalysis: _openAnalysis,
+          onInitialTabApplied: () {
+            if (_journalInitialTab != null) {
+              setState(() => _journalInitialTab = null);
+            }
+          },
+        ),
         accentColor: ModuleColors.trade,
       ),
 
@@ -261,23 +282,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
                 key: ValueKey('analysis_$_currentPortfolioId'),
                 portfolioId: _currentPortfolioId!,
                 onOpenCalendar: () => _swipeController.navigateTo(2),
-                onOpenJournalInsights: () => _swipeController.navigateTo(4),
-              ),
-        accentColor: ModuleColors.trade,
-      ),
-      NavigationItem(
-        title: 'Metrics',
-        subtitle: 'Performance metrics',
-        icon: Icons.analytics_outlined,
-        page: _currentPortfolioId == null
-            ? PortfolioSelectionPrompt(
-                title: 'Metrics',
-                icon: Icons.analytics_outlined,
-                onViewPortfolioList: () => _swipeController.navigateTo(0),
-              )
-            : TradeMetricsPage(
-                key: ValueKey('metrics_$_currentPortfolioId'),
-                portfolioId: _currentPortfolioId!,
+                onOpenJournalInsights: _openJournalInsights,
               ),
         accentColor: ModuleColors.trade,
       ),

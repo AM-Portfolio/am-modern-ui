@@ -7,7 +7,6 @@ import 'package:am_design_system/am_design_system.dart';
 import '../../internal/domain/entities/metrics/metrics_filter_request.dart';
 import '../../internal/domain/enums/metric_types.dart';
 import '../../providers/trade_metrics_providers.dart';
-import '../metrics/cubit/trade_metrics_cubit.dart';
 import 'tabs/timing_analysis_tab.dart';
 
 enum _AnalysisTab { timing, strategy, direction, holding, risk }
@@ -33,7 +32,6 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
   _AnalysisTab _tab = _AnalysisTab.timing;
   late DateTime _startDate;
   late DateTime _endDate;
-  TradeMetricsCubit? _cubit;
 
   @override
   void initState() {
@@ -46,6 +44,14 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
     });
   }
 
+  @override
+  void didUpdateWidget(covariant TradeAnalysisPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.portfolioId != widget.portfolioId) {
+      _loadMetrics();
+    }
+  }
+
   void _syncFromAppTimeFrame() {
     final range = ref.read(appTimeFrameProvider).dateRange;
     setState(() {
@@ -55,14 +61,10 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
     _loadMetrics();
   }
 
-  Future<void> _ensureCubit() async {
-    _cubit ??= await ref.read(tradeMetricsCubitProvider.future);
-  }
-
   Future<void> _loadMetrics() async {
-    await _ensureCubit();
-    if (!mounted || _cubit == null) return;
-    _cubit!.loadMetrics(
+    final resolved = await ref.read(tradeMetricsCubitProvider.future);
+    if (!mounted) return;
+    resolved.loadMetrics(
       MetricsFilterRequest(
         portfolioIds: [widget.portfolioId],
         startDate: _startDate,
@@ -103,13 +105,29 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<TimeFrame>(appTimeFrameProvider, (previous, next) {
+      if (previous == next) return;
+      final range = next.dateRange;
+      setState(() {
+        _startDate = range.start;
+        _endDate = range.end;
+      });
+      _loadMetrics();
+    });
+
+    final colors = context.colors;
     final theme = Theme.of(context);
     final cubitAsync = ref.watch(tradeMetricsCubitProvider);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: colors.surface,
       body: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.md,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -125,19 +143,20 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.3,
+                          color: colors.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSpacing.xs),
                       Text(
                         'Analyze your trading patterns to find edge and improve.',
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                          color: colors.textSecondary,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: AppSpacing.md),
                 _DateApplyBar(
                   dateLabel: _dateLabel,
                   onPickDateRange: _pickDateRange,
@@ -145,19 +164,26 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 18),
-            _UnderlineTabBar(
+            const SizedBox(height: AppSpacing.section),
+            _AnalysisTabBar(
               selected: _tab,
               onSelected: (tab) => setState(() => _tab = tab),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             Expanded(
               child: cubitAsync.when(
-                loading: () =>
-                    const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('Error: $e')),
+                loading: () => Center(
+                  child: CircularProgressIndicator(color: ModuleColors.trade),
+                ),
+                error: (e, _) => Center(
+                  child: Text(
+                    'Error: $e',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: context.statusError,
+                    ),
+                  ),
+                ),
                 data: (cubit) {
-                  _cubit = cubit;
                   if (_tab == _AnalysisTab.timing) {
                     return TimingAnalysisTab(
                       cubit: cubit,
@@ -191,67 +217,63 @@ class _DateApplyBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        OutlinedButton.icon(
+        AppButton(
+          text: dateLabel,
+          type: AppButtonType.secondary,
+          isOutlined: true,
+          icon: Icons.calendar_today_outlined,
           onPressed: onPickDateRange,
-          icon: Icon(Icons.calendar_today_outlined,
-              size: 16, color: ModuleColors.trade),
-          label: Text(dateLabel),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: theme.colorScheme.onSurface,
-            side: BorderSide(
-              color: theme.colorScheme.outlineVariant,
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          ),
+          height: 40,
         ),
-        const SizedBox(width: 8),
-        FilledButton(
+        const SizedBox(width: AppSpacing.sm),
+        AppButton(
+          text: 'Apply',
+          type: AppButtonType.primary,
           onPressed: onApply,
-          style: FilledButton.styleFrom(
-            backgroundColor: ModuleColors.trade,
-            foregroundColor: theme.colorScheme.onPrimary,
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-          ),
-          child: const Text('Apply'),
+          height: 40,
+          backgroundColor: ModuleColors.trade,
         ),
       ],
     );
   }
 }
 
-class _UnderlineTabBar extends StatelessWidget {
-  const _UnderlineTabBar({required this.selected, required this.onSelected});
+/// Hub sub-tabs — same ChoiceChip pattern as Journal.
+class _AnalysisTabBar extends StatelessWidget {
+  const _AnalysisTabBar({required this.selected, required this.onSelected});
 
   final _AnalysisTab selected;
   final ValueChanged<_AnalysisTab> onSelected;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.6),
-          ),
+    final colors = context.colors;
+    return Material(
+      color: colors.cardSurface,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
         ),
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            for (final tab in _AnalysisTab.values)
-              _TabItem(
-                label: _label(tab),
-                icon: _icon(tab),
-                selected: selected == tab,
-                onTap: () => onSelected(tab),
-              ),
-          ],
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              for (final tab in _AnalysisTab.values) ...[
+                if (tab.index > 0) const SizedBox(width: AppSpacing.sm),
+                ChoiceChip(
+                  avatar: Icon(_icon(tab), size: 16),
+                  label: Text(_label(tab)),
+                  selected: selected == tab,
+                  onSelected: (_) => onSelected(tab),
+                  selectedColor: ModuleColors.trade.withValues(alpha: 0.25),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
@@ -274,56 +296,6 @@ class _UnderlineTabBar extends StatelessWidget {
       };
 }
 
-class _TabItem extends StatelessWidget {
-  const _TabItem({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final color =
-        selected ? ModuleColors.trade : theme.colorScheme.onSurfaceVariant;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(4),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: selected ? ModuleColors.trade : Colors.transparent,
-              width: 2.5,
-            ),
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 16, color: color),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: color,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _ComingSoonTab extends StatelessWidget {
   const _ComingSoonTab({required this.tab});
 
@@ -331,6 +303,7 @@ class _ComingSoonTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final name = switch (tab) {
       _AnalysisTab.timing => 'Timing',
       _AnalysisTab.strategy => 'Strategy',
@@ -342,14 +315,16 @@ class _ComingSoonTab extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.construction_outlined,
-              size: 40,
-              color: Theme.of(context).colorScheme.onSurfaceVariant),
-          const SizedBox(height: 12),
+          Icon(
+            Icons.construction_outlined,
+            size: 40,
+            color: colors.textSecondary,
+          ),
+          const SizedBox(height: AppSpacing.md),
           Text(
             '$name analytics coming next',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: colors.textSecondary,
                 ),
           ),
         ],

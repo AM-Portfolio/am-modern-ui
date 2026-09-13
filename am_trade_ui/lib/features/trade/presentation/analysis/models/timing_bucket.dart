@@ -5,7 +5,7 @@ class TimingBucket {
     required this.label,
     required this.trades,
     required this.pnl,
-    required this.expectancy,
+    required this.avgPnl,
     this.winRatePercent,
   });
 
@@ -13,7 +13,8 @@ class TimingBucket {
   final String label;
   final int trades;
   final double pnl;
-  final double expectancy;
+  /// Average PnL per trade (`pnl / trades`). Not backend expectancy.
+  final double avgPnl;
   final double? winRatePercent;
 }
 
@@ -45,7 +46,7 @@ List<TimingBucket> buildTimingBuckets({
         label: labelFor(key),
         trades: count,
         pnl: pnl,
-        expectancy: pnl / count,
+        avgPnl: pnl / count,
         winRatePercent: winRate[key],
       ),
     );
@@ -53,7 +54,7 @@ List<TimingBucket> buildTimingBuckets({
   return buckets;
 }
 
-/// Chronological order for charts (not expectancy rank).
+/// Chronological order for charts (not avg-PnL rank).
 List<TimingBucket> sortForChart(
   List<TimingBucket> buckets,
   TimingDimension dimension,
@@ -103,24 +104,35 @@ List<TimingBucket> sortForChart(
   return sorted;
 }
 
+/// Split into best / worst by [TimingBucket.avgPnl] with no overlapping keys.
+///
+/// - 0 buckets → empty / empty
+/// - 1 bucket → best only, worst empty
+/// - 2..10 → best takes `min(take, ceil(n/2))`, worst takes remaining lowest up to [take]
+/// - >10 → best top [take], worst bottom [take]
 TimingRankSplit splitBestWorst(List<TimingBucket> buckets, {int take = 5}) {
   if (buckets.isEmpty) {
     return const TimingRankSplit(best: [], worst: []);
   }
 
-  final byExpectancy = [...buckets]
-    ..sort((a, b) => b.expectancy.compareTo(a.expectancy));
+  final byAvgPnl = [...buckets]
+    ..sort((a, b) => b.avgPnl.compareTo(a.avgPnl));
 
-  if (byExpectancy.length == 1) {
-    return TimingRankSplit(best: byExpectancy, worst: const []);
+  if (byAvgPnl.length == 1) {
+    return TimingRankSplit(best: byAvgPnl, worst: const []);
   }
 
-  final n = take.clamp(1, byExpectancy.length);
-  final best = byExpectancy.take(n).toList();
+  final n = byAvgPnl.length;
+  final maxTake = take.clamp(1, n);
+  final bestCount = n <= take * 2
+      ? (n / 2).ceil().clamp(1, maxTake)
+      : maxTake;
+
+  final best = byAvgPnl.take(bestCount).toList();
   final bestKeys = best.map((b) => b.key).toSet();
-  final worst = byExpectancy.reversed
+  final worst = byAvgPnl.reversed
       .where((b) => !bestKeys.contains(b.key))
-      .take(n)
+      .take(maxTake)
       .toList();
 
   return TimingRankSplit(best: best, worst: worst);

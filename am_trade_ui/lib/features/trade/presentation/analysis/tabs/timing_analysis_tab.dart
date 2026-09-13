@@ -41,14 +41,14 @@ class TimingAnalysisTab extends StatelessWidget {
               onOpenCalendar: onOpenCalendar,
               onOpenJournalInsights: onOpenJournalInsights,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             Text(
-              'Entry times as stored on the trade (exchange-local).',
+              'Entry times as stored on the trade (exchange-local; IST for India books).',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    color: context.colors.textSecondary,
                   ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: AppSpacing.md),
             Expanded(child: _buildBody(context, state)),
           ],
         );
@@ -57,30 +57,42 @@ class TimingAnalysisTab extends StatelessWidget {
   }
 
   Widget _buildBody(BuildContext context, TradeMetricsState state) {
+    final colors = context.colors;
     if (state is TradeMetricsLoading || state is TradeMetricsInitial) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(
+        child: CircularProgressIndicator(color: ModuleColors.trade),
+      );
     }
     if (state is TradeMetricsError) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline,
-                color: Theme.of(context).colorScheme.error, size: 40),
-            const SizedBox(height: 12),
-            Text('Could not load timing metrics',
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 4),
+            Icon(Icons.error_outline, color: context.statusError, size: 40),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              'Could not load timing metrics',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: colors.textPrimary,
+                  ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               state.message,
-              style: Theme.of(context).textTheme.bodySmall,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colors.textSecondary,
+                  ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
+            const SizedBox(height: AppSpacing.md),
+            AppButton(
+              text: 'Retry',
+              type: AppButtonType.secondary,
+              isOutlined: true,
+              icon: Icons.refresh,
               onPressed: onApply,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              height: 36,
+              backgroundColor: ModuleColors.trade,
             ),
           ],
         ),
@@ -112,7 +124,10 @@ class _ContextBanner extends StatelessWidget {
         : NumberFormat.decimalPattern('en_IN').format(tradeCount);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm + AppSpacing.xxs,
+      ),
       decoration: BoxDecoration(
         color: ModuleColors.trade.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(10),
@@ -123,30 +138,29 @@ class _ContextBanner extends StatelessWidget {
       child: Row(
         children: [
           Icon(Icons.info_outline, size: 16, color: ModuleColors.trade),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
               'Showing data for $countLabel trades',
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w500,
+                color: context.colors.textPrimary,
               ),
             ),
           ),
-          TextButton(
+          AppButton(
+            text: 'View Calendar',
+            type: AppButtonType.text,
             onPressed: onOpenCalendar,
-            style: TextButton.styleFrom(
-              foregroundColor: ModuleColors.trade,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-            ),
-            child: const Text('View Calendar'),
+            height: 32,
+            textColor: ModuleColors.trade,
           ),
-          TextButton(
+          AppButton(
+            text: 'Journal Insights',
+            type: AppButtonType.text,
             onPressed: onOpenJournalInsights,
-            style: TextButton.styleFrom(
-              foregroundColor: ModuleColors.trade,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-            ),
-            child: const Text('Journal Insights'),
+            height: 32,
+            textColor: ModuleColors.trade,
           ),
         ],
       ),
@@ -263,7 +277,7 @@ class _TimingDashboard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 for (var i = 0; i < children.length; i++) ...[
-                  if (i > 0) const SizedBox(width: 12),
+                  if (i > 0) const SizedBox(width: AppSpacing.md),
                   Expanded(child: children[i]),
                 ],
               ],
@@ -272,7 +286,7 @@ class _TimingDashboard extends StatelessWidget {
           return Column(
             children: [
               for (var i = 0; i < children.length; i++) ...[
-                if (i > 0) const SizedBox(height: 12),
+                if (i > 0) const SizedBox(height: AppSpacing.md),
                 children[i],
               ],
             ],
@@ -282,11 +296,11 @@ class _TimingDashboard extends StatelessWidget {
         return ListView(
           children: [
             threeCol(charts),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             threeCol(bestTables),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             threeCol(worstTables),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
           ],
         );
       },

@@ -4,7 +4,7 @@ import 'package:am_design_system/am_design_system.dart';
 
 import '../models/timing_bucket.dart';
 
-/// Avg PnL (expectancy) bar chart — green up / red down.
+/// Avg PnL bar chart — semantic success up / error down.
 class TimingAvgPnlChart extends StatelessWidget {
   const TimingAvgPnlChart({
     super.key,
@@ -20,15 +20,21 @@ class TimingAvgPnlChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.colors;
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: colors.cardSurface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45),
+          color: colors.border.withValues(alpha: 0.45),
         ),
       ),
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md - AppSpacing.xs,
+        AppSpacing.md - AppSpacing.xs,
+        AppSpacing.md - AppSpacing.xs,
+        AppSpacing.sm,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -36,16 +42,17 @@ class TimingAvgPnlChart extends StatelessWidget {
             title,
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w700,
+              color: colors.textPrimary,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             'Avg PnL (₹)',
             style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+              color: colors.textSecondary,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           SizedBox(
             height: 160,
             child: buckets.isEmpty
@@ -53,21 +60,25 @@ class TimingAvgPnlChart extends StatelessWidget {
                     child: Text(
                       emptyMessage ?? 'No data',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: colors.textSecondary,
                       ),
                       textAlign: TextAlign.center,
                     ),
                   )
-                : BarChart(_chartData(theme)),
+                : BarChart(_chartData(context)),
           ),
         ],
       ),
     );
   }
 
-  BarChartData _chartData(ThemeData theme) {
+  BarChartData _chartData(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = context.colors;
+    final success = context.statusSuccess;
+    final error = context.statusError;
     final maxAbs = buckets
-        .map((b) => b.expectancy.abs())
+        .map((b) => b.avgPnl.abs())
         .fold<double>(0, (a, b) => a > b ? a : b);
     final pad = maxAbs == 0 ? 100.0 : maxAbs * 1.2;
 
@@ -81,7 +92,7 @@ class TimingAvgPnlChart extends StatelessWidget {
           getTooltipItem: (group, groupIndex, rod, rodIndex) {
             final b = buckets[group.x.toInt()];
             return BarTooltipItem(
-              '${b.label}\n₹${b.expectancy.toStringAsFixed(0)}',
+              '${b.label}\n₹${b.avgPnl.toStringAsFixed(0)}',
               TextStyle(
                 color: theme.colorScheme.onInverseSurface,
                 fontWeight: FontWeight.w600,
@@ -101,8 +112,13 @@ class TimingAvgPnlChart extends StatelessWidget {
             reservedSize: 36,
             getTitlesWidget: (value, meta) {
               if (value == 0) {
-                return Text('0',
-                    style: theme.textTheme.labelSmall?.copyWith(fontSize: 10));
+                return Text(
+                  '0',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontSize: 10,
+                    color: colors.textSecondary,
+                  ),
+                );
               }
               return const SizedBox.shrink();
             },
@@ -117,14 +133,16 @@ class TimingAvgPnlChart extends StatelessWidget {
               if (i < 0 || i >= buckets.length) {
                 return const SizedBox.shrink();
               }
-              // Avoid label clutter on dense hour charts.
               final step = buckets.length > 10 ? 2 : 1;
               if (i % step != 0) return const SizedBox.shrink();
               return Padding(
-                padding: const EdgeInsets.only(top: 4),
+                padding: const EdgeInsets.only(top: AppSpacing.xs),
                 child: Text(
                   buckets[i].label,
-                  style: theme.textTheme.labelSmall?.copyWith(fontSize: 9),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontSize: 9,
+                    color: colors.textSecondary,
+                  ),
                 ),
               );
             },
@@ -136,7 +154,7 @@ class TimingAvgPnlChart extends StatelessWidget {
         drawVerticalLine: false,
         horizontalInterval: pad,
         getDrawingHorizontalLine: (value) => FlLine(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+          color: colors.border.withValues(alpha: 0.4),
           strokeWidth: 1,
         ),
       ),
@@ -147,12 +165,10 @@ class TimingAvgPnlChart extends StatelessWidget {
             x: i,
             barRods: [
               BarChartRodData(
-                toY: buckets[i].expectancy,
+                toY: buckets[i].avgPnl,
                 width: buckets.length > 12 ? 6 : 10,
                 borderRadius: BorderRadius.circular(3),
-                color: buckets[i].expectancy >= 0
-                    ? ModuleColors.analytics
-                    : theme.colorScheme.error,
+                color: buckets[i].avgPnl >= 0 ? success : error,
               ),
             ],
           ),

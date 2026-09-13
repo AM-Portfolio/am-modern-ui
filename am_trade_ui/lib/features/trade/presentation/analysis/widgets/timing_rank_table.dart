@@ -30,18 +30,19 @@ class TimingRankTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.colors;
     final accent =
-        isBest ? ModuleColors.analytics : theme.colorScheme.error;
+        isBest ? context.statusSuccess : context.statusError;
 
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: colors.cardSurface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45),
+          color: colors.border.withValues(alpha: 0.45),
         ),
       ),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(AppSpacing.md - AppSpacing.xxs),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -52,39 +53,40 @@ class TimingRankTable extends StatelessWidget {
                 size: 16,
                 color: accent,
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: AppSpacing.sm - AppSpacing.xxs),
               Expanded(
                 child: Text(
                   title,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w700,
+                    color: colors.textPrimary,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
-            'by Expectancy',
+            'by Avg PnL',
             style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+              color: colors.textSecondary,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.sm + AppSpacing.xxs),
           if (rows.isEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg - 4),
               child: Text(
                 emptyMessage ?? 'No data in this range',
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                  color: colors.textSecondary,
                 ),
                 textAlign: TextAlign.center,
               ),
             )
           else ...[
             _header(context, bucketLabel),
-            const Divider(height: 12),
+            Divider(height: AppSpacing.md - AppSpacing.xs, color: colors.divider),
             ...rows.map((b) => _row(context, b)),
           ],
         ],
@@ -94,7 +96,7 @@ class TimingRankTable extends StatelessWidget {
 
   Widget _header(BuildContext context, String bucketLabel) {
     final style = Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          color: context.colors.textSecondary,
           fontWeight: FontWeight.w600,
         );
     return Row(
@@ -105,7 +107,7 @@ class TimingRankTable extends StatelessWidget {
             child: Text('Win %', style: style, textAlign: TextAlign.end)),
         Expanded(
           flex: 2,
-          child: Text('Expect.', style: style, textAlign: TextAlign.end),
+          child: Text('Avg PnL', style: style, textAlign: TextAlign.end),
         ),
         Expanded(
           flex: 2,
@@ -117,44 +119,50 @@ class TimingRankTable extends StatelessWidget {
 
   Widget _row(BuildContext context, TimingBucket bucket) {
     final theme = Theme.of(context);
-    final pnlColor = bucket.pnl >= 0
-        ? ModuleColors.analytics
-        : theme.colorScheme.error;
-    final expColor = bucket.expectancy >= 0
-        ? ModuleColors.analytics
-        : theme.colorScheme.error;
+    final colors = context.colors;
+    final pnlColor =
+        bucket.pnl >= 0 ? context.statusSuccess : context.statusError;
+    final avgColor =
+        bucket.avgPnl >= 0 ? context.statusSuccess : context.statusError;
     final body = theme.textTheme.bodySmall;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs + 1),
       child: Row(
         children: [
           Expanded(
             flex: 2,
             child: Text(
               bucket.label,
-              style: body?.copyWith(fontWeight: FontWeight.w600),
+              style: body?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colors.textPrimary,
+              ),
               overflow: TextOverflow.ellipsis,
             ),
           ),
           Expanded(
-            child: Text('${bucket.trades}',
-                style: body, textAlign: TextAlign.end),
+            child: Text(
+              '${bucket.trades}',
+              style: body?.copyWith(color: colors.textPrimary),
+              textAlign: TextAlign.end,
+            ),
           ),
           Expanded(
             child: Text(
               bucket.winRatePercent == null
                   ? '—'
                   : '${bucket.winRatePercent!.toStringAsFixed(0)}%',
-              style: body,
+              style: body?.copyWith(color: colors.textPrimary),
               textAlign: TextAlign.end,
             ),
           ),
           Expanded(
             flex: 2,
             child: Text(
-              _inr.format(bucket.expectancy),
-              style: body?.copyWith(color: expColor, fontWeight: FontWeight.w600),
+              _inr.format(bucket.avgPnl),
+              style:
+                  body?.copyWith(color: avgColor, fontWeight: FontWeight.w600),
               textAlign: TextAlign.end,
             ),
           ),
@@ -162,7 +170,8 @@ class TimingRankTable extends StatelessWidget {
             flex: 2,
             child: Text(
               _inr.format(bucket.pnl),
-              style: body?.copyWith(color: pnlColor, fontWeight: FontWeight.w600),
+              style:
+                  body?.copyWith(color: pnlColor, fontWeight: FontWeight.w600),
               textAlign: TextAlign.end,
             ),
           ),

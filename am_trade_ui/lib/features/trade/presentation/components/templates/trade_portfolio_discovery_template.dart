@@ -9,31 +9,31 @@ import '../mobile/trade_portfolio_mobile_card.dart';
 import '../mobile/trade_portfolio_mobile_filter.dart';
 import '../mobile/trade_portfolio_mobile_header.dart';
 
-// Dark theme constants matching the app's existing dark palette
+// Theme-aware surfaces / borders (no hardcoded hex)
 Color _getCardBorder(BuildContext context) =>
     Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF2A2A45)
-        : Theme.of(context).colorScheme.outline.withOpacity(0.1);
+        ? context.borderColor
+        : Theme.of(context).colorScheme.outline.withValues(alpha: 0.1);
 Color _getCardHoverBorder(BuildContext context) =>
     Theme.of(context).brightness == Brightness.dark
         ? ModuleColors.trade
         : Theme.of(context).colorScheme.primary;
 Color _getBadgeBg(BuildContext context) => Theme.of(context).brightness ==
         Brightness.dark
-    ? const Color(0xFF1E1E30)
-    : Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5);
+    ? context.surfaceColor
+    : Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5);
 Color _getBadgeBorder(BuildContext context) =>
     Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF2D2D45)
-        : Theme.of(context).colorScheme.outline.withOpacity(0.1);
+        ? context.borderColor
+        : Theme.of(context).colorScheme.outline.withValues(alpha: 0.1);
 Color _getSearchBg(BuildContext context) =>
     Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF1E1E30)
+        ? context.surfaceColor
         : Theme.of(context).colorScheme.surface;
 Color _getSearchBorder(BuildContext context) =>
     Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF2D2D45)
-        : Theme.of(context).colorScheme.outline.withOpacity(0.2);
+        ? context.borderColor
+        : Theme.of(context).colorScheme.outline.withValues(alpha: 0.2);
 
 class TradePortfolioDiscoveryTemplate extends StatefulWidget {
   const TradePortfolioDiscoveryTemplate({
@@ -173,7 +173,7 @@ class _TradePortfolioDiscoveryTemplateState
                 label: const Text('Create paper wallet'),
                 style: FilledButton.styleFrom(
                   backgroundColor: ModuleColors.trade,
-                  foregroundColor: Colors.white,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                 ),
@@ -290,7 +290,7 @@ class _TradePortfolioDiscoveryTemplateState
                         label: Text('New Portfolio'),
                         style: FilledButton.styleFrom(
                           backgroundColor: ModuleColors.trade,
-                          foregroundColor: Colors.white,
+                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 10),
                           shape: RoundedRectangleBorder(
@@ -326,7 +326,7 @@ class _TradePortfolioDiscoveryTemplateState
                       label: 'Total Value',
                       value: '₹${_formatNum(totalValue)}',
                       icon: Icons.account_balance_wallet_rounded,
-                      iconColor: Colors.white,
+                      iconColor: Theme.of(context).colorScheme.onPrimary,
                       iconBgColor: ModuleColors.trade,
                     ),
                     const SizedBox(width: 8),
@@ -334,7 +334,7 @@ class _TradePortfolioDiscoveryTemplateState
                       label: 'Profitable',
                       value: '$profitableCount/${widget.portfolios.length}',
                       icon: Icons.trending_up_rounded,
-                      iconColor: Colors.white,
+                      iconColor: Theme.of(context).colorScheme.onPrimary,
                       iconBgColor: context.statusSuccess,
                       valueColor: context.statusSuccess,
                     ),
@@ -343,7 +343,7 @@ class _TradePortfolioDiscoveryTemplateState
                       label: 'Total Trades',
                       value: '$totalTrades',
                       icon: Icons.swap_horiz_rounded,
-                      iconColor: Colors.white,
+                      iconColor: Theme.of(context).colorScheme.onPrimary,
                       iconBgColor: ModuleColors.trade,
                     ),
                     const SizedBox(width: 8),
@@ -354,7 +354,7 @@ class _TradePortfolioDiscoveryTemplateState
                       icon: totalNetProfitLoss >= 0
                           ? Icons.arrow_upward_rounded
                           : Icons.arrow_downward_rounded,
-                      iconColor: Colors.white,
+                      iconColor: Theme.of(context).colorScheme.onPrimary,
                       iconBgColor: totalNetProfitLoss >= 0
                           ? context.statusSuccess
                           : context.statusError,
@@ -370,7 +370,7 @@ class _TradePortfolioDiscoveryTemplateState
                       icon: totalUnrealizedPnL >= 0
                           ? Icons.show_chart_rounded
                           : Icons.trending_down_rounded,
-                      iconColor: Colors.white,
+                      iconColor: Theme.of(context).colorScheme.onPrimary,
                       iconBgColor: totalUnrealizedPnL >= 0
                           ? context.statusSuccess
                           : context.statusError,
@@ -383,13 +383,13 @@ class _TradePortfolioDiscoveryTemplateState
                       label: 'Closed Win Rate',
                       value: '${avgWinRate.toStringAsFixed(1)}%',
                       icon: Icons.percent_rounded,
-                      iconColor: Colors.white,
+                      iconColor: Theme.of(context).colorScheme.onPrimary,
                       iconBgColor: avgWinRate >= 50
                           ? ModuleColors.trade
-                          : const Color(0xFFF59E0B),
+                          : context.statusWarning,
                       valueColor: avgWinRate >= 50
                           ? ModuleColors.trade
-                          : const Color(0xFFF59E0B),
+                          : context.statusWarning,
                     ),
                   ],
                 ),
@@ -857,7 +857,7 @@ class _TradePortfolioDiscoveryTemplateState
                 fontSize: 13,
                 fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
                 color: isCurrent
-                    ? Colors.white
+                    ? Theme.of(context).colorScheme.onPrimary
                     : Theme.of(context)
                         .colorScheme
                         .onSurface
@@ -981,12 +981,12 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
             gradient: Theme.of(context).brightness == Brightness.dark
-                ? const LinearGradient(
+                ? LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Color(0xFF1E1B4B),
-                      Color(0xFF1C1C2E),
+                      ModuleColors.trade.withValues(alpha: 0.35),
+                      context.surfaceColor,
                     ],
                   )
                 : null,
@@ -1010,7 +1010,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                   ]
                 : [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
+                      color: context.shadow(0.3),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -1035,12 +1035,12 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                           end: Alignment.bottomRight,
                           colors: isProfit
                               ? [
-                                  const Color(0xFF059669),
-                                  const Color(0xFF047857)
+                                  context.statusSuccess,
+                                  context.statusSuccess.withValues(alpha: 0.85)
                                 ]
                               : [
                                   ModuleColors.trade,
-                                  const Color(0xFF6D28D9)
+                                  ModuleColors.trade
                                 ],
                         ),
                         borderRadius: BorderRadius.circular(8),
@@ -1049,7 +1049,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                         isProfit
                             ? Icons.trending_up_rounded
                             : Icons.assessment_rounded,
-                        color: Theme.of(context).colorScheme.onSurface,
+                        color: Theme.of(context).colorScheme.onPrimary,
                         size: 17,
                       ),
                     ),
@@ -1209,13 +1209,13 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                       _metric(
                         icon: Icons.trending_up_rounded,
                         iconColor: p.isTradeProfit
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFFEF4444),
+                            ? context.statusSuccess
+                            : context.statusError,
                         label: 'Realized',
                         value: p.displayNetProfitLoss,
                         valueColor: p.isTradeProfit
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFFEF4444),
+                            ? context.statusSuccess
+                            : context.statusError,
                       ),
                       Container(
                           width: 1,
@@ -1227,13 +1227,13 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                       _metric(
                         icon: Icons.show_chart_rounded,
                         iconColor: p.isProfit
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFFEF4444),
+                            ? context.statusSuccess
+                            : context.statusError,
                         label: 'Live P&L',
                         value: p.displayGainLoss,
                         valueColor: p.isProfit
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFFEF4444),
+                            ? context.statusSuccess
+                            : context.statusError,
                       ),
                       Container(
                           width: 1,
@@ -1298,9 +1298,9 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                                     horizontal: 5, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: isProfit
-                                      ? const Color(0xFF10B981)
+                                      ? context.statusSuccess
                                           .withValues(alpha: 0.15)
-                                      : const Color(0xFFEF4444)
+                                      : context.statusError
                                           .withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
@@ -1310,8 +1310,8 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
                                     color: isProfit
-                                        ? const Color(0xFF10B981)
-                                        : const Color(0xFFEF4444),
+                                        ? context.statusSuccess
+                                        : context.statusError,
                                   ),
                                 ),
                               ),
@@ -1329,8 +1329,8 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: isProfit
-                                ? const Color(0xFF10B981)
-                                : const Color(0xFFEF4444),
+                                ? context.statusSuccess
+                                : context.statusError,
                           ),
                         ),
                         const SizedBox(height: 4),
