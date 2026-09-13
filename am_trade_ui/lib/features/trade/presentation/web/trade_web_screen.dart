@@ -15,6 +15,7 @@ import '../journal/pages/journal_web_page.dart';
 import '../models/trade_portfolio_view_model.dart';
 import '../trades/pages/trade_list_web_page.dart';
 import '../analysis/trade_analysis_page.dart';
+import '../utils/trade_portfolio_auto_select.dart';
 import 'package:am_market_ui/shared/widgets/trading_view_chart_widget.dart';
 import 'package:am_market_ui/am_market_ui.dart';
 import '../pages/trade_market_page.dart';
@@ -102,6 +103,8 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
   String? _currentPortfolioName;
   late TextEditingController _symbolController;
   TradeDetails? _existingTradeToEdit;
+
+  Set<String>? _knownPortfolioIds;
 
   @override
   void initState() {
@@ -381,6 +384,26 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         tag: 'TradeWebScreen');
   }
 
+  /// After doc-parser import or list refresh, switch off an empty/stale selection.
+  void _maybeAutoSelectPortfolio(List<TradePortfolioViewModel> portfolios) {
+    if (portfolios.isEmpty) return;
+
+    final autoSelect = resolveTradePortfolioAutoSelect(
+      portfolios: portfolios,
+      knownIds: _knownPortfolioIds,
+      currentPortfolioId: _currentPortfolioId,
+    );
+    _knownPortfolioIds = portfolios.map((p) => p.id).toSet();
+
+    if (autoSelect != null && autoSelect.id != _currentPortfolioId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _onPortfolioSelected(autoSelect.id, autoSelect.name, autoSelect: true);
+        }
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final brokerPortfolios =
@@ -391,16 +414,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     final isPaperSelected =
         paper != null && _currentPortfolioId == paper.portfolioUuid;
 
-    // Automatically select the first portfolio if none is selected
-    if (portfolios.isNotEmpty && _currentPortfolioId == null) {
-      final defaultPortfolio = portfolios.first;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _onPortfolioSelected(defaultPortfolio.id, defaultPortfolio.name,
-              autoSelect: true);
-        }
-      });
-    }
+    _maybeAutoSelectPortfolio(portfolios);
 
     return NotificationListener<OpenAddTradeNotification>(
       onNotification: (notification) {
@@ -649,6 +663,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
 
         return portfoliosAsyncValue.when(
           data: (portfolios) {
+            _maybeAutoSelectPortfolio(portfolios);
             final omsCubit = ref.watch(omsCubitProvider).asData?.value;
             Widget template(List<TradePortfolioViewModel> list, OmsWallet? paper) {
               return TradePortfolioDiscoveryTemplate(

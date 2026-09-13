@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_common/am_common.dart';
 
+import '../providers/portfolio_overview_providers.dart';
 import '../providers/trade_internal_providers.dart';
 import 'mobile/trade_mobile_screen.dart';
 import 'web/trade_web_screen.dart';
@@ -96,7 +97,8 @@ class TradeResponsiveLayout extends ConsumerStatefulWidget {
       TradeResponsiveLayoutState();
 }
 
-class TradeResponsiveLayoutState extends ConsumerState<TradeResponsiveLayout> {
+class TradeResponsiveLayoutState extends ConsumerState<TradeResponsiveLayout>
+    with WidgetsBindingObserver {
   /// Raw SwipeNavigationController index from the active screen.
   late int _currentTabIndex;
   final GlobalKey<TradeWebScreenState> _webScreenKey = GlobalKey<TradeWebScreenState>();
@@ -104,14 +106,29 @@ class TradeResponsiveLayoutState extends ConsumerState<TradeResponsiveLayout> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _currentTabIndex = TradeResponsiveLayout.tabIndexFromSlug(widget.initialTab);
     _currentPortfolioId = widget.initialPortfolioId;
     WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrapTradeData());
   }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _bootstrapTradeData();
+    }
+  }
+
   void _bootstrapTradeData() {
     if (!mounted) return;
     invalidateTradeData(ref);
+    ref.invalidate(enrichedTradePortfoliosProvider);
     ref.read(tradePortfoliosProvider.future).ignore();
   }
 

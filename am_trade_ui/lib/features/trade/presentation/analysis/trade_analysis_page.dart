@@ -36,7 +36,9 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
   @override
   void initState() {
     super.initState();
-    final range = TimeFrame.oneYear.dateRange;
+    // Analysis needs a wide default — short global app timeframes (e.g. 1D)
+    // hide historical doc-parser imports and show "0 trades".
+    final range = TimeFrame.all.dateRange;
     _startDate = range.start;
     _endDate = range.end;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -53,12 +55,26 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
   }
 
   void _syncFromAppTimeFrame() {
-    final range = ref.read(appTimeFrameProvider).dateRange;
+    final tf = ref.read(appTimeFrameProvider);
+    final range = _analysisDateRangeFor(tf);
     setState(() {
       _startDate = range.start;
       _endDate = range.end;
     });
     _loadMetrics();
+  }
+
+  /// Prefer a wide analysis window. Short global frames (1D/1W/1M) would miss
+  /// multi-year broker imports that doc-parser produces.
+  ({DateTime start, DateTime end}) _analysisDateRangeFor(TimeFrame tf) {
+    switch (tf) {
+      case TimeFrame.oneDay:
+      case TimeFrame.oneWeek:
+      case TimeFrame.oneMonth:
+        return TimeFrame.all.dateRange;
+      default:
+        return tf.dateRange;
+    }
   }
 
   Future<void> _loadMetrics() async {
@@ -107,7 +123,7 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
   Widget build(BuildContext context) {
     ref.listen<TimeFrame>(appTimeFrameProvider, (previous, next) {
       if (previous == next) return;
-      final range = next.dateRange;
+      final range = _analysisDateRangeFor(next);
       setState(() {
         _startDate = range.start;
         _endDate = range.end;

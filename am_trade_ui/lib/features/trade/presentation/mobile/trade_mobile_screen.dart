@@ -14,6 +14,7 @@ import '../cubit/oms_cubit.dart';
 import '../cubit/trade_controller_cubit.dart';
 import '../models/trade_portfolio_view_model.dart';
 import '../paper/paper_portfolio.dart';
+import '../utils/trade_portfolio_auto_select.dart';
 import '../paper/paper_wallet_banner.dart';
 import '../paper/place_order_web_page.dart';
 import '../../providers/oms_providers.dart';
@@ -81,6 +82,7 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
   String? _currentPortfolioName;
   Timer? _fabHideTimer;
   bool _showFab = true;
+  Set<String>? _knownPortfolioIds;
 
   @override
   void initState() {
@@ -197,6 +199,25 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
       'Portfolio selected: $portfolioName ($portfolioId)',
       tag: 'TradeMobileScreen',
     );
+  }
+
+  void _maybeAutoSelectPortfolio(List<TradePortfolioViewModel> portfolios) {
+    if (portfolios.isEmpty) return;
+
+    final autoSelect = resolveTradePortfolioAutoSelect(
+      portfolios: portfolios,
+      knownIds: _knownPortfolioIds,
+      currentPortfolioId: _currentPortfolioId,
+    );
+    _knownPortfolioIds = portfolios.map((p) => p.id).toSet();
+
+    if (autoSelect != null && autoSelect.id != _currentPortfolioId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _onPortfolioSelected(autoSelect.id, autoSelect.name);
+        }
+      });
+    }
   }
 
   void _leaveAddTrade() {
@@ -375,6 +396,9 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
             data: (portfolios) {
               final omsCubit = ref.watch(omsCubitProvider).asData?.value;
               final paper = omsCubit?.state.paperWallet;
+
+              _maybeAutoSelectPortfolio(portfolios);
+
               return TradePortfolioDiscoveryTemplate(
               portfolios: mergePaperWallet(portfolios, paper),
               isLoading: false,
