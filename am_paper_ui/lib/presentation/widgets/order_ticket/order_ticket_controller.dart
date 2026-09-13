@@ -1,8 +1,5 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:http/http.dart' as http;
 
 import '../../../data/paper_market_client.dart';
 import '../../../data/quote_models.dart';
@@ -84,34 +81,13 @@ class OrderTicketController extends ChangeNotifier {
   Future<void> loadQuote(String symbol) async {
     final sym = symbol.trim().toUpperCase();
     if (sym.isEmpty) return;
-    // #region agent log
-    http
-        .post(
-          Uri.parse(
-            'http://127.0.0.1:7626/ingest/0d1c8c7b-9f69-4195-beee-fbf3af51620e',
-          ),
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Debug-Session-Id': 'c7037f',
-          },
-          body: jsonEncode({
-            'sessionId': 'c7037f',
-            'runId': 'post-fix',
-            'hypothesisId': 'A',
-            'location': 'paper_order_ticket.dart:_loadQuote',
-            'message': 'ticket loadQuote with forceRefresh=false (cache)',
-            'data': {'symbol': sym},
-            'timestamp': DateTime.now().millisecondsSinceEpoch,
-          }),
-        )
-        .catchError((_) => http.Response('', 599));
-    // #endregion
     quoteLoading = true;
     displayName = sym;
     notifyListeners();
     final detail = await _client.fetchQuoteDetail(
       sym,
       name: displayName,
+      exchange: exchange,
       forceRefresh: false,
     );
     if (_disposed) return;

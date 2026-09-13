@@ -13,7 +13,6 @@ class PaperOrderTicketWeb extends StatelessWidget {
     required this.symbol,
     required this.wallet,
     required this.submitting,
-    this.onOpenFundamentalAnalysis,
     this.floating = false,
     this.onToggleFloat,
     this.onCloseFloat,
@@ -25,7 +24,6 @@ class PaperOrderTicketWeb extends StatelessWidget {
   final String symbol;
   final OmsWallet? wallet;
   final bool submitting;
-  final VoidCallback? onOpenFundamentalAnalysis;
   final bool floating;
   final VoidCallback? onToggleFloat;
   final VoidCallback? onCloseFloat;
@@ -72,7 +70,6 @@ class PaperOrderTicketWeb extends StatelessWidget {
                     changePct: changePct,
                     priceColor: priceColor,
                     fmt: fmt,
-                    quote: c.quote,
                     isBuy: isBuy,
                     compact: compact,
                     exchange: c.exchange,
@@ -85,30 +82,6 @@ class PaperOrderTicketWeb extends StatelessWidget {
                     onHeaderDragUpdate: onHeaderDragUpdate,
                     onHeaderDragEnd: onHeaderDragEnd,
                   ),
-                  if (onOpenFundamentalAnalysis != null && sym.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: TextButton.icon(
-                        onPressed: onOpenFundamentalAnalysis,
-                        icon: const Icon(Icons.analytics_outlined, size: 18),
-                        label: const Text('Full fundamental analysis'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: colors.actionPrimaryBg,
-                          padding: EdgeInsets.zero,
-                          visualDensity: VisualDensity.compact,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                      ),
-                    ),
-                  ],
-                  if (wallet != null) ...[
-                    const SizedBox(height: 10),
-                    OrderTicketBalanceBar(
-                      available: wallet!.available,
-                      compact: compact,
-                    ),
-                  ],
                   const SizedBox(height: 14),
                   Row(
                     children: [
@@ -455,27 +428,39 @@ class PaperOrderTicketWeb extends StatelessWidget {
                 ),
               ],
             ),
-            child: FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: ctaColor,
-                foregroundColor: colors.actionPrimaryFg,
-                minimumSize: const Size.fromHeight(48),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (wallet != null) ...[
+                  OrderTicketBalanceBar(
+                    available: wallet!.available,
+                    compact: compact,
+                  ),
+                  const SizedBox(height: 10),
+                ],
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: ctaColor,
+                    foregroundColor: colors.actionPrimaryFg,
+                    minimumSize: const Size.fromHeight(48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: submitting || c.localSubmitting || sym.isEmpty
+                      ? null
+                      : () => c.submit(context, symbol: symbol),
+                  child: Text(
+                    submitting || c.localSubmitting
+                        ? 'Submitting…'
+                        : 'Instant ${isBuy ? 'Buy' : 'Sell'}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                    ),
+                  ),
                 ),
-              ),
-              onPressed: submitting || c.localSubmitting || sym.isEmpty
-                  ? null
-                  : () => c.submit(context, symbol: symbol),
-              child: Text(
-                submitting || c.localSubmitting
-                    ? 'Submitting…'
-                    : 'Instant ${isBuy ? 'Buy' : 'Sell'}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                ),
-              ),
+              ],
             ),
           ),
         ],
