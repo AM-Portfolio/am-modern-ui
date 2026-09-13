@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
 import '../../../internal/domain/entities/portfolio_intelligence.dart';
@@ -14,7 +15,7 @@ const double kRiskRadarSweepSeconds = 7;
 const double kRiskRadarSweepHalfWidth = 0.32;
 
 /// Gold used for polygon glow, pedestal, and factor-card focus border.
-const Color kRiskRadarPolygonGold = Color(0xFFF5C542);
+const Color kRiskRadarPolygonGold = IntelligenceColors.riskRadarGold;
 
 /// Primary shout-radar paint order (top → right → bottom → left).
 /// Vol/Beta omitted this pass so the 4-spoke chart stays readable.
@@ -24,11 +25,6 @@ const List<String> kRiskRadarPrimaryAxisIds = [
   'DIVERSIFICATION',
   'LIQUIDITY',
 ];
-
-const Color _kConcentrationAccent = Color(0xFFE91E8C);
-const Color _kSectorAccent = Color(0xFF00D4FF);
-const Color _kDiversificationAccent = Color(0xFF3DDC97);
-const Color _kLiquidityAccent = Color(0xFFF5C542);
 
 double riskRadarAxisAngle(int index, int n, {double yaw = 0}) {
   return -math.pi / 2 + (2 * math.pi * index / n) + yaw;
@@ -99,13 +95,13 @@ String riskRadarBandSeverity(double riskScore) {
 Color riskRadarAxisAccent(String axisId) {
   switch (axisId.toUpperCase()) {
     case 'CONCENTRATION':
-      return _kConcentrationAccent;
+      return IntelligenceColors.riskRadarConcentration;
     case 'SECTOR':
-      return _kSectorAccent;
+      return IntelligenceColors.riskRadarSector;
     case 'DIVERSIFICATION':
-      return _kDiversificationAccent;
+      return IntelligenceColors.riskRadarDiversification;
     case 'LIQUIDITY':
-      return _kLiquidityAccent;
+      return IntelligenceColors.riskRadarLiquidity;
     default:
       return kRiskRadarPolygonGold;
   }

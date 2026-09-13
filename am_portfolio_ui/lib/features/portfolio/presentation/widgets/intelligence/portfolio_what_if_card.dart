@@ -60,6 +60,19 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
   bool _loading = false;
   String? _error;
   WhatIfResult? _result;
+  int _runGeneration = 0;
+
+  @override
+  void didUpdateWidget(covariant PortfolioWhatIfCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.portfolioId == widget.portfolioId) return;
+    _runGeneration++;
+    setState(() {
+      _loading = false;
+      _error = null;
+      _result = null;
+    });
+  }
 
   @override
   void dispose() {
@@ -157,11 +170,19 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
           validation = 'Enter a positive amount';
         }
       } else {
-        final w = double.tryParse(_weightCtrl.text.trim());
-        if (w == null || w <= 0) {
-          validation = 'Enter a positive target weight %';
-        } else if (w > 100) {
-          validation = 'Target weight % must be ≤ 100';
+        final symbol = _symbolCtrl.text.trim().toUpperCase();
+        final held = _holdings().any(
+          (h) => h.symbol.trim().toUpperCase() == symbol,
+        );
+        if (!held) {
+          validation = 'Symbol must be an existing holding';
+        } else {
+          final w = double.tryParse(_weightCtrl.text.trim());
+          if (w == null || w <= 0) {
+            validation = 'Enter a positive target weight %';
+          } else if (w > 100) {
+            validation = 'Target weight % must be ≤ 100';
+          }
         }
       }
     } else {
@@ -180,18 +201,20 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
       _loading = true;
       _error = null;
     });
+    final gen = ++_runGeneration;
+    final modeAtStart = _mode;
     try {
       final remote =
           await ref.read(portfolioRemoteDataSourceProvider.future);
       final result =
           await remote.getPortfolioWhatIf(widget.portfolioId, _body());
-      if (!mounted) return;
+      if (!mounted || gen != _runGeneration || modeAtStart != _mode) return;
       setState(() {
         _result = result;
         _loading = false;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || gen != _runGeneration || modeAtStart != _mode) return;
       setState(() {
         _loading = false;
         _error = _errorMessage(e);
@@ -551,9 +574,14 @@ class _DeltaRow extends StatelessWidget {
     IconData? icon;
     if (delta != null && delta.abs() > 0.05) {
       final up = delta > 0;
-      final good = higherIsBetter ? up : !up;
-      arrowColor =
-          good ? const Color(0xFF00B894) : const Color(0xFFFF7675);
+      // Sector / allocation weight moves stay neutral; score uses P&L semantics.
+      if (higherIsBetter) {
+        final good = up;
+        arrowColor =
+            good ? context.marketPositive : context.marketNegative;
+      } else {
+        arrowColor = context.textSecondary;
+      }
       icon = up ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded;
     }
 

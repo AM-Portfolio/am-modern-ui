@@ -190,12 +190,12 @@ class _TradeHoldingsAdvancedTemplateState
         Icon(
           Icons.error_outline,
           size: 48,
-          color: Colors.red.shade300,
+          color: context.statusError,
         ).animate().shake(hz: 2, offset: const Offset(4, 0)).fadeIn(duration: 300.ms),
         const SizedBox(height: 16),
         Text(
           widget.errorMessage!,
-          style: TextStyle(color: Colors.red.shade300, fontSize: 14),
+          style: TextStyle(color: context.statusError, fontSize: 14),
           textAlign: TextAlign.center,
         ),
         if (widget.onRefresh != null) ...[
@@ -247,8 +247,8 @@ class _TradeHoldingsAdvancedTemplateState
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             _buildFilterPill('all', 'All', _accent),
-            _buildFilterPill('profit', 'Profit', Colors.green),
-            _buildFilterPill('loss', 'Loss', Colors.red),
+            _buildFilterPill('profit', 'Profit', context.marketPositive),
+            _buildFilterPill('loss', 'Loss', context.marketNegative),
             const SizedBox(width: 4),
             // View Mode Toggle - always visible inside filter section
             Container(
@@ -477,7 +477,7 @@ class _TradeHoldingsAdvancedTemplateState
 
   Widget _buildCustomTableRow(TradeHoldingViewModel holding, int index) {
     final isPositive = holding.isProfit;
-    final pnlColor = isPositive ? Colors.green : Colors.red;
+    final pnlColor = isPositive ? context.marketPositive : context.marketNegative;
     final isExpanded = _isExpanded(holding.tradeId);
     final theme = Theme.of(context);
 
@@ -572,13 +572,13 @@ class _TradeHoldingsAdvancedTemplateState
       Icon(
         isPositive ? Icons.trending_up : Icons.trending_down,
         size: 14,
-        color: isPositive ? Colors.green : Colors.red,
+        color: isPositive ? context.marketPositive : context.marketNegative,
       ),
       const SizedBox(width: 4),
       Flexible(
         child: Text(
           value,
-          style: TextStyle(fontWeight: FontWeight.bold, color: isPositive ? Colors.green : Colors.red),
+          style: TextStyle(fontWeight: FontWeight.bold, color: isPositive ? context.marketPositive : context.marketNegative),
           overflow: TextOverflow.ellipsis,
           maxLines: 1,
         ),
@@ -589,12 +589,12 @@ class _TradeHoldingsAdvancedTemplateState
   Widget _buildPnLPercentageCell(String value, bool isPositive) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
     decoration: BoxDecoration(
-      color: (isPositive ? Colors.green : Colors.red).withOpacity(0.1),
+      color: (isPositive ? context.marketPositive : context.marketNegative).withOpacity(0.1),
       borderRadius: BorderRadius.circular(3),
     ),
     child: Text(
       value,
-      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: isPositive ? Colors.green : Colors.red),
+      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: isPositive ? context.marketPositive : context.marketNegative),
     ),
   );
 
@@ -627,7 +627,7 @@ class _TradeHoldingsAdvancedTemplateState
 
   Widget _buildAdvancedHoldingCard(TradeHoldingViewModel holding, int index) {
     final isPositive = holding.isProfit;
-    final pnlColor = isPositive ? Colors.green : Colors.red;
+    final pnlColor = isPositive ? context.marketPositive : context.marketNegative;
     final isExpanded = _isExpanded(holding.tradeId);
     final isDark = _isDarkChrome;
     final scheme = Theme.of(context).colorScheme;
@@ -983,7 +983,7 @@ class _TradeHoldingsAdvancedTemplateState
                 _buildDetailChip(
                   holding.displayStatus,
                   Icons.flag,
-                  holding.displayStatus == 'ACTIVE' ? Colors.green : Colors.grey,
+                  holding.displayStatus == 'ACTIVE' ? context.marketPositive : context.statusNeutral,
                 ),
               ],
             ),
@@ -1188,16 +1188,16 @@ class _TradeHoldingsAdvancedTemplateState
     switch (status.toUpperCase()) {
       case 'WIN':
       case 'CLOSED':
-        return Colors.green;
+        return context.marketPositive;
       case 'LOSS':
-        return Colors.red;
+        return context.marketNegative;
       case 'ACTIVE':
       case 'OPEN':
-        return Colors.blue;
+        return context.statusInfo;
       case 'BREAKEVEN':
-        return Colors.amber;
+        return context.statusWarning;
       default:
-        return Colors.grey;
+        return context.statusNeutral;
     }
   }
 }

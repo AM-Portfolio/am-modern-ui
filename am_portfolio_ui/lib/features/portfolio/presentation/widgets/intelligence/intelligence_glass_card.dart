@@ -111,7 +111,7 @@ class IntelligenceGlassCard extends StatelessWidget {
                     ]
                   : [
                       Colors.white.withValues(alpha: 0.45),
-                      const Color(0xFFF5F7FF).withValues(alpha: 0.25),
+                      IntelligenceColors.mist.withValues(alpha: 0.25),
                     ],
             ),
             border: Border.all(
@@ -275,7 +275,7 @@ class IntelligenceCardSkeleton extends StatelessWidget {
     return Container(
       height: height,
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0D1B2A) : Colors.grey.shade200,
+        color: isDark ? IntelligenceColors.surfaceDeep : Colors.grey.shade200,
         borderRadius: BorderRadius.circular(18),
       ),
     );

@@ -6,6 +6,6 @@ bool isUsableIntelligenceSectorLabel(String raw) {
   if (lower == 'unknown' || lower == 'n/a' || lower == 'na' || lower == 'null') {
     return false;
   }
-  if (RegExp(r'^[\-–—_/\\.|]+$').hasMatch(s)) return false;
+  if (!RegExp(r'[A-Za-z0-9]').hasMatch(s)) return false;
   return true;
 }

@@ -1,3 +1,4 @@
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
 import '../../../internal/domain/entities/portfolio_intelligence.dart';
@@ -6,20 +7,10 @@ import '../../../internal/domain/entities/portfolio_intelligence.dart';
 class IntelligenceDonut {
   IntelligenceDonut._();
 
-  static const palette = <Color>[
-    Color(0xFFD4AF37),
-    Color(0xFFFBBF24),
-    Color(0xFFF472B6),
-    Color(0xFF34D399),
-    Color(0xFFA78BFA),
-    Color(0xFFFB923C),
-    Color(0xFF60A5FA),
-    Color(0xFF2DD4BF),
-  ];
+  static const palette = IntelligenceColors.chartPalette;
 }
 
-Color intelligenceDonutColor(int index) =>
-    IntelligenceDonut.palette[index % IntelligenceDonut.palette.length];
+Color intelligenceDonutColor(int index) => IntelligenceColors.chartColor(index);
 
 /// Legacy static donut (tests / fallback). Prefer interactive X-Ray painter.
 class IntelligenceDonutView extends StatelessWidget {

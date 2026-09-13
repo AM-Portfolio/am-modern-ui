@@ -150,7 +150,7 @@ class _RiskRadarLiveViewState extends State<RiskRadarLiveView>
                     ? constraints.maxHeight
                     : 260.0,
               )
-              .clamp(168.0, 320.0);
+              .clamp(0.0, 320.0);
 
           return SizedBox(
             width: side,

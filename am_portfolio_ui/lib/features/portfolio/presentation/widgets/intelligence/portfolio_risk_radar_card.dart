@@ -140,7 +140,7 @@ class _RiskRadarLoadedBodyState extends State<_RiskRadarLoadedBody> {
         primaryAxes.length >= 3 ? primaryAxes : risk.axes.take(4).toList();
     final factors = _riskFactorRows(risk, chartAxes);
     final overall = _worstBandLabel(factors);
-    final overallColor = _severityColor(overall);
+    final overallColor = _severityColor(context, overall);
     final semanticsBand = '$overall Risk';
     // Soft painter focus from sweep only; strong selection only when pinned.
     final focusAxisId = _userPinned ? null : _sweepFocusId;
@@ -376,7 +376,7 @@ class _RiskFactorCardState extends State<_RiskFactorCard> {
       'MEDIUM' || 'WATCH' => 'Medium',
       _ => 'Good',
     };
-    final severityColor = _severityColor(row.severity);
+    final severityColor = _severityColor(context, row.severity);
     final accent = riskRadarAxisAccent(row.axisId);
     final goldFocus = widget.selected || widget.expanded || _hovered;
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
@@ -569,17 +569,5 @@ class _KeyInsightPanel extends StatelessWidget {
   }
 }
 
-Color _severityColor(String? severity) {
-  final s = (severity ?? '').toUpperCase();
-  switch (s) {
-    case 'HIGH':
-    case 'CRITICAL':
-      return const Color(0xFFFF7675);
-    case 'MEDIUM':
-    case 'WATCH':
-      return const Color(0xFFFDCB6E);
-    case 'GOOD':
-    default:
-      return const Color(0xFF00B894);
-  }
-}
+Color _severityColor(BuildContext context, String? severity) =>
+    IntelligenceColors.severity(severity, context.colors);

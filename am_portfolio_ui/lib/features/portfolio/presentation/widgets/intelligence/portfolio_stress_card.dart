@@ -15,8 +15,13 @@ import 'intelligence_suggest_search.dart';
 const kStressPresets = <String, String>{
   'NIFTY_DOWN_10': 'NIFTY −10%',
   'NIFTY_DOWN_20': 'NIFTY −20%',
+  'SENSEX_DOWN_10': 'Sensex −10%',
+  'SENSEX_DOWN_20': 'Sensex −20%',
   'BANKING_DOWN_20': 'Banking −20%',
   'IT_DOWN_15': 'IT −15%',
+  'AUTO_DOWN_20': 'Auto −20%',
+  'PHARMA_DOWN_15': 'Pharma −15%',
+  'ENERGY_DOWN_20': 'Energy −20%',
   'CRASH_2008': 'Market Crash 2008',
 };
 
@@ -67,6 +72,27 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
   @override
   void initState() {
     super.initState();
+    if (widget.initiallyExpanded) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadAllPresets());
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant PortfolioStressCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.portfolioId == widget.portfolioId) return;
+    _sectorCtrl.clear();
+    _shockCtrl.clear();
+    setState(() {
+      _loading = false;
+      _customLoading = false;
+      _error = null;
+      _rows.clear();
+      _failed.clear();
+      _customRow = null;
+      _customFailed = false;
+      _loadedOnce = false;
+    });
     if (widget.initiallyExpanded) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _loadAllPresets());
     }

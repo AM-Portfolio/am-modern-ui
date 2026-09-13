@@ -156,7 +156,7 @@ class PortfolioHealthCard extends ConsumerWidget {
             compact: compact,
             score: health.score,
             band: health.band,
-            bandColor: _bandColor(health.band),
+            bandColor: _bandColor(context, health.band),
             factors: factors,
             strongCount: strongCount,
           ),
@@ -166,36 +166,10 @@ class PortfolioHealthCard extends ConsumerWidget {
   }
 }
 
-Color _bandColor(String band) {
-  switch (band.toLowerCase()) {
-    case 'strong':
-      return const Color(0xFF00D2C6);
-    case 'healthy':
-      return const Color(0xFF55EFC4);
-    case 'critical':
-      return const Color(0xFFFF7675);
-    case 'watch':
-    default:
-      return const Color(0xFFFDCB6E);
-  }
-}
+Color _bandColor(BuildContext context, String band) =>
+    IntelligenceColors.healthBand(band, context.colors);
 
-Color _factorAccent(String id) {
-  switch (id.toLowerCase()) {
-    case 'diversification':
-      return const Color(0xFF00D2C6);
-    case 'concentration':
-      return const Color(0xFFFF6B9D);
-    case 'liquidity':
-      return const Color(0xFF4DA3FF);
-    case 'allocation':
-      return const Color(0xFFA78BFA);
-    case 'risk_resilience':
-      return const Color(0xFFFF9F43);
-    default:
-      return ModuleColors.portfolio;
-  }
-}
+Color _factorAccent(String id) => IntelligenceColors.factorAccent(id);
 
 IconData _factorIcon(String id) {
   switch (id.toLowerCase()) {
@@ -446,7 +420,8 @@ class _FactorRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent = _factorAccent(component.id);
     final status = healthStatusLabel(component.score);
-    final statusColor = _bandColor(healthBandForScore(component.score));
+    final statusColor =
+        _bandColor(context, healthBandForScore(component.score));
     final reason = healthReasonDisplay(component.reason);
     final progress = (component.score.clamp(0, 100)) / 100;
     final isDark = Theme.of(context).brightness == Brightness.dark;

@@ -190,7 +190,10 @@ class _ChartBootstrapSkeleton extends StatelessWidget {
         : Colors.black.withValues(alpha: 0.06);
     final line = accent.withValues(alpha: 0.35);
 
-    return LayoutBuilder(
+    return Semantics(
+      label: 'Loading chart',
+      liveRegion: true,
+      child: LayoutBuilder(
       builder: (context, constraints) {
         final hasBound =
             constraints.hasBoundedHeight && constraints.maxHeight.isFinite;
@@ -243,6 +246,7 @@ class _ChartBootstrapSkeleton extends StatelessWidget {
           ],
         );
       },
+    ),
     );
   }
 }

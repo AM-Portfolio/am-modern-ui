@@ -692,10 +692,10 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         subtitle:
             '${periodReturnPct >= 0 ? "+" : ""}${periodReturnPct.toStringAsFixed(2)}% in $periodLabel',
         accentColor: periodReturn == 0
-            ? Colors.grey
+            ? context.statusNeutral
             : (periodReturn > 0
-                ? const Color(0xFF00B894)
-                : const Color(0xFFFF7675)),
+                ? context.marketPositive
+                : context.marketNegative),
         chromeColor: modulePink,
         icon: periodReturn >= 0
             ? Icons.trending_up_rounded
@@ -713,10 +713,10 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         subtitle:
             '${summaryToUse.todayChangePercentage >= 0 ? "+" : ""}${summaryToUse.todayChangePercentage.toStringAsFixed(2)}% today',
         accentColor: summaryToUse.todayChange == 0
-            ? Colors.grey
+            ? context.statusNeutral
             : (summaryToUse.todayChange > 0
-                ? const Color(0xFF00B894)
-                : const Color(0xFFFF7675)),
+                ? context.marketPositive
+                : context.marketNegative),
         chromeColor: modulePink,
         icon: summaryToUse.todayChange >= 0
             ? Icons.keyboard_double_arrow_up_rounded
