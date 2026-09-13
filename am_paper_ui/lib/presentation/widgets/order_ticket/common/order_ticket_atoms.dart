@@ -2,8 +2,6 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../data/quote_models.dart';
-
 class OrderTicketHeaderBlock extends StatelessWidget {
   const OrderTicketHeaderBlock({
     super.key,
@@ -14,7 +12,6 @@ class OrderTicketHeaderBlock extends StatelessWidget {
     required this.changePct,
     required this.priceColor,
     required this.fmt,
-    required this.quote,
     required this.isBuy,
     required this.onBuy,
     required this.onSell,
@@ -35,7 +32,6 @@ class OrderTicketHeaderBlock extends StatelessWidget {
   final double changePct;
   final Color priceColor;
   final NumberFormat fmt;
-  final QuoteDetail? quote;
   final bool isBuy;
   final VoidCallback onBuy;
   final VoidCallback onSell;
@@ -169,39 +165,6 @@ class OrderTicketHeaderBlock extends StatelessWidget {
                   color: colors.textSecondary,
                 ),
           ),
-        if (!compact && quote != null && ltp > 0) ...[
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            decoration: BoxDecoration(
-              color: colors.marketCardSurface,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: colors.marketBorderMuted),
-            ),
-            child: Row(
-              children: [
-                OrderTicketMiniStat(
-                  'Open',
-                  quote!.open != null ? fmt.format(quote!.open) : '—',
-                ),
-                OrderTicketMiniStat(
-                  'High',
-                  quote!.high != null ? fmt.format(quote!.high) : '—',
-                ),
-                OrderTicketMiniStat(
-                  'Low',
-                  quote!.low != null ? fmt.format(quote!.low) : '—',
-                ),
-                OrderTicketMiniStat(
-                  'Prev',
-                  quote!.previousClose != null
-                      ? fmt.format(quote!.previousClose)
-                      : '—',
-                ),
-              ],
-            ),
-          ),
-        ],
         SizedBox(height: compact ? 8 : 12),
         Row(
           children: [
@@ -218,37 +181,6 @@ class OrderTicketHeaderBlock extends StatelessWidget {
           ],
         ),
       ],
-    );
-  }
-}
-
-class OrderTicketMiniStat extends StatelessWidget {
-  const OrderTicketMiniStat(this.label, this.value, {super.key});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return Expanded(
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: colors.textTertiary,
-                ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-        ],
-      ),
     );
   }
 }

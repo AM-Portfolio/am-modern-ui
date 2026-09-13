@@ -96,7 +96,6 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
           },
           onSideChanged: (s) => setState(() => _side = s),
           onOrderPlaced: _onOrderPlaced,
-          onOpenFundamentalAnalysis: _openFundamentalAnalysis,
         );
       });
       return;
@@ -191,7 +190,6 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
       },
       onSideChanged: (s) => setState(() => _side = s),
       onOrderPlaced: _onOrderPlaced,
-      onOpenFundamentalAnalysis: _openFundamentalAnalysis,
       floating: floating,
       onToggleFloat: floating ? _cycleFloat : null,
       onCloseFloat: floating ? _closeOrderPopup : null,

@@ -13,7 +13,6 @@ Future<void> showPaperOrderTicketSheet({
   required ValueChanged<String> onSymbolChanged,
   required ValueChanged<String> onSideChanged,
   VoidCallback? onOrderPlaced,
-  VoidCallback? onOpenFundamentalAnalysis,
 }) {
   final colors = context.colors;
   // Modal routes sit above the desk tree — re-provide the same cubit.
@@ -64,13 +63,6 @@ Future<void> showPaperOrderTicketSheet({
                         Navigator.of(sheetContext).pop();
                       }
                     },
-                    onOpenFundamentalAnalysis:
-                        onOpenFundamentalAnalysis == null
-                            ? null
-                            : () {
-                                Navigator.of(sheetContext).pop();
-                                onOpenFundamentalAnalysis();
-                              },
                   ),
                 ),
               ],
