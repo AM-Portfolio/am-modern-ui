@@ -30,6 +30,9 @@ class PaperDeskScreen extends StatefulWidget {
 class _PaperDeskScreenState extends State<PaperDeskScreen> {
   static const _ticketWidth = 340.0;
   static const _wideBreakpoint = 1100.0;
+  static const _watchlistMinWidth = 240.0;
+  static const _watchlistMaxWidth = 520.0;
+  static const _watchlistDefaultWidth = 300.0;
 
   String _symbol = '';
   String _side = 'BUY';
@@ -38,6 +41,7 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
   _TicketPlacement _placement = _TicketPlacement.floatTopRight;
   Offset _ticketOffset = Offset.zero;
   Size _deskSize = Size.zero;
+  double _watchlistWidth = _watchlistDefaultWidth;
 
   /// Narrow layout: show Desk (FA / orders) without Watchlist|Desk tabs.
   final _narrowTabs = GlobalKey<_NarrowDeskBodyState>();
@@ -143,12 +147,11 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
 
   Offset _snapBottomNearWatchlist(Size size) {
     if (size.width <= 0 || size.height <= 0) return const Offset(12, 12);
-    const watchlistWidth = 300.0;
     const ticketApproxHeight = 520.0;
     final left = 12.0;
     final top =
         (size.height - ticketApproxHeight - 12).clamp(12.0, size.height);
-    return Offset(left.clamp(0, watchlistWidth), top);
+    return Offset(left.clamp(0, _watchlistWidth), top);
   }
 
   Offset _clampOffset(Offset raw, Size size) {
@@ -351,7 +354,7 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               SizedBox(
-                                width: 300,
+                                width: _watchlistWidth,
                                 child: _framed(
                                   PaperWatchlistPane(
                                     selectedSymbol: _symbol,
@@ -361,7 +364,37 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              MouseRegion(
+                                cursor: SystemMouseCursors.resizeColumn,
+                                child: GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onHorizontalDragUpdate: (details) {
+                                    setState(() {
+                                      _watchlistWidth = (_watchlistWidth +
+                                              details.delta.dx)
+                                          .clamp(
+                                        _watchlistMinWidth,
+                                        _watchlistMaxWidth,
+                                      );
+                                    });
+                                  },
+                                  child: SizedBox(
+                                    width: 6,
+                                    child: Center(
+                                      child: Container(
+                                        width: 2,
+                                        height: 48,
+                                        decoration: BoxDecoration(
+                                          color: context.colors.divider,
+                                          borderRadius:
+                                              BorderRadius.circular(1),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
                               Expanded(
                                 child: _framed(_midPane(context)),
                               ),

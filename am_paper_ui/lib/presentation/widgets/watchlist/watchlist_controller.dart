@@ -303,9 +303,17 @@ class WatchlistController extends ChangeNotifier {
     _notify();
     onSelectSymbol(stock.symbol);
     if (expandedDepthSymbol == stock.symbol) {
+      closeDepth();
       return;
     }
     await openDepth(stock);
+  }
+
+  void closeDepth() {
+    expandedDepthSymbol = null;
+    depthQuote = null;
+    depthLoading = false;
+    _notify();
   }
 
   Future<void> openDepth(WatchlistStock stock) async {
@@ -316,6 +324,7 @@ class WatchlistController extends ChangeNotifier {
     final detail = await _client.fetchQuoteDetail(
       stock.symbol,
       name: stock.name,
+      exchange: stock.exchange,
     );
     if (_disposed) return;
     if (expandedDepthSymbol != stock.symbol) return;

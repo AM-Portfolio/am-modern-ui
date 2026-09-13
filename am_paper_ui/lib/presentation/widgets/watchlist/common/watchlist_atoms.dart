@@ -187,49 +187,58 @@ class WatchlistRow extends StatelessWidget {
                   ],
                 ),
               ),
-              if (showActions)
+              if (showActions) ...[
                 WatchlistActionToolbar(
                   onBuy: onBuy,
                   onSell: onSell,
                   onFundamentals: onFundamentals,
-                  onRemove: onRemove,
-                )
-              else
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          stock.ltp > 0 ? fmt.format(stock.ltp) : '—',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: priceColor,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        stock.ltp > 0 ? fmt.format(stock.ltp) : '—',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: priceColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                      if (stock.ltp > 0) ...[
+                        const SizedBox(width: 4),
+                        Icon(
+                          stock.isNegative
+                              ? Icons.arrow_drop_down
+                              : Icons.arrow_drop_up,
+                          size: 18,
+                          color: priceColor,
                         ),
-                        if (stock.ltp > 0) ...[
-                          const SizedBox(width: 4),
-                          Icon(
-                            stock.isNegative
-                                ? Icons.arrow_drop_down
-                                : Icons.arrow_drop_up,
-                            size: 18,
-                            color: priceColor,
-                          ),
-                        ],
                       ],
-                    ),
-                    Text(
-                      stock.ltp > 0
-                          ? '${fmt.format(stock.change)} (${stock.changePercent.toStringAsFixed(2)}%)'
-                          : '',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: priceColor,
-                          ),
-                    ),
-                  ],
+                    ],
+                  ),
+                  Text(
+                    stock.ltp > 0
+                        ? '${fmt.format(stock.change)} (${stock.changePercent.toStringAsFixed(2)}%)'
+                        : '',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: priceColor,
+                        ),
+                  ),
+                ],
+              ),
+              if (showActions)
+                IconButton(
+                  tooltip: 'Remove',
+                  iconSize: 18,
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                  onPressed: onRemove,
+                  icon: Icon(Icons.close, color: colors.textSecondary),
                 ),
             ],
           ),
@@ -252,13 +261,11 @@ class WatchlistActionToolbar extends StatelessWidget {
     required this.onBuy,
     required this.onSell,
     required this.onFundamentals,
-    required this.onRemove,
   });
 
   final VoidCallback onBuy;
   final VoidCallback onSell;
   final VoidCallback onFundamentals;
-  final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -287,13 +294,6 @@ class WatchlistActionToolbar extends StatelessWidget {
             Icons.analytics_outlined,
             color: _watchlistAccent(context),
           ),
-        ),
-        IconButton(
-          tooltip: 'Remove',
-          iconSize: 18,
-          visualDensity: VisualDensity.compact,
-          onPressed: onRemove,
-          icon: Icon(Icons.close, color: colors.textSecondary),
         ),
       ],
     );
@@ -362,43 +362,80 @@ class WatchlistDepthExpandPanel extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       child: Divider(height: 1, color: colors.divider),
                     ),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 8,
-                      children: [
-                        WatchlistStat(
-                          label: 'LTP',
-                          value: quote!.ltp > 0 ? fmt.format(quote!.ltp) : '—',
-                        ),
-                        WatchlistStat(
-                          label: 'Open',
-                          value: quote!.open != null
-                              ? fmt.format(quote!.open)
-                              : '—',
-                        ),
-                        WatchlistStat(
-                          label: 'Prev close',
-                          value: quote!.previousClose != null
-                              ? fmt.format(quote!.previousClose)
-                              : '—',
-                        ),
-                        WatchlistStat(
-                          label: 'High',
-                          value: quote!.high != null
-                              ? fmt.format(quote!.high)
-                              : '—',
-                        ),
-                        WatchlistStat(
-                          label: 'Low',
-                          value:
-                              quote!.low != null ? fmt.format(quote!.low) : '—',
-                        ),
-                        WatchlistStat(
-                          label: 'Vol traded',
-                          value: quote!.volume != null && quote!.volume! > 0
-                              ? NumberFormat.compact().format(quote!.volume)
-                              : '—',
-                        ),
+                    _WatchlistStatGrid(
+                      rows: [
+                        [
+                          WatchlistStat(
+                            label: 'LTP',
+                            value: quote!.ltp > 0 ? fmt.format(quote!.ltp) : '—',
+                          ),
+                          WatchlistStat(
+                            label: 'Change',
+                            value: quote!.ltp > 0
+                                ? '${quote!.change >= 0 ? '+' : ''}${fmt.format(quote!.change)}'
+                                : '—',
+                            valueColor: quote!.ltp > 0
+                                ? (quote!.isPositive
+                                    ? colors.marketPositiveIndicator
+                                    : quote!.isNegative
+                                        ? colors.marketNegativeIndicator
+                                        : null)
+                                : null,
+                          ),
+                          WatchlistStat(
+                            label: 'Change %',
+                            value: quote!.ltp > 0
+                                ? '${quote!.changePercent >= 0 ? '+' : ''}${quote!.changePercent.toStringAsFixed(2)}%'
+                                : '—',
+                            valueColor: quote!.ltp > 0
+                                ? (quote!.isPositive
+                                    ? colors.marketPositiveIndicator
+                                    : quote!.isNegative
+                                        ? colors.marketNegativeIndicator
+                                        : null)
+                                : null,
+                          ),
+                        ],
+                        [
+                          WatchlistStat(
+                            label: 'Open',
+                            value: quote!.open != null
+                                ? fmt.format(quote!.open)
+                                : '—',
+                          ),
+                          WatchlistStat(
+                            label: 'High',
+                            value: quote!.high != null
+                                ? fmt.format(quote!.high)
+                                : '—',
+                          ),
+                          WatchlistStat(
+                            label: 'Low',
+                            value: quote!.low != null
+                                ? fmt.format(quote!.low)
+                                : '—',
+                          ),
+                        ],
+                        [
+                          WatchlistStat(
+                            label: 'Prev close',
+                            value: quote!.previousClose != null
+                                ? fmt.format(quote!.previousClose)
+                                : '—',
+                          ),
+                          WatchlistStat(
+                            label: 'Vol traded',
+                            value: quote!.volume != null && quote!.volume! > 0
+                                ? NumberFormat.compact().format(quote!.volume)
+                                : '—',
+                          ),
+                          WatchlistStat(
+                            label: 'Exchange',
+                            value: quote!.exchange.isNotEmpty
+                                ? quote!.exchange
+                                : '—',
+                          ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 10),
@@ -414,34 +451,66 @@ class WatchlistDepthExpandPanel extends StatelessWidget {
   }
 }
 
+class _WatchlistStatGrid extends StatelessWidget {
+  const _WatchlistStatGrid({required this.rows});
+
+  final List<List<Widget>> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (var i = 0; i < rows.length; i++) ...[
+          if (i > 0) const SizedBox(height: 10),
+          Row(
+            children: [
+              for (var j = 0; j < rows[i].length; j++) ...[
+                if (j > 0) const SizedBox(width: 12),
+                Expanded(child: rows[i][j]),
+              ],
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 class WatchlistStat extends StatelessWidget {
-  const WatchlistStat({super.key, required this.label, required this.value});
+  const WatchlistStat({
+    super.key,
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
 
   final String label;
   final String value;
+  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return SizedBox(
-      width: 88,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: colors.textSecondary,
-                ),
-          ),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: colors.textSecondary,
+              ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: valueColor,
+              ),
+        ),
+      ],
     );
   }
 }

@@ -45,13 +45,33 @@ class PaperMarketClient {
   }
 
   static bool _isIndexSymbol(String symbol) {
-    final s = symbol.trim().toUpperCase();
+    final s = _bareSymbol(symbol);
     return s == 'NIFTY 50' ||
         s == 'NIFTY50' ||
         s.startsWith('NIFTY ') ||
         s == 'BANK NIFTY' ||
         s == 'BANKNIFTY' ||
         s == 'SENSEX';
+  }
+
+  static String _normalizeExchange(String? exchange) {
+    final ex = (exchange ?? 'NSE').trim().toUpperCase();
+    if (ex.isEmpty) return 'NSE';
+    if (ex == 'NSE_EQ') return 'NSE';
+    if (ex == 'BSE_EQ') return 'BSE';
+    return ex;
+  }
+
+  /// Strip exchange/segment prefix (`NSE:TRENT` → `TRENT`).
+  static String _bareSymbol(String symbol) {
+    final s = symbol.trim().toUpperCase();
+    if (s.contains('|')) {
+      return s.substring(s.indexOf('|') + 1).trim();
+    }
+    if (s.contains(':')) {
+      return s.substring(s.indexOf(':') + 1).trim();
+    }
+    return s;
   }
 
   /// Nifty 50 constituents via indices batch (same path as Market dashboard).
@@ -137,7 +157,7 @@ class PaperMarketClient {
   }
 
   WatchlistStock stockFromSymbol(String symbol, {String? name}) {
-    final sym = symbol.trim().toUpperCase();
+    final sym = _bareSymbol(symbol);
     return WatchlistStock(
       symbol: sym,
       name: (name ?? sym).trim(),
@@ -148,70 +168,88 @@ class PaperMarketClient {
     );
   }
 
-  /// Refresh LTP / change for the given symbols via live-ltp.
+  /// Refresh LTP / change via live-ltp, falling back to quotes when empty/miss.
   Future<List<WatchlistStock>> enrichQuotes(List<WatchlistStock> rows) async {
     if (rows.isEmpty) return rows;
     await _ensureAuth();
-    final symbols =
-        rows.map((r) => r.symbol).where((s) => s.isNotEmpty).toList();
-    if (symbols.isEmpty) return rows;
-    // #region agent log
-    final _dbgStart = DateTime.now().millisecondsSinceEpoch;
-    // #endregion
 
-    final equity = <String>[];
-    final indices = <String>[];
-    for (final s in symbols) {
-      if (_isIndexSymbol(s)) {
-        indices.add(s);
-      } else {
-        equity.add(s);
+    final byExchange = <String, List<WatchlistStock>>{};
+    for (final row in rows) {
+      if (row.symbol.trim().isEmpty) continue;
+      final ex = _normalizeExchange(row.exchange);
+      byExchange.putIfAbsent(ex, () => []).add(row);
+    }
+    if (byExchange.isEmpty) return rows;
+
+    final dataMap = <String, Map<String, dynamic>>{};
+    for (final entry in byExchange.entries) {
+      final exchange = entry.key;
+      final group = entry.value;
+      final equity = <String>[];
+      final indices = <String>[];
+      for (final r in group) {
+        final bare = _bareSymbol(r.symbol);
+        if (_isIndexSymbol(bare)) {
+          indices.add(bare);
+        } else {
+          equity.add(bare);
+        }
+      }
+      final futures = <Future<Map<String, Map<String, dynamic>>>>[];
+      if (equity.isNotEmpty) {
+        futures.add(_fetchLiveLtpMap(
+          equity,
+          isIndexSymbol: false,
+          exchange: exchange,
+        ));
+      }
+      if (indices.isNotEmpty) {
+        futures.add(_fetchLiveLtpMap(
+          indices,
+          isIndexSymbol: true,
+          exchange: exchange,
+        ));
+      }
+      for (final part in await Future.wait(futures)) {
+        dataMap.addAll(part);
       }
     }
 
-    final futures = <Future<Map<String, Map<String, dynamic>>>>[];
-    if (equity.isNotEmpty) {
-      futures.add(_fetchLiveLtpMap(equity, isIndexSymbol: false));
+    // Quotes fallback for symbols still missing LTP (live-ltp often empty off-hours).
+    final stillMissing = <String, List<String>>{};
+    for (final entry in byExchange.entries) {
+      for (final row in entry.value) {
+        final item = _lookupInParsedMap(
+          dataMap,
+          row.symbol,
+          exchange: entry.key,
+        );
+        final ltp = item == null ? 0.0 : _parsePriceFields(item).ltp;
+        if (ltp <= 0) {
+          stillMissing
+              .putIfAbsent(entry.key, () => [])
+              .add(_bareSymbol(row.symbol));
+        }
+      }
     }
-    if (indices.isNotEmpty) {
-      futures.add(_fetchLiveLtpMap(indices, isIndexSymbol: true));
+    for (final entry in stillMissing.entries) {
+      final symbols = entry.value.where((s) => s.isNotEmpty).toSet().toList();
+      if (symbols.isEmpty) continue;
+      final fromQuotes = await _fetchQuotesPriceMap(
+        symbols,
+        exchange: entry.key,
+      );
+      dataMap.addAll(fromQuotes);
     }
-    final parts = await Future.wait(futures);
-    // #region agent log
-    http
-        .post(
-          Uri.parse(
-            'http://127.0.0.1:7626/ingest/0d1c8c7b-9f69-4195-beee-fbf3af51620e',
-          ),
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Debug-Session-Id': 'c7037f',
-          },
-          body: jsonEncode({
-            'sessionId': 'c7037f',
-            'runId': 'pre-fix',
-            'hypothesisId': 'C',
-            'location': 'paper_market_client.dart:enrichQuotes',
-            'message': 'watchlist enrich done (refresh=false)',
-            'data': {
-              'equityCount': equity.length,
-              'indexCount': indices.length,
-              'elapsedMs':
-                  DateTime.now().millisecondsSinceEpoch - _dbgStart,
-            },
-            'timestamp': DateTime.now().millisecondsSinceEpoch,
-          }),
-        )
-        .catchError((_) => http.Response('', 599));
-    // #endregion
-    final dataMap = <String, Map<String, dynamic>>{};
-    for (final p in parts) {
-      dataMap.addAll(p);
-    }
+
     if (dataMap.isEmpty) return rows;
 
     return rows.map((row) {
-      final item = dataMap[row.symbol.toUpperCase()];
+      final item = _lookupInParsedMap(
+        dataMap,
+        row.symbol,
+        exchange: row.exchange,
+      );
       if (item == null) return row;
       final parsed = _parsePriceFields(item);
       if (parsed.ltp <= 0) return row;
@@ -221,6 +259,45 @@ class PaperMarketClient {
         changePercent: parsed.changePercent,
       );
     }).toList();
+  }
+
+  /// Batch quotes → symbol-keyed price maps (same shape as live-ltp parse).
+  Future<Map<String, Map<String, dynamic>>> _fetchQuotesPriceMap(
+    List<String> symbols, {
+    required String exchange,
+  }) async {
+    if (symbols.isEmpty) return {};
+    final ex = _normalizeExchange(exchange);
+    final joined = symbols.map(_bareSymbol).where((s) => s.isNotEmpty).join(',');
+    if (joined.isEmpty) return {};
+    final root = await _fetchQuotesHttp(
+      joined,
+      exchange: ex,
+      forceRefresh: false,
+    );
+    if (root == null) return {};
+
+    Map data = root;
+    if (root['quotes'] is Map) {
+      data = root['quotes'] as Map;
+    } else if (root['data'] is Map) {
+      data = root['data'] as Map;
+    }
+
+    final out = <String, Map<String, dynamic>>{};
+    data.forEach((key, value) {
+      if (value is! Map) return;
+      final raw = key.toString().trim().toUpperCase();
+      if (raw.isEmpty) return;
+      final map = Map<String, dynamic>.from(value);
+      final bare = _bareSymbol(raw);
+      out[raw] = map;
+      if (bare.isNotEmpty && bare != raw) {
+        out.putIfAbsent(bare, () => map);
+      }
+      out.putIfAbsent('$ex:$bare', () => map);
+    });
+    return out;
   }
 
   /// Enrich in chunks so callers can paint progressive LTP.
@@ -242,15 +319,17 @@ class PaperMarketClient {
     List<String> symbols, {
     required bool isIndexSymbol,
     bool refresh = false,
+    String exchange = 'NSE',
   }) async {
     if (symbols.isEmpty) return {};
+    final ex = _normalizeExchange(exchange);
     final normalized = symbols
-        .map((s) => s.trim().toUpperCase())
+        .map(_bareSymbol)
         .where((s) => s.isNotEmpty)
         .toList();
     if (normalized.isEmpty) return {};
     normalized.sort();
-    final cacheKey = '$isIndexSymbol|$refresh|${normalized.join(',')}';
+    final cacheKey = '$ex|$isIndexSymbol|$refresh|${normalized.join(',')}';
     final inflight = _inflightLtp[cacheKey];
     if (inflight != null) return inflight;
 
@@ -258,6 +337,7 @@ class PaperMarketClient {
       normalized,
       isIndexSymbol: isIndexSymbol,
       refresh: refresh,
+      exchange: ex,
     );
     _inflightLtp[cacheKey] = future;
     try {
@@ -271,14 +351,15 @@ class PaperMarketClient {
     List<String> symbols, {
     required bool isIndexSymbol,
     required bool refresh,
+    required String exchange,
   }) async {
     final joined = symbols.join(',');
 
-    // One HTTP call only — avoid SDK then HTTP double-hit (same URL twice).
     var parsed = await _fetchLiveLtpHttp(
       joined,
       isIndexSymbol: isIndexSymbol,
       refresh: refresh,
+      exchange: exchange,
     );
 
     if (parsed.isEmpty) {
@@ -293,9 +374,10 @@ class PaperMarketClient {
       } catch (_) {}
     }
 
-    // Remap single-symbol bare quote payloads onto the requested symbol.
     if (parsed.containsKey('_') && symbols.length == 1) {
-      parsed[symbols.first.toUpperCase()] = parsed.remove('_')!;
+      final bare = symbols.first;
+      parsed[bare] = parsed.remove('_')!;
+      parsed['$exchange:$bare'] = parsed[bare]!;
     }
     return parsed;
   }
@@ -304,16 +386,18 @@ class PaperMarketClient {
   Future<double> fetchLiveLtp(
     String symbol, {
     bool forceRefresh = false,
+    String exchange = 'NSE',
   }) async {
-    final sym = symbol.trim().toUpperCase();
+    final sym = _bareSymbol(symbol);
     if (sym.isEmpty) return 0;
     await _ensureAuth();
     final map = await _fetchLiveLtpMap(
       [sym],
       isIndexSymbol: _isIndexSymbol(sym),
       refresh: forceRefresh,
+      exchange: exchange,
     );
-    final item = map[sym] ?? map['_'];
+    final item = _lookupInParsedMap(map, sym, exchange: exchange);
     if (item == null) return 0;
     return _parsePriceFields(item).ltp;
   }
@@ -322,15 +406,13 @@ class PaperMarketClient {
     String symbols, {
     required bool isIndexSymbol,
     bool refresh = false,
+    String exchange = 'NSE',
   }) async {
-    // #region agent log
-    final _dbgStart = DateTime.now().millisecondsSinceEpoch;
-    final _symCount = symbols.split(',').where((s) => s.trim().isNotEmpty).length;
-    // #endregion
     try {
       final uri = Uri.parse('${EnvDomains.market}/v1/market-data/live-ltp')
           .replace(queryParameters: {
         'symbols': symbols,
+        'exchange': _normalizeExchange(exchange),
         'isIndexSymbol': isIndexSymbol.toString(),
         'timeframe': '1D',
         'refresh': refresh.toString(),
@@ -341,38 +423,6 @@ class PaperMarketClient {
           'Authorization': 'Bearer $_bearer',
       };
       final response = await http.get(uri, headers: headers);
-      // #region agent log
-      final _dbgMs = DateTime.now().millisecondsSinceEpoch - _dbgStart;
-      http
-          .post(
-            Uri.parse(
-              'http://127.0.0.1:7626/ingest/0d1c8c7b-9f69-4195-beee-fbf3af51620e',
-            ),
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Debug-Session-Id': 'c7037f',
-            },
-            body: jsonEncode({
-              'sessionId': 'c7037f',
-              'runId': 'pre-fix',
-              'hypothesisId': 'A',
-              'location': 'paper_market_client.dart:_fetchLiveLtpHttp',
-              'message': 'live-ltp http completed',
-              'data': {
-                'refresh': refresh,
-                'isIndexSymbol': isIndexSymbol,
-                'symbolCount': _symCount,
-                'symbolsPreview': symbols.length > 80
-                    ? '${symbols.substring(0, 80)}…'
-                    : symbols,
-                'status': response.statusCode,
-                'elapsedMs': _dbgMs,
-              },
-              'timestamp': DateTime.now().millisecondsSinceEpoch,
-            }),
-          )
-          .catchError((_) => http.Response('', 599));
-      // #endregion
       if (response.statusCode < 200 || response.statusCode >= 300) {
         return {};
       }
@@ -383,35 +433,42 @@ class PaperMarketClient {
         if (v != null) asObjects[k.toString()] = v as Object;
       });
       return _parseLiveLtpData(asObjects);
-    } catch (e) {
-      // #region agent log
-      http
-          .post(
-            Uri.parse(
-              'http://127.0.0.1:7626/ingest/0d1c8c7b-9f69-4195-beee-fbf3af51620e',
-            ),
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Debug-Session-Id': 'c7037f',
-            },
-            body: jsonEncode({
-              'sessionId': 'c7037f',
-              'runId': 'pre-fix',
-              'hypothesisId': 'A',
-              'location': 'paper_market_client.dart:_fetchLiveLtpHttp',
-              'message': 'live-ltp http error',
-              'data': {
-                'refresh': refresh,
-                'elapsedMs':
-                    DateTime.now().millisecondsSinceEpoch - _dbgStart,
-                'error': e.toString(),
-              },
-              'timestamp': DateTime.now().millisecondsSinceEpoch,
-            }),
-          )
-          .catchError((_) => http.Response('', 599));
-      // #endregion
+    } catch (_) {
       return {};
+    }
+  }
+
+  /// Quotes GET with exchange (SDK has no exchange param yet).
+  Future<Map<String, Object>?> _fetchQuotesHttp(
+    String symbol, {
+    required String exchange,
+    bool forceRefresh = false,
+  }) async {
+    try {
+      final uri = Uri.parse('${EnvDomains.market}/v1/market-data/quotes')
+          .replace(queryParameters: {
+        'symbols': symbol,
+        'exchange': _normalizeExchange(exchange),
+        'refresh': forceRefresh.toString(),
+      });
+      final headers = <String, String>{
+        'Accept': 'application/json',
+        if (_bearer != null && _bearer!.isNotEmpty)
+          'Authorization': 'Bearer $_bearer',
+      };
+      final response = await http.get(uri, headers: headers);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        return null;
+      }
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map) return null;
+      final asObjects = <String, Object>{};
+      decoded.forEach((k, v) {
+        if (v != null) asObjects[k.toString()] = v as Object;
+      });
+      return asObjects;
+    } catch (_) {
+      return null;
     }
   }
 
@@ -426,11 +483,22 @@ class PaperMarketClient {
     final out = <String, Map<String, dynamic>>{};
     data.forEach((key, value) {
       if (value is! Map) return;
-      final sym = key.toString().trim().toUpperCase();
-      if (sym.isEmpty) return;
-      out[sym] = Map<String, dynamic>.from(value);
+      final raw = key.toString().trim().toUpperCase();
+      if (raw.isEmpty) return;
+      final map = Map<String, dynamic>.from(value);
+      out[raw] = map;
+      final bare = _bareSymbol(raw);
+      if (bare.isNotEmpty && bare != raw) {
+        out.putIfAbsent(bare, () => map);
+      }
+      // Prefer exchange from payload when indexing qualified key.
+      final ex = _normalizeExchange(
+        (map['exchange'] ?? map['segment'] ?? '').toString(),
+      );
+      if (ex.isNotEmpty && bare.isNotEmpty) {
+        out.putIfAbsent('$ex:$bare', () => map);
+      }
     });
-    // Single-symbol payload shaped as the quote itself.
     if (out.isEmpty &&
         (data.containsKey('lastPrice') ||
             data.containsKey('last_price') ||
@@ -440,108 +508,69 @@ class PaperMarketClient {
     return out;
   }
 
+  Map<String, dynamic>? _lookupInParsedMap(
+    Map<String, Map<String, dynamic>> data,
+    String symbol, {
+    String? exchange,
+  }) {
+    final bare = _bareSymbol(symbol);
+    final ex = _normalizeExchange(exchange);
+    return data['$ex:$bare'] ??
+        data[bare] ??
+        data[symbol.trim().toUpperCase()] ??
+        data['_'];
+  }
+
   /// Full quote + optional market depth for one symbol.
   Future<QuoteDetail?> fetchQuoteDetail(
     String symbol, {
     String? name,
+    String exchange = 'NSE',
     bool forceRefresh = false,
   }) async {
-    final sym = symbol.trim().toUpperCase();
+    final sym = _bareSymbol(symbol);
     if (sym.isEmpty) return null;
+    final ex = _normalizeExchange(exchange);
     await _ensureAuth();
-    // #region agent log
-    final _dbgStart = DateTime.now().millisecondsSinceEpoch;
-    // #endregion
 
-    Map<String, dynamic>? item;
+    Map<String, dynamic>? quoteItem;
     try {
-      final quotes = await _sdk.marketDataApi.getQuotes(
+      final quotes = await _fetchQuotesHttp(
         sym,
-        refresh: forceRefresh,
+        exchange: ex,
+        forceRefresh: forceRefresh,
       );
-      item = _extractQuoteItem(quotes, sym);
-      // #region agent log
-      http
-          .post(
-            Uri.parse(
-              'http://127.0.0.1:7626/ingest/0d1c8c7b-9f69-4195-beee-fbf3af51620e',
-            ),
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Debug-Session-Id': 'c7037f',
-            },
-            body: jsonEncode({
-              'sessionId': 'c7037f',
-              'runId': 'pre-fix',
-              'hypothesisId': 'D',
-              'location': 'paper_market_client.dart:fetchQuoteDetail',
-              'message': 'quotes leg done',
-              'data': {
-                'symbol': sym,
-                'forceRefresh': forceRefresh,
-                'quotesHit': item != null,
-                'elapsedMs':
-                    DateTime.now().millisecondsSinceEpoch - _dbgStart,
-              },
-              'timestamp': DateTime.now().millisecondsSinceEpoch,
-            }),
-          )
-          .catchError((_) => http.Response('', 599));
-      // #endregion
+      quoteItem = _extractQuoteItem(quotes, sym, exchange: ex);
     } catch (_) {}
 
-    if (item == null) {
+    // Always merge live-ltp for LTP / previousClose / day change (Insider parity).
+    Map<String, dynamic>? ltpItem;
+    try {
       final map = await _fetchLiveLtpMap(
         [sym],
         isIndexSymbol: _isIndexSymbol(sym),
         refresh: forceRefresh,
+        exchange: ex,
       );
-      item = map[sym] ?? map['_'];
-      // #region agent log
-      http
-          .post(
-            Uri.parse(
-              'http://127.0.0.1:7626/ingest/0d1c8c7b-9f69-4195-beee-fbf3af51620e',
-            ),
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Debug-Session-Id': 'c7037f',
-            },
-            body: jsonEncode({
-              'sessionId': 'c7037f',
-              'runId': 'pre-fix',
-              'hypothesisId': 'D',
-              'location': 'paper_market_client.dart:fetchQuoteDetail',
-              'message': 'fell back to live-ltp',
-              'data': {
-                'symbol': sym,
-                'forceRefresh': forceRefresh,
-                'ltpHit': item != null,
-                'elapsedMs':
-                    DateTime.now().millisecondsSinceEpoch - _dbgStart,
-              },
-              'timestamp': DateTime.now().millisecondsSinceEpoch,
-            }),
-          )
-          .catchError((_) => http.Response('', 599));
-      // #endregion
-    }
+      ltpItem = _lookupInParsedMap(map, sym, exchange: ex);
+    } catch (_) {}
 
+    final item = _mergeQuoteMaps(quoteItem, ltpItem);
     if (item == null) {
-      return QuoteDetail(symbol: sym, name: name, exchange: 'NSE');
+      return QuoteDetail(symbol: sym, name: name, exchange: ex);
     }
 
     final prices = _parsePriceFields(item);
     final ohlc = item['ohlc'] is Map ? item['ohlc'] as Map : null;
-    final open = _asDouble(item['open'] ??
+    final openRaw = _asDouble(item['open'] ??
             item['openPrice'] ??
             ohlc?['open']) ??
         prices.open;
-    final high = _asDouble(item['high'] ??
+    final highRaw = _asDouble(item['high'] ??
             item['highPrice'] ??
             ohlc?['high']) ??
         prices.high;
-    final low = _asDouble(item['low'] ??
+    final lowRaw = _asDouble(item['low'] ??
             item['lowPrice'] ??
             ohlc?['low']) ??
         prices.low;
@@ -549,8 +578,13 @@ class PaperMarketClient {
             item['previous_close'] ??
             ohlc?['close']) ??
         prices.previousClose;
-    final exchange =
-        (item['exchange'] ?? item['segment'] ?? 'NSE').toString().toUpperCase();
+    // Provider often sends 0.0 for missing OHLC outside session.
+    final open = (openRaw != null && openRaw > 0) ? openRaw : null;
+    final high = (highRaw != null && highRaw > 0) ? highRaw : null;
+    final low = (lowRaw != null && lowRaw > 0) ? lowRaw : null;
+    final resolvedExchange = _normalizeExchange(
+      (item['exchange'] ?? item['segment'] ?? ex).toString(),
+    );
 
     final depth = item['marketDepth'] ?? item['depth'] ?? item['market_depth'];
     final buy = _parseDepthSide(depth, isBuy: true);
@@ -568,7 +602,7 @@ class PaperMarketClient {
     return QuoteDetail(
       symbol: sym,
       name: name,
-      exchange: exchange.isEmpty ? 'NSE' : exchange,
+      exchange: resolvedExchange.isEmpty ? ex : resolvedExchange,
       ltp: prices.ltp,
       change: prices.change,
       changePercent: prices.changePercent,
@@ -582,33 +616,100 @@ class PaperMarketClient {
     );
   }
 
-  Map<String, dynamic>? _extractQuoteItem(
-    Map<String, Object>? root,
-    String symbol,
+  /// Prefer quotes OHLC/depth; overlay live-ltp price fields when stronger.
+  Map<String, dynamic>? _mergeQuoteMaps(
+    Map<String, dynamic>? quotes,
+    Map<String, dynamic>? ltp,
   ) {
-    if (root == null) return null;
-    Map data = root;
-    if (root['data'] is Map) {
-      data = root['data'] as Map;
+    if (quotes == null && ltp == null) return null;
+    if (quotes == null) return Map<String, dynamic>.from(ltp!);
+    if (ltp == null) return Map<String, dynamic>.from(quotes);
+
+    final merged = Map<String, dynamic>.from(quotes);
+    final ltpPrices = _parsePriceFields(ltp);
+    final quotePrices = _parsePriceFields(quotes);
+
+    if (ltpPrices.ltp > 0 &&
+        (quotePrices.ltp <= 0 || ltpPrices.ltp != quotePrices.ltp)) {
+      merged['lastPrice'] = ltpPrices.ltp;
+      merged['ltp'] = ltpPrices.ltp;
     }
-    return _findSymbolMap(data, symbol);
+    if (ltpPrices.previousClose != null && ltpPrices.previousClose! > 0) {
+      merged['previousClose'] = ltpPrices.previousClose;
+    }
+    if (ltpPrices.change != 0 || quotePrices.change == 0) {
+      merged['change'] = ltpPrices.change;
+    }
+    if (ltpPrices.changePercent != 0 || quotePrices.changePercent == 0) {
+      merged['changePercent'] = ltpPrices.changePercent;
+    }
+    final ltpEx = ltp['exchange'] ?? ltp['segment'];
+    if (ltpEx != null && '$ltpEx'.trim().isNotEmpty) {
+      merged['exchange'] = ltpEx;
+    }
+    return merged;
   }
 
-  Map<String, dynamic>? _findSymbolMap(Map data, String symbol) {
-    final key = data.keys.firstWhere(
-      (k) => k.toString().toUpperCase() == symbol.toUpperCase(),
-      orElse: () => '',
-    );
-    if (key == '' || data[key] is! Map) {
-      // Sometimes payload is the quote itself (single-symbol).
-      if (data.containsKey('lastPrice') ||
-          data.containsKey('last_price') ||
-          data.containsKey('ltp')) {
-        return Map<String, dynamic>.from(data);
-      }
-      return null;
+  Map<String, dynamic>? _extractQuoteItem(
+    Map<String, Object>? root,
+    String symbol, {
+    String exchange = 'NSE',
+  }) {
+    if (root == null) return null;
+    Map data = root;
+    if (root['quotes'] is Map) {
+      data = root['quotes'] as Map;
+    } else if (root['data'] is Map) {
+      data = root['data'] as Map;
     }
-    return Map<String, dynamic>.from(data[key] as Map);
+    return _findSymbolMap(data, symbol, exchange: exchange);
+  }
+
+  Map<String, dynamic>? _findSymbolMap(
+    Map data,
+    String symbol, {
+    String exchange = 'NSE',
+  }) {
+    final bare = _bareSymbol(symbol);
+    final ex = _normalizeExchange(exchange);
+    final candidates = <String>[
+      '$ex:$bare',
+      bare,
+      symbol.trim().toUpperCase(),
+      'NSE_EQ:$bare',
+      'BSE_EQ:$bare',
+    ];
+
+    for (final want in candidates) {
+      for (final k in data.keys) {
+        final key = k.toString().toUpperCase();
+        if (key == want ||
+            (_bareSymbol(key) == bare && key.endsWith(':$bare'))) {
+          final v = data[k];
+          if (v is Map) return Map<String, dynamic>.from(v);
+        }
+      }
+    }
+
+    // Prefer exact exchange-qualified match when multiple exchanges present.
+    for (final k in data.keys) {
+      final key = k.toString().toUpperCase();
+      if (_bareSymbol(key) == bare) {
+        final v = data[k];
+        if (v is Map) {
+          if (key.startsWith('$ex:') || !key.contains(':')) {
+            return Map<String, dynamic>.from(v);
+          }
+        }
+      }
+    }
+
+    if (data.containsKey('lastPrice') ||
+        data.containsKey('last_price') ||
+        data.containsKey('ltp')) {
+      return Map<String, dynamic>.from(data);
+    }
+    return null;
   }
 
   _PriceFields _parsePriceFields(Map item) {
