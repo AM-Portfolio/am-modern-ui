@@ -1,9 +1,9 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../internal/data/dtos/journal_entry_dto.dart';
 
-/// Journal Entries header — discipline status counts only (no trading scoreboard).
 class JournalMetricsHeader extends StatelessWidget {
   const JournalMetricsHeader({
     super.key,
@@ -17,36 +17,43 @@ class JournalMetricsHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = summary;
+    final pnl = s?.totalPnl;
+    final winRate = s?.winRate;
+    final avgRr = s?.avgRR;
+    final pnlFmt = NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
 
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.all(16),
       child: Row(
         children: [
           Expanded(
             child: MetricCard(
-              title: 'Entries',
+              title: 'Total Trades',
               value: '${s?.totalTrades ?? 0}',
             ),
           ),
-          const SizedBox(width: AppSpacing.md),
+          const SizedBox(width: 16),
           Expanded(
             child: MetricCard(
-              title: 'Planned',
-              value: '${s?.plannedCount ?? 0}',
+              title: 'Win Rate',
+              value: winRate == null
+                  ? '—'
+                  : '${(winRate * (winRate <= 1 ? 100 : 1)).toStringAsFixed(0)}%',
             ),
           ),
-          const SizedBox(width: AppSpacing.md),
+          const SizedBox(width: 16),
           Expanded(
             child: MetricCard(
-              title: 'Open',
-              value: '${s?.openCount ?? 0}',
+              title: 'Avg R:R',
+              value: avgRr == null ? '—' : avgRr.toStringAsFixed(2),
             ),
           ),
-          const SizedBox(width: AppSpacing.md),
+          const SizedBox(width: 16),
           Expanded(
             child: MetricCard(
-              title: 'Completed',
-              value: '${s?.completedCount ?? 0}',
+              title: 'Net P&L',
+              value: pnl == null ? '—' : pnlFmt.format(pnl),
+              isPositive: pnl == null ? null : pnl >= 0,
             ),
           ),
           if (onOpenAnalysis != null) ...[
@@ -89,7 +96,7 @@ class MetricCard extends StatelessWidget {
       color: context.colors.cardSurface.withValues(alpha: 0.3),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -99,12 +106,12 @@ class MetricCard extends StatelessWidget {
                     color: context.textSecondary,
                   ),
             ),
-            const SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: 8),
             Text(
               value,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: valueColor ?? context.colors.textPrimary,
+                    color: valueColor,
                   ),
             ),
           ],

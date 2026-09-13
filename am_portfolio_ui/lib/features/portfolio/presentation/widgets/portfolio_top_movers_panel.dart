@@ -16,6 +16,7 @@ class PortfolioTopMoversPanel extends StatelessWidget {
     required this.timeFrame,
     this.height,
     this.showTimeFrameSelector = false,
+    this.compact = false,
     super.key,
   });
 
@@ -23,13 +24,15 @@ class PortfolioTopMoversPanel extends StatelessWidget {
   final ds.TimeFrame timeFrame;
   final double? height;
   final bool showTimeFrameSelector;
+  /// Mobile-style Gainers|Losers tabs, fewer rows — used on intel Overview.
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
       builder: (context, state) {
         if (state is PortfolioAnalyticsLoading) {
-          return const MoversWidget(isLoading: true);
+          return MoversWidget(isLoading: true, compact: compact);
         } else if (state is PortfolioAnalyticsLoaded) {
           final isLoading = state.isLoadingType(AnalyticsDataType.movers);
           final error = state.getErrorForType(AnalyticsDataType.movers);
@@ -37,12 +40,26 @@ class PortfolioTopMoversPanel extends StatelessWidget {
             movers: state.movers,
             isLoading: isLoading,
             error: error,
+            compact: compact,
             onViewAll: (movers) => MoversDetailModal.show(context, movers),
+            onRetry: () => context.read<PortfolioAnalyticsCubit>().loadAnalytics(
+                  portfolioId,
+                  timeFrame: timeFrame,
+                ),
           );
         } else if (state is PortfolioAnalyticsError) {
-          return MoversWidget(error: state.message);
+          return MoversWidget(
+            error: state.message,
+            compact: compact,
+            onRetry: () => context.read<PortfolioAnalyticsCubit>().loadAnalytics(
+                  portfolioId,
+                  timeFrame: timeFrame,
+                ),
+          );
+        } else if (state is PortfolioAnalyticsInitial) {
+          return MoversWidget(compact: compact);
         }
-        return const MoversWidget(isLoading: true);
+        return MoversWidget(isLoading: true, compact: compact);
       },
     );
   }

@@ -15,6 +15,7 @@ import '../dtos/portfolio_create_request_dto.dart';
 import '../dtos/portfolio_update_request_dto.dart';
 import '../mappers/portfolio_analytics_mapper.dart';
 import '../mappers/portfolio_mapper.dart';
+import '../../domain/entities/portfolio_intelligence.dart';
 import 'portfolio_mock_data_helper.dart';
 
 /// Abstract data source for portfolio data
@@ -40,6 +41,23 @@ abstract class PortfolioRemoteDataSource {
   Future<PortfolioAnalyticsResponseDto> getPortfolioAnalytics(
     String portfolioId,
     PortfolioAnalyticsRequestDto request,
+  );
+
+  /// Portfolio Intelligence (Health + Risk + X-Ray)
+  Future<PortfolioIntelligence> getPortfolioIntelligence(String portfolioId);
+
+  /// Stress scenario estimates
+  Future<StressResult> getPortfolioStress(
+    String portfolioId, {
+    String? preset,
+    List<String>? presets,
+    Map<String, dynamic>? custom,
+  });
+
+  /// What-If simulation (stateless)
+  Future<WhatIfResult> getPortfolioWhatIf(
+    String portfolioId,
+    Map<String, dynamic> body,
   );
 
   /// Get portfolios list from remote API
@@ -544,6 +562,152 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
         );
         rethrow;
       }
+    }
+  }
+
+  @override
+  Future<PortfolioIntelligence> getPortfolioIntelligence(
+    String portfolioId,
+  ) async {
+    CommonLogger.methodEntry(
+      'getPortfolioIntelligence',
+      tag: 'PortfolioRemoteDataSource',
+      metadata: {'portfolioId': portfolioId},
+    );
+
+    try {
+      final baseUri = _buildUri(
+        _baseUrl,
+        PortfolioEndpoints.intelligence(portfolioId),
+      );
+      final result = await _apiClient.post<PortfolioIntelligence>(
+        baseUri,
+        body: <String, dynamic>{},
+        parser: (data) => PortfolioIntelligence.fromJson(
+          Map<String, dynamic>.from(data! as Map),
+        ),
+      );
+      CommonLogger.methodExit(
+        'getPortfolioIntelligence',
+        tag: 'PortfolioRemoteDataSource',
+        metadata: {'status': 'success'},
+      );
+      return result;
+    } catch (e) {
+      CommonLogger.error(
+        'Failed to fetch portfolio intelligence',
+        tag: 'PortfolioRemoteDataSource',
+        error: e,
+        stackTrace: StackTrace.current,
+      );
+      CommonLogger.methodExit(
+        'getPortfolioIntelligence',
+        tag: 'PortfolioRemoteDataSource',
+        metadata: {'status': 'error'},
+      );
+      rethrow;
+    }
+  }
+
+  @override
+  Future<StressResult> getPortfolioStress(
+    String portfolioId, {
+    String? preset,
+    List<String>? presets,
+    Map<String, dynamic>? custom,
+  }) async {
+    CommonLogger.methodEntry(
+      'getPortfolioStress',
+      tag: 'PortfolioRemoteDataSource',
+      metadata: {
+        'portfolioId': portfolioId,
+        'preset': preset,
+        'presets': presets?.length,
+      },
+    );
+
+    try {
+      final baseUri = _buildUri(
+        _baseUrl,
+        PortfolioEndpoints.stress(portfolioId),
+      );
+      final body = <String, dynamic>{};
+      if (custom != null) {
+        body['custom'] = custom;
+      } else if (presets != null && presets.isNotEmpty) {
+        body['presets'] = presets;
+      } else if (preset != null) {
+        body['preset'] = preset;
+      }
+      final result = await _apiClient.post<StressResult>(
+        baseUri,
+        body: body,
+        parser: (data) =>
+            StressResult.fromJson(Map<String, dynamic>.from(data! as Map)),
+      );
+      CommonLogger.methodExit(
+        'getPortfolioStress',
+        tag: 'PortfolioRemoteDataSource',
+        metadata: {'status': 'success'},
+      );
+      return result;
+    } catch (e) {
+      CommonLogger.error(
+        'Failed to fetch portfolio stress',
+        tag: 'PortfolioRemoteDataSource',
+        error: e,
+        stackTrace: StackTrace.current,
+      );
+      CommonLogger.methodExit(
+        'getPortfolioStress',
+        tag: 'PortfolioRemoteDataSource',
+        metadata: {'status': 'error'},
+      );
+      rethrow;
+    }
+  }
+
+  @override
+  Future<WhatIfResult> getPortfolioWhatIf(
+    String portfolioId,
+    Map<String, dynamic> body,
+  ) async {
+    CommonLogger.methodEntry(
+      'getPortfolioWhatIf',
+      tag: 'PortfolioRemoteDataSource',
+      metadata: {'portfolioId': portfolioId, 'mode': body['mode']},
+    );
+
+    try {
+      final baseUri = _buildUri(
+        _baseUrl,
+        PortfolioEndpoints.whatIf(portfolioId),
+      );
+      final result = await _apiClient.post<WhatIfResult>(
+        baseUri,
+        body: body,
+        parser: (data) =>
+            WhatIfResult.fromJson(Map<String, dynamic>.from(data! as Map)),
+      );
+      CommonLogger.methodExit(
+        'getPortfolioWhatIf',
+        tag: 'PortfolioRemoteDataSource',
+        metadata: {'status': 'success'},
+      );
+      return result;
+    } catch (e) {
+      CommonLogger.error(
+        'Failed to fetch portfolio what-if',
+        tag: 'PortfolioRemoteDataSource',
+        error: e,
+        stackTrace: StackTrace.current,
+      );
+      CommonLogger.methodExit(
+        'getPortfolioWhatIf',
+        tag: 'PortfolioRemoteDataSource',
+        metadata: {'status': 'error'},
+      );
+      rethrow;
     }
   }
 
