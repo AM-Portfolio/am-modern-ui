@@ -12,6 +12,9 @@ import 'tabs/timing_analysis_tab.dart';
 enum _AnalysisTab { timing, strategy, direction, holding, risk }
 
 /// Analysis hub — edge analytics (Timing first; other tabs stubbed).
+///
+/// Date range is owned by this page: default is **all time → today**.
+/// Global app [appTimeFrameProvider] must not shrink Analysis to 1D/1W.
 class TradeAnalysisPage extends ConsumerStatefulWidget {
   const TradeAnalysisPage({
     super.key,
@@ -32,17 +35,26 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
   _AnalysisTab _tab = _AnalysisTab.timing;
   late DateTime _startDate;
   late DateTime _endDate;
+  /// true until the user picks a narrower range in the calendar.
+  bool _usingAllTime = true;
   /// null = All holding styles.
   String? _holdingStyle;
+
+  static DateTimeRange get _allTimeRange {
+    final range = TimeFrame.all.dateRange;
+    return DateTimeRange(start: range.start, end: range.end);
+  }
 
   @override
   void initState() {
     super.initState();
-    final range = TimeFrame.oneYear.dateRange;
-    _startDate = range.start;
-    _endDate = range.end;
+    final all = _allTimeRange;
+    _startDate = all.start;
+    _endDate = all.end;
+    _usingAllTime = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _syncFromAppTimeFrame();
+      if (!mounted) return;
+      _loadMetrics();
     });
   }
 
@@ -52,15 +64,6 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
     if (oldWidget.portfolioId != widget.portfolioId) {
       _loadMetrics();
     }
-  }
-
-  void _syncFromAppTimeFrame() {
-    final range = ref.read(appTimeFrameProvider).dateRange;
-    setState(() {
-      _startDate = range.start;
-      _endDate = range.end;
-    });
-    _loadMetrics();
   }
 
   Future<void> _loadMetrics() async {
@@ -82,48 +85,63 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
     _loadMetrics();
   }
 
+  void _resetToAllTime() {
+    final all = _allTimeRange;
+    setState(() {
+      _startDate = all.start;
+      _endDate = all.end;
+      _usingAllTime = true;
+    });
+    _loadMetrics();
+  }
+
   Future<void> _pickDateRange() async {
-    final picked = await showDateRangePicker(
+    final picked = await showDialog<DateTimeRange>(
       context: context,
-      firstDate: DateTime(2015),
-      lastDate: DateTime.now().add(const Duration(days: 1)),
-      initialDateRange: DateTimeRange(start: _startDate, end: _endDate),
-      builder: (context, child) {
+      builder: (ctx) {
         return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(
+          data: Theme.of(ctx).copyWith(
+            colorScheme: Theme.of(ctx).colorScheme.copyWith(
                   primary: ModuleColors.trade,
+                  onPrimary: Colors.white,
                 ),
           ),
-          child: child!,
+          child: CompactDateRangePickerDialog(
+            initialDateRange: DateTimeRange(
+              start: _startDate,
+              end: _endDate,
+            ),
+          ),
         );
       },
     );
     if (picked == null || !mounted) return;
+
+    final all = _allTimeRange;
+    final choseAllTime = _isSameCalendarDay(picked.start, all.start) &&
+        _isSameCalendarDay(picked.end, all.end);
+
     setState(() {
       _startDate = picked.start;
       _endDate = picked.end;
+      _usingAllTime = choseAllTime;
     });
-    // Same as holding-style: apply filter changes immediately (Apply still refreshes).
     await _loadMetrics();
   }
 
+  static bool _isSameCalendarDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
   String get _dateLabel {
+    if (_usingAllTime) return 'All time';
     final fmt = DateFormat('MMM d, yyyy');
     return '${fmt.format(_startDate)} – ${fmt.format(_endDate)}';
   }
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<TimeFrame>(appTimeFrameProvider, (previous, next) {
-      if (previous == next) return;
-      final range = next.dateRange;
-      setState(() {
-        _startDate = range.start;
-        _endDate = range.end;
-      });
-      _loadMetrics();
-    });
+    // Do NOT listen to [appTimeFrameProvider] — global 1D/1W must not wipe
+    // Analysis' all-time default.
 
     final colors = context.colors;
     final theme = Theme.of(context);
@@ -169,7 +187,9 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
                 const SizedBox(width: AppSpacing.md),
                 _DateApplyBar(
                   dateLabel: _dateLabel,
+                  usingAllTime: _usingAllTime,
                   onPickDateRange: _pickDateRange,
+                  onResetAllTime: _resetToAllTime,
                   onApply: _loadMetrics,
                 ),
               ],
@@ -224,12 +244,16 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
 class _DateApplyBar extends StatelessWidget {
   const _DateApplyBar({
     required this.dateLabel,
+    required this.usingAllTime,
     required this.onPickDateRange,
+    required this.onResetAllTime,
     required this.onApply,
   });
 
   final String dateLabel;
+  final bool usingAllTime;
   final VoidCallback onPickDateRange;
+  final VoidCallback onResetAllTime;
   final VoidCallback onApply;
 
   @override
@@ -245,6 +269,16 @@ class _DateApplyBar extends StatelessWidget {
           onPressed: onPickDateRange,
           height: 40,
         ),
+        if (!usingAllTime) ...[
+          const SizedBox(width: AppSpacing.sm),
+          AppButton(
+            text: 'All time',
+            type: AppButtonType.text,
+            onPressed: onResetAllTime,
+            height: 40,
+            textColor: ModuleColors.trade,
+          ),
+        ],
         const SizedBox(width: AppSpacing.sm),
         AppButton(
           text: 'Apply',

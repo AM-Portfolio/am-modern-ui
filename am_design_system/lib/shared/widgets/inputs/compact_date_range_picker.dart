@@ -124,44 +124,33 @@ class _CompactDateRangePickerDialogState
                     ),
                   ),
                   const SizedBox(height: 8),
-                  _buildShortcutItem(
-                    'Today',
-                    () => DateTimeRange(
-                      start: DateTime.now(),
-                      end: DateTime.now(),
-                    ),
-                  ),
-                  _buildShortcutItem('This Week', () {
+                  _buildShortcutItem('Today', () {
                     final now = DateTime.now();
-                    final start = now.subtract(Duration(days: now.weekday - 1));
-                    return DateTimeRange(start: start, end: now);
+                    final day = DateTime(now.year, now.month, now.day);
+                    return DateTimeRange(start: day, end: day);
                   }),
-                  _buildShortcutItem('Last Week', () {
+                  _buildShortcutItem('Last 7 days', () {
                     final now = DateTime.now();
-                    final startCurrent = now.subtract(
-                      Duration(days: now.weekday - 1),
+                    return DateTimeRange(
+                      start: now.subtract(const Duration(days: 7)),
+                      end: now,
                     );
-                    final startLast = startCurrent.subtract(
-                      const Duration(days: 7),
-                    );
-                    final endLast = startLast.add(const Duration(days: 6));
-                    return DateTimeRange(start: startLast, end: endLast);
                   }),
-                  _buildShortcutItem('Last 30 Days', () {
+                  _buildShortcutItem('Last 30 days', () {
                     final now = DateTime.now();
                     return DateTimeRange(
                       start: now.subtract(const Duration(days: 30)),
                       end: now,
                     );
                   }),
-                  _buildShortcutItem('This Month', () {
+                  _buildShortcutItem('This month', () {
                     final now = DateTime.now();
                     return DateTimeRange(
                       start: DateTime(now.year, now.month),
                       end: now,
                     );
                   }),
-                  _buildShortcutItem('Last Month', () {
+                  _buildShortcutItem('Last month', () {
                     final now = DateTime.now();
                     final firstOfCurrent = DateTime(now.year, now.month);
                     final lastOfPrev = firstOfCurrent.subtract(
@@ -173,9 +162,16 @@ class _CompactDateRangePickerDialogState
                     );
                     return DateTimeRange(start: firstOfPrev, end: lastOfPrev);
                   }),
-                  _buildShortcutItem('Year to Date', () {
+                  _buildShortcutItem('Year to date', () {
                     final now = DateTime.now();
                     return DateTimeRange(start: DateTime(now.year), end: now);
+                  }),
+                  _buildShortcutItem('All time', () {
+                    final now = DateTime.now();
+                    return DateTimeRange(
+                      start: DateTime(now.year - 20, now.month, now.day),
+                      end: now,
+                    );
                   }),
                 ],
               ),
