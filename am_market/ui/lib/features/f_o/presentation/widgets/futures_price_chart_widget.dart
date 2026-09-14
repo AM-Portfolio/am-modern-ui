@@ -14,29 +14,36 @@ class FuturesPriceChartWidget extends ConsumerStatefulWidget {
 }
 
 class _FuturesPriceChartWidgetState extends ConsumerState<FuturesPriceChartWidget> {
-  String _selectedTimeframe = '1M';
+  TimeFrame _selectedTimeframe = TimeFrame.oneMonth;
   String _selectedChartType = 'Candle';
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final marketTheme = context.marketTheme;
-    final activeSymbol = ref.watch(foActiveSymbolProvider) ?? 'TCS';
+    final activeSymbol = ref.watch(foActiveSymbolProvider) ?? 'NIFTY';
     final selectedContract = ref.watch(selectedFutureContractProvider);
+    final contracts = ref.watch(futuresContractsProvider).maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
 
-    final tradingSymbol = selectedContract != null
-        ? (selectedContract['trading_symbol'] ?? selectedContract['tradingSymbol'] ?? '$activeSymbol FUT 24 SEP 26').toString()
-        : '$activeSymbol FUT 24 SEP 26';
+    final firstContract = contracts.isNotEmpty && contracts.first is Map ? Map<String, dynamic>.from(contracts.first) : null;
+    final activeContract = selectedContract ?? firstContract;
+    final tradingSymbol = activeContract != null
+        ? (activeContract['trading_symbol'] ?? activeContract['tradingSymbol'] ?? activeContract['name'] ?? '$activeSymbol FUT').toString()
+        : '$activeSymbol FUT';
 
-    final timeframes = ['1D', '1W', '1M', '3M', '1Y'];
-    final candles = _generateCandles(_selectedTimeframe);
+    final currentLtp = activeContract != null && activeContract['ltp'] is num
+        ? (activeContract['ltp'] as num).toDouble()
+        : 0.0;
 
-    // Latest OHLC values
-    final latest = candles.last;
-    final change = latest.close - candles.first.close;
-    final pChange = (change / candles.first.close) * 100;
-    final isPos = change >= 0;
-    final deltaColor = isPos ? marketTheme.positive : marketTheme.negative;
+    final chartAsync = ref.watch(
+      futuresHistoricalChartProvider(
+        FuturesChartParams(
+          symbol: tradingSymbol,
+          timeFrame: _selectedTimeframe,
+          currentLtp: currentLtp,
+        ),
+      ),
+    );
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -53,36 +60,23 @@ class _FuturesPriceChartWidgetState extends ConsumerState<FuturesPriceChartWidge
             children: [
               Text('Price Chart', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(width: 8),
-              Text(tradingSymbol, style: TextStyle(color: colors.textSecondary, fontSize: 13)),
-              const Spacer(),
-              // Timeframe Chips
-              Row(
-                children: timeframes.map((tf) {
-                  final isSel = _selectedTimeframe == tf;
-                  return InkWell(
-                    onTap: () => setState(() => _selectedTimeframe = tf),
-                    borderRadius: BorderRadius.circular(6),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      margin: const EdgeInsets.only(right: 4),
-                      decoration: BoxDecoration(
-                        color: isSel ? ModuleColors.market : Colors.transparent,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        tf,
-                        style: TextStyle(
-                          color: isSel ? Colors.black : colors.textSecondary,
-                          fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
+              Expanded(
+                child: Text(
+                  tradingSymbol,
+                  style: TextStyle(color: colors.textSecondary, fontSize: 13),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               const SizedBox(width: 8),
-              // Candle / Line Dropdown
+              // Design System TimeFrame Selector
+              TimeFrameSelector(
+                selectedTimeFrame: _selectedTimeframe,
+                availableTimeFrames: TimeFrame.tradingTimeFrames,
+                compact: true,
+                onTimeFrameChanged: (tf) => setState(() => _selectedTimeframe = tf),
+              ),
+              const SizedBox(width: 8),
+              // Candle / Line Toggle Dropdown
               InkWell(
                 onTap: () => setState(() {
                   _selectedChartType = _selectedChartType == 'Candle' ? 'Line' : 'Candle';
@@ -111,52 +105,90 @@ class _FuturesPriceChartWidgetState extends ConsumerState<FuturesPriceChartWidge
           ),
           const SizedBox(height: 12),
 
-          // OHLC Readout Bar
-          Row(
-            children: [
-              _buildOhlcItem('O', latest.open.toStringAsFixed(2), colors),
-              _buildOhlcItem('H', latest.high.toStringAsFixed(2), colors),
-              _buildOhlcItem('L', latest.low.toStringAsFixed(2), colors),
-              _buildOhlcItem('C', latest.close.toStringAsFixed(2), colors),
-              const SizedBox(width: 8),
-              Text(
-                '${isPos ? '+' : ''}${change.toStringAsFixed(2)} (${isPos ? '+' : ''}${pChange.toStringAsFixed(2)}%)',
-                style: TextStyle(color: deltaColor, fontWeight: FontWeight.bold, fontSize: 12),
+          chartAsync.when(
+            loading: () => SizedBox(
+              height: 270,
+              child: Center(
+                child: CircularProgressIndicator(color: ModuleColors.market),
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Integrated Design System Candle Chart View
-          SizedBox(
-            height: 240,
-            child: _selectedChartType == 'Candle'
-                ? CandleChartView(
-                    key: ValueKey('candle_$_selectedTimeframe'),
-                    candles: candles,
-                    config: const CommonChartConfig(
-                      showGrid: true,
-                      showTitles: true,
-                      showTooltips: true,
-                    ),
-                    upColor: marketTheme.positive,
-                    downColor: marketTheme.negative,
-                  )
-                : ChartFactory.line(
-                    data: candles.map((c) => CommonChartDataPoint(
-                      x: c.x,
-                      y: c.close,
-                      xLabel: c.xLabel,
-                      yLabel: c.close.toStringAsFixed(2),
-                    )).toList(),
-                    config: const CommonChartConfig(
-                      showGrid: true,
-                      showTitles: true,
-                      showTooltips: true,
-                    ),
-                    color: ModuleColors.market,
-                    height: 240,
+            ),
+            error: (_, __) => SizedBox(
+              height: 270,
+              child: Center(
+                child: Text('Unable to load chart data', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
+              ),
+            ),
+            data: (candles) {
+              if (candles.isEmpty) {
+                return SizedBox(
+                  height: 270,
+                  child: Center(
+                    child: Text('No OHLC chart data available', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
                   ),
+                );
+              }
+
+              final latest = candles.last;
+              final change = latest.close - candles.first.close;
+              final pChange = candles.first.close > 0 ? (change / candles.first.close) * 100 : 0.0;
+              final isPos = change >= 0;
+              final deltaColor = isPos ? marketTheme.positive : marketTheme.negative;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // OHLC Readout Bar
+                  Row(
+                    children: [
+                      _buildOhlcItem('O', latest.open.toStringAsFixed(2), colors),
+                      _buildOhlcItem('H', latest.high.toStringAsFixed(2), colors),
+                      _buildOhlcItem('L', latest.low.toStringAsFixed(2), colors),
+                      _buildOhlcItem('C', latest.close.toStringAsFixed(2), colors),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${isPos ? '+' : ''}${change.toStringAsFixed(2)} (${isPos ? '+' : ''}${pChange.toStringAsFixed(2)}%)',
+                        style: TextStyle(color: deltaColor, fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Integrated Design System Chart View
+                  SizedBox(
+                    height: 220,
+                    child: _selectedChartType == 'Candle'
+                        ? CandleChartView(
+                            key: ValueKey('candle_${_selectedTimeframe.code}_$tradingSymbol'),
+                            candles: candles,
+                            config: const CommonChartConfig(
+                              showGrid: true,
+                              showTitles: true,
+                              showTooltips: true,
+                            ),
+                            upColor: marketTheme.positive,
+                            downColor: marketTheme.negative,
+                          )
+                        : ChartFactory.line(
+                            data: candles
+                                .map((c) => CommonChartDataPoint(
+                                      x: c.x,
+                                      y: c.close,
+                                      xLabel: c.xLabel,
+                                      yLabel: c.close.toStringAsFixed(2),
+                                    ))
+                                .toList(),
+                            config: const CommonChartConfig(
+                              showGrid: true,
+                              showTitles: true,
+                              showTooltips: true,
+                            ),
+                            color: ModuleColors.market,
+                            height: 220,
+                          ),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -173,84 +205,5 @@ class _FuturesPriceChartWidgetState extends ConsumerState<FuturesPriceChartWidge
         ],
       ),
     );
-  }
-
-  List<CommonCandlePoint> _generateCandles(String tf) {
-    late final List<String> dates;
-    late final List<List<double>> rawPoints;
-
-    switch (tf) {
-      case '1D':
-        dates = ['09:15', '10:30', '11:45', '13:00', '14:15', '15:30'];
-        rawPoints = [
-          [2203.50, 2208.00, 2201.00, 2206.20],
-          [2206.20, 2212.50, 2204.00, 2210.80],
-          [2210.80, 2214.00, 2207.50, 2209.00],
-          [2209.00, 2211.50, 2202.00, 2204.50],
-          [2204.50, 2207.00, 2199.50, 2201.20],
-          [2201.20, 2205.80, 2200.00, 2203.50],
-        ];
-        break;
-      case '1W':
-        dates = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-        rawPoints = [
-          [2192.00, 2210.00, 2188.00, 2205.50],
-          [2205.50, 2222.00, 2200.00, 2218.00],
-          [2218.00, 2228.00, 2210.00, 2214.50],
-          [2214.50, 2219.00, 2195.00, 2198.00],
-          [2198.00, 2208.50, 2194.00, 2203.50],
-        ];
-        break;
-      case '3M':
-        dates = ['Jul W1', 'Jul W3', 'Aug W1', 'Aug W3', 'Sep W1', 'Sep W3'];
-        rawPoints = [
-          [2145.00, 2178.00, 2135.00, 2168.00],
-          [2168.00, 2195.00, 2160.00, 2188.00],
-          [2188.00, 2220.00, 2180.00, 2210.00],
-          [2210.00, 2245.00, 2202.00, 2235.00],
-          [2235.00, 2250.00, 2200.00, 2215.00],
-          [2215.00, 2225.00, 2195.00, 2203.50],
-        ];
-        break;
-      case '1Y':
-        dates = ['Oct', 'Dec', 'Feb', 'Apr', 'Jun', 'Aug', 'Sep'];
-        rawPoints = [
-          [1980.00, 2040.00, 1965.00, 2025.00],
-          [2025.00, 2110.00, 2015.00, 2095.00],
-          [2095.00, 2150.00, 2075.00, 2135.00],
-          [2135.00, 2190.00, 2120.00, 2175.00],
-          [2175.00, 2240.00, 2160.00, 2220.00],
-          [2220.00, 2280.00, 2210.00, 2250.00],
-          [2250.00, 2260.00, 2190.00, 2203.50],
-        ];
-        break;
-      case '1M':
-      default:
-        dates = ['1 Sep', '4 Sep', '8 Sep', '11 Sep', '15 Sep', '18 Sep', '22 Sep', '25 Sep', '26 Sep'];
-        rawPoints = [
-          [2195.00, 2212.00, 2185.00, 2208.00],
-          [2208.00, 2218.00, 2198.00, 2205.00],
-          [2205.00, 2230.00, 2200.00, 2225.00],
-          [2225.00, 2242.00, 2220.00, 2235.00],
-          [2235.00, 2238.00, 2202.00, 2215.00],
-          [2215.00, 2218.00, 2188.00, 2196.00],
-          [2196.00, 2222.00, 2190.00, 2212.00],
-          [2212.00, 2228.00, 2208.00, 2218.00],
-          [2218.00, 2224.00, 2200.00, 2203.50],
-        ];
-        break;
-    }
-
-    return List.generate(dates.length, (i) {
-      final p = rawPoints[i];
-      return CommonCandlePoint(
-        x: i.toDouble(),
-        open: p[0],
-        high: p[1],
-        low: p[2],
-        close: p[3],
-        xLabel: dates[i],
-      );
-    });
   }
 }
