@@ -93,7 +93,7 @@ class PaperOrderTicketMobile extends StatelessWidget {
                                   selected: c.orderType == t.$1,
                                   superStyle: t.$4,
                                   compact: compact,
-                                  onTap: () => c.setOrderType(t.$1),
+                                  onTap: () => c.setOrderType(t.$1, context: context),
                                 ),
                               ),
                             ],
@@ -149,7 +149,17 @@ class PaperOrderTicketMobile extends StatelessWidget {
                         if (c.orderType == 'MARKET') ...[
                           const SizedBox(height: 4),
                           Text(
-                            'Executes at live market price.',
+                            'Executes at live last price during market hours.',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(color: colors.textSecondary),
+                          ),
+                        ],
+                        if (c.orderType == 'LIMIT') ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Paper fills when price touches your limit (not an exchange order book).',
                             style: Theme.of(context)
                                 .textTheme
                                 .bodySmall
@@ -402,7 +412,7 @@ class PaperOrderTicketMobile extends StatelessWidget {
                   child: Text(
                     submitting || c.localSubmitting
                         ? 'Submitting…'
-                        : 'Instant ${isBuy ? 'Buy' : 'Sell'}',
+                        : c.ctaLabel,
                     style: const TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 15,

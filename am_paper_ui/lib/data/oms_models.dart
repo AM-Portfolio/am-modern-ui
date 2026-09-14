@@ -71,19 +71,14 @@ class OmsOrder {
 
   factory OmsOrder.fromJson(Map<String, dynamic> json) {
     final snap = json['walletSnapshot'];
-    DateTime? created;
-    final rawCreated = json['createdAt'] ?? json['created_at'];
-    if (rawCreated != null) {
-      created = DateTime.tryParse(rawCreated.toString());
-    }
     return OmsOrder(
       orderId: json['orderId'] as String,
       walletId: json['walletId'] as String,
       symbol: json['symbol'] as String? ?? '',
-      side: json['side'] as String? ?? '',
-      orderType: json['orderType'] as String? ?? 'MARKET',
+      side: (json['side'] as String? ?? '').toUpperCase(),
+      orderType: (json['orderType'] as String? ?? 'MARKET').toUpperCase(),
       quantity: '${json['quantity'] ?? ''}',
-      status: json['status'] as String? ?? '',
+      status: (json['status'] as String? ?? '').toUpperCase(),
       fillPrice: json['fillPrice']?.toString(),
       filledQuantity: json['filledQuantity']?.toString(),
       rejectReason: json['rejectReason'] as String?,
@@ -94,7 +89,7 @@ class OmsOrder {
       trailJump: json['trailJump']?.toString(),
       available: snap is Map ? '${snap['available'] ?? ''}' : null,
       reserved: snap is Map ? '${snap['reserved'] ?? ''}' : null,
-      createdAt: created,
+      createdAt: parseOmsDateTime(json['createdAt'] ?? json['created_at']),
     );
   }
 
@@ -122,19 +117,58 @@ class OmsOrder {
 
   bool get isFilled => status == 'FILLED';
   bool get isRejected => status == 'REJECTED';
+  bool get isCancelled => status == 'CANCELLED';
   bool get isWorking => status == 'ACCEPTED';
 
+  /// UI label: ACCEPTED → OPEN (matches order.png).
+  String get displayStatus {
+    if (isWorking) return 'OPEN';
+    return status;
+  }
+
+  /// Local calendar day for "today's orders". Naive OMS timestamps are UTC.
   bool get isCreatedToday {
-    if (createdAt == null) return false;
+    // Missing stamp (optimistic create) — keep visible in today's book.
+    if (createdAt == null) return true;
     final d = createdAt!.toLocal();
     final now = DateTime.now();
     return d.year == now.year && d.month == now.month && d.day == now.day;
   }
 
+  /// Prefer local wall-clock for the Time column.
+  DateTime? get createdAtLocal => createdAt?.toLocal();
+
   double get quantityAsDouble => double.tryParse(quantity) ?? 0;
-  double get filledQuantityAsDouble =>
-      double.tryParse(filledQuantity ?? '') ?? quantityAsDouble;
+  double get filledQuantityAsDouble {
+    if (filledQuantity == null || filledQuantity!.isEmpty) {
+      return isFilled ? quantityAsDouble : 0;
+    }
+    return double.tryParse(filledQuantity!) ?? 0;
+  }
+
   double get fillPriceAsDouble => double.tryParse(fillPrice ?? '') ?? 0;
+  double get limitPriceAsDouble => double.tryParse(limitPrice ?? '') ?? 0;
+  double get triggerPriceAsDouble => double.tryParse(triggerPrice ?? '') ?? 0;
+
+  /// Price for table: fill if filled, else limit/trigger.
+  double get displayPrice {
+    if (isFilled && fillPriceAsDouble > 0) return fillPriceAsDouble;
+    if (limitPriceAsDouble > 0) return limitPriceAsDouble;
+    if (triggerPriceAsDouble > 0) return triggerPriceAsDouble;
+    return 0;
+  }
+
+  String get qtyDisplayLabel {
+    final q = quantityAsDouble;
+    final qStr = q == q.roundToDouble() ? q.toStringAsFixed(0) : q.toStringAsFixed(2);
+    if (isWorking || isRejected || isCancelled) {
+      final f = filledQuantityAsDouble;
+      final fStr = f == f.roundToDouble() ? f.toStringAsFixed(0) : f.toStringAsFixed(2);
+      return '$fStr / $qStr';
+    }
+    final f = filledQuantityAsDouble > 0 ? filledQuantityAsDouble : q;
+    return f == f.roundToDouble() ? f.toStringAsFixed(0) : f.toStringAsFixed(2);
+  }
 
   static List<OmsOrder> listFromEnvelope(dynamic raw) {
     final data = _envelope(raw);
@@ -173,6 +207,41 @@ class OmsPosition {
   }
 }
 
+/// OMS stores UTC; naive ISO strings must not be treated as local (breaks IST "today").
+DateTime? parseOmsDateTime(Object? raw) {
+  if (raw == null) return null;
+  if (raw is DateTime) {
+    return raw.isUtc
+        ? raw
+        : DateTime.utc(
+            raw.year,
+            raw.month,
+            raw.day,
+            raw.hour,
+            raw.minute,
+            raw.second,
+            raw.millisecond,
+            raw.microsecond,
+          );
+  }
+  final s = raw.toString().trim();
+  if (s.isEmpty) return null;
+  final parsed = DateTime.tryParse(s);
+  if (parsed == null) return null;
+  if (parsed.isUtc) return parsed;
+  // No offset in string → API meant UTC.
+  return DateTime.utc(
+    parsed.year,
+    parsed.month,
+    parsed.day,
+    parsed.hour,
+    parsed.minute,
+    parsed.second,
+    parsed.millisecond,
+    parsed.microsecond,
+  );
+}
+
 String omsRejectMessage(String? code) {
   switch (code) {
     case 'INSUFFICIENT_CASH':
@@ -181,6 +250,14 @@ String omsRejectMessage(String? code) {
       return 'Not enough paper quantity to sell.';
     case 'LTP_UNAVAILABLE':
       return 'Live price unavailable — order was not filled.';
+    case 'MARKET_CLOSED':
+      return 'Market closed — order was not filled.';
+    case 'MARKET_PREOPEN':
+      return 'Market pre-open — market orders not accepted yet.';
+    case 'AMO_NOT_SUPPORTED':
+      return 'After-market orders are not supported yet.';
+    case 'PRODUCT_NOT_SUPPORTED':
+      return 'This product mode is not supported for paper.';
     case 'OPTIONS_NOT_ENABLED':
       return 'Options are not enabled yet.';
     case 'LIVE_NOT_ENABLED':

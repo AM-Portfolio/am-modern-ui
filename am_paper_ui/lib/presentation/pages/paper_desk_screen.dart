@@ -2,6 +2,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../data/oms_models.dart';
 import '../paper_oms_cubit.dart';
 import '../paper_oms_state.dart';
 import '../widgets/paper_analyser_pane.dart';
@@ -113,6 +114,10 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
         _ticketOffset = _snapTopRight(_deskSize);
       }
     });
+  }
+
+  void _reorderOrder(OmsOrder order) {
+    _buySell(order.symbol, order.side);
   }
 
   void _closeOrderPopup() {
@@ -276,7 +281,7 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
         }
         return PaperAnalyserPane(symbol: _symbol);
       case _MidTab.orders:
-        return const PaperOrdersPane();
+        return PaperOrdersPane(onReorder: _reorderOrder);
       case _MidTab.positions:
         return const PaperPositionsPnlPane();
     }

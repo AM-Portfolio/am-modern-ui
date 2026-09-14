@@ -7,6 +7,7 @@ class PaperOmsState extends Equatable {
     this.wallet,
     this.orders = const [],
     this.positions = const [],
+    this.orderTypeFavorite = 'MARKET',
     this.loading = false,
     this.submitting = false,
     this.error,
@@ -16,6 +17,7 @@ class PaperOmsState extends Equatable {
   final OmsWallet? wallet;
   final List<OmsOrder> orders;
   final List<OmsPosition> positions;
+  final String orderTypeFavorite;
   final bool loading;
   final bool submitting;
   final String? error;
@@ -25,6 +27,7 @@ class PaperOmsState extends Equatable {
     OmsWallet? wallet,
     List<OmsOrder>? orders,
     List<OmsPosition>? positions,
+    String? orderTypeFavorite,
     bool? loading,
     bool? submitting,
     String? error,
@@ -36,6 +39,7 @@ class PaperOmsState extends Equatable {
       wallet: wallet ?? this.wallet,
       orders: orders ?? this.orders,
       positions: positions ?? this.positions,
+      orderTypeFavorite: orderTypeFavorite ?? this.orderTypeFavorite,
       loading: loading ?? this.loading,
       submitting: submitting ?? this.submitting,
       error: clearError ? null : (error ?? this.error),
@@ -44,6 +48,14 @@ class PaperOmsState extends Equatable {
   }
 
   @override
-  List<Object?> get props =>
-      [wallet, orders, positions, loading, submitting, error, toast];
+  List<Object?> get props => [
+        wallet,
+        orders,
+        positions,
+        orderTypeFavorite,
+        loading,
+        submitting,
+        error,
+        toast,
+      ];
 }

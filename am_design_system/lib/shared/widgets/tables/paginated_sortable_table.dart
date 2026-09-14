@@ -214,10 +214,8 @@ class _PaginatedSortableTableState<T> extends State<PaginatedSortableTable<T>> {
         : _totalPages(sorted.length);
     final currentPage =
         widget.serverPagination ? widget.serverCurrentPage : _currentPage;
-    final showFooter = widget.showPagination &&
-        (widget.serverPagination
-            ? totalItems > widget.pageSize
-            : sorted.length > _pageSize);
+    // Show footer whenever there are rows so page-size (e.g. 25/50) stays choosable.
+    final showFooter = widget.showPagination && totalItems > 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -352,7 +350,7 @@ class _TablePaginationFooter extends StatelessWidget {
       child: Row(
         children: [
           Text(
-            '${totalItems == 0 ? 0 : currentPage + 1}/$totalPages',
+            '${totalItems == 0 ? 0 : currentPage + 1}/$totalPages · $totalItems',
             style: labelStyle,
           ),
           if (trailing != null) ...[
@@ -360,16 +358,22 @@ class _TablePaginationFooter extends StatelessWidget {
             trailing!,
           ],
           const Spacer(),
-          DropdownButtonHideUnderline(
-            child: DropdownButton<int>(
-              value: pageSize,
-              style: labelStyle,
-              items: pageSizeOptions
-                  .map((s) => DropdownMenuItem(value: s, child: Text('$s')))
-                  .toList(),
-              onChanged: (value) {
-                if (value != null) onPageSizeChanged(value);
-              },
+          Text('Rows', style: labelStyle),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 88,
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<int>(
+                value: pageSize,
+                isDense: true,
+                style: labelStyle,
+                items: pageSizeOptions
+                    .map((s) => DropdownMenuItem(value: s, child: Text('$s')))
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) onPageSizeChanged(value);
+                },
+              ),
             ),
           ),
           IconButton(

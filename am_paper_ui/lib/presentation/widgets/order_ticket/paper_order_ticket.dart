@@ -59,6 +59,10 @@ class _PaperOrderTicketState extends State<PaperOrderTicket> {
       side: widget.side,
       symbol: widget.symbol,
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _controller.loadFavorite(context);
+    });
   }
 
   @override
