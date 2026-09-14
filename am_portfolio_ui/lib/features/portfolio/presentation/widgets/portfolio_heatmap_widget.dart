@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart'
     hide MarketCapType, MetricType, TimeFrame, SectorType;
+import 'package:am_design_system/core/utils/string_utils.dart';
 import '../cubit/portfolio_analytics_cubit.dart';
 import '../cubit/portfolio_analytics_state.dart';
 import '../cubit/portfolio_cubit.dart';
@@ -15,9 +16,10 @@ import '../mappers/sector_heatmap_converter.dart';
 import 'portfolio_metric_card.dart';
 
 
-/// Configuration class for platform-specific heatmap settings
-class PortfolioHeatmapConfig {
-  const PortfolioHeatmapConfig({
+/// Platform UI settings for the portfolio heatmap page widget
+/// (distinct from presentation/config/portfolio_heatmap_config.dart).
+class PortfolioHeatmapUiConfig {
+  const PortfolioHeatmapUiConfig({
     required this.defaultLayout,
     required this.compactMode,
     required this.showSelectors,
@@ -39,21 +41,21 @@ class PortfolioHeatmapConfig {
   final String subtitle;
   final String logTag;
 
-  /// Mobile configuration
-  static const mobile = PortfolioHeatmapConfig(
+  /// Mobile configuration — List by default so every sector stays readable.
+  static const mobile = PortfolioHeatmapUiConfig(
     defaultLayout: HeatmapLayoutType.list,
     compactMode: true,
     showSelectors: true,
     templateType: UniversalTemplateType.compact,
     showSubCards: false,
-    padding: EdgeInsets.all(8.0),
+    padding: EdgeInsets.fromLTRB(4, 4, 4, 0),
     title: 'Heatmap Overview',
     subtitle: '', // Completely removed the down side text
     logTag: 'PortfolioHeatmap.Mobile',
   );
 
   /// Web configuration
-  static const web = PortfolioHeatmapConfig(
+  static const web = PortfolioHeatmapUiConfig(
     defaultLayout: HeatmapLayoutType.treemap,
     compactMode: false,
     showSelectors: true,
@@ -78,7 +80,7 @@ class PortfolioHeatmapWidget extends ConsumerStatefulWidget {
 
   final String portfolioId;
   final String? portfolioName;
-  final PortfolioHeatmapConfig config;
+  final PortfolioHeatmapUiConfig config;
 
   @override
   ConsumerState<PortfolioHeatmapWidget> createState() =>
@@ -93,6 +95,7 @@ class _PortfolioHeatmapWidgetState
   MarketCapType? _selectedMarketCap;
   late HeatmapLayoutType _selectedLayout;
   HeatmapTileData? _drillDownTile;
+  int _heatmapLoadGeneration = 0;
 
   @override
   void initState() {
@@ -115,8 +118,18 @@ class _PortfolioHeatmapWidgetState
     });
   }
 
+  @override
+  void didUpdateWidget(PortfolioHeatmapWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.config.defaultLayout != widget.config.defaultLayout &&
+        _selectedLayout == oldWidget.config.defaultLayout) {
+      setState(() => _selectedLayout = widget.config.defaultLayout);
+    }
+  }
+
   void _loadHeatmapData() {
     final selectedTimeframe = ref.read(appTimeFrameProvider);
+    final loadGen = ++_heatmapLoadGeneration;
     CommonLogger.methodEntry(
       '_loadHeatmapData',
       tag: '${widget.config.logTag}.Data',
@@ -126,6 +139,7 @@ class _PortfolioHeatmapWidgetState
         'metric': _selectedMetric.name,
         'sector': _selectedSector?.name ?? 'all',
         'marketCap': _selectedMarketCap?.name ?? 'all',
+        'loadGen': loadGen,
       },
     );
 
@@ -136,6 +150,7 @@ class _PortfolioHeatmapWidgetState
     portfolioAnalyticsCubit
         .loadAnalytics(widget.portfolioId, timeFrame: selectedTimeframe)
         .then((_) {
+          if (!mounted || loadGen != _heatmapLoadGeneration) return;
           final analyticsState = portfolioAnalyticsCubit.state;
           if (analyticsState is PortfolioAnalyticsError) {
             CommonLogger.error(
@@ -161,6 +176,7 @@ class _PortfolioHeatmapWidgetState
           );
         })
         .catchError((error) {
+          if (!mounted || loadGen != _heatmapLoadGeneration) return;
           CommonLogger.error(
             'Analytics failed, using fallback',
             tag: '${widget.config.logTag}.Data',
@@ -356,13 +372,47 @@ class _PortfolioHeatmapWidgetState
       ),
     );
 
-    // Drill-down filtering
-    HeatmapData displayData = convertedHeatmapData;
+    // Drill-down filtering + treemap small-weight merge + per-tile tap
+    var workingTiles = convertedHeatmapData.tiles
+        .map((t) => t is HeatmapTileData ? t : HeatmapTileData.fromEntity(t))
+        .toList();
+
     if (_drillDownTile != null && _drillDownTile!.children != null) {
-      displayData = convertedHeatmapData.copyWith(
-        tiles: _drillDownTile!.children,
-      );
+      workingTiles = _drillDownTile!.children!
+          .map((t) => t is HeatmapTileData ? t : HeatmapTileData.fromEntity(t))
+          .toList();
+    } else if (_selectedLayout == HeatmapLayoutType.treemap) {
+      workingTiles =
+          SectorHeatmapConverter.mergeSmallWeightTilesForTreemap(workingTiles);
     }
+
+    workingTiles = workingTiles.map((tile) {
+      final hasChildren = tile.children != null && tile.children!.isNotEmpty;
+      if (!hasChildren) return tile;
+      return HeatmapTileData(
+        id: tile.id,
+        name: tile.name,
+        displayName: tile.displayName,
+        weightage: tile.weightage,
+        performance: tile.performance,
+        value: tile.value,
+        metadata: tile.metadata,
+        children: tile.children,
+        customColor: tile.customColor,
+        icon: tile.icon,
+        imageUrl: tile.imageUrl,
+        onTap: () {
+          CommonLogger.userAction(
+            'Heatmap drill-down: ${tile.name}',
+            tag: '${widget.config.logTag}.Action',
+          );
+          setState(() => _drillDownTile = tile);
+        },
+        customWidgets: tile.customWidgets,
+      );
+    }).toList();
+
+    final displayData = convertedHeatmapData.copyWith(tiles: workingTiles);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -487,32 +537,36 @@ class _PortfolioHeatmapWidgetState
   Widget _buildSummaryCardsRow() {
     return BlocBuilder<PortfolioCubit, PortfolioState>(
       builder: (context, portfolioState) {
-        // Derive values from portfolio state
+        // Derive values from portfolio state (exact ₹ on Heatmap page only)
         String totalValue = '--';
         String todayChange = '--';
         double todayChangePct = 0;
         bool isTodayPositive = true;
+        // Day P&L from overview until advanced attaches period P&L; label stays honest.
+        const changeCardTitle = 'TODAY';
+        ref.watch(appTimeFrameProvider); // rebuild when TF changes tile data
 
         if (portfolioState is PortfolioLoaded) {
           final summary = portfolioState.summary;
-          totalValue = summary.formattedTotalValue;
-          todayChange = summary.formattedTodayChange;
+          totalValue = StringUtils.formatCurrencyExact(summary.totalValue);
+          // Day P&L always available from overview; non-1D keeps TODAY numbers
+          // until advanced period P&L is attached (label reflects selection).
+          todayChange = StringUtils.formatCurrencyExact(summary.todayChange);
           todayChangePct = summary.todayChangePercentage;
           isTodayPositive = summary.isTodayPositive;
         }
 
-        // Derive top/worst sectors from analytics
-        return BlocBuilder<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
-          builder: (context, analyticsState) {
+        // Top/Weakest from visible filtered heatmap tiles
+        return BlocBuilder<PortfolioHeatmapCubit, PortfolioHeatmapState>(
+          builder: (context, heatmapState) {
             String topSector = '--';
             String topSectorChange = '';
             String worstSector = '--';
             String worstSectorChange = '';
 
-            if (analyticsState is PortfolioAnalyticsLoaded) {
+            if (heatmapState is PortfolioHeatmapLoaded) {
               final summary = SectorHeatmapConverter.resolveSectorSummary(
-                heatmap: analyticsState.heatmap,
-                sectorAllocation: analyticsState.sectorAllocation,
+                tiles: heatmapState.heatmapData.uiTiles,
               );
               topSector = summary.topSector;
               topSectorChange = summary.topSectorChange;
@@ -529,18 +583,18 @@ class _PortfolioHeatmapWidgetState
                     title: 'TOTAL VALUE',
                     value: totalValue,
                     subtitle: '',
-                    accentColor: const Color(0xFF0BA95B),
+                    accentColor: context.marketPositive,
                     chromeColor: ModuleColors.portfolio,
                     compact: isSmallMobile,
                     glowBorder: true,
                   ),
                   PortfolioMetricCard(
-                    title: '24H CHANGE',
+                    title: changeCardTitle,
                     value: todayChange,
                     subtitle: '${isTodayPositive ? '+' : ''}${todayChangePct.toStringAsFixed(2)}%',
                     accentColor: isTodayPositive
-                        ? const Color(0xFF0BA95B)
-                        : const Color(0xFFB22222),
+                        ? context.marketPositive
+                        : context.marketNegative,
                     chromeColor: ModuleColors.portfolio,
                     isPositive: isTodayPositive,
                     compact: isSmallMobile,
@@ -550,7 +604,9 @@ class _PortfolioHeatmapWidgetState
                     title: 'TOP SECTOR',
                     value: topSector,
                     subtitle: topSectorChange,
-                    accentColor: const Color(0xFF0BA95B),
+                    accentColor: topSectorChange.startsWith('-')
+                        ? context.marketNegative
+                        : context.marketPositive,
                     chromeColor: ModuleColors.portfolio,
                     isPositive: !topSectorChange.startsWith('-'),
                     compact: isSmallMobile,
@@ -560,9 +616,15 @@ class _PortfolioHeatmapWidgetState
                     title: 'WEAKEST SECTOR',
                     value: worstSector,
                     subtitle: worstSectorChange,
-                    accentColor: const Color(0xFFB22222),
+                    accentColor: worstSectorChange.isEmpty
+                        ? ModuleColors.portfolio
+                        : (worstSectorChange.startsWith('-')
+                            ? context.marketNegative
+                            : context.marketPositive),
                     chromeColor: ModuleColors.portfolio,
-                    isPositive: !worstSectorChange.startsWith('-'),
+                    isPositive: worstSectorChange.isEmpty
+                        ? null
+                        : !worstSectorChange.startsWith('-'),
                     compact: isSmallMobile,
                     glowBorder: true,
                   ),
@@ -629,6 +691,7 @@ class _PortfolioHeatmapWidgetState
                 ? GlobalTimeFrameVariant.dropdown
                 : GlobalTimeFrameVariant.pills,
             primaryColor: ModuleColors.portfolio,
+            availableTimeFrames: TimeFrame.heatmapTimeFrames,
           ),
         );
 
@@ -837,10 +900,9 @@ class _PortfolioHeatmapWidgetState
       );
     }
 
-    // Reload heatmap data with new selections (timeframe reloads via provider listen)
-    if (timeFrame == null) {
-      _loadHeatmapData();
-    } else if (metric != null || sector != null || marketCap != null || layout != null) {
+    // Sector/market-cap need client-side refilter. Layout/metric are UI-only.
+    // Timeframe reloads via appTimeFrameProvider listen.
+    if (sector != null || marketCap != null) {
       _loadHeatmapData();
     }
   }

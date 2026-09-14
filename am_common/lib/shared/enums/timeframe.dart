@@ -58,6 +58,7 @@ enum TimeFrame {
         TimeFrame.oneWeek,
         TimeFrame.oneMonth,
         TimeFrame.threeMonths,
+        TimeFrame.sixMonths,
         TimeFrame.oneYear,
       ];
 

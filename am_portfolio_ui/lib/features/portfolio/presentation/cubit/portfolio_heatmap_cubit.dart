@@ -3,90 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart'
     hide MarketCapType, MetricType, TimeFrame, SectorType;
+import '../mappers/heatmap_sector_matcher.dart';
 import '../mappers/sector_heatmap_converter.dart';
 import '../../internal/domain/entities/portfolio_analytics.dart';
 import 'portfolio_analytics_cubit.dart';
 import 'portfolio_analytics_state.dart';
 import 'portfolio_heatmap_state.dart';
-
-/// Strict matching: ensures whole-word boundary matching.
-bool _matchesStrictly(String source, String target) {
-  final s = source.toLowerCase().trim();
-  final t = target.toLowerCase().trim();
-  if (s == t) return true;
-  if (s.replaceAll(' ', '') == t.replaceAll(' ', '')) return true;
-  try {
-    if (RegExp('\\b${RegExp.escape(t)}', caseSensitive: false).hasMatch(s)) {
-      return true;
-    }
-    if (RegExp('\\b${RegExp.escape(s)}', caseSensitive: false).hasMatch(t)) {
-      return true;
-    }
-  } catch (_) {}
-  return false;
-}
-
-/// Accurate domain-aware matching for investment sectors.
-/// Prevents 'Health Technology' from appearing under 'Technology',
-/// while correctly including sub-sectors (e.g. 'Consumer Durables' under 'Consumer').
-bool _matchesSector(String tileName, SectorType targetSector) {
-  final s = tileName.toLowerCase().trim();
-  switch (targetSector) {
-    case SectorType.all:
-      return true;
-    case SectorType.technology:
-    case SectorType.it:
-      return s.contains('information technology') ||
-          s == 'it' ||
-          (s.contains('tech') && !s.contains('health') && !s.contains('bio'));
-    case SectorType.healthcare:
-    case SectorType.pharma:
-      return s.contains('health') ||
-          s.contains('pharma') ||
-          s.contains('biotech') ||
-          s.contains('medical');
-    case SectorType.finance:
-    case SectorType.banking:
-      return s.contains('finance') ||
-          s.contains('financial') ||
-          s.contains('bank') ||
-          s.contains('insurance');
-    case SectorType.consumer:
-    case SectorType.fmcg:
-    case SectorType.consumerServices:
-    case SectorType.automobiles:
-      return s.contains('consumer') ||
-          s.contains('fmcg') ||
-          s.contains('automobile') ||
-          s.contains('auto ') ||
-          s == 'auto' ||
-          s.contains('retail');
-    case SectorType.energy:
-    case SectorType.utilities:
-      return s.contains('energy') ||
-          s.contains('oil') ||
-          s.contains('gas') ||
-          s.contains('power') ||
-          s.contains('utilit');
-    case SectorType.industrials:
-    case SectorType.manufacturing:
-    case SectorType.infrastructure:
-      return s.contains('industrial') ||
-          s.contains('manufactur') ||
-          s.contains('infrastruct') ||
-          (s.contains('process') && !s.contains('food')) ||
-          s.contains('transport');
-    case SectorType.materials:
-    case SectorType.metals:
-      return s.contains('material') ||
-          s.contains('metal') ||
-          s.contains('mining') ||
-          s.contains('mineral') ||
-          s.contains('chemical');
-    default:
-      return s == targetSector.displayName.toLowerCase().trim();
-  }
-}
 
 /// Portfolio Heatmap Cubit
 class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
@@ -128,8 +50,10 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
         final analyticsState = usedAnalyticsCubit.state;
 
         if (analyticsState is PortfolioAnalyticsLoaded &&
-            analyticsState.heatmap != null) {
-          // Convert real analytics data to heatmap data
+            (analyticsState.heatmap != null ||
+                (analyticsState.sectorAllocation?.sectorWeights.isNotEmpty ??
+                    false))) {
+          // Convert real analytics data to heatmap data (allocation fallback OK)
           heatmapData = SectorHeatmapConverter.convertToHeatmapData(
             heatmap: analyticsState.heatmap,
             sectorAllocation: analyticsState.sectorAllocation,
@@ -142,55 +66,72 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
           if (sector != SectorType.all && sector != SectorType.noGroup) {
             heatmapData = heatmapData.copyWith(
               tiles: heatmapData.uiTiles.where((tile) {
-                return _matchesSector(tile.name, sector) ||
-                       _matchesSector(tile.displayName, sector);
+                return matchesHeatmapSector(tile.name, sector) ||
+                       matchesHeatmapSector(tile.displayName, sector);
               }).toList(),
             );
           }
 
-          // Apply Market Cap filtering — strict word-boundary match
+          // Apply Market Cap filtering — match child symbols, drop empty parents
           if (marketCap != MarketCapType.all) {
             final targetCapName = marketCap.displayName;
 
-            // Try to find the matching segment in marketCapAllocation
             final segments = analyticsState.marketCapAllocation?.segments ?? [];
             final targetSegment = segments.cast<MarketCapSegment?>().firstWhere(
-              (s) => s != null && _matchesStrictly(s.segmentName, targetCapName),
+              (s) => s != null && matchesStrictly(s.segmentName, targetCapName),
               orElse: () => null,
             );
 
             if (targetSegment != null && targetSegment.topStocks.isNotEmpty) {
-              // Filter the children of each tile to only include stocks in the target segment
+              final symbols = targetSegment.topStocks
+                  .map((s) => s.trim().toUpperCase())
+                  .toSet();
               final List<HeatmapTileData> filteredTiles = [];
-              
+              final totalValue = heatmapData.uiTiles.fold<double>(
+                0.0,
+                (sum, tile) => sum + (tile.value ?? 0.0),
+              );
+
               for (final tile in heatmapData.uiTiles) {
                 if (tile.children == null || tile.children!.isEmpty) {
-                  filteredTiles.add(tile);
+                  final symbol = ((tile.metadata?['symbol'] as String?) ?? tile.name)
+                      .trim()
+                      .toUpperCase();
+                  if (symbols.contains(symbol)) {
+                    filteredTiles.add(tile);
+                  }
                   continue;
                 }
-                
+
                 final filteredChildren = tile.children!.where((child) {
-                  return targetSegment.topStocks.contains(child.id);
+                  final symbol =
+                      ((child.metadata?['symbol'] as String?) ?? child.name)
+                          .trim()
+                          .toUpperCase();
+                  return symbols.contains(symbol);
                 }).toList();
-                
-                if (filteredChildren.isNotEmpty) {
-                  // Recalculate sector value based on remaining children to prevent layout errors
-                  final newSectorValue = filteredChildren.fold<double>(
-                    0.0, 
-                    (sum, child) => sum + (child.value ?? 0.0)
-                  );
-                  
-                  filteredTiles.add(tile.copyWith(
+
+                if (filteredChildren.isEmpty) continue;
+
+                final newSectorValue = filteredChildren.fold<double>(
+                  0.0,
+                  (sum, child) => sum + (child.value ?? 0.0),
+                );
+                final newWeightage = totalValue > 0
+                    ? (newSectorValue / totalValue) * 100
+                    : tile.weightage;
+
+                filteredTiles.add(
+                  tile.copyWith(
                     children: filteredChildren,
                     value: newSectorValue,
-                  ));
-                }
+                    weightage: newWeightage,
+                  ),
+                );
               }
-              
+
               heatmapData = heatmapData.copyWith(tiles: filteredTiles);
             } else {
-              // No stocks match this segment — emit Loaded with empty tiles
-              // This preserves the filter dropdowns so the user can change their selection back.
               heatmapData = heatmapData.copyWith(tiles: []);
               ProductTelemetry.instance.emptyState('heatmap_segment_empty');
             }
@@ -233,6 +174,15 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
       }
 
       if (isClosed) return;
+      if (heatmapData.uiTiles.isEmpty) {
+        emit(
+          const PortfolioHeatmapEmpty(
+            message:
+                'Heatmap Data Unavailable: No sector performance data is currently available.',
+          ),
+        );
+        return;
+      }
       emit(
         PortfolioHeatmapLoaded(
           heatmapData: heatmapData,

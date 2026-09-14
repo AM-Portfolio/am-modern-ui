@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:am_common/am_common.dart';
+import 'package:am_design_system/core/theme/app_colors_theme.dart';
 import 'package:am_design_system/core/utils/string_utils.dart';
 
 import '../../../models/heatmap.dart';
@@ -42,17 +43,17 @@ abstract class HeatmapLayoutBuilder {
   }) {
     if (customTileBuilder != null) {
       return GestureDetector(
-        onTap: onTilePressed,
+        onTap: tile.onTap ?? onTilePressed,
         child: customTileBuilder(tile),
       );
     }
 
-    final tileColor = getTileColor(tile, data);
+    final tileColor = getTileColor(context, tile, data);
     final textColor = getTextColor(tileColor);
     final config = data.configuration;
 
     return GestureDetector(
-      onTap: onTilePressed,
+      onTap: tile.onTap ?? onTilePressed,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
@@ -193,12 +194,12 @@ abstract class HeatmapLayoutBuilder {
   String _getPrimaryMetricText(HeatmapTileData tile, MetricType? metric) {
     switch (metric) {
       case MetricType.marketValue:
-        return StringUtils.formatCurrency(tile.value ?? 0, decimals: 0);
+        return StringUtils.formatCurrencyExact(tile.value ?? 0);
       case MetricType.allocationPercent:
         return '${tile.weightage.toStringAsFixed(1)}%';
       case MetricType.profitLoss:
         final pnl = (tile.value ?? 0) * (tile.performance / 100);
-        return StringUtils.formatCurrency(pnl, decimals: 0);
+        return StringUtils.formatCurrencyExact(pnl);
       case MetricType.returns:
       case MetricType.changePercent:
       default:
@@ -228,7 +229,7 @@ abstract class HeatmapLayoutBuilder {
       case MetricType.profitLoss:
       case MetricType.returns:
       default:
-        return StringUtils.formatCurrency(tile.value ?? 0, decimals: 0);
+        return StringUtils.formatCurrencyExact(tile.value ?? 0);
     }
   }
 
@@ -298,27 +299,11 @@ abstract class HeatmapLayoutBuilder {
       }
       resultTiles = allChildren;
     } else {
-      // Show specific sector tile and its children
+      // Show matching parent sector tile(s) with children nested (no flatten).
       final sectorName = selectedSector.displayName;
-      final specificSectorTiles = <HeatmapTileData>[];
-
-      for (final tile in rootTiles) {
-        if (matchesSector(tile, sectorName)) {
-          // Add the sector tile itself
-          specificSectorTiles.add(tile);
-          // Add all its children
-          if (tile.children != null && tile.children!.isNotEmpty) {
-            for (final child in tile.children!) {
-              final childTile = child is HeatmapTileData
-                  ? child
-                  : HeatmapTileData.fromEntity(child);
-              specificSectorTiles.add(childTile);
-            }
-          }
-          break; // Found the sector, no need to continue
-        }
-      }
-      resultTiles = specificSectorTiles;
+      resultTiles = rootTiles
+          .where((tile) => matchesSector(tile, sectorName))
+          .toList();
     }
 
     // Apply centralized sorting based on configuration
@@ -370,16 +355,28 @@ abstract class HeatmapLayoutBuilder {
     }
   }
 
-  /// Checks if a tile matches the selected sector
-  bool matchesSector(HeatmapTileData tile, String sectorName) =>
-      tile.displayName.toLowerCase().contains(sectorName.toLowerCase()) ||
-      tile.name.toLowerCase().contains(sectorName.toLowerCase());
+  /// Checks if a tile matches the selected sector (domain-aware when possible).
+  bool matchesSector(HeatmapTileData tile, String sectorName) {
+    final needle = sectorName.toLowerCase().trim();
+    if (needle.isEmpty || needle == 'all') return true;
+    final hay = '${tile.displayName} ${tile.name}'.toLowerCase();
+    // Prefer whole-name / compacted equality over naive contains (avoids Tech vs Health Tech).
+    if (hay == needle || hay.replaceAll(' ', '') == needle.replaceAll(' ', '')) {
+      return true;
+    }
+    return tile.displayName.toLowerCase().contains(needle) ||
+        tile.name.toLowerCase().contains(needle);
+  }
 
   /// Gets the color for a heatmap tile based on configuration
-  Color getTileColor(HeatmapTileData tile, HeatmapData data) {
+  Color getTileColor(
+    BuildContext context,
+    HeatmapTileData tile,
+    HeatmapData data,
+  ) {
     switch (data.configuration.colorScheme) {
       case HeatmapColorSchemeType.performance:
-        return getPerformanceColor(tile.performance);
+        return getPerformanceColor(context, tile.performance);
       case HeatmapColorSchemeType.custom:
         return tile.customColor ?? Colors.grey.shade300;
       case HeatmapColorSchemeType.weightage:
@@ -389,27 +386,30 @@ abstract class HeatmapLayoutBuilder {
     }
   }
 
-  /// Gets color based on performance value — Obsidian Pulse palette
-  Color getPerformanceColor(double changePercent) {
+  /// Gets color based on performance using theme market tokens.
+  Color getPerformanceColor(BuildContext context, double changePercent) {
     final intensity = (changePercent.abs() / 5.0).clamp(0.0, 1.0);
+    final colors = Theme.of(context).extension<AppColorsTheme>();
+    final positive =
+        colors?.marketPositiveIndicator ?? const Color(0xFF00C896);
+    final negative =
+        colors?.marketNegativeIndicator ?? const Color(0xFFF87171);
+    final neutral = colors?.statusNeutral ?? const Color(0xFF6B7280);
 
     if (changePercent > 0.05) {
-      // Emerald greens from Stitch design
       return Color.lerp(
-        const Color(0xFF005236), // Deep emerald (dark)
-        const Color(0xFF0BA95B), // Bright emerald (light)
+        positive.withValues(alpha: 0.55),
+        positive,
         intensity,
       )!;
     } else if (changePercent < -0.05) {
-      // Crimson reds from Stitch design
       return Color.lerp(
-        const Color(0xFF68000A), // Deep crimson (dark)
-        const Color(0xFFB22222), // Bright crimson (light)
+        negative.withValues(alpha: 0.55),
+        negative,
         intensity,
       )!;
-    } else {
-      return const Color(0xFF6B7280); // Visible neutral slate/cool gray
     }
+    return neutral;
   }
 
   /// Gets color based on weightage value
@@ -525,12 +525,12 @@ abstract class HeatmapLayoutBuilder {
     double? height,
     VoidCallback? onTilePressed,
   ) {
-    final tileColor = getTileColor(tile, data);
+    final tileColor = getTileColor(context, tile, data);
     final textColor = getTextColor(tileColor);
     final hierarchyLevel = _calculateHierarchyLevel(tile, data);
 
     return GestureDetector(
-      onTap: onTilePressed,
+      onTap: tile.onTap ?? onTilePressed,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 2),
         decoration: BoxDecoration(
@@ -571,7 +571,7 @@ abstract class HeatmapLayoutBuilder {
     VoidCallback? onTilePressed,
     MetricType? selectedMetric,
   ) {
-    final tileColor = getTileColor(tile, data);
+    final tileColor = getTileColor(context, tile, data);
     final isPositive = tile.performance >= 0;
     // Always white text — all tile colors (green, red, neutral) are dark enough
     const textColor = Colors.white;
@@ -594,7 +594,7 @@ abstract class HeatmapLayoutBuilder {
     final trendIcon = isPositive ? Icons.trending_up : Icons.trending_down;
 
     return GestureDetector(
-      onTap: onTilePressed,
+      onTap: tile.onTap ?? onTilePressed,
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         child: Container(
@@ -687,7 +687,6 @@ abstract class HeatmapLayoutBuilder {
     int hierarchyLevel,
   ) {
     final config = data.configuration;
-    final showSubCards = config.showSubCards;
 
     // Determine if we're in a tight constraint situation
     final isTightHeight = height < 50;
@@ -772,8 +771,8 @@ abstract class HeatmapLayoutBuilder {
             ),
           ),
 
-          // Trailing section - Performance and value metrics (simplified for tight constraints)
-          if (showSubCards && !compactMode) ...[
+          // Trailing section - Performance and value metrics
+          if (config.showPerformance || (config.showValue && tile.value != null)) ...[
             // Performance
             if (config.showPerformance)
               Expanded(
@@ -782,7 +781,7 @@ abstract class HeatmapLayoutBuilder {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '${tile.performance >= 0 ? '+' : ''}${tile.performance.toStringAsFixed(1)}%',
+                      '${tile.performance >= 0 ? '+' : ''}${tile.performance.toStringAsFixed(2)}%',
                       style: TextStyle(
                         color: textColor,
                         fontSize: isTightHeight ? 11.0 : 13.0,
@@ -790,7 +789,7 @@ abstract class HeatmapLayoutBuilder {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    if (height > 50 && !isTightHeight)
+                    if (height > 50 && !isTightHeight && !compactMode)
                       Text(
                         'Performance',
                         style: TextStyle(
@@ -811,7 +810,7 @@ abstract class HeatmapLayoutBuilder {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      StringUtils.formatCurrency(tile.value!, decimals: 1),
+                      StringUtils.formatCurrencyExact(tile.value!),
                       style: TextStyle(
                         color: textColor,
                         fontSize: isTightHeight ? 11.0 : 13.0,
@@ -819,7 +818,7 @@ abstract class HeatmapLayoutBuilder {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    if (height > 50 && !isTightHeight)
+                    if (height > 50 && !isTightHeight && !compactMode)
                       Text(
                         'Value',
                         style: TextStyle(

@@ -118,16 +118,18 @@ class PortfolioAnalyticsService {
 
   /// Retrieves only heatmap data for portfolio visualization
   /// Optimized method for getting visualization data only
-  Future<Heatmap?> getPortfolioHeatmap(String portfolioId) async {
+  Future<Heatmap?> getPortfolioHeatmap(
+    String portfolioId, {
+    TimeFrame? timeFrame,
+  }) async {
     CommonLogger.methodEntry(
       'getPortfolioHeatmap',
       tag: 'PortfolioAnalyticsService',
-      metadata: {'portfolioId': portfolioId},
+      metadata: {'portfolioId': portfolioId, 'timeFrame': timeFrame?.name},
     );
 
     try {
-      // Create request with only heatmap enabled
-      final request = _createHeatmapOnlyRequest(portfolioId);
+      final request = _createHeatmapOnlyRequest(portfolioId, timeFrame: timeFrame);
 
       CommonLogger.info(
         'Getting portfolio heatmap data',
@@ -345,24 +347,35 @@ class PortfolioAnalyticsService {
   }
 
   /// Creates a request with only heatmap feature enabled
-  PortfolioAnalyticsRequest _createHeatmapOnlyRequest(String portfolioId) =>
-      PortfolioAnalyticsRequest(
-        coreIdentifiers: CoreIdentifiers(portfolioId: portfolioId),
-        featureToggles: const FeatureToggles(
-          includeHeatmap: true,
-          includeMovers: false,
-          includeSectorAllocation: false,
-          includeMarketCapAllocation: false,
-        ),
-        featureConfiguration: const FeatureConfiguration(moversLimit: 10),
-        pagination: const Pagination(
-          page: 1,
-          size: 50,
-          sortBy: 'performance',
-          sortDirection: 'desc',
-          returnAllData: false,
-        ),
-      );
+  PortfolioAnalyticsRequest _createHeatmapOnlyRequest(
+    String portfolioId, {
+    TimeFrame? timeFrame,
+  }) {
+    final base = PortfolioAnalyticsMapper.createDefaultRequest(
+      portfolioId,
+      timeFrame: timeFrame,
+    );
+    return PortfolioAnalyticsRequest(
+      coreIdentifiers: base.coreIdentifiers,
+      featureToggles: const FeatureToggles(
+        includeHeatmap: true,
+        includeMovers: false,
+        includeSectorAllocation: false,
+        includeMarketCapAllocation: false,
+      ),
+      featureConfiguration: const FeatureConfiguration(moversLimit: 10),
+      pagination: const Pagination(
+        page: 1,
+        size: 50,
+        sortBy: 'performance',
+        sortDirection: 'desc',
+        returnAllData: false,
+      ),
+      fromDate: base.fromDate,
+      toDate: base.toDate,
+      timeFrame: base.timeFrame,
+    );
+  }
 
   /// Creates a request with only movers feature enabled
   PortfolioAnalyticsRequest _createMoversOnlyRequest(

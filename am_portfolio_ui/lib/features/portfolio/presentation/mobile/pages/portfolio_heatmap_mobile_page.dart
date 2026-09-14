@@ -19,6 +19,6 @@ class PortfolioHeatmapMobilePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) => PortfolioHeatmapWidget(
     portfolioId: portfolioId,
     portfolioName: portfolioName,
-    config: PortfolioHeatmapConfig.mobile,
+    config: PortfolioHeatmapUiConfig.mobile,
   );
 }
