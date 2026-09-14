@@ -4,6 +4,7 @@ import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_renderer.da
 import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_store.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_timeframe_provider.dart';
+import 'package:am_dashboard_ui/presentation/providers/has_demo_portfolio_provider.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
@@ -62,6 +63,14 @@ class DashboardWebScreen extends ConsumerWidget {
 
     final isDark = context.isDark;
     final onSurface = context.colors.textPrimary;
+    // Retry demo detection once session is ready (avoids pre-auth false cache).
+    ref.listen(dashboardSessionUserIdProvider(userId), (prev, next) {
+      if (next.hasValue && prev?.hasValue != true) {
+        ref.invalidate(hasDemoPortfolioProvider);
+      }
+    });
+    final showDemoBanner =
+        ref.watch(hasDemoPortfolioProvider).asData?.value ?? false;
 
     return Scaffold(
       backgroundColor: context.colors.scaffoldBackground,
@@ -132,7 +141,12 @@ class DashboardWebScreen extends ConsumerWidget {
                                 fontWeight: FontWeight.w600,
                               ),
                         ),
-                        const Spacer(),
+                        if (showDemoBanner) ...[
+                          const SizedBox(width: AppSpacing.md),
+                          // Badge + welcome in one row; Upload is only "Add Portfolio".
+                          const Expanded(child: DemoAccountInlineBanner()),
+                        ] else
+                          const Spacer(),
                         if (kDashboardCustomizeEnabled)
                           IconButton(
                             tooltip: 'Customize dashboard',

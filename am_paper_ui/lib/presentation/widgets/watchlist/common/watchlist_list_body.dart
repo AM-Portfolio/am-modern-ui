@@ -117,7 +117,7 @@ class WatchlistListBody extends StatelessWidget {
                               controller.expandedDepthSymbol == stock.symbol;
                           final showActions = compact
                               ? controller.actionSymbol == stock.symbol
-                              : (hovered || selected || expanded);
+                              : hovered;
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [

@@ -743,36 +743,24 @@ final userId =
 
           if (!kIsWeb || !authPending) return shell;
 
+          final failed = authState is AuthRestoreFailed;
           return Stack(
             children: [
               shell,
-              ColoredBox(
-                color: const Color(0xFF0B1120),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const CircularProgressIndicator(color: Color(0xFF6366F1)),
-                      const SizedBox(height: 20),
-                      Text(
-                        authState is AuthRestoreFailed
-                            ? 'Connection issue — retrying session…'
-                            : 'Restoring your session…',
-                        style: const TextStyle(
-                          color: Color(0xFF94A3B8),
-                          fontSize: 16,
-                        ),
-                      ),
-                      if (authState is AuthRestoreFailed) ...[
-                        const SizedBox(height: 16),
-                        FilledButton(
-                          onPressed: () =>
-                              context.read<AuthCubit>().checkAuthStatus(),
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ],
-                  ),
+              Positioned.fill(
+                child: AmSessionStatusView(
+                  title: failed
+                      ? 'Connection issue — retrying session…'
+                      : 'Restoring your session…',
+                  subtitle: failed
+                      ? 'We could not reach the auth service. You can retry now.'
+                      : 'Signing you back into AM securely',
+                  tone: failed
+                      ? AmSessionStatusTone.retrying
+                      : AmSessionStatusTone.restoring,
+                  onRetry: failed
+                      ? () => context.read<AuthCubit>().checkAuthStatus()
+                      : null,
                 ),
               ),
             ],

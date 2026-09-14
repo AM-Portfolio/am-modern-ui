@@ -16,7 +16,6 @@ class PaperOrderTicket extends StatefulWidget {
     this.onSymbolChanged,
     this.onSideChanged,
     this.onOrderPlaced,
-    this.onOpenFundamentalAnalysis,
     this.compact = false,
     this.floating = false,
     this.onToggleFloat,
@@ -32,9 +31,6 @@ class PaperOrderTicket extends StatefulWidget {
 
   /// Called after a successful place (filled or working), before toast.
   final VoidCallback? onOrderPlaced;
-
-  /// Opens full fundamental analysis (Desk → Overview) for the ticket symbol.
-  final VoidCallback? onOpenFundamentalAnalysis;
 
   /// Mobile half-sheet: denser layout, fewer chrome blocks.
   final bool compact;
@@ -63,6 +59,10 @@ class _PaperOrderTicketState extends State<PaperOrderTicket> {
       side: widget.side,
       symbol: widget.symbol,
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _controller.loadFavorite(context);
+    });
   }
 
   @override
@@ -97,7 +97,6 @@ class _PaperOrderTicketState extends State<PaperOrderTicket> {
                 symbol: widget.symbol,
                 wallet: state.wallet,
                 submitting: state.submitting,
-                onOpenFundamentalAnalysis: widget.onOpenFundamentalAnalysis,
                 onCloseFloat: widget.onCloseFloat,
               );
             }
@@ -106,7 +105,6 @@ class _PaperOrderTicketState extends State<PaperOrderTicket> {
               symbol: widget.symbol,
               wallet: state.wallet,
               submitting: state.submitting,
-              onOpenFundamentalAnalysis: widget.onOpenFundamentalAnalysis,
               floating: widget.floating,
               onToggleFloat: widget.onToggleFloat,
               onCloseFloat: widget.onCloseFloat,
