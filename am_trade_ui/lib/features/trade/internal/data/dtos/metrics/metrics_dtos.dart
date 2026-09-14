@@ -12,6 +12,38 @@ import '../../../domain/enums/metric_types.dart';
 
 part 'metrics_dtos.g.dart';
 
+/// Jackson may emit null map values for empty buckets, or BigDecimal as string.
+/// These helpers must live in this library (not only in generated `.g.dart`) so
+/// Docker `build_runner` cannot wipe null-safety on regenerate.
+num? _asNum(Object? value) {
+  if (value == null) return null;
+  if (value is num) return value;
+  if (value is String) return num.tryParse(value);
+  return null;
+}
+
+Map<String, int>? _distIntMap(Object? raw) {
+  if (raw is! Map) return null;
+  final out = <String, int>{};
+  for (final e in raw.entries) {
+    final n = _asNum(e.value);
+    if (n != null) out[e.key.toString()] = n.toInt();
+  }
+  return out;
+}
+
+Map<String, double>? _distDoubleMap(Object? raw) {
+  if (raw is! Map) return null;
+  final out = <String, double>{};
+  for (final e in raw.entries) {
+    final n = _asNum(e.value);
+    if (n != null && n.isFinite) out[e.key.toString()] = n.toDouble();
+  }
+  return out;
+}
+
+int _asIntOrZero(Object? value) => _asNum(value)?.toInt() ?? 0;
+
 @JsonSerializable()
 class PerformanceMetricsDto {
   final double? totalProfitLoss;
@@ -164,7 +196,9 @@ class TradingStyleHintDto {
   }
 }
 
-@JsonSerializable()
+/// [createFactory: false] — hand-written fromJson so CI build_runner cannot
+/// regenerate `(e as num).toDouble()` and crash on Jackson null map values.
+@JsonSerializable(createFactory: false)
 class TradeDistributionMetricsDto {
   final Map<String, int>? tradesByDay;
   final Map<String, int>? tradesByMonth;
@@ -244,8 +278,52 @@ class TradeDistributionMetricsDto {
     this.tradingStyleHint,
   });
 
-  factory TradeDistributionMetricsDto.fromJson(Map<String, dynamic> json) =>
-      _$TradeDistributionMetricsDtoFromJson(json);
+  factory TradeDistributionMetricsDto.fromJson(Map<String, dynamic> json) {
+    return TradeDistributionMetricsDto(
+      tradesByDay: _distIntMap(json['tradesByDay']),
+      tradesByMonth: _distIntMap(json['tradesByMonth']),
+      profitByDay: _distDoubleMap(json['profitByDay']),
+      profitByMonth: _distDoubleMap(json['profitByMonth']),
+      winRateByDay: _distDoubleMap(json['winRateByDay']),
+      winRateByMonth: _distDoubleMap(json['winRateByMonth']),
+      avgPnlByDay: _distDoubleMap(json['avgPnlByDay']),
+      avgPnlByMonth: _distDoubleMap(json['avgPnlByMonth']),
+      eligibleTradesByDay: _distIntMap(json['eligibleTradesByDay']),
+      eligibleTradesByMonth: _distIntMap(json['eligibleTradesByMonth']),
+      tradesByHour: _distIntMap(json['tradesByHour']),
+      profitByHour: _distDoubleMap(json['profitByHour']),
+      winRateByHour: _distDoubleMap(json['winRateByHour']),
+      avgPnlByHour: _distDoubleMap(json['avgPnlByHour']),
+      eligibleTradesByHour: _distIntMap(json['eligibleTradesByHour']),
+      tradesBySession: _distIntMap(json['tradesBySession']),
+      profitBySession: _distDoubleMap(json['profitBySession']),
+      winRateBySession: _distDoubleMap(json['winRateBySession']),
+      avgPnlBySession: _distDoubleMap(json['avgPnlBySession']),
+      eligibleTradesBySession: _distIntMap(json['eligibleTradesBySession']),
+      tradeCountByAssetClass: _distIntMap(json['tradeCountByAssetClass']),
+      profitByAssetClass: _distDoubleMap(json['profitByAssetClass']),
+      winRateByAssetClass: _distDoubleMap(json['winRateByAssetClass']),
+      tradeCountByStrategy: _distIntMap(json['tradeCountByStrategy']),
+      profitByStrategy: _distDoubleMap(json['profitByStrategy']),
+      winRateByStrategy: _distDoubleMap(json['winRateByStrategy']),
+      tradesByDuration: _distIntMap(json['tradesByDuration']),
+      profitByDuration: _distDoubleMap(json['profitByDuration']),
+      winRateByDuration: _distDoubleMap(json['winRateByDuration']),
+      tradesByPositionSize: _distIntMap(json['tradesByPositionSize']),
+      profitByPositionSize: _distDoubleMap(json['profitByPositionSize']),
+      winRateByPositionSize: _distDoubleMap(json['winRateByPositionSize']),
+      skippedMissingEntryCount: _asNum(json['skippedMissingEntryCount'])?.toInt(),
+      openOrMissingPnlCount: _asNum(json['openOrMissingPnlCount'])?.toInt(),
+      badTimestampCount: _asNum(json['badTimestampCount'])?.toInt(),
+      timezoneNote: json['timezoneNote'] as String?,
+      tradingStyleHint: json['tradingStyleHint'] == null
+          ? null
+          : TradingStyleHintDto.fromJson(
+              json['tradingStyleHint'] as Map<String, dynamic>,
+            ),
+    );
+  }
+
   Map<String, dynamic> toJson() => _$TradeDistributionMetricsDtoToJson(this);
 
   TradeDistributionMetrics toEntity() => TradeDistributionMetrics(
@@ -338,7 +416,7 @@ class TradePatternMetricsDto {
   );
 }
 
-@JsonSerializable()
+@JsonSerializable(createFactory: false)
 class StrategyPerformanceMetricsDto {
   final String strategyName;
   final double totalProfitLoss;
@@ -352,7 +430,15 @@ class StrategyPerformanceMetricsDto {
     required this.sharpeRatio,
   });
 
-  factory StrategyPerformanceMetricsDto.fromJson(Map<String, dynamic> json) => _$StrategyPerformanceMetricsDtoFromJson(json);
+  factory StrategyPerformanceMetricsDto.fromJson(Map<String, dynamic> json) {
+    return StrategyPerformanceMetricsDto(
+      strategyName: json['strategyName'] as String? ?? '',
+      totalProfitLoss: _asNum(json['totalProfitLoss'])?.toDouble() ?? 0,
+      winRate: _asNum(json['winRate'])?.toDouble() ?? 0,
+      sharpeRatio: _asNum(json['sharpeRatio'])?.toDouble() ?? 0,
+    );
+  }
+
   Map<String, dynamic> toJson() => _$StrategyPerformanceMetricsDtoToJson(this);
 
   StrategyPerformanceMetrics toEntity() => StrategyPerformanceMetrics(
@@ -402,6 +488,7 @@ class TradeMetricsResponseDto {
   final List<String> portfolioIds;
   final DateTime startDate;
   final DateTime endDate;
+  @JsonKey(fromJson: _asIntOrZero)
   final int totalTradesCount;
   final List<TradeDetailsDto>? tradeDetails;
   final PerformanceMetricsDto? performanceMetrics;

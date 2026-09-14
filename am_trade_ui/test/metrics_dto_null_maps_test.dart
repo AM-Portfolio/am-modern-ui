@@ -1,54 +1,46 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:am_trade_ui/features/trade/internal/data/dtos/metrics/metrics_dtos.dart';
 
+/// Prod Jackson emits null win%/avgPnl for empty buckets. Default
+/// json_serializable `(e as num)` throws; hand-written fromJson must tolerate.
 void main() {
-  test('distribution maps tolerate null winRate/avgPnl bucket values', () {
+  test('TradeDistributionMetricsDto.fromJson skips null map values', () {
     final dto = TradeDistributionMetricsDto.fromJson({
-      'tradesBySession': {
-        'SESSION_0915_1100': 4,
-        'OTHER': 0,
-      },
-      'profitBySession': {
-        'SESSION_0915_1100': 100,
-        'OTHER': 0,
-      },
-      'winRateBySession': {
-        'SESSION_0915_1100': 50,
-        'OTHER': null,
-      },
-      'avgPnlBySession': {
-        'SESSION_0915_1100': '25.5',
-        'OTHER': null,
-      },
-      'eligibleTradesBySession': {
-        'SESSION_0915_1100': 4,
-        'OTHER': 0,
-      },
-      'totalTradesCount': null,
+      'tradesBySession': {'MORNING': 10, 'OTHER': 0},
+      'profitBySession': {'MORNING': 100.0, 'OTHER': null},
+      'winRateBySession': {'MORNING': 55.0, 'OTHER': null},
+      'avgPnlBySession': {'MORNING': 12.5, 'OTHER': null},
+      'eligibleTradesBySession': {'MORNING': 10, 'OTHER': 0},
+      'winRateByHour': {'09': 40.0, '15': null},
+      'avgPnlByHour': {'09': 1.0, '15': null},
+      'winRateByDay': {'MONDAY': null, 'TUESDAY': 50.0},
+      'avgPnlByDay': {'MONDAY': null, 'TUESDAY': 2.0},
     });
 
+    expect(dto.winRateBySession, {'MORNING': 55.0});
+    expect(dto.avgPnlBySession, {'MORNING': 12.5});
+    expect(dto.profitBySession, {'MORNING': 100.0});
+    expect(dto.winRateByHour, {'09': 40.0});
+    expect(dto.avgPnlByHour, {'09': 1.0});
+    expect(dto.winRateByDay, {'TUESDAY': 50.0});
+    expect(dto.avgPnlByDay, {'TUESDAY': 2.0});
+
     final entity = dto.toEntity();
-    expect(entity.tradesBySession['SESSION_0915_1100'], 4);
-    expect(entity.winRateBySession['SESSION_0915_1100'], 50);
+    expect(entity.avgPnlBySession['MORNING'], 12.5);
     expect(entity.winRateBySession.containsKey('OTHER'), isFalse);
-    expect(entity.avgPnlBySession['SESSION_0915_1100'], 25.5);
   });
 
-  test('metrics response tolerates null totalTradesCount', () {
+  test('TradeMetricsResponseDto tolerates null totalTradesCount', () {
     final dto = TradeMetricsResponseDto.fromJson({
-      'portfolioIds': ['9baba209-be43-44db-9b40-e8b664084920'],
-      'startDate': '2015-09-13',
+      'portfolioIds': ['p1'],
+      'startDate': '2015-01-01',
       'endDate': '2026-09-14',
       'totalTradesCount': null,
       'distributionMetrics': {
-        'tradesBySession': {'OTHER': 0},
-        'winRateBySession': {'OTHER': null},
-        'avgPnlBySession': {'OTHER': null},
+        'avgPnlBySession': {'MORNING': null},
       },
     });
-
     expect(dto.totalTradesCount, 0);
-    expect(dto.distributionMetrics, isNotNull);
-    expect(dto.toEntity().distributionMetrics.winRateBySession, isEmpty);
+    expect(dto.distributionMetrics?.avgPnlBySession, isEmpty);
   });
 }
