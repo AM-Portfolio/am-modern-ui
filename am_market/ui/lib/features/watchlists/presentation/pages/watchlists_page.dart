@@ -7,7 +7,6 @@ import '../widgets/watchlist_management_view.dart';
 import '../widgets/watchlist_mobile_detail_view.dart';
 import '../widgets/create_watchlist_dialog.dart';
 import '../widgets/edit_watchlist_dialog.dart';
-import 'package:am_market_ui/core/styles/market_theme_extension.dart';
 
 class WatchlistsPage extends ConsumerStatefulWidget {
   final ValueChanged<String>? onStockSelected;
@@ -127,6 +126,67 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        const SizedBox(height: 8),
+        // Unified Header Row: My Watchlists + Count Badge + Create Button
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Row(
+              children: [
+                const Text(
+                  'My Watchlists',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: ModuleColors.market.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: ModuleColors.market.withValues(alpha: 0.35),
+                    ),
+                  ),
+                  child: Text(
+                    '${allWatchlists.length}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: ModuleColors.market,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                CreateWatchlistDialog.show(
+                  context,
+                  onCreated: (name) {
+                    ref.read(watchlistsProvider.notifier).createWatchlist(name);
+                  },
+                );
+              },
+              icon: Icon(Icons.add, size: 16, color: colors.actionPrimaryFg),
+              label: Text(
+                'Create Watchlist',
+                style: TextStyle(
+                  color: colors.actionPrimaryFg,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ModuleColors.market,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                elevation: 0,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
         // Search watchlists...
         TextField(
           controller: _watchlistSearchController,
@@ -153,46 +213,6 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
           ),
         ),
         const SizedBox(height: 14),
-
-        // + Create New Watchlist Button
-        SizedBox(
-          width: double.infinity,
-          height: 44,
-          child: ElevatedButton.icon(
-            onPressed: () {
-              CreateWatchlistDialog.show(
-                context,
-                onCreated: (name) {
-                  ref.read(watchlistsProvider.notifier).createWatchlist(name);
-                },
-              );
-            },
-            icon: Icon(Icons.add, size: 18, color: colors.actionPrimaryFg),
-            label: Text(
-              'Create New Watchlist',
-              style: TextStyle(color: colors.actionPrimaryFg, fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ModuleColors.market,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              elevation: 0,
-            ),
-          ),
-        ),
-        const SizedBox(height: 20),
-
-        // Section Title: My Watchlists (N)
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'My Watchlists (${allWatchlists.length})',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            Icon(Icons.swap_vert, size: 20, color: colors.textSecondary),
-          ],
-        ),
-        const SizedBox(height: 12),
 
         // List of Watchlist Cards
         Expanded(
@@ -332,7 +352,7 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                                     child: Row(
                                       children: [
                                         Icon(Icons.delete_outline, color: colors.statusError, size: 18),
-                                        SizedBox(width: 8),
+                                        const SizedBox(width: 8),
                                         Text('Delete', style: TextStyle(color: colors.statusError)),
                                       ],
                                     ),
@@ -363,20 +383,35 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Single Unified Header: My Watchlists + Count Badge + Create Button
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Row(
               children: [
                 const Text(
-                  'Watchlist',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  'My Watchlists',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  'Create and manage your custom watchlists to track the stocks that matter to you.',
-                  style: TextStyle(color: colors.textSecondary, fontSize: 14),
+                const SizedBox(width: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: ModuleColors.market.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: ModuleColors.market.withValues(alpha: 0.35),
+                    ),
+                  ),
+                  child: Text(
+                    '${watchlists.length}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: ModuleColors.market,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -392,36 +427,20 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
               icon: Icon(Icons.add, size: 18, color: colors.actionPrimaryFg),
               label: Text(
                 'Create Watchlist',
-                style: TextStyle(color: colors.actionPrimaryFg, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: colors.actionPrimaryFg,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: ModuleColors.market,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                elevation: 0,
               ),
             ),
           ],
-        ),
-        const SizedBox(height: 20),
-
-        // Tabs
-        Container(
-          decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: colors.border)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.only(bottom: 12, right: 16, left: 8),
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: ModuleColors.market, width: 2)),
-                ),
-                child: Text(
-                  'My Watchlists',
-                  style: TextStyle(color: ModuleColors.market, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
         ),
         const SizedBox(height: 20),
 
@@ -435,11 +454,6 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'My Watchlists (${watchlists.length})',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 14),
                     Expanded(
                       child: ListView.separated(
                         itemCount: watchlists.length,

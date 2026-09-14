@@ -1,3 +1,4 @@
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -16,19 +17,19 @@ class AddFolderDialog extends StatefulWidget {
 class _AddFolderDialogState extends State<AddFolderDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  Color _selectedColor = Colors.blue;
+  late Color _selectedColor;
   IconData _selectedIcon = Icons.folder;
 
-  final List<Color> _availableColors = [
-    Colors.blue,
-    Colors.purple,
-    Colors.green,
-    Colors.orange,
-    Colors.red,
-    Colors.teal,
-    Colors.pink,
-    Colors.amber,
-  ];
+  List<Color> get _availableColors => [
+        ModuleColors.dashboard,
+        ModuleColors.trade,
+        ModuleColors.analytics,
+        ModuleColors.reports,
+        ModuleColors.portfolio,
+        ModuleColors.market,
+        ModuleColors.aiChat,
+        context.statusWarning,
+      ];
 
   final List<IconData> _availableIcons = [
     Icons.folder,
@@ -38,6 +39,12 @@ class _AddFolderDialogState extends State<AddFolderDialog> {
     Icons.bookmark_outline,
     Icons.label_outline,
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedColor = ModuleColors.dashboard;
+  }
 
   @override
   void dispose() {
@@ -57,6 +64,7 @@ class _AddFolderDialogState extends State<AddFolderDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
@@ -68,7 +76,6 @@ class _AddFolderDialogState extends State<AddFolderDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
               Row(
                 children: [
                   Container(
@@ -98,7 +105,7 @@ class _AddFolderDialogState extends State<AddFolderDialog> {
                         Text(
                           'Organize your journal entries',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                color: context.textSecondary,
                               ),
                         ),
                       ],
@@ -113,12 +120,9 @@ class _AddFolderDialogState extends State<AddFolderDialog> {
                   ),
                 ],
               ).animate().fadeIn(),
-              
               const SizedBox(height: 24),
               const Divider(),
               const SizedBox(height: 24),
-
-              // Folder Name Input
               TextFormField(
                 controller: _nameController,
                 autofocus: true,
@@ -130,7 +134,7 @@ class _AddFolderDialogState extends State<AddFolderDialog> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   filled: true,
-                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                  fillColor: colors.surface.withOpacity(0.3),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -143,10 +147,7 @@ class _AddFolderDialogState extends State<AddFolderDialog> {
                 },
                 onFieldSubmitted: (_) => _handleCreate(),
               ).animate().fadeIn(delay: 50.ms).slideX(begin: -0.1, end: 0),
-
               const SizedBox(height: 24),
-
-              // Color Selection
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -171,7 +172,7 @@ class _AddFolderDialogState extends State<AddFolderDialog> {
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: isSelected
-                                  ? Theme.of(context).colorScheme.primary
+                                  ? ModuleColors.trade
                                   : Colors.transparent,
                               width: 3,
                             ),
@@ -186,7 +187,11 @@ class _AddFolderDialogState extends State<AddFolderDialog> {
                                 : null,
                           ),
                           child: isSelected
-                              ? const Icon(Icons.check, color: Colors.white, size: 20)
+                              ? Icon(
+                                  Icons.check,
+                                  color: colors.actionPrimaryFg,
+                                  size: 20,
+                                )
                               : null,
                         ),
                       );
@@ -194,10 +199,7 @@ class _AddFolderDialogState extends State<AddFolderDialog> {
                   ),
                 ],
               ).animate().fadeIn(delay: 100.ms).slideX(begin: -0.1, end: 0),
-
               const SizedBox(height: 24),
-
-              // Icon Selection
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -220,7 +222,7 @@ class _AddFolderDialogState extends State<AddFolderDialog> {
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? _selectedColor.withOpacity(0.15)
-                                : Theme.of(context).colorScheme.surfaceContainerHighest,
+                                : colors.surface,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: isSelected
@@ -233,7 +235,7 @@ class _AddFolderDialogState extends State<AddFolderDialog> {
                             icon,
                             color: isSelected
                                 ? _selectedColor
-                                : Theme.of(context).colorScheme.onSurfaceVariant,
+                                : context.textSecondary,
                             size: 22,
                           ),
                         ),
@@ -242,10 +244,7 @@ class _AddFolderDialogState extends State<AddFolderDialog> {
                   ),
                 ],
               ).animate().fadeIn(delay: 150.ms).slideX(begin: -0.1, end: 0),
-
               const SizedBox(height: 32),
-
-              // Action Buttons
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -259,7 +258,10 @@ class _AddFolderDialogState extends State<AddFolderDialog> {
                     icon: const Icon(Icons.add, size: 20),
                     label: const Text('Create Folder'),
                     style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
                       backgroundColor: _selectedColor,
                     ),
                   ),

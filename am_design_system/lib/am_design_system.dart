@@ -9,6 +9,7 @@ export 'core/theme/app_theme.dart';
 export 'core/theme/am_chart_theme.dart';
 export 'core/theme/app_colors.dart';
 export 'core/theme/app_colors_theme.dart';
+export 'core/theme/intelligence_colors.dart';
 export 'core/theme/app_spacing.dart';
 export 'core/theme/app_radii.dart';
 export 'core/theme/app_type_scale.dart';
@@ -31,7 +32,7 @@ export 'core/contracts/design_contract.dart';
 // Utils
 export 'core/utils/common_logger.dart';
 export 'core/utils/device_utils.dart';
-export 'core/utils/validators.dart';
+export 'core/utils/validators.dart'; 
 export 'core/utils/conditional_mouse_region.dart';
 export 'core/utils/browser_zoom.dart';
 export 'core/utils/browser_zoom_platform.dart';

@@ -290,7 +290,7 @@ class _ModalContainerState extends State<_ModalContainer> {
             ),
           )
         else
-          ...stocks.map(
+          ...stocks.take(10).map(
             (stock) => Padding(
               padding: const EdgeInsets.only(bottom: 12.0),
               child: MoverTile(stock: stock, isGainer: isGainers),

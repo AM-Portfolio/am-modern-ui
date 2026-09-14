@@ -19,6 +19,7 @@ class PortfolioScreen extends StatelessWidget {
     this.onToggleSidebar,
     this.onBack,
     this.addTradeBuilder,
+    this.holdingsPageBuilder,
     this.onOpenDocIntel,
   });
 
@@ -31,6 +32,8 @@ class PortfolioScreen extends StatelessWidget {
   final VoidCallback? onToggleSidebar;
   final VoidCallback? onBack;
   final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
+  /// Web-only Holdings override (mobile keeps PortfolioHoldingsWidget).
+  final Widget Function(BuildContext context, String portfolioId)? holdingsPageBuilder;
   final VoidCallback? onOpenDocIntel;
 
   @override
@@ -61,6 +64,7 @@ class PortfolioScreen extends StatelessWidget {
           onToggleSidebar: onToggleSidebar,
           onBack: onBack,
           addTradeBuilder: addTradeBuilder,
+          holdingsPageBuilder: holdingsPageBuilder,
           onOpenDocIntel: onOpenDocIntel,
         );
       },

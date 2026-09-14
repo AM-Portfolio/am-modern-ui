@@ -22,11 +22,11 @@ import 'web/trade_web_screen.dart';
 /// when the layout switches the new screen starts on the same view — preventing
 /// the unwanted jump back to the Portfolios page.
 ///
-/// ## "Add Trade" tab (web index 9)
-/// The web screen has a hidden "Add Trade" tab at index 9, which is beyond the
-/// [TradeViewType] enum length of 9 (indices 0–8). We track this as the
-/// special constant [_webAddTradeIndex]. When switching to mobile at this
-/// index, [TradeMobileScreen] shows its own "Add Trade" tab (index 3).
+/// ## "Add Trade" tab (web index 7)
+/// The web screen has a hidden "Add Trade" tab at index 7, beyond
+/// [TradeViewType] (indices 0–6). We track this as [_webAddTradeIndex].
+/// When switching to mobile at this index, [TradeMobileScreen] shows its own
+/// "Add Trade" tab (index 3).
 class TradeResponsiveLayout extends ConsumerStatefulWidget {
   const TradeResponsiveLayout({
     super.key,
@@ -55,13 +55,20 @@ class TradeResponsiveLayout extends ConsumerStatefulWidget {
     'calendar',
     'trades',
     'journal',
-    'report',
+    'analysis',
     'unified',
     'templates',
   ];
 
+  /// Legacy Report / Metrics hubs resolve to Analysis.
+  static const _slugAliases = {
+    'report': 'analysis',
+    'metrics': 'analysis',
+  };
+
   static int tabIndexFromSlug(String slug) {
-    final index = _tabSlugs.indexOf(slug);
+    final normalized = _slugAliases[slug] ?? slug;
+    final index = _tabSlugs.indexOf(normalized);
     return index >= 0 ? index : 0;
   }
 

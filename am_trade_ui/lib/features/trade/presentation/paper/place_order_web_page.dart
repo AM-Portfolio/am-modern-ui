@@ -175,9 +175,9 @@ class _Blotter extends StatelessWidget {
       itemBuilder: (context, i) {
         final o = orders[i];
         final color = o.isRejected
-            ? Colors.red
+            ? context.statusError
             : o.isFilled
-                ? const Color(0xFF10B981)
+                ? context.statusSuccess
                 : Theme.of(context).colorScheme.onSurface;
         return ListTile(
           dense: true,

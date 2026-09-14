@@ -5,7 +5,7 @@ import '../../../core/navigation/swipe_navigation_controller.dart';
 
 /// A swipeable PageView widget that works with SwipeNavigationController
 /// Supports horizontal swiping, haptic feedback, and page indicators
-class SwipeablePageView extends StatelessWidget {
+class SwipeablePageView extends StatefulWidget {
   /// The navigation controller
   final SwipeNavigationController controller;
 
@@ -35,33 +35,64 @@ class SwipeablePageView extends StatelessWidget {
   });
 
   @override
+  State<SwipeablePageView> createState() => _SwipeablePageViewState();
+}
+
+class _SwipeablePageViewState extends State<SwipeablePageView> {
+  @override
+  void initState() {
+    super.initState();
+    _checkPageSync();
+  }
+
+  @override
+  void didUpdateWidget(SwipeablePageView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _checkPageSync();
+  }
+
+  void _checkPageSync() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final pageController = widget.controller.pageController;
+      final targetIndex = widget.controller.currentIndex;
+      if (pageController.hasClients) {
+        final currentPos = pageController.page?.round();
+        if (currentPos != targetIndex) {
+          pageController.jumpToPage(targetIndex);
+        }
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        if (showIndicator && indicatorPosition == IndicatorPosition.top)
+        if (widget.showIndicator && widget.indicatorPosition == IndicatorPosition.top)
           _buildIndicator(),
 
         Expanded(
           child: AnimatedBuilder(
-            animation: controller,
+            animation: widget.controller,
             builder: (context, _) {
               return PageView.builder(
-                scrollDirection: scrollDirection,
-                controller: controller.pageController,
+                scrollDirection: widget.scrollDirection,
+                controller: widget.controller.pageController,
                 onPageChanged: (index) {
                   HapticFeedback.lightImpact();
-                  controller.onPageChanged(index);
-                  onPageChanged?.call(index);
+                  widget.controller.onPageChanged(index);
+                  widget.onPageChanged?.call(index);
                 },
-                itemCount: controller.items.length,
+                itemCount: widget.controller.items.length,
                 // Wrap each page in SingleChildScrollView for vertical scrolling
-                itemBuilder: (context, index) => controller.items[index].page,
+                itemBuilder: (context, index) => widget.controller.items[index].page,
               );
             },
           ),
         ),
 
-        if (showIndicator && indicatorPosition == IndicatorPosition.bottom)
+        if (widget.showIndicator && widget.indicatorPosition == IndicatorPosition.bottom)
           _buildIndicator(),
       ],
     );
@@ -69,13 +100,13 @@ class SwipeablePageView extends StatelessWidget {
 
   Widget _buildIndicator() {
     return AnimatedBuilder(
-      animation: controller,
+      animation: widget.controller,
       builder: (context, _) {
-        if (customIndicator != null) {
-          return customIndicator!(
+        if (widget.customIndicator != null) {
+          return widget.customIndicator!(
             context,
-            controller.currentIndex,
-            controller.items.length,
+            widget.controller.currentIndex,
+            widget.controller.items.length,
           );
         }
         return _buildDefaultIndicator();
@@ -89,19 +120,19 @@ class SwipeablePageView extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(
-          controller.items.length,
-          (index) => _buildDot(index, controller.currentIndex == index),
+          widget.controller.items.length,
+          (index) => _buildDot(index, widget.controller.currentIndex == index),
         ),
       ),
     );
   }
 
   Widget _buildDot(int index, bool isActive) {
-    final item = controller.items[index];
+    final item = widget.controller.items[index];
     final color = item.accentColor;
 
     return GestureDetector(
-      onTap: () => controller.navigateTo(index),
+      onTap: () => widget.controller.navigateTo(index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOutCubic,

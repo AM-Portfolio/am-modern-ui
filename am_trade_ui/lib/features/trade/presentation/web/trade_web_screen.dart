@@ -5,10 +5,8 @@ import 'package:am_design_system/am_design_system.dart';
 
 import 'package:am_common/am_common.dart';
 import '../../internal/domain/entities/trade_controller_entities.dart';
-import '../../internal/domain/entities/metrics/metrics_filter_request.dart';
 import '../../providers/portfolio_overview_providers.dart';
 import '../../providers/trade_internal_providers.dart';
-import '../../providers/trade_report_providers.dart';
 import '../calendar/pages/trade_calendar_analytics_web_page.dart';
 import '../components/templates/trade_portfolio_discovery_template.dart';
 import '../components/portfolio_selection_prompt.dart';
@@ -16,8 +14,7 @@ import '../holdings/pages/trade_holdings_dashboard_web_page.dart';
 import '../journal/pages/journal_web_page.dart';
 import '../models/trade_portfolio_view_model.dart';
 import '../trades/pages/trade_list_web_page.dart';
-import '../metrics/trade_metrics_page.dart';
-import '../report/pages/trade_report_page.dart';
+import '../analysis/trade_analysis_page.dart';
 import 'package:am_market_ui/shared/widgets/trading_view_chart_widget.dart';
 import 'package:am_market_ui/am_market_ui.dart';
 import '../pages/trade_market_page.dart';
@@ -60,7 +57,7 @@ enum TradeViewType {
   calendar,
   trades,
   journal,
-  report,
+  analysis,
   unified
 }
 
@@ -159,6 +156,21 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     }
   }
 
+  /// Journal hub sub-tab requested by Analysis context strip (Insights).
+  String? _journalInitialTab;
+
+  void _openJournalInsights() {
+    setState(() {
+      _journalInitialTab = 'insights';
+      _swipeController.updateItems(_buildNavigationItems());
+    });
+    _swipeController.navigateTo(4);
+  }
+
+  void _openAnalysis() {
+    _swipeController.navigateTo(5);
+  }
+
   int _getInitialIndex() {
     if (widget.initialTabIndex != null) return widget.initialTabIndex!;
     switch (widget.initialView) {
@@ -172,7 +184,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         return 3;
       case TradeViewType.journal:
         return 4;
-      case TradeViewType.report:
+      case TradeViewType.analysis:
         return 5;
       case TradeViewType.unified:
         return 6;
@@ -242,23 +254,35 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         title: 'Journal',
         subtitle: 'Trade journal',
         icon: Icons.book_outlined,
-        page: JournalWebPage(portfolioId: _currentPortfolioId),
+        page: JournalWebPage(
+          key: ValueKey('journal_${_currentPortfolioId}_$_journalInitialTab'),
+          portfolioId: _currentPortfolioId,
+          initialTab: _journalInitialTab ?? 'entries',
+          onOpenAnalysis: _openAnalysis,
+          onInitialTabApplied: () {
+            if (_journalInitialTab != null) {
+              setState(() => _journalInitialTab = null);
+            }
+          },
+        ),
         accentColor: ModuleColors.trade,
       ),
 
       NavigationItem(
-        title: 'Report',
-        subtitle: 'Generate reports',
-        icon: Icons.summarize_outlined,
+        title: 'Analysis',
+        subtitle: 'Edge analytics',
+        icon: Icons.insights_outlined,
         page: _currentPortfolioId == null
             ? PortfolioSelectionPrompt(
-                title: 'Report',
-                icon: Icons.summarize_outlined,
+                title: 'Analysis',
+                icon: Icons.insights_outlined,
                 onViewPortfolioList: () => _swipeController.navigateTo(0),
               )
-            : TradeReportPage(
-                key: ValueKey('report_$_currentPortfolioId'),
+            : TradeAnalysisPage(
+                key: ValueKey('analysis_$_currentPortfolioId'),
                 portfolioId: _currentPortfolioId!,
+                onOpenCalendar: () => _swipeController.navigateTo(2),
+                onOpenJournalInsights: _openJournalInsights,
               ),
         accentColor: ModuleColors.trade,
       ),
@@ -577,7 +601,6 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
               return title != addTradeTitle &&
                   title != placeOrderTitle &&
                   title != 'Market' &&
-                  title != 'Report' &&
                   title != 'Unified';
             }).map((entry) {
               final index = entry.key;

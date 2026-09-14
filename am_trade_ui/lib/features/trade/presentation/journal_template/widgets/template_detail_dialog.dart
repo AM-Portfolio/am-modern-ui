@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../internal/domain/entities/journal_template.dart';
@@ -200,7 +201,7 @@ class _TemplateDetailDialogState extends ConsumerState<TemplateDetailDialog>
             context,
             icon: Icons.star,
             label: 'Recommended',
-            color: Colors.amber,
+            color: ModuleColors.reports,
           ),
       ],
     );

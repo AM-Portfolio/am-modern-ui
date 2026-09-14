@@ -1,5 +1,4 @@
 import 'package:am_library/am_library.dart';
-import 'package:am_common/core/config/config_service.dart';
 import 'package:am_common/core/config/app_config.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_trade_ui/core/constants/trade_endpoints.dart';
@@ -8,26 +7,87 @@ import 'trade_api_request_util.dart';
 
 /// Abstract data source for journal operations
 abstract class JournalRemoteDataSource {
-  /// Create a new journal entry
-  Future<TradeJournalEntryResponseDto> createJournalEntry(TradeJournalEntryRequestDto request);
+  Future<TradeJournalEntryResponseDto> createJournalEntry(
+    TradeJournalEntryRequestDto request,
+  );
 
-  /// Get a journal entry by ID
   Future<TradeJournalEntryResponseDto> getJournalEntry(String entryId);
 
-  /// Update a journal entry
-  Future<TradeJournalEntryResponseDto> updateJournalEntry(String entryId, TradeJournalEntryRequestDto request);
+  Future<TradeJournalEntryResponseDto> updateJournalEntry(
+    String entryId,
+    TradeJournalEntryRequestDto request,
+  );
 
-  /// Delete a journal entry
   Future<void> deleteJournalEntry(String entryId);
 
-  /// Get journal entries for a user
-  Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByUser();
+  Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByUser({
+    Map<String, dynamic>? query,
+  });
 
-  /// Get journal entries for a specific trade
-  Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByTrade(String tradeId);
+  Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByTrade(
+    String tradeId,
+  );
 
-  /// Get journal entries by date range
-  Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByDateRange(String startDate, String endDate);
+  Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByDateRange(
+    String startDate,
+    String endDate,
+  );
+
+  Future<JournalSummaryDto> getSummary(String startDate, String endDate);
+
+  Future<List<MistakeAnalysisDto>> getMistakesSummary(
+    String startDate,
+    String endDate,
+  );
+
+  Future<List<LessonLearnedDto>> getLessons(
+    String startDate,
+    String endDate, {
+    int limit = 10,
+  });
+
+  Future<JournalAdherenceDto> getAdherence(String startDate, String endDate);
+
+  Future<JournalReportCardDto> getReportCard(String startDate, String endDate);
+
+  Future<TradeJournalEntryResponseDto> updatePrePlan(
+    String entryId,
+    PreTradePlanDto plan,
+  );
+
+  Future<TradeJournalEntryResponseDto> updateExecution(
+    String entryId,
+    TradeExecutionDto execution,
+  );
+
+  Future<TradeJournalEntryResponseDto> updatePostReview(
+    String entryId,
+    PostTradeReviewDto review, {
+    bool markCompleted = false,
+  });
+
+  Future<TradeJournalEntryResponseDto> linkTrade(String entryId, String tradeId);
+
+  Future<TradeJournalEntryResponseDto> addAttachment(
+    String entryId,
+    JournalAttachmentDto attachment,
+  );
+
+  Future<TradeJournalEntryResponseDto> removeAttachment(
+    String entryId,
+    String fileUrl,
+  );
+
+  Future<int> bulkArchive(List<String> entryIds);
+
+  Future<int> bulkDelete(List<String> entryIds);
+
+  Future<String> exportCsv(String startDate, String endDate);
+
+  Future<List<TradeJournalEntryResponseDto>> createFromTrades(
+    List<String> tradeIds, {
+    String journalStatus = 'COMPLETED',
+  });
 }
 
 /// Concrete implementation of journal remote data source
@@ -35,13 +95,12 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
   const JournalRemoteDataSourceImpl({
     required ApiClient apiClient,
     required TradeApiConfig tradeConfig,
-  }) : _apiClient = apiClient,
-       _tradeConfig = tradeConfig;
+  })  : _apiClient = apiClient,
+        _tradeConfig = tradeConfig;
 
   final ApiClient _apiClient;
   final TradeApiConfig _tradeConfig;
 
-  /// Use ConfigService baseUrl if configured, fall back to the constant
   String get _baseUrl {
     try {
       if (_tradeConfig.baseUrl.isNotEmpty) return _tradeConfig.baseUrl;
@@ -49,19 +108,63 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
     return TradeEndpoints.tradeBaseUrl;
   }
 
-  /// Helper to safely build URI avoiding double slashes
   String _buildUri(String baseUrl, String resource) {
-    final cleanBase = baseUrl.endsWith('/')
-        ? baseUrl.substring(0, baseUrl.length - 1)
-        : baseUrl;
-    final cleanResource = resource.startsWith('/')
-        ? resource
-        : '/$resource';
+    final cleanBase =
+        baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+    final cleanResource =
+        resource.startsWith('/') ? resource : '/$resource';
     return '$cleanBase$cleanResource';
   }
 
+  String _withQuery(String uri, Map<String, dynamic>? query) {
+    if (query == null || query.isEmpty) return uri;
+    final params = <String>[];
+    query.forEach((key, value) {
+      if (value == null) return;
+      if (value is List) {
+        for (final item in value) {
+          params.add(
+            '${Uri.encodeQueryComponent(key)}=${Uri.encodeQueryComponent('$item')}',
+          );
+        }
+      } else {
+        params.add(
+          '${Uri.encodeQueryComponent(key)}=${Uri.encodeQueryComponent('$value')}',
+        );
+      }
+    });
+    if (params.isEmpty) return uri;
+    return '$uri?${params.join('&')}';
+  }
+
+  List<TradeJournalEntryResponseDto> _parseEntryList(dynamic data) {
+    if (data is Map<String, dynamic> &&
+        data.containsKey('content') &&
+        data['content'] is List) {
+      return (data['content'] as List)
+          .map(
+            (item) => TradeJournalEntryResponseDto.fromJson(
+              item as Map<String, dynamic>,
+            ),
+          )
+          .toList();
+    }
+    if (data is List) {
+      return data
+          .map(
+            (item) => TradeJournalEntryResponseDto.fromJson(
+              item as Map<String, dynamic>,
+            ),
+          )
+          .toList();
+    }
+    return [];
+  }
+
   @override
-  Future<TradeJournalEntryResponseDto> createJournalEntry(TradeJournalEntryRequestDto request) async {
+  Future<TradeJournalEntryResponseDto> createJournalEntry(
+    TradeJournalEntryRequestDto request,
+  ) async {
     AppLogger.methodEntry(
       'createJournalEntry',
       tag: 'JournalRemoteDataSource',
@@ -69,18 +172,18 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
     );
 
     try {
-      // API Spec: POST /v1/journal
       final fullUri = _buildUri(_baseUrl, 'v1/journal');
-
       final response = await _apiClient.post<TradeJournalEntryResponseDto>(
         fullUri,
         body: tradeRequestBodyWithoutUserId(request.toJson()),
-        parser: (data) => TradeJournalEntryResponseDto.fromJson(data! as Map<String, dynamic>),
+        parser: (data) => TradeJournalEntryResponseDto.fromJson(
+          data! as Map<String, dynamic>,
+        ),
       );
-
-      AppLogger.info('Journal entry created successfully', tag: 'JournalRemoteDataSource');
-      AppLogger.methodExit('createJournalEntry', tag: 'JournalRemoteDataSource', result: 'success');
-
+      AppLogger.info(
+        'Journal entry created successfully',
+        tag: 'JournalRemoteDataSource',
+      );
       return response;
     } catch (e) {
       AppLogger.error(
@@ -95,22 +198,14 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
 
   @override
   Future<TradeJournalEntryResponseDto> getJournalEntry(String entryId) async {
-    AppLogger.methodEntry('getJournalEntry', tag: 'JournalRemoteDataSource', params: {'entryId': entryId});
-
     try {
-      // API Spec: GET /v1/journal/{entryId}
-      final baseUri = _buildUri(_baseUrl, 'v1/journal');
-      final fullUri = '$baseUri/$entryId';
-
-      final response = await _apiClient.get<TradeJournalEntryResponseDto>(
+      final fullUri = '${_buildUri(_baseUrl, 'v1/journal')}/$entryId';
+      return await _apiClient.get<TradeJournalEntryResponseDto>(
         fullUri,
-        parser: (data) => TradeJournalEntryResponseDto.fromJson(data! as Map<String, dynamic>),
+        parser: (data) => TradeJournalEntryResponseDto.fromJson(
+          data! as Map<String, dynamic>,
+        ),
       );
-
-      AppLogger.info('Journal entry fetched successfully', tag: 'JournalRemoteDataSource');
-      AppLogger.methodExit('getJournalEntry', tag: 'JournalRemoteDataSource', result: 'success');
-
-      return response;
     } catch (e) {
       AppLogger.error(
         'Failed to fetch journal entry',
@@ -127,23 +222,15 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
     String entryId,
     TradeJournalEntryRequestDto request,
   ) async {
-    AppLogger.methodEntry('updateJournalEntry', tag: 'JournalRemoteDataSource', params: {'entryId': entryId});
-
     try {
-      // API Spec: PUT /v1/journal/{entryId}
-      final baseUri = _buildUri(_baseUrl, 'v1/journal');
-      final fullUri = '$baseUri/$entryId';
-
-      final response = await _apiClient.put<TradeJournalEntryResponseDto>(
+      final fullUri = '${_buildUri(_baseUrl, 'v1/journal')}/$entryId';
+      return await _apiClient.put<TradeJournalEntryResponseDto>(
         fullUri,
         body: tradeRequestBodyWithoutUserId(request.toJson()),
-        parser: (data) => TradeJournalEntryResponseDto.fromJson(data! as Map<String, dynamic>),
+        parser: (data) => TradeJournalEntryResponseDto.fromJson(
+          data! as Map<String, dynamic>,
+        ),
       );
-
-      AppLogger.info('Journal entry updated successfully', tag: 'JournalRemoteDataSource');
-      AppLogger.methodExit('updateJournalEntry', tag: 'JournalRemoteDataSource', result: 'success');
-
-      return response;
     } catch (e) {
       AppLogger.error(
         'Failed to update journal entry',
@@ -157,17 +244,9 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
 
   @override
   Future<void> deleteJournalEntry(String entryId) async {
-    AppLogger.methodEntry('deleteJournalEntry', tag: 'JournalRemoteDataSource', params: {'entryId': entryId});
-
     try {
-      // API Spec: DELETE /v1/journal/{entryId}
-      final baseUri = _buildUri(_baseUrl, 'v1/journal');
-      final fullUri = '$baseUri/$entryId';
-
+      final fullUri = '${_buildUri(_baseUrl, 'v1/journal')}/$entryId';
       await _apiClient.delete<void>(fullUri, parser: (_) {});
-
-      AppLogger.info('Journal entry deleted successfully', tag: 'JournalRemoteDataSource');
-      AppLogger.methodExit('deleteJournalEntry', tag: 'JournalRemoteDataSource', result: 'success');
     } catch (e) {
       AppLogger.error(
         'Failed to delete journal entry',
@@ -180,29 +259,18 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
   }
 
   @override
-  Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByUser() async {
-    AppLogger.methodEntry('getJournalEntriesByUser', tag: 'JournalRemoteDataSource', params: {});
-
+  Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByUser({
+    Map<String, dynamic>? query,
+  }) async {
     try {
-      // API Spec: GET /v1/journal/user (user from JWT)
-      final fullUri = _buildUri(_baseUrl, 'v1/journal/user');
-
-      final response = await _apiClient.get<List<TradeJournalEntryResponseDto>>(
-        fullUri,
-        parser: (data) {
-          if (data is Map<String, dynamic> && data.containsKey('content') && data['content'] is List) {
-             return (data['content'] as List)
-                .map((item) => TradeJournalEntryResponseDto.fromJson(item as Map<String, dynamic>))
-                .toList();
-          }
-          return [];
-        },
+      final fullUri = _withQuery(
+        _buildUri(_baseUrl, 'v1/journal/user'),
+        query,
       );
-
-      AppLogger.info('Journal entries fetched successfully', tag: 'JournalRemoteDataSource');
-      AppLogger.methodExit('getJournalEntriesByUser', tag: 'JournalRemoteDataSource', result: 'success');
-
-      return response;
+      return await _apiClient.get<List<TradeJournalEntryResponseDto>>(
+        fullUri,
+        parser: (data) => _parseEntryList(data),
+      );
     } catch (e) {
       AppLogger.error(
         'Failed to fetch journal entries for user',
@@ -215,30 +283,15 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
   }
 
   @override
-  Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByTrade(String tradeId) async {
-    AppLogger.methodEntry('getJournalEntriesByTrade', tag: 'JournalRemoteDataSource', params: {'tradeId': tradeId});
-
+  Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByTrade(
+    String tradeId,
+  ) async {
     try {
-      // API Spec: GET /v1/journal/trade/{tradeId}
-      final baseUri = _buildUri(_baseUrl, 'v1/journal/trade');
-      final fullUri = '$baseUri/$tradeId';
-
-      final response = await _apiClient.get<List<TradeJournalEntryResponseDto>>(
+      final fullUri = '${_buildUri(_baseUrl, 'v1/journal/trade')}/$tradeId';
+      return await _apiClient.get<List<TradeJournalEntryResponseDto>>(
         fullUri,
-        parser: (data) {
-           if (data is List) {
-            return data
-                .map((item) => TradeJournalEntryResponseDto.fromJson(item as Map<String, dynamic>))
-                .toList();
-          }
-          return [];
-        },
+        parser: (data) => _parseEntryList(data),
       );
-
-      AppLogger.info('Journal entries fetched successfully', tag: 'JournalRemoteDataSource');
-      AppLogger.methodExit('getJournalEntriesByTrade', tag: 'JournalRemoteDataSource', result: 'success');
-
-      return response;
     } catch (e) {
       AppLogger.error(
         'Failed to fetch journal entries for trade',
@@ -251,34 +304,19 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
   }
 
   @override
-  Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByDateRange(startDate, endDate) async {
-    AppLogger.methodEntry(
-      'getJournalEntriesByDateRange',
-      tag: 'JournalRemoteDataSource',
-      params: {'startDate': startDate, 'endDate': endDate},
-    );
-
+  Future<List<TradeJournalEntryResponseDto>> getJournalEntriesByDateRange(
+    String startDate,
+    String endDate,
+  ) async {
     try {
-      // API Spec: GET /v1/journal/date-range?startDate={startDate}&endDate={endDate}
-      final baseUri = _buildUri(_baseUrl, 'v1/journal/date-range');
-      final fullUri = '$baseUri?startDate=$startDate&endDate=$endDate';
-
-      final response = await _apiClient.get<List<TradeJournalEntryResponseDto>>(
-        fullUri,
-        parser: (data) {
-          if (data is Map<String, dynamic> && data.containsKey('content') && data['content'] is List) {
-             return (data['content'] as List)
-                .map((item) => TradeJournalEntryResponseDto.fromJson(item as Map<String, dynamic>))
-                .toList();
-          }
-          return [];
-        },
+      final fullUri = _withQuery(
+        _buildUri(_baseUrl, 'v1/journal/date-range'),
+        {'startDate': startDate, 'endDate': endDate},
       );
-
-      AppLogger.info('Journal entries fetched successfully', tag: 'JournalRemoteDataSource');
-      AppLogger.methodExit('getJournalEntriesByDateRange', tag: 'JournalRemoteDataSource', result: 'success');
-
-      return response;
+      return await _apiClient.get<List<TradeJournalEntryResponseDto>>(
+        fullUri,
+        parser: (data) => _parseEntryList(data),
+      );
     } catch (e) {
       AppLogger.error(
         'Failed to fetch journal entries by date range',
@@ -289,5 +327,242 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
       rethrow;
     }
   }
-}
 
+  @override
+  Future<JournalSummaryDto> getSummary(String startDate, String endDate) async {
+    final fullUri = _withQuery(
+      _buildUri(_baseUrl, 'v1/journal/summary'),
+      {'startDate': startDate, 'endDate': endDate},
+    );
+    return _apiClient.get<JournalSummaryDto>(
+      fullUri,
+      parser: (data) =>
+          JournalSummaryDto.fromJson(data! as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<List<MistakeAnalysisDto>> getMistakesSummary(
+    String startDate,
+    String endDate,
+  ) async {
+    final fullUri = _withQuery(
+      _buildUri(_baseUrl, 'v1/journal/mistakes/summary'),
+      {'startDate': startDate, 'endDate': endDate},
+    );
+    return _apiClient.get<List<MistakeAnalysisDto>>(
+      fullUri,
+      parser: (data) {
+        if (data is List) {
+          return data
+              .map(
+                (e) => MistakeAnalysisDto.fromJson(e as Map<String, dynamic>),
+              )
+              .toList();
+        }
+        return [];
+      },
+    );
+  }
+
+  @override
+  Future<List<LessonLearnedDto>> getLessons(
+    String startDate,
+    String endDate, {
+    int limit = 10,
+  }) async {
+    final fullUri = _withQuery(
+      _buildUri(_baseUrl, 'v1/journal/lessons'),
+      {'startDate': startDate, 'endDate': endDate, 'limit': limit},
+    );
+    return _apiClient.get<List<LessonLearnedDto>>(
+      fullUri,
+      parser: (data) {
+        if (data is List) {
+          return data
+              .map((e) => LessonLearnedDto.fromJson(e as Map<String, dynamic>))
+              .toList();
+        }
+        return [];
+      },
+    );
+  }
+
+  @override
+  Future<JournalAdherenceDto> getAdherence(
+    String startDate,
+    String endDate,
+  ) async {
+    final fullUri = _withQuery(
+      _buildUri(_baseUrl, 'v1/journal/adherence'),
+      {'startDate': startDate, 'endDate': endDate},
+    );
+    return _apiClient.get<JournalAdherenceDto>(
+      fullUri,
+      parser: (data) =>
+          JournalAdherenceDto.fromJson(data! as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<JournalReportCardDto> getReportCard(
+    String startDate,
+    String endDate,
+  ) async {
+    final fullUri = _withQuery(
+      _buildUri(_baseUrl, 'v1/journal/report-card'),
+      {'startDate': startDate, 'endDate': endDate},
+    );
+    return _apiClient.get<JournalReportCardDto>(
+      fullUri,
+      parser: (data) =>
+          JournalReportCardDto.fromJson(data! as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<TradeJournalEntryResponseDto> updatePrePlan(
+    String entryId,
+    PreTradePlanDto plan,
+  ) async {
+    final fullUri = '${_buildUri(_baseUrl, 'v1/journal')}/$entryId/pre-plan';
+    return _apiClient.put<TradeJournalEntryResponseDto>(
+      fullUri,
+      body: plan.toJson(),
+      parser: (data) => TradeJournalEntryResponseDto.fromJson(
+        data! as Map<String, dynamic>,
+      ),
+    );
+  }
+
+  @override
+  Future<TradeJournalEntryResponseDto> updateExecution(
+    String entryId,
+    TradeExecutionDto execution,
+  ) async {
+    final fullUri = '${_buildUri(_baseUrl, 'v1/journal')}/$entryId/execution';
+    return _apiClient.put<TradeJournalEntryResponseDto>(
+      fullUri,
+      body: execution.toJson(),
+      parser: (data) => TradeJournalEntryResponseDto.fromJson(
+        data! as Map<String, dynamic>,
+      ),
+    );
+  }
+
+  @override
+  Future<TradeJournalEntryResponseDto> updatePostReview(
+    String entryId,
+    PostTradeReviewDto review, {
+    bool markCompleted = false,
+  }) async {
+    final fullUri = _withQuery(
+      '${_buildUri(_baseUrl, 'v1/journal')}/$entryId/post-review',
+      {'markCompleted': markCompleted},
+    );
+    return _apiClient.put<TradeJournalEntryResponseDto>(
+      fullUri,
+      body: review.toJson(),
+      parser: (data) => TradeJournalEntryResponseDto.fromJson(
+        data! as Map<String, dynamic>,
+      ),
+    );
+  }
+
+  @override
+  Future<TradeJournalEntryResponseDto> linkTrade(
+    String entryId,
+    String tradeId,
+  ) async {
+    final fullUri = '${_buildUri(_baseUrl, 'v1/journal')}/$entryId/link-trade';
+    return _apiClient.post<TradeJournalEntryResponseDto>(
+      fullUri,
+      body: {'tradeId': tradeId},
+      parser: (data) => TradeJournalEntryResponseDto.fromJson(
+        data! as Map<String, dynamic>,
+      ),
+    );
+  }
+
+  @override
+  Future<TradeJournalEntryResponseDto> addAttachment(
+    String entryId,
+    JournalAttachmentDto attachment,
+  ) async {
+    final fullUri = '${_buildUri(_baseUrl, 'v1/journal')}/$entryId/attachments';
+    return _apiClient.post<TradeJournalEntryResponseDto>(
+      fullUri,
+      body: attachment.toJson(),
+      parser: (data) => TradeJournalEntryResponseDto.fromJson(
+        data! as Map<String, dynamic>,
+      ),
+    );
+  }
+
+  @override
+  Future<TradeJournalEntryResponseDto> removeAttachment(
+    String entryId,
+    String fileUrl,
+  ) async {
+    final fullUri = _withQuery(
+      '${_buildUri(_baseUrl, 'v1/journal')}/$entryId/attachments',
+      {'fileUrl': fileUrl},
+    );
+    return _apiClient.delete<TradeJournalEntryResponseDto>(
+      fullUri,
+      parser: (data) => TradeJournalEntryResponseDto.fromJson(
+        data! as Map<String, dynamic>,
+      ),
+    );
+  }
+
+  @override
+  Future<int> bulkArchive(List<String> entryIds) async {
+    final fullUri = _buildUri(_baseUrl, 'v1/journal/bulk/archive');
+    final result = await _apiClient.post<Map<String, dynamic>>(
+      fullUri,
+      body: {'entryIds': entryIds},
+      parser: (data) => data! as Map<String, dynamic>,
+    );
+    return (result['archived'] as num?)?.toInt() ?? 0;
+  }
+
+  @override
+  Future<int> bulkDelete(List<String> entryIds) async {
+    final fullUri = _buildUri(_baseUrl, 'v1/journal/bulk/delete');
+    final result = await _apiClient.post<Map<String, dynamic>>(
+      fullUri,
+      body: {'entryIds': entryIds},
+      parser: (data) => data! as Map<String, dynamic>,
+    );
+    return (result['deleted'] as num?)?.toInt() ?? 0;
+  }
+
+  @override
+  Future<String> exportCsv(String startDate, String endDate) async {
+    final fullUri = _withQuery(
+      _buildUri(_baseUrl, 'v1/journal/export'),
+      {'startDate': startDate, 'endDate': endDate},
+    );
+    return _apiClient.get<String>(
+      fullUri,
+      parser: (data) {
+        if (data is String) return data;
+        return data?.toString() ?? '';
+      },
+    );
+  }
+
+  @override
+  Future<List<TradeJournalEntryResponseDto>> createFromTrades(
+    List<String> tradeIds, {
+    String journalStatus = 'COMPLETED',
+  }) async {
+    final fullUri = _buildUri(_baseUrl, 'v1/journal/from-trades');
+    return _apiClient.post<List<TradeJournalEntryResponseDto>>(
+      fullUri,
+      body: {'tradeIds': tradeIds, 'journalStatus': journalStatus},
+      parser: (data) => _parseEntryList(data),
+    );
+  }
+}
