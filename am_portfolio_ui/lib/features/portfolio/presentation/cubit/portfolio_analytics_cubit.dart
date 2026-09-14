@@ -203,9 +203,12 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
       if (moversEmpty) {
         ProductTelemetry.instance.emptyState('portfolio_movers_empty');
       }
+      final priorHeatmap = state is PortfolioAnalyticsLoaded
+          ? (state as PortfolioAnalyticsLoaded).heatmap
+          : null;
       final mergedHeatmap = preferNonEmptyHeatmap(
         analytics.analytics.heatmap,
-        null,
+        priorHeatmap,
       );
       if (mergedHeatmap == null || mergedHeatmap.sectors.isEmpty) {
         ProductTelemetry.instance.emptyState('heatmap_empty');

@@ -174,15 +174,7 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
       }
 
       if (isClosed) return;
-      if (heatmapData.uiTiles.isEmpty) {
-        emit(
-          const PortfolioHeatmapEmpty(
-            message:
-                'Heatmap Data Unavailable: No sector performance data is currently available.',
-          ),
-        );
-        return;
-      }
+      // Keep Loaded (even with zero tiles) so sector/market-cap filters stay usable.
       emit(
         PortfolioHeatmapLoaded(
           heatmapData: heatmapData,
