@@ -125,6 +125,45 @@ class RiskMetricsDto {
   );
 }
 
+class TradingStyleHintDto {
+  final String? style;
+  final double? confidencePercent;
+  final String? basis;
+  final int? sampleSize;
+
+  TradingStyleHintDto({
+    this.style,
+    this.confidencePercent,
+    this.basis,
+    this.sampleSize,
+  });
+
+  factory TradingStyleHintDto.fromJson(Map<String, dynamic> json) =>
+      TradingStyleHintDto(
+        style: json['style'] as String?,
+        confidencePercent: (json['confidencePercent'] as num?)?.toDouble(),
+        basis: json['basis'] as String?,
+        sampleSize: (json['sampleSize'] as num?)?.toInt(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'style': style,
+        'confidencePercent': confidencePercent,
+        'basis': basis,
+        'sampleSize': sampleSize,
+      };
+
+  TradingStyleHint? toEntity() {
+    if (style == null) return null;
+    return TradingStyleHint(
+      style: style!,
+      confidencePercent: confidencePercent ?? 0,
+      basis: basis ?? 'holding_duration',
+      sampleSize: sampleSize ?? 0,
+    );
+  }
+}
+
 @JsonSerializable()
 class TradeDistributionMetricsDto {
   final Map<String, int>? tradesByDay;
@@ -133,9 +172,20 @@ class TradeDistributionMetricsDto {
   final Map<String, double>? profitByMonth;
   final Map<String, double>? winRateByDay;
   final Map<String, double>? winRateByMonth;
+  final Map<String, double>? avgPnlByDay;
+  final Map<String, double>? avgPnlByMonth;
+  final Map<String, int>? eligibleTradesByDay;
+  final Map<String, int>? eligibleTradesByMonth;
   final Map<String, int>? tradesByHour;
   final Map<String, double>? profitByHour;
   final Map<String, double>? winRateByHour;
+  final Map<String, double>? avgPnlByHour;
+  final Map<String, int>? eligibleTradesByHour;
+  final Map<String, int>? tradesBySession;
+  final Map<String, double>? profitBySession;
+  final Map<String, double>? winRateBySession;
+  final Map<String, double>? avgPnlBySession;
+  final Map<String, int>? eligibleTradesBySession;
   final Map<String, int>? tradeCountByAssetClass;
   final Map<String, double>? profitByAssetClass;
   final Map<String, double>? winRateByAssetClass;
@@ -148,6 +198,11 @@ class TradeDistributionMetricsDto {
   final Map<String, int>? tradesByPositionSize;
   final Map<String, double>? profitByPositionSize;
   final Map<String, double>? winRateByPositionSize;
+  final int? skippedMissingEntryCount;
+  final int? openOrMissingPnlCount;
+  final int? badTimestampCount;
+  final String? timezoneNote;
+  final TradingStyleHintDto? tradingStyleHint;
 
   TradeDistributionMetricsDto({
     this.tradesByDay,
@@ -156,9 +211,20 @@ class TradeDistributionMetricsDto {
     this.profitByMonth,
     this.winRateByDay,
     this.winRateByMonth,
+    this.avgPnlByDay,
+    this.avgPnlByMonth,
+    this.eligibleTradesByDay,
+    this.eligibleTradesByMonth,
     this.tradesByHour,
     this.profitByHour,
     this.winRateByHour,
+    this.avgPnlByHour,
+    this.eligibleTradesByHour,
+    this.tradesBySession,
+    this.profitBySession,
+    this.winRateBySession,
+    this.avgPnlBySession,
+    this.eligibleTradesBySession,
     this.tradeCountByAssetClass,
     this.profitByAssetClass,
     this.winRateByAssetClass,
@@ -171,6 +237,11 @@ class TradeDistributionMetricsDto {
     this.tradesByPositionSize,
     this.profitByPositionSize,
     this.winRateByPositionSize,
+    this.skippedMissingEntryCount,
+    this.openOrMissingPnlCount,
+    this.badTimestampCount,
+    this.timezoneNote,
+    this.tradingStyleHint,
   });
 
   factory TradeDistributionMetricsDto.fromJson(Map<String, dynamic> json) =>
@@ -180,16 +251,41 @@ class TradeDistributionMetricsDto {
   TradeDistributionMetrics toEntity() => TradeDistributionMetrics(
         tradesByDay: tradesByDay ?? {},
         profitByDay: profitByDay ?? {},
-        winRateByDay: winRateByDay ?? {},
+        winRateByDay: _nullableDoubleMap(winRateByDay),
+        avgPnlByDay: _nullableDoubleMap(avgPnlByDay),
+        eligibleTradesByDay: eligibleTradesByDay ?? {},
         tradesByHour: tradesByHour ?? {},
         profitByHour: profitByHour ?? {},
-        winRateByHour: winRateByHour ?? {},
+        winRateByHour: _nullableDoubleMap(winRateByHour),
+        avgPnlByHour: _nullableDoubleMap(avgPnlByHour),
+        eligibleTradesByHour: eligibleTradesByHour ?? {},
         tradesByMonth: tradesByMonth ?? {},
         profitByMonth: profitByMonth ?? {},
-        winRateByMonth: winRateByMonth ?? {},
+        winRateByMonth: _nullableDoubleMap(winRateByMonth),
+        avgPnlByMonth: _nullableDoubleMap(avgPnlByMonth),
+        eligibleTradesByMonth: eligibleTradesByMonth ?? {},
+        tradesBySession: tradesBySession ?? {},
+        profitBySession: profitBySession ?? {},
+        winRateBySession: _nullableDoubleMap(winRateBySession),
+        avgPnlBySession: _nullableDoubleMap(avgPnlBySession),
+        eligibleTradesBySession: eligibleTradesBySession ?? {},
         tradeCountByAssetClass: tradeCountByAssetClass ?? {},
         tradeCountByStrategy: tradeCountByStrategy ?? {},
+        skippedMissingEntryCount: skippedMissingEntryCount ?? 0,
+        openOrMissingPnlCount: openOrMissingPnlCount ?? 0,
+        badTimestampCount: badTimestampCount ?? 0,
+        timezoneNote: timezoneNote ?? 'entry_local_as_stored',
+        tradingStyleHint: tradingStyleHint?.toEntity(),
       );
+}
+
+/// Keeps only non-null numeric entries (Jackson may send null win%/avg).
+Map<String, double> _nullableDoubleMap(Map<String, double>? source) {
+  if (source == null) return {};
+  return {
+    for (final e in source.entries)
+      if (e.value.isFinite) e.key: e.value,
+  };
 }
 
 @JsonSerializable()
@@ -417,6 +513,7 @@ class MetricsFilterRequestDto {
   final List<String>? groupBy;
   final bool includeTradeDetails;
   final Map<String, dynamic>? customFilters;
+  final Map<String, dynamic>? tradeCharacteristics;
 
   MetricsFilterRequestDto({
     required this.portfolioIds,
@@ -427,22 +524,37 @@ class MetricsFilterRequestDto {
     this.groupBy,
     this.includeTradeDetails = false,
     this.customFilters,
+    this.tradeCharacteristics,
   });
 
-  factory MetricsFilterRequestDto.fromJson(Map<String, dynamic> json) => _$MetricsFilterRequestDtoFromJson(json);
-  Map<String, dynamic> toJson() => _$MetricsFilterRequestDtoToJson(this);
+  factory MetricsFilterRequestDto.fromJson(Map<String, dynamic> json) =>
+      _$MetricsFilterRequestDtoFromJson(json);
 
-  factory MetricsFilterRequestDto.fromEntity(MetricsFilterRequest entity) => MetricsFilterRequestDto(
-    portfolioIds: entity.portfolioIds,
-    dateRange: DateRangeDto(
-      startDate: entity.startDate,
-      endDate: entity.endDate,
-    ),
-    timePeriod: entity.timePeriod,
-    metricTypes: entity.metricTypes,
-    instruments: entity.instruments,
-    groupBy: entity.groupBy,
-    includeTradeDetails: entity.includeTradeDetails,
-    customFilters: entity.customFilters,
-  );
+  Map<String, dynamic> toJson() {
+    final json = _$MetricsFilterRequestDtoToJson(this);
+    // json_serializable emits DateRangeDto object; API expects nested map.
+    json['dateRange'] = {
+      'startDate': dateRange.startDate.toIso8601String().split('T').first,
+      'endDate': dateRange.endDate.toIso8601String().split('T').first,
+    };
+    return json;
+  }
+
+  factory MetricsFilterRequestDto.fromEntity(MetricsFilterRequest entity) =>
+      MetricsFilterRequestDto(
+        portfolioIds: entity.portfolioIds,
+        dateRange: DateRangeDto(
+          startDate: entity.startDate,
+          endDate: entity.endDate,
+        ),
+        timePeriod: entity.timePeriod,
+        metricTypes: entity.metricTypes,
+        instruments: entity.instruments,
+        groupBy: entity.groupBy,
+        includeTradeDetails: entity.includeTradeDetails,
+        customFilters: entity.customFilters,
+        tradeCharacteristics: entity.holdingStyle == null
+            ? null
+            : {'holdingStyle': entity.holdingStyle},
+      );
 }

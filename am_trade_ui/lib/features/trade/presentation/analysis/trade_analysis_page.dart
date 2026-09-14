@@ -32,6 +32,8 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
   _AnalysisTab _tab = _AnalysisTab.timing;
   late DateTime _startDate;
   late DateTime _endDate;
+  /// null = All holding styles.
+  String? _holdingStyle;
 
   @override
   void initState() {
@@ -70,8 +72,14 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
         startDate: _startDate,
         endDate: _endDate,
         metricTypes: const [MetricTypes.distribution],
+        holdingStyle: _holdingStyle,
       ),
     );
+  }
+
+  void _onHoldingStyleChanged(String? style) {
+    setState(() => _holdingStyle = style);
+    _loadMetrics();
   }
 
   Future<void> _pickDateRange() async {
@@ -96,6 +104,8 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
       _startDate = picked.start;
       _endDate = picked.end;
     });
+    // Same as holding-style: apply filter changes immediately (Apply still refreshes).
+    await _loadMetrics();
   }
 
   String get _dateLabel {
@@ -169,6 +179,13 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
               selected: _tab,
               onSelected: (tab) => setState(() => _tab = tab),
             ),
+            if (_tab == _AnalysisTab.timing) ...[
+              const SizedBox(height: AppSpacing.sm),
+              _HoldingStyleFilter(
+                selected: _holdingStyle,
+                onChanged: _onHoldingStyleChanged,
+              ),
+            ],
             const SizedBox(height: AppSpacing.md),
             Expanded(
               child: cubitAsync.when(
@@ -241,7 +258,63 @@ class _DateApplyBar extends StatelessWidget {
   }
 }
 
-/// Hub sub-tabs — same ChoiceChip pattern as Journal.
+/// Holding-style filter — same session clocks; subsets trades by hold duration.
+class _HoldingStyleFilter extends StatelessWidget {
+  const _HoldingStyleFilter({
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final String? selected;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    Widget pill(String label, String? value) {
+      return AmToggleChip(
+        label: label,
+        selected: selected == value,
+        compact: true,
+        accentColor: ModuleColors.trade,
+        onTap: () => onChanged(value),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Holding style',
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: colors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: [
+            pill('All', null),
+            pill('Scalper', 'SCALPER'),
+            pill('Intraday', 'INTRADAY'),
+            pill('Swing', 'SWING'),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          'Scalper <15m · Intraday 15m–<24h · Swing ≥24h. Session windows stay the same.',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colors.textSecondary,
+              ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Hub sub-tabs — soft ChoiceChip pattern matching Journal.
 class _AnalysisTabBar extends StatelessWidget {
   const _AnalysisTabBar({required this.selected, required this.onSelected});
 
@@ -265,11 +338,18 @@ class _AnalysisTabBar extends StatelessWidget {
               for (final tab in _AnalysisTab.values) ...[
                 if (tab.index > 0) const SizedBox(width: AppSpacing.sm),
                 ChoiceChip(
-                  avatar: Icon(_icon(tab), size: 16),
+                  avatar: Icon(
+                    _icon(tab),
+                    size: 16,
+                    color: selected == tab
+                        ? ModuleColors.trade
+                        : colors.textSecondary,
+                  ),
                   label: Text(_label(tab)),
                   selected: selected == tab,
                   onSelected: (_) => onSelected(tab),
                   selectedColor: ModuleColors.trade.withValues(alpha: 0.25),
+                  showCheckmark: false,
                 ),
               ],
             ],

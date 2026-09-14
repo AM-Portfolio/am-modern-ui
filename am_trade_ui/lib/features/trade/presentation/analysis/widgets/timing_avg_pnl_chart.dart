@@ -24,15 +24,15 @@ class TimingAvgPnlChart extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: colors.cardSurface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadii.card,
         border: Border.all(
           color: colors.border.withValues(alpha: 0.45),
         ),
       ),
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.md - AppSpacing.xs,
-        AppSpacing.md - AppSpacing.xs,
-        AppSpacing.md - AppSpacing.xs,
+        AppSpacing.sm + AppSpacing.xs,
+        AppSpacing.sm + AppSpacing.xs,
+        AppSpacing.sm + AppSpacing.xs,
         AppSpacing.sm,
       ),
       child: Column(
@@ -167,8 +167,10 @@ class TimingAvgPnlChart extends StatelessWidget {
               BarChartRodData(
                 toY: buckets[i].avgPnl,
                 width: buckets.length > 12 ? 6 : 10,
-                borderRadius: BorderRadius.circular(3),
-                color: buckets[i].avgPnl >= 0 ? success : error,
+                borderRadius: BorderRadius.circular(AppRadii.xs),
+                color: buckets[i].trades == 0
+                    ? colors.border.withValues(alpha: 0.35)
+                    : (buckets[i].avgPnl >= 0 ? success : error),
               ),
             ],
           ),
