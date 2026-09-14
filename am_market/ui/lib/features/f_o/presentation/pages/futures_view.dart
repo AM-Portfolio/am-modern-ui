@@ -74,52 +74,43 @@ class FuturesView extends ConsumerWidget {
             if (isDesktop) {
               return SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
-                child: Column(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Top Row: Futures Contracts Table (Left flex 6) + (Selected Contract + Details + Open Interest) (Right flex 6)
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          flex: 6,
-                          child: FuturesContractsTableWidget(contracts: contracts),
-                        ),
-                        const SizedBox(width: 16),
-                        const Expanded(
-                          flex: 6,
-                          child: Column(
+                    // Left Column: Futures Contracts Table + Price Chart
+                    Expanded(
+                      flex: 6,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          FuturesContractsTableWidget(contracts: contracts),
+                          const SizedBox(height: 16),
+                          const FuturesPriceChartWidget(),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+
+                    // Right Column: Selected Contract & Details + Open Interest + Market Depth
+                    const Expanded(
+                      flex: 6,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(child: FuturesSelectedContractCard()),
-                                  SizedBox(width: 12),
-                                  Expanded(child: FuturesContractDetailsCard()),
-                                ],
-                              ),
-                              SizedBox(height: 16),
-                              FuturesOpenInterestCard(),
+                              Expanded(child: FuturesSelectedContractCard()),
+                              SizedBox(width: 12),
+                              Expanded(child: FuturesContractDetailsCard()),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Bottom Row: Price Chart (Left flex 6) + Market Depth & Key Metrics (Right flex 6)
-                    const Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          flex: 6,
-                          child: FuturesPriceChartWidget(),
-                        ),
-                        SizedBox(width: 16),
-                        Expanded(
-                          flex: 6,
-                          child: FuturesMarketDepthMetricsCard(),
-                        ),
-                      ],
+                          SizedBox(height: 16),
+                          FuturesOpenInterestCard(),
+                          SizedBox(height: 16),
+                          FuturesMarketDepthMetricsCard(),
+                        ],
+                      ),
                     ),
                   ],
                 ),
