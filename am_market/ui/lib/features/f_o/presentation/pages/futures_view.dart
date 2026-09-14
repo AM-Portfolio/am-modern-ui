@@ -49,7 +49,7 @@ class FuturesView extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 40),
+                  Icon(Icons.warning_amber_rounded, color: colors.statusWarning, size: 40),
                   const SizedBox(height: 12),
                   Text(
                     'No Futures Contracts Found in Backend Database',

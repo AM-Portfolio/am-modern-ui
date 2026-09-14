@@ -47,11 +47,11 @@ class FuturesContractDetailsCard extends ConsumerWidget {
                 message: 'Specifications for the active derivative contract including trading symbol, exchange, expiry date, and lot size multiplier.',
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.black87,
+                  color: colors.surface,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: ModuleColors.market.withValues(alpha: 0.6)),
                 ),
-                textStyle: const TextStyle(color: Colors.white, fontSize: 12),
+                textStyle: TextStyle(color: colors.textPrimary, fontSize: 12),
                 child: Icon(Icons.info_outline_rounded, color: colors.textSecondary, size: 16),
               ),
             ],

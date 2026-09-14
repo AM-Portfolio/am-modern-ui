@@ -71,11 +71,11 @@ class _FuturesOpenInterestCardState extends ConsumerState<FuturesOpenInterestCar
                 message: infoMessage,
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.black87,
+                  color: colors.surface,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: ModuleColors.market.withValues(alpha: 0.6)),
                 ),
-                textStyle: const TextStyle(color: Colors.white, fontSize: 12),
+                textStyle: TextStyle(color: colors.textPrimary, fontSize: 12),
                 child: Icon(Icons.info_outline_rounded, color: colors.textSecondary, size: 16),
               ),
               const Spacer(),
@@ -154,9 +154,9 @@ class _FuturesOpenInterestCardState extends ConsumerState<FuturesOpenInterestCar
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildLegendItem(isOi ? 'Open Interest' : 'Volume', marketTheme.positive),
+              _buildLegendItem(isOi ? 'Open Interest' : 'Volume', marketTheme.positive, colors),
               const SizedBox(width: 16),
-              _buildLegendItem('Close Price', Colors.purpleAccent),
+              _buildLegendItem('Close Price', marketTheme.chartPurple, colors),
             ],
           ),
           const SizedBox(height: 14),
@@ -177,6 +177,7 @@ class _FuturesOpenInterestCardState extends ConsumerState<FuturesOpenInterestCar
   }
 
   Widget _buildModeToggle(String label, bool isSelected, AppColorsTheme colors) {
+    final marketTheme = context.marketTheme;
     return InkWell(
       onTap: () => setState(() {
         _selectedMode = label;
@@ -191,7 +192,7 @@ class _FuturesOpenInterestCardState extends ConsumerState<FuturesOpenInterestCar
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.black : colors.textSecondary,
+            color: isSelected ? marketTheme.accentText : colors.textSecondary,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             fontSize: 11,
           ),
@@ -200,12 +201,12 @@ class _FuturesOpenInterestCardState extends ConsumerState<FuturesOpenInterestCar
     );
   }
 
-  Widget _buildLegendItem(String label, Color color) {
+  Widget _buildLegendItem(String label, Color color, AppColorsTheme colors) {
     return Row(
       children: [
         Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 4),
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 10)),
+        Text(label, style: TextStyle(color: colors.textSecondary, fontSize: 10)),
       ],
     );
   }
@@ -291,13 +292,13 @@ class _OiDualAxisPainter extends CustomPainter {
         canvas.drawLine(
           Offset(x + barWidth / 2, 0),
           Offset(x + barWidth / 2, chartHeight),
-          Paint()..color = Colors.white.withValues(alpha: 0.4)..strokeWidth = 1,
+          Paint()..color = colors.textPrimary.withValues(alpha: 0.4)..strokeWidth = 1,
         );
       }
     }
 
     final linePaint = Paint()
-      ..color = Colors.purpleAccent
+      ..color = marketTheme.chartPurple
       ..strokeWidth = 2.0
       ..style = PaintingStyle.stroke;
 

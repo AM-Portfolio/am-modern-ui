@@ -32,7 +32,7 @@ class EquityInsiderHero extends ConsumerWidget {
         final arrow = isPos ? '▲' : '▼';
         final absChange = data.dayChange != null ? data.dayChange!.abs().toStringAsFixed(2) : '0.00';
         final pctChange = data.dayChangePercent != null ? data.dayChangePercent!.abs().toStringAsFixed(2) : '0.00';
-        final exchangeBadgeColor = activeExchange == 'BSE' ? Colors.orange : context.marketTheme.chartBlue;
+        final exchangeBadgeColor = activeExchange == 'BSE' ? context.colors.statusWarning : context.marketTheme.chartBlue;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -136,7 +136,7 @@ class EquityInsiderHero extends ConsumerWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isBse
-              ? Colors.orange.withValues(alpha: 0.5)
+              ? context.colors.statusWarning.withValues(alpha: 0.5)
               : context.marketTheme.chartBlue.withValues(alpha: 0.5),
           width: 1,
         ),
@@ -156,7 +156,7 @@ class EquityInsiderHero extends ConsumerWidget {
             ref,
             label: 'BSE',
             isSelected: isBse,
-            activeColor: Colors.orange,
+            activeColor: context.colors.statusWarning,
           ),
         ],
       ),
@@ -286,7 +286,7 @@ class EquityInsiderHero extends ConsumerWidget {
                 if (confirm) {
                   final wid = statuses.firstWhere((s) => s.containsSymbol).watchlistId;
                   ref.read(watchlistsProvider.notifier).removeStock(wid, symbol);
-                  ref.refresh(watchlistCheckStatusProvider(symbol));
+                  ref.invalidate(watchlistCheckStatusProvider(symbol));
                 }
               },
               icon: const Icon(Icons.bookmark_added_rounded, size: 14, color: Colors.white),

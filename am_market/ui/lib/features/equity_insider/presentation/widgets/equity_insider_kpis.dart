@@ -306,7 +306,7 @@ class EquityInsiderKpis extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: (exchange == 'BSE' ? Colors.orange : context.marketTheme.chartBlue).withValues(alpha: 0.15),
+                  color: (exchange == 'BSE' ? context.colors.statusWarning : context.marketTheme.chartBlue).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
@@ -314,7 +314,7 @@ class EquityInsiderKpis extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
-                    color: exchange == 'BSE' ? Colors.orange : context.marketTheme.chartBlue,
+                    color: exchange == 'BSE' ? context.colors.statusWarning : context.marketTheme.chartBlue,
                   ),
                 ),
               ),

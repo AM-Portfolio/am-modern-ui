@@ -56,9 +56,9 @@ class FuturesSelectedContractCard extends ConsumerWidget {
                   style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 18),
                 ),
               ),
-              _buildReadOnlyBadge(instType, ModuleColors.market, instDesc),
+              _buildReadOnlyBadge(context, instType, ModuleColors.market, instDesc),
               const SizedBox(width: 6),
-              _buildReadOnlyBadge('NSE_FO', colors.textSecondary, 'Exchange Segment: National Stock Exchange F&O'),
+              _buildReadOnlyBadge(context, 'NSE_FO', colors.textSecondary, 'Exchange Segment: National Stock Exchange F&O'),
             ],
           ),
           const SizedBox(height: 4),
@@ -123,15 +123,17 @@ class FuturesSelectedContractCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildReadOnlyBadge(String label, Color color, String tooltipText) {
+  Widget _buildReadOnlyBadge(BuildContext context, String label, Color color, String tooltipText) {
+    final colors = context.colors;
     return Tooltip(
       message: tooltipText,
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.black87,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: ModuleColors.market.withValues(alpha: 0.6)),
       ),
-      textStyle: const TextStyle(color: Colors.white, fontSize: 11),
+      textStyle: TextStyle(color: colors.textPrimary, fontSize: 11),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(

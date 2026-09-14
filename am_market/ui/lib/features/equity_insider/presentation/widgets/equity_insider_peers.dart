@@ -565,7 +565,7 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(
-            color: (activeExchange == 'BSE' ? Colors.orange : context.marketTheme.chartBlue).withValues(alpha: 0.15),
+            color: (activeExchange == 'BSE' ? context.colors.statusWarning : context.marketTheme.chartBlue).withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Text(
@@ -573,7 +573,7 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w600,
-              color: activeExchange == 'BSE' ? Colors.orange : context.marketTheme.chartBlue,
+              color: activeExchange == 'BSE' ? context.colors.statusWarning : context.marketTheme.chartBlue,
             ),
           ),
         ),
