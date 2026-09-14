@@ -9,7 +9,7 @@ enum AmSessionStatusTone {
   retrying,
 }
 
-/// Branded full-screen session / boot status with theme-aware AM monogram,
+/// Branded full-screen session / boot status with the ASRAX app logo,
 /// orbiting arcs, and soft logo pulse.
 class AmSessionStatusView extends StatefulWidget {
   const AmSessionStatusView({
@@ -19,7 +19,7 @@ class AmSessionStatusView extends StatefulWidget {
     this.tone = AmSessionStatusTone.restoring,
     this.onRetry,
     this.retryLabel = 'Retry',
-    this.logoSize = 88,
+    this.logoHeight = 96,
   });
 
   final String title;
@@ -27,10 +27,10 @@ class AmSessionStatusView extends StatefulWidget {
   final AmSessionStatusTone tone;
   final VoidCallback? onRetry;
   final String retryLabel;
-  final double logoSize;
+  final double logoHeight;
 
-  static const String darkLogoAsset = 'lib/assets/images/app_logo_dark.png';
-  static const String lightLogoAsset = 'lib/assets/images/app_logo_light.png';
+  /// Full ASRAX lockup — high contrast on a light plate (same as AssetPaths.appLogo).
+  static const String appLogoAsset = 'lib/assets/images/app_logo.png';
   static const String packageName = 'am_design_system';
 
   @override
@@ -106,10 +106,10 @@ class _AmSessionStatusViewState extends State<AmSessionStatusView>
     final titleColor = isDark ? const Color(0xFFE2E8F0) : const Color(0xFF0F172A);
     final subtitleColor =
         isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-    final logoAsset = isDark
-        ? AmSessionStatusView.darkLogoAsset
-        : AmSessionStatusView.lightLogoAsset;
-    final ringSize = widget.logoSize + 48;
+    // Full lockup is wider than tall; ring wraps a light card so logo stays readable on dark.
+    final logoW = widget.logoHeight * 1.55;
+    final logoH = widget.logoHeight;
+    final ringSize = math.max(logoW, logoH) + 56;
 
     return ColoredBox(
       color: isDark ? _darkBg : _lightBg,
@@ -156,17 +156,36 @@ class _AmSessionStatusViewState extends State<AmSessionStatusView>
                           ),
                         );
                       },
-                      child: Image.asset(
-                        logoAsset,
-                        package: AmSessionStatusView.packageName,
-                        width: widget.logoSize,
-                        height: widget.logoSize,
-                        fit: BoxFit.contain,
-                        filterQuality: FilterQuality.high,
-                        errorBuilder: (_, __, ___) => Icon(
-                          Icons.account_balance,
-                          size: widget.logoSize * 0.55,
-                          color: accent,
+                      child: Container(
+                        width: logoW + 28,
+                        height: logoH + 28,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: accent.withValues(alpha: 0.18),
+                              blurRadius: 18,
+                              spreadRadius: 0,
+                            ),
+                          ],
+                        ),
+                        child: Image.asset(
+                          AmSessionStatusView.appLogoAsset,
+                          package: AmSessionStatusView.packageName,
+                          width: logoW,
+                          height: logoH,
+                          fit: BoxFit.contain,
+                          filterQuality: FilterQuality.high,
+                          errorBuilder: (_, __, ___) => Icon(
+                            Icons.account_balance,
+                            size: logoH * 0.55,
+                            color: accent,
+                          ),
                         ),
                       ),
                     ),

@@ -7,11 +7,17 @@ class TradePortfolioSkeletonLoader extends StatelessWidget {
 
   final bool isWebView;
 
+  Color _block(BuildContext context) =>
+      skeletonShimmerColors(context, accentColor: ModuleColors.trade).base;
+
+  Color _shimmer(BuildContext context) =>
+      skeletonShimmerColors(context, accentColor: ModuleColors.trade).highlight;
+
   @override
   Widget build(BuildContext context) {
+    final accent = ModuleColors.trade;
     return Column(
       children: [
-        // Header Skeleton
         Padding(
           padding: const EdgeInsets.all(16.0),
           child: Row(
@@ -20,37 +26,51 @@ class TradePortfolioSkeletonLoader extends StatelessWidget {
                 width: 150,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                  color: _block(context),
                   borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: accent.withValues(alpha: 0.15)),
                 ),
-              ).animate(onPlay: (controller) => controller.repeat()).shimmer(duration: 1200.ms, color: ModuleColors.trade.withOpacity(0.18)),
+              )
+                  .animate(onPlay: (controller) => controller.repeat())
+                  .shimmer(
+                    duration: 1200.ms,
+                    color: accent.withValues(alpha: 0.22),
+                  ),
               const Spacer(),
               Container(
                 width: 100,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                  color: _block(context),
                   borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: accent.withValues(alpha: 0.15)),
                 ),
-              ).animate(onPlay: (controller) => controller.repeat()).shimmer(duration: 1200.ms, delay: 200.ms, color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5)),
+              )
+                  .animate(onPlay: (controller) => controller.repeat())
+                  .shimmer(
+                    duration: 1200.ms,
+                    delay: 200.ms,
+                    color: _shimmer(context),
+                  ),
             ],
           ),
         ),
-        
-        // Grid/List Skeleton
         Expanded(
-          child: isWebView ? _buildGridSkeleton(context) : _buildListSkeleton(context),
+          child: isWebView
+              ? _buildGridSkeleton(context)
+              : _buildListSkeleton(context),
         ),
       ],
     );
   }
 
   Widget _buildGridSkeleton(BuildContext context) {
+    final accent = ModuleColors.trade;
     return LayoutBuilder(
       builder: (context, constraints) {
-        int crossAxisCount;
-        double childAspectRatio;
-        
+        late int crossAxisCount;
+        late double childAspectRatio;
+
         if (constraints.maxWidth >= 1400) {
           crossAxisCount = 3;
           childAspectRatio = 1.5;
@@ -77,9 +97,9 @@ class TradePortfolioSkeletonLoader extends StatelessWidget {
           itemBuilder: (context, index) {
             return Container(
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.1),
+                color: _block(context).withValues(alpha: 0.85),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
+                border: Border.all(color: accent.withValues(alpha: 0.14)),
               ),
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -91,7 +111,7 @@ class TradePortfolioSkeletonLoader extends StatelessWidget {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                          color: _block(context),
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
@@ -103,7 +123,7 @@ class TradePortfolioSkeletonLoader extends StatelessWidget {
                             width: 120,
                             height: 16,
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                              color: _block(context),
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
@@ -112,7 +132,7 @@ class TradePortfolioSkeletonLoader extends StatelessWidget {
                             width: 80,
                             height: 12,
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                              color: _block(context),
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
@@ -125,7 +145,7 @@ class TradePortfolioSkeletonLoader extends StatelessWidget {
                     width: double.infinity,
                     height: 60,
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.2),
+                      color: _block(context),
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
@@ -137,7 +157,7 @@ class TradePortfolioSkeletonLoader extends StatelessWidget {
                         width: 60,
                         height: 20,
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                          color: _block(context),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -145,7 +165,7 @@ class TradePortfolioSkeletonLoader extends StatelessWidget {
                         width: 60,
                         height: 20,
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                          color: _block(context),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -153,8 +173,13 @@ class TradePortfolioSkeletonLoader extends StatelessWidget {
                   ),
                 ],
               ),
-            ).animate(onPlay: (controller) => controller.repeat())
-             .shimmer(duration: 1200.ms, delay: (100 * index).ms, color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5));
+            )
+                .animate(onPlay: (controller) => controller.repeat())
+                .shimmer(
+                  duration: 1200.ms,
+                  delay: (100 * index).ms,
+                  color: accent.withValues(alpha: 0.2),
+                );
           },
         );
       },
@@ -162,6 +187,7 @@ class TradePortfolioSkeletonLoader extends StatelessWidget {
   }
 
   Widget _buildListSkeleton(BuildContext context) {
+    final accent = ModuleColors.trade;
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: 6,
@@ -170,9 +196,9 @@ class TradePortfolioSkeletonLoader extends StatelessWidget {
           height: 100,
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.1),
+            color: _block(context).withValues(alpha: 0.85),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
+            border: Border.all(color: accent.withValues(alpha: 0.14)),
           ),
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -181,7 +207,7 @@ class TradePortfolioSkeletonLoader extends StatelessWidget {
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                  color: _block(context),
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
@@ -195,7 +221,7 @@ class TradePortfolioSkeletonLoader extends StatelessWidget {
                       width: 150,
                       height: 16,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                        color: _block(context),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -204,7 +230,7 @@ class TradePortfolioSkeletonLoader extends StatelessWidget {
                       width: 100,
                       height: 12,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                        color: _block(context),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -213,8 +239,13 @@ class TradePortfolioSkeletonLoader extends StatelessWidget {
               ),
             ],
           ),
-        ).animate(onPlay: (controller) => controller.repeat())
-         .shimmer(duration: 1200.ms, delay: (100 * index).ms, color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5));
+        )
+            .animate(onPlay: (controller) => controller.repeat())
+            .shimmer(
+              duration: 1200.ms,
+              delay: (100 * index).ms,
+              color: accent.withValues(alpha: 0.2),
+            );
       },
     );
   }

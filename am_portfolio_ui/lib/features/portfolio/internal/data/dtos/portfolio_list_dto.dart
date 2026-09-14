@@ -7,6 +7,7 @@ class PortfolioItemDto {
     required this.portfolioId,
     required this.portfolioName,
     this.kind,
+    this.isDummy = false,
   });
 
   /// Create from JSON
@@ -16,16 +17,19 @@ class PortfolioItemDto {
         portfolioName:
             (json['portfolioName'] as String?) ?? 'Unnamed Portfolio',
         kind: json['kind'] as String?,
+        isDummy: json['isDummy'] == true || json['dummy'] == true,
       );
   final String portfolioId;
   final String portfolioName;
   final String? kind;
+  final bool isDummy;
 
   /// Convert to JSON
   Map<String, dynamic> toJson() => {
     'portfolioId': portfolioId,
     'portfolioName': portfolioName,
     if (kind != null) 'kind': kind,
+    'isDummy': isDummy,
   };
 
   @override

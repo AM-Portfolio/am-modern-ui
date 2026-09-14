@@ -522,12 +522,12 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
   }
 
   Widget _buildOverviewSkeleton(BuildContext context) {
-    final baseColor = Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFF0D1B2A)
-        : Colors.grey.shade200;
-    final highlightColor = Theme.of(context).brightness == Brightness.dark
-        ? Colors.white.withValues(alpha: 0.05)
-        : Colors.white.withValues(alpha: 0.5);
+    final resolved = ds.skeletonShimmerColors(
+      context,
+      accentColor: ds.ModuleColors.portfolio,
+    );
+    final baseColor = resolved.base;
+    final highlightColor = resolved.highlight;
 
     return LayoutBuilder(
       builder: (context, constraints) {

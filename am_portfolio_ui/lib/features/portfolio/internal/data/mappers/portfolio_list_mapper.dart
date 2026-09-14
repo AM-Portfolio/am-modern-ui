@@ -39,7 +39,8 @@ class PortfolioListMapper {
               }
 
               final kind = itemDto.kind?.toUpperCase();
-              final isDummy = kind == 'DUMMY' ||
+              final isDummy = itemDto.isDummy ||
+                  kind == 'DUMMY' ||
                   kind == 'DEMO' ||
                   name.toLowerCase().contains('demo');
               return PortfolioItem(

@@ -503,26 +503,40 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
                   }
                   return false;
                 },
-                child: Stack(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    PortfolioTabContentWidget(
-                      tabController: _tabController,
-                      currentPortfolioId: _currentPortfolioId!,
-                    ),
-                    if (widget.addTradeBuilder != null &&
-                        _tabController.index == 0)
-                      Positioned(
-                        bottom: 24,
-                        right: 16,
-                        child: AnimatedOpacity(
-                          opacity: _showScrollFab ? 1.0 : 0.0,
-                          duration: const Duration(milliseconds: 300),
-                          child: IgnorePointer(
-                            ignoring: !_showScrollFab,
-                            child: _buildGlassFab(),
-                          ),
-                        ),
+                    if (widget.portfolios != null &&
+                        widget.portfolios!.any((p) => p.isDummy))
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                        // Sticky row already has Doc Intel / Add — no second Upload.
+                        child: const DemoAccountInlineBanner(),
                       ),
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          PortfolioTabContentWidget(
+                            tabController: _tabController,
+                            currentPortfolioId: _currentPortfolioId!,
+                          ),
+                          if (widget.addTradeBuilder != null &&
+                              _tabController.index == 0)
+                            Positioned(
+                              bottom: 24,
+                              right: 16,
+                              child: AnimatedOpacity(
+                                opacity: _showScrollFab ? 1.0 : 0.0,
+                                duration: const Duration(milliseconds: 300),
+                                child: IgnorePointer(
+                                  ignoring: !_showScrollFab,
+                                  child: _buildGlassFab(),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),

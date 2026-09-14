@@ -43,8 +43,8 @@
     }
     #am-boot .brand {
       position: relative;
-      width: 136px;
-      height: 136px;
+      width: 200px;
+      height: 200px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -76,11 +76,15 @@
       animation: am-spin-rev 1.8s linear infinite;
     }
     #am-boot .logo {
-      width: 88px;
-      height: 88px;
+      width: 148px;
+      height: 96px;
       object-fit: contain;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 10px 14px;
+      box-sizing: border-box;
+      box-shadow: 0 0 18px rgba(29,233,182,0.18);
       animation: am-pulse 1.6s ease-in-out infinite alternate;
-      filter: drop-shadow(0 0 12px rgba(29,233,182,0.18));
     }
     #am-boot-msg {
       font-size: 17px;
@@ -127,7 +131,7 @@
       }
       #am-boot .ring-spin-inner { border-bottom-color: rgba(13,148,136,0.4); }
       #am-boot .logo {
-        filter: none;
+        box-shadow: 0 4px 16px rgba(15,23,42,0.08);
       }
       #am-boot-msg { color: #0f172a; }
       #am-boot-sub { color: #64748b; }
@@ -140,7 +144,7 @@
       <div class="ring"></div>
       <div class="ring-spin"></div>
       <div class="ring-spin-inner"></div>
-      <img class="logo" src="logos/app_logo_dark.png" alt="" width="88" height="88"
+      <img class="logo" src="logos/app_logo.png" alt="ASRAX" width="148" height="96"
            onerror="this.style.display='none'">
     </div>
     <p id="am-boot-msg">Loading AM Investment Platform…</p>
@@ -156,14 +160,6 @@
     (function () {
       var msg = document.getElementById('am-boot-msg');
       var sub = document.getElementById('am-boot-sub');
-      var logo = document.querySelector('#am-boot .logo');
-      var prefersLight = window.matchMedia &&
-        window.matchMedia('(prefers-color-scheme: light)').matches;
-      if (logo) {
-        logo.src = prefersLight
-          ? 'logos/app_logo_light.png'
-          : 'logos/app_logo_dark.png';
-      }
       if (msg && location.pathname.indexOf('/app/') === 0) {
         msg.textContent = 'Restoring your session…';
         if (sub) sub.textContent = 'Signing you back into AM securely';

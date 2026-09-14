@@ -1190,13 +1190,14 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _metric(
-                        icon: Icons.swap_horiz_rounded,
-                        iconColor: ModuleColors.trade,
-                        label: 'Trades',
-                        value: p.displayTotalTrades,
+                      Expanded(
+                        child: _metric(
+                          icon: Icons.swap_horiz_rounded,
+                          iconColor: ModuleColors.trade,
+                          label: 'Trades',
+                          value: p.displayTotalTrades,
+                        ),
                       ),
                       Container(
                           width: 1,
@@ -1205,16 +1206,18 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                               .colorScheme
                               .onSurface
                               .withValues(alpha: 0.08)),
-                      _metric(
-                        icon: Icons.trending_up_rounded,
-                        iconColor: p.isTradeProfit
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFFEF4444),
-                        label: 'Realized',
-                        value: p.displayNetProfitLoss,
-                        valueColor: p.isTradeProfit
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFFEF4444),
+                      Expanded(
+                        child: _metric(
+                          icon: Icons.trending_up_rounded,
+                          iconColor: p.isTradeProfit
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFFEF4444),
+                          label: 'Realized',
+                          value: p.displayNetProfitLoss,
+                          valueColor: p.isTradeProfit
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFFEF4444),
+                        ),
                       ),
                       Container(
                           width: 1,
@@ -1223,16 +1226,18 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                               .colorScheme
                               .onSurface
                               .withValues(alpha: 0.08)),
-                      _metric(
-                        icon: Icons.show_chart_rounded,
-                        iconColor: p.isProfit
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFFEF4444),
-                        label: 'Live P&L',
-                        value: p.displayGainLoss,
-                        valueColor: p.isProfit
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFFEF4444),
+                      Expanded(
+                        child: _metric(
+                          icon: Icons.show_chart_rounded,
+                          iconColor: p.isProfit
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFFEF4444),
+                          label: 'Live P&L',
+                          value: p.displayGainLoss,
+                          valueColor: p.isProfit
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFFEF4444),
+                        ),
                       ),
                       Container(
                           width: 1,
@@ -1241,11 +1246,13 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                               .colorScheme
                               .onSurface
                               .withValues(alpha: 0.08)),
-                      _metric(
-                        icon: Icons.check_circle_outline_rounded,
-                        iconColor: ModuleColors.trade,
-                        label: 'Closed Win Rate',
-                        value: p.displayWinRate,
+                      Expanded(
+                        child: _metric(
+                          icon: Icons.check_circle_outline_rounded,
+                          iconColor: ModuleColors.trade,
+                          label: 'Win Rate',
+                          value: p.displayWinRate,
+                        ),
                       ),
                     ],
                   ),
@@ -1352,32 +1359,33 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
     required String value,
     Color? valueColor,
   }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Transform.translate(
-              offset: const Offset(0, 1),
-              child: Icon(icon, size: 12, color: iconColor),
-            ),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.5),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 12, color: iconColor),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.5),
+                  ),
+                ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 3),
+            ],
+          ),
+          const SizedBox(height: 3),
           Text(
             value,
             style: TextStyle(
@@ -1387,9 +1395,9 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.left,
           ),
         ],
-      );
+      ),
+    );
   }
 }

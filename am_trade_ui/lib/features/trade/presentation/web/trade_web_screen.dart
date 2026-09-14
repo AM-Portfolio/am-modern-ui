@@ -543,6 +543,9 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
             if (isPaperSelected && paper != null) PaperWalletBanner(wallet: paper),
             Expanded(
               child: SwipeablePageView(
+                // Stable identity so OMS/stream rebuilds do not dispose
+                // AnimatedBuilder dependents mid-notify (InheritedNotifier assert).
+                key: const ValueKey('trade-swipeable-pages'),
                 controller: _swipeController,
                 showIndicator: false,
                 indicatorPosition: IndicatorPosition.bottom,
@@ -606,6 +609,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
               .showSnackBar(SnackBar(content: Text(toast)));
         },
         child: BlocBuilder<OmsCubit, OmsState>(
+          buildWhen: (prev, next) => prev.paperWallet != next.paperWallet,
           builder: (context, oms) => tree(
             mergePaperWallet(brokerPortfolios, oms.paperWallet),
             oms.paperWallet,

@@ -1,5 +1,33 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/color_extensions.dart';
+
+/// Resolves theme-aware shimmer / skeleton fill colors.
+({Color base, Color highlight}) skeletonShimmerColors(
+  BuildContext context, {
+  Color? accentColor,
+}) {
+  final colors = context.colors;
+  final isDark = context.isDark;
+  final accent = accentColor ?? colors.actionPrimaryBg;
+
+  final base = Color.lerp(
+        colors.scaffoldBackground,
+        colors.surface,
+        isDark ? 0.35 : 0.55,
+      ) ??
+      colors.surface;
+
+  final highlight = Color.lerp(
+        base,
+        accent,
+        isDark ? 0.28 : 0.18,
+      ) ??
+      accent.withValues(alpha: 0.35);
+
+  return (base: base, highlight: highlight);
+}
+
 /// A shimmer loading effect widget that can be used as a skeleton loader
 class ShimmerLoading extends StatefulWidget {
   final Widget child;
@@ -7,12 +35,16 @@ class ShimmerLoading extends StatefulWidget {
   final Color? baseColor;
   final Color? highlightColor;
 
+  /// Optional module/brand accent used when [highlightColor] is null.
+  final Color? accentColor;
+
   const ShimmerLoading({
     Key? key,
     required this.child,
     this.isLoading = true,
     this.baseColor,
     this.highlightColor,
+    this.accentColor,
   }) : super(key: key);
 
   @override
@@ -31,7 +63,7 @@ class _ShimmerLoadingState extends State<ShimmerLoading>
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     )..repeat();
-    
+
     _animation = Tween<double>(begin: -1.0, end: 2.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOutSine),
     );
@@ -49,13 +81,12 @@ class _ShimmerLoadingState extends State<ShimmerLoading>
       return widget.child;
     }
 
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    
-    final baseColor = widget.baseColor ?? 
-        (isDark ? Colors.grey[800]! : Colors.grey[300]!);
-    final highlightColor = widget.highlightColor ?? 
-        (isDark ? Colors.grey[700]! : Colors.grey[100]!);
+    final resolved = skeletonShimmerColors(
+      context,
+      accentColor: widget.accentColor,
+    );
+    final baseColor = widget.baseColor ?? resolved.base;
+    final highlightColor = widget.highlightColor ?? resolved.highlight;
 
     return AnimatedBuilder(
       animation: _animation,
@@ -91,25 +122,33 @@ class SkeletonBox extends StatelessWidget {
   final double? width;
   final double? height;
   final BorderRadius? borderRadius;
+  final Color? accentColor;
 
   const SkeletonBox({
     Key? key,
     this.width,
     this.height = 16,
     this.borderRadius,
+    this.accentColor,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final resolved = skeletonShimmerColors(
+      context,
+      accentColor: accentColor,
+    );
 
     return Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: isDark ? Colors.grey[800] : Colors.grey[300],
+        color: resolved.base,
         borderRadius: borderRadius ?? BorderRadius.circular(4),
+        border: Border.all(
+          color: (accentColor ?? context.colors.actionPrimaryBg)
+              .withValues(alpha: 0.12),
+        ),
       ),
     );
   }
@@ -118,11 +157,13 @@ class SkeletonBox extends StatelessWidget {
 class SkeletonLine extends StatelessWidget {
   final double? width;
   final double height;
+  final Color? accentColor;
 
   const SkeletonLine({
     Key? key,
     this.width,
     this.height = 16,
+    this.accentColor,
   }) : super(key: key);
 
   @override
@@ -131,16 +172,19 @@ class SkeletonLine extends StatelessWidget {
       width: width,
       height: height,
       borderRadius: BorderRadius.circular(8),
+      accentColor: accentColor,
     );
   }
 }
 
 class SkeletonAvatar extends StatelessWidget {
   final double size;
+  final Color? accentColor;
 
   const SkeletonAvatar({
     Key? key,
     this.size = 48,
+    this.accentColor,
   }) : super(key: key);
 
   @override
@@ -149,6 +193,7 @@ class SkeletonAvatar extends StatelessWidget {
       width: size,
       height: size,
       borderRadius: BorderRadius.circular(size / 2),
+      accentColor: accentColor,
     );
   }
 }
