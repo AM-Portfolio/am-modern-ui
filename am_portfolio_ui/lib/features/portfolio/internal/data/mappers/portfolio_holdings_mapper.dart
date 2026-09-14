@@ -18,6 +18,7 @@ class PortfolioHoldingsMapper {
       asOf: asOf,
       priceFreshness: apiModel.priceFreshness ?? 'AS_OF',
       priceSource: apiModel.priceSource,
+      sessionDate: apiModel.sessionDate,
     );
   }
 

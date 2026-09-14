@@ -22,6 +22,9 @@ abstract class PortfolioSummary with _$PortfolioSummary {
     required int gainersCount,
     required int losersCount,
     required DateTime lastUpdated,
+    DateTime? asOf,
+    @Default('AS_OF') String priceFreshness,
+    String? sessionDate,
     @Default([]) List<SectorAllocation> sectorAllocation,
     @Default([]) List<TopPerformer> topPerformers,
     @Default([]) List<TopPerformer> worstPerformers,
@@ -47,7 +50,23 @@ abstract class PortfolioSummary with _$PortfolioSummary {
     gainersCount: 0,
     losersCount: 0,
     lastUpdated: DateTime.now(),
+    priceFreshness: 'AS_OF',
   );
+
+  bool get isLivePrices => priceFreshness == 'LIVE';
+
+  String get priceLabel {
+    if (isLivePrices) return 'Live';
+    final stamp = asOf ?? lastUpdated;
+    final hh = stamp.hour.toString().padLeft(2, '0');
+    final mm = stamp.minute.toString().padLeft(2, '0');
+    final datePart = (sessionDate != null && sessionDate!.isNotEmpty)
+        ? sessionDate!
+        : '${stamp.year.toString().padLeft(4, '0')}-'
+            '${stamp.month.toString().padLeft(2, '0')}-'
+            '${stamp.day.toString().padLeft(2, '0')}';
+    return 'As of $datePart $hh:$mm';
+  }
 
   /// Check if portfolio is profitable
   bool get isProfitable => totalGainLoss >= 0;

@@ -69,6 +69,7 @@ abstract class PortfolioHoldings with _$PortfolioHoldings {
     DateTime? asOf,
     @Default('AS_OF') String priceFreshness,
     String? priceSource,
+    String? sessionDate,
   }) = _PortfolioHoldings;
   const PortfolioHoldings._();
 
@@ -88,7 +89,12 @@ abstract class PortfolioHoldings with _$PortfolioHoldings {
     final stamp = asOf ?? lastUpdated;
     final hh = stamp.hour.toString().padLeft(2, '0');
     final mm = stamp.minute.toString().padLeft(2, '0');
-    return 'As of $hh:$mm';
+    final datePart = (sessionDate != null && sessionDate!.isNotEmpty)
+        ? sessionDate!
+        : '${stamp.year.toString().padLeft(4, '0')}-'
+            '${stamp.month.toString().padLeft(2, '0')}-'
+            '${stamp.day.toString().padLeft(2, '0')}';
+    return 'As of $datePart $hh:$mm';
   }
 
   /// Check if portfolio is empty

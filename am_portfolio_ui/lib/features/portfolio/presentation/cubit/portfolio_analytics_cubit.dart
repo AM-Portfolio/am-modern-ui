@@ -205,7 +205,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
             return;
           }
         } catch (e) {
-          CommonLogger.warn(
+          CommonLogger.warning(
             'Movers fallback fetch failed: $e',
             tag: 'PortfolioAnalyticsCubit',
           );

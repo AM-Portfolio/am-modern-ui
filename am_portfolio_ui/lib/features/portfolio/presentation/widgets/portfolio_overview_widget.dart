@@ -323,6 +323,19 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: Text(
+                              state.summary.priceLabel,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.65),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                            ),
+                          ),
                           // ── ROW 1: 4 Metric Cards ──────────────────────────
                           if (isPhone)
                             Builder(
@@ -731,7 +744,8 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
       PortfolioMetricCard(
         title: 'Total Balance',
         value: _formatCurrency(summaryToUse.totalValue),
-        subtitle: '${summaryToUse.totalAssets} Active Holdings',
+        subtitle:
+            '${summaryToUse.priceLabel} · ${summaryToUse.totalAssets} holdings',
         accentColor: modulePink,
         icon: null,
         isPositive: null,

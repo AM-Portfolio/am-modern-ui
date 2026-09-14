@@ -9,6 +9,7 @@ class PortfolioHoldingsDto {
     this.asOf,
     this.priceFreshness,
     this.priceSource,
+    this.sessionDate,
   });
 
   /// Create from JSON response
@@ -20,6 +21,7 @@ class PortfolioHoldingsDto {
         asOf: json['asOf'] as String?,
         priceFreshness: json['priceFreshness'] as String?,
         priceSource: json['priceSource'] as String?,
+        sessionDate: json['sessionDate'] as String?,
       );
 
   /// List of equity holdings from API
@@ -27,6 +29,7 @@ class PortfolioHoldingsDto {
   final String? asOf;
   final String? priceFreshness;
   final String? priceSource;
+  final String? sessionDate;
 
   /// Convert to JSON for API requests
   Map<String, dynamic> toJson() => {
@@ -34,6 +37,7 @@ class PortfolioHoldingsDto {
     if (asOf != null) 'asOf': asOf,
     if (priceFreshness != null) 'priceFreshness': priceFreshness,
     if (priceSource != null) 'priceSource': priceSource,
+    if (sessionDate != null) 'sessionDate': sessionDate,
   };
 }
 
