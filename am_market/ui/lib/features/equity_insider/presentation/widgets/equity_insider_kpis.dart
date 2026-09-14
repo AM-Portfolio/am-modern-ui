@@ -310,7 +310,7 @@ class EquityInsiderKpis extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  'computed using $exchange LTP',
+                  exchange,
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,

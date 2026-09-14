@@ -45,6 +45,24 @@ class RecentlyViewedStocksNotifier extends Notifier<List<String>> {
   }
 }
 
+/// Fetches dynamic stock recommendations from security search API.
+final dynamicStockRecommendationsProvider = FutureProvider<List<String>>((ref) async {
+  final sdkService = MarketDataSdkService();
+  try {
+    final results = await sdkService.securityApi.search(
+      '',
+      smartRecommendations: true,
+      category: 'STOCKS',
+      limit: 8,
+    );
+    if (results != null && results.isNotEmpty) {
+      final symbols = results.map((d) => d.key?.symbol).whereType<String>().where((s) => s.isNotEmpty).toList();
+      if (symbols.isNotEmpty) return symbols;
+    }
+  } catch (_) {}
+  return const [];
+});
+
 /// Active selected exchange provider ('NSE' vs 'BSE')
 final selectedExchangeProvider =
     NotifierProvider<SelectedExchangeNotifier, String>(

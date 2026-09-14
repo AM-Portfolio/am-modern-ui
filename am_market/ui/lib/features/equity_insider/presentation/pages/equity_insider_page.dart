@@ -66,16 +66,7 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
     }
   }
 
-  static const List<String> _typewriterHints = [
-    'HDFC',
-    'TCS',
-    'RELIANCE',
-    'INFY',
-    'ICICIBANK',
-    'WIPRO',
-    'TATAMOTORS',
-    'BHARTIARTL',
-  ];
+
 
   void navigateToSymbol(String newSymbol) {
     final text = newSymbol.trim().toUpperCase();
@@ -143,7 +134,7 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
     return EquityInsiderEmptyView(
       controller: _controller,
       sdkService: _sdkService,
-      typewriterHints: _typewriterHints,
+      typewriterHints: const [],
       onSelectSymbol: navigateToSymbol,
       onSearch: _search,
     );

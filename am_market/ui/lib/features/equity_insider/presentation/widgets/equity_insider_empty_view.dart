@@ -29,6 +29,15 @@ class EquityInsiderEmptyView extends StatelessWidget {
     return Consumer(
       builder: (context, ref, _) {
         final recent = ref.watch(recentlyViewedStocksProvider);
+        final recommendationsAsync = ref.watch(dynamicStockRecommendationsProvider);
+        final rawSymbols = recommendationsAsync.maybeWhen(
+          data: (d) => d,
+          orElse: () => const <String>[],
+        );
+        final recSymbols = rawSymbols.isNotEmpty
+            ? rawSymbols.take(6).toList()
+            : const ['RELIANCE', 'TCS', 'HDFCBANK', 'ICICIBANK', 'INFY', 'BHARTIARTL'];
+        final animatedHints = recSymbols.map((s) => 'Search "$s"...').toList();
 
         return Center(
           child: SingleChildScrollView(
@@ -82,7 +91,7 @@ class EquityInsiderEmptyView extends StatelessWidget {
                   const SizedBox(height: 28),
                   SmartSearchAnchor(
                     controller: controller,
-                    animatedHints: typewriterHints,
+                    animatedHints: animatedHints,
                     recentSearches: recent,
                     onRemoveRecent: (sym) {
                       ref.read(recentlyViewedStocksProvider.notifier).removeView(sym);
@@ -102,32 +111,34 @@ class EquityInsiderEmptyView extends StatelessWidget {
                     },
                     onSubmit: onSearch,
                   ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    alignment: WrapAlignment.center,
-                    children: ['TCS', 'RELIANCE', 'INFY', 'HDFCBANK', 'WIPRO', 'RAILTEL']
-                        .map(
-                          (s) => ActionChip(
-                            label: Text(
-                              s,
-                              style: TextStyle(
-                                color: context.colors.textPrimary,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
+                  if (recSymbols.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.center,
+                      children: recSymbols
+                          .map(
+                            (s) => ActionChip(
+                              label: Text(
+                                s,
+                                style: TextStyle(
+                                  color: context.colors.textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
                               ),
+                              backgroundColor: context.colors.cardSurface,
+                              side: BorderSide(color: context.colors.border),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              onPressed: () {
+                                onSelectSymbol(s);
+                              },
                             ),
-                            backgroundColor: context.colors.cardSurface,
-                            side: BorderSide(color: context.colors.border),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            onPressed: () {
-                              onSelectSymbol(s);
-                            },
-                          ),
-                        )
-                        .toList(),
-                  ),
+                          )
+                          .toList(),
+                    ),
+                  ],
                 ],
               ),
             ),

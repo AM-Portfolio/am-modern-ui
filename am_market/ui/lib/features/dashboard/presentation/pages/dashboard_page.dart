@@ -25,6 +25,7 @@ import 'user_dashboard_page.dart';
 import 'package:am_market_ui/features/market_analysis/presentation/widgets/heatmap_explorer_view.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_market_ui/features/equity_insider/presentation/pages/equity_insider_page.dart';
+import 'package:am_market_ui/features/f_o/presentation/pages/fo_page.dart';
 
 /// Market feature page with Swipe Navigation
 class MarketPage extends StatelessWidget {
@@ -145,6 +146,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     'Dashboard': 'dashboard',
     'Heatmap Explorer': 'heatmap-explorer',
     'Equity Insider': 'equity-insider',
+    'Futures & Options': 'futures-options',
     'Watch List': 'watch-list',
   };
 
@@ -277,14 +279,15 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         viewModeProvider,
         includeAllIndices: isMobile,
       );
-      if (_hasItemsChanged(newItems)) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
+      final itemsChanged = _hasItemsChanged(newItems);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          if (itemsChanged) {
             _swipeController.updateItems(newItems);
-            _syncTabFromUrl(isMobile: isMobile);
           }
-        });
-      }
+          _syncTabFromUrl(isMobile: isMobile);
+        }
+      });
 
       return UnifiedSidebarScaffold(
         module: ModuleType.market,
@@ -400,9 +403,15 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         Icons.insights_rounded,
         'Fundamental analysis',
       ),
+      _createSidebarItem(
+        includeAllIndices ? 8 : 7,
+        'Futures & Options',
+        Icons.candlestick_chart_rounded,
+        'F&O contracts & chain',
+      ),
       if (widget.paperDesk != null)
         _createSidebarItem(
-          includeAllIndices ? 8 : 7,
+          includeAllIndices ? 9 : 8,
           'Paper',
           Icons.science_outlined,
           'Paper trading desk',
@@ -416,7 +425,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         provider.availableIndices?.broad.take(5).length ?? 0;
     final indexItems = <SecondarySidebarItem>[];
     if (provider.availableIndices != null) {
-      var baseIndex = 7 + allIndicesOffset + paperOffset;
+      var baseIndex = 8 + allIndicesOffset + paperOffset;
       for (final indexName in provider.availableIndices!.broad.take(5)) {
         final i = baseIndex;
         indexItems.add(
@@ -438,7 +447,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
       }
     }
 
-    final adminIndex = 7 + allIndicesOffset + paperOffset + dynamicIndicesCount;
+    final adminIndex = 8 + allIndicesOffset + paperOffset + dynamicIndicesCount;
     final developerIndex = adminIndex + 1;
 
     final adminItem = SecondarySidebarItem(
@@ -500,6 +509,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
       _createSidebarItem(i++, 'Dashboard', Icons.home_rounded, 'Overview'),
       _createSidebarItem(i++, 'Market Analysis', Icons.analytics_rounded, 'Detailed charts'),
       _createSidebarItem(i++, 'Equity Insider', Icons.insights_rounded, 'Fundamental analysis'),
+      _createSidebarItem(i++, 'Futures & Options', Icons.candlestick_chart_rounded, 'F&O contracts & chain'),
       _createSidebarItem(i++, 'Watch List', Icons.star_border_rounded, 'Custom tracking'),
     ];
 
@@ -609,6 +619,13 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         page: _wrapPage(EquityInsiderPage(key: _equityInsiderKey)),
         accentColor: accentColor,
       ),
+      NavigationItem(
+        title: 'Futures & Options',
+        subtitle: 'Futures and Options',
+        icon: Icons.candlestick_chart_rounded,
+        page: _wrapPage(const FoPage()),
+        accentColor: accentColor,
+      ),
     ];
 
     final paperDesk = widget.paperDesk;
@@ -710,6 +727,13 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         subtitle: 'Fundamental analysis',
         icon: Icons.insights_rounded,
         page: _wrapPage(EquityInsiderPage(key: _equityInsiderKey)),
+        accentColor: accentColor,
+      ),
+      NavigationItem(
+        title: 'Futures & Options',
+        subtitle: 'F&O contracts & chain',
+        icon: Icons.candlestick_chart_rounded,
+        page: _wrapPage(const FoPage()),
         accentColor: accentColor,
       ),
       NavigationItem(
