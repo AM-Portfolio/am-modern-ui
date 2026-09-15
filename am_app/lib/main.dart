@@ -8,6 +8,7 @@ import 'package:get_it/get_it.dart';
 import 'url_strategy_noop.dart'
     if (dart.library.html) 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:am_common/am_common.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 import 'core/di/injection.dart';
 import 'app.dart';
@@ -152,23 +153,27 @@ class _BootstrapAppState extends State<_BootstrapApp> {
         final path = widget.launchUri?.path ?? '';
         final restoring = path.startsWith('/app/');
         // Avoid MaterialApp(home:) — it can clobber the browser URL to `/`.
+        // Theme follows OS so dark/light monograms resolve correctly pre-app.
+        final brightness =
+            WidgetsBinding.instance.platformDispatcher.platformBrightness;
         return Directionality(
           textDirection: TextDirection.ltr,
-          child: Material(
-            color: const Color(0xFF0B1120),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const CircularProgressIndicator(color: Color(0xFF6366F1)),
-                  const SizedBox(height: 20),
-                  Text(
-                    restoring
-                        ? 'Restoring your session…'
-                        : 'Starting AM Investment Platform…',
-                    style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 16),
-                  ),
-                ],
+          child: Theme(
+            data: ThemeData(
+              brightness: brightness,
+              useMaterial3: true,
+            ),
+            child: Material(
+              child: AmSessionStatusView(
+                title: restoring
+                    ? 'Restoring your session…'
+                    : 'Starting AM Investment Platform…',
+                subtitle: restoring
+                    ? 'Signing you back into AM securely'
+                    : 'Preparing your workspace',
+                tone: restoring
+                    ? AmSessionStatusTone.restoring
+                    : AmSessionStatusTone.starting,
               ),
             ),
           ),

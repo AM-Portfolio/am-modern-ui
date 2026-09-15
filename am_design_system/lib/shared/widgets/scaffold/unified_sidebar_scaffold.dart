@@ -354,9 +354,9 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
     final fillTrack = items.length <= 6;
     final selectedIndex = items.indexWhere((item) => item.isSelected);
     final selectedKey = GlobalKey();
-    // Compact track — between the old thin bar and bottom nav (68).
-    const trackHeight = 48.0;
-    const segmentHeight = 40.0;
+    // Taller track so label sits above icon (not cramped side-by-side).
+    const trackHeight = 58.0;
+    const segmentHeight = 50.0;
     final manyTabs = items.length >= 6;
 
     if (selectedIndex >= 0 && selectedIndex != _lastEnsuredMobileTabIndex) {
@@ -377,6 +377,12 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
     Widget buildSegment(SecondarySidebarItem item, {Key? key}) {
       final isSelected = item.isSelected;
       final itemColor = item.accentColor ?? _resolvedColor;
+      final fg = isSelected
+          ? Colors.white
+          : (isDark ? Colors.white70 : Colors.black87);
+      final iconFg = isSelected
+          ? Colors.white
+          : (isDark ? Colors.white70 : Colors.black54);
 
       return GestureDetector(
         key: key,
@@ -388,7 +394,8 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
           height: segmentHeight,
           margin: const EdgeInsets.symmetric(horizontal: 1),
           padding: EdgeInsets.symmetric(
-            horizontal: fillTrack ? 8 : (manyTabs ? 11 : 14),
+            horizontal: fillTrack ? 4 : (manyTabs ? 10 : 12),
+            vertical: 4,
           ),
           decoration: BoxDecoration(
             color: isSelected
@@ -405,46 +412,29 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
                   ]
                 : null,
           ),
-          child: Row(
+          // Stack like global bottom nav: label above, icon below — not side-by-side.
+          child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: fillTrack ? MainAxisSize.max : MainAxisSize.min,
+            mainAxisSize: MainAxisSize.max,
             children: [
+              Text(
+                item.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: manyTabs ? 9.5 : 10.5,
+                  height: 1.05,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                  color: fg,
+                ),
+              ),
+              const SizedBox(height: 3),
               Icon(
                 item.icon,
-                size: 17,
-                color: isSelected
-                    ? Colors.white
-                    : (isDark ? Colors.white70 : Colors.black54),
+                size: manyTabs ? 16 : 18,
+                color: iconFg,
               ),
-              const SizedBox(width: 5),
-              if (fillTrack)
-                Flexible(
-                  child: Text(
-                    item.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight:
-                          isSelected ? FontWeight.w700 : FontWeight.w600,
-                      color: isSelected
-                          ? Colors.white
-                          : (isDark ? Colors.white70 : Colors.black87),
-                    ),
-                  ),
-                )
-              else
-                Text(
-                  item.title,
-                  maxLines: 1,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                    color: isSelected
-                        ? Colors.white
-                        : (isDark ? Colors.white70 : Colors.black87),
-                  ),
-                ),
             ],
           ),
         ),
@@ -572,22 +562,22 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
         }
 
         // Desktop / Tablet Layout
-        final isCompact = _resolveCompact(isTablet);
+        final targetCompact = _resolveCompact(isTablet);
         final targetWidth =
-            isCompact ? widget.compactWidth : widget.fullWidth;
+            targetCompact ? widget.compactWidth : widget.fullWidth;
 
         if (_lastTargetWidth != targetWidth) {
           _lastTargetWidth = targetWidth;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted || _animationController.isAnimating) return;
             _animationController.animateTo(
-              isCompact ? 0.0 : 1.0,
+              targetCompact ? 0.0 : 1.0,
               duration: const Duration(milliseconds: 300),
             );
           });
         }
 
-        // Background Decoration (Glass vs Solid)
+        // Background Decorations (Glass vs Solid)
         final bgDecoration = widget.enableGlass
             ? AppGlassmorphismV2.techBackground(isDark: widget.isDark)
             : BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor);
@@ -599,15 +589,19 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
 
         final desktopStack = AnimatedBuilder(
           animation: _widthAnimation,
-          builder: (context, _) {
+          builder: (context, child) {
             final sidebarWidth = _widthAnimation.value;
+            // Track chrome with width mid-tween so labels do not snap on tap.
+            final isCompact = _animationController.value < 0.5;
             return _buildDesktopStack(
               bgDecoration: bgDecoration,
               bodyColor: bodyColor,
               sidebarWidth: sidebarWidth,
               isCompact: isCompact,
+              body: child!,
             );
           },
+          child: widget.body,
         );
 
         return Scaffold(
@@ -629,6 +623,7 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
     required Color bodyColor,
     required double sidebarWidth,
     required bool isCompact,
+    required Widget body,
   }) {
     return Container(
       decoration: bgDecoration,
@@ -648,7 +643,7 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
             child: Container(
               clipBehavior: Clip.hardEdge,
               decoration: BoxDecoration(color: bodyColor),
-              child: widget.body,
+              child: body,
             ),
           ),
         ],

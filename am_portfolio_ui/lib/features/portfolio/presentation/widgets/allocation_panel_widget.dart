@@ -13,12 +13,14 @@ class AllocationPanelWidget extends StatefulWidget {
     this.holdings,
     this.isLoading = false,
     this.error,
+    this.onRetry,
   });
   final SectorAllocation? sectorAllocation;
   final MarketCapAllocation? marketCapAllocation;
   final List<PortfolioHolding>? holdings;
   final bool isLoading;
   final String? error;
+  final VoidCallback? onRetry;
 
   @override
   State<AllocationPanelWidget> createState() => _AllocationPanelWidgetState();
@@ -249,7 +251,16 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
                   style: TextStyle(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 12),
-                  textAlign: TextAlign.center),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis),
+              if (widget.onRetry != null) ...[
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: widget.onRetry,
+                  child: const Text('Retry'),
+                ),
+              ],
             ],
           ),
         ),
@@ -843,16 +854,7 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
   }
 }
 
-const List<Color> _kRainbowPalette = [
-  Color(0xFF00B894),
-  Color(0xFFFF7675),
-  Color(0xFF60A5FA),
-  Color(0xFFFBBF24),
-  Color(0xFFF472B6),
-  Color(0xFF34D399),
-  Color(0xFFA78BFA),
-  Color(0xFFFB923C),
-];
+const List<Color> _kRainbowPalette = IntelligenceColors.chartPalette;
 
 class _GlowingDonutPainter extends CustomPainter {
   final List<SectorWeight> sectorWeights;

@@ -14,7 +14,6 @@ import 'pages/portfolio_holdings_web_page.dart';
 import 'pages/portfolio_heatmap_web_page.dart';
 import 'pages/portfolio_baskets_web_page.dart';
 import 'package:am_user_ui/am_user_ui.dart';
-import '../widgets/demo_portfolio_banner.dart';
 
 /// Web-specific portfolio screen implementation
 class PortfolioWebScreen extends ConsumerStatefulWidget {
@@ -30,6 +29,7 @@ class PortfolioWebScreen extends ConsumerStatefulWidget {
     this.onToggleSidebar,
     this.onBack,
     this.addTradeBuilder,
+    this.holdingsPageBuilder,
     this.onOpenDocIntel,
   });
   final String? selectedPortfolioId;
@@ -42,6 +42,8 @@ class PortfolioWebScreen extends ConsumerStatefulWidget {
   final VoidCallback? onToggleSidebar;
   final VoidCallback? onBack;
   final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
+  /// Optional web Holdings tab body (e.g. Trade holdings dashboard from am_app).
+  final Widget Function(BuildContext context, String portfolioId)? holdingsPageBuilder;
   final VoidCallback? onOpenDocIntel;
 
   @override
@@ -159,9 +161,10 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         subtitle: 'Assets',
         icon: Icons.account_balance_wallet_outlined,
         accentColor: ModuleColors.portfolio,
-        page: PortfolioHoldingsWebPage(
-          portfolioId: portfolioId,
-        ),
+        page: widget.holdingsPageBuilder?.call(context, portfolioId) ??
+            PortfolioHoldingsWebPage(
+              portfolioId: portfolioId,
+            ),
       ),
       NavigationItem(
         title: 'Heatmap',
@@ -237,16 +240,21 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Show demo portfolio banner if the active portfolio is the shared demo
-            if (widget.portfolios != null &&
-                widget.portfolios!.any((p) => p.isDummy))
-              DemoPortfolioBanner(onUploadPortfolio: widget.onOpenDocIntel),
-            if (currentIndex == 0)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Row(
+                children: [
+                  if (widget.portfolios != null &&
+                      widget.portfolios!.any((p) => p.isDummy))
+                    Expanded(
+                      child: DemoAccountInlineBanner(
+                        onUploadPortfolio: widget.onOpenDocIntel,
+                      ),
+                    )
+                  else
+                    const Spacer(),
+                  if (currentIndex == 0) ...[
+                    const SizedBox(width: 12),
                     Consumer(
                       builder: (context, ref, _) {
                         final selected = ref.watch(appTimeFrameProvider);
@@ -276,8 +284,9 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
                       },
                     ),
                   ],
-                ),
+                ],
               ),
+            ),
             Expanded(
               child: (_isAddingTrade && widget.addTradeBuilder != null && _currentPortfolioId != null)
                   ? widget.addTradeBuilder!(

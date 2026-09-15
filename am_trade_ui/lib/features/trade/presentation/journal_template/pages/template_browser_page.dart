@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -223,7 +224,7 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
         color: Theme.of(context).colorScheme.surface.withOpacity(0.7),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: context.shadow(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),

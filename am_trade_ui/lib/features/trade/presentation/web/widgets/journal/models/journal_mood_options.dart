@@ -3,41 +3,94 @@ import 'package:am_design_system/am_design_system.dart';
 
 class JournalMoodOptions {
   static Map<String, Map<String, dynamic>> getMoods(BuildContext context) => {
-    'confident': {'emoji': '😊', 'label': 'Confident', 'color': context.colors.statusSuccess},
-    'neutral': {'emoji': '😐', 'label': 'Neutral', 'color': context.colors.statusNeutral},
-    'anxious': {'emoji': '😰', 'label': 'Anxious', 'color': context.colors.statusWarning},
-    'frustrated': {'emoji': '😤', 'label': 'Frustrated', 'color': context.colors.statusError},
-    'focused': {'emoji': '🎯', 'label': 'Focused', 'color': ModuleColors.trade},
-    'tired': {'emoji': '😴', 'label': 'Tired', 'color': context.colors.border}, // Fallback for purple
-  };
+        'confident': {
+          'emoji': '😊',
+          'label': 'Confident',
+          'color': context.colors.statusSuccess,
+        },
+        'neutral': {
+          'emoji': '😐',
+          'label': 'Neutral',
+          'color': context.colors.statusNeutral,
+        },
+        'anxious': {
+          'emoji': '😰',
+          'label': 'Anxious',
+          'color': context.colors.statusWarning,
+        },
+        'frustrated': {
+          'emoji': '😤',
+          'label': 'Frustrated',
+          'color': context.colors.statusError,
+        },
+        'focused': {
+          'emoji': '🎯',
+          'label': 'Focused',
+          'color': ModuleColors.trade,
+        },
+        'tired': {
+          'emoji': '😴',
+          'label': 'Tired',
+          'color': context.colors.border,
+        },
+      };
 
-  static Map<String, Map<String, dynamic>> getSentiments(BuildContext context) => {
-    'very_bearish': {'icon': Icons.trending_down, 'label': 'Very Bearish', 'color': context.colors.statusError},
-    'bearish': {'icon': Icons.south_east, 'label': 'Bearish', 'color': context.colors.statusWarning},
-    'neutral': {'icon': Icons.remove, 'label': 'Neutral', 'color': context.colors.statusNeutral},
-    'bullish': {'icon': Icons.north_east, 'label': 'Bullish', 'color': context.colors.statusSuccess},
-    'very_bullish': {'icon': Icons.trending_up, 'label': 'Very Bullish', 'color': context.colors.statusSuccess},
-  };
+  static Map<String, Map<String, dynamic>> getSentiments(BuildContext context) =>
+      {
+        'very_bearish': {
+          'icon': Icons.trending_down,
+          'label': 'Very Bearish',
+          'color': context.colors.statusError,
+        },
+        'bearish': {
+          'icon': Icons.south_east,
+          'label': 'Bearish',
+          'color': context.colors.statusWarning,
+        },
+        'neutral': {
+          'icon': Icons.remove,
+          'label': 'Neutral',
+          'color': context.colors.statusNeutral,
+        },
+        'bullish': {
+          'icon': Icons.north_east,
+          'label': 'Bullish',
+          'color': context.colors.statusSuccess,
+        },
+        'very_bullish': {
+          'icon': Icons.trending_up,
+          'label': 'Very Bullish',
+          'color': context.colors.statusSuccess,
+        },
+      };
 
   static List<Map<String, dynamic>> getTags(BuildContext context) => [
-    {'label': 'Breakout', 'color': ModuleColors.trade},
-    {'label': 'Breakdown', 'color': context.colors.statusError},
-    {'label': 'Profit', 'color': context.colors.statusSuccess},
-    {'label': 'Loss', 'color': context.colors.statusError},
-    {'label': 'Lesson', 'color': ModuleColors.trade},
-    {'label': 'Mistake', 'color': context.colors.statusWarning},
-    {'label': 'Good Entry', 'color': context.colors.statusSuccess},
-    {'label': 'Bad Entry', 'color': context.colors.statusError},
-    {'label': 'Patience', 'color': context.colors.statusNeutral},
-    {'label': 'FOMO', 'color': context.colors.statusError},
-    {'label': 'Revenge', 'color': context.colors.statusError},
-    {'label': 'Discipline', 'color': ModuleColors.trade},
-    {'label': 'Analysis', 'color': ModuleColors.trade},
-    {'label': 'Pattern', 'color': context.colors.statusWarning},
-    {'label': 'Support/Resistance', 'color': ModuleColors.trade},
-  ];
+        {'label': 'Breakout', 'color': ModuleColors.trade},
+        {'label': 'Pullback', 'color': context.colors.statusSuccess},
+        {'label': 'Reversal', 'color': context.colors.statusWarning},
+        {'label': 'Swing', 'color': context.colors.statusSuccess},
+        {'label': 'Scalp', 'color': context.colors.statusError},
+        {'label': 'Intraday', 'color': ModuleColors.trade},
+        {'label': 'Equity', 'color': ModuleColors.dashboard},
+        {'label': 'Options', 'color': ModuleColors.trade},
+        {'label': 'OR', 'color': ModuleColors.market},
+        {'label': 'Daily Routine', 'color': context.colors.statusNeutral},
+        {'label': 'Breakdown', 'color': context.colors.statusError},
+        {'label': 'Profit', 'color': context.colors.statusSuccess},
+        {'label': 'Loss', 'color': context.colors.statusError},
+        {'label': 'Lesson', 'color': ModuleColors.trade},
+        {'label': 'Mistake', 'color': context.colors.statusWarning},
+        {'label': 'Good Entry', 'color': context.colors.statusSuccess},
+        {'label': 'Bad Entry', 'color': context.colors.statusError},
+        {'label': 'Patience', 'color': context.colors.statusNeutral},
+        {'label': 'FOMO', 'color': context.colors.statusError},
+        {'label': 'Revenge', 'color': context.colors.statusError},
+        {'label': 'Discipline', 'color': ModuleColors.trade},
+        {'label': 'Analysis', 'color': ModuleColors.trade},
+        {'label': 'Pattern', 'color': context.colors.statusWarning},
+        {'label': 'Support/Resistance', 'color': ModuleColors.trade},
+      ];
 
-  // Helper properties to access without context if color is not needed
   static const Map<String, Map<String, dynamic>> moodsStatic = {
     'confident': {'emoji': '😊', 'label': 'Confident'},
     'neutral': {'emoji': '😐', 'label': 'Neutral'},

@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:intl/intl.dart';
 import '../../providers/equity_insider_provider.dart';
-
+import '../../../../features/watchlists/providers/watchlist_provider.dart';
+import '../../../../features/watchlists/presentation/widgets/add_to_watchlist_popup.dart';
 class EquityInsiderHero extends ConsumerWidget {
   final String symbol;
   final VoidCallback? onSearchTap;
@@ -99,7 +100,7 @@ class EquityInsiderHero extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    _buildWatchlistButton(context),
+                    _buildWatchlistButton(context, ref),
                   ],
                 ),
               ],
@@ -181,33 +182,85 @@ class EquityInsiderHero extends ConsumerWidget {
     );
   }
 
-  Widget _buildWatchlistButton(BuildContext context) {
-    return SizedBox(
-      height: 28,
-      child: OutlinedButton.icon(
-        onPressed: () {
-          // TODO: Wire to watchlist provider
-        },
-        icon: Icon(Icons.add, size: 14, color: ModuleColors.market),
-        label: Text(
-          'Add to Watchlist',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: ModuleColors.market,
+  Widget _buildWatchlistButton(BuildContext context, WidgetRef ref) {
+    final statusAsync = ref.watch(watchlistCheckStatusProvider(symbol));
+
+    return statusAsync.when(
+      data: (statuses) {
+        final isAdded = statuses.any((s) => s.containsSymbol);
+        final addedToWatchlistName = isAdded ? statuses.firstWhere((s) => s.containsSymbol).name : '';
+
+        if (isAdded) {
+          return SizedBox(
+            height: 28,
+            child: FilledButton.icon(
+              onPressed: () async {
+                // Check if they want to manage it
+                final confirm = await ConfirmationDialog.show(
+                  context: context,
+                  title: 'Remove Stock',
+                  subtitle: 'Watchlist Management',
+                  message: 'Are you sure you want to remove $symbol from $addedToWatchlistName?',
+                  icon: Icons.bookmark_remove_rounded,
+                  confirmText: 'Remove',
+                  isDestructive: true,
+                );
+                if (confirm) {
+                  final wid = statuses.firstWhere((s) => s.containsSymbol).watchlistId;
+                  ref.read(watchlistsProvider.notifier).removeStock(wid, symbol);
+                  ref.refresh(watchlistCheckStatusProvider(symbol));
+                }
+              },
+              icon: const Icon(Icons.bookmark_added_rounded, size: 14, color: Colors.white),
+              label: const Text(
+                'Already Added',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+              style: FilledButton.styleFrom(
+                backgroundColor: ModuleColors.market,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ),
+            ),
+          );
+        }
+
+        return SizedBox(
+          height: 28,
+          child: OutlinedButton.icon(
+            onPressed: () {
+              AddToWatchlistPopup.show(context, symbol);
+            },
+            icon: Icon(Icons.add, size: 14, color: ModuleColors.market),
+            label: Text(
+              'Add to Watchlist',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: ModuleColors.market,
+              ),
+            ),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+              side: BorderSide(
+                color: ModuleColors.market.withValues(alpha: 0.4),
+                width: 1,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
           ),
-        ),
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-          side: BorderSide(
-            color: ModuleColors.market.withValues(alpha: 0.4),
-            width: 1,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(6),
-          ),
-        ),
-      ),
+        );
+      },
+      loading: () => const SizedBox(height: 28, width: 100, child: Center(child: CircularProgressIndicator())),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 

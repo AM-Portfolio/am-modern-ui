@@ -12,18 +12,22 @@ import 'package:am_market_ui/features/dashboard/presentation/pages/dashboard_pag
     deferred as market_ui;
 import 'package:am_market_ui/features/market_analysis/services/market_analysis_service.dart'
     deferred as market_deps;
+import 'package:am_paper_ui/am_paper_ui.dart' deferred as paper_ui;
 import 'package:am_portfolio_ui/features/portfolio/presentation/pages/portfolio_screen.dart'
     deferred as portfolio_pages;
 import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/global_portfolio_wrapper.dart'
     deferred as portfolio_shell;
 import 'package:am_trade_ui/features/trade/presentation/add_trade/pages/add_trade_web_page.dart'
     deferred as trade_add;
+import 'package:am_trade_ui/features/trade/presentation/holdings/pages/trade_holdings_dashboard_web_page.dart'
+    deferred as trade_holdings;
 import 'package:am_trade_ui/features/trade/presentation/trade_responsive_layout.dart'
     deferred as trade_ui;
 import 'package:am_trade_ui/features/trade/providers/trade_controller_providers.dart'
     deferred as trade_providers;
 import 'package:am_user_ui/am_user_ui.dart' deferred as user_ui;
 import 'package:am_subscription_ui/am_subscription_ui.dart' as am_sub;
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -46,6 +50,7 @@ Future<void> _loadPortfolio() async {
     _loadPortfolioLibraries(),
     trade_ui.loadLibrary(),
     trade_add.loadLibrary(),
+    trade_holdings.loadLibrary(),
     trade_providers.loadLibrary(),
   ]);
 }
@@ -55,6 +60,11 @@ typedef PortfolioAddTradeBuilder = Widget Function(
   String portfolioId,
   String? portfolioName,
   VoidCallback onComplete,
+);
+
+typedef PortfolioHoldingsPageBuilder = Widget Function(
+  BuildContext context,
+  String portfolioId,
 );
 
 Widget _defaultPortfolioAddTradeBuilder(
@@ -83,6 +93,17 @@ Widget _defaultPortfolioAddTradeBuilder(
   );
 }
 
+Widget _defaultPortfolioHoldingsPageBuilder(
+  BuildContext context,
+  String portfolioId,
+) {
+  return trade_holdings.TradeHoldingsDashboardWebPage(
+    portfolioId: portfolioId,
+    embedded: true,
+    accentColor: ModuleColors.portfolio,
+  );
+}
+
 Future<void> _loadTrade() async {
   await _ensureFeatureDi();
   await Future.wait([
@@ -96,6 +117,7 @@ Future<void> _loadMarket() async {
   await Future.wait([
     market_ui.loadLibrary(),
     market_deps.loadLibrary(),
+    paper_ui.loadLibrary(),
   ]);
   market_deps.registerMarketAnalysisServiceDi();
 }
@@ -119,9 +141,12 @@ Widget buildPortfolioRoute({
   required void Function(String slug) onTabChanged,
   required void Function(String id, String name) onPortfolioChanged,
   PortfolioAddTradeBuilder? addTradeBuilder,
+  PortfolioHoldingsPageBuilder? holdingsPageBuilder,
   VoidCallback? onOpenDocIntel,
 }) {
   final tradeBuilder = addTradeBuilder ?? _defaultPortfolioAddTradeBuilder;
+  final holdingsBuilder =
+      holdingsPageBuilder ?? _defaultPortfolioHoldingsPageBuilder;
   return DeferredModuleLoader(
     load: _loadPortfolio,
     skeleton: const PortfolioModuleSkeleton(),
@@ -135,6 +160,7 @@ Widget buildPortfolioRoute({
         onTabChanged: onTabChanged,
         onPortfolioChanged: onPortfolioChanged,
         addTradeBuilder: tradeBuilder,
+        holdingsPageBuilder: holdingsBuilder,
         onOpenDocIntel: onOpenDocIntel,
       ),
     ),
@@ -218,6 +244,7 @@ Widget buildMarketRoute({
       userId: userId,
       initialTab: tab,
       onTabChanged: onTabChanged,
+      paperDesk: paper_ui.PaperGateScreen(),
     ),
   );
 }

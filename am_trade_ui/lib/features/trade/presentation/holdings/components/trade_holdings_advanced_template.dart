@@ -16,6 +16,8 @@ class TradeHoldingsAdvancedTemplate extends StatefulWidget {
     this.onSymbolTap,
     this.onRefresh,
     this.itemsPerPage = 20,
+    this.accentColor,
+    this.priceFreshnessLabel,
   });
 
   final List<TradeHoldingViewModel> holdings;
@@ -25,23 +27,28 @@ class TradeHoldingsAdvancedTemplate extends StatefulWidget {
   final Function(String symbol)? onSymbolTap;
   final VoidCallback? onRefresh;
   final int itemsPerPage;
+  final Color? accentColor;
+  /// Collection-level Live / As-of label from portfolio holdings (Phase F).
+  final String? priceFreshnessLabel;
 
   @override
-  State<TradeHoldingsAdvancedTemplate> createState() => _TradeHoldingsAdvancedTemplateState();
+  State<TradeHoldingsAdvancedTemplate> createState() =>
+      _TradeHoldingsAdvancedTemplateState();
 }
 
-class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTemplate> with TickerProviderStateMixin {
+class _TradeHoldingsAdvancedTemplateState
+    extends State<TradeHoldingsAdvancedTemplate> with TickerProviderStateMixin {
   final Set<String> _expandedItems = {};
-  // _hoverControllers removed as AmDataTable handles hover states
   int _currentPage = 0;
   int? _sortColumnIndex;
   bool _sortAscending = true;
   List<TradeHoldingViewModel> _sortedHoldings = [];
   late AnimationController _refreshController;
-  String _viewMode = 'table'; // 'table' or 'card'
-  String _filterStatus = 'all'; // 'all', 'profit', 'loss'
+  String _viewMode = 'table';
+  String _filterStatus = 'all';
   String _searchQuery = '';
 
+  Color get _accent => widget.accentColor ?? ModuleColors.trade;
   @override
   void initState() {
     super.initState();
@@ -186,12 +193,12 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
         Icon(
           Icons.error_outline,
           size: 48,
-          color: Colors.red.shade300,
+          color: context.statusError,
         ).animate().shake(hz: 2, offset: const Offset(4, 0)).fadeIn(duration: 300.ms),
         const SizedBox(height: 16),
         Text(
           widget.errorMessage!,
-          style: TextStyle(color: Colors.red.shade300, fontSize: 14),
+          style: TextStyle(color: context.statusError, fontSize: 14),
           textAlign: TextAlign.center,
         ),
         if (widget.onRefresh != null) ...[
@@ -242,19 +249,19 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
           spacing: 8,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            _buildFilterPill('all', 'All', ModuleColors.trade),
-            _buildFilterPill('profit', 'Profit', Colors.green),
-            _buildFilterPill('loss', 'Loss', Colors.red),
+            _buildFilterPill('all', 'All', _accent),
+            _buildFilterPill('profit', 'Profit', context.marketPositive),
+            _buildFilterPill('loss', 'Loss', context.marketNegative),
             const SizedBox(width: 4),
             // View Mode Toggle - always visible inside filter section
             Container(
               decoration: BoxDecoration(
                 color: _isDarkChrome
                     ? Colors.white.withValues(alpha: 0.06)
-                    : ModuleColors.trade.withValues(alpha: 0.06),
+                    : _accent.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: ModuleColors.trade.withValues(alpha: 0.2),
+                  color: _accent.withValues(alpha: 0.2),
                 ),
               ),
               child: Row(
@@ -294,7 +301,7 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: ModuleColors.trade, width: 1.5),
+                borderSide: BorderSide(color: _accent, width: 1.5),
               ),
             ),
             style: const TextStyle(fontSize: 13),
@@ -332,11 +339,11 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: selected
-              ? ModuleColors.trade.withValues(alpha: isDark ? 0.28 : 0.15)
+              ? _accent.withValues(alpha: isDark ? 0.28 : 0.15)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
           border: selected
-              ? Border.all(color: ModuleColors.trade.withValues(alpha: 0.55))
+              ? Border.all(color: _accent.withValues(alpha: 0.55))
               : null,
         ),
         child: Row(
@@ -346,7 +353,7 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
               icon,
               size: 16,
               color: selected
-                  ? ModuleColors.trade
+                  ? _accent
                   : (isDark ? Colors.white60 : Colors.grey.shade600),
             ),
             const SizedBox(width: 4),
@@ -356,7 +363,7 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
                 color: selected
-                    ? ModuleColors.trade
+                    ? _accent
                     : (isDark ? Colors.white60 : Colors.grey.shade600),
               ),
             ),
@@ -368,7 +375,7 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
 
   Widget _buildFilterPill(String value, String label, Color? color) {
     final selected = _filterStatus == value;
-    final accent = color ?? ModuleColors.trade;
+    final accent = color ?? _accent;
     final isDark = _isDarkChrome;
     return InkWell(
       onTap: () => setState(() => _filterStatus = value),
@@ -382,14 +389,14 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
               ? accent.withValues(alpha: isDark ? 0.22 : 0.15)
               : (isDark
                   ? Colors.white.withValues(alpha: 0.06)
-                  : ModuleColors.trade.withValues(alpha: 0.06)),
+                  : _accent.withValues(alpha: 0.06)),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: selected
                 ? accent
                 : (isDark
                     ? Colors.white.withValues(alpha: 0.14)
-                    : ModuleColors.trade.withValues(alpha: 0.25)),
+                    : _accent.withValues(alpha: 0.25)),
             width: selected ? 1.5 : 1,
           ),
         ),
@@ -473,7 +480,7 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
 
   Widget _buildCustomTableRow(TradeHoldingViewModel holding, int index) {
     final isPositive = holding.isProfit;
-    final pnlColor = isPositive ? Colors.green : Colors.red;
+    final pnlColor = isPositive ? context.marketPositive : context.marketNegative;
     final isExpanded = _isExpanded(holding.tradeId);
     final theme = Theme.of(context);
 
@@ -568,13 +575,13 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
       Icon(
         isPositive ? Icons.trending_up : Icons.trending_down,
         size: 14,
-        color: isPositive ? Colors.green : Colors.red,
+        color: isPositive ? context.marketPositive : context.marketNegative,
       ),
       const SizedBox(width: 4),
       Flexible(
         child: Text(
           value,
-          style: TextStyle(fontWeight: FontWeight.bold, color: isPositive ? Colors.green : Colors.red),
+          style: TextStyle(fontWeight: FontWeight.bold, color: isPositive ? context.marketPositive : context.marketNegative),
           overflow: TextOverflow.ellipsis,
           maxLines: 1,
         ),
@@ -585,12 +592,12 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
   Widget _buildPnLPercentageCell(String value, bool isPositive) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
     decoration: BoxDecoration(
-      color: (isPositive ? Colors.green : Colors.red).withOpacity(0.1),
+      color: (isPositive ? context.marketPositive : context.marketNegative).withOpacity(0.1),
       borderRadius: BorderRadius.circular(3),
     ),
     child: Text(
       value,
-      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: isPositive ? Colors.green : Colors.red),
+      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: isPositive ? context.marketPositive : context.marketNegative),
     ),
   );
 
@@ -623,44 +630,38 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
 
   Widget _buildAdvancedHoldingCard(TradeHoldingViewModel holding, int index) {
     final isPositive = holding.isProfit;
-    final pnlColor = isPositive ? Colors.green : Colors.red;
+    final pnlColor = isPositive ? context.marketPositive : context.marketNegative;
     final isExpanded = _isExpanded(holding.tradeId);
-    final isDark = _isDarkChrome;
-    final scheme = Theme.of(context).colorScheme;
-    final muted = isDark ? Colors.white60 : Colors.grey.shade600;
-    final titleColor = isDark ? Colors.white : scheme.onSurface;
-    final cardSurface = isDark ? const Color(0xFF1C1C2E) : scheme.surface;
+    final theme = context.colors;
+    final titleColor = context.textPrimary;
+    final muted = context.textSecondary;
+    final cardSurface = theme.cardSurface;
     final cardBorder = isExpanded
         ? pnlColor.withValues(alpha: 0.45)
-        : (isDark
-            ? ModuleColors.trade.withValues(alpha: 0.28)
-            : Colors.grey.shade300);
+        : theme.border;
+    final avatarLetter = holding.displaySymbol.isNotEmpty
+        ? holding.displaySymbol.substring(0, 1).toUpperCase()
+        : '?';
+    final currentPriceColor = context.statusWarning;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: () => _toggleExpanded(holding.tradeId),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppRadii.card,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 220),
           decoration: BoxDecoration(
-            gradient: isDark
-                ? const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF1E1B4B), Color(0xFF1C1C2E)],
-                  )
-                : null,
-            color: isDark ? null : cardSurface,
-            borderRadius: BorderRadius.circular(14),
+            color: cardSurface,
+            borderRadius: AppRadii.card,
             border: Border.all(
               color: cardBorder,
               width: isExpanded ? 1.5 : 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
-                blurRadius: isDark ? 12 : 8,
+                color: context.shadow(_isDarkChrome ? 0.35 : 0.08),
+                blurRadius: _isDarkChrome ? 12 : 8,
                 offset: const Offset(0, 4),
               ),
             ],
@@ -669,161 +670,148 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.md,
+                  AppSpacing.md,
+                  AppSpacing.sm,
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: 42,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                pnlColor.withValues(alpha: 0.28),
-                                pnlColor.withValues(alpha: 0.08),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: pnlColor.withValues(alpha: 0.3),
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                isPositive
-                                    ? Icons.trending_up
-                                    : Icons.trending_down,
-                                color: pnlColor,
-                                size: 16,
-                              ),
-                              Text(
-                                holding.displaySymbol.isNotEmpty
-                                    ? holding.displaySymbol
-                                        .substring(0, 1)
-                                        .toUpperCase()
-                                    : '•',
-                                style: TextStyle(
-                                  color: pnlColor,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ],
-                          ),
+                    Container(
+                      width: AppComponentSizes.iconButtonSize,
+                      height: AppComponentSizes.iconButtonSize,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: pnlColor.withValues(alpha: 0.22),
+                        borderRadius: BorderRadius.circular(AppRadii.sm),
+                      ),
+                      child: Text(
+                        avatarLetter,
+                        style: TextStyle(
+                          color: context.textPrimary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: AppTypeScale.lg,
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                holding.displaySymbol,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                  color: titleColor,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                holding.displayCompanyName,
-                                style: TextStyle(color: muted, fontSize: 11),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: pnlColor.withValues(alpha: 0.14),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: pnlColor.withValues(alpha: 0.35),
-                            ),
-                          ),
-                          child: Text(
-                            holding.displayProfitLossPercentage,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            holding.displaySymbol,
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                              color: pnlColor,
+                              fontSize: AppTypeScale.md,
+                              color: titleColor,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: AppSpacing.xxs),
+                          Text(
+                            holding.displayCompanyName,
+                            style: TextStyle(
+                              color: muted,
+                              fontSize: AppTypeScale.sm,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (widget.priceFreshnessLabel != null &&
+                              widget.priceFreshnessLabel!.isNotEmpty) ...[
+                            const SizedBox(height: AppSpacing.xxs),
+                            Text(
+                              widget.priceFreshnessLabel!,
+                              style: TextStyle(
+                                color: muted,
+                                fontSize: AppTypeScale.xs,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(width: AppSpacing.sm),
                     Text(
                       holding.displayCurrentValue,
                       style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                        color: muted,
+                        fontWeight: FontWeight.w700,
+                        fontSize: AppTypeScale.lg,
+                        color: titleColor,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.04)
-                            : ModuleColors.trade.withValues(alpha: 0.04),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.06)
-                              : ModuleColors.trade.withValues(alpha: 0.1),
+                    const SizedBox(width: AppSpacing.sm),
+                    Tooltip(
+                      message: 'Total P&L %',
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm,
+                          vertical: AppSpacing.xs,
+                        ),
+                        decoration: BoxDecoration(
+                          color: pnlColor.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(AppRadii.xs),
+                          border: Border.all(
+                            color: pnlColor.withValues(alpha: 0.35),
+                          ),
+                        ),
+                        child: Text(
+                          holding.displayProfitLossPercentage,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: AppTypeScale.sm,
+                            color: pnlColor,
+                          ),
                         ),
                       ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: _buildQuickMetric(
-                              'Entry',
-                              holding.displayEntryPrice,
-                              titleColor,
-                            ),
-                          ),
-                          Expanded(
-                            child: _buildQuickMetric(
-                              'Current',
-                              holding.displayCurrentPrice,
-                              ModuleColors.trade,
-                            ),
-                          ),
-                          Expanded(
-                            child: _buildQuickMetric(
-                              'Qty',
-                              holding.displayQuantity,
-                              titleColor,
-                            ),
-                          ),
-                          Expanded(
-                            child: _buildQuickMetric(
-                              'P&L',
-                              holding.displayProfitLoss,
-                              pnlColor,
-                            ),
-                          ),
-                        ],
+                    ),
+                  ],
+                ),
+              ),
+              Divider(height: 1, thickness: 1, color: theme.divider),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: AppSpacing.sm,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildQuickMetric(
+                        'Entry',
+                        holding.displayEntryPrice,
+                        titleColor,
+                      ),
+                    ),
+                    _buildMetricDivider(theme.divider),
+                    Expanded(
+                      child: _buildQuickMetric(
+                        'Current',
+                        holding.displayCurrentPrice,
+                        currentPriceColor,
+                      ),
+                    ),
+                    _buildMetricDivider(theme.divider),
+                    Expanded(
+                      child: _buildQuickMetric(
+                        'Qty',
+                        holding.displayQuantity,
+                        titleColor,
+                      ),
+                    ),
+                    _buildMetricDivider(theme.divider),
+                    Expanded(
+                      child: _buildQuickMetric(
+                        'P&L',
+                        holding.displayProfitLoss,
+                        pnlColor,
                       ),
                     ),
                   ],
@@ -844,24 +832,33 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
     ).animate().fadeIn(delay: (index * 40).ms, duration: 400.ms);
   }
 
+  Widget _buildMetricDivider(Color color) {
+    return Container(
+      width: 1,
+      height: AppSpacing.xl,
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xxs),
+      color: color,
+    );
+  }
+
   Widget _buildQuickMetric(String label, String value, Color color) {
-    final muted = _isDarkChrome ? Colors.white54 : Colors.grey.shade600;
+    final muted = context.textSecondary;
     return Column(
       children: [
         Text(
           label,
           style: TextStyle(
             color: muted,
-            fontSize: 10,
+            fontSize: AppTypeScale.xs,
             fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 3),
+        const SizedBox(height: AppSpacing.xxs),
         Text(
           value,
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            fontSize: 12,
+            fontSize: AppTypeScale.sm,
             color: color,
           ),
           textAlign: TextAlign.center,
@@ -895,7 +892,7 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
                 subValue: holding.entryTimestamp != null
                     ? DateFormat('MMM dd').format(holding.entryTimestamp!)
                     : null,
-                color: ModuleColors.trade,
+                color: _accent,
               );
 
               final exitCard = _buildDetailCard(
@@ -912,14 +909,14 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
                 icon: Icons.access_time,
                 label: 'Period',
                 value: holding.displayHoldingPeriod,
-                color: ModuleColors.trade,
+                color: _accent,
               );
 
               final rrCard = _buildDetailCard(
                 icon: Icons.balance,
                 label: 'R:R',
                 value: holding.displayRiskRewardRatio,
-                color: ModuleColors.trade,
+                color: _accent,
               );
 
               if (isSmall) {
@@ -968,18 +965,18 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
                   _buildDetailChip(
                     holding.sector!,
                     Icons.category_outlined,
-                    ModuleColors.trade,
+                    _accent,
                   ),
                 if (holding.broker != null)
                   _buildDetailChip(
                     holding.broker!,
                     Icons.account_balance_outlined,
-                    ModuleColors.trade,
+                    _accent,
                   ),
                 _buildDetailChip(
                   holding.displayStatus,
                   Icons.flag,
-                  holding.displayStatus == 'ACTIVE' ? Colors.green : Colors.grey,
+                  holding.displayStatus == 'ACTIVE' ? context.marketPositive : context.statusNeutral,
                 ),
               ],
             ),
@@ -997,9 +994,9 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
               icon: Icon(Icons.edit, size: 16),
               label: Text('Edit Trade'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: ModuleColors.trade,
+                foregroundColor: _accent,
                 side: BorderSide(
-                  color: ModuleColors.trade.withValues(alpha: 0.45),
+                  color: _accent.withValues(alpha: 0.45),
                 ),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1148,9 +1145,9 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             decoration: BoxDecoration(
-              color: isCurrentPage ? ModuleColors.trade : Colors.transparent,
+              color: isCurrentPage ? _accent : Colors.transparent,
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: isCurrentPage ? ModuleColors.trade : Colors.grey.shade300),
+              border: Border.all(color: isCurrentPage ? _accent : Colors.grey.shade300),
             ),
             child: InkWell(
               onTap: () => _goToPage(pageNumber),
@@ -1184,16 +1181,16 @@ class _TradeHoldingsAdvancedTemplateState extends State<TradeHoldingsAdvancedTem
     switch (status.toUpperCase()) {
       case 'WIN':
       case 'CLOSED':
-        return Colors.green;
+        return context.marketPositive;
       case 'LOSS':
-        return Colors.red;
+        return context.marketNegative;
       case 'ACTIVE':
       case 'OPEN':
-        return Colors.blue;
+        return context.statusInfo;
       case 'BREAKEVEN':
-        return Colors.amber;
+        return context.statusWarning;
       default:
-        return Colors.grey;
+        return context.statusNeutral;
     }
   }
 }

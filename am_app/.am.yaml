@@ -9,7 +9,7 @@ context: ..
 port: 8080
 github:
   repo: AM-Portfolio/am-modern-ui
-  deploy_workflow: unified-ci.yml
+  deploy_workflow: deploy-modern-ui.yml
   service: am-modern-ui
   ref: main
 deploy:

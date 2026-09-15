@@ -36,3 +36,12 @@ final analysisApiClientProvider = FutureProvider<ApiClient>((ref) async {
   }
   return ApiClient(baseUrl: config.api.analysis!.baseUrl);
 });
+
+final omsApiClientProvider = FutureProvider<ApiClient>((ref) async {
+  final config = await ref.watch(appConfigProvider.future);
+  const localOmsUrl = String.fromEnvironment('AM_OMS_BASE_URL');
+  final base = localOmsUrl.isNotEmpty
+      ? localOmsUrl
+      : (config.api.oms?.baseUrl ?? '');
+  return ApiClient(baseUrl: base, category: 'oms');
+});

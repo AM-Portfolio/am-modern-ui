@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:am_market_common/models/indices_region.dart';
 import 'package:am_market_common/models/market_data.dart';
+import 'package:am_market_ui/features/market/widgets/drawer_index_card.dart';
 import 'package:am_market_ui/features/market/widgets/market_colors.dart';
 import 'package:am_market_ui/features/market/widgets/market_region_toggle.dart';
-import 'drawer_index_card.dart';
 
-class AllIndicesDrawer extends StatefulWidget {
+/// Desktop/tablet All Indices panel — Indian|Global + 2-col cards (web style).
+class AllIndicesDrawer extends StatelessWidget {
   final List<StockIndicesMarketData> indices;
   final List<StockIndicesMarketData> globalIndices;
   final IndicesRegion region;
@@ -29,19 +30,14 @@ class AllIndicesDrawer extends StatefulWidget {
     super.key,
   });
 
-  @override
-  State<AllIndicesDrawer> createState() => _AllIndicesDrawerState();
-}
-
-class _AllIndicesDrawerState extends State<AllIndicesDrawer> {
   List<StockIndicesMarketData> get _activeIndices =>
-      widget.region == IndicesRegion.global ? widget.globalIndices : widget.indices;
+      region == IndicesRegion.global ? globalIndices : indices;
 
   double _displayPChange(
     StockIndicesMarketData data,
     Map<String, double> basePricesForTf,
   ) {
-    if (widget.initialTimeframe != '1D') {
+    if (initialTimeframe != '1D') {
       final base = basePricesForTf[data.indexSymbol];
       if (base != null && base > 0) {
         return ((data.lastPrice - base) / base) * 100;
@@ -53,11 +49,12 @@ class _AllIndicesDrawerState extends State<AllIndicesDrawer> {
 
   @override
   Widget build(BuildContext context) {
-    final basePricesForTf =
-        widget.allTimeframeBasePrices[widget.initialTimeframe] ?? {};
+    final basePricesForTf = allTimeframeBasePrices[initialTimeframe] ?? {};
     final active = List<StockIndicesMarketData>.from(_activeIndices)
-      ..sort((a, b) => _displayPChange(b, basePricesForTf)
-          .compareTo(_displayPChange(a, basePricesForTf)));
+      ..sort(
+        (a, b) => _displayPChange(b, basePricesForTf)
+            .compareTo(_displayPChange(a, basePricesForTf)),
+      );
 
     return Container(
       width: 460,
@@ -79,7 +76,7 @@ class _AllIndicesDrawerState extends State<AllIndicesDrawer> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'All indices',
+                'All Indices',
                 style: TextStyle(
                   fontSize: 14,
                   color: MarketColors.textPrimary(context),
@@ -100,22 +97,22 @@ class _AllIndicesDrawerState extends State<AllIndicesDrawer> {
                   padding: EdgeInsets.zero,
                   icon: const Icon(Icons.close, size: 16),
                   color: MarketColors.textMuted(context),
-                  onPressed: widget.onClose,
+                  onPressed: onClose,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
           MarketRegionToggle(
-            value: widget.region,
-            onChanged: widget.onRegionChanged,
+            value: region,
+            onChanged: onRegionChanged,
           ),
           const SizedBox(height: 12),
           Expanded(
             child: active.isEmpty
                 ? Center(
                     child: Text(
-                      widget.region == IndicesRegion.global
+                      region == IndicesRegion.global
                           ? 'No global indices available'
                           : 'No indices available',
                       style: TextStyle(
@@ -126,7 +123,8 @@ class _AllIndicesDrawerState extends State<AllIndicesDrawer> {
                   )
                 : GridView.builder(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
                       crossAxisSpacing: 10,
                       mainAxisSpacing: 10,
@@ -135,14 +133,13 @@ class _AllIndicesDrawerState extends State<AllIndicesDrawer> {
                     itemCount: active.length,
                     itemBuilder: (context, index) {
                       final data = active[index];
-                      final isSelected = data.indexSymbol == widget.selectedIndexSymbol;
-                      final basePrice = basePricesForTf[data.indexSymbol];
                       return DrawerIndexCard(
                         data: data,
-                        isSelected: isSelected,
-                        timeframe: widget.initialTimeframe,
-                        basePrice: basePrice,
-                        onTap: () => widget.onIndexSelected(data),
+                        isSelected:
+                            data.indexSymbol == selectedIndexSymbol,
+                        timeframe: initialTimeframe,
+                        basePrice: basePricesForTf[data.indexSymbol],
+                        onTap: () => onIndexSelected(data),
                       );
                     },
                   ),

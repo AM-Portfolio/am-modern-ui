@@ -131,8 +131,11 @@ class TradeDistributionMetricsDto {
   final Map<String, int>? tradesByMonth;
   final Map<String, double>? profitByDay;
   final Map<String, double>? profitByMonth;
+  final Map<String, double>? winRateByDay;
+  final Map<String, double>? winRateByMonth;
   final Map<String, int>? tradesByHour;
   final Map<String, double>? profitByHour;
+  final Map<String, double>? winRateByHour;
   final Map<String, int>? tradeCountByAssetClass;
   final Map<String, double>? profitByAssetClass;
   final Map<String, double>? winRateByAssetClass;
@@ -151,8 +154,11 @@ class TradeDistributionMetricsDto {
     this.tradesByMonth,
     this.profitByDay,
     this.profitByMonth,
+    this.winRateByDay,
+    this.winRateByMonth,
     this.tradesByHour,
     this.profitByHour,
+    this.winRateByHour,
     this.tradeCountByAssetClass,
     this.profitByAssetClass,
     this.winRateByAssetClass,
@@ -167,17 +173,23 @@ class TradeDistributionMetricsDto {
     this.winRateByPositionSize,
   });
 
-  factory TradeDistributionMetricsDto.fromJson(Map<String, dynamic> json) => _$TradeDistributionMetricsDtoFromJson(json);
+  factory TradeDistributionMetricsDto.fromJson(Map<String, dynamic> json) =>
+      _$TradeDistributionMetricsDtoFromJson(json);
   Map<String, dynamic> toJson() => _$TradeDistributionMetricsDtoToJson(this);
 
   TradeDistributionMetrics toEntity() => TradeDistributionMetrics(
-    tradesByDay: tradesByDay ?? {},
-    profitByDay: profitByDay ?? {},
-    tradesByHour: tradesByHour ?? {},
-    profitByHour: profitByHour ?? {},
-    tradeCountByAssetClass: tradeCountByAssetClass ?? {},
-    tradeCountByStrategy: tradeCountByStrategy ?? {},
-  );
+        tradesByDay: tradesByDay ?? {},
+        profitByDay: profitByDay ?? {},
+        winRateByDay: winRateByDay ?? {},
+        tradesByHour: tradesByHour ?? {},
+        profitByHour: profitByHour ?? {},
+        winRateByHour: winRateByHour ?? {},
+        tradesByMonth: tradesByMonth ?? {},
+        profitByMonth: profitByMonth ?? {},
+        winRateByMonth: winRateByMonth ?? {},
+        tradeCountByAssetClass: tradeCountByAssetClass ?? {},
+        tradeCountByStrategy: tradeCountByStrategy ?? {},
+      );
 }
 
 @JsonSerializable()
@@ -355,14 +367,15 @@ class TradeMetricsResponseDto {
       valueAtRisk: 0.0,
       probabilityOfRuin: 0.0,
     ),
-    distributionMetrics: distributionMetrics?.toEntity() ?? TradeDistributionMetrics(
-      tradesByDay: {},
-      profitByDay: {},
-      tradesByHour: {},
-      profitByHour: {},
-      tradeCountByAssetClass: {},
-      tradeCountByStrategy: {},
-    ),
+    distributionMetrics: distributionMetrics?.toEntity() ??
+        TradeDistributionMetrics(
+          tradesByDay: {},
+          profitByDay: {},
+          tradesByHour: {},
+          profitByHour: {},
+          tradeCountByAssetClass: {},
+          tradeCountByStrategy: {},
+        ),
     timingMetrics: timingMetrics?.toEntity() ?? TradeTimingMetrics(
       entryTimingScore: 0.0,
       exitTimingScore: 0.0,

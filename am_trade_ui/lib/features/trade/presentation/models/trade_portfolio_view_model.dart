@@ -12,6 +12,7 @@ class TradePortfolioViewModel {
     this.holdingsCount = 0,
     this.description,
     this.lastUpdated,
+    this.isPaper = false,
     // Trade metrics
     this.totalTrades = 0,
     this.netProfitLoss,
@@ -35,6 +36,7 @@ class TradePortfolioViewModel {
     holdingsCount: entity.holdingsCount,
     description: entity.description,
     lastUpdated: entity.lastUpdated,
+    isPaper: false,
     // Trade metrics
     totalTrades: entity.totalTrades,
     netProfitLoss: entity.netProfitLoss,
@@ -54,6 +56,7 @@ class TradePortfolioViewModel {
   final int holdingsCount;
   final String? description;
   final DateTime? lastUpdated;
+  final bool isPaper;
 
   // Trade metrics
   final int totalTrades;
@@ -99,6 +102,7 @@ class TradePortfolioViewModel {
     int? holdingsCount,
     DateTime? lastUpdated,
     double? winRate,
+    bool? isPaper,
   }) =>
       TradePortfolioViewModel(
         id: id,
@@ -118,6 +122,7 @@ class TradePortfolioViewModel {
         winningTrades: winningTrades,
         losingTrades: losingTrades,
         openPositions: openPositions,
+        isPaper: isPaper ?? this.isPaper,
       );
 }
 

@@ -4,6 +4,7 @@ import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_renderer.da
 import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_store.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_timeframe_provider.dart';
+import 'package:am_dashboard_ui/presentation/providers/has_demo_portfolio_provider.dart';
 import 'package:am_common/am_common.dart';
 import '../shared/widgets/glass_card.dart';
 import 'package:am_design_system/am_design_system.dart';
@@ -18,11 +19,13 @@ bool _dashboardDataMarkedMobile = false;
 class DashboardMobileScreen extends ConsumerStatefulWidget {
   final String userId;
   final VoidCallback? onOpenDocIntel;
+  final VoidCallback? onOpenPaper;
 
   const DashboardMobileScreen({
     super.key,
     required this.userId,
     this.onOpenDocIntel,
+    this.onOpenPaper,
   });
 
   @override
@@ -103,6 +106,7 @@ class _DashboardMobileScreenState
     required Color onSurface,
     required Color chipBg,
     required Color chipBorder,
+    required bool showDemoBadge,
   }) {
     return Material(
       color: Colors.transparent,
@@ -115,7 +119,7 @@ class _DashboardMobileScreenState
         ),
         child: Row(
           children: [
-            Expanded(
+            Flexible(
               child: Text(
                 'Dashboard',
                 maxLines: 1,
@@ -127,6 +131,11 @@ class _DashboardMobileScreenState
                     ),
               ),
             ),
+            if (showDemoBadge) ...[
+              const SizedBox(width: AppSpacing.sm),
+              const DemoAccountBadge(),
+            ],
+            const Spacer(),
             const SizedBox(width: AppSpacing.sm),
             // Controls hug the trailing edge — equal height, tight gap.
             Row(
@@ -148,6 +157,16 @@ class _DashboardMobileScreenState
                     backgroundColor: chipBg,
                     borderColor: chipBorder,
                     foregroundColor: onSurface,
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                if (widget.onOpenPaper != null) ...[
+                  IconButton(
+                    tooltip: 'Paper trading',
+                    onPressed: widget.onOpenPaper,
+                    icon: Icon(Icons.science_outlined, color: onSurface, size: 22),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                   ),
                   const SizedBox(width: 8),
                 ],
@@ -193,7 +212,11 @@ class _DashboardMobileScreenState
     Future<void> refresh() async {
       retryDashboardSummary(ref, userId);
       ref.invalidate(portfolioOverviewsProvider(userId));
+      ref.invalidate(hasDemoPortfolioProvider);
     }
+
+    final showDemoBanner =
+        ref.watch(hasDemoPortfolioProvider).asData?.value ?? false;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -249,6 +272,7 @@ class _DashboardMobileScreenState
                   onSurface: onSurface,
                   chipBg: chipBg,
                   chipBorder: chipBorder,
+                  showDemoBadge: showDemoBanner,
                 ),
                 Expanded(
                   child: RefreshIndicator(
@@ -270,6 +294,7 @@ class _DashboardMobileScreenState
                             layout: layout,
                             timeFrameCode: tfCode,
                             onOpenDocIntel: widget.onOpenDocIntel,
+                            onOpenPaper: widget.onOpenPaper,
                             compactBreakpoint: 99999,
                             chartHeight: 350,
                             mobileChartHeight: 350,

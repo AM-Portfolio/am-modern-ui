@@ -12,6 +12,7 @@ class AppRoutes {
   static const portfolio = '/app/portfolio';
   static const trade = '/app/trade';
   static const tradeDiscovery = '/app/trade/portfolios';
+  static const paper = '/app/paper';
   static const market = '/app/market';
   static const aiChat = '/app/ai-chat';
   static const lab = '/app/lab';
@@ -61,14 +62,19 @@ class AppRoutes {
     'trades',
     'journal',
     'analysis',
-    'market-analysis',
-    'report',
     'unified',
-    'metrics',
     'templates',
   ];
 
+  /// Legacy trade hub slugs that still appear in bookmarks / share URLs.
+  static const tradeTabAliases = {
+    'report': 'analysis',
+    'metrics': 'analysis',
+    'market-analysis': 'analysis',
+  };
+
   static const marketStaticSlugs = {
+    'Paper': 'paper',
     'All Indices': 'all-indices',
     'Streamer': 'streamer',
     'Instrument Explorer': 'instrument-explorer',
@@ -80,11 +86,16 @@ class AppRoutes {
     'Developer Dashboard': 'developer-dashboard',
     'Dashboard': 'dashboard',
     'Heatmap Explorer': 'heatmap-explorer',
+    'Equity Insider': 'equity-insider',
+    'Watch List': 'watch-list',
   };
 
   static bool isPortfolioTab(String slug) => portfolioTabs.contains(slug);
 
-  static bool isTradeTab(String slug) => tradeTabs.contains(slug);
+  static bool isTradeTab(String slug) =>
+      tradeTabs.contains(slug) || tradeTabAliases.containsKey(slug);
+
+  static String normalizeTradeTab(String tab) => tradeTabAliases[tab] ?? tab;
 
   static String portfolioTab(int index) =>
       portfolioTabs[index.clamp(0, portfolioTabs.length - 1)];
@@ -98,7 +109,7 @@ class AppRoutes {
       tradeTabs[index.clamp(0, tradeTabs.length - 1)];
 
   static int tradeTabIndex(String tab) {
-    final index = tradeTabs.indexOf(tab);
+    final index = tradeTabs.indexOf(normalizeTradeTab(tab));
     return index >= 0 ? index : 0;
   }
 
@@ -151,7 +162,9 @@ class AppRoutes {
     'Dashboard': dashboard,
     'Portfolio': '/app/portfolio/overview',
     'Trade': tradeDiscovery,
-    'Market': '/app/market/dashboard',
+    // Legacy session title — Paper is now a Market tab.
+    'Paper': '/app/market/paper',
+    'Market': '/app/market/paper',
     'AI Chat': aiChat,
     'Lab': lab,
     'Analysis': analysis,
@@ -174,6 +187,8 @@ class AppRoutes {
   static String activeNavTitleForLocation(String location) {
     if (location.startsWith(portfolio)) return 'Portfolio';
     if (location.startsWith(trade)) return 'Trade';
+    // Legacy /app/paper redirects to Market; keep Market highlighted.
+    if (location.startsWith(paper)) return 'Market';
     if (location.startsWith(market)) return 'Market';
     if (location.startsWith(aiChat)) return 'AI Chat';
     if (location.startsWith(lab)) return 'Lab';

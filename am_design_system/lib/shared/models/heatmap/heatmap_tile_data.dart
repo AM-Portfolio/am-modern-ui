@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/app_logic/domain/entities/heatmap/heatmap_entities.dart';
+import '../../../core/theme/color_extensions.dart';
 import '../../../core/utils/common_logger.dart';
 
 /// Enum for heatmap color scheme types
@@ -96,11 +97,11 @@ class HeatmapTileData extends HeatmapTileEntity {
     switch (scheme ?? HeatmapColorSchemeType.performance) {
       case HeatmapColorSchemeType.performance:
         if (isPositive) {
-          return Colors.green.shade400;
+          return context.marketPositive;
         } else if (isNegative) {
-          return Colors.red.shade400;
+          return context.marketNegative;
         } else {
-          return Colors.grey.shade400;
+          return context.colors.statusNeutral;
         }
       case HeatmapColorSchemeType.weightage:
         final intensity = (weightage / 100).clamp(0.0, 1.0);

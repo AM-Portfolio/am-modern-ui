@@ -13,6 +13,7 @@ class DashboardLayoutRenderer extends ConsumerWidget {
     required this.layout,
     required this.timeFrameCode,
     this.onOpenDocIntel,
+    this.onOpenPaper,
     this.compactBreakpoint = 1280,
     this.chartHeight = 420,
     this.mobileChartHeight = 350,
@@ -22,6 +23,7 @@ class DashboardLayoutRenderer extends ConsumerWidget {
   final DashboardLayoutModel layout;
   final String timeFrameCode;
   final VoidCallback? onOpenDocIntel;
+  final VoidCallback? onOpenPaper;
   final double compactBreakpoint;
   final double chartHeight;
   final double mobileChartHeight;
@@ -37,6 +39,7 @@ class DashboardLayoutRenderer extends ConsumerWidget {
       userId: userId,
       timeFrameCode: timeFrameCode,
       onOpenDocIntel: onOpenDocIntel,
+      onOpenPaper: onOpenPaper,
       chartHeight: height,
     );
   }

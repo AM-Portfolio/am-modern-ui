@@ -16,8 +16,8 @@ class InteractiveBackground extends StatefulWidget {
 
   const InteractiveBackground({
     super.key,
-    this.baseColor = const Color(0xFF6C63FF),
-    this.highlightColor = Colors.cyanAccent,
+    this.baseColor = const Color(0xFF1A1710),
+    this.highlightColor = const Color(0xFFE8D5A3),
     this.particleColor,
     this.theme = BackgroundTheme.nebula,
     this.child,
@@ -35,11 +35,26 @@ class _InteractiveBackgroundState extends State<InteractiveBackground>
   final Random _random = Random();
   Size? _lastSize;
   BackgroundTheme? _lastTheme;
+  Color? _lastBaseColor;
+  Color? _lastHighlightColor;
+  Color? _lastParticleColor;
 
   @override
   void initState() {
     super.initState();
     _ticker = createTicker(_onTick)..start();
+  }
+
+  @override
+  void didUpdateWidget(covariant InteractiveBackground oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final colorsChanged = oldWidget.baseColor != widget.baseColor ||
+        oldWidget.highlightColor != widget.highlightColor ||
+        oldWidget.particleColor != widget.particleColor ||
+        oldWidget.theme != widget.theme;
+    if (colorsChanged && _lastSize != null) {
+      _initParticles(_lastSize!);
+    }
   }
 
   void _onTick(Duration elapsed) {
@@ -55,6 +70,9 @@ class _InteractiveBackgroundState extends State<InteractiveBackground>
     if (size.shortestSide == 0) return;
     _lastSize = size;
     _lastTheme = widget.theme;
+    _lastBaseColor = widget.baseColor;
+    _lastHighlightColor = widget.highlightColor;
+    _lastParticleColor = widget.particleColor;
 
     if (widget.theme == BackgroundTheme.market) {
       _initMarketParticles(size);
@@ -65,18 +83,13 @@ class _InteractiveBackgroundState extends State<InteractiveBackground>
 
   void _initNebulaParticles(Size size) {
     final count = (size.width * size.height) ~/ 15000;
-    final isDark = ThemeData.estimateBrightnessForColor(widget.baseColor) == Brightness.dark;
-    
-    
+    // Prefer highlight for particle base when available (auth passes brand
+    // accent here); fall back to baseColor for unstyled callers.
+    final seed = widget.particleColor ??
+        Color.lerp(widget.baseColor, widget.highlightColor, 0.65)!;
+
     _particles = List.generate(count, (index) {
-      final Color pColor;
-      if (widget.particleColor != null) {
-        pColor = widget.particleColor!;
-      } else {
-        pColor = isDark 
-            ? widget.highlightColor.withValues(alpha: _random.nextDouble() * 0.4 + 0.1)
-            : widget.baseColor.withValues(alpha: _random.nextDouble() * 0.4 + 0.2);
-      }
+      final pColor = seed.withValues(alpha: _random.nextDouble() * 0.4 + 0.15);
 
       return Particle(
         position: Offset(
@@ -94,7 +107,6 @@ class _InteractiveBackgroundState extends State<InteractiveBackground>
     });
   }
 
-
   void _initMarketParticles(Size size) {
     final count = (size.width * size.height) ~/ 10000;
     _particles = List.generate(count, (index) {
@@ -105,12 +117,16 @@ class _InteractiveBackgroundState extends State<InteractiveBackground>
           _random.nextDouble() * size.height,
         ),
         velocity: Offset(
-          0, // Mostly vertical movement
-          isBullish ? -(_random.nextDouble() * 3 + 1) : (_random.nextDouble() * 3 + 1),
+          0,
+          isBullish
+              ? -(_random.nextDouble() * 3 + 1)
+              : (_random.nextDouble() * 3 + 1),
         ),
-        size: _random.nextDouble() * 10 + 5, // Width of candle
-        length: _random.nextDouble() * 30 + 10, // Height of candle
-        color: isBullish ? Colors.greenAccent.withValues(alpha: 0.6) : Colors.redAccent.withValues(alpha: 0.6),
+        size: _random.nextDouble() * 10 + 5,
+        length: _random.nextDouble() * 30 + 10,
+        color: isBullish
+            ? Colors.greenAccent.withValues(alpha: 0.6)
+            : Colors.redAccent.withValues(alpha: 0.6),
         type: ParticleType.candle,
         isBullish: isBullish,
       );
@@ -128,28 +144,33 @@ class _InteractiveBackgroundState extends State<InteractiveBackground>
     return LayoutBuilder(
       builder: (context, constraints) {
         final size = Size(constraints.maxWidth, constraints.maxHeight);
-        if (_particles.isEmpty || _lastSize != size || _lastTheme != widget.theme) {
-             _initParticles(size);
+        final needsInit = _particles.isEmpty ||
+            _lastSize != size ||
+            _lastTheme != widget.theme ||
+            _lastBaseColor != widget.baseColor ||
+            _lastHighlightColor != widget.highlightColor ||
+            _lastParticleColor != widget.particleColor;
+        if (needsInit) {
+          _initParticles(size);
         }
-        
+
         return MouseRegion(
           onHover: (event) {
             _mousePosition = event.localPosition;
           },
           child: Stack(
             children: [
-              // Background Layer
               Positioned.fill(
                 child: CustomPaint(
                   painter: ParticlePainter(
                     particles: _particles,
                     mousePosition: _mousePosition,
                     highlightColor: widget.highlightColor,
+                    baseColor: widget.baseColor,
                     theme: widget.theme,
                   ),
                 ),
               ),
-              // Content Layer
               if (widget.child != null) Positioned.fill(child: widget.child!),
             ],
           ),
@@ -168,7 +189,7 @@ class Particle {
   final double length;
   final Color color;
   final ParticleType type;
-  final bool isBullish; // true for green, false for red
+  final bool isBullish;
 
   Particle({
     required this.position,
@@ -183,15 +204,14 @@ class Particle {
   void update(Size bounds) {
     position += velocity;
 
-    // Reset loop for market view (rain down/up)
     if (type == ParticleType.candle) {
       if (position.dy < -length && velocity.dy < 0) {
-        position = Offset(bounds.width * Random().nextDouble(), bounds.height + length);
+        position =
+            Offset(bounds.width * Random().nextDouble(), bounds.height + length);
       } else if (position.dy > bounds.height + length && velocity.dy > 0) {
         position = Offset(bounds.width * Random().nextDouble(), -length);
       }
     } else {
-      // Bounce for dots
       if (position.dx < 0 || position.dx > bounds.width) {
         velocity = Offset(-velocity.dx, velocity.dy);
         position = Offset(position.dx.clamp(0, bounds.width), position.dy);
@@ -208,12 +228,14 @@ class ParticlePainter extends CustomPainter {
   final List<Particle> particles;
   final Offset mousePosition;
   final Color highlightColor;
+  final Color baseColor;
   final BackgroundTheme theme;
 
   ParticlePainter({
     required this.particles,
     required this.mousePosition,
     required this.highlightColor,
+    required this.baseColor,
     required this.theme,
   });
 
@@ -231,33 +253,28 @@ class ParticlePainter extends CustomPainter {
     final linePaint = Paint()..strokeWidth = 1;
 
     for (var particle in particles) {
-       // Mouse Influence: "Flashlight" effect - brighten nearby candles
-       // or "Push" effect - push them sideways
       final dx = particle.position.dx - mousePosition.dx;
       final dy = particle.position.dy - mousePosition.dy;
-      final dist = sqrt(dx*dx + dy*dy);
-      
-      // Flashlight effect
+      final dist = sqrt(dx * dx + dy * dy);
+
       if (dist < 200) {
-         paint.maskFilter = const MaskFilter.blur(BlurStyle.solid, 4);
+        paint.maskFilter = const MaskFilter.blur(BlurStyle.solid, 4);
       } else {
-         paint.maskFilter = null;
+        paint.maskFilter = null;
       }
 
-      // Draw Wick
       linePaint.color = particle.color;
       canvas.drawLine(
-        Offset(particle.position.dx, particle.position.dy - particle.length/2 - 5),
-        Offset(particle.position.dx, particle.position.dy + particle.length/2 + 5),
-        linePaint
+        Offset(particle.position.dx, particle.position.dy - particle.length / 2 - 5),
+        Offset(particle.position.dx, particle.position.dy + particle.length / 2 + 5),
+        linePaint,
       );
 
-      // Draw Body
       paint.color = particle.color;
       final rect = Rect.fromCenter(
-        center: particle.position, 
-        width: particle.size, 
-        height: particle.length
+        center: particle.position,
+        width: particle.size,
+        height: particle.length,
       );
       canvas.drawRect(rect, paint);
     }
@@ -265,54 +282,52 @@ class ParticlePainter extends CustomPainter {
 
   void _paintNebula(Canvas canvas, Size size) {
     final paint = Paint()..strokeCap = StrokeCap.round;
+    final hoverBright = Color.lerp(highlightColor, Colors.white, 0.35)!;
 
     for (var particle in particles) {
-      // Mouse interaction
       final dx = particle.position.dx - mousePosition.dx;
       final dy = particle.position.dy - mousePosition.dy;
       final distance = sqrt(dx * dx + dy * dy);
-      final repulsionRadius = 250.0; // Increased radius
+      const repulsionRadius = 250.0;
 
       Offset drawPosition = particle.position;
       double drawSize = particle.size;
       Color drawColor = particle.color;
 
-      // Interaction Logic: Zoom and Color Shift
       if (distance < repulsionRadius) {
-        // Stronger repulsion
         final force = (repulsionRadius - distance) / repulsionRadius;
         final angle = atan2(dy, dx);
-        final pushFactor = 120.0; // More dramatic push
-        
-        drawPosition += Offset(cos(angle) * force * pushFactor, sin(angle) * force * pushFactor);
-        
-        // Zoom Effect: Closer = Larger
-        drawSize = particle.size * (1 + force * 2.0); // Up to 3x size
-        
-        // Color Shift: Closer = Brighter/White
+        const pushFactor = 120.0;
+
+        drawPosition += Offset(
+          cos(angle) * force * pushFactor,
+          sin(angle) * force * pushFactor,
+        );
+
+        drawSize = particle.size * (1 + force * 2.0);
+
+        // Stay on theme accent — never cyan.
         if (force > 0.5) {
-             drawColor = Color.lerp(particle.color, Colors.white, (force - 0.5) * 2)!;
+          drawColor = Color.lerp(particle.color, hoverBright, (force - 0.5) * 2)!;
         } else {
-             drawColor = Color.lerp(particle.color, Colors.cyanAccent, force * 2)!;
+          drawColor =
+              Color.lerp(particle.color, highlightColor, force * 2)!;
         }
       }
 
-      // Draw Particle
       paint.color = drawColor;
       canvas.drawCircle(drawPosition, drawSize, paint);
 
-      // Draw Connections
       for (var other in particles) {
         if (particle == other) continue;
         final distToOther = (drawPosition - other.position).distance;
-        final connectionDist = 120.0;
-        
+        const connectionDist = 120.0;
+
         if (distToOther < connectionDist) {
-           // Connections also brighten if the particle is highlighted
-           final alpha = (1 - distToOther / connectionDist) * 0.2;
-           paint.color = drawColor.withValues(alpha: alpha);
-           paint.strokeWidth = 1 + (drawSize - particle.size) * 0.5; // Thicker lines when zoomed
-           canvas.drawLine(drawPosition, other.position, paint);
+          final alpha = (1 - distToOther / connectionDist) * 0.2;
+          paint.color = drawColor.withValues(alpha: alpha);
+          paint.strokeWidth = 1 + (drawSize - particle.size) * 0.5;
+          canvas.drawLine(drawPosition, other.position, paint);
         }
       }
     }

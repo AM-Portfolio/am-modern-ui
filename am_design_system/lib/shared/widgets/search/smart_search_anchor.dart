@@ -32,6 +32,8 @@ class SmartSearchAnchor extends StatefulWidget {
     this.onRemoveRecent,
     this.onClearRecent,
     this.accentColor,
+    this.forceUppercase = true,
+    this.resultBadge = 'STOCK',
   });
 
   final TextEditingController? controller;
@@ -46,6 +48,10 @@ class SmartSearchAnchor extends StatefulWidget {
   final ValueChanged<String>? onRemoveRecent;
   final VoidCallback? onClearRecent;
   final Color? accentColor;
+  /// When true (default), selection/submit uppercases the value (stock symbols).
+  final bool forceUppercase;
+  /// Overlay pill next to each result; null hides the badge (e.g. sectors).
+  final String? resultBadge;
 
   @override
   State<SmartSearchAnchor> createState() => _SmartSearchAnchorState();
@@ -134,11 +140,18 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
     }
   }
 
+  String _normalizeSelection(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return trimmed;
+    return widget.forceUppercase ? trimmed.toUpperCase() : trimmed;
+  }
+
   void _handleSelection(String symbol) {
-    _controller.text = symbol;
+    final normalized = _normalizeSelection(symbol);
+    _controller.text = normalized;
     _removeOverlay();
     _focusNode.unfocus();
-    widget.onSelected(symbol);
+    widget.onSelected(normalized);
     widget.onSubmit?.call();
   }
 
@@ -425,25 +438,26 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            // Subtle Stock pill tag
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: context.colors.surface,
-                                borderRadius: BorderRadius.circular(4),
-                                border: Border.all(color: context.colors.border, width: 0.5),
-                              ),
-                              child: Text(
-                                'STOCK',
-                                style: TextStyle(
-                                  color: context.colors.textTertiary,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.5,
+                            if (widget.resultBadge != null) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: context.colors.surface,
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: context.colors.border, width: 0.5),
+                                ),
+                                child: Text(
+                                  widget.resultBadge!,
+                                  style: TextStyle(
+                                    color: context.colors.textTertiary,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.5,
+                                  ),
                                 ),
                               ),
-                            ),
+                            ],
                           ],
                         ),
                       ),
@@ -478,13 +492,15 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
         onChanged: _onQueryChanged,
         onSubmitted: (val) {
           _removeOverlay();
-          final text = val.trim().toUpperCase();
+          final text = _normalizeSelection(val);
           if (text.isNotEmpty) {
             widget.onSelected(text);
           }
           widget.onSubmit?.call();
         },
-        textCapitalization: TextCapitalization.characters,
+        textCapitalization: widget.forceUppercase
+            ? TextCapitalization.characters
+            : TextCapitalization.words,
         style: TextStyle(
           color: context.colors.textPrimary,
           fontSize: widget.compact ? 13 : 15,

@@ -4,6 +4,7 @@ import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_renderer.da
 import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_store.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_timeframe_provider.dart';
+import 'package:am_dashboard_ui/presentation/providers/has_demo_portfolio_provider.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
@@ -16,11 +17,13 @@ bool _dashboardDataMarked = false;
 class DashboardWebScreen extends ConsumerWidget {
   final String userId;
   final VoidCallback? onOpenDocIntel;
+  final VoidCallback? onOpenPaper;
 
   const DashboardWebScreen({
     super.key,
     required this.userId,
     this.onOpenDocIntel,
+    this.onOpenPaper,
   });
 
   void _listenDashboardFirstData(WidgetRef ref, String tfCode) {
@@ -60,6 +63,14 @@ class DashboardWebScreen extends ConsumerWidget {
 
     final isDark = context.isDark;
     final onSurface = context.colors.textPrimary;
+    // Retry demo detection once session is ready (avoids pre-auth false cache).
+    ref.listen(dashboardSessionUserIdProvider(userId), (prev, next) {
+      if (next.hasValue && prev?.hasValue != true) {
+        ref.invalidate(hasDemoPortfolioProvider);
+      }
+    });
+    final showDemoBanner =
+        ref.watch(hasDemoPortfolioProvider).asData?.value ?? false;
 
     return Scaffold(
       backgroundColor: context.colors.scaffoldBackground,
@@ -130,7 +141,12 @@ class DashboardWebScreen extends ConsumerWidget {
                                 fontWeight: FontWeight.w600,
                               ),
                         ),
-                        const Spacer(),
+                        if (showDemoBanner) ...[
+                          const SizedBox(width: AppSpacing.md),
+                          // Badge + welcome in one row; Upload is only "Add Portfolio".
+                          const Expanded(child: DemoAccountInlineBanner()),
+                        ] else
+                          const Spacer(),
                         if (kDashboardCustomizeEnabled)
                           IconButton(
                             tooltip: 'Customize dashboard',
@@ -155,6 +171,23 @@ class DashboardWebScreen extends ConsumerWidget {
                               ),
                             ),
                           ),
+                        if (onOpenPaper != null)
+                          TextButton.icon(
+                            onPressed: onOpenPaper,
+                            icon: Icon(
+                              Icons.science_outlined,
+                              size: 18,
+                              color: context.colors.statusInfo,
+                            ),
+                            label: const Text('Paper trading'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: onSurface,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.sm + 2,
+                                vertical: AppSpacing.sm - 2,
+                              ),
+                            ),
+                          ),
                         const SizedBox(width: AppSpacing.md),
                         const GlobalTimeFrameBar(),
                       ],
@@ -165,6 +198,7 @@ class DashboardWebScreen extends ConsumerWidget {
                       layout: layout,
                       timeFrameCode: tfCode,
                       onOpenDocIntel: onOpenDocIntel,
+                      onOpenPaper: onOpenPaper,
                     ),
                   ],
                 ),

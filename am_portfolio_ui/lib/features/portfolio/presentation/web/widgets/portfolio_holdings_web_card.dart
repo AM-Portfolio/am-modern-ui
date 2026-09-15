@@ -369,6 +369,12 @@ class _PortfolioHoldingsWebCardState
                   ),
                 ),
                 Text(
+                  holdings.priceLabel,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                  ),
+                ),
+                Text(
                   formatCurrency(totalInvestment),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,

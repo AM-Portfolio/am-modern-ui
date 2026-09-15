@@ -19,6 +19,7 @@ class JournalNavigationSidebar extends StatelessWidget {
     this.tags = const [],
     this.onAddFolder,
     this.onNewTradeTap,
+    this.onTagTap,
     this.onEntryDropped,
     super.key,
   });
@@ -31,6 +32,7 @@ class JournalNavigationSidebar extends StatelessWidget {
   final List<NotebookTag> tags;
   final VoidCallback? onAddFolder;
   final VoidCallback? onNewTradeTap;
+  final ValueChanged<String>? onTagTap;
   final Function(JournalEntry entry, String folderId)? onEntryDropped;
 
   @override
@@ -168,7 +170,17 @@ class JournalNavigationSidebar extends StatelessWidget {
                     _buildSectionHeader(context, 'Tags'),
                     
                     // Dynamic Tags
-                    ...tags.map((tag) => _buildTagItem(context, tag.name, 0)), // Count placeholder
+                    ...tags.map(
+                      (tag) => _buildTagItem(
+                        context,
+                        tag.name,
+                        0,
+                        onTap: () {
+                          final id = tag.id;
+                          if (id != null) onTagTap?.call(id);
+                        },
+                      ),
+                    ),
                     
                     const SizedBox(height: 16),
                     const SizedBox(height: 16),
@@ -178,7 +190,7 @@ class JournalNavigationSidebar extends StatelessWidget {
                       isSelected: selectedFolder == 'Recently Deleted',
                       isCollapsed: isCollapsed,
                       onTap: () => onFolderSelected('Recently Deleted'),
-                      accentColor: Colors.redAccent, // Special case
+                      accentColor: context.statusError, // Special case
                     ),
                   ] else ...[
                      const SizedBox(height: 16),
@@ -190,7 +202,7 @@ class JournalNavigationSidebar extends StatelessWidget {
                        isSelected: selectedFolder == 'Recently Deleted',
                        isCollapsed: isCollapsed,
                        onTap: () => onFolderSelected('Recently Deleted'),
-                       accentColor: Colors.redAccent,
+                       accentColor: context.statusError,
                      ),
                   ],
                 ],
@@ -204,19 +216,20 @@ class JournalNavigationSidebar extends StatelessWidget {
 
   Widget _buildFooter(BuildContext context) {
     if (isCollapsed) return const SizedBox.shrink();
-    
+    final colors = context.colors;
+
     return Container(
       width: double.infinity,
       height: 48,
       decoration: BoxDecoration(
-        color: const Color(0xFF1F222B), // Dark background for contrast
+        color: colors.actionPrimaryBg,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.white.withOpacity(0.1),
+          color: colors.border.withOpacity(0.1),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: context.shadow(0.2),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -235,13 +248,13 @@ class JournalNavigationSidebar extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Icon(Icons.add, color: Colors.white, size: 20),
-              SizedBox(width: 8),
+            children: [
+              Icon(Icons.add, color: colors.actionPrimaryFg, size: 20),
+              const SizedBox(width: 8),
               Text(
                 'New Trade',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: colors.actionPrimaryFg,
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                 ),
@@ -271,30 +284,39 @@ class JournalNavigationSidebar extends StatelessWidget {
     );
   }
 
-  Widget _buildTagItem(BuildContext context, String tag, int count) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(4),
+  Widget _buildTagItem(
+    BuildContext context,
+    String tag,
+    int count, {
+    VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                tag,
+                style: Theme.of(context).textTheme.labelSmall,
+              ),
             ),
-            child: Text(
-              tag,
-              style: Theme.of(context).textTheme.labelSmall,
+            const SizedBox(width: 8),
+            Text(
+              '($count)',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '($count)',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Theme.of(context).colorScheme.secondary,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -410,16 +432,18 @@ class _JournalFolderItemState extends State<JournalFolderItem> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color: widget.isSelected
-                  ? Colors.white.withOpacity(0.08)
+                  ? context.glassOverlay(0.08)
                   : _isDragOver
-                      ? widget.isSelected ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.04)
+                      ? widget.isSelected
+                          ? context.glassOverlay(0.08)
+                          : context.glassOverlay(0.04)
                       : _isHovered
-                          ? Colors.white.withOpacity(0.04)
+                          ? context.glassOverlay(0.04)
                           : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
               border: _isDragOver
                   ? Border.all(
-                      color: Theme.of(context).colorScheme.primary,
+                      color: ModuleColors.trade,
                       width: 1,
                     )
                   : Border.all(color: Colors.transparent),
@@ -456,16 +480,15 @@ class _JournalFolderItemState extends State<JournalFolderItem> {
   }
 
   Color _getColorForFolder(String title) {
-    // Mock colors based on title hash or predefined
     final colors = [
-      Colors.orange,
-      Colors.blue,
-      Colors.purple,
-      Colors.green,
-      Colors.red,
-      Colors.teal,
+      ModuleColors.reports,
+      ModuleColors.dashboard,
+      ModuleColors.trade,
+      ModuleColors.analytics,
+      ModuleColors.portfolio,
+      ModuleColors.market,
     ];
-    return colors[title.hashCode % colors.length];
+    return colors[title.hashCode.abs() % colors.length];
   }
 }
 
@@ -501,10 +524,10 @@ class _ExpandableFolderItemState extends State<ExpandableFolderItem> {
         final colorHex = widget.folder.metadata!['color'] as String;
         return Color(int.parse('0x$colorHex'));
       } catch (e) {
-        return Colors.blue;
+        return ModuleColors.dashboard;
       }
     }
-    return Colors.blue;
+    return ModuleColors.dashboard;
   }
 
   IconData _getFolderIcon() {
@@ -534,11 +557,11 @@ class _ExpandableFolderItemState extends State<ExpandableFolderItem> {
             margin: const EdgeInsets.symmetric(vertical: 2),
             decoration: BoxDecoration(
               color: widget.isSelected
-                  ? Colors.white.withOpacity(0.08)
+                  ? context.glassOverlay(0.08)
                   : _isDragOver
-                      ? Colors.white.withOpacity(0.04)
+                      ? context.glassOverlay(0.04)
                       : _isHovered
-                          ? Colors.white.withOpacity(0.04)
+                          ? context.glassOverlay(0.04)
                           : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
               border: _isDragOver

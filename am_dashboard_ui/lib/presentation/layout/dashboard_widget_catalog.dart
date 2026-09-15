@@ -82,6 +82,15 @@ class DashboardWidgetCatalog {
       defaultSize: DashboardWidgetSize.twoThirds,
       build: _buildNews,
     ),
+    DashboardWidgetId.paperTrading: DashboardWidgetDescriptor(
+      id: DashboardWidgetId.paperTrading,
+      title: DashboardWidgetId.paperTrading.label,
+      module: DashboardWidgetId.paperTrading.module,
+      defaultVisible: true,
+      defaultOrder: 1,
+      defaultSize: DashboardWidgetSize.oneThird,
+      build: _buildPaperTrading,
+    ),
   };
 
   static DashboardWidgetDescriptor descriptorFor(DashboardWidgetId id) {
@@ -211,6 +220,41 @@ class DashboardWidgetCatalog {
     DashboardWidgetContext ctx,
   ) {
     return DashboardChartWidget(userId: ctx.userId);
+  }
+
+  static Widget _buildPaperTrading(
+    BuildContext context,
+    WidgetRef ref,
+    DashboardWidgetContext ctx,
+  ) {
+    return AmGlassCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Paper trading',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+              color: ModuleColors.dashboard,
+              fontFamily: 'Inter',
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Practice with virtual cash and live prices. Enable if needed, then place Market / Limit / Super / Trail orders.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: ctx.onOpenPaper,
+            icon: const Icon(Icons.science_outlined, size: 18),
+            label: const Text('Open paper desk'),
+          ),
+        ],
+      ),
+    );
   }
 
   static Widget _buildNews(

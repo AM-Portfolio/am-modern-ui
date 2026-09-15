@@ -9,6 +9,7 @@ export 'core/theme/app_theme.dart';
 export 'core/theme/am_chart_theme.dart';
 export 'core/theme/app_colors.dart';
 export 'core/theme/app_colors_theme.dart';
+export 'core/theme/intelligence_colors.dart';
 export 'core/theme/app_spacing.dart';
 export 'core/theme/app_radii.dart';
 export 'core/theme/app_type_scale.dart';
@@ -31,7 +32,8 @@ export 'core/contracts/design_contract.dart';
 // Utils
 export 'core/utils/common_logger.dart';
 export 'core/utils/device_utils.dart';
-export 'core/utils/validators.dart';
+export 'core/utils/string_utils.dart';
+export 'core/utils/validators.dart'; 
 export 'core/utils/conditional_mouse_region.dart';
 export 'core/utils/browser_zoom.dart';
 export 'core/utils/browser_zoom_platform.dart';
@@ -166,6 +168,10 @@ export 'shared/widgets/feedback/shimmer_loading.dart';
 export 'shared/widgets/feedback/error_widget.dart';
 export 'shared/widgets/feedback/animated_page_transition.dart';
 export 'shared/widgets/feedback/animated_list_item.dart';
+export 'shared/widgets/feedback/am_session_status_view.dart';
+export 'shared/widgets/feedback/demo_account_badge.dart';
+export 'shared/widgets/feedback/demo_account_inline_banner.dart';
+export 'shared/widgets/feedback/demo_portfolio_banner.dart';
 
 // --- Filters ---
 export 'shared/widgets/filters/am_filter_panel.dart';
@@ -186,4 +192,7 @@ export 'shared/widgets/movers/am_top_movers_panel.dart';
 // --- Search & Autocomplete ---
 export 'shared/widgets/search/smart_search_anchor.dart';
 export 'shared/widgets/search/typewriter_hint_controller.dart';
+
+// --- Dialogs ---
+export 'shared/widgets/dialogs/confirmation_dialog.dart';
 

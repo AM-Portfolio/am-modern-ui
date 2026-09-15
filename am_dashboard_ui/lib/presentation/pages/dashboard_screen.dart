@@ -9,11 +9,13 @@ import '../mobile/dashboard_mobile_screen.dart';
 class DashboardScreen extends ConsumerWidget {
   final String userId;
   final VoidCallback? onOpenDocIntel;
+  final VoidCallback? onOpenPaper;
 
   const DashboardScreen({
     super.key,
     required this.userId,
     this.onOpenDocIntel,
+    this.onOpenPaper,
   });
 
   @override
@@ -26,10 +28,12 @@ class DashboardScreen extends ConsumerWidget {
             ? DashboardMobileScreen(
                 userId: resolvedUserId,
                 onOpenDocIntel: onOpenDocIntel,
+                onOpenPaper: onOpenPaper,
               )
             : DashboardWebScreen(
                 userId: resolvedUserId,
                 onOpenDocIntel: onOpenDocIntel,
+                onOpenPaper: onOpenPaper,
               ),
       ),
       loading: () => const _DashboardSessionLoading(),

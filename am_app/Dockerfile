@@ -18,12 +18,14 @@ COPY am_dashboard_ui/ ./am_dashboard_ui/
 COPY am_market/ ./am_market/
 COPY am_portfolio_ui/ ./am_portfolio_ui/
 COPY am_trade_ui/ ./am_trade_ui/
+COPY am_paper_ui/ ./am_paper_ui/
 COPY am_user_ui/ ./am_user_ui/
 COPY am_ai_ui/ ./am_ai_ui/
 COPY am_analysis/ ./am_analysis/
 COPY am_diagnostic_ui/ ./am_diagnostic_ui/
 COPY am_doc_intelligence_ui/ ./am_doc_intelligence_ui/
 COPY am_subscription_ui/ ./am_subscription_ui/
+COPY am_paper_ui/ ./am_paper_ui/
 
 # ── CODE GENERATION ──────────────────────────────────────────────────────
 RUN for d in am_common am_design_system am_market/common am_analysis/common am_market/ui am_analysis/ui am_auth_ui am_dashboard_ui am_portfolio_ui am_trade_ui am_doc_intelligence_ui am_subscription_ui; do \

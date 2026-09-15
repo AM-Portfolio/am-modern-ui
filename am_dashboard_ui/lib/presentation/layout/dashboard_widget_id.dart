@@ -6,12 +6,14 @@ class DashboardWidgetContext {
     required this.userId,
     required this.timeFrameCode,
     this.onOpenDocIntel,
+    this.onOpenPaper,
     this.chartHeight,
   });
 
   final String userId;
   final String timeFrameCode;
   final VoidCallback? onOpenDocIntel;
+  final VoidCallback? onOpenPaper;
   final double? chartHeight;
 }
 
@@ -25,6 +27,7 @@ enum DashboardWidgetId {
   allocation,
   benchmarkComparison,
   news,
+  paperTrading,
 }
 
 extension DashboardWidgetIdX on DashboardWidgetId {
@@ -37,6 +40,7 @@ extension DashboardWidgetIdX on DashboardWidgetId {
         DashboardWidgetId.allocation => 'Allocation',
         DashboardWidgetId.benchmarkComparison => 'Performance Chart',
         DashboardWidgetId.news => 'Market Intelligence',
+        DashboardWidgetId.paperTrading => 'Paper trading',
       };
 
   String get module => switch (this) {
@@ -44,6 +48,7 @@ extension DashboardWidgetIdX on DashboardWidgetId {
         DashboardWidgetId.allocation =>
           'portfolio',
         DashboardWidgetId.benchmarkComparison => 'market',
+        DashboardWidgetId.paperTrading => 'paper',
         _ => 'dashboard',
       };
 
