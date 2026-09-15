@@ -11,10 +11,11 @@ import 'tabs/timing_analysis_tab.dart';
 
 enum _AnalysisTab { timing, strategy, direction, holding, risk }
 
-/// Analysis hub — edge analytics (Timing first; other tabs stubbed).
+/// Analysis hub — Timing-first edge analytics.
 ///
-/// Date range is owned by this page: default is **all time → today**.
-/// Global app [appTimeFrameProvider] must not shrink Analysis to 1D/1W.
+/// Deliberately **no** page-level portfolio dropdown (sidebar owns that) and
+/// **no** Net PnL / Win Rate KPI strip (Calendar + Portfolios own glance metrics).
+/// See Doc/analysis_ui_mock_plan.md.
 class TradeAnalysisPage extends ConsumerStatefulWidget {
   const TradeAnalysisPage({
     super.key,
@@ -35,9 +36,7 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
   _AnalysisTab _tab = _AnalysisTab.timing;
   late DateTime _startDate;
   late DateTime _endDate;
-  /// true until the user picks a narrower range in the calendar.
   bool _usingAllTime = true;
-  /// null = All holding styles.
   String? _holdingStyle;
 
   static DateTimeRange get _allTimeRange {
@@ -140,9 +139,6 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Do NOT listen to [appTimeFrameProvider] — global 1D/1W must not wipe
-    // Analysis' all-time default.
-
     final colors = context.colors;
     final theme = Theme.of(context);
     final cubitAsync = ref.watch(tradeMetricsCubitProvider);
@@ -152,13 +148,14 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
       body: Padding(
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.lg,
-          AppSpacing.lg,
+          AppSpacing.md,
           AppSpacing.lg,
           AppSpacing.md,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Header: title + date only — no portfolio dropdown, no KPI strip.
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -167,18 +164,19 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Analysis',
+                        'Trade Analysis',
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w800,
-                          letterSpacing: -0.3,
+                          letterSpacing: -0.4,
                           color: colors.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: AppSpacing.xs),
+                      const SizedBox(height: AppSpacing.xxs),
                       Text(
-                        'Analyze your trading patterns to find edge and improve.',
+                        'Execution patterns, session timing & style distribution.',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: colors.textSecondary,
+                          height: 1.35,
                         ),
                       ),
                     ],
@@ -194,7 +192,7 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
                 ),
               ],
             ),
-            const SizedBox(height: AppSpacing.section),
+            const SizedBox(height: AppSpacing.md),
             _AnalysisTabBar(
               selected: _tab,
               onSelected: (tab) => setState(() => _tab = tab),
@@ -206,7 +204,7 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
                 onChanged: _onHoldingStyleChanged,
               ),
             ],
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.sm),
             Expanded(
               child: cubitAsync.when(
                 loading: () => Center(
@@ -258,8 +256,10 @@ class _DateApplyBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return Wrap(
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.sm,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         AppButton(
           text: dateLabel,
@@ -267,24 +267,21 @@ class _DateApplyBar extends StatelessWidget {
           isOutlined: true,
           icon: Icons.calendar_today_outlined,
           onPressed: onPickDateRange,
-          height: 40,
+          height: 36,
         ),
-        if (!usingAllTime) ...[
-          const SizedBox(width: AppSpacing.sm),
+        if (!usingAllTime)
           AppButton(
             text: 'All time',
             type: AppButtonType.text,
             onPressed: onResetAllTime,
-            height: 40,
+            height: 36,
             textColor: ModuleColors.trade,
           ),
-        ],
-        const SizedBox(width: AppSpacing.sm),
         AppButton(
           text: 'Apply',
           type: AppButtonType.primary,
           onPressed: onApply,
-          height: 40,
+          height: 36,
           backgroundColor: ModuleColors.trade,
         ),
       ],
@@ -292,7 +289,6 @@ class _DateApplyBar extends StatelessWidget {
   }
 }
 
-/// Holding-style filter — same session clocks; subsets trades by hold duration.
 class _HoldingStyleFilter extends StatelessWidget {
   const _HoldingStyleFilter({
     required this.selected,
@@ -315,8 +311,7 @@ class _HoldingStyleFilter extends StatelessWidget {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
         Text(
           'Holding style',
@@ -325,30 +320,24 @@ class _HoldingStyleFilter extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
         ),
-        const SizedBox(height: AppSpacing.xs),
-        Wrap(
-          spacing: AppSpacing.sm,
-          runSpacing: AppSpacing.sm,
-          children: [
-            pill('All', null),
-            pill('Scalper', 'SCALPER'),
-            pill('Intraday', 'INTRADAY'),
-            pill('Swing', 'SWING'),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          'Scalper <15m · Intraday 15m–<24h · Swing ≥24h. Session windows stay the same.',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: colors.textSecondary,
-              ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+              pill('All', null),
+              pill('Scalper', 'SCALPER'),
+              pill('Intraday', 'INTRADAY'),
+              pill('Swing', 'SWING'),
+            ],
+          ),
         ),
       ],
     );
   }
 }
 
-/// Hub sub-tabs — soft ChoiceChip pattern matching Journal.
 class _AnalysisTabBar extends StatelessWidget {
   const _AnalysisTabBar({required this.selected, required this.onSelected});
 
@@ -358,36 +347,39 @@ class _AnalysisTabBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return Material(
-      color: colors.cardSurface,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
-        ),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              for (final tab in _AnalysisTab.values) ...[
-                if (tab.index > 0) const SizedBox(width: AppSpacing.sm),
-                ChoiceChip(
-                  avatar: Icon(
-                    _icon(tab),
-                    size: 16,
-                    color: selected == tab
-                        ? ModuleColors.trade
-                        : colors.textSecondary,
-                  ),
-                  label: Text(_label(tab)),
-                  selected: selected == tab,
-                  onSelected: (_) => onSelected(tab),
-                  selectedColor: ModuleColors.trade.withValues(alpha: 0.25),
-                  showCheckmark: false,
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.cardSurface,
+        borderRadius: AppRadii.card,
+        border: Border.all(color: colors.border.withValues(alpha: 0.35)),
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            for (final tab in _AnalysisTab.values) ...[
+              if (tab.index > 0) const SizedBox(width: AppSpacing.xs),
+              ChoiceChip(
+                avatar: Icon(
+                  _icon(tab),
+                  size: 16,
+                  color: selected == tab
+                      ? ModuleColors.trade
+                      : colors.textSecondary,
                 ),
-              ],
+                label: Text(_label(tab)),
+                selected: selected == tab,
+                onSelected: (_) => onSelected(tab),
+                selectedColor: ModuleColors.trade.withValues(alpha: 0.22),
+                showCheckmark: false,
+                visualDensity: VisualDensity.compact,
+              ),
             ],
-          ),
+          ],
         ),
       ),
     );

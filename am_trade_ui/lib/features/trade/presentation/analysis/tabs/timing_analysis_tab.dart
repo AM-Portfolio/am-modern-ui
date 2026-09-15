@@ -40,26 +40,15 @@ class TimingAnalysisTab extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _ContextBanner(
+            _MetaStrip(
               tradeCount: tradeCount,
+              styleHint: dist?.tradingStyleHint,
+              timezoneNote: dist?.timezoneNote,
               skippedMissingEntry: dist?.skippedMissingEntryCount ?? 0,
               openOrMissingPnl: dist?.openOrMissingPnlCount ?? 0,
               badTimestamp: dist?.badTimestampCount ?? 0,
               onOpenCalendar: onOpenCalendar,
               onOpenJournalInsights: onOpenJournalInsights,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            if (dist?.tradingStyleHint != null) ...[
-              _StyleHintChip(hint: dist!.tradingStyleHint!),
-              const SizedBox(height: AppSpacing.sm),
-            ],
-            Text(
-              'Entry times as stored on the trade '
-              '(${dist?.timezoneNote ?? 'entry_local_as_stored'}; typically IST for India books). '
-              'NSE session windows; lunch sits inside 1:00–3:00.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: context.colors.textSecondary,
-                  ),
             ),
             const SizedBox(height: AppSpacing.md),
             Expanded(child: _buildBody(context, state)),
@@ -118,9 +107,11 @@ class TimingAnalysisTab extends StatelessWidget {
   }
 }
 
-class _ContextBanner extends StatelessWidget {
-  const _ContextBanner({
+class _MetaStrip extends StatelessWidget {
+  const _MetaStrip({
     required this.tradeCount,
+    required this.styleHint,
+    required this.timezoneNote,
     required this.skippedMissingEntry,
     required this.openOrMissingPnl,
     required this.badTimestamp,
@@ -129,6 +120,8 @@ class _ContextBanner extends StatelessWidget {
   });
 
   final int? tradeCount;
+  final TradingStyleHint? styleHint;
+  final String? timezoneNote;
   final int skippedMissingEntry;
   final int openOrMissingPnl;
   final int badTimestamp;
@@ -138,21 +131,31 @@ class _ContextBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.colors;
     final countLabel = tradeCount == null
         ? '…'
         : NumberFormat.decimalPattern('en_IN').format(tradeCount);
 
-    final secondaryParts = <String>[];
-    if (skippedMissingEntry > 0) {
-      secondaryParts.add('$skippedMissingEntry skipped (no entry time)');
-    }
-    if (openOrMissingPnl > 0) {
-      secondaryParts.add(
-        '$openOrMissingPnl open/missing PnL excluded from Win% and Avg PnL',
+    final parts = <String>['$countLabel Trades'];
+    if (styleHint != null && styleHint!.style.toUpperCase() != 'UNKNOWN') {
+      parts.add(
+        'Mostly ${styleHintDisplayLabel(styleHint!.style)} · '
+        '${styleHint!.confidencePercent.toStringAsFixed(0)}% of ${styleHint!.sampleSize}',
       );
     }
+    parts.add(
+      timezoneNote == null || timezoneNote!.isEmpty
+          ? 'IST (UTC+5:30) · NSE session'
+          : timezoneNote!,
+    );
+    if (skippedMissingEntry > 0) {
+      parts.add('$skippedMissingEntry skipped (no entry time)');
+    }
+    if (openOrMissingPnl > 0) {
+      parts.add('$openOrMissingPnl open/missing PnL excluded');
+    }
     if (badTimestamp > 0) {
-      secondaryParts.add('$badTimestamp bad timestamps excluded from style');
+      parts.add('$badTimestamp bad timestamps');
     }
 
     return Container(
@@ -161,120 +164,36 @@ class _ContextBanner extends StatelessWidget {
         vertical: AppSpacing.sm,
       ),
       decoration: BoxDecoration(
-        color: ModuleColors.trade.withValues(alpha: 0.08),
-        borderRadius: AppRadii.card,
-        border: Border.all(
-          color: ModuleColors.trade.withValues(alpha: 0.28),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.info_outline, size: 18, color: ModuleColors.trade),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Text.rich(
-                  TextSpan(
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: context.colors.textPrimary,
-                    ),
-                    children: [
-                      const TextSpan(text: 'Showing data for '),
-                      TextSpan(
-                        text: '$countLabel trades',
-                        style: const TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                      if (secondaryParts.isNotEmpty)
-                        TextSpan(
-                          text: '. ${secondaryParts.join(' · ')}',
-                          style: TextStyle(
-                            color: context.colors.textSecondary,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              AppButton(
-                text: 'View Calendar',
-                type: AppButtonType.text,
-                onPressed: onOpenCalendar,
-                height: 36,
-                textColor: ModuleColors.trade,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-              ),
-              AppButton(
-                text: 'Journal Insights',
-                type: AppButtonType.text,
-                onPressed: onOpenJournalInsights,
-                height: 36,
-                textColor: ModuleColors.trade,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StyleHintChip extends StatelessWidget {
-  const _StyleHintChip({required this.hint});
-
-  final TradingStyleHint hint;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = context.colors;
-    final label = styleHintDisplayLabel(hint.style);
-    final isUnknown = hint.style.toUpperCase() == 'UNKNOWN';
-
-    final primary = isUnknown
-        ? 'Book style (from hold time): Not enough closed trades to infer style'
-        : 'Book style (from hold time): Mostly $label · '
-            '${hint.confidencePercent.toStringAsFixed(0)}% of ${hint.sampleSize} trades';
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
         color: colors.cardSurface,
         borderRadius: AppRadii.card,
-        border: Border.all(
-          color: ModuleColors.trade.withValues(alpha: 0.22),
-        ),
+        border: Border.all(color: colors.border.withValues(alpha: 0.35)),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.menu_book_outlined, size: 20, color: ModuleColors.trade),
-          const SizedBox(width: AppSpacing.sm),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  primary,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: colors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  'Inferred from hold time in the current filters (date + holding style). '
-                  'Does not change session time windows — use the Holding style chips to filter.',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colors.textSecondary,
-                    height: 1.35,
-                  ),
-                ),
-              ],
+            child: Text(
+              parts.join('  ·  '),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colors.textSecondary,
+                height: 1.35,
+              ),
             ),
+          ),
+          AppButton(
+            text: 'View Calendar',
+            type: AppButtonType.text,
+            onPressed: onOpenCalendar,
+            height: 32,
+            textColor: ModuleColors.trade,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+          ),
+          AppButton(
+            text: 'Journal Insights',
+            type: AppButtonType.text,
+            onPressed: onOpenJournalInsights,
+            height: 32,
+            textColor: ModuleColors.trade,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
           ),
         ],
       ),
@@ -341,11 +260,7 @@ class _TimingDashboardState extends State<_TimingDashboard> {
       TimingDimension.weekday => 'Day',
       TimingDimension.month => 'Month',
     };
-    final rankTitle = switch (_rankView) {
-      TimingRankView.all => 'All $bucketLabel',
-      TimingRankView.best => 'Best $bucketLabel',
-      TimingRankView.worst => 'Worst $bucketLabel',
-    };
+    final rankTitle = 'Breakdown ($bucketLabel)';
     final emptyRank = _rankView == TimingRankView.all
         ? 'No timing data yet'
         : 'Need at least $minTradesForRank trades with PnL in a bucket to rank';
@@ -409,10 +324,13 @@ class _TimingDashboardState extends State<_TimingDashboard> {
               bucketLabel: bucketLabel,
               rows: rankRows,
               emptyMessage: emptyRank,
+              subtitle: switch (_rankView) {
+                TimingRankView.all => 'All · ranked by Avg PnL',
+                TimingRankView.best => 'Best · ranked by Avg PnL',
+                TimingRankView.worst => 'Worst · ranked by Avg PnL',
+              },
               showLowSampleBadges: _rankView == TimingRankView.all,
             ),
-            const SizedBox(height: AppSpacing.md),
-            const _EntryExampleTip(),
             const SizedBox(height: AppSpacing.md),
           ],
         );
@@ -471,7 +389,7 @@ class _RankControls extends StatelessWidget {
       runSpacing: AppSpacing.sm,
       children: [
         chipGroup<TimingDimension>(
-          label: 'Dimension',
+          label: 'Breakdown',
           options: const [
             (TimingDimension.session, 'Session'),
             (TimingDimension.weekday, 'Day'),
@@ -491,53 +409,6 @@ class _RankControls extends StatelessWidget {
           onChanged: onRankView,
         ),
       ],
-    );
-  }
-}
-
-class _EntryExampleTip extends StatelessWidget {
-  const _EntryExampleTip();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: ModuleColors.trade.withValues(alpha: 0.08),
-        borderRadius: AppRadii.card,
-        border: Border.all(
-          color: ModuleColors.trade.withValues(alpha: 0.25),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.lightbulb_outline, size: 18, color: ModuleColors.trade),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Text.rich(
-              TextSpan(
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: context.colors.textPrimary,
-                  height: 1.4,
-                ),
-                children: const [
-                  TextSpan(
-                    text: 'Example: ',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  TextSpan(
-                    text:
-                        'Buy at 10:00 / Sell at 15:00 → Session bucket 9:15–11:00 '
-                        '(entry time). Holding style: Intraday (~5 hours).',
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

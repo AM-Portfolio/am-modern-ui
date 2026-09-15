@@ -21,6 +21,11 @@ class TimingAvgPnlChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.colors;
+    final ranked = buckets.where((b) => b.trades > 0).toList()
+      ..sort((a, b) => b.avgPnl.compareTo(a.avgPnl));
+    final best = ranked.isEmpty ? null : ranked.first;
+    final weakest = ranked.length < 2 ? null : ranked.last;
+
     return Container(
       decoration: BoxDecoration(
         color: colors.cardSurface,
@@ -67,6 +72,36 @@ class TimingAvgPnlChart extends StatelessWidget {
                   )
                 : BarChart(_chartData(context)),
           ),
+          if (best != null || weakest != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              children: [
+                if (weakest != null)
+                  Expanded(
+                    child: Text(
+                      'Weakest  ${weakest.label}',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: context.statusError,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                if (best != null)
+                  Expanded(
+                    child: Text(
+                      'Best  ${best.label}',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: context.statusSuccess,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.end,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
     );
