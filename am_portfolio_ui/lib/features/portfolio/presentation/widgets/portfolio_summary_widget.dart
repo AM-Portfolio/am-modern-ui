@@ -115,7 +115,7 @@ class PortfolioSummaryWidget extends StatelessWidget {
                           Icon(Icons.sync, size: 12, color: Colors.white.withValues(alpha: 0.9)),
                           const SizedBox(width: 4),
                           Text(
-                            _formatDateTime(summary.lastUpdated),
+                            summary.priceLabel,
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.9),
                               fontSize: 10,
@@ -342,18 +342,4 @@ class PortfolioSummaryWidget extends StatelessWidget {
     );
   }
 
-  String _formatDateTime(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inMinutes < 1) {
-      return 'Just now';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}m ago';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours}h ago';
-    } else {
-      return '${dateTime.day}/${dateTime.month}';
-    }
-  }
 }

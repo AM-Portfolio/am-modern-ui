@@ -183,7 +183,7 @@ class UniversalHeatmapTemplateFactory {
           showSelectors: selectorWidget != null,
           showLegend: false,
           icon: icon,
-          padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+          padding: const EdgeInsets.fromLTRB(4, 4, 4, 4),
           compactHeader: true,
         );
         break;
@@ -251,7 +251,7 @@ class UniversalHeatmapTemplateFactory {
                 showSelectors: selectorWidget != null,
                 icon: icon,
                 compactHeader: true,
-                padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+                padding: const EdgeInsets.fromLTRB(4, 4, 4, 4),
               );
             } else if (constraints.maxWidth < 1024) {
               CommonLogger.debug(

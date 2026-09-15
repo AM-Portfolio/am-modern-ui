@@ -93,29 +93,15 @@ class GridLayoutBuilder extends HeatmapLayoutBuilder {
 
   /// Gets the tile color based on performance and configuration
   @override
-  Color getTileColor(HeatmapTileData tile, HeatmapData data) {
+  Color getTileColor(
+    BuildContext context,
+    HeatmapTileData tile,
+    HeatmapData data,
+  ) {
     if (!data.configuration.showPerformance) {
-      return Colors
-          .blue
-          .shade400; // Default color when performance is not shown
+      return Colors.blue.shade400;
     }
-
-    final performance = tile.performance;
-    if (performance > 0) {
-      return Color.lerp(
-        Colors.green.shade300,
-        Colors.green.shade700,
-        (performance / 10).clamp(0.0, 1.0),
-      )!;
-    } else if (performance < 0) {
-      return Color.lerp(
-        Colors.red.shade300,
-        Colors.red.shade700,
-        (performance.abs() / 10).clamp(0.0, 1.0),
-      )!;
-    } else {
-      return Colors.grey.shade400; // Neutral for zero performance
-    }
+    return getPerformanceColor(context, tile.performance);
   }
 
   /// Gets appropriate text color based on background color
@@ -134,7 +120,7 @@ class GridLayoutBuilder extends HeatmapLayoutBuilder {
     Widget Function(HeatmapTileData tile)? customTileBuilder,
   }) {
     // Get tile color for consistent background
-    final tileColor = getTileColor(tile, data);
+    final tileColor = getTileColor(context, tile, data);
     final textColor = getTextColor(tileColor);
 
     return Container(

@@ -18,6 +18,9 @@ class PortfolioSummaryDto {
     required this.marketCapHoldings,
     required this.sectorialHoldings,
     required this.brokerPortfolios,
+    this.asOf,
+    this.priceFreshness,
+    this.sessionDate,
   });
 
   /// Create from JSON response — keys match exact backend field names.
@@ -38,6 +41,9 @@ class PortfolioSummaryDto {
         marketCapHoldings: _parseEquityHoldingsMap(json['marketCapHoldings']),
         sectorialHoldings: _parseEquityHoldingsMap(json['sectorialHoldings']),
         brokerPortfolios: _parseBrokerPortfolios(json['brokerPortfolios']),
+        asOf: json['asOf'] as String?,
+        priceFreshness: json['priceFreshness'] as String?,
+        sessionDate: json['sessionDate'] as String?,
       );
     } catch (e) {
       // ignore: avoid_print
@@ -58,6 +64,9 @@ class PortfolioSummaryDto {
   final int losersCount;
   final int todayGainersCount;
   final int todayLosersCount;
+  final String? asOf;
+  final String? priceFreshness;
+  final String? sessionDate;
 
   /// marketCapHoldings: Map<String (cap category), List<EquityHolding>>
   final Map<String, List<SectorialEquityHoldingDto>> marketCapHoldings;
@@ -124,6 +133,9 @@ class PortfolioSummaryDto {
     'losersCount': losersCount,
     'todayGainersCount': todayGainersCount,
     'todayLosersCount': todayLosersCount,
+    if (asOf != null) 'asOf': asOf,
+    if (priceFreshness != null) 'priceFreshness': priceFreshness,
+    if (sessionDate != null) 'sessionDate': sessionDate,
   };
 }
 

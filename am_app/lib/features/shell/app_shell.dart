@@ -455,6 +455,9 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
         stompCubit.updateToken(token, userId: authState.user.id);
         unawaited(_startMarketStreamingGate());
         unawaited(_syncFeatureFlagAttributes(authState.user.id));
+        unawaited(
+          am_sub.ReferralIntroHost.maybeShow(context, authState.user.id),
+        );
       }
     }
   }
@@ -504,6 +507,9 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
                 _seedPortfolioSelectionFromSession();
                 unawaited(_startMarketStreamingGate());
                 unawaited(_syncFeatureFlagAttributes(state.user.id));
+                unawaited(
+                  am_sub.ReferralIntroHost.maybeShow(context, state.user.id),
+                );
               }
             } else if (state is Unauthenticated) {
               _portfolioSeeded = false;

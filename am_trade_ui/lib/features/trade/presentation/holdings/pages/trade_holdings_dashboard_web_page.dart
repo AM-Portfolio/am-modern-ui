@@ -1,4 +1,5 @@
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_portfolio_ui/features/portfolio/providers/portfolio_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -44,6 +45,7 @@ class _TradeHoldingsDashboardWebPageState
   @override
   void initState() {
     super.initState();
+    if (widget.embedded) return;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final cubit = await ref.read(favoriteFilterCubitProvider.future);
       if (!mounted) return;
@@ -61,57 +63,68 @@ class _TradeHoldingsDashboardWebPageState
   Widget _buildHoldingsTab() {
     final portfolioId = widget.portfolioId;
     final holdingsAsync = ref.watch(tradeHoldingsStreamProvider(portfolioId));
+    final portfolioHoldingsAsync = ref.watch(portfolioHoldingsProvider(portfolioId));
+    final priceFreshnessLabel = portfolioHoldingsAsync.maybeWhen(
+      data: (h) => h.priceLabel,
+      orElse: () => null,
+    );
 
     return Column(
       children: [
-        // Filter section
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 0.0),
-          child: ref.watch(favoriteFilterCubitProvider).when(
-                data: (cubit) => BlocProvider.value(
-                  value: cubit,
-                  child: FilterPanel(
-                    initialConfig: _currentFilter,
-                    onApplyFilter: (config) {
-                      setState(() {
-                        _currentFilter = config;
-                      });
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(const SnackBar(content: Text('Custom filters applied'), duration: Duration(seconds: 2)));
-                    },
-                    onReset: () {
-                      setState(() {
-                        _currentFilter = MetricsFilterConfig.empty();
-                      });
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(const SnackBar(content: Text('Filters reset'), duration: Duration(seconds: 1)));
-                    },
+        if (!widget.embedded) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 0.0),
+            child: ref.watch(favoriteFilterCubitProvider).when(
+                  data: (cubit) => BlocProvider.value(
+                    value: cubit,
+                    child: FilterPanel(
+                      initialConfig: _currentFilter,
+                      onApplyFilter: (config) {
+                        setState(() {
+                          _currentFilter = config;
+                        });
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(const SnackBar(content: Text('Custom filters applied'), duration: Duration(seconds: 2)));
+                      },
+                      onReset: () {
+                        setState(() {
+                          _currentFilter = MetricsFilterConfig.empty();
+                        });
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(const SnackBar(content: Text('Filters reset'), duration: Duration(seconds: 1)));
+                      },
+                    ),
                   ),
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (error, stack) => Center(child: Text('Error loading filters: $error')),
                 ),
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, stack) => Center(child: Text('Error loading filters: $error')),
-              ),
-        ),
-
-        const SizedBox(height: 6),
+          ),
+          const SizedBox(height: 6),
+        ],
 
         // Holdings List
         Expanded(
           child: holdingsAsync.when(
             data: (tradeHoldings) {
-              // Apply filters to holdings
-              final filteredHoldings = _applyFilters(tradeHoldings.holdings, _currentFilter);
+              final filteredHoldings = widget.embedded
+                  ? tradeHoldings.holdings
+                  : _applyFilters(tradeHoldings.holdings, _currentFilter);
 
               return TradeHoldingsAdvancedTemplate(
                 holdings: filteredHoldings,
                 isLoading: false,
+                embedded: widget.embedded,
                 accentColor: _accent,
-                onHoldingSelected: (holding) => _showHoldingDetails(context, holding),
+                priceFreshnessLabel: priceFreshnessLabel,
+                onHoldingSelected: widget.embedded
+                    ? null
+                    : (holding) => _showHoldingDetails(context, holding),
                 onSymbolTap: widget.onNavigateToChart,
                 onRefresh: () {
                   ref.invalidate(tradeHoldingsStreamProvider(portfolioId));
+                  ref.invalidate(portfolioHoldingsProvider(portfolioId));
                 },
               );
             },
@@ -119,10 +132,13 @@ class _TradeHoldingsDashboardWebPageState
             error: (error, stack) => TradeHoldingsAdvancedTemplate(
               holdings: const [],
               isLoading: false,
+              embedded: widget.embedded,
               accentColor: _accent,
+              priceFreshnessLabel: priceFreshnessLabel,
               errorMessage: error.toString(),
               onRefresh: () {
                 ref.invalidate(tradeHoldingsStreamProvider(portfolioId));
+                ref.invalidate(portfolioHoldingsProvider(portfolioId));
               },
             ),
           ),

@@ -27,7 +27,11 @@ class MockAuthDataSource implements AuthDataSource {
 
 
   @override
-  Future<AuthResultModel> googleLogin(String idToken) async {
+  Future<AuthResultModel> googleLogin(
+    String idToken, {
+    String? referralCode,
+    String? deviceId,
+  }) async {
     try {
       final result = await _mockDataService.authenticateGoogle();
       return result;
@@ -74,6 +78,8 @@ class MockAuthDataSource implements AuthDataSource {
     required String email,
     required String password,
     String? phone,
+    String? referralCode,
+    String? deviceId,
   }) async {
     // Simulate network delay
     await Future.delayed(const Duration(milliseconds: 1000));

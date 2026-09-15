@@ -205,6 +205,7 @@ class PortfolioAnalyticsMapper {
   static PortfolioAnalyticsRequest createDefaultRequest(
     String portfolioId, {
     TimeFrame? timeFrame,
+    FeatureToggles? featureToggles,
   }) {
     String? fromDateStr;
     String? toDateStr;
@@ -212,70 +213,77 @@ class PortfolioAnalyticsMapper {
 
     if (timeFrame != null) {
       final now = DateTime.now();
-      DateTime fromDate = now;
 
+      // Backend TimeFrame @JsonValue codes: 1D / 1W / 1M / 1Y
+      // oneDay must omit timeFrame+dates so BE takes the live holdings path.
+      // Same-day hist (1D + from=to=today) returns empty heatmap/allocation on prod today.
       switch (timeFrame) {
         case TimeFrame.oneDay:
-          fromDate = now;
-          backendTimeFrame = 'DAY';
           break;
         case TimeFrame.oneWeek:
-          fromDate = now.subtract(const Duration(days: 7));
-          backendTimeFrame = 'WEEK';
+          fromDateStr = _ymd(now.subtract(const Duration(days: 7)));
+          toDateStr = _ymd(now);
+          backendTimeFrame = '1W';
           break;
         case TimeFrame.oneMonth:
-          fromDate = now.subtract(const Duration(days: 30));
-          backendTimeFrame = 'MONTH';
+          fromDateStr = _ymd(now.subtract(const Duration(days: 30)));
+          toDateStr = _ymd(now);
+          backendTimeFrame = '1M';
           break;
         case TimeFrame.threeMonths:
-          fromDate = now.subtract(const Duration(days: 90));
-          backendTimeFrame = 'MONTH';
+          fromDateStr = _ymd(now.subtract(const Duration(days: 90)));
+          toDateStr = _ymd(now);
+          backendTimeFrame = '1M';
           break;
         case TimeFrame.sixMonths:
-          fromDate = now.subtract(const Duration(days: 180));
-          backendTimeFrame = 'MONTH';
+          fromDateStr = _ymd(now.subtract(const Duration(days: 180)));
+          toDateStr = _ymd(now);
+          backendTimeFrame = '1M';
           break;
         case TimeFrame.oneYear:
-          fromDate = now.subtract(const Duration(days: 365));
-          backendTimeFrame = 'YEAR';
+          fromDateStr = _ymd(now.subtract(const Duration(days: 365)));
+          toDateStr = _ymd(now);
+          backendTimeFrame = '1Y';
           break;
         case TimeFrame.ytd:
-          fromDate = DateTime(now.year, 1, 1);
-          backendTimeFrame = 'YEAR';
+          fromDateStr = _ymd(DateTime(now.year, 1, 1));
+          toDateStr = _ymd(now);
+          backendTimeFrame = '1Y';
           break;
         case TimeFrame.threeYears:
-          fromDate = now.subtract(const Duration(days: 1095));
-          backendTimeFrame = 'YEAR';
+          fromDateStr = _ymd(now.subtract(const Duration(days: 1095)));
+          toDateStr = _ymd(now);
+          backendTimeFrame = '1Y';
           break;
         case TimeFrame.fiveYears:
-          fromDate = now.subtract(const Duration(days: 1825));
-          backendTimeFrame = 'YEAR';
+          fromDateStr = _ymd(now.subtract(const Duration(days: 1825)));
+          toDateStr = _ymd(now);
+          backendTimeFrame = '1Y';
           break;
         case TimeFrame.all:
-          fromDate = now.subtract(const Duration(days: 3650));
-          backendTimeFrame = 'YEAR';
+          fromDateStr = _ymd(now.subtract(const Duration(days: 3650)));
+          toDateStr = _ymd(now);
+          backendTimeFrame = '1Y';
           break;
       }
-
-      fromDateStr = '${fromDate.year}-${fromDate.month.toString().padLeft(2, '0')}-${fromDate.day.toString().padLeft(2, '0')}';
-      toDateStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     }
 
     return PortfolioAnalyticsRequest(
       coreIdentifiers: CoreIdentifiers(portfolioId: portfolioId),
-      featureToggles: const FeatureToggles(
-        includeHeatmap: true,
-        includeMovers: true,
-        includeSectorAllocation: true,
-        includeMarketCapAllocation: true,
-      ),
+      featureToggles: featureToggles ??
+          const FeatureToggles(
+            includeHeatmap: true,
+            includeMovers: true,
+            includeSectorAllocation: true,
+            includeMarketCapAllocation: true,
+          ),
       featureConfiguration: const FeatureConfiguration(moversLimit: 10),
       pagination: const Pagination(
         page: 1,
-        size: 20,
+        size: 500,
         sortBy: 'performance',
         sortDirection: 'DESC',
-        returnAllData: false,
+        returnAllData: true,
       ),
       fromDate: fromDateStr,
       toDate: toDateStr,
@@ -285,4 +293,7 @@ class PortfolioAnalyticsMapper {
 
   /// Create empty analytics when DTO analytics is null
   static Analytics _createEmptyAnalytics() => const Analytics();
+
+  static String _ymd(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 }

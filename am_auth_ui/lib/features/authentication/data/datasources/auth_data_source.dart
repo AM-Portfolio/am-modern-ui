@@ -7,7 +7,11 @@ abstract class AuthDataSource {
   Future<AuthResultModel> emailLogin(String email, String password);
 
   /// Google login
-  Future<AuthResultModel> googleLogin(String idToken);
+  Future<AuthResultModel> googleLogin(
+    String idToken, {
+    String? referralCode,
+    String? deviceId,
+  });
 
   /// Login with demo account
   Future<AuthResultModel> demoLogin();
@@ -24,6 +28,8 @@ abstract class AuthDataSource {
     required String email,
     required String password,
     String? phone,
+    String? referralCode,
+    String? deviceId,
   });
 
   /// Check if user is authenticated

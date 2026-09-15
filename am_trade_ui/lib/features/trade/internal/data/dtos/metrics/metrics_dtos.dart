@@ -229,6 +229,7 @@ class TradeDistributionMetricsDto {
   final Map<String, double>? winRateBySession;
   final Map<String, double>? avgPnlBySession;
   final Map<String, int>? eligibleTradesBySession;
+<<<<<<< HEAD
   final Map<String, double>? avgHoldMinutesByDay;
   final Map<String, double>? avgHoldMinutesByHour;
   final Map<String, double>? avgHoldMinutesByMonth;
@@ -237,6 +238,8 @@ class TradeDistributionMetricsDto {
   final Map<String, double>? riskRewardByHour;
   final Map<String, double>? riskRewardByMonth;
   final Map<String, double>? riskRewardBySession;
+=======
+>>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
   final Map<String, int>? tradeCountByAssetClass;
   final Map<String, double>? profitByAssetClass;
   final Map<String, double>? winRateByAssetClass;
@@ -254,8 +257,11 @@ class TradeDistributionMetricsDto {
   final int? badTimestampCount;
   final String? timezoneNote;
   final TradingStyleHintDto? tradingStyleHint;
+<<<<<<< HEAD
   final String? bestSessionKey;
   final double? bestSessionAvgPnl;
+=======
+>>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
 
   TradeDistributionMetricsDto({
     this.tradesByDay,
@@ -278,6 +284,7 @@ class TradeDistributionMetricsDto {
     this.winRateBySession,
     this.avgPnlBySession,
     this.eligibleTradesBySession,
+<<<<<<< HEAD
     this.avgHoldMinutesByDay,
     this.avgHoldMinutesByHour,
     this.avgHoldMinutesByMonth,
@@ -286,6 +293,8 @@ class TradeDistributionMetricsDto {
     this.riskRewardByHour,
     this.riskRewardByMonth,
     this.riskRewardBySession,
+=======
+>>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
     this.tradeCountByAssetClass,
     this.profitByAssetClass,
     this.winRateByAssetClass,
@@ -303,8 +312,11 @@ class TradeDistributionMetricsDto {
     this.badTimestampCount,
     this.timezoneNote,
     this.tradingStyleHint,
+<<<<<<< HEAD
     this.bestSessionKey,
     this.bestSessionAvgPnl,
+=======
+>>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
   });
 
   factory TradeDistributionMetricsDto.fromJson(Map<String, dynamic> json) {
@@ -329,6 +341,7 @@ class TradeDistributionMetricsDto {
       winRateBySession: _distDoubleMap(json['winRateBySession']),
       avgPnlBySession: _distDoubleMap(json['avgPnlBySession']),
       eligibleTradesBySession: _distIntMap(json['eligibleTradesBySession']),
+<<<<<<< HEAD
       avgHoldMinutesByDay: _distDoubleMap(json['avgHoldMinutesByDay']),
       avgHoldMinutesByHour: _distDoubleMap(json['avgHoldMinutesByHour']),
       avgHoldMinutesByMonth: _distDoubleMap(json['avgHoldMinutesByMonth']),
@@ -337,6 +350,8 @@ class TradeDistributionMetricsDto {
       riskRewardByHour: _distDoubleMap(json['riskRewardByHour']),
       riskRewardByMonth: _distDoubleMap(json['riskRewardByMonth']),
       riskRewardBySession: _distDoubleMap(json['riskRewardBySession']),
+=======
+>>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
       tradeCountByAssetClass: _distIntMap(json['tradeCountByAssetClass']),
       profitByAssetClass: _distDoubleMap(json['profitByAssetClass']),
       winRateByAssetClass: _distDoubleMap(json['winRateByAssetClass']),
@@ -358,8 +373,11 @@ class TradeDistributionMetricsDto {
           : TradingStyleHintDto.fromJson(
               json['tradingStyleHint'] as Map<String, dynamic>,
             ),
+<<<<<<< HEAD
       bestSessionKey: json['bestSessionKey'] as String?,
       bestSessionAvgPnl: _asNum(json['bestSessionAvgPnl'])?.toDouble(),
+=======
+>>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
     );
   }
 
@@ -371,29 +389,41 @@ class TradeDistributionMetricsDto {
         winRateByDay: _nullableDoubleMap(winRateByDay),
         avgPnlByDay: _nullableDoubleMap(avgPnlByDay),
         eligibleTradesByDay: eligibleTradesByDay ?? {},
+<<<<<<< HEAD
         avgHoldMinutesByDay: _nullableDoubleMap(avgHoldMinutesByDay),
         riskRewardByDay: _nullableDoubleMap(riskRewardByDay),
+=======
+>>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
         tradesByHour: tradesByHour ?? {},
         profitByHour: profitByHour ?? {},
         winRateByHour: _nullableDoubleMap(winRateByHour),
         avgPnlByHour: _nullableDoubleMap(avgPnlByHour),
         eligibleTradesByHour: eligibleTradesByHour ?? {},
+<<<<<<< HEAD
         avgHoldMinutesByHour: _nullableDoubleMap(avgHoldMinutesByHour),
         riskRewardByHour: _nullableDoubleMap(riskRewardByHour),
+=======
+>>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
         tradesByMonth: tradesByMonth ?? {},
         profitByMonth: profitByMonth ?? {},
         winRateByMonth: _nullableDoubleMap(winRateByMonth),
         avgPnlByMonth: _nullableDoubleMap(avgPnlByMonth),
         eligibleTradesByMonth: eligibleTradesByMonth ?? {},
+<<<<<<< HEAD
         avgHoldMinutesByMonth: _nullableDoubleMap(avgHoldMinutesByMonth),
         riskRewardByMonth: _nullableDoubleMap(riskRewardByMonth),
+=======
+>>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
         tradesBySession: tradesBySession ?? {},
         profitBySession: profitBySession ?? {},
         winRateBySession: _nullableDoubleMap(winRateBySession),
         avgPnlBySession: _nullableDoubleMap(avgPnlBySession),
         eligibleTradesBySession: eligibleTradesBySession ?? {},
+<<<<<<< HEAD
         avgHoldMinutesBySession: _nullableDoubleMap(avgHoldMinutesBySession),
         riskRewardBySession: _nullableDoubleMap(riskRewardBySession),
+=======
+>>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
         tradeCountByAssetClass: tradeCountByAssetClass ?? {},
         tradeCountByStrategy: tradeCountByStrategy ?? {},
         skippedMissingEntryCount: skippedMissingEntryCount ?? 0,
@@ -401,8 +431,11 @@ class TradeDistributionMetricsDto {
         badTimestampCount: badTimestampCount ?? 0,
         timezoneNote: timezoneNote ?? 'entry_local_as_stored',
         tradingStyleHint: tradingStyleHint?.toEntity(),
+<<<<<<< HEAD
         bestSessionKey: bestSessionKey,
         bestSessionAvgPnl: bestSessionAvgPnl,
+=======
+>>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
       );
 }
 
