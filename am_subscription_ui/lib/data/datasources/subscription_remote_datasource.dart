@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 import '../../domain/entities/plan.dart';
+import '../../domain/entities/referral.dart';
 import '../../domain/entities/subscription.dart';
 
 abstract class SubscriptionRemoteDataSource {
@@ -8,6 +9,8 @@ abstract class SubscriptionRemoteDataSource {
   Future<Subscription> getCurrentSubscription();
   Future<Subscription> createSubscription(String planCode, String billingInterval);
   Future<Subscription> upgradeSubscription(String subscriptionId, String planCode, String billingInterval);
+  Future<ReferralSummary> getReferralSummary();
+  Future<List<ReferralHistoryItem>> getReferralHistory({int limit = 50});
 }
 
 @LazySingleton(as: SubscriptionRemoteDataSource)
@@ -51,5 +54,25 @@ class SubscriptionRemoteDataSourceImpl implements SubscriptionRemoteDataSource {
       },
     );
     return Subscription.fromJson(response.data['data'] as Map<String, dynamic>);
+  }
+
+  @override
+  Future<ReferralSummary> getReferralSummary() async {
+    final response = await _dio.get('/subscriptions/referrals/me');
+    return ReferralSummary.fromJson(
+      response.data['data'] as Map<String, dynamic>,
+    );
+  }
+
+  @override
+  Future<List<ReferralHistoryItem>> getReferralHistory({int limit = 50}) async {
+    final response = await _dio.get(
+      '/subscriptions/referrals/me/history',
+      queryParameters: {'limit': limit},
+    );
+    final data = response.data['data'] as List? ?? const [];
+    return data
+        .map((e) => ReferralHistoryItem.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 }
