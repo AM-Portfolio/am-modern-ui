@@ -1,42 +1,134 @@
+import 'dart:math';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/core/styles/market_theme_extension.dart';
+import 'package:am_market_ui/features/f_o/providers/fo_provider.dart';
+import 'package:am_market_ui/features/f_o/providers/futures_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 class FuturesMarketDepthMetricsCard extends ConsumerWidget {
   const FuturesMarketDepthMetricsCard({super.key});
+
+  static String _formatNum(num n) {
+    final formatter = NumberFormat('#,##,##0', 'en_IN');
+    return formatter.format(n);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
     final marketTheme = context.marketTheme;
 
-    final buyOrders = [
-      {'price': '2,203.40', 'qty': '5,000', 'orders': '3'},
-      {'price': '2,203.25', 'qty': '3,750', 'orders': '2'},
-      {'price': '2,203.10', 'qty': '2,500', 'orders': '1'},
-      {'price': '2,203.00', 'qty': '2,000', 'orders': '3'},
-      {'price': '2,202.80', 'qty': '1,750', 'orders': '2'},
-    ];
+    final activeSymbol = ref.watch(foActiveSymbolProvider) ?? 'NIFTY';
+    final selectedContract = ref.watch(selectedFutureContractProvider);
+    final contracts = ref.watch(futuresContractsProvider).maybeWhen(
+          data: (d) => d,
+          orElse: () => <dynamic>[],
+        );
 
-    final sellOrders = [
-      {'price': '2,203.60', 'qty': '4,800', 'orders': '3'},
-      {'price': '2,203.75', 'qty': '3,600', 'orders': '2'},
-      {'price': '2,203.90', 'qty': '2,400', 'orders': '1'},
-      {'price': '2,204.00', 'qty': '2,200', 'orders': '2'},
-      {'price': '2,204.20', 'qty': '1,900', 'orders': '1'},
-    ];
+    final firstContract = contracts.isNotEmpty && contracts.first is Map
+        ? Map<String, dynamic>.from(contracts.first)
+        : null;
+    final activeContract = selectedContract ?? firstContract;
+
+    final ltp = (activeContract?['ltp'] as num?)?.toDouble() ?? 2203.50;
+    final rawVolume = (activeContract?['volume'] as num?)?.toInt() ?? 1872300;
+    final rawOi = (activeContract?['oi'] as num?)?.toInt() ?? 5131200;
+    final openPrice = (activeContract?['open'] as num?)?.toDouble() ?? (ltp > 0 ? ltp * 1.003 : 2210.00);
+    final highPrice = (activeContract?['high'] as num?)?.toDouble() ?? (ltp > 0 ? ltp * 1.012 : 2232.60);
+    final lowPrice = (activeContract?['low'] as num?)?.toDouble() ?? (ltp > 0 ? ltp * 0.992 : 2185.50);
+    final closePrice = (activeContract?['close'] as num?)?.toDouble() ?? ltp;
+
+    final avgPrice = (activeContract?['avgPrice'] as num?)?.toDouble() ?? ((highPrice + lowPrice) / 2);
+    final lowerCircuit = (activeContract?['lowerCircuit'] as num?)?.toDouble() ?? (ltp * 0.90);
+    final upperCircuit = (activeContract?['upperCircuit'] as num?)?.toDouble() ?? (ltp * 1.10);
+    final lotSize = (activeContract?['lot_size'] as num?)?.toInt() ?? 65;
+
+    final rawDepth = activeContract?['depth'] as Map?;
+    final rawBuyList = rawDepth?['buy'] as List?;
+    final rawSellList = rawDepth?['sell'] as List?;
+
+    final List<Map<String, String>> buyOrders = [];
+    final List<Map<String, String>> sellOrders = [];
+
+    if (rawBuyList != null && rawBuyList.isNotEmpty) {
+      for (final item in rawBuyList.take(5)) {
+        if (item is Map) {
+          final p = (item['price'] as num?)?.toDouble() ?? 0.0;
+          final q = (item['quantity'] as num?)?.toInt() ?? 0;
+          final o = (item['orders'] as num?)?.toInt() ?? 1;
+          buyOrders.add({
+            'price': p.toStringAsFixed(2),
+            'qty': _formatNum(q),
+            'orders': '$o',
+          });
+        }
+      }
+    }
+
+    if (buyOrders.isEmpty) {
+      final baseLtp = ltp > 0 ? ltp : 2203.50;
+      for (int i = 0; i < 5; i++) {
+        final stepPrice = baseLtp - (0.15 * (i + 1));
+        final qty = lotSize * (75 - i * 10);
+        final ordersCount = max(1, 3 - (i ~/ 2));
+        buyOrders.add({
+          'price': stepPrice.toStringAsFixed(2),
+          'qty': _formatNum(qty),
+          'orders': '$ordersCount',
+        });
+      }
+    }
+
+    if (rawSellList != null && rawSellList.isNotEmpty) {
+      for (final item in rawSellList.take(5)) {
+        if (item is Map) {
+          final p = (item['price'] as num?)?.toDouble() ?? 0.0;
+          final q = (item['quantity'] as num?)?.toInt() ?? 0;
+          final o = (item['orders'] as num?)?.toInt() ?? 1;
+          sellOrders.add({
+            'price': p.toStringAsFixed(2),
+            'qty': _formatNum(q),
+            'orders': '$o',
+          });
+        }
+      }
+    }
+
+    if (sellOrders.isEmpty) {
+      final baseLtp = ltp > 0 ? ltp : 2203.50;
+      for (int i = 0; i < 5; i++) {
+        final stepPrice = baseLtp + (0.15 * (i + 1));
+        final qty = lotSize * (70 - i * 9);
+        final ordersCount = max(1, 3 - (i ~/ 2));
+        sellOrders.add({
+          'price': stepPrice.toStringAsFixed(2),
+          'qty': _formatNum(qty),
+          'orders': '$ordersCount',
+        });
+      }
+    }
+
+    final totalBuyQty = buyOrders.fold(0, (sum, o) {
+      final qStr = o['qty']!.replaceAll(',', '');
+      return sum + (int.tryParse(qStr) ?? 0);
+    });
+    final totalSellQty = sellOrders.fold(0, (sum, o) {
+      final qStr = o['qty']!.replaceAll(',', '');
+      return sum + (int.tryParse(qStr) ?? 0);
+    });
 
     final metrics = [
-      {'label': 'Volume', 'val': '18,72,300'},
-      {'label': 'Open', 'val': '2,210.00'},
-      {'label': 'High', 'val': '2,232.60'},
-      {'label': 'Low', 'val': '2,185.50'},
-      {'label': 'Close', 'val': '2,205.60'},
-      {'label': 'Prev. OI', 'val': '51,31,200'},
-      {'label': 'Avg Price', 'val': '2,198.40'},
-      {'label': 'Lower Circuit', 'val': '1,985.00'},
-      {'label': 'Upper Circuit', 'val': '2,426.20'},
+      {'label': 'Volume', 'val': _formatNum(rawVolume)},
+      {'label': 'Open', 'val': '₹${openPrice.toStringAsFixed(2)}'},
+      {'label': 'High', 'val': '₹${highPrice.toStringAsFixed(2)}'},
+      {'label': 'Low', 'val': '₹${lowPrice.toStringAsFixed(2)}'},
+      {'label': 'Close', 'val': '₹${closePrice.toStringAsFixed(2)}'},
+      {'label': 'Prev. OI', 'val': _formatNum(rawOi)},
+      {'label': 'Avg Price', 'val': '₹${avgPrice.toStringAsFixed(2)}'},
+      {'label': 'Lower Circuit', 'val': '₹${lowerCircuit.toStringAsFixed(2)}'},
+      {'label': 'Upper Circuit', 'val': '₹${upperCircuit.toStringAsFixed(2)}'},
     ];
 
     return Container(
@@ -101,8 +193,8 @@ class FuturesMarketDepthMetricsCard extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Total Buy: 21,50,000', style: TextStyle(color: marketTheme.positive, fontWeight: FontWeight.bold, fontSize: 10)),
-              Text('Total Sell: 22,10,500', style: TextStyle(color: marketTheme.negative, fontWeight: FontWeight.bold, fontSize: 10)),
+              Text('Total Buy: ${_formatNum(totalBuyQty)}', style: TextStyle(color: marketTheme.positive, fontWeight: FontWeight.bold, fontSize: 10)),
+              Text('Total Sell: ${_formatNum(totalSellQty)}', style: TextStyle(color: marketTheme.negative, fontWeight: FontWeight.bold, fontSize: 10)),
             ],
           ),
           const Divider(height: 20, thickness: 0.5),
@@ -113,7 +205,7 @@ class FuturesMarketDepthMetricsCard extends ConsumerWidget {
               Text('Key Metrics', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14)),
               const SizedBox(width: 6),
               Tooltip(
-                message: 'Trading metrics including high/low boundaries, circuit limits, and average traded price.',
+                message: 'Trading metrics for $activeSymbol futures including high/low boundaries, circuit limits, and average traded price.',
                 child: Icon(Icons.info_outline_rounded, color: colors.textSecondary, size: 14),
               ),
             ],

@@ -3,6 +3,7 @@ import 'package:am_market_ui/core/styles/market_theme_extension.dart';
 import 'package:am_market_ui/features/f_o/providers/futures_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 class FuturesContractsTableWidget extends ConsumerWidget {
   const FuturesContractsTableWidget({
@@ -167,7 +168,7 @@ class FuturesContractsTableWidget extends ConsumerWidget {
                           String expiryStr = '24 Sep 2026';
                           if (rawExpiry is num && rawExpiry > 0) {
                             final dt = DateTime.fromMillisecondsSinceEpoch(rawExpiry.toInt());
-                            expiryStr = '${dt.day} ${_monthName(dt.month)} ${dt.year}';
+                            expiryStr = DateFormat('d MMM yyyy').format(dt);
                           } else if (rawExpiry != null && rawExpiry.toString().isNotEmpty) {
                             expiryStr = rawExpiry.toString();
                           }
@@ -296,20 +297,8 @@ class FuturesContractsTableWidget extends ConsumerWidget {
   }
 
   static Map<String, dynamic> _deriveContractMetrics(Map<String, dynamic> map, int index) {
-    final symbol = (map['trading_symbol'] ?? map['tradingSymbol'] ?? map['name'] ?? '').toString().toUpperCase();
-
-    int lotSize = 65;
-    if (map['lot_size'] != null || map['lotSize'] != null) {
-      lotSize = ((map['lot_size'] ?? map['lotSize']) as num).toInt();
-    } else if (symbol.contains('BANKNIFTY')) {
-      lotSize = 30;
-    } else if (symbol.contains('FINNIFTY')) {
-      lotSize = 60;
-    } else if (symbol.contains('MIDCPNIFTY')) {
-      lotSize = 120;
-    } else if (symbol.contains('NIFTYNXT50')) {
-      lotSize = 25;
-    }
+    final rawLotSize = map['lot_size'] ?? map['lotSize'] ?? map['minimum_lot_size'] ?? map['lot_multiplier'];
+    final lotSize = (rawLotSize is num && rawLotSize > 0) ? rawLotSize.toInt() : 1;
 
     final rawLtp = map['ltp'];
     final ltp = (rawLtp is num) ? rawLtp.toDouble() : 0.0;
@@ -344,7 +333,7 @@ class FuturesContractsTableWidget extends ConsumerWidget {
     final rawExpiry = map['expiry'];
     if (rawExpiry is num && rawExpiry > 0) {
       final dt = DateTime.fromMillisecondsSinceEpoch(rawExpiry.toInt());
-      return '${_monthName(dt.month)} ${dt.year}';
+      return DateFormat('MMM yyyy').format(dt);
     } else if (rawExpiry != null && rawExpiry.toString().isNotEmpty) {
       final str = rawExpiry.toString();
       final parts = str.split(' ');
@@ -361,11 +350,6 @@ class FuturesContractsTableWidget extends ConsumerWidget {
       return '${mStr[0]}${mStr.substring(1).toLowerCase()} $yStr';
     }
     return '';
-  }
-
-  static String _monthName(int month) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return (month >= 1 && month <= 12) ? months[month - 1] : '';
   }
 
   static String _formatNum(int num) {
