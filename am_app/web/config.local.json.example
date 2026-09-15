@@ -1,6 +1,6 @@
 {
-  "_comment": "Copy to config.local.json (gitignored). Merged last over config.{env}.json. For local UI + preprod APIs + Google on localhost:9000, use domain + webClientId below.",
-  "domain": "am-preprod.asrax.in",
+  "_comment": "Copy to config.local.json (gitignored). Merged last for Google client ID / local service ports. Domain is ignored when AM_ENV is prod/dev/preprod (dart-define wins). For AM_ENV=local, set domain to the APIs you want (am.asrax.in or am-preprod.asrax.in).",
+  "domain": "am.asrax.in",
   "services": {},
   "google": {
     "webClientId": "307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com"

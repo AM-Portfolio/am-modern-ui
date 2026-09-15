@@ -45,12 +45,6 @@ class TimingRankTable extends StatelessWidget {
     final colors = context.colors;
 
     return Container(
-      decoration: BoxDecoration(
-        color: colors.cardSurface,
-        borderRadius: AppRadii.card,
-        border: Border.all(color: colors.border.withValues(alpha: 0.4)),
-      ),
-      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -61,25 +55,12 @@ class TimingRankTable extends StatelessWidget {
               AppSpacing.md,
               AppSpacing.sm,
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                ),
-                Text(
-                  'Showing ${rows.length} '
-                  '${rows.length == 1 ? bucketLabel.toLowerCase() : '${bucketLabel.toLowerCase()}s'}',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: colors.textSecondary,
-                  ),
-                ),
-              ],
+            child: Text(
+              title,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: colors.textPrimary,
+              ),
             ),
           ),
           Divider(
@@ -149,12 +130,12 @@ class TimingRankTable extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _cell(bucketLabel, _sessionW, style, TextAlign.start),
-          _cell('Trades', _tradesW, style, TextAlign.end),
-          _cell('Win Rate', _winW, style, TextAlign.end),
-          _cell('Total P&L (₹)', _pnlW, style, TextAlign.end),
-          _cell('Avg P&L (₹)', _avgW, style, TextAlign.end),
-          _cell('Avg Hold Time', _holdW, style, TextAlign.end),
+          _cell(bucketLabel.toUpperCase(), _sessionW, style, TextAlign.start),
+          _cell('TRADES', _tradesW, style, TextAlign.end),
+          _cell('WIN RATE', _winW, style, TextAlign.end),
+          _cell('TOTAL P&L (₹)', _pnlW, style, TextAlign.end),
+          _cell('AVG P&L (₹)', _avgW, style, TextAlign.end),
+          _cell('AVG HOLD TIME', _holdW, style, TextAlign.end),
           _cell('R:R', _rrW, style, TextAlign.end),
         ],
       ),

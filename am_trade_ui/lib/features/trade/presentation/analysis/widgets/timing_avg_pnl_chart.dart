@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:am_design_system/am_design_system.dart';
 
 import '../models/timing_bucket.dart';
@@ -16,6 +17,19 @@ class TimingAvgPnlChart extends StatelessWidget {
   final String title;
   final List<TimingBucket> buckets;
   final String? emptyMessage;
+
+  static final _inr = NumberFormat.currency(
+    locale: 'en_IN',
+    symbol: '₹',
+    decimalDigits: 0,
+  );
+
+  static String _signedInr(double value) {
+    final formatted = _inr.format(value.abs());
+    if (value > 0) return '+$formatted';
+    if (value < 0) return '-$formatted';
+    return formatted;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,23 +57,27 @@ class TimingAvgPnlChart extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            title,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: colors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            'Avg PnL (₹)',
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: colors.textSecondary,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: colors.textPrimary,
+                ),
+              ),
+              Text(
+                'Avg PnL (₹)',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: AppSpacing.sm),
           SizedBox(
-            height: 160,
+            height: 200,
             child: buckets.isEmpty
                 ? Center(
                     child: Text(
@@ -74,30 +92,66 @@ class TimingAvgPnlChart extends StatelessWidget {
           ),
           if (best != null || weakest != null) ...[
             const SizedBox(height: AppSpacing.sm),
-            Row(
+            Wrap(
+              spacing: AppSpacing.md,
+              runSpacing: AppSpacing.sm,
+              alignment: WrapAlignment.spaceBetween,
               children: [
                 if (weakest != null)
-                  Expanded(
-                    child: Text(
-                      'Weakest  ${weakest.label}',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: context.statusError,
-                        fontWeight: FontWeight.w600,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: context.statusError.withValues(alpha: 0.5)),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'Weakest: ${weakest.label}',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: context.statusError,
+                            fontSize: 10,
+                          ),
+                        ),
                       ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Text(
+                        _signedInr(weakest.avgPnl),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: context.statusError,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 if (best != null)
-                  Expanded(
-                    child: Text(
-                      'Best  ${best.label}',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: context.statusSuccess,
-                        fontWeight: FontWeight.w600,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: context.statusSuccess.withValues(alpha: 0.5)),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'Best: ${best.label}',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: context.statusSuccess,
+                            fontSize: 10,
+                          ),
+                        ),
                       ),
-                      textAlign: TextAlign.end,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Text(
+                        _signedInr(best.avgPnl),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: context.statusSuccess,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
               ],
             ),
@@ -146,12 +200,26 @@ class TimingAvgPnlChart extends StatelessWidget {
             showTitles: true,
             reservedSize: 36,
             getTitlesWidget: (value, meta) {
-              if (value == 0) {
-                return Text(
-                  '0',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    fontSize: 10,
-                    color: colors.textSecondary,
+              if (value == 0 || (value.abs() - pad).abs() < 1e-4) {
+                String text;
+                if (value == 0) {
+                  text = '0';
+                } else {
+                  final absVal = value.abs();
+                  text = absVal >= 1000 
+                      ? '${(absVal / 1000).toStringAsFixed(0)}K' 
+                      : absVal.toStringAsFixed(0);
+                  if (value < 0) text = '-$text';
+                }
+                return Padding(
+                  padding: const EdgeInsets.only(right: 4.0),
+                  child: Text(
+                    text,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontSize: 10,
+                      color: colors.textSecondary,
+                    ),
+                    textAlign: TextAlign.right,
                   ),
                 );
               }
@@ -187,7 +255,7 @@ class TimingAvgPnlChart extends StatelessWidget {
       gridData: FlGridData(
         show: true,
         drawVerticalLine: false,
-        horizontalInterval: pad,
+        horizontalInterval: pad > 0 ? pad : 1,
         getDrawingHorizontalLine: (value) => FlLine(
           color: colors.border.withValues(alpha: 0.4),
           strokeWidth: 1,
@@ -200,7 +268,7 @@ class TimingAvgPnlChart extends StatelessWidget {
             x: i,
             barRods: [
               BarChartRodData(
-                toY: buckets[i].avgPnl,
+                toY: buckets[i].avgPnl == 0 ? (pad * 0.015) : buckets[i].avgPnl,
                 width: buckets.length > 12 ? 6 : 10,
                 borderRadius: BorderRadius.circular(AppRadii.xs),
                 color: buckets[i].trades == 0

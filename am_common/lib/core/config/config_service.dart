@@ -171,12 +171,13 @@ class ConfigService {
 
     // Local web: `config.json` is usually am-dev and has no Helm `env`.
     // If AM_ENV is dart-defined (prod/dev/preprod), re-apply config.{env}.json
-    // last so localhost can hit prod without overwriting committed config.json.
+    // so localhost can hit that env without overwriting committed config.json.
     final bootstrapHasEnv = bootstrapEnv != null && bootstrapEnv.isNotEmpty;
-    if (!bootstrapHasEnv &&
+    final explicitRemoteEnv = !bootstrapHasEnv &&
         _envFromDefine.isNotEmpty &&
         _resolvedEnv.isNotEmpty &&
-        _resolvedEnv != 'local') {
+        _resolvedEnv != 'local';
+    if (explicitRemoteEnv) {
       final envConfig = await _fetchJson('/config.$_resolvedEnv.json');
       if (envConfig != null) {
         merged = _deepMerge(merged, envConfig);
@@ -184,9 +185,16 @@ class ConfigService {
     }
 
     // Gitignored overlay, like `.env`. 404 is ignored.
+    // Keeps machine-specific Google client IDs / local service ports.
+    // When AM_ENV is explicitly prod/dev/preprod, do not let the overlay
+    // override `domain` — that defeated `run:app:prod` and pointed at preprod.
     final localOverlay = await _fetchJson('/config.local.json');
     if (localOverlay != null) {
-      merged = _deepMerge(merged, localOverlay);
+      final overlay = Map<String, dynamic>.from(localOverlay);
+      if (explicitRemoteEnv) {
+        overlay.remove('domain');
+      }
+      merged = _deepMerge(merged, overlay);
     }
 
     return merged;

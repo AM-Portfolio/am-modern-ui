@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
+import 'package:am_design_system/am_design_system.dart';
 import 'package:am_common/am_common.dart';
 import '../cubit/portfolio_cubit.dart';
 import '../cubit/portfolio_state.dart';
@@ -189,8 +190,12 @@ class _GlobalPortfolioWrapperState
     final fallback = portfolios.first;
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Portfolio not found or access denied. Showing default.'),
+        SnackBar(
+          content: Text(
+            'Portfolio not found or access denied. Showing default.',
+            style: TextStyle(color: context.colors.textPrimary),
+          ),
+          backgroundColor: context.statusError,
         ),
       );
     }

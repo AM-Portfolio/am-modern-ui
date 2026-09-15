@@ -155,110 +155,52 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header Row: Title, Badge, and Action Buttons
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          'Trade Analysis',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: colors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.sm,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: context.statusSuccess.withValues(alpha: 0.15),
-                            borderRadius: AppRadii.chip,
-                            border: Border.all(
-                              color: context.statusSuccess.withValues(alpha: 0.3),
-                            ),
-                          ),
-                          child: Text(
-                            'LIVE EDGE',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: context.statusSuccess,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Analyze execution patterns, session timing & style distribution',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-                const Spacer(),
-                AppButton(
-                  text: widget.portfolioId.length > 24
-                      ? '${widget.portfolioId.substring(0, 24)}...'
-                      : widget.portfolioId,
-                  type: AppButtonType.secondary,
-                  isOutlined: true,
-                  iconTrailing: Icons.keyboard_arrow_down_rounded,
-                  onPressed: () {},
-                  height: 36,
-                ),
-                const SizedBox(width: AppSpacing.md),
-                _DateApplyBar(
-                  dateLabel: _dateLabel,
-                  usingAllTime: _usingAllTime,
-                  onPickDateRange: _pickDateRange,
-                  onResetAllTime: _resetToAllTime,
-                  onApply: _loadMetrics,
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                AppButton(
-                  text: '',
-                  icon: Icons.refresh,
-                  type: AppButtonType.secondary,
-                  isOutlined: true,
-                  onPressed: _loadMetrics,
-                  height: 36,
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                AppButton(
-                  text: '',
-                  icon: Icons.download_outlined,
-                  type: AppButtonType.secondary,
-                  isOutlined: true,
-                  onPressed: () {}, // Not implemented yet
-                  height: 36,
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-            // Filter Row: Tabs & Holding Style
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+            // Single header row (wraps if too narrow): Tabs + [Holding style] + Date + Apply + Refresh + Download
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              runSpacing: AppSpacing.md,
               children: [
                 _AnalysisTabBar(
                   selected: _tab,
                   onSelected: (tab) => setState(() => _tab = tab),
                 ),
-                const Spacer(),
-                if (_tab == _AnalysisTab.timing) ...[
-                  _HoldingStyleFilter(
-                    selected: _holdingStyle,
-                    onChanged: _onHoldingStyleChanged,
-                  ),
-                ],
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    if (_tab == _AnalysisTab.timing) ...[
+                      _HoldingStyleFilter(
+                        selected: _holdingStyle,
+                        onChanged: _onHoldingStyleChanged,
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                    ],
+                    _DateApplyBar(
+                      dateLabel: _dateLabel,
+                      usingAllTime: _usingAllTime,
+                      onPickDateRange: _pickDateRange,
+                      onResetAllTime: _resetToAllTime,
+                      onApply: _loadMetrics,
+                    ),
+                    AppButton(
+                      text: '',
+                      icon: Icons.refresh,
+                      type: AppButtonType.secondary,
+                      isOutlined: true,
+                      onPressed: _loadMetrics,
+                      height: 36,
+                    ),
+                    AppButton(
+                      text: '',
+                      icon: Icons.download_outlined,
+                      type: AppButtonType.secondary,
+                      isOutlined: true,
+                      onPressed: () {},
+                      height: 36,
+                    ),
+                  ],
+                ),
               ],
             ),
             const SizedBox(height: AppSpacing.md),

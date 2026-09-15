@@ -53,7 +53,6 @@ class TimingAnalysisTab extends StatelessWidget {
               onOpenCalendar: onOpenCalendar,
               onOpenJournalInsights: onOpenJournalInsights,
             ),
-            const SizedBox(height: AppSpacing.md),
             TimingKpiRow(
               performance: perf,
               distribution: dist,
@@ -348,17 +347,9 @@ class _RankControls extends StatelessWidget {
         children: [
           Text(label, style: labelStyle),
           const SizedBox(width: AppSpacing.sm),
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.xxs),
-            decoration: BoxDecoration(
-              color: colors.surface.withValues(alpha: 0.55),
-              borderRadius: AppRadii.chip,
-              border: Border.all(color: colors.border.withValues(alpha: 0.35)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: chips,
-            ),
+          Wrap(
+            spacing: AppSpacing.xs,
+            children: chips,
           ),
         ],
       );
@@ -428,12 +419,19 @@ class _RankControls extends StatelessWidget {
             ],
           ),
         ),
-        Text(
-          'Showing $rowCount '
-          '${rowCount == 1 ? bucketLabel.toLowerCase() : '${bucketLabel.toLowerCase()}s'}',
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: colors.textSecondary,
-              ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.table_rows_outlined, size: 16, color: colors.textSecondary),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              'Showing $rowCount '
+              '${rowCount == 1 ? bucketLabel.toLowerCase() : '${bucketLabel.toLowerCase()}s'}',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: colors.textSecondary,
+                  ),
+            ),
+          ],
         ),
       ],
     );
