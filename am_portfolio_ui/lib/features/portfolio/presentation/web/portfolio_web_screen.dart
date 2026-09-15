@@ -196,6 +196,11 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
 
     return NotificationListener<OpenAddTradeNotification>(
       onNotification: (notification) {
+        // Holdings embeds Trade cards as view-only; ignore edit notifications there.
+        if (widget.initialTab == 'holdings') {
+          notification.handled = true;
+          return true;
+        }
         if (widget.addTradeBuilder != null) {
           setState(() {
             _isAddingTrade = true;

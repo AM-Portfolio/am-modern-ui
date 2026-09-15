@@ -210,6 +210,11 @@ class TradeHoldingViewModel {
   /// Computed properties for UI display
   String get displaySymbol => symbol;
   String get displayCompanyName => companyName;
+  bool get hasDistinctCompanyName {
+    final name = companyName.trim();
+    if (name.isEmpty || name == 'Unknown Company') return false;
+    return name.toUpperCase() != symbol.toUpperCase();
+  }
   String get displaySector => sector ?? 'Unknown';
   String get displayIndustry => industry ?? 'Unknown';
   String get displayExchange => exchange ?? 'Unknown';
