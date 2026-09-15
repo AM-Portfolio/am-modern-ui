@@ -3,7 +3,7 @@ import 'package:am_design_system/am_design_system.dart';
 import '../../internal/domain/entities/portfolio_analytics.dart';
 import 'intelligence/intelligence_glass_card.dart';
 
-/// Top movers panel — Gainers left, Losers right.
+/// Top movers panel — Gainers left, Losers right (day change vs previous close).
 /// Each tile uses the Stitch design: colored squircle arrow + ticker + price + pill badge.
 class MoversWidget extends StatefulWidget {
   const MoversWidget({
@@ -435,7 +435,9 @@ class _MoverTileState extends State<MoverTile> {
                 ],
               ),
               child: Text(
-                '${stock.changePercent >= 0 ? '+' : ''}${stock.changePercent.toStringAsFixed(2)}%',
+                stock.changePercent.abs() < 0.005
+                    ? '0.00%'
+                    : '${stock.changePercent >= 0 ? '+' : ''}${stock.changePercent.toStringAsFixed(2)}%',
                 style: TextStyle(
                   color: color,
                   fontSize: 10,

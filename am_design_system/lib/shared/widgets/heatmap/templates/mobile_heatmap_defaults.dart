@@ -37,7 +37,7 @@ class MobileHeatmapDefaults {
       showRefreshButton: false,
     ),
     layout: layout_config.LayoutConfig(
-      layoutType: HeatmapLayoutType.grid,
+      layoutType: HeatmapLayoutType.treemap,
       compactView: true,
       customTitle: title ?? 'Portfolio',
     ),

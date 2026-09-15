@@ -130,6 +130,7 @@ class PortfolioSummaryMapper {
           )
           .toList();
 
+      final asOf = _parseAsOf(apiModel.asOf);
       return PortfolioSummary(
         totalValue: apiModel.currentValue,
         totalInvested: apiModel.investmentValue,
@@ -145,7 +146,10 @@ class PortfolioSummaryMapper {
         todayLosersCount: apiModel.todayLosersCount,
         gainersCount: apiModel.gainersCount,
         losersCount: apiModel.losersCount,
-        lastUpdated: DateTime.now(),
+        lastUpdated: asOf ?? DateTime.now(),
+        asOf: asOf,
+        priceFreshness: apiModel.priceFreshness ?? 'AS_OF',
+        sessionDate: apiModel.sessionDate,
         sectorAllocation: sectorAllocations,
         topPerformers: topPerformers,
         worstPerformers: worstPerformers,
@@ -208,4 +212,9 @@ class PortfolioSummaryMapper {
       apiModel != null &&
       apiModel.currentValue >= 0 &&
       apiModel.investmentValue >= 0;
+
+  static DateTime? _parseAsOf(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    return DateTime.tryParse(raw);
+  }
 }
