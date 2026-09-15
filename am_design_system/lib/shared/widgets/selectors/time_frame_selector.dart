@@ -22,6 +22,7 @@ const List<TimeFrame> heatmapTimeFrames = [
   TimeFrame.oneWeek,
   TimeFrame.oneMonth,
   TimeFrame.threeMonths,
+  TimeFrame.sixMonths,
   TimeFrame.oneYear,
 ];
 

@@ -75,6 +75,11 @@ class _BootstrapAppState extends State<_BootstrapApp> {
   Future<void> _initialize() async {
     try {
       await ConfigService.initialize();
+      final captured =
+          await ReferralInstallStore.instance.captureFromUri(widget.launchUri);
+      if (!captured && kIsWeb) {
+        await ReferralInstallStore.instance.captureFromUri(Uri.base);
+      }
       await configureCoreDependencies();
       await configureFeatureDependencies();
       // Fire-and-forget: GrowthBook has no request timeout of its own and

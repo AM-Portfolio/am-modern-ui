@@ -3,8 +3,10 @@ release: am-modern-ui
 image: ghcr.io/am-portfolio/am-modern-ui
 runtime: flutter
 language: flutter
+# Dockerfile COPYs sibling packages (am_common, …) — build from repo root
 dockerfile: Dockerfile
 context: ..
+port: 8080
 github:
   repo: AM-Portfolio/am-modern-ui
   deploy_workflow: deploy-modern-ui.yml

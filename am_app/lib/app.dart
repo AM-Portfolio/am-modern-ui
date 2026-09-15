@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,7 +9,6 @@ import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_common/am_common.dart' as common;
 import 'package:am_library/am_library.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_quill/flutter_quill.dart';
 import 'package:go_router/go_router.dart';
 
 import 'core/di/injection.dart';
@@ -51,6 +52,7 @@ class _AMAppState extends ConsumerState<AMApp> {
     if (!skipSessionRestore) {
       _authCubit.checkAuthStatus();
     }
+    unawaited(_captureLaunchReferral());
     _authRefresh = AuthRefreshListenable(_authCubit);
     _router = createAppRouter(
       authCubit: _authCubit,
@@ -79,6 +81,23 @@ class _AMAppState extends ConsumerState<AMApp> {
       );
       return _previousPlatformOnError?.call(error, stack) ?? false;
     };
+  }
+
+  Future<void> _captureLaunchReferral() async {
+    final captured = await common.ReferralInstallStore.instance.captureFromUri(
+      widget.launchUri,
+    );
+    if (!captured && kIsWeb) {
+      await common.ReferralInstallStore.instance.captureFromUri(Uri.base);
+    }
+    final pending =
+        await common.ReferralInstallStore.instance.pendingReferralCode();
+    if (pending != null) {
+      ProductTelemetry.instance.featureAction(
+        'ref_captured',
+        metadata: {'code_len': pending.length},
+      );
+    }
   }
 
   @override
@@ -139,11 +158,10 @@ class _AMAppState extends ConsumerState<AMApp> {
                     child: child ?? const SizedBox.shrink(),
                   );
                 },
-                localizationsDelegates: const [
+                localizationsDelegates: [
                   GlobalMaterialLocalizations.delegate,
                   GlobalWidgetsLocalizations.delegate,
                   GlobalCupertinoLocalizations.delegate,
-                  FlutterQuillLocalizations.delegate,
                 ],
                 supportedLocales: const [
                   Locale('en', 'US'),

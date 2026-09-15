@@ -1,4 +1,5 @@
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_portfolio_ui/features/portfolio/providers/portfolio_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -61,6 +62,11 @@ class _TradeHoldingsDashboardWebPageState
   Widget _buildHoldingsTab() {
     final portfolioId = widget.portfolioId;
     final holdingsAsync = ref.watch(tradeHoldingsStreamProvider(portfolioId));
+    final portfolioHoldingsAsync = ref.watch(portfolioHoldingsProvider(portfolioId));
+    final priceFreshnessLabel = portfolioHoldingsAsync.maybeWhen(
+      data: (h) => h.priceLabel,
+      orElse: () => null,
+    );
 
     return Column(
       children: [
@@ -108,10 +114,12 @@ class _TradeHoldingsDashboardWebPageState
                 holdings: filteredHoldings,
                 isLoading: false,
                 accentColor: _accent,
+                priceFreshnessLabel: priceFreshnessLabel,
                 onHoldingSelected: (holding) => _showHoldingDetails(context, holding),
                 onSymbolTap: widget.onNavigateToChart,
                 onRefresh: () {
                   ref.invalidate(tradeHoldingsStreamProvider(portfolioId));
+                  ref.invalidate(portfolioHoldingsProvider(portfolioId));
                 },
               );
             },
@@ -120,9 +128,11 @@ class _TradeHoldingsDashboardWebPageState
               holdings: const [],
               isLoading: false,
               accentColor: _accent,
+              priceFreshnessLabel: priceFreshnessLabel,
               errorMessage: error.toString(),
               onRefresh: () {
                 ref.invalidate(tradeHoldingsStreamProvider(portfolioId));
+                ref.invalidate(portfolioHoldingsProvider(portfolioId));
               },
             ),
           ),

@@ -36,6 +36,10 @@ class ProfileSettingsPage extends StatefulWidget {
   /// True when plan is Pro/Premium (not free). Hides upgrade upsell copy.
   final bool? isPaidSubscription;
 
+  /// Optional Account-section content (e.g. Referral) composed by the shell
+  /// so this package stays free of subscription module dependencies.
+  final Widget? accountSectionExtra;
+
   const ProfileSettingsPage({
     required this.userId,
     this.email,
@@ -48,6 +52,7 @@ class ProfileSettingsPage extends StatefulWidget {
     this.highlightSubscription = false,
     this.subscriptionStatusLabel,
     this.isPaidSubscription,
+    this.accountSectionExtra,
     super.key,
   });
 
@@ -453,6 +458,16 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                       );
                     },
                   ),
+                ),
+              ],
+              if (widget.accountSectionExtra != null) ...[
+                _buildDivider(isDark),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.sm,
+                  ),
+                  child: widget.accountSectionExtra!,
                 ),
               ],
               _buildDivider(isDark),

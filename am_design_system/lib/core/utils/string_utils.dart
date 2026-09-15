@@ -38,6 +38,42 @@ class StringUtils {
   static bool isNullOrWhitespace(String? text) =>
       text == null || text.trim().isEmpty;
 
+  /// Format currency with Indian grouping and no L/K/Cr abbreviation.
+  /// Example: 929000 -> ₹9,29,000.00
+  static String formatCurrencyExact(
+    double amount, {
+    String symbol = '₹',
+    int decimals = 2,
+  }) {
+    if (amount.isNaN || amount.isInfinite) {
+      return '$symbol${'0.${'0' * decimals}'}';
+    }
+
+    final isNegative = amount < 0;
+    final absAmount = amount.abs();
+    final fixed = absAmount.toStringAsFixed(decimals);
+    final parts = fixed.split('.');
+    final intPart = parts[0];
+    final fracPart = parts.length > 1 ? parts[1] : ('0' * decimals);
+
+    String grouped;
+    if (intPart.length <= 3) {
+      grouped = intPart;
+    } else {
+      final last3 = intPart.substring(intPart.length - 3);
+      var rest = intPart.substring(0, intPart.length - 3);
+      final chunks = <String>[];
+      while (rest.length > 2) {
+        chunks.insert(0, rest.substring(rest.length - 2));
+        rest = rest.substring(0, rest.length - 2);
+      }
+      if (rest.isNotEmpty) chunks.insert(0, rest);
+      grouped = '${chunks.join(',')},$last3';
+    }
+
+    return '${isNegative ? '-' : ''}$symbol$grouped.$fracPart';
+  }
+
   /// Format currency with symbol
   static String formatCurrency(
     double amount, {
@@ -70,6 +106,18 @@ class StringUtils {
   static String formatPercentage(double percentage, {int decimals = 2}) {
     if (percentage.isNaN || percentage.isInfinite) return '0.00%';
     return '${percentage.toStringAsFixed(decimals)}%';
+  }
+
+  /// Signed percent for tiles/movers. Flat (~0) is unsigned `0.00%` (never `+0.00%`).
+  static String formatSignedPercent(double value, {int decimals = 2}) {
+    if (value.isNaN || value.isInfinite) {
+      return '0.${'0' * decimals}%';
+    }
+    if (value.abs() < 0.005) {
+      return '0.${'0' * decimals}%';
+    }
+    final sign = value > 0 ? '+' : '';
+    return '$sign${value.toStringAsFixed(decimals)}%';
   }
 
   /// Format large numbers with Indian numbering system

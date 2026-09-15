@@ -58,9 +58,12 @@ class Sector {
   /// Helper getter for formatted performance
   String get formattedPerformance => '${performance.toStringAsFixed(2)}%';
 
-  /// Helper getter for formatted change percent
-  String get formattedChangePercent =>
-      '${changePercent >= 0 ? '+' : ''}${changePercent.toStringAsFixed(2)}%';
+  /// Helper getter for formatted change percent (flat is unsigned 0.00%).
+  String get formattedChangePercent {
+    if (changePercent.abs() < 0.005) return '0.00%';
+    final sign = changePercent > 0 ? '+' : '';
+    return '$sign${changePercent.toStringAsFixed(2)}%';
+  }
 
   /// Helper getter for formatted weightage
   String get formattedWeightage => '${weightage.toStringAsFixed(2)}%';
@@ -100,9 +103,12 @@ class Stock {
   final double? weight;
   final double? previousClose;
 
-  /// Helper getter for formatted change percent
-  String get formattedChangePercent =>
-      '${changePercent >= 0 ? '+' : ''}${changePercent.toStringAsFixed(2)}%';
+  /// Helper getter for formatted change percent (flat is unsigned 0.00%).
+  String get formattedChangePercent {
+    if (changePercent.abs() < 0.005) return '0.00%';
+    final sign = changePercent > 0 ? '+' : '';
+    return '$sign${changePercent.toStringAsFixed(2)}%';
+  }
 
   /// Helper getter for formatted change amount
   String get formattedChangeAmount {

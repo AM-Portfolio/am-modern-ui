@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart' show CommonLogger;
-import 'package:am_library/am_library.dart';
 import '../../internal/data/datasources/portfolio_remote_data_source.dart';
 import 'portfolio_intraday_state.dart';
 
@@ -12,12 +13,25 @@ class PortfolioIntradayCubit extends Cubit<PortfolioIntradayState> {
   Timer? _timer;
   String? _lastPortfolioId;
 
+  bool get _marketStreamingAllowed {
+    if (!GetIt.instance.isRegistered<MarketStreamingGate>()) return true;
+    return GetIt.instance<MarketStreamingGate>().isOpen;
+  }
+
   void startLiveUpdates(String? portfolioId) {
     _lastPortfolioId = portfolioId;
     _load();
-    // Refresh every 60 seconds during market hours
+    // Refresh every 60 seconds only while cash session is open.
     _timer?.cancel();
-    _timer = Timer.periodic(const Duration(minutes: 1), (_) => _load());
+    if (!_marketStreamingAllowed) return;
+    _timer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (!_marketStreamingAllowed) {
+        _timer?.cancel();
+        _timer = null;
+        return;
+      }
+      _load();
+    });
   }
 
   void stop() {

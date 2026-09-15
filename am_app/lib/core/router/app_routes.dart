@@ -87,6 +87,7 @@ class AppRoutes {
     'Dashboard': 'dashboard',
     'Heatmap Explorer': 'heatmap-explorer',
     'Equity Insider': 'equity-insider',
+    'Futures & Options': 'futures-options',
     'Watch List': 'watch-list',
   };
 

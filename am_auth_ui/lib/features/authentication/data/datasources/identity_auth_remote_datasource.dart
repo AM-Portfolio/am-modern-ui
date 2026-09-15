@@ -118,14 +118,23 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
   }
 
   @override
-  Future<AuthResultModel> googleLogin(String idToken) async {
+  Future<AuthResultModel> googleLogin(
+    String idToken, {
+    String? referralCode,
+    String? deviceId,
+  }) async {
     try {
       final fullUrl = AuthEndpoints.identityGoogleLogin;
       AppLogger.info('🔵 [IdentityAuthRemoteDataSource] POST $fullUrl');
 
       final response = await _dio.post(
         fullUrl,
-        data: {'id_token': idToken},
+        data: {
+          'id_token': idToken,
+          if (referralCode != null && referralCode.isNotEmpty)
+            'referral_code': referralCode,
+          if (deviceId != null && deviceId.isNotEmpty) 'device_id': deviceId,
+        },
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
@@ -243,6 +252,8 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
     required String email,
     required String password,
     String? phone,
+    String? referralCode,
+    String? deviceId,
   }) async {
     try {
       final fullUrl = AuthEndpoints.identityRegister;
@@ -258,6 +269,9 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
           'first_name': firstName,
           'last_name': lastName,
           if (phone != null && phone.trim().isNotEmpty) 'phone': phone.trim(),
+          if (referralCode != null && referralCode.isNotEmpty)
+            'referral_code': referralCode,
+          if (deviceId != null && deviceId.isNotEmpty) 'device_id': deviceId,
         },
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
