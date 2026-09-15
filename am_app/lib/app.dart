@@ -9,7 +9,6 @@ import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_common/am_common.dart' as common;
 import 'package:am_library/am_library.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_quill/flutter_quill.dart';
 import 'package:go_router/go_router.dart';
 
 import 'core/di/injection.dart';
@@ -159,11 +158,10 @@ class _AMAppState extends ConsumerState<AMApp> {
                     child: child ?? const SizedBox.shrink(),
                   );
                 },
-                localizationsDelegates: const [
+                localizationsDelegates: [
                   GlobalMaterialLocalizations.delegate,
                   GlobalWidgetsLocalizations.delegate,
                   GlobalCupertinoLocalizations.delegate,
-                  FlutterQuillLocalizations.delegate,
                 ],
                 supportedLocales: const [
                   Locale('en', 'US'),

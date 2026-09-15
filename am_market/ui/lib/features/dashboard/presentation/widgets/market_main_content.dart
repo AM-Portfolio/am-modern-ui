@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
-import '../../providers/market_provider.dart';
+import 'package:am_market_common/providers/market_provider.dart';
 
 
 // Import actual screens/widgets
@@ -48,6 +48,7 @@ class _MarketMainContentState extends State<MarketMainContent> {
         index == 'Price Test' || 
         index == 'Market Analysis' ||
         index == 'Equity Insider' ||
+        index == 'Futures & Options' ||
         index == 'Admin Dashboard') { 
       return 'NIFTY 50';
     }
