@@ -35,7 +35,7 @@ class _FuturesPriceChartWidgetState extends ConsumerState<FuturesPriceChartWidge
         ? (activeContract['ltp'] as num).toDouble()
         : 0.0;
 
-    final chartAsync = ref.watch(
+    final candles = ref.watch(
       futuresHistoricalChartProvider(
         FuturesChartParams(
           symbol: tradingSymbol,
@@ -105,91 +105,78 @@ class _FuturesPriceChartWidgetState extends ConsumerState<FuturesPriceChartWidge
           ),
           const SizedBox(height: 12),
 
-          chartAsync.when(
-            loading: () => SizedBox(
+          if (candles.isEmpty)
+            SizedBox(
               height: 270,
               child: Center(
-                child: CircularProgressIndicator(color: ModuleColors.market),
+                child: Text('No OHLC chart data available', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
               ),
-            ),
-            error: (_, __) => SizedBox(
-              height: 270,
-              child: Center(
-                child: Text('Unable to load chart data', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
-              ),
-            ),
-            data: (candles) {
-              if (candles.isEmpty) {
-                return SizedBox(
-                  height: 270,
-                  child: Center(
-                    child: Text('No OHLC chart data available', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
-                  ),
+            )
+          else
+            Builder(
+              builder: (context) {
+                final latest = candles.last;
+                final change = latest.close - candles.first.close;
+                final pChange = candles.first.close > 0 ? (change / candles.first.close) * 100 : 0.0;
+                final isPos = change >= 0;
+                final deltaColor = isPos ? marketTheme.positive : marketTheme.negative;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // OHLC Readout Bar
+                    Row(
+                      children: [
+                        _buildOhlcItem('O', latest.open.toStringAsFixed(2), colors),
+                        _buildOhlcItem('H', latest.high.toStringAsFixed(2), colors),
+                        _buildOhlcItem('L', latest.low.toStringAsFixed(2), colors),
+                        _buildOhlcItem('C', latest.close.toStringAsFixed(2), colors),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${isPos ? '+' : ''}${change.toStringAsFixed(2)} (${isPos ? '+' : ''}${pChange.toStringAsFixed(2)}%)',
+                          style: TextStyle(color: deltaColor, fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Integrated Design System Chart View
+                    SizedBox(
+                      height: 220,
+                      child: _selectedChartType == 'Candle'
+                          ? CandleChartView(
+                              key: ValueKey('candle_${_selectedTimeframe.code}_$tradingSymbol'),
+                              candles: candles,
+                              config: const CommonChartConfig(
+                                showGrid: true,
+                                showTitles: true,
+                                showTooltips: true,
+                              ),
+                              upColor: marketTheme.positive,
+                              downColor: marketTheme.negative,
+                            )
+                          : ChartFactory.line(
+                              data: candles
+                                  .map((c) => CommonChartDataPoint(
+                                        x: c.x,
+                                        y: c.close,
+                                        xLabel: c.xLabel,
+                                        yLabel: c.close.toStringAsFixed(2),
+                                      ))
+                                  .toList(),
+                              config: const CommonChartConfig(
+                                showGrid: true,
+                                showTitles: true,
+                                showTooltips: true,
+                              ),
+                              color: ModuleColors.market,
+                              height: 220,
+                            ),
+                    ),
+                  ],
                 );
-              }
-
-              final latest = candles.last;
-              final change = latest.close - candles.first.close;
-              final pChange = candles.first.close > 0 ? (change / candles.first.close) * 100 : 0.0;
-              final isPos = change >= 0;
-              final deltaColor = isPos ? marketTheme.positive : marketTheme.negative;
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // OHLC Readout Bar
-                  Row(
-                    children: [
-                      _buildOhlcItem('O', latest.open.toStringAsFixed(2), colors),
-                      _buildOhlcItem('H', latest.high.toStringAsFixed(2), colors),
-                      _buildOhlcItem('L', latest.low.toStringAsFixed(2), colors),
-                      _buildOhlcItem('C', latest.close.toStringAsFixed(2), colors),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${isPos ? '+' : ''}${change.toStringAsFixed(2)} (${isPos ? '+' : ''}${pChange.toStringAsFixed(2)}%)',
-                        style: TextStyle(color: deltaColor, fontWeight: FontWeight.bold, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Integrated Design System Chart View
-                  SizedBox(
-                    height: 220,
-                    child: _selectedChartType == 'Candle'
-                        ? CandleChartView(
-                            key: ValueKey('candle_${_selectedTimeframe.code}_$tradingSymbol'),
-                            candles: candles,
-                            config: const CommonChartConfig(
-                              showGrid: true,
-                              showTitles: true,
-                              showTooltips: true,
-                            ),
-                            upColor: marketTheme.positive,
-                            downColor: marketTheme.negative,
-                          )
-                        : ChartFactory.line(
-                            data: candles
-                                .map((c) => CommonChartDataPoint(
-                                      x: c.x,
-                                      y: c.close,
-                                      xLabel: c.xLabel,
-                                      yLabel: c.close.toStringAsFixed(2),
-                                    ))
-                                .toList(),
-                            config: const CommonChartConfig(
-                              showGrid: true,
-                              showTitles: true,
-                              showTooltips: true,
-                            ),
-                            color: ModuleColors.market,
-                            height: 220,
-                          ),
-                  ),
-                ],
-              );
-            },
-          ),
+              },
+            ),
         ],
       ),
     );

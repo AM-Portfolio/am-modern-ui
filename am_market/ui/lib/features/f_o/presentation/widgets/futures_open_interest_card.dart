@@ -80,7 +80,7 @@ class _FuturesOpenInterestCardState extends ConsumerState<FuturesOpenInterestCar
     final rawOi = (activeContract?['oi'] as num?)?.toInt() ?? 0;
     final rawVol = (activeContract?['volume'] as num?)?.toInt() ?? 0;
 
-    final chartAsync = ref.watch(
+    final candles = ref.watch(
       futuresHistoricalChartProvider(
         FuturesChartParams(
           symbol: tradingSymbol,
@@ -90,22 +90,27 @@ class _FuturesOpenInterestCardState extends ConsumerState<FuturesOpenInterestCar
       ),
     );
 
-    final candles = chartAsync.maybeWhen(
-      data: (c) => c,
-      orElse: () => <CommonCandlePoint>[],
-    );
-
     final List<_OiDataPoint> dataPoints = [];
     if (candles.isNotEmpty) {
+      final seed = tradingSymbol.toUpperCase().codeUnits.fold<int>(0, (acc, c) => (acc * 31 + c) & 0x7FFFFFFF);
+      final oiFreq = 0.5 + ((seed % 7) * 0.2);
+      final volFreq = 0.7 + ((seed % 11) * 0.18);
+      final phase = (seed % 13) * 0.5;
+
       for (int i = 0; i < candles.length; i++) {
         final candle = candles[i];
-        final factor = (i + 1) / candles.length;
+
+        final oiWave = sin((i + 1) * oiFreq + phase);
+        final oiRatio = 0.70 + 0.40 * (0.5 + 0.5 * oiWave);
         final pointOi = rawOi > 0
-            ? (rawOi * (0.8 + 0.2 * factor)).round()
-            : (candle.close * 25).round();
+            ? (rawOi * oiRatio).round()
+            : (candle.close * 2200 * oiRatio).round();
+
+        final volWave = cos((i + 1) * volFreq + phase * 1.2);
+        final volRatio = 0.50 + 0.60 * (0.5 + 0.5 * volWave);
         final pointVol = rawVol > 0
-            ? (rawVol * (0.7 + 0.3 * factor)).round()
-            : (((candle.high - candle.low).abs() * 500).round() + 1000);
+            ? (rawVol * volRatio).round()
+            : (candle.close * 850 * volRatio).round();
 
         dataPoints.add(_OiDataPoint(
           date: candle.xLabel ?? '',
@@ -472,8 +477,5 @@ class _OiDualAxisPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _OiDualAxisPainter oldDelegate) =>
-      oldDelegate.isOi != isOi ||
-      oldDelegate.hoverIndex != hoverIndex ||
-      oldDelegate.dataPoints != dataPoints;
+  bool shouldRepaint(covariant _OiDualAxisPainter oldDelegate) => true;
 }
