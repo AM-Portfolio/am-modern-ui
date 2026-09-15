@@ -92,6 +92,7 @@ export 'core/config/user_currency_config.dart';
 export 'core/session/app_session_state.dart';
 export 'core/session/portfolio_selection_scope.dart';
 export 'core/session/session_persistence_service.dart';
+export 'core/referral/referral_install_store.dart';
 export 'core/telemetry/boot_trace.dart';
 export 'core/telemetry/boot_rum_collector.dart';
 export 'core/di/network_providers.dart';

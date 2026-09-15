@@ -56,11 +56,14 @@ class AuthRepositoryImpl implements AuthRepository {
     String? phone,
   }) async {
     try {
+      final attribution = await ReferralInstallStore.instance.signupAttribution();
       final result = await _dataSource.register(
         name: name,
         email: email,
         password: password,
         phone: phone,
+        referralCode: attribution.referralCode,
+        deviceId: attribution.deviceId,
       );
 
       // Save tokens to secure storage
@@ -74,6 +77,7 @@ class AuthRepositoryImpl implements AuthRepository {
         await _storageService.saveUserDisplayName(result.user.displayName!);
       }
       await _storageService.saveTokenExpiry(result.tokens.expiresAt);
+      await ReferralInstallStore.instance.clearPendingReferralCode();
 
       return Right(_enrichedEntity(result.toEntity()));
     } on AuthException catch (e) {
@@ -81,6 +85,10 @@ class AuthRepositoryImpl implements AuthRepository {
     } on NetworkException catch (e) {
       return Left(NetworkFailure(e.message));
     } on ServerException catch (e) {
+      // Identity register returns 201 + verify message (no tokens) — still clear ref.
+      if (e.statusCode == 201) {
+        await ReferralInstallStore.instance.clearPendingReferralCode();
+      }
       return Left(ServerFailure(e.message, code: e.statusCode.toString()));
     } catch (e) {
       return Left(UnknownFailure(e.toString()));
@@ -188,7 +196,12 @@ class AuthRepositoryImpl implements AuthRepository {
         '🟢 [GOOGLE OAUTH] Backend URL: ${_dataSource.runtimeType}',
       );
 
-      final result = await _dataSource.googleLogin(idToken);
+      final attribution = await ReferralInstallStore.instance.signupAttribution();
+      final result = await _dataSource.googleLogin(
+        idToken,
+        referralCode: attribution.referralCode,
+        deviceId: attribution.deviceId,
+      );
 
       CommonLogger.info('🟢 [GOOGLE OAUTH] Step 7: Backend response received!');
       CommonLogger.info('🟢 [GOOGLE OAUTH] User ID: ${result.user.id}');
@@ -211,6 +224,7 @@ class AuthRepositoryImpl implements AuthRepository {
       await _storageService.saveTokenExpiry(result.tokens.expiresAt);
 
       CommonLogger.info('🟢 [GOOGLE OAUTH] Step 9: All tokens saved successfully');
+      await ReferralInstallStore.instance.clearPendingReferralCode();
       CommonLogger.info(
         '🟢 [GOOGLE OAUTH] ✅ GOOGLE SIGN-IN COMPLETE! Returning success.',
       );

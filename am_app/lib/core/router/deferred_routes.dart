@@ -320,6 +320,7 @@ Widget buildProfileRoute({
         highlightSubscription: highlightSubscription,
         subscriptionStatusLabel: statusLabel,
         isPaidSubscription: isPaid,
+        accountSectionExtra: const am_sub.ReferralSettingsSection(),
       ),
     ),
   );

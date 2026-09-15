@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -50,6 +52,7 @@ class _AMAppState extends ConsumerState<AMApp> {
     if (!skipSessionRestore) {
       _authCubit.checkAuthStatus();
     }
+    unawaited(_captureLaunchReferral());
     _authRefresh = AuthRefreshListenable(_authCubit);
     _router = createAppRouter(
       authCubit: _authCubit,
@@ -78,6 +81,23 @@ class _AMAppState extends ConsumerState<AMApp> {
       );
       return _previousPlatformOnError?.call(error, stack) ?? false;
     };
+  }
+
+  Future<void> _captureLaunchReferral() async {
+    final captured = await common.ReferralInstallStore.instance.captureFromUri(
+      widget.launchUri,
+    );
+    if (!captured && kIsWeb) {
+      await common.ReferralInstallStore.instance.captureFromUri(Uri.base);
+    }
+    final pending =
+        await common.ReferralInstallStore.instance.pendingReferralCode();
+    if (pending != null) {
+      ProductTelemetry.instance.featureAction(
+        'ref_captured',
+        metadata: {'code_len': pending.length},
+      );
+    }
   }
 
   @override
