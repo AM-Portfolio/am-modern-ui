@@ -8,6 +8,8 @@ class TimingBucket {
     required this.avgPnl,
     this.winRatePercent,
     this.eligibleTrades = 0,
+    this.avgHoldMinutes,
+    this.riskReward,
   });
 
   final String key;
@@ -19,6 +21,9 @@ class TimingBucket {
   final double? winRatePercent;
   /// Trades with non-null PnL (Win% / Avg PnL denominator).
   final int eligibleTrades;
+  final double? avgHoldMinutes;
+  /// Avg win ÷ |avg loss|; null when undefined (not stop-based R).
+  final double? riskReward;
 
   bool get isLowSample => eligibleTrades > 0 && eligibleTrades < minTradesForRank;
 }
@@ -53,6 +58,8 @@ List<TimingBucket> buildTimingBuckets({
   Map<String, double> winRate = const {},
   Map<String, double> avgPnl = const {},
   Map<String, int> eligible = const {},
+  Map<String, double> avgHoldMinutes = const {},
+  Map<String, double> riskReward = const {},
   required String Function(String key) labelFor,
   bool includeZeroTradeBuckets = false,
   List<String>? orderedKeys,
@@ -78,6 +85,8 @@ List<TimingBucket> buildTimingBuckets({
         avgPnl: serverAvg ?? computedAvg,
         winRatePercent: winRate[key],
         eligibleTrades: eligibleCount,
+        avgHoldMinutes: avgHoldMinutes[key],
+        riskReward: riskReward[key],
       ),
     );
   }

@@ -13,9 +13,9 @@ enum _AnalysisTab { timing, strategy, direction, holding, risk }
 
 /// Analysis hub — Timing-first edge analytics.
 ///
-/// Deliberately **no** page-level portfolio dropdown (sidebar owns that) and
-/// **no** Net PnL / Win Rate KPI strip (Calendar + Portfolios own glance metrics).
-/// See Doc/analysis_ui_mock_plan.md.
+/// No page title (sidebar labels the page), no portfolio dropdown, no Export.
+/// Date range + Apply sit on the tab row. Timing shows insights + KPI cards.
+/// See Doc/analysis_ui_mock_plan.md (Timing KPI strip is intentional for this delivery).
 class TradeAnalysisPage extends ConsumerStatefulWidget {
   const TradeAnalysisPage({
     super.key,
@@ -73,7 +73,7 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
         portfolioIds: [widget.portfolioId],
         startDate: _startDate,
         endDate: _endDate,
-        metricTypes: const [MetricTypes.distribution],
+        metricTypes: const [MetricTypes.performance, MetricTypes.distribution],
         holdingStyle: _holdingStyle,
       ),
     );
@@ -155,31 +155,14 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header: title + date only — no portfolio dropdown, no KPI strip.
+            // Tabs + date/Apply on one row — no page title / LIVE EDGE / portfolio.
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Trade Analysis',
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.4,
-                          color: colors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xxs),
-                      Text(
-                        'Execution patterns, session timing & style distribution.',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colors.textSecondary,
-                          height: 1.35,
-                        ),
-                      ),
-                    ],
+                  child: _AnalysisTabBar(
+                    selected: _tab,
+                    onSelected: (tab) => setState(() => _tab = tab),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),
@@ -192,11 +175,6 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
                 ),
               ],
             ),
-            const SizedBox(height: AppSpacing.md),
-            _AnalysisTabBar(
-              selected: _tab,
-              onSelected: (tab) => setState(() => _tab = tab),
-            ),
             if (_tab == _AnalysisTab.timing) ...[
               const SizedBox(height: AppSpacing.sm),
               _HoldingStyleFilter(
@@ -204,7 +182,7 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
                 onChanged: _onHoldingStyleChanged,
               ),
             ],
-            const SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: AppSpacing.md),
             Expanded(
               child: cubitAsync.when(
                 loading: () => Center(
@@ -314,7 +292,7 @@ class _HoldingStyleFilter extends StatelessWidget {
     return Row(
       children: [
         Text(
-          'Holding style',
+          'Holding style:',
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
                 color: colors.textSecondary,
                 fontWeight: FontWeight.w600,

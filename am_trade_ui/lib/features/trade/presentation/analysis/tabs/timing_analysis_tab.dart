@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import 'package:am_design_system/am_design_system.dart';
 
-import '../../../internal/domain/entities/metrics/trade_distribution_metrics.dart';
 import '../../../internal/domain/entities/metrics/trade_metrics_response.dart';
 import '../../metrics/cubit/trade_metrics_cubit.dart';
 import '../../metrics/cubit/trade_metrics_state.dart';
 import '../models/timing_bucket.dart';
 import '../widgets/timing_avg_pnl_chart.dart';
+import '../widgets/timing_insights_banner.dart';
+import '../widgets/timing_kpi_row.dart';
 import '../widgets/timing_rank_table.dart';
 
-/// Analysis → Timing: session/day/month charts + one All/Best/Worst rank card.
+/// Analysis → Timing: insights, KPIs, session/day/month charts + rank table.
 class TimingAnalysisTab extends StatelessWidget {
   const TimingAnalysisTab({
     super.key,
@@ -36,11 +36,14 @@ class TimingAnalysisTab extends StatelessWidget {
         final dist = state is TradeMetricsLoaded
             ? state.metrics.distributionMetrics
             : null;
+        final perf = state is TradeMetricsLoaded
+            ? state.metrics.performanceMetrics
+            : null;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _MetaStrip(
+            TimingInsightsBanner(
               tradeCount: tradeCount,
               styleHint: dist?.tradingStyleHint,
               timezoneNote: dist?.timezoneNote,
@@ -49,6 +52,12 @@ class TimingAnalysisTab extends StatelessWidget {
               badTimestamp: dist?.badTimestampCount ?? 0,
               onOpenCalendar: onOpenCalendar,
               onOpenJournalInsights: onOpenJournalInsights,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            TimingKpiRow(
+              performance: perf,
+              distribution: dist,
+              totalTradesCount: tradeCount,
             ),
             const SizedBox(height: AppSpacing.md),
             Expanded(child: _buildBody(context, state)),
@@ -107,100 +116,6 @@ class TimingAnalysisTab extends StatelessWidget {
   }
 }
 
-class _MetaStrip extends StatelessWidget {
-  const _MetaStrip({
-    required this.tradeCount,
-    required this.styleHint,
-    required this.timezoneNote,
-    required this.skippedMissingEntry,
-    required this.openOrMissingPnl,
-    required this.badTimestamp,
-    required this.onOpenCalendar,
-    required this.onOpenJournalInsights,
-  });
-
-  final int? tradeCount;
-  final TradingStyleHint? styleHint;
-  final String? timezoneNote;
-  final int skippedMissingEntry;
-  final int openOrMissingPnl;
-  final int badTimestamp;
-  final VoidCallback onOpenCalendar;
-  final VoidCallback onOpenJournalInsights;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = context.colors;
-    final countLabel = tradeCount == null
-        ? '…'
-        : NumberFormat.decimalPattern('en_IN').format(tradeCount);
-
-    final parts = <String>['$countLabel Trades'];
-    if (styleHint != null && styleHint!.style.toUpperCase() != 'UNKNOWN') {
-      parts.add(
-        'Mostly ${styleHintDisplayLabel(styleHint!.style)} · '
-        '${styleHint!.confidencePercent.toStringAsFixed(0)}% of ${styleHint!.sampleSize}',
-      );
-    }
-    parts.add(
-      timezoneNote == null || timezoneNote!.isEmpty
-          ? 'IST (UTC+5:30) · NSE session'
-          : timezoneNote!,
-    );
-    if (skippedMissingEntry > 0) {
-      parts.add('$skippedMissingEntry skipped (no entry time)');
-    }
-    if (openOrMissingPnl > 0) {
-      parts.add('$openOrMissingPnl open/missing PnL excluded');
-    }
-    if (badTimestamp > 0) {
-      parts.add('$badTimestamp bad timestamps');
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
-      ),
-      decoration: BoxDecoration(
-        color: colors.cardSurface,
-        borderRadius: AppRadii.card,
-        border: Border.all(color: colors.border.withValues(alpha: 0.35)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              parts.join('  ·  '),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colors.textSecondary,
-                height: 1.35,
-              ),
-            ),
-          ),
-          AppButton(
-            text: 'View Calendar',
-            type: AppButtonType.text,
-            onPressed: onOpenCalendar,
-            height: 32,
-            textColor: ModuleColors.trade,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-          ),
-          AppButton(
-            text: 'Journal Insights',
-            type: AppButtonType.text,
-            onPressed: onOpenJournalInsights,
-            height: 32,
-            textColor: ModuleColors.trade,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _TimingDashboard extends StatefulWidget {
   const _TimingDashboard({required this.metrics});
 
@@ -224,6 +139,8 @@ class _TimingDashboardState extends State<_TimingDashboard> {
       winRate: dist.winRateBySession,
       avgPnl: dist.avgPnlBySession,
       eligible: dist.eligibleTradesBySession,
+      avgHoldMinutes: dist.avgHoldMinutesBySession,
+      riskReward: dist.riskRewardBySession,
       labelFor: formatSessionLabel,
       includeZeroTradeBuckets: true,
       orderedKeys: kSessionKeys,
@@ -234,6 +151,8 @@ class _TimingDashboardState extends State<_TimingDashboard> {
       winRate: dist.winRateByDay,
       avgPnl: dist.avgPnlByDay,
       eligible: dist.eligibleTradesByDay,
+      avgHoldMinutes: dist.avgHoldMinutesByDay,
+      riskReward: dist.riskRewardByDay,
       labelFor: formatWeekdayLabel,
     );
     final months = buildTimingBuckets(
@@ -242,6 +161,8 @@ class _TimingDashboardState extends State<_TimingDashboard> {
       winRate: dist.winRateByMonth,
       avgPnl: dist.avgPnlByMonth,
       eligible: dist.eligibleTradesByMonth,
+      avgHoldMinutes: dist.avgHoldMinutesByMonth,
+      riskReward: dist.riskRewardByMonth,
       labelFor: formatMonthLabel,
     );
 
@@ -360,53 +281,55 @@ class _RankControls extends StatelessWidget {
           fontWeight: FontWeight.w600,
         );
 
-    Widget chipGroup<T>({
-      required String label,
-      required List<(T, String)> options,
-      required T selected,
-      required ValueChanged<T> onChanged,
-    }) {
-      return Wrap(
-        spacing: AppSpacing.sm,
-        runSpacing: AppSpacing.sm,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          Text(label, style: labelStyle),
-          for (final (value, text) in options)
-            AmToggleChip(
-              label: text,
-              selected: selected == value,
-              compact: true,
-              accentColor: ModuleColors.trade,
-              onTap: () => onChanged(value),
-            ),
-        ],
-      );
-    }
-
     return Wrap(
-      spacing: AppSpacing.lg,
+      spacing: AppSpacing.md,
       runSpacing: AppSpacing.sm,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        chipGroup<TimingDimension>(
-          label: 'Breakdown',
-          options: const [
-            (TimingDimension.session, 'Session'),
-            (TimingDimension.weekday, 'Day'),
-            (TimingDimension.month, 'Month'),
-          ],
-          selected: dimension,
-          onChanged: onDimension,
+        Text('Dimension:', style: labelStyle),
+        AmToggleChip(
+          label: 'Session',
+          selected: dimension == TimingDimension.session,
+          compact: true,
+          accentColor: ModuleColors.trade,
+          onTap: () => onDimension(TimingDimension.session),
         ),
-        chipGroup<TimingRankView>(
-          label: 'View',
-          options: const [
-            (TimingRankView.all, 'All'),
-            (TimingRankView.best, 'Best'),
-            (TimingRankView.worst, 'Worst'),
-          ],
-          selected: rankView,
-          onChanged: onRankView,
+        AmToggleChip(
+          label: 'Day',
+          selected: dimension == TimingDimension.weekday,
+          compact: true,
+          accentColor: ModuleColors.trade,
+          onTap: () => onDimension(TimingDimension.weekday),
+        ),
+        AmToggleChip(
+          label: 'Month',
+          selected: dimension == TimingDimension.month,
+          compact: true,
+          accentColor: ModuleColors.trade,
+          onTap: () => onDimension(TimingDimension.month),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Text('View:', style: labelStyle),
+        AmToggleChip(
+          label: 'All',
+          selected: rankView == TimingRankView.all,
+          compact: true,
+          accentColor: ModuleColors.trade,
+          onTap: () => onRankView(TimingRankView.all),
+        ),
+        AmToggleChip(
+          label: 'Best',
+          selected: rankView == TimingRankView.best,
+          compact: true,
+          accentColor: ModuleColors.trade,
+          onTap: () => onRankView(TimingRankView.best),
+        ),
+        AmToggleChip(
+          label: 'Worst',
+          selected: rankView == TimingRankView.worst,
+          compact: true,
+          accentColor: ModuleColors.trade,
+          onTap: () => onRankView(TimingRankView.worst),
         ),
       ],
     );

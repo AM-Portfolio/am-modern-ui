@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:am_design_system/am_design_system.dart';
 
 import '../models/timing_bucket.dart';
+import 'timing_kpi_row.dart';
 
 /// Ranked table for Analysis → Timing (All / Best / Worst) — mock-aligned layout.
 class TimingRankTable extends StatelessWidget {
@@ -35,6 +36,8 @@ class TimingRankTable extends StatelessWidget {
       'Win % = trades with PnL > 0 ÷ trades with non-null PnL. Break-even is not a win.';
   static const avgPnlTooltip =
       'Avg PnL = sum of non-null PnL ÷ trades with non-null PnL.';
+  static const rrTooltip =
+      'R:R = avg win ÷ |avg loss| in this bucket (not stop-based R-multiple).';
 
   @override
   Widget build(BuildContext context) {
@@ -85,13 +88,21 @@ class TimingRankTable extends StatelessWidget {
               ),
             )
           else ...[
-            Padding(
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: _header(context, bucketLabel),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 720),
+                child: Column(
+                  children: [
+                    _header(context, bucketLabel),
+                    const SizedBox(height: AppSpacing.xs),
+                    for (var i = 0; i < rows.length; i++)
+                      _row(context, rows[i], i + 1, i.isOdd),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(height: AppSpacing.xs),
-            for (var i = 0; i < rows.length; i++)
-              _row(context, rows[i], i + 1, i.isOdd),
             if (showFormulaFooter)
               Container(
                 width: double.infinity,
@@ -105,7 +116,9 @@ class TimingRankTable extends StatelessWidget {
                 ),
                 child: Text(
                   'Win % = wins (PnL > 0) ÷ eligible (non-null PnL). '
-                  'Avg PnL = Σ PnL ÷ eligible. Best/Worst need ≥$minTradesForRank eligible trades.',
+                  'Avg PnL = Σ PnL ÷ eligible. '
+                  'R:R = avg win ÷ |avg loss| (— when undefined). '
+                  'Best/Worst need ≥$minTradesForRank eligible trades.',
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: colors.textSecondary,
                     height: 1.35,
@@ -125,10 +138,7 @@ class TimingRankTable extends StatelessWidget {
         );
     return Row(
       children: [
-        SizedBox(
-          width: 28,
-          child: Text('#', style: style),
-        ),
+        SizedBox(width: 28, child: Text('#', style: style)),
         Expanded(flex: 3, child: Text(bucketLabel, style: style)),
         Expanded(child: Text('Trades', style: style, textAlign: TextAlign.end)),
         Expanded(
@@ -139,14 +149,25 @@ class TimingRankTable extends StatelessWidget {
         ),
         Expanded(
           flex: 2,
+          child: Text('Total P&L', style: style, textAlign: TextAlign.end),
+        ),
+        Expanded(
+          flex: 2,
           child: Tooltip(
             message: avgPnlTooltip,
-            child: Text('Avg PnL', style: style, textAlign: TextAlign.end),
+            child: Text('Avg P&L', style: style, textAlign: TextAlign.end),
           ),
         ),
         Expanded(
           flex: 2,
-          child: Text('PnL', style: style, textAlign: TextAlign.end),
+          child: Text('Avg Hold', style: style, textAlign: TextAlign.end),
+        ),
+        Expanded(
+          flex: 2,
+          child: Tooltip(
+            message: rrTooltip,
+            child: Text('R:R', style: style, textAlign: TextAlign.end),
+          ),
         ),
       ],
     );
@@ -169,6 +190,10 @@ class TimingRankTable extends StatelessWidget {
         : (bucket.winRatePercent! >= 50
             ? context.statusSuccess
             : context.statusError);
+    final rr = bucket.riskReward;
+    final rrColor = rr == null
+        ? colors.textSecondary
+        : (rr >= 1 ? context.statusSuccess : context.statusError);
     final body = theme.textTheme.bodySmall;
 
     return Container(
@@ -176,7 +201,7 @@ class TimingRankTable extends StatelessWidget {
           ? colors.textPrimary.withValues(alpha: 0.03)
           : Colors.transparent,
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
+        horizontal: 0,
         vertical: AppSpacing.sm,
       ),
       child: Row(
@@ -248,6 +273,15 @@ class TimingRankTable extends StatelessWidget {
           Expanded(
             flex: 2,
             child: Text(
+              _signedInr(bucket.pnl),
+              style:
+                  body?.copyWith(color: pnlColor, fontWeight: FontWeight.w700),
+              textAlign: TextAlign.end,
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(
               bucket.eligibleTrades == 0 && bucket.winRatePercent == null
                   ? '—'
                   : _signedInr(bucket.avgPnl),
@@ -259,10 +293,42 @@ class TimingRankTable extends StatelessWidget {
           Expanded(
             flex: 2,
             child: Text(
-              _signedInr(bucket.pnl),
-              style:
-                  body?.copyWith(color: pnlColor, fontWeight: FontWeight.w700),
+              bucket.avgHoldMinutes == null
+                  ? '—'
+                  : formatHoldDuration(bucket.avgHoldMinutes!),
+              style: body?.copyWith(color: colors.textPrimary),
               textAlign: TextAlign.end,
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  rr == null ? '—' : rr.toStringAsFixed(1),
+                  style: body?.copyWith(
+                    color: rrColor,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if (rr != null) ...[
+                  const SizedBox(width: AppSpacing.xs),
+                  SizedBox(
+                    width: 36,
+                    height: 6,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: LinearProgressIndicator(
+                        value: (rr / 3).clamp(0.0, 1.0),
+                        backgroundColor:
+                            colors.border.withValues(alpha: 0.25),
+                        color: rrColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ],

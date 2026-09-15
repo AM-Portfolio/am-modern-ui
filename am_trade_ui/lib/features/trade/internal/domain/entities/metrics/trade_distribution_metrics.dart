@@ -18,24 +18,32 @@ class TradeDistributionMetrics {
   final Map<String, double> winRateByDay;
   final Map<String, double> avgPnlByDay;
   final Map<String, int> eligibleTradesByDay;
+  final Map<String, double> avgHoldMinutesByDay;
+  final Map<String, double> riskRewardByDay;
 
   final Map<String, int> tradesByHour;
   final Map<String, double> profitByHour;
   final Map<String, double> winRateByHour;
   final Map<String, double> avgPnlByHour;
   final Map<String, int> eligibleTradesByHour;
+  final Map<String, double> avgHoldMinutesByHour;
+  final Map<String, double> riskRewardByHour;
 
   final Map<String, int> tradesByMonth;
   final Map<String, double> profitByMonth;
   final Map<String, double> winRateByMonth;
   final Map<String, double> avgPnlByMonth;
   final Map<String, int> eligibleTradesByMonth;
+  final Map<String, double> avgHoldMinutesByMonth;
+  final Map<String, double> riskRewardByMonth;
 
   final Map<String, int> tradesBySession;
   final Map<String, double> profitBySession;
   final Map<String, double> winRateBySession;
   final Map<String, double> avgPnlBySession;
   final Map<String, int> eligibleTradesBySession;
+  final Map<String, double> avgHoldMinutesBySession;
+  final Map<String, double> riskRewardBySession;
 
   final Map<String, int> tradeCountByAssetClass;
   final Map<String, int> tradeCountByStrategy;
@@ -45,6 +53,8 @@ class TradeDistributionMetrics {
   final int badTimestampCount;
   final String timezoneNote;
   final TradingStyleHint? tradingStyleHint;
+  final String? bestSessionKey;
+  final double? bestSessionAvgPnl;
 
   TradeDistributionMetrics({
     required this.tradesByDay,
@@ -52,21 +62,29 @@ class TradeDistributionMetrics {
     this.winRateByDay = const {},
     this.avgPnlByDay = const {},
     this.eligibleTradesByDay = const {},
+    this.avgHoldMinutesByDay = const {},
+    this.riskRewardByDay = const {},
     required this.tradesByHour,
     required this.profitByHour,
     this.winRateByHour = const {},
     this.avgPnlByHour = const {},
     this.eligibleTradesByHour = const {},
+    this.avgHoldMinutesByHour = const {},
+    this.riskRewardByHour = const {},
     this.tradesByMonth = const {},
     this.profitByMonth = const {},
     this.winRateByMonth = const {},
     this.avgPnlByMonth = const {},
     this.eligibleTradesByMonth = const {},
+    this.avgHoldMinutesByMonth = const {},
+    this.riskRewardByMonth = const {},
     this.tradesBySession = const {},
     this.profitBySession = const {},
     this.winRateBySession = const {},
     this.avgPnlBySession = const {},
     this.eligibleTradesBySession = const {},
+    this.avgHoldMinutesBySession = const {},
+    this.riskRewardBySession = const {},
     required this.tradeCountByAssetClass,
     required this.tradeCountByStrategy,
     this.skippedMissingEntryCount = 0,
@@ -74,5 +92,7 @@ class TradeDistributionMetrics {
     this.badTimestampCount = 0,
     this.timezoneNote = 'entry_local_as_stored',
     this.tradingStyleHint,
+    this.bestSessionKey,
+    this.bestSessionAvgPnl,
   });
 }

@@ -1,0 +1,243 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:am_design_system/am_design_system.dart';
+
+import '../../../internal/domain/entities/metrics/performance_metrics.dart';
+import '../../../internal/domain/entities/metrics/trade_distribution_metrics.dart';
+import '../models/timing_bucket.dart';
+
+/// Five Timing KPI cards: Total P&L, Avg P&L, Win Rate, Best Session, Avg Hold.
+class TimingKpiRow extends StatelessWidget {
+  const TimingKpiRow({
+    super.key,
+    required this.performance,
+    required this.distribution,
+    required this.totalTradesCount,
+  });
+
+  final PerformanceMetrics? performance;
+  final TradeDistributionMetrics? distribution;
+  final int? totalTradesCount;
+
+  static final _inr = NumberFormat.currency(
+    locale: 'en_IN',
+    symbol: '₹',
+    decimalDigits: 0,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final perf = performance;
+    final dist = distribution;
+
+    final totalPnl = perf?.totalProfitLoss;
+    final totalPct = perf?.totalProfitLossPercentage;
+    final wins = perf?.winningTradesCount;
+    final losses = perf?.losingTradesCount;
+    final eligible = (wins ?? 0) + (losses ?? 0);
+    final avgPnl = (totalPnl != null && eligible > 0)
+        ? totalPnl / eligible
+        : (totalPnl != null && (totalTradesCount ?? 0) > 0)
+            ? totalPnl / totalTradesCount!
+            : null;
+    final winRate = perf?.winRate;
+
+    String? bestLabel;
+    String? bestSub;
+    if (dist?.bestSessionKey != null) {
+      bestLabel = formatSessionLabel(dist!.bestSessionKey!);
+      final avg = dist.bestSessionAvgPnl;
+      if (avg != null) {
+        bestSub = '${avg >= 0 ? '+' : ''}${_inr.format(avg)} avg P&L';
+      }
+    } else if (dist != null) {
+      final sessions = buildTimingBuckets(
+        trades: dist.tradesBySession,
+        profit: dist.profitBySession,
+        winRate: dist.winRateBySession,
+        avgPnl: dist.avgPnlBySession,
+        eligible: dist.eligibleTradesBySession,
+        labelFor: formatSessionLabel,
+        includeZeroTradeBuckets: true,
+        orderedKeys: kSessionKeys,
+      );
+      final ranked = qualifyingForRank(sessions);
+      if (ranked.isNotEmpty) {
+        final best = sortByAvgPnlDesc(ranked).first;
+        bestLabel = best.label;
+        bestSub =
+            '${best.avgPnl >= 0 ? '+' : ''}${_inr.format(best.avgPnl)} avg P&L';
+      }
+    }
+
+    final holdMinutes = perf?.averageHoldingTimeMinutes;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final wide = constraints.maxWidth >= 900;
+        final cards = [
+          _KpiCard(
+            title: 'Total P&L',
+            value: totalPnl == null ? '—' : _signedInr(totalPnl),
+            subtitle: totalPct == null
+                ? null
+                : '${totalPct >= 0 ? '+' : ''}${totalPct.toStringAsFixed(1)}%',
+            valueColor: totalPnl == null
+                ? null
+                : (totalPnl >= 0
+                    ? context.statusSuccess
+                    : context.statusError),
+            icon: Icons.trending_down_rounded,
+          ),
+          _KpiCard(
+            title: 'Avg P&L per Trade',
+            value: avgPnl == null ? '—' : _signedInr(avgPnl),
+            valueColor: avgPnl == null
+                ? null
+                : (avgPnl >= 0
+                    ? context.statusSuccess
+                    : context.statusError),
+            icon: Icons.show_chart_rounded,
+          ),
+          _KpiCard(
+            title: 'Win Rate',
+            value: winRate == null ? '—' : '${winRate.toStringAsFixed(1)}%',
+            subtitle: (wins != null && losses != null)
+                ? '$wins wins / $losses losses'
+                : null,
+            icon: Icons.donut_large_rounded,
+          ),
+          _KpiCard(
+            title: 'Best Session',
+            value: bestLabel ?? '—',
+            subtitle: bestSub,
+            valueColor: bestLabel == null ? null : context.statusSuccess,
+            icon: Icons.access_time_rounded,
+          ),
+          _KpiCard(
+            title: 'Avg Hold Time',
+            value: holdMinutes == null ? '—' : formatHoldDuration(holdMinutes),
+            subtitle: 'Across all trades',
+            icon: Icons.timer_outlined,
+          ),
+        ];
+
+        if (wide) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (var i = 0; i < cards.length; i++) ...[
+                if (i > 0) const SizedBox(width: AppSpacing.sm),
+                Expanded(child: cards[i]),
+              ],
+            ],
+          );
+        }
+        return Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: [
+            for (final c in cards)
+              SizedBox(
+                width: (constraints.maxWidth - AppSpacing.sm) / 2,
+                child: c,
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  static String _signedInr(double value) {
+    final formatted = _inr.format(value.abs());
+    if (value > 0) return '+$formatted';
+    if (value < 0) return '-$formatted';
+    return formatted;
+  }
+}
+
+String formatHoldDuration(double minutes) {
+  if (minutes < 60) {
+    final m = minutes.round();
+    return '${m}m';
+  }
+  if (minutes < 24 * 60) {
+    final h = minutes ~/ 60;
+    final m = (minutes % 60).round();
+    if (m == 0) return '${h}h';
+    return '${h}h ${m}m';
+  }
+  final days = minutes / (24 * 60);
+  return '${days.toStringAsFixed(1)}d';
+}
+
+class _KpiCard extends StatelessWidget {
+  const _KpiCard({
+    required this.title,
+    required this.value,
+    this.subtitle,
+    this.valueColor,
+    required this.icon,
+  });
+
+  final String title;
+  final String value;
+  final String? subtitle;
+  final Color? valueColor;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = context.colors;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: colors.cardSurface,
+        borderRadius: AppRadii.card,
+        border: Border.all(color: colors.border.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: colors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Icon(icon, size: 16, color: colors.textSecondary),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            value,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: valueColor ?? colors.textPrimary,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: AppSpacing.xxs),
+            Text(
+              subtitle!,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: valueColor ?? colors.textSecondary,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
