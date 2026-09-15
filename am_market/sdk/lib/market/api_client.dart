@@ -162,6 +162,9 @@ class ApiClient {
       switch (targetType) {
         case 'String':
           return value is String ? value : value.toString();
+        case 'Object':
+        case 'dynamic':
+          return value;
         case 'int':
           return value is int ? value : int.parse('$value');
         case 'double':

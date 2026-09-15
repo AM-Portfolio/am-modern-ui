@@ -146,6 +146,7 @@ export 'shared/widgets/tables/sortable_table.dart';
 export 'shared/widgets/tables/paginated_sortable_table.dart';
 export 'shared/widgets/tables/adaptive_data_table.dart';
 export 'shared/widgets/tables/am_adaptive_table_view.dart';
+export 'shared/widgets/filters/am_filter_pills_bar.dart';
 export 'shared/widgets/charts/chart_factory.dart';
 export 'shared/widgets/charts/chart_types.dart';
 export 'shared/widgets/charts/chart_axis_scale.dart';
