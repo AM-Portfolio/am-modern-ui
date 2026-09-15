@@ -82,7 +82,9 @@ class _PortfolioHeatmapView extends StatelessWidget {
           child: PortfolioHeatmapWidget(
             portfolioId: portfolioId,
             portfolioName: portfolioName,
-            config: PortfolioHeatmapConfig.web,
+            config: constraints.maxWidth < 600
+                ? PortfolioHeatmapUiConfig.mobile
+                : PortfolioHeatmapUiConfig.web,
           ),
         );
       },

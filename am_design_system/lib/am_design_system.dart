@@ -32,6 +32,7 @@ export 'core/contracts/design_contract.dart';
 // Utils
 export 'core/utils/common_logger.dart';
 export 'core/utils/device_utils.dart';
+export 'core/utils/string_utils.dart';
 export 'core/utils/validators.dart'; 
 export 'core/utils/conditional_mouse_region.dart';
 export 'core/utils/browser_zoom.dart';

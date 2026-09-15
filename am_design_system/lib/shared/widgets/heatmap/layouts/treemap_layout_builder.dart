@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:am_common/am_common.dart';
+import 'package:am_design_system/core/utils/string_utils.dart';
 
 import '../../../models/heatmap.dart';
 import '../../../../core/utils/common_logger.dart';
@@ -311,33 +312,25 @@ class _HoverTileState extends State<_HoverTile>
 
   @override
   Widget build(BuildContext context) {
-    Color tileColor = widget.builder.getTileColor(widget.tile, widget.data);
+    Color tileColor =
+        widget.builder.getTileColor(context, widget.tile, widget.data);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // The default colors are deep/dark (perfect for dark mode).
-    // For Light Mode glassmorphism, we need hyper-vibrant base colors 
-    // so they don't look dull when rendered at 25% opacity.
+    // Light mode: keep vivid fill for glassmorphic opacity.
     if (!isDark) {
-      final p = widget.tile.performance;
-      final intensity = (p.abs() / 5.0).clamp(0.0, 1.0);
-      if (p > 0.05) {
-        // Bright Emerald to Neon Green
-        tileColor = Color.lerp(const Color(0xFF0BA95B), const Color(0xFF00E676), intensity)!;
-      } else if (p < -0.05) {
-        // Vibrant Red to Neon Crimson
-        tileColor = Color.lerp(const Color(0xFFE53935), const Color(0xFFFF1744), intensity)!;
-      } else {
-        tileColor = const Color(0xFF6B7280); // Premium cool gray
-      }
+      tileColor = widget.builder.getPerformanceColor(
+        context,
+        widget.tile.performance,
+      );
     }
-    
+
     // Dark text for light mode glass, White text for dark mode glass
     final textColor = isDark ? Colors.white : const Color(0xFF1C192C);
 
     Widget content;
     if (widget.customTileBuilder != null) {
       content = GestureDetector(
-        onTap: widget.onTilePressed,
+        onTap: widget.tile.onTap ?? widget.onTilePressed,
         child: widget.customTileBuilder!(widget.tile),
       );
     } else {
@@ -349,7 +342,7 @@ class _HoverTileState extends State<_HoverTile>
       return Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: widget.onTilePressed,
+          onTap: widget.tile.onTap ?? widget.onTilePressed,
           borderRadius: BorderRadius.circular(8),
           splashColor: Colors.white.withValues(alpha: 0.2),
           child: content,
@@ -363,7 +356,7 @@ class _HoverTileState extends State<_HoverTile>
       onExit: (_) => setState(() => _hovered = false),
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: widget.onTilePressed,
+        onTap: widget.tile.onTap ?? widget.onTilePressed,
         child: AnimatedScale(
           scale: 1.0, // Prevent scaling up so tiles never cover neighbors
           duration: const Duration(milliseconds: 220),
@@ -493,7 +486,7 @@ class _HoverTileState extends State<_HoverTile>
                           Padding(
                             padding: const EdgeInsets.only(top: 1),
                             child: Text(
-                              '₹${_formatValue(widget.tile.value!)}',
+                              StringUtils.formatCurrencyExact(widget.tile.value!),
                               style: TextStyle(
                                 color: textColor.withValues(alpha: isDark ? 0.65 : 0.80),
                                 fontSize: secondaryFontSize,
@@ -533,12 +526,7 @@ class _HoverTileState extends State<_HoverTile>
     }
   }
 
-  String _formatValue(double v) {
-    if (v >= 10000000) return '${(v / 10000000).toStringAsFixed(1)}Cr';
-    if (v >= 100000) return '${(v / 100000).toStringAsFixed(1)}L';
-    if (v >= 1000) return '${(v / 1000).toStringAsFixed(1)}K';
-    return v.toStringAsFixed(0);
-  }
+  // Value formatting uses StringUtils.formatCurrencyExact (Indian commas).
 }
 
 enum _FontRole { name, primary, secondary }

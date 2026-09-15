@@ -162,7 +162,7 @@ class _ModalContainerState extends State<_ModalContainer> {
                                 ),
                           ),
                           Text(
-                            'Today\'s highest gainers and losers',
+                            'Day change — highest gainers and losers',
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                   color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                                 ),

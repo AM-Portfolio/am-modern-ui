@@ -527,44 +527,60 @@ class _HeatmapSelectorMobileState extends State<HeatmapSelectorMobile>
     ),
   );
 
-  Widget _buildCompactFiltersRow(BuildContext context) => Row(
-    children: [
-      if (widget.showSector) ...[
-        Expanded(
-          child: _buildCompactFilterChip(
+  Widget _buildCompactFiltersRow(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final stackFilters = constraints.maxWidth < 420;
+      final chips = <Widget>[
+        if (widget.showSector)
+          _buildCompactFilterChip(
             context,
             icon: Icons.business,
             label: 'Sector',
             value: widget.core.selectedSector.shortName,
             onTap: () => _showSectorSelector(context),
           ),
-        ),
-        const SizedBox(width: 6),
-      ],
-      if (widget.showMarketCap) ...[
-        Expanded(
-          child: _buildCompactFilterChip(
+        if (widget.showMarketCap)
+          _buildCompactFilterChip(
             context,
             icon: Icons.account_balance,
             label: 'Cap',
             value: widget.core.selectedMarketCap.shortName,
             onTap: () => _showMarketCapSelector(context),
           ),
-        ),
-        const SizedBox(width: 6),
-      ],
-      if (widget.showLayout) ...[
-        Expanded(
-          child: _buildCompactFilterChip(
+        if (widget.showLayout)
+          _buildCompactFilterChip(
             context,
             icon: widget.core.selectedLayout.icon,
             label: 'Layout',
             value: widget.core.selectedLayout.displayName,
             onTap: () => _showLayoutSelector(context),
           ),
-        ),
-      ],
-    ],
+      ];
+
+      if (stackFilters) {
+        return Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: chips
+              .map(
+                (chip) => SizedBox(
+                  width: (constraints.maxWidth - 6) / 2,
+                  child: chip,
+                ),
+              )
+              .toList(),
+        );
+      }
+
+      return Row(
+        children: [
+          for (var i = 0; i < chips.length; i++) ...[
+            if (i > 0) const SizedBox(width: 6),
+            Expanded(child: chips[i]),
+          ],
+        ],
+      );
+    },
   );
 
   Widget _buildFiltersList(BuildContext context) => Padding(

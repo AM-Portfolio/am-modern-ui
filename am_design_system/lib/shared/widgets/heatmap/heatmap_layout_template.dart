@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-
+import '../../../../core/theme/color_extensions.dart';
 import '../../../../core/utils/common_logger.dart';
 import '../../models/heatmap.dart';
 
@@ -50,7 +50,7 @@ class HeatmapLayoutTemplate extends StatelessWidget {
     );
 
     final cardPadding = compactHeader
-        ? const EdgeInsets.fromLTRB(12, 10, 12, 12)
+        ? const EdgeInsets.fromLTRB(8, 8, 8, 8)
         : const EdgeInsets.all(16);
 
     return Container(
@@ -177,11 +177,11 @@ class HeatmapLayoutTemplate extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text('Performance: ', style: Theme.of(context).textTheme.bodySmall),
-        _buildLegendItem(context, 'Loss', Colors.red.shade300),
+        _buildLegendItem(context, 'Loss', context.marketNegative),
         const SizedBox(width: 16),
-        _buildLegendItem(context, 'Neutral', Colors.grey.shade300),
+        _buildLegendItem(context, 'Neutral', context.colors.statusNeutral),
         const SizedBox(width: 16),
-        _buildLegendItem(context, 'Gain', Colors.green.shade300),
+        _buildLegendItem(context, 'Gain', context.marketPositive),
       ],
     );
   }

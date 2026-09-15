@@ -10,10 +10,15 @@ class PortfolioHoldingsMapper {
     PortfolioHoldingsDto apiModel,
   ) {
     final holdings = apiModel.equityHoldings.map(_mapEquityHolding).toList();
+    final asOf = _parseAsOf(apiModel.asOf);
 
     return PortfolioHoldings(
       holdings: holdings,
-      lastUpdated: DateTime.now(),
+      lastUpdated: asOf ?? DateTime.now(),
+      asOf: asOf,
+      priceFreshness: apiModel.priceFreshness ?? 'AS_OF',
+      priceSource: apiModel.priceSource,
+      sessionDate: apiModel.sessionDate,
     );
   }
 
@@ -24,6 +29,11 @@ class PortfolioHoldingsMapper {
         .toList();
 
     return PortfolioHoldingsDto(equityHoldings: apiHoldings);
+  }
+
+  static DateTime? _parseAsOf(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    return DateTime.tryParse(raw);
   }
 
   /// Map individual equity holding from API to domain

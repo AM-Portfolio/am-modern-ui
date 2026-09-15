@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_library/am_library.dart';
 import '../../internal/domain/entities/portfolio_analytics.dart';
+import '../../internal/domain/entities/portfolio_analytics_request.dart';
 import '../../internal/services/portfolio_analytics_service.dart';
 import 'portfolio_analytics_state.dart';
 
@@ -16,13 +17,100 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
   Future<void>? _loadingFuture;
   String? _currentPortfolioId;
   TimeFrame? _lastLoadedTimeFrame;
+  TimeFrame? _inFlightTimeFrame;
   int _loadGeneration = 0;
 
+  /// Prefer hist when it has data; otherwise keep live/fast. Empty lists must not wipe live.
+  static SectorAllocation? preferNonEmptyAllocation(
+    SectorAllocation? hist,
+    SectorAllocation? live,
+  ) {
+    if (hist != null && hist.sectorWeights.isNotEmpty) return hist;
+    if (live != null && live.sectorWeights.isNotEmpty) return live;
+    return hist ?? live;
+  }
+
+  static Heatmap? preferNonEmptyHeatmap(Heatmap? hist, Heatmap? live) {
+    return preferQualityHeatmap(hist, live);
+  }
+
+  /// Accept [candidate] only when its non-zero sector mass is comparable to [prior].
+  /// Thin hist (few priced sectors) must not wipe a richer live/prior map.
+  static Heatmap? preferQualityHeatmap(
+    Heatmap? candidate,
+    Heatmap? prior, {
+    double? overviewTotal,
+  }) {
+    if (candidate == null || candidate.sectors.isEmpty) {
+      if (prior != null && prior.sectors.isNotEmpty) return prior;
+      return candidate ?? prior;
+    }
+    if (prior == null || prior.sectors.isEmpty) return candidate;
+
+    final candidateValue = _heatmapValueSum(candidate);
+    final priorValue = _heatmapValueSum(prior);
+    final candidatePriced = _pricedSectorCount(candidate);
+    final priorPriced = _pricedSectorCount(prior);
+
+    final minSectors = priorPriced <= 0
+        ? 1
+        : (priorPriced * 0.5).ceil().clamp(1, priorPriced);
+    final thinByCount = candidatePriced < minSectors && candidatePriced < 3;
+    final thinByValue =
+        priorValue > 0 && candidateValue < priorValue * 0.5;
+    final thinByOverview = overviewTotal != null &&
+        overviewTotal > 0 &&
+        candidateValue < overviewTotal * 0.5;
+
+    if (thinByCount || thinByValue || thinByOverview) {
+      return _overlayPeriodPercents(prior, candidate);
+    }
+    return candidate;
+  }
+
+  static double _heatmapValueSum(Heatmap heatmap) =>
+      heatmap.sectors.fold(0.0, (sum, s) => sum + s.totalValue);
+
+  static int _pricedSectorCount(Heatmap heatmap) =>
+      heatmap.sectors.where((s) => s.totalValue > 0).length;
+
+  static Heatmap _overlayPeriodPercents(Heatmap structure, Heatmap period) {
+    final byName = {
+      for (final s in period.sectors)
+        s.sectorName.trim().toLowerCase(): s.changePercent,
+    };
+    final merged = structure.sectors.map((s) {
+      final key = s.sectorName.trim().toLowerCase();
+      final pct = byName[key];
+      if (pct == null) return s;
+      return Sector(
+        sectorName: s.sectorName,
+        performanceRank: s.performanceRank,
+        performance: pct,
+        changePercent: pct,
+        weightage: s.weightage,
+        color: s.color,
+        stockCount: s.stockCount,
+        totalValue: s.totalValue,
+        totalReturnAmount: s.totalReturnAmount,
+        stocks: s.stocks,
+      );
+    }).toList();
+    return Heatmap(sectors: merged);
+  }
+
   /// Load all analytics data for a portfolio
-  Future<void> loadAnalytics(String portfolioId, {TimeFrame? timeFrame}) async {
-    if (_loadingFuture != null && _currentPortfolioId == portfolioId) {
+  Future<void> loadAnalytics(
+    String portfolioId, {
+    TimeFrame? timeFrame,
+    FeatureToggles? featureToggles,
+  }) async {
+    // Coalesce only when the same portfolio AND timeframe are already loading.
+    if (_loadingFuture != null &&
+        _currentPortfolioId == portfolioId &&
+        _inFlightTimeFrame == timeFrame) {
       CommonLogger.debug(
-        '🔍 PortfolioAnalyticsCubit: loadAnalytics already in progress for portfolioId: $portfolioId',
+        '🔍 PortfolioAnalyticsCubit: loadAnalytics already in progress for portfolioId: $portfolioId tf: ${timeFrame?.name}',
         tag: 'PortfolioAnalyticsCubit',
       );
       return _loadingFuture;
@@ -39,19 +127,29 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
     }
 
     _currentPortfolioId = portfolioId;
+    _inFlightTimeFrame = timeFrame;
     final gen = ++_loadGeneration;
-    _loadingFuture = _doLoadAnalytics(portfolioId, timeFrame: timeFrame, gen: gen);
+    _loadingFuture = _doLoadAnalytics(
+      portfolioId,
+      timeFrame: timeFrame,
+      featureToggles: featureToggles,
+      gen: gen,
+    );
 
     try {
       await _loadingFuture;
     } finally {
-      _loadingFuture = null;
+      if (gen == _loadGeneration) {
+        _loadingFuture = null;
+        _inFlightTimeFrame = null;
+      }
     }
   }
 
   Future<void> _doLoadAnalytics(
     String portfolioId, {
     TimeFrame? timeFrame,
+    FeatureToggles? featureToggles,
     required int gen,
   }) async {
     CommonLogger.debug(
@@ -85,6 +183,7 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
     final fullAnalyticsFuture = _analyticsService.getPortfolioAnalyticsWithDefaults(
       portfolioId, 
       timeFrame: timeFrame,
+      featureToggles: featureToggles,
     );
 
     // Fast fetch for allocations (uses MongoDB / fast current market data, ~100ms)
@@ -163,7 +262,10 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
         technicalArea: 'portfolio',
       );
       final sectorEmpty =
-          (analytics.analytics.sectorAllocation ?? fastSectorAllocation)
+          preferNonEmptyAllocation(
+                analytics.analytics.sectorAllocation,
+                fastSectorAllocation,
+              )
               ?.sectorWeights
               .isEmpty ??
           true;
@@ -173,20 +275,53 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
       if (sectorEmpty) {
         ProductTelemetry.instance.emptyState('allocation_empty');
       }
+      var resolvedMovers = analytics.analytics.movers;
       if (moversEmpty) {
         ProductTelemetry.instance.emptyState('portfolio_movers_empty');
+        try {
+          final retryMovers = await _analyticsService.getPortfolioMovers(
+            portfolioId,
+          );
+          if (retryMovers != null &&
+              (retryMovers.topGainers.isNotEmpty ||
+                  retryMovers.topLosers.isNotEmpty) &&
+              !isClosed &&
+              gen == _loadGeneration) {
+            resolvedMovers = retryMovers;
+            CommonLogger.info(
+              'Portfolio movers recovered via dedicated movers endpoint',
+              tag: 'PortfolioAnalyticsCubit',
+            );
+          }
+        } catch (e) {
+          CommonLogger.warning(
+            'Movers fallback fetch failed: $e',
+            tag: 'PortfolioAnalyticsCubit',
+          );
+        }
       }
-      if (analytics.analytics.heatmap == null) {
+      final priorHeatmap = state is PortfolioAnalyticsLoaded
+          ? (state as PortfolioAnalyticsLoaded).heatmap
+          : null;
+      final mergedHeatmap = preferNonEmptyHeatmap(
+        analytics.analytics.heatmap,
+        priorHeatmap,
+      );
+      if (mergedHeatmap == null || mergedHeatmap.sectors.isEmpty) {
         ProductTelemetry.instance.emptyState('heatmap_empty');
       }
-      
+
       _lastLoadedTimeFrame = timeFrame;
       emit(
         PortfolioAnalyticsLoaded(
-          sectorAllocation: analytics.analytics.sectorAllocation ?? fastSectorAllocation,
-          marketCapAllocation: analytics.analytics.marketCapAllocation ?? fastMarketCapAllocation,
-          heatmap: analytics.analytics.heatmap,
-          movers: analytics.analytics.movers,
+          sectorAllocation: preferNonEmptyAllocation(
+            analytics.analytics.sectorAllocation,
+            fastSectorAllocation,
+          ),
+          marketCapAllocation: analytics.analytics.marketCapAllocation ??
+              fastMarketCapAllocation,
+          heatmap: mergedHeatmap,
+          movers: resolvedMovers,
         ),
       );
       CommonLogger.info(
@@ -344,19 +479,28 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
       emit(currentState.copyWith(isRefreshing: true));
 
       try {
-        // Refresh all data with single API call (more efficient)
         final analytics = await _analyticsService
-            .getPortfolioAnalyticsWithDefaults(portfolioId);
+            .getPortfolioAnalyticsWithDefaults(
+          portfolioId,
+          timeFrame: _lastLoadedTimeFrame,
+        );
 
         if (isClosed) return;
         emit(
           currentState.copyWith(
-            sectorAllocation: analytics.analytics.sectorAllocation,
-            marketCapAllocation: analytics.analytics.marketCapAllocation,
-            heatmap: analytics.analytics.heatmap,
-            movers: analytics.analytics.movers,
+            sectorAllocation: preferNonEmptyAllocation(
+              analytics.analytics.sectorAllocation,
+              currentState.sectorAllocation,
+            ),
+            marketCapAllocation: analytics.analytics.marketCapAllocation ??
+                currentState.marketCapAllocation,
+            heatmap: preferNonEmptyHeatmap(
+              analytics.analytics.heatmap,
+              currentState.heatmap,
+            ),
+            movers: analytics.analytics.movers ?? currentState.movers,
             isRefreshing: false,
-            errors: {}, // Clear errors on successful refresh
+            errors: {},
           ),
         );
 
