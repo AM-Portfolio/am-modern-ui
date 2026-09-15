@@ -110,9 +110,66 @@ class TimingAnalysisTab extends StatelessWidget {
       );
     }
     if (state is TradeMetricsLoaded) {
-      return _TimingDashboard(metrics: state.metrics);
+      final metrics = state.metrics;
+      if (metrics.totalTradesCount <= 0) {
+        return _EmptyTimingState(onRetry: onApply);
+      }
+      return _TimingDashboard(metrics: metrics);
     }
     return const SizedBox.shrink();
+  }
+}
+
+class _EmptyTimingState extends StatelessWidget {
+  const _EmptyTimingState({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.insights_outlined,
+                size: 44, color: colors.textSecondary),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              'No trades in this portfolio / range',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Select the same portfolio you use in production '
+              '(sidebar → Current Portfolio), keep “All time”, then Apply. '
+              'Timing charts and the breakdown table will fill once trades load.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colors.textSecondary,
+                    height: 1.4,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            AppButton(
+              text: 'Retry',
+              type: AppButtonType.secondary,
+              isOutlined: true,
+              icon: Icons.refresh,
+              onPressed: onRetry,
+              height: 36,
+              backgroundColor: ModuleColors.trade,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -238,6 +295,8 @@ class _TimingDashboardState extends State<_TimingDashboard> {
               rankView: _rankView,
               onDimension: (d) => setState(() => _dimension = d),
               onRankView: (v) => setState(() => _rankView = v),
+              rowCount: rankRows.length,
+              bucketLabel: bucketLabel,
             ),
             const SizedBox(height: AppSpacing.sm),
             TimingRankTable(
@@ -245,11 +304,6 @@ class _TimingDashboardState extends State<_TimingDashboard> {
               bucketLabel: bucketLabel,
               rows: rankRows,
               emptyMessage: emptyRank,
-              subtitle: switch (_rankView) {
-                TimingRankView.all => 'All · ranked by Avg PnL',
-                TimingRankView.best => 'Best · ranked by Avg PnL',
-                TimingRankView.worst => 'Worst · ranked by Avg PnL',
-              },
               showLowSampleBadges: _rankView == TimingRankView.all,
             ),
             const SizedBox(height: AppSpacing.md),
@@ -266,12 +320,16 @@ class _RankControls extends StatelessWidget {
     required this.rankView,
     required this.onDimension,
     required this.onRankView,
+    required this.rowCount,
+    required this.bucketLabel,
   });
 
   final TimingDimension dimension;
   final TimingRankView rankView;
   final ValueChanged<TimingDimension> onDimension;
   final ValueChanged<TimingRankView> onRankView;
+  final int rowCount;
+  final String bucketLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -281,55 +339,101 @@ class _RankControls extends StatelessWidget {
           fontWeight: FontWeight.w600,
         );
 
-    return Wrap(
-      spacing: AppSpacing.md,
-      runSpacing: AppSpacing.sm,
-      crossAxisAlignment: WrapCrossAlignment.center,
+    Widget group({
+      required String label,
+      required List<Widget> chips,
+    }) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label, style: labelStyle),
+          const SizedBox(width: AppSpacing.sm),
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.xxs),
+            decoration: BoxDecoration(
+              color: colors.surface.withValues(alpha: 0.55),
+              borderRadius: AppRadii.chip,
+              border: Border.all(color: colors.border.withValues(alpha: 0.35)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: chips,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text('Dimension:', style: labelStyle),
-        AmToggleChip(
-          label: 'Session',
-          selected: dimension == TimingDimension.session,
-          compact: true,
-          accentColor: ModuleColors.trade,
-          onTap: () => onDimension(TimingDimension.session),
+        Expanded(
+          child: Wrap(
+            spacing: AppSpacing.lg,
+            runSpacing: AppSpacing.sm,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              group(
+                label: 'Dimension:',
+                chips: [
+                  AmToggleChip(
+                    label: 'Session',
+                    selected: dimension == TimingDimension.session,
+                    compact: true,
+                    accentColor: ModuleColors.trade,
+                    onTap: () => onDimension(TimingDimension.session),
+                  ),
+                  AmToggleChip(
+                    label: 'Day',
+                    selected: dimension == TimingDimension.weekday,
+                    compact: true,
+                    accentColor: ModuleColors.trade,
+                    onTap: () => onDimension(TimingDimension.weekday),
+                  ),
+                  AmToggleChip(
+                    label: 'Month',
+                    selected: dimension == TimingDimension.month,
+                    compact: true,
+                    accentColor: ModuleColors.trade,
+                    onTap: () => onDimension(TimingDimension.month),
+                  ),
+                ],
+              ),
+              group(
+                label: 'View:',
+                chips: [
+                  AmToggleChip(
+                    label: 'All',
+                    selected: rankView == TimingRankView.all,
+                    compact: true,
+                    accentColor: ModuleColors.trade,
+                    onTap: () => onRankView(TimingRankView.all),
+                  ),
+                  AmToggleChip(
+                    label: 'Best',
+                    selected: rankView == TimingRankView.best,
+                    compact: true,
+                    accentColor: ModuleColors.trade,
+                    onTap: () => onRankView(TimingRankView.best),
+                  ),
+                  AmToggleChip(
+                    label: 'Worst',
+                    selected: rankView == TimingRankView.worst,
+                    compact: true,
+                    accentColor: ModuleColors.trade,
+                    onTap: () => onRankView(TimingRankView.worst),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-        AmToggleChip(
-          label: 'Day',
-          selected: dimension == TimingDimension.weekday,
-          compact: true,
-          accentColor: ModuleColors.trade,
-          onTap: () => onDimension(TimingDimension.weekday),
-        ),
-        AmToggleChip(
-          label: 'Month',
-          selected: dimension == TimingDimension.month,
-          compact: true,
-          accentColor: ModuleColors.trade,
-          onTap: () => onDimension(TimingDimension.month),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Text('View:', style: labelStyle),
-        AmToggleChip(
-          label: 'All',
-          selected: rankView == TimingRankView.all,
-          compact: true,
-          accentColor: ModuleColors.trade,
-          onTap: () => onRankView(TimingRankView.all),
-        ),
-        AmToggleChip(
-          label: 'Best',
-          selected: rankView == TimingRankView.best,
-          compact: true,
-          accentColor: ModuleColors.trade,
-          onTap: () => onRankView(TimingRankView.best),
-        ),
-        AmToggleChip(
-          label: 'Worst',
-          selected: rankView == TimingRankView.worst,
-          compact: true,
-          accentColor: ModuleColors.trade,
-          onTap: () => onRankView(TimingRankView.worst),
+        Text(
+          'Showing $rowCount '
+          '${rowCount == 1 ? bucketLabel.toLowerCase() : '${bucketLabel.toLowerCase()}s'}',
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: colors.textSecondary,
+              ),
         ),
       ],
     );

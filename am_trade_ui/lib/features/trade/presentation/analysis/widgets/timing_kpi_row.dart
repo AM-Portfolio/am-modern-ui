@@ -72,6 +72,10 @@ class TimingKpiRow extends StatelessWidget {
 
     final holdMinutes = perf?.averageHoldingTimeMinutes;
 
+    final pnlSparklineData = dist?.profitByMonth.values.toList() ?? [];
+    final avgPnlSparklineData = dist?.avgPnlByMonth.values.toList() ?? [];
+    final sessionAvgPnlData = dist?.avgPnlBySession.values.toList() ?? [];
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= 900;
@@ -81,23 +85,36 @@ class TimingKpiRow extends StatelessWidget {
             value: totalPnl == null ? '—' : _signedInr(totalPnl),
             subtitle: totalPct == null
                 ? null
-                : '${totalPct >= 0 ? '+' : ''}${totalPct.toStringAsFixed(1)}%',
+                : '${totalPct >= 0 ? '↑' : '↓'} ${totalPct.abs().toStringAsFixed(1)}%',
             valueColor: totalPnl == null
                 ? null
                 : (totalPnl >= 0
                     ? context.statusSuccess
                     : context.statusError),
             icon: Icons.trending_down_rounded,
+            sparkline: pnlSparklineData.isEmpty 
+                ? null 
+                : AmSparklineChart(
+                    data: pnlSparklineData,
+                    color: (totalPnl ?? 0) >= 0 ? context.statusSuccess : context.statusError,
+                  ),
           ),
           _KpiCard(
             title: 'Avg P&L per Trade',
             value: avgPnl == null ? '—' : _signedInr(avgPnl),
+            subtitle: 'vs. 0 previous', // Following the design
             valueColor: avgPnl == null
                 ? null
                 : (avgPnl >= 0
                     ? context.statusSuccess
                     : context.statusError),
             icon: Icons.show_chart_rounded,
+            sparkline: avgPnlSparklineData.isEmpty 
+                ? null 
+                : AmSparklineChart(
+                    data: avgPnlSparklineData,
+                    color: (avgPnl ?? 0) >= 0 ? context.statusSuccess : context.statusError,
+                  ),
           ),
           _KpiCard(
             title: 'Win Rate',
@@ -106,6 +123,14 @@ class TimingKpiRow extends StatelessWidget {
                 ? '$wins wins / $losses losses'
                 : null,
             icon: Icons.donut_large_rounded,
+            sparkline: (wins != null && eligible > 0)
+                ? AmDonutSparkline(
+                    value: wins.toDouble(),
+                    total: eligible.toDouble(),
+                    color: context.statusSuccess,
+                    backgroundColor: context.statusSuccess.withValues(alpha: 0.2),
+                  )
+                : null,
           ),
           _KpiCard(
             title: 'Best Session',
@@ -113,12 +138,24 @@ class TimingKpiRow extends StatelessWidget {
             subtitle: bestSub,
             valueColor: bestLabel == null ? null : context.statusSuccess,
             icon: Icons.access_time_rounded,
+            sparkline: sessionAvgPnlData.isEmpty
+                ? null
+                : AmBarSparkline(
+                    data: sessionAvgPnlData,
+                    positiveColor: context.statusSuccess,
+                    negativeColor: context.statusError,
+                  ),
           ),
           _KpiCard(
             title: 'Avg Hold Time',
             value: holdMinutes == null ? '—' : formatHoldDuration(holdMinutes),
             subtitle: 'Across all trades',
             icon: Icons.timer_outlined,
+            sparkline: Icon(
+              Icons.schedule,
+              size: 32,
+              color: context.colors.textSecondary.withValues(alpha: 0.3),
+            ),
           ),
         ];
 
@@ -178,6 +215,7 @@ class _KpiCard extends StatelessWidget {
     this.subtitle,
     this.valueColor,
     required this.icon,
+    this.sparkline,
   });
 
   final String title;
@@ -185,6 +223,7 @@ class _KpiCard extends StatelessWidget {
   final String? subtitle;
   final Color? valueColor;
   final IconData icon;
+  final Widget? sparkline;
 
   @override
   Widget build(BuildContext context) {
@@ -198,42 +237,63 @@ class _KpiCard extends StatelessWidget {
         borderRadius: AppRadii.card,
         border: Border.all(color: colors.border.withValues(alpha: 0.4)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: colors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: colors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Icon(
+                      Icons.info_outline,
+                      size: 14,
+                      color: colors.textSecondary.withValues(alpha: 0.7),
+                    ),
+                    const Spacer(),
+                    if (sparkline == null)
+                      Icon(icon, size: 16, color: colors.textSecondary),
+                  ],
                 ),
-              ),
-              Icon(icon, size: 16, color: colors.textSecondary),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            value,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: valueColor ?? colors.textPrimary,
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  value,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: valueColor ?? colors.textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    subtitle!,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: valueColor ?? colors.textSecondary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
-          if (subtitle != null) ...[
-            const SizedBox(height: AppSpacing.xxs),
-            Text(
-              subtitle!,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: valueColor ?? colors.textSecondary,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+          if (sparkline != null) ...[
+            const SizedBox(width: AppSpacing.md),
+            SizedBox(
+              width: 48,
+              height: 36,
+              child: sparkline!,
             ),
           ],
         ],

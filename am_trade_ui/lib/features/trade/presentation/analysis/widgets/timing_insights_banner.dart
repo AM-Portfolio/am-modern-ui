@@ -41,13 +41,17 @@ class TimingInsightsBanner extends StatelessWidget {
         ? 'Mostly ${styleHintDisplayLabel(styleHint!.style)} · '
             '${styleHint!.confidencePercent.toStringAsFixed(0)}% of '
             '${styleHint!.sampleSize}'
-        : 'Style unknown';
+        : ((tradeCount ?? 0) == 0
+            ? 'No style yet'
+            : 'Style mixed / unknown');
 
-    final tzText = (timezoneNote == null ||
-            timezoneNote!.isEmpty ||
-            timezoneNote == 'entry_local_as_stored')
+    // Never show raw API honesty keys in the banner.
+    final tzRaw = timezoneNote?.trim() ?? '';
+    final tzText = (tzRaw.isEmpty ||
+            tzRaw == 'entry_local_as_stored' ||
+            tzRaw.contains('entry_local'))
         ? 'IST (UTC+5:30) · NSE Session'
-        : timezoneNote!;
+        : tzRaw;
 
     final honesty = <String>[];
     if (skippedMissingEntry > 0) {

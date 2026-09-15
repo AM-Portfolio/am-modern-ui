@@ -141,6 +141,9 @@ export 'shared/widgets/calendar/universal_calendar/card_types.dart';
 export 'shared/widgets/calendar/universal_calendar/data_provider.dart';
 
 // Tables & Charts
+export 'shared/widgets/charts/am_sparkline_chart.dart';
+export 'shared/widgets/charts/am_donut_sparkline.dart';
+export 'shared/widgets/charts/am_bar_sparkline.dart';
 export 'shared/widgets/tables/sortable_table.dart';
 export 'shared/widgets/tables/paginated_sortable_table.dart';
 export 'shared/widgets/tables/adaptive_data_table.dart';

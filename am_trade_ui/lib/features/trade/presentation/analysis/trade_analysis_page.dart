@@ -155,15 +155,65 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Tabs + date/Apply on one row — no page title / LIVE EDGE / portfolio.
+            // Header Row: Title, Badge, and Action Buttons
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Expanded(
-                  child: _AnalysisTabBar(
-                    selected: _tab,
-                    onSelected: (tab) => setState(() => _tab = tab),
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'Trade Analysis',
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.sm,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: context.statusSuccess.withValues(alpha: 0.15),
+                            borderRadius: AppRadii.chip,
+                            border: Border.all(
+                              color: context.statusSuccess.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: Text(
+                            'LIVE EDGE',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: context.statusSuccess,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Analyze execution patterns, session timing & style distribution',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                AppButton(
+                  text: widget.portfolioId.length > 24
+                      ? '${widget.portfolioId.substring(0, 24)}...'
+                      : widget.portfolioId,
+                  type: AppButtonType.secondary,
+                  isOutlined: true,
+                  iconTrailing: Icons.keyboard_arrow_down_rounded,
+                  onPressed: () {},
+                  height: 36,
                 ),
                 const SizedBox(width: AppSpacing.md),
                 _DateApplyBar(
@@ -173,15 +223,44 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
                   onResetAllTime: _resetToAllTime,
                   onApply: _loadMetrics,
                 ),
+                const SizedBox(width: AppSpacing.sm),
+                AppButton(
+                  text: '',
+                  icon: Icons.refresh,
+                  type: AppButtonType.secondary,
+                  isOutlined: true,
+                  onPressed: _loadMetrics,
+                  height: 36,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                AppButton(
+                  text: '',
+                  icon: Icons.download_outlined,
+                  type: AppButtonType.secondary,
+                  isOutlined: true,
+                  onPressed: () {}, // Not implemented yet
+                  height: 36,
+                ),
               ],
             ),
-            if (_tab == _AnalysisTab.timing) ...[
-              const SizedBox(height: AppSpacing.sm),
-              _HoldingStyleFilter(
-                selected: _holdingStyle,
-                onChanged: _onHoldingStyleChanged,
-              ),
-            ],
+            const SizedBox(height: AppSpacing.md),
+            // Filter Row: Tabs & Holding Style
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _AnalysisTabBar(
+                  selected: _tab,
+                  onSelected: (tab) => setState(() => _tab = tab),
+                ),
+                const Spacer(),
+                if (_tab == _AnalysisTab.timing) ...[
+                  _HoldingStyleFilter(
+                    selected: _holdingStyle,
+                    onChanged: _onHoldingStyleChanged,
+                  ),
+                ],
+              ],
+            ),
             const SizedBox(height: AppSpacing.md),
             Expanded(
               child: cubitAsync.when(
@@ -290,6 +369,7 @@ class _HoldingStyleFilter extends StatelessWidget {
     }
 
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           'Holding style:',
@@ -299,17 +379,15 @@ class _HoldingStyleFilter extends StatelessWidget {
               ),
         ),
         const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              pill('All', null),
-              pill('Scalper', 'SCALPER'),
-              pill('Intraday', 'INTRADAY'),
-              pill('Swing', 'SWING'),
-            ],
-          ),
+        Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: [
+            pill('All', null),
+            pill('Scalper <15m', 'SCALPER'),
+            pill('Intraday 15m–24h', 'INTRADAY'),
+            pill('Swing ≥24h', 'SWING'),
+          ],
         ),
       ],
     );
@@ -346,13 +424,20 @@ class _AnalysisTabBar extends StatelessWidget {
                   _icon(tab),
                   size: 16,
                   color: selected == tab
-                      ? ModuleColors.trade
+                      ? Colors.white
                       : colors.textSecondary,
                 ),
-                label: Text(_label(tab)),
+                label: Text(
+                  _label(tab),
+                  style: TextStyle(
+                    color: selected == tab ? Colors.white : colors.textPrimary,
+                    fontWeight: selected == tab ? FontWeight.w600 : FontWeight.normal,
+                  ),
+                ),
                 selected: selected == tab,
                 onSelected: (_) => onSelected(tab),
-                selectedColor: ModuleColors.trade.withValues(alpha: 0.22),
+                selectedColor: ModuleColors.trade,
+                backgroundColor: Colors.transparent,
                 showCheckmark: false,
                 visualDensity: VisualDensity.compact,
               ),
