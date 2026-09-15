@@ -1,8 +1,10 @@
+import 'dart:math';
 import 'package:am_common/am_common.dart';
 import 'package:am_market_sdk/market/api.dart';
 import 'package:am_market_ui/core/services/market_data_sdk_service.dart';
 import 'package:am_market_ui/features/f_o/providers/fo_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 /// Fetches the list of Futures contracts for the active symbol with market quotes via backend SDK.
 final futuresContractsProvider = FutureProvider.autoDispose<List<dynamic>>((ref) async {
@@ -145,54 +147,74 @@ final futuresHistoricalChartProvider = FutureProvider.autoDispose.family<List<Co
 });
 
 String _formatDate(DateTime dt) {
-  return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+  return DateFormat('yyyy-MM-dd').format(dt);
 }
 
 String _formatXLabel(DateTime dt, TimeFrame tf) {
   if (tf == TimeFrame.oneDay) {
-    return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    return DateFormat('HH:mm').format(dt);
   }
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  final mStr = months[dt.month - 1];
   if (tf == TimeFrame.oneWeek || tf == TimeFrame.oneMonth) {
-    return '${dt.day} $mStr';
+    return DateFormat('d MMM').format(dt);
   }
-  return mStr;
+  return DateFormat('MMM yyyy').format(dt);
 }
 
 List<CommonCandlePoint> _buildDynamicCandleSequence(double basePrice, TimeFrame tf) {
-  late final List<String> labels;
-  late final List<double> factors;
+  final now = DateTime.now();
+  int count = 6;
+  Duration stepDuration = const Duration(minutes: 75);
+  bool isIntraday = false;
+  bool isWeeklyStep = false;
+  bool isMonthlyStep = false;
 
   switch (tf) {
     case TimeFrame.oneDay:
-      labels = ['09:15', '10:30', '11:45', '13:00', '14:15', '15:30'];
-      factors = [-0.002, 0.001, 0.003, -0.001, -0.002, 0.000];
+      count = 6;
+      isIntraday = true;
       break;
     case TimeFrame.oneWeek:
-      labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-      factors = [-0.005, 0.003, 0.006, -0.004, 0.000];
+      count = 5;
+      stepDuration = const Duration(days: 1);
       break;
     case TimeFrame.threeMonths:
-      labels = ['W1', 'W3', 'W5', 'W7', 'W9', 'W11'];
-      factors = [-0.02, 0.01, 0.02, 0.03, -0.01, 0.00];
+      count = 12;
+      isWeeklyStep = true;
       break;
     case TimeFrame.oneYear:
-      labels = ['Q1', 'Q2', 'Q3', 'Q4'];
-      factors = [-0.08, -0.03, 0.02, 0.00];
+    case TimeFrame.fiveYears:
+    case TimeFrame.all:
+      count = 12;
+      isMonthlyStep = true;
       break;
     case TimeFrame.oneMonth:
     default:
-      labels = ['W1', 'W2', 'W3', 'W4'];
-      factors = [-0.010, 0.005, 0.012, 0.000];
+      count = 15;
+      stepDuration = const Duration(days: 2);
       break;
   }
 
-  return List.generate(labels.length, (i) {
-    final close = basePrice * (1.0 + factors[i]);
-    final open = i == 0 ? basePrice * 0.998 : basePrice * (1.0 + factors[i - 1]);
-    final high = (open > close ? open : close) * 1.003;
-    final low = (open < close ? open : close) * 0.997;
+  double prevClose = basePrice;
+
+  return List.generate(count, (i) {
+    late final DateTime dt;
+    if (isIntraday) {
+      final marketOpen = DateTime(now.year, now.month, now.day, 9, 15);
+      dt = marketOpen.add(Duration(minutes: i * 75));
+    } else if (isWeeklyStep) {
+      dt = now.subtract(Duration(days: (count - 1 - i) * 7));
+    } else if (isMonthlyStep) {
+      dt = DateTime(now.year, now.month - (count - 1 - i), 1);
+    } else {
+      dt = now.subtract(Duration(days: (count - 1 - i) * stepDuration.inDays));
+    }
+
+    final waveFactor = (sin((i + 1) * 1.5) * 0.008) + (cos((i + 1) * 0.8) * 0.004);
+    final open = i == 0 ? basePrice * 0.998 : prevClose;
+    final close = basePrice * (1.0 + waveFactor);
+    final high = max(open, close) * (1.0 + (i % 3 + 1) * 0.0015);
+    final low = min(open, close) * (1.0 - (i % 3 + 1) * 0.0015);
+    prevClose = close;
 
     return CommonCandlePoint(
       x: i.toDouble(),
@@ -200,7 +222,7 @@ List<CommonCandlePoint> _buildDynamicCandleSequence(double basePrice, TimeFrame 
       high: double.parse(high.toStringAsFixed(2)),
       low: double.parse(low.toStringAsFixed(2)),
       close: double.parse(close.toStringAsFixed(2)),
-      xLabel: labels[i],
+      xLabel: _formatXLabel(dt, tf),
     );
   });
 }
