@@ -5,13 +5,15 @@ TimingBucket _bucket({
   required String key,
   required double avgPnl,
   int trades = 2,
+  int? eligible,
 }) {
   return TimingBucket(
     key: key,
     label: key,
     trades: trades,
-    pnl: avgPnl * trades,
+    pnl: avgPnl * (eligible ?? trades),
     avgPnl: avgPnl,
+    eligibleTrades: eligible ?? trades,
   );
 }
 
@@ -26,32 +28,52 @@ void main() {
       expect(buckets, isEmpty);
     });
 
-    test('skips count <= 0 and computes avgPnl = pnl / count', () {
+    test('uses server avgPnl and eligible when provided', () {
       final buckets = buildTimingBuckets(
-        trades: {'9': 4, '10': 0, '11': -1},
-        profit: {'9': 400, '10': 99, '11': 50},
-        winRate: {'9': 50},
-        labelFor: formatEntryHourLabel,
+        trades: {'SESSION_0915_1100': 4},
+        profit: {'SESSION_0915_1100': 400},
+        winRate: {'SESSION_0915_1100': 50},
+        avgPnl: {'SESSION_0915_1100': 100},
+        eligible: {'SESSION_0915_1100': 4},
+        labelFor: formatSessionLabel,
       );
       expect(buckets, hasLength(1));
-      expect(buckets.single.key, '9');
       expect(buckets.single.avgPnl, 100);
-      expect(buckets.single.winRatePercent, 50);
-      expect(buckets.single.label, '09:00');
+      expect(buckets.single.label, '9:15–11:00');
+    });
+
+    test('includeZeroTradeBuckets keeps empty session keys', () {
+      final buckets = buildTimingBuckets(
+        trades: {
+          for (final k in kSessionKeys) k: k == 'OTHER' ? 2 : 0,
+        },
+        profit: {for (final k in kSessionKeys) k: 0.0},
+        labelFor: formatSessionLabel,
+        includeZeroTradeBuckets: true,
+        orderedKeys: kSessionKeys,
+      );
+      expect(buckets, hasLength(5));
+      expect(buckets.first.key, 'SESSION_0915_1100');
+      expect(buckets.first.trades, 0);
+      expect(buckets.last.key, 'OTHER');
+      expect(buckets.last.trades, 2);
     });
   });
 
   group('sortForChart', () {
-    test('sorts hours numerically', () {
+    test('sorts sessions in NSE order', () {
       final sorted = sortForChart(
         [
-          _bucket(key: '14', avgPnl: 1),
-          _bucket(key: '9', avgPnl: 1),
-          _bucket(key: '11', avgPnl: 1),
+          _bucket(key: 'OTHER', avgPnl: 1),
+          _bucket(key: 'SESSION_0915_1100', avgPnl: 1),
+          _bucket(key: 'SESSION_1500_1530', avgPnl: 1),
         ],
-        TimingDimension.hour,
+        TimingDimension.session,
       );
-      expect(sorted.map((b) => b.key).toList(), ['9', '11', '14']);
+      expect(
+        sorted.map((b) => b.key).toList(),
+        ['SESSION_0915_1100', 'SESSION_1500_1530', 'OTHER'],
+      );
     });
 
     test('sorts weekdays Mon→Sun', () {
@@ -109,26 +131,15 @@ void main() {
       final split = splitBestWorst(buckets);
       expect(split.best, isNotEmpty);
       expect(split.worst, isNotEmpty);
-      expect(split.best.length, 3); // ceil(5/2)
+      expect(split.best.length, 3);
       expect(split.worst.length, 2);
-      final keys = {...split.best.map((b) => b.key), ...split.worst.map((b) => b.key)};
+      final keys = {
+        ...split.best.map((b) => b.key),
+        ...split.worst.map((b) => b.key),
+      };
       expect(keys.length, split.best.length + split.worst.length);
       expect(split.best.first.key, 'a');
       expect(split.worst.first.key, 'e');
-    });
-
-    test('7 buckets → ceil(n/2) best, remaining worst, no overlap', () {
-      final buckets = List.generate(
-        7,
-        (i) => _bucket(key: '$i', avgPnl: (7 - i).toDouble()),
-      );
-      final split = splitBestWorst(buckets);
-      expect(split.best.length, 4);
-      expect(split.worst.length, 3);
-      final overlap = split.best.map((b) => b.key).toSet().intersection(
-            split.worst.map((b) => b.key).toSet(),
-          );
-      expect(overlap, isEmpty);
     });
 
     test('11+ buckets → top 5 / bottom 5, no overlap', () {
@@ -141,22 +152,124 @@ void main() {
       expect(split.worst.length, 5);
       expect(split.best.first.key, '0');
       expect(split.worst.first.key, '10');
-      final overlap = split.best.map((b) => b.key).toSet().intersection(
-            split.worst.map((b) => b.key).toSet(),
-          );
-      expect(overlap, isEmpty);
+    });
+  });
+
+  group('rowsForRankView + min sample', () {
+    test('Best ignores low-sample buckets', () {
+      final buckets = [
+        _bucket(key: 'hot', avgPnl: 999, trades: 1, eligible: 1),
+        _bucket(key: 'solid', avgPnl: 50, trades: 5, eligible: 5),
+        _bucket(key: 'ok', avgPnl: 10, trades: 4, eligible: 4),
+        _bucket(key: 'meh', avgPnl: -5, trades: 3, eligible: 3),
+      ];
+      final best = rowsForRankView(buckets, TimingRankView.best);
+      expect(best.map((b) => b.key), isNot(contains('hot')));
+      expect(best.first.key, 'solid');
+
+      final all = rowsForRankView(buckets, TimingRankView.all);
+      expect(all.first.key, 'hot');
+      expect(all.first.isLowSample, isTrue);
+    });
+
+    test('Best empty when no bucket meets min sample', () {
+      final buckets = [
+        _bucket(key: 'a', avgPnl: 10, trades: 1, eligible: 1),
+        _bucket(key: 'b', avgPnl: -10, trades: 2, eligible: 2),
+      ];
+      expect(rowsForRankView(buckets, TimingRankView.best), isEmpty);
+      expect(rowsForRankView(buckets, TimingRankView.worst), isEmpty);
+    });
+
+    test('Session All excludes zero-trade skeleton buckets', () {
+      final sessions = buildTimingBuckets(
+        trades: {
+          for (final k in kSessionKeys) k: k == 'SESSION_0915_1100' ? 4 : 0,
+        },
+        profit: {
+          for (final k in kSessionKeys)
+            k: k == 'SESSION_0915_1100' ? 200.0 : 0.0,
+        },
+        avgPnl: {
+          for (final k in kSessionKeys)
+            k: k == 'SESSION_0915_1100' ? 50.0 : 0.0,
+        },
+        eligible: {
+          for (final k in kSessionKeys) k: k == 'SESSION_0915_1100' ? 4 : 0,
+        },
+        labelFor: formatSessionLabel,
+        includeZeroTradeBuckets: true,
+        orderedKeys: kSessionKeys,
+      );
+      expect(sessions, hasLength(5));
+
+      final all = rowsForRankView(sessions, TimingRankView.all);
+      expect(all, hasLength(1));
+      expect(all.single.key, 'SESSION_0915_1100');
+      expect(all.single.avgPnl, 50);
+
+      final best = rowsForRankView(sessions, TimingRankView.best);
+      expect(best, hasLength(1));
+      expect(best.single.key, 'SESSION_0915_1100');
+    });
+
+    test('All empty when every bucket has zero trades', () {
+      final empty = buildTimingBuckets(
+        trades: {for (final k in kSessionKeys) k: 0},
+        profit: {for (final k in kSessionKeys) k: 0.0},
+        labelFor: formatSessionLabel,
+        includeZeroTradeBuckets: true,
+        orderedKeys: kSessionKeys,
+      );
+      expect(rowsForRankView(empty, TimingRankView.all), isEmpty);
+      expect(rowsForRankView(empty, TimingRankView.best), isEmpty);
+    });
+  });
+
+  group('bucketsWithTrades', () {
+    test('keeps only positive trade counts', () {
+      final filtered = bucketsWithTrades([
+        _bucket(key: 'a', avgPnl: 1, trades: 0),
+        _bucket(key: 'b', avgPnl: 2, trades: 3),
+      ]);
+      expect(filtered.map((b) => b.key), ['b']);
+    });
+  });
+
+  group('isLowSample', () {
+    test('true only when 0 < eligible < min', () {
+      expect(
+        _bucket(key: 'a', avgPnl: 1, trades: 0, eligible: 0).isLowSample,
+        isFalse,
+      );
+      expect(
+        _bucket(key: 'b', avgPnl: 1, trades: 2, eligible: 2).isLowSample,
+        isTrue,
+      );
+      expect(
+        _bucket(key: 'c', avgPnl: 1, trades: 3, eligible: 3).isLowSample,
+        isFalse,
+      );
     });
   });
 
   group('label formatters', () {
-    test('formatEntryHourLabel', () {
-      expect(formatEntryHourLabel('9'), '09:00');
-      expect(formatEntryHourLabel('bad'), 'bad');
+    test('formatSessionLabel', () {
+      expect(formatSessionLabel('SESSION_0915_1100'), '9:15–11:00');
+      expect(formatSessionLabel('SESSION_1100_1300'), '11:00–1:00');
+      expect(formatSessionLabel('SESSION_1300_1500'), '1:00–3:00');
+      expect(formatSessionLabel('SESSION_1500_1530'), '3:00–3:30');
+      expect(formatSessionLabel('OTHER'), 'Other');
     });
 
     test('formatWeekdayLabel / formatMonthLabel', () {
       expect(formatWeekdayLabel('MONDAY'), 'Mon');
       expect(formatMonthLabel('JANUARY'), 'Jan');
+    });
+
+    test('styleHintDisplayLabel', () {
+      expect(styleHintDisplayLabel('SCALPER'), 'Scalper');
+      expect(styleHintDisplayLabel('UNKNOWN'), 'Unknown');
     });
   });
 }

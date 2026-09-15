@@ -67,6 +67,7 @@ dependencies:
   # webview_flutter_web: ^0.2.3+4
   flutter_localizations:
     sdk: flutter
+  # 11.5.1 required for Flutter stable CI (TextInputClient.onFocusReceived).
   flutter_quill: 11.5.1
 
 dev_dependencies:

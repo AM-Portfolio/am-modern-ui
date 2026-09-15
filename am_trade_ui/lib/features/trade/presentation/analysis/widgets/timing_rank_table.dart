@@ -4,22 +4,26 @@ import 'package:am_design_system/am_design_system.dart';
 
 import '../models/timing_bucket.dart';
 
-/// Single ranked table (Best or Worst) for Analysis → Timing.
+/// Ranked table for Analysis → Timing (All / Best / Worst) — mock-aligned layout.
 class TimingRankTable extends StatelessWidget {
   const TimingRankTable({
     super.key,
     required this.title,
     required this.bucketLabel,
     required this.rows,
-    required this.isBest,
     this.emptyMessage,
+    this.subtitle = 'Ranked by Avg PnL',
+    this.showLowSampleBadges = true,
+    this.showFormulaFooter = true,
   });
 
   final String title;
   final String bucketLabel;
   final List<TimingBucket> rows;
-  final bool isBest;
   final String? emptyMessage;
+  final String subtitle;
+  final bool showLowSampleBadges;
+  final bool showFormulaFooter;
 
   static final _inr = NumberFormat.currency(
     locale: 'en_IN',
@@ -27,55 +31,51 @@ class TimingRankTable extends StatelessWidget {
     decimalDigits: 0,
   );
 
+  static const winRateTooltip =
+      'Win % = trades with PnL > 0 ÷ trades with non-null PnL. Break-even is not a win.';
+  static const avgPnlTooltip =
+      'Avg PnL = sum of non-null PnL ÷ trades with non-null PnL.';
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.colors;
-    final accent =
-        isBest ? context.statusSuccess : context.statusError;
 
     return Container(
       decoration: BoxDecoration(
         color: colors.cardSurface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadii.card,
         border: Border.all(
-          color: colors.border.withValues(alpha: 0.45),
+          color: colors.border.withValues(alpha: 0.4),
         ),
       ),
-      padding: const EdgeInsets.all(AppSpacing.md - AppSpacing.xxs),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Icon(
-                isBest ? Icons.trending_up : Icons.trending_down,
-                size: 16,
-                color: accent,
-              ),
-              const SizedBox(width: AppSpacing.sm - AppSpacing.xxs),
-              Expanded(
-                child: Text(
-                  title,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.sm,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$title — $subtitle',
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w700,
                     color: colors.textPrimary,
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            'by Avg PnL',
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: colors.textSecondary,
+              ],
             ),
           ),
-          const SizedBox(height: AppSpacing.sm + AppSpacing.xxs),
           if (rows.isEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg - 4),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
               child: Text(
                 emptyMessage ?? 'No data in this range',
                 style: theme.textTheme.bodySmall?.copyWith(
@@ -85,9 +85,33 @@ class TimingRankTable extends StatelessWidget {
               ),
             )
           else ...[
-            _header(context, bucketLabel),
-            Divider(height: AppSpacing.md - AppSpacing.xs, color: colors.divider),
-            ...rows.map((b) => _row(context, b)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+              child: _header(context, bucketLabel),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            for (var i = 0; i < rows.length; i++)
+              _row(context, rows[i], i + 1, i.isOdd),
+            if (showFormulaFooter)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(
+                      color: colors.border.withValues(alpha: 0.35),
+                    ),
+                  ),
+                ),
+                child: Text(
+                  'Win % = wins (PnL > 0) ÷ eligible (non-null PnL). '
+                  'Avg PnL = Σ PnL ÷ eligible. Best/Worst need ≥$minTradesForRank eligible trades.',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: colors.textSecondary,
+                    height: 1.35,
+                  ),
+                ),
+              ),
           ],
         ],
       ),
@@ -101,13 +125,24 @@ class TimingRankTable extends StatelessWidget {
         );
     return Row(
       children: [
-        Expanded(flex: 2, child: Text(bucketLabel, style: style)),
+        SizedBox(
+          width: 28,
+          child: Text('#', style: style),
+        ),
+        Expanded(flex: 3, child: Text(bucketLabel, style: style)),
         Expanded(child: Text('Trades', style: style, textAlign: TextAlign.end)),
         Expanded(
-            child: Text('Win %', style: style, textAlign: TextAlign.end)),
+          child: Tooltip(
+            message: winRateTooltip,
+            child: Text('Win %', style: style, textAlign: TextAlign.end),
+          ),
+        ),
         Expanded(
           flex: 2,
-          child: Text('Avg PnL', style: style, textAlign: TextAlign.end),
+          child: Tooltip(
+            message: avgPnlTooltip,
+            child: Text('Avg PnL', style: style, textAlign: TextAlign.end),
+          ),
         ),
         Expanded(
           flex: 2,
@@ -117,28 +152,78 @@ class TimingRankTable extends StatelessWidget {
     );
   }
 
-  Widget _row(BuildContext context, TimingBucket bucket) {
+  Widget _row(
+    BuildContext context,
+    TimingBucket bucket,
+    int index,
+    bool striped,
+  ) {
     final theme = Theme.of(context);
     final colors = context.colors;
     final pnlColor =
         bucket.pnl >= 0 ? context.statusSuccess : context.statusError;
     final avgColor =
         bucket.avgPnl >= 0 ? context.statusSuccess : context.statusError;
+    final winColor = bucket.winRatePercent == null
+        ? colors.textSecondary
+        : (bucket.winRatePercent! >= 50
+            ? context.statusSuccess
+            : context.statusError);
     final body = theme.textTheme.bodySmall;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs + 1),
+    return Container(
+      color: striped
+          ? colors.textPrimary.withValues(alpha: 0.03)
+          : Colors.transparent,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
       child: Row(
         children: [
-          Expanded(
-            flex: 2,
+          SizedBox(
+            width: 28,
             child: Text(
-              bucket.label,
-              style: body?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: colors.textPrimary,
-              ),
-              overflow: TextOverflow.ellipsis,
+              '$index',
+              style: body?.copyWith(color: colors.textSecondary),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: AppSpacing.xs,
+              children: [
+                Text(
+                  bucket.label,
+                  style: body?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colors.textPrimary,
+                  ),
+                ),
+                if (showLowSampleBadges && bucket.isLowSample)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xs,
+                      vertical: AppSpacing.xxs,
+                    ),
+                    decoration: BoxDecoration(
+                      color: ModuleColors.trade.withValues(alpha: 0.12),
+                      borderRadius: AppRadii.chip,
+                      border: Border.all(
+                        color: ModuleColors.trade.withValues(alpha: 0.25),
+                      ),
+                    ),
+                    child: Text(
+                      'Low sample',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        fontSize: 10,
+                        color: ModuleColors.trade,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
           Expanded(
@@ -153,30 +238,42 @@ class TimingRankTable extends StatelessWidget {
               bucket.winRatePercent == null
                   ? '—'
                   : '${bucket.winRatePercent!.toStringAsFixed(0)}%',
-              style: body?.copyWith(color: colors.textPrimary),
+              style: body?.copyWith(
+                color: winColor,
+                fontWeight: FontWeight.w600,
+              ),
               textAlign: TextAlign.end,
             ),
           ),
           Expanded(
             flex: 2,
             child: Text(
-              _inr.format(bucket.avgPnl),
+              bucket.eligibleTrades == 0 && bucket.winRatePercent == null
+                  ? '—'
+                  : _signedInr(bucket.avgPnl),
               style:
-                  body?.copyWith(color: avgColor, fontWeight: FontWeight.w600),
+                  body?.copyWith(color: avgColor, fontWeight: FontWeight.w700),
               textAlign: TextAlign.end,
             ),
           ),
           Expanded(
             flex: 2,
             child: Text(
-              _inr.format(bucket.pnl),
+              _signedInr(bucket.pnl),
               style:
-                  body?.copyWith(color: pnlColor, fontWeight: FontWeight.w600),
+                  body?.copyWith(color: pnlColor, fontWeight: FontWeight.w700),
               textAlign: TextAlign.end,
             ),
           ),
         ],
       ),
     );
+  }
+
+  String _signedInr(double value) {
+    final formatted = _inr.format(value.abs());
+    if (value > 0) return '+$formatted';
+    if (value < 0) return '-$formatted';
+    return formatted;
   }
 }

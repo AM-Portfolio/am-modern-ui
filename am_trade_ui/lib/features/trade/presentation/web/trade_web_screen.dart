@@ -116,6 +116,14 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
   @override
   void didUpdateWidget(TradeWebScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // Keep local selection in sync with route props (portfolio switch).
+    if (widget.selectedPortfolioId != oldWidget.selectedPortfolioId &&
+        widget.selectedPortfolioId != null) {
+      setState(() {
+        _currentPortfolioId = widget.selectedPortfolioId;
+        _currentPortfolioName = widget.selectedPortfolioName;
+      });
+    }
     if (widget.initialTabIndex != null &&
         widget.initialTabIndex != oldWidget.initialTabIndex &&
         widget.initialTabIndex != _swipeController.currentIndex) {
