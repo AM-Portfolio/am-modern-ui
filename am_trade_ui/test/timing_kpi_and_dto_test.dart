@@ -184,10 +184,35 @@ void main() {
       expect(timingAvgPnl(dist), closeTo(12, 0.001));
       // wins = 0.5*2 + 0.5*2 + 0*1 = 2; eligible 5 → 40%
       expect(timingWinRate(dist), closeTo(40, 0.05));
+      final counts = timingWinCounts(dist)!;
+      expect(counts.wins, 2);
+      expect(counts.losses, 3);
+      expect(counts.eligible, 5);
       expect(
         timingAvgPnlForBasis(dist, TimingAvgBasis.perTrade),
         closeTo(12, 0.001),
       );
+    });
+
+    test('avg hold is eligible-weighted from session map', () {
+      final dist = TradeDistributionMetrics(
+        tradesByDay: const {},
+        profitByDay: const {},
+        tradesByHour: const {},
+        profitByHour: const {},
+        tradeCountByAssetClass: const {},
+        tradeCountByStrategy: const {},
+        eligibleTradesBySession: const {
+          'SESSION_0915_1100': 2,
+          'SESSION_1100_1300': 2,
+        },
+        avgHoldMinutesBySession: const {
+          'SESSION_0915_1100': 10,
+          'SESSION_1100_1300': 30,
+        },
+      );
+      // (10*2 + 30*2) / 4 = 20
+      expect(timingAvgHoldMinutes(dist), closeTo(20, 0.001));
     });
 
     test('avg per active day uses server field or days count', () {

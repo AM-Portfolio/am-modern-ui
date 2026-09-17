@@ -43,13 +43,11 @@ class TimingRankTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final colors = context.colors;
 
-    return Container(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.md,
@@ -59,7 +57,7 @@ class TimingRankTable extends StatelessWidget {
             ),
             child: Text(
               title,
-              style: theme.textTheme.titleSmall?.copyWith(
+              style: context.text.sectionTitle(compact: true).copyWith(
                 fontWeight: FontWeight.w700,
                 color: colors.textPrimary,
               ),
@@ -75,7 +73,7 @@ class TimingRankTable extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
               child: Text(
                 emptyMessage ?? 'No data in this range',
-                style: theme.textTheme.bodySmall?.copyWith(
+                style: context.text.body(compact: true).copyWith(
                   color: colors.textSecondary,
                 ),
                 textAlign: TextAlign.center,
@@ -114,8 +112,7 @@ class TimingRankTable extends StatelessWidget {
                 );
               },
             ),
-        ],
-      ),
+      ],
     );
   }
 

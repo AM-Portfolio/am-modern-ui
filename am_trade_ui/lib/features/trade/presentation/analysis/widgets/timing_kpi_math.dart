@@ -48,19 +48,49 @@ double? timingAvgPnlForBasis(
 
 /// Weighted Win% = Σ (winRate/100 * eligible) / Σ eligible.
 double? timingWinRate(TradeDistributionMetrics? dist) {
+  final counts = timingWinCounts(dist);
+  if (counts == null || counts.eligible <= 0) return null;
+  return (counts.winsExact / counts.eligible) * 100.0;
+}
+
+/// Win / loss counts derived from distribution session maps only.
+({int wins, int losses, int eligible, double winsExact})? timingWinCounts(
+  TradeDistributionMetrics? dist,
+) {
   if (dist == null) return null;
-  var wins = 0.0;
-  var eligible = 0.0;
+  var winsExact = 0.0;
+  var eligible = 0;
   for (final entry in dist.eligibleTradesBySession.entries) {
     final e = entry.value;
     if (e <= 0) continue;
     final wr = dist.winRateBySession[entry.key];
     if (wr == null) continue;
-    wins += (wr / 100.0) * e;
+    winsExact += (wr / 100.0) * e;
     eligible += e;
   }
   if (eligible <= 0) return null;
-  return (wins / eligible) * 100.0;
+  final wins = winsExact.round().clamp(0, eligible);
+  return (
+    wins: wins,
+    losses: eligible - wins,
+    eligible: eligible,
+    winsExact: winsExact,
+  );
+}
+
+/// Eligible-weighted mean hold minutes across sessions (distribution only).
+double? timingAvgHoldMinutes(TradeDistributionMetrics? dist) {
+  if (dist == null || dist.avgHoldMinutesBySession.isEmpty) return null;
+  var weighted = 0.0;
+  var eligible = 0;
+  for (final entry in dist.avgHoldMinutesBySession.entries) {
+    final e = dist.eligibleTradesBySession[entry.key] ?? 0;
+    if (e <= 0) continue;
+    weighted += entry.value * e;
+    eligible += e;
+  }
+  if (eligible <= 0) return null;
+  return weighted / eligible;
 }
 
 /// Sign hint for sparkline when Total P&L is null — sum of series values.

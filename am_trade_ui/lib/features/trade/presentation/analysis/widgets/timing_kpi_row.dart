@@ -2,25 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:am_design_system/am_design_system.dart';
 
-import '../../../internal/domain/entities/metrics/performance_metrics.dart';
 import '../../../internal/domain/entities/metrics/trade_distribution_metrics.dart';
 import '../models/timing_bucket.dart';
 import 'timing_kpi_math.dart';
 
 /// Five Timing KPI cards: Total P&L, Avg P&L, Win Rate, Best Session, Avg Hold.
-/// Total / Avg / Win Rate come from distribution session maps (Timing universe).
+/// All values come from distribution session maps (Timing universe) — never
+/// PERFORMANCE fallbacks for Total / Avg / Win Rate / Hold.
 class TimingKpiRow extends StatelessWidget {
   const TimingKpiRow({
     super.key,
-    required this.performance,
     required this.distribution,
-    required this.totalTradesCount,
     this.avgBasis = TimingAvgBasis.perTrade,
   });
 
-  final PerformanceMetrics? performance;
   final TradeDistributionMetrics? distribution;
-  final int? totalTradesCount;
   final TimingAvgBasis avgBasis;
 
   static final _inr = NumberFormat.currency(
@@ -31,15 +27,13 @@ class TimingKpiRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final perf = performance;
     final dist = distribution;
 
     final totalPnl = timingTotalPnl(dist);
-    final totalPct = perf?.totalProfitLossPercentage;
     final avgPnl = timingAvgPnlForBasis(dist, avgBasis);
     final winRate = timingWinRate(dist);
-    final wins = perf?.winningTradesCount;
-    final losses = perf?.losingTradesCount;
+    final winCounts = timingWinCounts(dist);
+    final holdMinutes = timingAvgHoldMinutes(dist);
 
     String? bestLabel;
     String? bestSub;
@@ -75,8 +69,6 @@ class TimingKpiRow extends StatelessWidget {
       }
     }
 
-    final holdMinutes = perf?.averageHoldingTimeMinutes;
-
     final pnlSparklineData = dist?.profitByMonth.values.toList() ?? [];
     final avgPnlSparklineData = avgBasis == TimingAvgBasis.perActiveDay
         ? (dist?.avgPnlPerActiveDayByMonth.values.toList() ?? [])
@@ -95,17 +87,9 @@ class TimingKpiRow extends StatelessWidget {
           _KpiCard(
             title: 'Total P&L',
             value: totalPnl == null ? '—' : _signedInr(totalPnl),
-            subtitle: totalPct == null
-                ? null
-                : '${totalPct >= 0 ? '↑' : '↓'} ${totalPct.abs().toStringAsFixed(1)}%',
             valueColor: totalPnl == null
                 ? null
                 : (totalPnl >= 0
-                    ? context.statusSuccess
-                    : context.statusError),
-            subtitleColor: totalPct == null
-                ? null
-                : (totalPct >= 0
                     ? context.statusSuccess
                     : context.statusError),
             sparkline: pnlSparklineData.isEmpty
@@ -147,15 +131,13 @@ class TimingKpiRow extends StatelessWidget {
                 : (winRate >= 50
                     ? context.statusSuccess
                     : context.statusError),
-            subtitle: (wins != null && losses != null)
-                ? '$wins wins / $losses losses'
-                : null,
-            sparkline: (wins != null &&
-                    losses != null &&
-                    (wins + losses) > 0)
+            subtitle: winCounts == null
+                ? null
+                : '${winCounts.wins} wins / ${winCounts.losses} losses',
+            sparkline: (winCounts != null && winCounts.eligible > 0)
                 ? AmDonutSparkline(
-                    value: wins.toDouble(),
-                    total: (wins + losses).toDouble(),
+                    value: winCounts.wins.toDouble(),
+                    total: winCounts.eligible.toDouble(),
                     color: winRate != null && winRate >= 50
                         ? context.statusSuccess
                         : context.statusError,
@@ -183,7 +165,7 @@ class TimingKpiRow extends StatelessWidget {
           _KpiCard(
             title: 'Avg Hold Time',
             value: holdMinutes == null ? '—' : formatHoldDuration(holdMinutes),
-            subtitle: 'Across all trades',
+            subtitle: holdMinutes == null ? null : 'Eligible sessions',
             sparkline: Icon(
               Icons.schedule,
               size: 40,

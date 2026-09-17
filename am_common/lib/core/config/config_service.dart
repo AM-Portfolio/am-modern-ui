@@ -227,14 +227,18 @@ class ConfigService {
 
     // Extract Google Sign-In Web Client ID dynamically (config JSON first,
     // then AM_GOOGLE_CLIENT_ID dart-define). Never bake a product client ID
-    // into source — Helm / config.*.json / .env supply it per environment.
+    // into source — Helm / config.local.json / .env supply it per environment.
+    // Empty strings in committed config.*.json must NOT wipe a non-empty value.
     final google = json['google'] as Map<String, dynamic>?;
+    String? fromJson;
     if (google != null) {
-      _googleClientId = google['webClientId']?.toString() ??
-          google['clientId']?.toString() ??
-          '';
+      fromJson = google['webClientId']?.toString() ??
+          google['clientId']?.toString();
     } else if (json['googleWebClientId'] != null) {
-      _googleClientId = json['googleWebClientId'].toString();
+      fromJson = json['googleWebClientId'].toString();
+    }
+    if (fromJson != null && fromJson.isNotEmpty) {
+      _googleClientId = fromJson;
     }
     if (_googleClientId.isEmpty && _googleClientIdFromDefine.isNotEmpty) {
       _googleClientId = _googleClientIdFromDefine;
@@ -308,6 +312,13 @@ class ConfigService {
       if (entry.key.startsWith('_')) continue;
       final value = entry.value;
       final existing = result[entry.key];
+      // Do not let committed empty google.webClientId wipe Helm / local IDs.
+      if (value is String &&
+          value.isEmpty &&
+          existing is String &&
+          existing.isNotEmpty) {
+        continue;
+      }
       if (value is Map<String, dynamic> && existing is Map<String, dynamic>) {
         result[entry.key] = _deepMerge(existing, value);
       } else {

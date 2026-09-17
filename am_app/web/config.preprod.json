@@ -1,9 +1,9 @@
 {
-  "_comment": "Cluster preprod gateway (am-preprod; dual-host am.asrax.in until Phase 4).",
+  "_comment": "Cluster preprod gateway (am-preprod; dual-host am.asrax.in until Phase 4). google.webClientId is injected by Helm / config.local.json / AM_GOOGLE_CLIENT_ID — never commit a product client ID here.",
   "domain": "am-preprod.asrax.in",
   "services": {},
   "google": {
-    "webClientId": "307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com"
+    "webClientId": ""
   },
   "growthbook": {
     "enabled": true,

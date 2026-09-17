@@ -43,9 +43,6 @@ class _TimingAnalysisTabState extends State<TimingAnalysisTab> {
         final dist = state is TradeMetricsLoaded
             ? state.metrics.distributionMetrics
             : null;
-        final perf = state is TradeMetricsLoaded
-            ? state.metrics.performanceMetrics
-            : null;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -66,9 +63,7 @@ class _TimingAnalysisTabState extends State<TimingAnalysisTab> {
             ),
             const SizedBox(height: AppSpacing.sm),
             TimingKpiRow(
-              performance: perf,
               distribution: dist,
-              totalTradesCount: tradeCount,
               avgBasis: _avgBasis,
             ),
             const SizedBox(height: AppSpacing.md),

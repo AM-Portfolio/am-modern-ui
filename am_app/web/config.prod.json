@@ -1,5 +1,5 @@
 {
-  "_comment": "Cluster production gateway (am.asrax.in). Munish removed as app host.",
+  "_comment": "Cluster production gateway (am.asrax.in). Munish removed as app host. google.webClientId is injected by Helm ConfigMap / config.local.json / AM_GOOGLE_CLIENT_ID — never commit a product client ID here.",
   "domain": "am.asrax.in",
   "services": {},
   "google": {

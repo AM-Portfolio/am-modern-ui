@@ -1,5 +1,5 @@
 {
-  "_comment": "Cluster dev — empty services uses https://{domain}/<service> paths.",
+  "_comment": "Cluster dev — empty services uses https://{domain}/<service> paths. google.webClientId is injected by Helm / config.local.json / AM_GOOGLE_CLIENT_ID — never commit a product client ID here.",
   "domain": "am-dev.asrax.in",
   "services": {},
   "google": {

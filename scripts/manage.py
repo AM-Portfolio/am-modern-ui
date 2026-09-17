@@ -87,15 +87,6 @@ def load_env(env_name):
                     env_vars[k.strip()] = v.strip()
     else:
         print(f"[Warning] Environment config file not found: {env_file}. Using defaults.")
-        
-    # Inject default domain based on environment if not present
-    if "AM_DOMAIN" not in env_vars:
-        if env_name == "prod":
-            env_vars["AM_DOMAIN"] = "am.asrax.in"
-        elif env_name == "preprod":
-            env_vars["AM_DOMAIN"] = "am-preprod.asrax.in"
-        elif env_name == "dev":
-            env_vars["AM_DOMAIN"] = "am-dev.asrax.in"
             
     return env_vars
 
