@@ -47,7 +47,6 @@
     "run:subscription:preprod": "python scripts/manage.py run subscription preprod --boot-trace",
     "─── RUN PROD ───": "echo",
     "run:app:prod": "python scripts/manage.py run app prod --boot-trace",
-    "run:app:reload": "npm run run:app:prod",
     "run:auth:prod": "python scripts/manage.py run auth prod --boot-trace",
     "run:trade:prod": "python scripts/manage.py run trade prod --boot-trace",
     "run:portfolio:prod": "python scripts/manage.py run portfolio prod --boot-trace",
