@@ -490,6 +490,7 @@ class ProductTelemetry with WidgetsBindingObserver {
     if (p.startsWith('/app/ai-chat')) return 'ai';
     if (p.startsWith('/app/analysis')) return 'analysis';
     if (p.startsWith('/app/subscription')) return 'subscription';
+    if (p.startsWith('/app/referral')) return 'referral';
     if (p.startsWith('/app/profile')) return 'profile';
     return 'other';
   }

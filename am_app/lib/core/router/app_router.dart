@@ -468,18 +468,21 @@ GoRouter createAppRouter({
               final openSubscription = _subscriptionPageEnabled()
                   ? () => context.go(AppRoutes.subscription)
                   : null;
+              void openReferral() => context.go(AppRoutes.referral);
               final authState = context.read<AuthCubit>().state;
               if (authState is Authenticated) {
               return buildProfileRoute(
                 userId: authState.user.id,
                 email: authState.user.email,
                 displayName: authState.user.displayName,
+                photoUrl: authState.user.photoUrl,
                 highlightSubscription: highlightSubscription,
                 onOpenPrivacyPolicy: () =>
                     context.go(AppRoutes.privacyPolicy),
                 onOpenTermsOfService: () =>
                     context.go(AppRoutes.termsOfService),
                 onOpenSubscription: openSubscription,
+                onOpenReferral: openReferral,
                 onOpenActiveSessions: () =>
                     context.go(AppRoutes.activeSessions),
                 onOpenScanWebLogin: kIsWeb
@@ -495,6 +498,7 @@ GoRouter createAppRouter({
                 onOpenTermsOfService: () =>
                     context.go(AppRoutes.termsOfService),
                 onOpenSubscription: openSubscription,
+                onOpenReferral: openReferral,
                 onOpenActiveSessions: () =>
                     context.go(AppRoutes.activeSessions),
                 onOpenScanWebLogin: kIsWeb
@@ -518,6 +522,12 @@ GoRouter createAppRouter({
                 onClose: () =>
                     context.go(AppRoutes.profileHighlightSubscription()),
               ),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.referral,
+            builder: (context, state) => am_sub.ReferralPage(
+              onClose: () => context.go(AppRoutes.profile),
             ),
           ),
           if (!kIsWeb)

@@ -16,6 +16,9 @@ dependencies:
     path: ../am_design_system
   am_auth_ui:
     path: ../am_auth_ui
+  am_common:
+    path: ../am_common
+  image_picker: ^1.0.7
     
   # State Management
   flutter_bloc: ^9.1.1

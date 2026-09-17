@@ -127,6 +127,7 @@ class CrossModuleSectionSequence {
       return steps.indexWhere((s) => s == AppRoutes.dashboard);
     }
     if (normalized.startsWith(AppRoutes.subscription) ||
+        normalized.startsWith(AppRoutes.referral) ||
         normalized.startsWith(AppRoutes.profile) ||
         normalized.startsWith(AppRoutes.privacyPolicy) ||
         normalized.startsWith(AppRoutes.termsOfService)) {

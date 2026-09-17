@@ -296,9 +296,11 @@ Widget buildProfileRoute({
   required String userId,
   String? email,
   String? displayName,
+  String? photoUrl,
   VoidCallback? onOpenPrivacyPolicy,
   VoidCallback? onOpenTermsOfService,
   VoidCallback? onOpenSubscription,
+  VoidCallback? onOpenReferral,
   VoidCallback? onOpenActiveSessions,
   VoidCallback? onOpenScanWebLogin,
   bool highlightSubscription = false,
@@ -308,19 +310,21 @@ Widget buildProfileRoute({
     skeleton: const GenericModuleSkeleton(),
     loadingMessage: 'Loading Profile…',
     builder: () => _ProfileSubscriptionLoader(
-      builder: (statusLabel, isPaid) => user_ui.ProfileSettingsPage(
+      builder: (statusLabel, isPaid, referralLabel) => user_ui.ProfileSettingsPage(
         userId: userId,
         email: email,
         displayName: displayName,
+        photoUrl: photoUrl,
         onOpenPrivacyPolicy: onOpenPrivacyPolicy,
         onOpenTermsOfService: onOpenTermsOfService,
         onOpenSubscription: onOpenSubscription,
+        onOpenReferral: onOpenReferral,
         onOpenActiveSessions: onOpenActiveSessions,
         onOpenScanWebLogin: onOpenScanWebLogin,
         highlightSubscription: highlightSubscription,
         subscriptionStatusLabel: statusLabel,
         isPaidSubscription: isPaid,
-        accountSectionExtra: const am_sub.ReferralSettingsSection(),
+        referralStatusLabel: referralLabel,
       ),
     ),
   );
@@ -337,11 +341,15 @@ Widget buildActiveSessionsRoute({VoidCallback? onOpenSecuritySettings}) {
   );
 }
 
-/// Loads `/subscriptions/me` so Profile can show Free / Pro / Premium · Active.
+/// Loads subscription + referral status labels for Profile Account tiles.
 class _ProfileSubscriptionLoader extends StatefulWidget {
   const _ProfileSubscriptionLoader({required this.builder});
 
-  final Widget Function(String? statusLabel, bool isPaid) builder;
+  final Widget Function(
+    String? statusLabel,
+    bool isPaid,
+    String? referralLabel,
+  ) builder;
 
   @override
   State<_ProfileSubscriptionLoader> createState() =>
@@ -351,6 +359,7 @@ class _ProfileSubscriptionLoader extends StatefulWidget {
 class _ProfileSubscriptionLoaderState extends State<_ProfileSubscriptionLoader> {
   String? _statusLabel;
   bool _isPaid = false;
+  String? _referralLabel;
 
   @override
   void initState() {
@@ -359,6 +368,10 @@ class _ProfileSubscriptionLoaderState extends State<_ProfileSubscriptionLoader> 
   }
 
   Future<void> _load() async {
+    await Future.wait([_loadSubscription(), _loadReferral()]);
+  }
+
+  Future<void> _loadSubscription() async {
     try {
       if (!GetIt.instance.isRegistered<am_sub.SubscriptionCubit>()) {
         return;
@@ -375,8 +388,27 @@ class _ProfileSubscriptionLoaderState extends State<_ProfileSubscriptionLoader> 
     }
   }
 
+  Future<void> _loadReferral() async {
+    try {
+      if (!GetIt.instance.isRegistered<am_sub.SubscriptionRemoteDataSource>()) {
+        return;
+      }
+      final summary = await GetIt.instance<am_sub.SubscriptionRemoteDataSource>()
+          .getReferralSummary();
+      if (!mounted) return;
+      setState(() {
+        _referralLabel =
+            '${summary.qualifiedCount} of ${summary.lifetimeCap} successful · '
+            'up to 6 months Pro';
+      });
+    } catch (_) {
+      // Leave default invite copy if referral API fails.
+    }
+  }
+
   @override
-  Widget build(BuildContext context) => widget.builder(_statusLabel, _isPaid);
+  Widget build(BuildContext context) =>
+      widget.builder(_statusLabel, _isPaid, _referralLabel);
 }
 
 Widget buildPrivacyPolicyRoute({
