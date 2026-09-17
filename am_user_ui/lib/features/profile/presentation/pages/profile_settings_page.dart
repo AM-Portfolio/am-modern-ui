@@ -2,12 +2,14 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
 import 'dart:ui';
 
 import 'privacy_policy_page.dart';
 import 'terms_of_service_page.dart';
+import '../widgets/avatar_picker_sheet.dart';
 
 /// Profile and Settings page for user account management
 class ProfileSettingsPage extends StatefulWidget {
@@ -23,9 +25,15 @@ class ProfileSettingsPage extends StatefulWidget {
   /// Opens the existing subscription / pricing screen via GoRouter when set.
   final VoidCallback? onOpenSubscription;
 
+  /// Opens the Referral screen via GoRouter when set.
+  final VoidCallback? onOpenReferral;
+
   final VoidCallback? onOpenActiveSessions;
 
   final VoidCallback? onOpenScanWebLogin;
+
+  /// Auth provider picture URL (Google / Keycloak), if any.
+  final String? photoUrl;
 
   /// When true (e.g. returning from Subscription), pulse Account + Subscription.
   final bool highlightSubscription;
@@ -36,7 +44,10 @@ class ProfileSettingsPage extends StatefulWidget {
   /// True when plan is Pro/Premium (not free). Hides upgrade upsell copy.
   final bool? isPaidSubscription;
 
-  /// Optional Account-section content (e.g. Referral) composed by the shell
+  /// Live referral progress label (e.g. `"2 of 12 successful · 10 left"`).
+  final String? referralStatusLabel;
+
+  /// Optional Account-section content composed by the shell
   /// so this package stays free of subscription module dependencies.
   final Widget? accountSectionExtra;
 
@@ -47,11 +58,14 @@ class ProfileSettingsPage extends StatefulWidget {
     this.onOpenPrivacyPolicy,
     this.onOpenTermsOfService,
     this.onOpenSubscription,
+    this.onOpenReferral,
     this.onOpenActiveSessions,
     this.onOpenScanWebLogin,
+    this.photoUrl,
     this.highlightSubscription = false,
     this.subscriptionStatusLabel,
     this.isPaidSubscription,
+    this.referralStatusLabel,
     this.accountSectionExtra,
     super.key,
   });
@@ -73,14 +87,18 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
   VoidCallback? get onOpenPrivacyPolicy => widget.onOpenPrivacyPolicy;
   VoidCallback? get onOpenTermsOfService => widget.onOpenTermsOfService;
   VoidCallback? get onOpenSubscription => widget.onOpenSubscription;
+  VoidCallback? get onOpenReferral => widget.onOpenReferral;
   VoidCallback? get onOpenActiveSessions => widget.onOpenActiveSessions;
   VoidCallback? get onOpenScanWebLogin => widget.onOpenScanWebLogin;
   String? get subscriptionStatusLabel => widget.subscriptionStatusLabel;
   bool get isPaidSubscription => widget.isPaidSubscription ?? false;
+  String? get referralStatusLabel => widget.referralStatusLabel;
+  String? get photoUrl => widget.photoUrl;
 
   @override
   void initState() {
     super.initState();
+    UserAvatarStore.instance.loadForUser(userId);
     _highlightController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 900),
@@ -97,6 +115,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
   @override
   void didUpdateWidget(covariant ProfileSettingsPage oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.userId != widget.userId) {
+      UserAvatarStore.instance.loadForUser(widget.userId);
+    }
     if (widget.highlightSubscription && !oldWidget.highlightSubscription) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _startHighlight());
     }
@@ -304,34 +325,65 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
   Widget _buildProfileHeader(BuildContext context, bool isDark) {
     return Column(
       children: [
-        Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: ModuleColors.portfolio.withValues(alpha: 0.4),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: () => showAvatarPickerSheet(
+              context: context,
+              userId: userId,
+              displayName: displayName,
+              remotePhotoUrl: photoUrl,
+            ),
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: ModuleColors.portfolio.withValues(alpha: 0.4),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: CircleAvatar(
-            radius: 60,
-            backgroundColor: isDark
-                ? context.cardColor
-                : context.cardColor,
-            child: CircleAvatar(
-              radius: 56,
-              backgroundColor: ModuleColors.portfolio.withValues(alpha: 0.1),
-              child: Icon(
-                Icons.person,
-                size: 60,
-                color: ModuleColors.portfolio,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isDark ? context.cardColor : context.cardColor,
+                ),
+                child: UserAvatar(
+                  radius: 56,
+                  displayName: displayName ?? userId,
+                  remotePhotoUrl: photoUrl,
+                  showEditBadge: true,
+                ),
               ),
             ),
           ),
         ),
-        const SizedBox(height: AppSpacing.lg),
+        const SizedBox(height: AppSpacing.sm),
+        TextButton.icon(
+          onPressed: () => showAvatarPickerSheet(
+            context: context,
+            userId: userId,
+            displayName: displayName,
+            remotePhotoUrl: photoUrl,
+          ),
+          icon: Icon(
+            Icons.photo_camera_outlined,
+            size: 16,
+            color: ModuleColors.portfolio,
+          ),
+          label: Text(
+            'Change avatar',
+            style: context.text.body().copyWith(
+              color: ModuleColors.portfolio,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
         Text(
           displayName != null && displayName!.isNotEmpty
               ? displayName!
@@ -460,6 +512,18 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                   ),
                 ),
               ],
+              if (onOpenReferral != null) ...[
+                _buildDivider(isDark),
+                _buildSettingTile(
+                  context,
+                  icon: Icons.card_giftcard_outlined,
+                  title: 'Referral',
+                  subtitle: referralStatusLabel ??
+                      'Up to 6 months Pro · invite friends',
+                  isDark: isDark,
+                  onTap: onOpenReferral!,
+                ),
+              ],
               if (widget.accountSectionExtra != null) ...[
                 _buildDivider(isDark),
                 Padding(
@@ -523,62 +587,56 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
           ],
         ),
 
-        const SizedBox(height: AppSpacing.xl),
+        // Preferences: theme stays on mobile/native only — web uses the global
+        // theme bar. Notifications removed from profile entirely.
+        if (!kIsWeb) ...[
+          const SizedBox(height: AppSpacing.xl),
+          _buildSectionHeader(context, 'Preferences', isDark),
+          const SizedBox(height: AppSpacing.md),
+          _buildGlassSection(
+            context,
+            isDark,
+            children: [
+              BlocBuilder<ThemeCubit, ThemeState>(
+                builder: (context, themeState) {
+                  final currentMode = themeState.mode;
+                  var modeLabel = 'System Default';
+                  if (currentMode == AppThemeMode.light) {
+                    modeLabel = 'Minimal Light';
+                  } else if (currentMode == AppThemeMode.white) {
+                    modeLabel = 'Pure White';
+                  } else if (currentMode == AppThemeMode.dark) {
+                    modeLabel = 'Midnight OLED';
+                  } else if (currentMode == AppThemeMode.skyBlue) {
+                    modeLabel = 'Sky Blue Breeze';
+                  } else if (currentMode == AppThemeMode.imperialGold) {
+                    modeLabel = 'Imperial Gold';
+                  } else if (currentMode == AppThemeMode.cyberNeon) {
+                    modeLabel = 'Cyber Neon / Rose Quartz';
+                  }
 
-        // Preferences Section
-        _buildSectionHeader(context, 'Preferences', isDark),
-        const SizedBox(height: AppSpacing.md),
-        _buildGlassSection(
-          context,
-          isDark,
-          children: [
-            BlocBuilder<ThemeCubit, ThemeState>(
-              builder: (context, themeState) {
-                final currentMode = themeState.mode;
-                var modeLabel = 'System Default';
-                if (currentMode == AppThemeMode.light) {
-                  modeLabel = 'Minimal Light';
-                } else if (currentMode == AppThemeMode.white) {
-                  modeLabel = 'Pure White';
-                } else if (currentMode == AppThemeMode.dark) {
-                  modeLabel = 'Midnight OLED';
-                } else if (currentMode == AppThemeMode.skyBlue) {
-                  modeLabel = 'Sky Blue Breeze';
-                } else if (currentMode == AppThemeMode.imperialGold) {
-                  modeLabel = 'Imperial Gold';
-                } else if (currentMode == AppThemeMode.cyberNeon) {
-                  modeLabel = 'Cyber Neon / Rose Quartz';
-                }
-
-                return _buildSettingTile(
-                  context,
-                  icon: isDark
-                      ? Icons.light_mode_outlined
-                      : Icons.dark_mode_outlined,
-                  title: 'Theme Mode',
-                  subtitle: modeLabel,
-                  isDark: isDark,
-                  onTap: () => _showThemeSelectionDialog(context, currentMode),
-                  trailing: Text(
-                    modeLabel,
-                    style: context.text.body().copyWith(
-                      color: context.colors.textSecondary,
+                  return _buildSettingTile(
+                    context,
+                    icon: isDark
+                        ? Icons.light_mode_outlined
+                        : Icons.dark_mode_outlined,
+                    title: 'Theme Mode',
+                    subtitle: modeLabel,
+                    isDark: isDark,
+                    onTap: () =>
+                        _showThemeSelectionDialog(context, currentMode),
+                    trailing: Text(
+                      modeLabel,
+                      style: context.text.body().copyWith(
+                        color: context.colors.textSecondary,
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
-            _buildDivider(isDark),
-            _buildSettingTile(
-              context,
-              icon: Icons.notifications_none_rounded,
-              title: 'Notifications',
-              subtitle: 'Manage alerts and push notifications',
-              isDark: isDark,
-              onTap: () => _showNotificationSettings(context),
-            ),
-          ],
-        ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ],
 
         const SizedBox(height: AppSpacing.xl),
 
@@ -589,15 +647,6 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
           context,
           isDark,
           children: [
-            _buildSettingTile(
-              context,
-              icon: Icons.info_outline,
-              title: 'App Version',
-              subtitle: '1.0.0 (Build 100)',
-              isDark: isDark,
-              trailing: const SizedBox(), // No chevron
-            ),
-            _buildDivider(isDark),
             _buildSettingTile(
               context,
               icon: Icons.description_outlined,
@@ -895,22 +944,6 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
       builder: (context) => AlertDialog(
         title: const Text('Edit Email'),
         content: const Text('Email edit functionality coming soon'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showNotificationSettings(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Notification Settings'),
-        content: const Text('Notification settings coming soon'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

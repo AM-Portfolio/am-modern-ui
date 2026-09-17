@@ -453,6 +453,7 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
       }
       if (mounted) {
         stompCubit.updateToken(token, userId: authState.user.id);
+        unawaited(common.UserAvatarStore.instance.loadForUser(authState.user.id));
         unawaited(_startMarketStreamingGate());
         unawaited(_syncFeatureFlagAttributes(authState.user.id));
         unawaited(
@@ -505,6 +506,9 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
                 _portfolioSeeded = false;
                 _restoreSessionNav();
                 _seedPortfolioSelectionFromSession();
+                unawaited(
+                  common.UserAvatarStore.instance.loadForUser(state.user.id),
+                );
                 unawaited(_startMarketStreamingGate());
                 unawaited(_syncFeatureFlagAttributes(state.user.id));
                 unawaited(
@@ -587,6 +591,12 @@ final userId =
                               userName: authState.user.displayName,
                               userEmail: authState.user.email,
                               userAvatarUrl: authState.user.photoUrl,
+                              userAvatar: common.UserAvatar(
+                                radius: 20,
+                                displayName: authState.user.displayName ??
+                                    authState.user.email,
+                                remotePhotoUrl: authState.user.photoUrl,
+                              ),
                               moduleShareUrls: AppRoutes.navTitleToDefaultPath,
                               onThemeToggle: () {
                                 try {

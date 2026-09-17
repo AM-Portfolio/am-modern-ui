@@ -28,6 +28,7 @@ class GlobalSidebar extends StatelessWidget {
     this.userName,
     this.userEmail,
     this.userAvatarUrl,
+    this.userAvatar,
     this.isDarkMode = false,
     this.moduleShareUrls,
   });
@@ -41,6 +42,9 @@ class GlobalSidebar extends StatelessWidget {
   final String? userName;
   final String? userEmail;
   final String? userAvatarUrl;
+
+  /// When set, replaces the default network / initials avatar.
+  final Widget? userAvatar;
   final bool isDarkMode;
   final Map<String, String>? moduleShareUrls;
 
@@ -276,13 +280,14 @@ class GlobalSidebar extends StatelessWidget {
                 ],
               ),
               child: ClipOval(
-                child: userAvatarUrl != null
-                    ? Image.network(
-                        userAvatarUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _buildUserInitials(),
-                      )
-                    : _buildUserInitials(),
+                child: userAvatar ??
+                    (userAvatarUrl != null
+                        ? Image.network(
+                            userAvatarUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _buildUserInitials(),
+                          )
+                        : _buildUserInitials()),
               ),
             ),
           ),

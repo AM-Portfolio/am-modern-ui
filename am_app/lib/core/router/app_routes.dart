@@ -22,6 +22,7 @@ class AppRoutes {
   static const privacyPolicy = '/app/privacy-policy';
   static const termsOfService = '/app/terms-of-service';
   static const subscription = '/app/subscription';
+  static const referral = '/app/referral';
   static const deleteAccount = '/delete-account';
   static const chartCompare = '/app/chart/compare';
   static const appLock = '/app-lock';
@@ -199,7 +200,8 @@ class AppRoutes {
     if (location.startsWith(profile) ||
         location.startsWith(privacyPolicy) ||
         location.startsWith(termsOfService) ||
-        location.startsWith(subscription)) {
+        location.startsWith(subscription) ||
+        location.startsWith(referral)) {
       return 'Profile';
     }
     return 'Dashboard';
