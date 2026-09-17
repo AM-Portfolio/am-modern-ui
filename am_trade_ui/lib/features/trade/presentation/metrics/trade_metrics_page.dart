@@ -205,7 +205,7 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
                 const Text('Net P&L', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)), // Improved visibility
                 const SizedBox(height: 4),
                 Text(
-                  '\$${metrics.performanceMetrics.totalProfitLoss.toStringAsFixed(2)}',
+                  '\$${(metrics.performanceMetrics.totalProfitLoss ?? 0).toStringAsFixed(2)}',
                   style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w800), // Larger, bolder
                 ),
                 Text(

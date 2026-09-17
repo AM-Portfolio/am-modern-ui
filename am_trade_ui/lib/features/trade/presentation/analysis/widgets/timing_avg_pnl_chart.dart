@@ -11,11 +11,13 @@ class TimingAvgPnlChart extends StatelessWidget {
     super.key,
     required this.title,
     required this.buckets,
+    this.avgAxisLabel = 'Avg PnL (₹)',
     this.emptyMessage,
   });
 
   final String title;
   final List<TimingBucket> buckets;
+  final String avgAxisLabel;
   final String? emptyMessage;
 
   static final _inr = NumberFormat.currency(
@@ -68,7 +70,7 @@ class TimingAvgPnlChart extends StatelessWidget {
                 ),
               ),
               Text(
-                'Avg PnL (₹)',
+                avgAxisLabel,
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: colors.textSecondary,
                 ),
@@ -92,7 +94,6 @@ class TimingAvgPnlChart extends StatelessWidget {
           ),
           if (best != null || weakest != null) ...[
             const SizedBox(height: AppSpacing.sm),
-<<<<<<< HEAD
             Wrap(
               spacing: AppSpacing.md,
               runSpacing: AppSpacing.sm,
@@ -153,32 +154,6 @@ class TimingAvgPnlChart extends StatelessWidget {
                         ),
                       ),
                     ],
-=======
-            Row(
-              children: [
-                if (weakest != null)
-                  Expanded(
-                    child: Text(
-                      'Weakest  ${weakest.label}',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: context.statusError,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                if (best != null)
-                  Expanded(
-                    child: Text(
-                      'Best  ${best.label}',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: context.statusSuccess,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      textAlign: TextAlign.end,
-                      overflow: TextOverflow.ellipsis,
-                    ),
->>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
                   ),
               ],
             ),

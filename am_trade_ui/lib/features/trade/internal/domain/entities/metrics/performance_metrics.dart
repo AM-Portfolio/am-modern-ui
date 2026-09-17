@@ -1,6 +1,6 @@
 class PerformanceMetrics {
-  final double totalProfitLoss;
-  final double totalProfitLossPercentage;
+  final double? totalProfitLoss;
+  final double? totalProfitLossPercentage;
   final double winRate;
   final double profitFactor;
   final double expectancy;
@@ -18,10 +18,11 @@ class PerformanceMetrics {
   final double? averageHoldingTimeMinutes;
   final int? winningTradesCount;
   final int? losingTradesCount;
+  final int? eligibleTradesCount;
 
   PerformanceMetrics({
-    required this.totalProfitLoss,
-    required this.totalProfitLossPercentage,
+    this.totalProfitLoss,
+    this.totalProfitLossPercentage,
     required this.winRate,
     required this.profitFactor,
     required this.expectancy,
@@ -39,5 +40,6 @@ class PerformanceMetrics {
     this.averageHoldingTimeMinutes,
     this.winningTradesCount,
     this.losingTradesCount,
+    this.eligibleTradesCount,
   });
 }

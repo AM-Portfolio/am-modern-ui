@@ -5,38 +5,24 @@ import 'package:am_design_system/am_design_system.dart';
 import '../models/timing_bucket.dart';
 import 'timing_kpi_row.dart';
 
-<<<<<<< HEAD
 /// Breakdown table for Analysis → Timing — fixed columns matching the mock.
-=======
-/// Ranked table for Analysis → Timing (All / Best / Worst) — mock-aligned layout.
->>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
 class TimingRankTable extends StatelessWidget {
   const TimingRankTable({
     super.key,
     required this.title,
     required this.bucketLabel,
     required this.rows,
+    this.avgColumnLabel = 'AVG P&L (₹)',
     this.emptyMessage,
-<<<<<<< HEAD
     this.showLowSampleBadges = true,
-=======
-    this.subtitle = 'Ranked by Avg PnL',
-    this.showLowSampleBadges = true,
-    this.showFormulaFooter = true,
->>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
   });
 
   final String title;
   final String bucketLabel;
   final List<TimingBucket> rows;
+  final String avgColumnLabel;
   final String? emptyMessage;
-<<<<<<< HEAD
   final bool showLowSampleBadges;
-=======
-  final String subtitle;
-  final bool showLowSampleBadges;
-  final bool showFormulaFooter;
->>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
 
   static final _inr = NumberFormat.currency(
     locale: 'en_IN',
@@ -44,7 +30,6 @@ class TimingRankTable extends StatelessWidget {
     decimalDigits: 0,
   );
 
-<<<<<<< HEAD
   // Fixed column widths so header/body never collapse into each other.
   static const double _sessionW = 140;
   static const double _tradesW = 72;
@@ -55,12 +40,6 @@ class TimingRankTable extends StatelessWidget {
   static const double _rrW = 120;
   static const double _tableMinWidth =
       _sessionW + _tradesW + _winW + _pnlW + _avgW + _holdW + _rrW + 48;
-=======
-  static const winRateTooltip =
-      'Win % = trades with PnL > 0 ÷ trades with non-null PnL. Break-even is not a win.';
-  static const avgPnlTooltip =
-      'Avg PnL = sum of non-null PnL ÷ trades with non-null PnL.';
->>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
 
   @override
   Widget build(BuildContext context) {
@@ -68,17 +47,6 @@ class TimingRankTable extends StatelessWidget {
     final colors = context.colors;
 
     return Container(
-<<<<<<< HEAD
-=======
-      decoration: BoxDecoration(
-        color: colors.cardSurface,
-        borderRadius: AppRadii.card,
-        border: Border.all(
-          color: colors.border.withValues(alpha: 0.4),
-        ),
-      ),
-      clipBehavior: Clip.antiAlias,
->>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -89,7 +57,6 @@ class TimingRankTable extends StatelessWidget {
               AppSpacing.md,
               AppSpacing.sm,
             ),
-<<<<<<< HEAD
             child: Text(
               title,
               style: theme.textTheme.titleSmall?.copyWith(
@@ -103,21 +70,6 @@ class TimingRankTable extends StatelessWidget {
             thickness: 1,
             color: colors.border.withValues(alpha: 0.35),
           ),
-=======
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '$title — $subtitle',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: colors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
->>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
           if (rows.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
@@ -129,7 +81,6 @@ class TimingRankTable extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
             )
-<<<<<<< HEAD
           else
             LayoutBuilder(
               builder: (context, constraints) {
@@ -163,37 +114,6 @@ class TimingRankTable extends StatelessWidget {
                 );
               },
             ),
-=======
-          else ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: _header(context, bucketLabel),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            for (var i = 0; i < rows.length; i++)
-              _row(context, rows[i], i + 1, i.isOdd),
-            if (showFormulaFooter)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  border: Border(
-                    top: BorderSide(
-                      color: colors.border.withValues(alpha: 0.35),
-                    ),
-                  ),
-                ),
-                child: Text(
-                  'Win % = wins (PnL > 0) ÷ eligible (non-null PnL). '
-                  'Avg PnL = Σ PnL ÷ eligible. Best/Worst need ≥$minTradesForRank eligible trades.',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: colors.textSecondary,
-                    height: 1.35,
-                  ),
-                ),
-              ),
-          ],
->>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
         ],
       ),
     );
@@ -205,7 +125,6 @@ class TimingRankTable extends StatelessWidget {
           fontWeight: FontWeight.w600,
           letterSpacing: 0.2,
         );
-<<<<<<< HEAD
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
@@ -217,7 +136,7 @@ class TimingRankTable extends StatelessWidget {
           _cell('TRADES', _tradesW, style, TextAlign.end),
           _cell('WIN RATE', _winW, style, TextAlign.end),
           _cell('TOTAL P&L (₹)', _pnlW, style, TextAlign.end),
-          _cell('AVG P&L (₹)', _avgW, style, TextAlign.end),
+          _cell(avgColumnLabel, _avgW, style, TextAlign.end),
           _cell('AVG HOLD TIME', _holdW, style, TextAlign.end),
           _cell('R:R', _rrW, style, TextAlign.end),
         ],
@@ -226,43 +145,6 @@ class TimingRankTable extends StatelessWidget {
   }
 
   Widget _dataRow(BuildContext context, TimingBucket bucket, bool striped) {
-=======
-    return Row(
-      children: [
-        SizedBox(
-          width: 28,
-          child: Text('#', style: style),
-        ),
-        Expanded(flex: 3, child: Text(bucketLabel, style: style)),
-        Expanded(child: Text('Trades', style: style, textAlign: TextAlign.end)),
-        Expanded(
-          child: Tooltip(
-            message: winRateTooltip,
-            child: Text('Win %', style: style, textAlign: TextAlign.end),
-          ),
-        ),
-        Expanded(
-          flex: 2,
-          child: Tooltip(
-            message: avgPnlTooltip,
-            child: Text('Avg PnL', style: style, textAlign: TextAlign.end),
-          ),
-        ),
-        Expanded(
-          flex: 2,
-          child: Text('PnL', style: style, textAlign: TextAlign.end),
-        ),
-      ],
-    );
-  }
-
-  Widget _row(
-    BuildContext context,
-    TimingBucket bucket,
-    int index,
-    bool striped,
-  ) {
->>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
     final theme = Theme.of(context);
     final colors = context.colors;
     final body = theme.textTheme.bodyMedium;
@@ -275,7 +157,6 @@ class TimingRankTable extends StatelessWidget {
         : (bucket.winRatePercent! >= 50
             ? context.statusSuccess
             : context.statusError);
-<<<<<<< HEAD
     final rr = bucket.riskReward;
 
     return Container(
@@ -285,23 +166,11 @@ class TimingRankTable extends StatelessWidget {
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
         vertical: AppSpacing.md - 2,
-=======
-    final body = theme.textTheme.bodySmall;
-
-    return Container(
-      color: striped
-          ? colors.textPrimary.withValues(alpha: 0.03)
-          : Colors.transparent,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
->>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           SizedBox(
-<<<<<<< HEAD
             width: _sessionW,
             child: Row(
               children: [
@@ -321,37 +190,10 @@ class TimingRankTable extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.xs,
                       vertical: 1,
-=======
-            width: 28,
-            child: Text(
-              '$index',
-              style: body?.copyWith(color: colors.textSecondary),
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Wrap(
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: AppSpacing.xs,
-              children: [
-                Text(
-                  bucket.label,
-                  style: body?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: colors.textPrimary,
-                  ),
-                ),
-                if (showLowSampleBadges && bucket.isLowSample)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.xs,
-                      vertical: AppSpacing.xxs,
->>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
                     ),
                     decoration: BoxDecoration(
                       color: ModuleColors.trade.withValues(alpha: 0.12),
                       borderRadius: AppRadii.chip,
-<<<<<<< HEAD
                     ),
                     child: Text(
                       'Low',
@@ -363,21 +205,6 @@ class TimingRankTable extends StatelessWidget {
                     ),
                   ),
                 ],
-=======
-                      border: Border.all(
-                        color: ModuleColors.trade.withValues(alpha: 0.25),
-                      ),
-                    ),
-                    child: Text(
-                      'Low sample',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        fontSize: 10,
-                        color: ModuleColors.trade,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
->>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
               ],
             ),
           ),
@@ -387,7 +214,6 @@ class TimingRankTable extends StatelessWidget {
             body?.copyWith(color: colors.textPrimary),
             TextAlign.end,
           ),
-<<<<<<< HEAD
           _cell(
             bucket.winRatePercent == null
                 ? '—'
@@ -421,46 +247,12 @@ class TimingRankTable extends StatelessWidget {
           SizedBox(
             width: _rrW,
             child: _RrCell(value: rr),
-=======
-          Expanded(
-            child: Text(
-              bucket.winRatePercent == null
-                  ? '—'
-                  : '${bucket.winRatePercent!.toStringAsFixed(0)}%',
-              style: body?.copyWith(
-                color: winColor,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.end,
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              bucket.eligibleTrades == 0 && bucket.winRatePercent == null
-                  ? '—'
-                  : _signedInr(bucket.avgPnl),
-              style:
-                  body?.copyWith(color: avgColor, fontWeight: FontWeight.w700),
-              textAlign: TextAlign.end,
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              _signedInr(bucket.pnl),
-              style:
-                  body?.copyWith(color: pnlColor, fontWeight: FontWeight.w700),
-              textAlign: TextAlign.end,
-            ),
->>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
           ),
         ],
       ),
     );
   }
 
-<<<<<<< HEAD
   Widget _cell(
     String text,
     double width,
@@ -479,15 +271,12 @@ class TimingRankTable extends StatelessWidget {
     );
   }
 
-=======
->>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
   String _signedInr(double value) {
     final formatted = _inr.format(value.abs());
     if (value > 0) return '+$formatted';
     if (value < 0) return '-$formatted';
     return formatted;
   }
-<<<<<<< HEAD
 }
 
 /// R:R value + mock-style horizontal bar (green ≥1, red &lt;1).
@@ -545,6 +334,4 @@ class _RrCell extends StatelessWidget {
       ],
     );
   }
-=======
->>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
 }

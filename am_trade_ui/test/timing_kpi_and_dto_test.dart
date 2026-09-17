@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:am_trade_ui/features/trade/internal/data/dtos/metrics/metrics_dtos.dart';
+import 'package:am_trade_ui/features/trade/internal/domain/entities/metrics/trade_distribution_metrics.dart';
 import 'package:am_trade_ui/features/trade/presentation/analysis/models/timing_bucket.dart';
+import 'package:am_trade_ui/features/trade/presentation/analysis/widgets/timing_kpi_math.dart';
 import 'package:am_trade_ui/features/trade/presentation/analysis/widgets/timing_kpi_row.dart';
 
 void main() {
@@ -64,6 +66,10 @@ void main() {
         'riskRewardByDay': {'MONDAY': 1.1},
         'avgHoldMinutesByMonth': {'JANUARY': 20},
         'riskRewardByMonth': {'JANUARY': 0.8},
+        'avgPnlPerActiveDayByMonth': {'AUGUST': 9232.22},
+        'activeTradingDaysByMonth': {'AUGUST': 9},
+        'activeTradingDaysCount': 31,
+        'avgPnlPerActiveDay': 1755.19,
         'bestSessionKey': 'SESSION_0915_1100',
         'bestSessionAvgPnl': 42.5,
         'timezoneNote': 'entry_local_as_stored',
@@ -79,6 +85,8 @@ void main() {
       expect(dto.riskRewardBySession, {'SESSION_0915_1100': 2.0});
       expect(dto.bestSessionKey, 'SESSION_0915_1100');
       expect(dto.bestSessionAvgPnl, 42.5);
+      expect(dto.activeTradingDaysCount, 31);
+      expect(dto.avgPnlPerActiveDay, closeTo(1755.19, 0.01));
 
       final entity = dto.toEntity();
       expect(entity.avgHoldMinutesBySession['SESSION_0915_1100'], 15.0);
@@ -88,6 +96,9 @@ void main() {
       expect(entity.tradingStyleHint!.style, 'SCALPER');
       expect(entity.avgHoldMinutesByDay['MONDAY'], 12.5);
       expect(entity.riskRewardByMonth['JANUARY'], 0.8);
+      expect(entity.activeTradingDaysByMonth['AUGUST'], 9);
+      expect(entity.avgPnlPerActiveDayByMonth['AUGUST'], closeTo(9232.22, 0.01));
+      expect(entity.activeTradingDaysCount, 31);
     });
 
     test('BigDecimal-as-string values parse', () {
@@ -131,6 +142,108 @@ void main() {
       expect(entity.winningTradesCount, isNull);
       expect(entity.losingTradesCount, isNull);
       expect(entity.averageHoldingTimeMinutes, isNull);
+      expect(entity.totalProfitLossPercentage, isNull);
+    });
+
+    test('missing totalProfitLoss stays null not zero', () {
+      final entity = PerformanceMetricsDto.fromJson({
+        'winRate': 50,
+      }).toEntity();
+      expect(entity.totalProfitLoss, isNull);
+      expect(entity.totalProfitLossPercentage, isNull);
+    });
+  });
+
+  group('timing_kpi_math', () {
+    test('total avg winRate from session maps', () {
+      final dist = TradeDistributionMetrics(
+        tradesByDay: const {},
+        profitByDay: const {},
+        tradesByHour: const {},
+        profitByHour: const {},
+        tradeCountByAssetClass: const {},
+        tradeCountByStrategy: const {},
+        profitBySession: const {
+          'SESSION_0915_1100': 100,
+          'SESSION_1100_1300': -40,
+          'OTHER': 0,
+        },
+        eligibleTradesBySession: const {
+          'SESSION_0915_1100': 2,
+          'SESSION_1100_1300': 2,
+          'OTHER': 1,
+        },
+        winRateBySession: const {
+          'SESSION_0915_1100': 50,
+          'SESSION_1100_1300': 50,
+          'OTHER': 0,
+        },
+      );
+      expect(timingTotalPnl(dist), 60);
+      expect(timingEligibleSum(dist), 5);
+      expect(timingAvgPnl(dist), closeTo(12, 0.001));
+      // wins = 0.5*2 + 0.5*2 + 0*1 = 2; eligible 5 → 40%
+      expect(timingWinRate(dist), closeTo(40, 0.05));
+      expect(
+        timingAvgPnlForBasis(dist, TimingAvgBasis.perTrade),
+        closeTo(12, 0.001),
+      );
+    });
+
+    test('avg per active day uses server field or days count', () {
+      final dist = TradeDistributionMetrics(
+        tradesByDay: const {},
+        profitByDay: const {},
+        tradesByHour: const {},
+        profitByHour: const {},
+        tradeCountByAssetClass: const {},
+        tradeCountByStrategy: const {},
+        profitBySession: const {'SESSION_0915_1100': 83090},
+        eligibleTradesBySession: const {'SESSION_0915_1100': 34},
+        activeTradingDaysCount: 9,
+        avgPnlPerActiveDay: 83090 / 9,
+      );
+      expect(timingAvgPnl(dist), closeTo(83090 / 34, 0.01));
+      expect(
+        timingAvgPnlForBasis(dist, TimingAvgBasis.perActiveDay),
+        closeTo(83090 / 9, 0.01),
+      );
+    });
+
+    test('null dist yields null KPIs', () {
+      expect(timingTotalPnl(null), isNull);
+      expect(timingAvgPnl(null), isNull);
+      expect(timingAvgPnlForBasis(null, TimingAvgBasis.perActiveDay), isNull);
+      expect(timingWinRate(null), isNull);
+    });
+  });
+
+  group('Avg basis bucket display', () {
+    test('Aug-style per trade vs per active day without refetch', () {
+      final perTrade = buildTimingBuckets(
+        trades: {'AUGUST': 34},
+        profit: {'AUGUST': 83090},
+        avgPnl: {'AUGUST': 83090 / 34},
+        avgPnlPerActiveDay: {'AUGUST': 83090 / 9},
+        eligible: {'AUGUST': 34},
+        activeTradingDays: {'AUGUST': 9},
+        labelFor: formatMonthLabel,
+        avgBasis: TimingAvgBasis.perTrade,
+      ).single;
+      final perDay = buildTimingBuckets(
+        trades: {'AUGUST': 34},
+        profit: {'AUGUST': 83090},
+        avgPnl: {'AUGUST': 83090 / 34},
+        avgPnlPerActiveDay: {'AUGUST': 83090 / 9},
+        eligible: {'AUGUST': 34},
+        activeTradingDays: {'AUGUST': 9},
+        labelFor: formatMonthLabel,
+        avgBasis: TimingAvgBasis.perActiveDay,
+      ).single;
+      expect(perTrade.avgPnl, closeTo(2443.82, 0.1));
+      expect(perDay.avgPnl, closeTo(9232.22, 0.1));
+      expect(perDay.activeTradingDays, 9);
+      expect(perDay.displayAvg(TimingAvgBasis.perTrade), closeTo(2443.82, 0.1));
     });
   });
 

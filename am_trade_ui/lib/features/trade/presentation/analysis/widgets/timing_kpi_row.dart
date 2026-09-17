@@ -5,19 +5,23 @@ import 'package:am_design_system/am_design_system.dart';
 import '../../../internal/domain/entities/metrics/performance_metrics.dart';
 import '../../../internal/domain/entities/metrics/trade_distribution_metrics.dart';
 import '../models/timing_bucket.dart';
+import 'timing_kpi_math.dart';
 
 /// Five Timing KPI cards: Total P&L, Avg P&L, Win Rate, Best Session, Avg Hold.
+/// Total / Avg / Win Rate come from distribution session maps (Timing universe).
 class TimingKpiRow extends StatelessWidget {
   const TimingKpiRow({
     super.key,
     required this.performance,
     required this.distribution,
     required this.totalTradesCount,
+    this.avgBasis = TimingAvgBasis.perTrade,
   });
 
   final PerformanceMetrics? performance;
   final TradeDistributionMetrics? distribution;
   final int? totalTradesCount;
+  final TimingAvgBasis avgBasis;
 
   static final _inr = NumberFormat.currency(
     locale: 'en_IN',
@@ -30,51 +34,59 @@ class TimingKpiRow extends StatelessWidget {
     final perf = performance;
     final dist = distribution;
 
-    final totalPnl = perf?.totalProfitLoss;
+    final totalPnl = timingTotalPnl(dist);
     final totalPct = perf?.totalProfitLossPercentage;
+    final avgPnl = timingAvgPnlForBasis(dist, avgBasis);
+    final winRate = timingWinRate(dist);
     final wins = perf?.winningTradesCount;
     final losses = perf?.losingTradesCount;
-    final eligible = (wins ?? 0) + (losses ?? 0);
-    final avgPnl = (totalPnl != null && eligible > 0)
-        ? totalPnl / eligible
-        : (totalPnl != null && (totalTradesCount ?? 0) > 0)
-            ? totalPnl / totalTradesCount!
-            : null;
-    final winRate = perf?.winRate;
 
     String? bestLabel;
     String? bestSub;
-    if (dist?.bestSessionKey != null) {
-      bestLabel = formatSessionLabel(dist!.bestSessionKey!);
-      final avg = dist.bestSessionAvgPnl;
-      if (avg != null) {
-        bestSub = '${avg >= 0 ? '+' : ''}${_inr.format(avg)} avg P&L';
-      }
-    } else if (dist != null) {
+    if (dist != null) {
       final sessions = buildTimingBuckets(
         trades: dist.tradesBySession,
         profit: dist.profitBySession,
         winRate: dist.winRateBySession,
         avgPnl: dist.avgPnlBySession,
+        avgPnlPerActiveDay: dist.avgPnlPerActiveDayBySession,
         eligible: dist.eligibleTradesBySession,
+        activeTradingDays: dist.activeTradingDaysBySession,
         labelFor: formatSessionLabel,
         includeZeroTradeBuckets: true,
         orderedKeys: kSessionKeys,
+        avgBasis: avgBasis,
       );
       final ranked = qualifyingForRank(sessions);
       if (ranked.isNotEmpty) {
         final best = sortByAvgPnlDesc(ranked).first;
         bestLabel = best.label;
+        final basisHint =
+            avgBasis == TimingAvgBasis.perActiveDay ? '/ day' : '/ trade';
         bestSub =
-            '${best.avgPnl >= 0 ? '+' : ''}${_inr.format(best.avgPnl)} avg P&L';
+            '${best.avgPnl >= 0 ? '+' : ''}${_inr.format(best.avgPnl)} avg$basisHint';
+      } else if (dist.bestSessionKey != null &&
+          avgBasis == TimingAvgBasis.perTrade) {
+        bestLabel = formatSessionLabel(dist.bestSessionKey!);
+        final avg = dist.bestSessionAvgPnl;
+        if (avg != null) {
+          bestSub = '${avg >= 0 ? '+' : ''}${_inr.format(avg)} avg / trade';
+        }
       }
     }
 
     final holdMinutes = perf?.averageHoldingTimeMinutes;
 
     final pnlSparklineData = dist?.profitByMonth.values.toList() ?? [];
-    final avgPnlSparklineData = dist?.avgPnlByMonth.values.toList() ?? [];
-    final sessionAvgPnlData = dist?.avgPnlBySession.values.toList() ?? [];
+    final avgPnlSparklineData = avgBasis == TimingAvgBasis.perActiveDay
+        ? (dist?.avgPnlPerActiveDayByMonth.values.toList() ?? [])
+        : (dist?.avgPnlByMonth.values.toList() ?? []);
+    final sessionAvgPnlData = avgBasis == TimingAvgBasis.perActiveDay
+        ? (dist?.avgPnlPerActiveDayBySession.values.toList() ?? [])
+        : (dist?.avgPnlBySession.values.toList() ?? []);
+
+    final totalColorSign = totalPnl ?? sparklineSeriesSign(pnlSparklineData);
+    final avgColorSign = avgPnl ?? sparklineSeriesSign(avgPnlSparklineData);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -91,21 +103,28 @@ class TimingKpiRow extends StatelessWidget {
                 : (totalPnl >= 0
                     ? context.statusSuccess
                     : context.statusError),
-            subtitleColor: totalPnl == null
+            subtitleColor: totalPct == null
                 ? null
-                : (totalPnl >= 0
+                : (totalPct >= 0
                     ? context.statusSuccess
                     : context.statusError),
             sparkline: pnlSparklineData.isEmpty
                 ? null
                 : AmSparklineChart(
                     data: pnlSparklineData,
-                    color: (totalPnl ?? 0) >= 0 ? context.statusSuccess : context.statusError,
+                    color: totalColorSign >= 0
+                        ? context.statusSuccess
+                        : context.statusError,
                   ),
           ),
           _KpiCard(
-            title: 'Avg P&L per Trade',
+            title: timingAvgKpiTitle(avgBasis),
             value: avgPnl == null ? '—' : _signedInr(avgPnl),
+            subtitle: avgBasis == TimingAvgBasis.perActiveDay &&
+                    dist != null &&
+                    dist.activeTradingDaysCount > 0
+                ? '${dist.activeTradingDaysCount} active days'
+                : null,
             valueColor: avgPnl == null
                 ? null
                 : (avgPnl >= 0
@@ -115,7 +134,9 @@ class TimingKpiRow extends StatelessWidget {
                 ? null
                 : AmSparklineChart(
                     data: avgPnlSparklineData,
-                    color: (avgPnl ?? 0) >= 0 ? context.statusSuccess : context.statusError,
+                    color: avgColorSign >= 0
+                        ? context.statusSuccess
+                        : context.statusError,
                   ),
           ),
           _KpiCard(
@@ -129,12 +150,19 @@ class TimingKpiRow extends StatelessWidget {
             subtitle: (wins != null && losses != null)
                 ? '$wins wins / $losses losses'
                 : null,
-            sparkline: (wins != null && eligible > 0)
+            sparkline: (wins != null &&
+                    losses != null &&
+                    (wins + losses) > 0)
                 ? AmDonutSparkline(
                     value: wins.toDouble(),
-                    total: eligible.toDouble(),
-                    color: winRate != null && winRate >= 50 ? context.statusSuccess : context.statusError,
-                    backgroundColor: (winRate != null && winRate >= 50 ? context.statusSuccess : context.statusError).withValues(alpha: 0.2),
+                    total: (wins + losses).toDouble(),
+                    color: winRate != null && winRate >= 50
+                        ? context.statusSuccess
+                        : context.statusError,
+                    backgroundColor: (winRate != null && winRate >= 50
+                            ? context.statusSuccess
+                            : context.statusError)
+                        .withValues(alpha: 0.2),
                   )
                 : null,
           ),
@@ -308,4 +336,3 @@ class _KpiCard extends StatelessWidget {
     );
   }
 }
-

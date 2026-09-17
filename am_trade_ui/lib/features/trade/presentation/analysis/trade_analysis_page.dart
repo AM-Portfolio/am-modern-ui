@@ -13,15 +13,9 @@ enum _AnalysisTab { timing, strategy, direction, holding, risk }
 
 /// Analysis hub — Timing-first edge analytics.
 ///
-<<<<<<< HEAD
 /// No page title (sidebar labels the page), no portfolio dropdown, no Export.
 /// Date range + Apply sit on the tab row. Timing shows insights + KPI cards.
 /// See Doc/analysis_ui_mock_plan.md (Timing KPI strip is intentional for this delivery).
-=======
-/// Deliberately **no** page-level portfolio dropdown (sidebar owns that) and
-/// **no** Net PnL / Win Rate KPI strip (Calendar + Portfolios own glance metrics).
-/// See Doc/analysis_ui_mock_plan.md.
->>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
 class TradeAnalysisPage extends ConsumerStatefulWidget {
   const TradeAnalysisPage({
     super.key,
@@ -79,11 +73,7 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
         portfolioIds: [widget.portfolioId],
         startDate: _startDate,
         endDate: _endDate,
-<<<<<<< HEAD
         metricTypes: const [MetricTypes.performance, MetricTypes.distribution],
-=======
-        metricTypes: const [MetricTypes.distribution],
->>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
         holdingStyle: _holdingStyle,
       ),
     );
@@ -165,7 +155,6 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-<<<<<<< HEAD
             // Single header row (wraps if too narrow): Tabs + [Holding style] + Date + Apply + Refresh + Download
             Wrap(
               alignment: WrapAlignment.spaceBetween,
@@ -211,61 +200,10 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
                       height: 36,
                     ),
                   ],
-=======
-            // Header: title + date only — no portfolio dropdown, no KPI strip.
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Trade Analysis',
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.4,
-                          color: colors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xxs),
-                      Text(
-                        'Execution patterns, session timing & style distribution.',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colors.textSecondary,
-                          height: 1.35,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                _DateApplyBar(
-                  dateLabel: _dateLabel,
-                  usingAllTime: _usingAllTime,
-                  onPickDateRange: _pickDateRange,
-                  onResetAllTime: _resetToAllTime,
-                  onApply: _loadMetrics,
->>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
                 ),
               ],
             ),
             const SizedBox(height: AppSpacing.md),
-<<<<<<< HEAD
-=======
-            _AnalysisTabBar(
-              selected: _tab,
-              onSelected: (tab) => setState(() => _tab = tab),
-            ),
-            if (_tab == _AnalysisTab.timing) ...[
-              const SizedBox(height: AppSpacing.sm),
-              _HoldingStyleFilter(
-                selected: _holdingStyle,
-                onChanged: _onHoldingStyleChanged,
-              ),
-            ],
-            const SizedBox(height: AppSpacing.sm),
->>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
             Expanded(
               child: cubitAsync.when(
                 loading: () => Center(
@@ -373,23 +311,16 @@ class _HoldingStyleFilter extends StatelessWidget {
     }
 
     return Row(
-<<<<<<< HEAD
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           'Holding style:',
-=======
-      children: [
-        Text(
-          'Holding style',
->>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
                 color: colors.textSecondary,
                 fontWeight: FontWeight.w600,
               ),
         ),
         const SizedBox(width: AppSpacing.sm),
-<<<<<<< HEAD
         Wrap(
           spacing: AppSpacing.sm,
           runSpacing: AppSpacing.sm,
@@ -399,19 +330,6 @@ class _HoldingStyleFilter extends StatelessWidget {
             pill('Intraday 15m–24h', 'INTRADAY'),
             pill('Swing ≥24h', 'SWING'),
           ],
-=======
-        Expanded(
-          child: Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              pill('All', null),
-              pill('Scalper', 'SCALPER'),
-              pill('Intraday', 'INTRADAY'),
-              pill('Swing', 'SWING'),
-            ],
-          ),
->>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
         ),
       ],
     );
@@ -448,7 +366,6 @@ class _AnalysisTabBar extends StatelessWidget {
                   _icon(tab),
                   size: 16,
                   color: selected == tab
-<<<<<<< HEAD
                       ? Colors.white
                       : colors.textSecondary,
                 ),
@@ -463,15 +380,6 @@ class _AnalysisTabBar extends StatelessWidget {
                 onSelected: (_) => onSelected(tab),
                 selectedColor: ModuleColors.trade,
                 backgroundColor: Colors.transparent,
-=======
-                      ? ModuleColors.trade
-                      : colors.textSecondary,
-                ),
-                label: Text(_label(tab)),
-                selected: selected == tab,
-                onSelected: (_) => onSelected(tab),
-                selectedColor: ModuleColors.trade.withValues(alpha: 0.22),
->>>>>>> 75c323b63e8098e2ccf5c9a5530797fcf6bb5d70
                 showCheckmark: false,
                 visualDensity: VisualDensity.compact,
               ),
