@@ -35,7 +35,6 @@ class TimingAvgPnlChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final colors = context.colors;
     final ranked = buckets.where((b) => b.trades > 0).toList()
       ..sort((a, b) => b.avgPnl.compareTo(a.avgPnl));
@@ -64,14 +63,14 @@ class TimingAvgPnlChart extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: theme.textTheme.titleSmall?.copyWith(
+                style: context.text.sectionTitle(compact: true).copyWith(
                   fontWeight: FontWeight.w700,
                   color: colors.textPrimary,
                 ),
               ),
               Text(
                 avgAxisLabel,
-                style: theme.textTheme.labelSmall?.copyWith(
+                style: context.text.caption(compact: true).copyWith(
                   color: colors.textSecondary,
                 ),
               ),
@@ -84,7 +83,7 @@ class TimingAvgPnlChart extends StatelessWidget {
                 ? Center(
                     child: Text(
                       emptyMessage ?? 'No data',
-                      style: theme.textTheme.bodySmall?.copyWith(
+                      style: context.text.bodyMuted(compact: true).copyWith(
                         color: colors.textSecondary,
                       ),
                       textAlign: TextAlign.center,
@@ -104,23 +103,25 @@ class TimingAvgPnlChart extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm,
+                          vertical: AppSpacing.xxs,
+                        ),
                         decoration: BoxDecoration(
                           border: Border.all(color: context.statusError.withValues(alpha: 0.5)),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadii.md),
                         ),
                         child: Text(
                           'Weakest: ${weakest.label}',
-                          style: theme.textTheme.labelSmall?.copyWith(
+                          style: context.text.caption(compact: true).copyWith(
                             color: context.statusError,
-                            fontSize: 10,
                           ),
                         ),
                       ),
                       const SizedBox(width: AppSpacing.xs),
                       Text(
                         _signedInr(weakest.avgPnl),
-                        style: theme.textTheme.labelSmall?.copyWith(
+                        style: context.text.caption(compact: true).copyWith(
                           color: context.statusError,
                           fontWeight: FontWeight.w600,
                         ),
@@ -132,23 +133,25 @@ class TimingAvgPnlChart extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm,
+                          vertical: AppSpacing.xxs,
+                        ),
                         decoration: BoxDecoration(
                           border: Border.all(color: context.statusSuccess.withValues(alpha: 0.5)),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadii.md),
                         ),
                         child: Text(
                           'Best: ${best.label}',
-                          style: theme.textTheme.labelSmall?.copyWith(
+                          style: context.text.caption(compact: true).copyWith(
                             color: context.statusSuccess,
-                            fontSize: 10,
                           ),
                         ),
                       ),
                       const SizedBox(width: AppSpacing.xs),
                       Text(
                         _signedInr(best.avgPnl),
-                        style: theme.textTheme.labelSmall?.copyWith(
+                        style: context.text.caption(compact: true).copyWith(
                           color: context.statusSuccess,
                           fontWeight: FontWeight.w600,
                         ),
@@ -184,10 +187,9 @@ class TimingAvgPnlChart extends StatelessWidget {
             final b = buckets[group.x.toInt()];
             return BarTooltipItem(
               '${b.label}\n₹${b.avgPnl.toStringAsFixed(0)}',
-              TextStyle(
+              context.text.caption().copyWith(
                 color: theme.colorScheme.onInverseSurface,
                 fontWeight: FontWeight.w600,
-                fontSize: 12,
               ),
             );
           },
@@ -214,11 +216,10 @@ class TimingAvgPnlChart extends StatelessWidget {
                   if (value < 0) text = '-$text';
                 }
                 return Padding(
-                  padding: const EdgeInsets.only(right: 4.0),
+                  padding: const EdgeInsets.only(right: AppSpacing.xs),
                   child: Text(
                     text,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      fontSize: 10,
+                    style: context.text.caption(compact: true).copyWith(
                       color: colors.textSecondary,
                     ),
                     textAlign: TextAlign.right,
@@ -244,8 +245,7 @@ class TimingAvgPnlChart extends StatelessWidget {
                 padding: const EdgeInsets.only(top: AppSpacing.xs),
                 child: Text(
                   buckets[i].label,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    fontSize: 9,
+                  style: context.text.caption(compact: true).copyWith(
                     color: colors.textSecondary,
                   ),
                 ),

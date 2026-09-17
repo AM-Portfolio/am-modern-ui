@@ -193,7 +193,9 @@ class _GlobalPortfolioWrapperState
         SnackBar(
           content: Text(
             'Portfolio not found or access denied. Showing default.',
-            style: TextStyle(color: context.colors.textPrimary),
+            style: context.text.body().copyWith(
+                  color: context.colors.textPrimary,
+                ),
           ),
           backgroundColor: context.statusError,
         ),

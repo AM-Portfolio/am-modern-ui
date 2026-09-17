@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 
 import '../../internal/domain/entities/metrics/metrics_filter_request.dart';
@@ -95,6 +94,7 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
   }
 
   Future<void> _pickDateRange() async {
+    final colors = context.colors;
     final picked = await showDialog<DateTimeRange>(
       context: context,
       builder: (ctx) {
@@ -102,7 +102,7 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
           data: Theme.of(ctx).copyWith(
             colorScheme: Theme.of(ctx).colorScheme.copyWith(
                   primary: ModuleColors.trade,
-                  onPrimary: Colors.white,
+                  onPrimary: colors.actionPrimaryFg,
                 ),
           ),
           child: CompactDateRangePickerDialog(
@@ -140,7 +140,6 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final theme = Theme.of(context);
     final cubitAsync = ref.watch(tradeMetricsCubitProvider);
 
     return Scaffold(
@@ -209,13 +208,9 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
                 loading: () => Center(
                   child: CircularProgressIndicator(color: ModuleColors.trade),
                 ),
-                error: (e, _) => Center(
-                  child: Text(
-                    'Error: $e',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: context.statusError,
-                    ),
-                  ),
+                error: (e, _) => AmErrorWidget(
+                  message: 'Error: $e',
+                  onRetry: _loadMetrics,
                 ),
                 data: (cubit) {
                   if (_tab == _AnalysisTab.timing) {
@@ -315,7 +310,7 @@ class _HoldingStyleFilter extends StatelessWidget {
       children: [
         Text(
           'Holding style:',
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+          style: context.text.label(compact: true).copyWith(
                 color: colors.textSecondary,
                 fontWeight: FontWeight.w600,
               ),
@@ -361,27 +356,12 @@ class _AnalysisTabBar extends StatelessWidget {
           children: [
             for (final tab in _AnalysisTab.values) ...[
               if (tab.index > 0) const SizedBox(width: AppSpacing.xs),
-              ChoiceChip(
-                avatar: Icon(
-                  _icon(tab),
-                  size: 16,
-                  color: selected == tab
-                      ? Colors.white
-                      : colors.textSecondary,
-                ),
-                label: Text(
-                  _label(tab),
-                  style: TextStyle(
-                    color: selected == tab ? Colors.white : colors.textPrimary,
-                    fontWeight: selected == tab ? FontWeight.w600 : FontWeight.normal,
-                  ),
-                ),
+              AmToggleChip(
+                label: _label(tab),
                 selected: selected == tab,
-                onSelected: (_) => onSelected(tab),
-                selectedColor: ModuleColors.trade,
-                backgroundColor: Colors.transparent,
-                showCheckmark: false,
-                visualDensity: VisualDensity.compact,
+                compact: true,
+                accentColor: ModuleColors.trade,
+                onTap: () => onSelected(tab),
               ),
             ],
           ],
@@ -396,14 +376,6 @@ class _AnalysisTabBar extends StatelessWidget {
         _AnalysisTab.direction => 'Direction',
         _AnalysisTab.holding => 'Holding',
         _AnalysisTab.risk => 'Risk',
-      };
-
-  IconData _icon(_AnalysisTab tab) => switch (tab) {
-        _AnalysisTab.timing => Icons.schedule_outlined,
-        _AnalysisTab.strategy => Icons.flag_outlined,
-        _AnalysisTab.direction => Icons.swap_vert,
-        _AnalysisTab.holding => Icons.hourglass_empty_outlined,
-        _AnalysisTab.risk => Icons.shield_outlined,
       };
 }
 
@@ -434,7 +406,7 @@ class _ComingSoonTab extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           Text(
             '$name analytics coming next',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            style: context.text.sectionTitle(compact: true).copyWith(
                   color: colors.textSecondary,
                 ),
           ),

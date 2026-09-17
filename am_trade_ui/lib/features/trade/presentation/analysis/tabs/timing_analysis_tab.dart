@@ -80,45 +80,15 @@ class _TimingAnalysisTabState extends State<TimingAnalysisTab> {
   }
 
   Widget _buildBody(BuildContext context, TradeMetricsState state) {
-    final colors = context.colors;
     if (state is TradeMetricsLoading || state is TradeMetricsInitial) {
       return Center(
         child: CircularProgressIndicator(color: ModuleColors.trade),
       );
     }
     if (state is TradeMetricsError) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline, color: context.statusError, size: 40),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              'Could not load timing metrics',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: colors.textPrimary,
-                  ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              state.message,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: colors.textSecondary,
-                  ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            AppButton(
-              text: 'Retry',
-              type: AppButtonType.secondary,
-              isOutlined: true,
-              icon: Icons.refresh,
-              onPressed: widget.onApply,
-              height: 36,
-              backgroundColor: ModuleColors.trade,
-            ),
-          ],
-        ),
+      return AmErrorWidget(
+        message: 'Could not load timing metrics\n${state.message}',
+        onRetry: widget.onApply,
       );
     }
     if (state is TradeMetricsLoaded) {
@@ -160,7 +130,7 @@ class _AvgBasisFilter extends StatelessWidget {
         children: [
           Text(
             'Avg basis:',
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            style: context.text.label(compact: true).copyWith(
                   color: colors.textSecondary,
                   fontWeight: FontWeight.w600,
                 ),
@@ -196,7 +166,7 @@ class _EmptyTimingState extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             Text(
               'No trades in this portfolio / range',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              style: context.text.sectionTitle(compact: true).copyWith(
                     color: colors.textPrimary,
                     fontWeight: FontWeight.w700,
                   ),
@@ -207,7 +177,7 @@ class _EmptyTimingState extends StatelessWidget {
               'Select the same portfolio you use in production '
               '(sidebar → Current Portfolio), keep “All time”, then Apply. '
               'Timing charts and the breakdown table will fill once trades load.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              style: context.text.bodyMuted(compact: true).copyWith(
                     color: colors.textSecondary,
                     height: 1.4,
                   ),
@@ -412,7 +382,7 @@ class _RankControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final labelStyle = Theme.of(context).textTheme.labelMedium?.copyWith(
+    final labelStyle = context.text.label(compact: true).copyWith(
           color: colors.textSecondary,
           fontWeight: FontWeight.w600,
         );
@@ -506,7 +476,7 @@ class _RankControls extends StatelessWidget {
             Text(
               'Showing $rowCount '
               '${rowCount == 1 ? bucketLabel.toLowerCase() : '${bucketLabel.toLowerCase()}s'}',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              style: context.text.caption(compact: true).copyWith(
                     color: colors.textSecondary,
                   ),
             ),

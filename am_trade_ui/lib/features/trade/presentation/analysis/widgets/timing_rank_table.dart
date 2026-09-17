@@ -120,7 +120,7 @@ class TimingRankTable extends StatelessWidget {
   }
 
   Widget _headerRow(BuildContext context) {
-    final style = Theme.of(context).textTheme.labelSmall?.copyWith(
+    final style = context.text.caption(compact: true).copyWith(
           color: context.colors.textSecondary,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.2,
@@ -128,7 +128,7 @@ class TimingRankTable extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm + 2,
+        vertical: AppSpacing.sm,
       ),
       child: Row(
         children: [
@@ -145,9 +145,8 @@ class TimingRankTable extends StatelessWidget {
   }
 
   Widget _dataRow(BuildContext context, TimingBucket bucket, bool striped) {
-    final theme = Theme.of(context);
     final colors = context.colors;
-    final body = theme.textTheme.bodyMedium;
+    final body = context.text.body(compact: true);
     final pnlColor =
         bucket.pnl >= 0 ? context.statusSuccess : context.statusError;
     final avgColor =
@@ -157,15 +156,14 @@ class TimingRankTable extends StatelessWidget {
         : (bucket.winRatePercent! >= 50
             ? context.statusSuccess
             : context.statusError);
-    final rr = bucket.riskReward;
 
     return Container(
       color: striped
           ? colors.textPrimary.withValues(alpha: 0.025)
-          : Colors.transparent,
+          : null,
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
-        vertical: AppSpacing.md - 2,
+        vertical: AppSpacing.sm,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -177,7 +175,7 @@ class TimingRankTable extends StatelessWidget {
                 Flexible(
                   child: Text(
                     bucket.label,
-                    style: body?.copyWith(
+                    style: body.copyWith(
                       fontWeight: FontWeight.w600,
                       color: colors.textPrimary,
                     ),
@@ -189,7 +187,7 @@ class TimingRankTable extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.xs,
-                      vertical: 1,
+                      vertical: AppSpacing.xxs,
                     ),
                     decoration: BoxDecoration(
                       color: ModuleColors.trade.withValues(alpha: 0.12),
@@ -197,8 +195,7 @@ class TimingRankTable extends StatelessWidget {
                     ),
                     child: Text(
                       'Low',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        fontSize: 9,
+                      style: context.text.caption(compact: true).copyWith(
                         color: ModuleColors.trade,
                         fontWeight: FontWeight.w700,
                       ),
@@ -211,7 +208,7 @@ class TimingRankTable extends StatelessWidget {
           _cell(
             '${bucket.trades}',
             _tradesW,
-            body?.copyWith(color: colors.textPrimary),
+            body.copyWith(color: colors.textPrimary),
             TextAlign.end,
           ),
           _cell(
@@ -219,13 +216,13 @@ class TimingRankTable extends StatelessWidget {
                 ? '—'
                 : '${bucket.winRatePercent!.toStringAsFixed(0)}%',
             _winW,
-            body?.copyWith(color: winColor, fontWeight: FontWeight.w600),
+            body.copyWith(color: winColor, fontWeight: FontWeight.w600),
             TextAlign.end,
           ),
           _cell(
             _signedInr(bucket.pnl),
             _pnlW,
-            body?.copyWith(color: pnlColor, fontWeight: FontWeight.w700),
+            body.copyWith(color: pnlColor, fontWeight: FontWeight.w700),
             TextAlign.end,
           ),
           _cell(
@@ -233,7 +230,7 @@ class TimingRankTable extends StatelessWidget {
                 ? '—'
                 : _signedInr(bucket.avgPnl),
             _avgW,
-            body?.copyWith(color: avgColor, fontWeight: FontWeight.w700),
+            body.copyWith(color: avgColor, fontWeight: FontWeight.w700),
             TextAlign.end,
           ),
           _cell(
@@ -241,12 +238,12 @@ class TimingRankTable extends StatelessWidget {
                 ? '—'
                 : formatHoldDuration(bucket.avgHoldMinutes!),
             _holdW,
-            body?.copyWith(color: colors.textPrimary),
+            body.copyWith(color: colors.textPrimary),
             TextAlign.end,
           ),
           SizedBox(
             width: _rrW,
-            child: _RrCell(value: rr),
+            child: _RrCell(value: bucket.riskReward),
           ),
         ],
       ),
@@ -292,7 +289,7 @@ class _RrCell extends StatelessWidget {
       return Text(
         '—',
         textAlign: TextAlign.end,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+        style: context.text.body(compact: true).copyWith(
               color: colors.textSecondary,
             ),
       );
@@ -309,7 +306,7 @@ class _RrCell extends StatelessWidget {
       children: [
         Text(
           rr.toStringAsFixed(1),
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          style: context.text.body(compact: true).copyWith(
                 color: barColor,
                 fontWeight: FontWeight.w700,
               ),
@@ -317,7 +314,7 @@ class _RrCell extends StatelessWidget {
         const SizedBox(width: AppSpacing.sm),
         SizedBox(
           width: 56,
-          height: 8,
+          height: AppSpacing.sm,
           child: Align(
             alignment: Alignment.centerLeft,
             child: FractionallySizedBox(
@@ -325,7 +322,7 @@ class _RrCell extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   color: barColor,
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(AppRadii.xs),
                 ),
               ),
             ),

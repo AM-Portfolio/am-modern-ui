@@ -260,7 +260,6 @@ class _KpiCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final colors = context.colors;
 
     return Container(
@@ -285,12 +284,12 @@ class _KpiCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: theme.textTheme.labelSmall?.copyWith(
+                      style: context.text.caption(compact: true).copyWith(
                         color: colors.textSecondary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const SizedBox(width: 3),
+                    const SizedBox(width: AppSpacing.xxs),
                     Icon(
                       Icons.info_outline,
                       size: 12,
@@ -301,7 +300,7 @@ class _KpiCard extends StatelessWidget {
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   value,
-                  style: theme.textTheme.headlineMedium?.copyWith(
+                  style: context.text.heroTitle(compact: true).copyWith(
                     fontWeight: FontWeight.bold,
                     color: valueColor ?? colors.textPrimary,
                     height: 1.1,
@@ -313,7 +312,7 @@ class _KpiCard extends StatelessWidget {
                   const SizedBox(height: AppSpacing.xxs),
                   Text(
                     subtitle!,
-                    style: theme.textTheme.labelSmall?.copyWith(
+                    style: context.text.caption(compact: true).copyWith(
                       color: subtitleColor ?? colors.textSecondary,
                     ),
                     maxLines: 1,

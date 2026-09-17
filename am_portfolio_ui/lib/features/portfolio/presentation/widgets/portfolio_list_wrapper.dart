@@ -1,7 +1,6 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_library/am_library.dart';
 import '../cubit/portfolio_cubit.dart';
@@ -149,7 +148,9 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
           SnackBar(
             content: Text(
               'Portfolio not found or access denied. Showing default.',
-              style: TextStyle(color: context.colors.textPrimary),
+              style: context.text.body().copyWith(
+                    color: context.colors.textPrimary,
+                  ),
             ),
             backgroundColor: context.statusError,
           ),

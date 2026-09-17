@@ -39,7 +39,6 @@ class _TimingInsightsBannerState extends State<TimingInsightsBanner> {
   Widget build(BuildContext context) {
     if (_dismissed) return const SizedBox.shrink();
 
-    final theme = Theme.of(context);
     final colors = context.colors;
     final countLabel = widget.tradeCount == null
         ? '…'
@@ -85,16 +84,15 @@ class _TimingInsightsBannerState extends State<TimingInsightsBanner> {
             children: [
               Text(
                 value,
-                style: (theme.textTheme.labelMedium ?? const TextStyle()).copyWith(
+                style: context.text.label(compact: true).copyWith(
                   color: colors.textPrimary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               Text(
                 sub,
-                style: (theme.textTheme.labelSmall ?? const TextStyle()).copyWith(
+                style: context.text.caption(compact: true).copyWith(
                   color: colors.textSecondary,
-                  fontSize: 10,
                 ),
               ),
             ],
@@ -115,10 +113,10 @@ class _TimingInsightsBannerState extends State<TimingInsightsBanner> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, size: 14, color: ModuleColors.trade),
-              const SizedBox(width: 4),
+              const SizedBox(width: AppSpacing.xs),
               Text(
                 label,
-                style: (theme.textTheme.labelSmall ?? const TextStyle()).copyWith(
+                style: context.text.caption(compact: true).copyWith(
                   color: ModuleColors.trade,
                   fontWeight: FontWeight.w600,
                 ),
@@ -141,38 +139,38 @@ class _TimingInsightsBannerState extends State<TimingInsightsBanner> {
           borderRadius: AppRadii.card,
           border: Border.all(color: colors.border.withValues(alpha: 0.35)),
         ),
-      child: Wrap(
-        spacing: AppSpacing.lg,
-        runSpacing: AppSpacing.md,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          fact(Icons.bar_chart_rounded, '$countLabel Trades',
-              'In selected period'),
-          fact(Icons.pie_chart_outline_rounded, styleValue,
-              'Inferred from hold time'),
-          fact(Icons.schedule_rounded, tzValue,
-              'Session windows as stored'),
-          link(Icons.calendar_today_outlined, 'View Calendar',
-              widget.onOpenCalendar),
-          link(Icons.auto_stories_outlined, 'Journal Insights',
-              widget.onOpenJournalInsights),
-          if (honesty.isNotEmpty)
-            Text(
-              honesty.join('  ·  '),
-              style: (theme.textTheme.labelSmall ?? const TextStyle()).copyWith(
-                color: colors.textSecondary,
+        child: Wrap(
+          spacing: AppSpacing.lg,
+          runSpacing: AppSpacing.md,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            fact(Icons.bar_chart_rounded, '$countLabel Trades',
+                'In selected period'),
+            fact(Icons.pie_chart_outline_rounded, styleValue,
+                'Inferred from hold time'),
+            fact(Icons.schedule_rounded, tzValue,
+                'Session windows as stored'),
+            link(Icons.calendar_today_outlined, 'View Calendar',
+                widget.onOpenCalendar),
+            link(Icons.auto_stories_outlined, 'Journal Insights',
+                widget.onOpenJournalInsights),
+            if (honesty.isNotEmpty)
+              Text(
+                honesty.join('  ·  '),
+                style: context.text.caption(compact: true).copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
+            IconButton(
+              icon: Icon(Icons.close, size: 16, color: colors.textSecondary),
+              onPressed: () => setState(() => _dismissed = true),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+              splashRadius: 14,
+              tooltip: 'Dismiss',
             ),
-          IconButton(
-            icon: Icon(Icons.close, size: 16, color: colors.textSecondary),
-            onPressed: () => setState(() => _dismissed = true),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-            splashRadius: 14,
-            tooltip: 'Dismiss',
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }
