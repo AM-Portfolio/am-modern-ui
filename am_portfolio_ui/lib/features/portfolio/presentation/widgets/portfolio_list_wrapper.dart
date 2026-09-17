@@ -145,8 +145,14 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Portfolio not found or access denied. Showing default.'),
+          SnackBar(
+            content: Text(
+              'Portfolio not found or access denied. Showing default.',
+              style: context.text.body().copyWith(
+                    color: context.colors.textPrimary,
+                  ),
+            ),
+            backgroundColor: context.statusError,
           ),
         );
       }

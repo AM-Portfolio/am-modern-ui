@@ -20,6 +20,7 @@ class AppButton extends PlatformWidget<Widget, Widget> {
     this.isLoading = false,
     this.type = AppButtonType.primary,
     this.icon,
+    this.iconTrailing,
     this.padding,
     this.minWidth,
     this.height,
@@ -33,6 +34,7 @@ class AppButton extends PlatformWidget<Widget, Widget> {
   final bool isLoading;
   final AppButtonType type;
   final IconData? icon;
+  final IconData? iconTrailing;
   final EdgeInsetsGeometry? padding;
   final double? minWidth;
   final double? height;
@@ -183,12 +185,15 @@ class AppButton extends PlatformWidget<Widget, Widget> {
       return _buildLoadingIndicator(context, displayColor);
     }
 
-    if (icon != null) {
+    if (icon != null || iconTrailing != null) {
       return Row(
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: displayColor, size: 18),
-          const SizedBox(width: 8),
+          if (icon != null) ...[
+            Icon(icon, color: displayColor, size: 18),
+            const SizedBox(width: 8),
+          ],
           Text(
             text,
             style: TextStyle(
@@ -196,6 +201,10 @@ class AppButton extends PlatformWidget<Widget, Widget> {
               fontFamily: DesignSystemProvider.of(context).fontFamily,
             ),
           ),
+          if (iconTrailing != null) ...[
+            const SizedBox(width: 8),
+            Icon(iconTrailing, color: displayColor, size: 18),
+          ],
         ],
       );
     }

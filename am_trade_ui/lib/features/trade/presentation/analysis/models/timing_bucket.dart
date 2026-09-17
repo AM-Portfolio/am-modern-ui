@@ -6,21 +6,41 @@ class TimingBucket {
     required this.trades,
     required this.pnl,
     required this.avgPnl,
+    this.avgPnlPerTrade,
+    this.avgPnlPerActiveDay,
+    this.activeTradingDays = 0,
     this.winRatePercent,
     this.eligibleTrades = 0,
+    this.avgHoldMinutes,
+    this.riskReward,
   });
 
   final String key;
   final String label;
   final int trades;
   final double pnl;
-  /// Avg PnL from server when present; else `pnl / eligible` (eligible only).
+  /// Display Avg P&L for the currently selected [TimingAvgBasis].
   final double avgPnl;
+  final double? avgPnlPerTrade;
+  final double? avgPnlPerActiveDay;
+  final int activeTradingDays;
   final double? winRatePercent;
   /// Trades with non-null PnL (Win% / Avg PnL denominator).
   final int eligibleTrades;
+  final double? avgHoldMinutes;
+  /// Avg win ÷ |avg loss|; null when undefined (not stop-based R).
+  final double? riskReward;
 
   bool get isLowSample => eligibleTrades > 0 && eligibleTrades < minTradesForRank;
+
+  double displayAvg(TimingAvgBasis basis) {
+    switch (basis) {
+      case TimingAvgBasis.perTrade:
+        return avgPnlPerTrade ?? avgPnl;
+      case TimingAvgBasis.perActiveDay:
+        return avgPnlPerActiveDay ?? avgPnl;
+    }
+  }
 }
 
 /// Default minimum eligible trades to appear in Best/Worst rankings.
@@ -47,15 +67,50 @@ enum TimingDimension { session, weekday, month }
 
 enum TimingRankView { all, best, worst }
 
+/// Client-only Avg P&L denominator for Timing charts / KPI / rank.
+enum TimingAvgBasis { perTrade, perActiveDay }
+
+String timingAvgBasisLabel(TimingAvgBasis basis) {
+  switch (basis) {
+    case TimingAvgBasis.perTrade:
+      return 'Per trade';
+    case TimingAvgBasis.perActiveDay:
+      return 'Per active day';
+  }
+}
+
+String timingAvgAxisLabel(TimingAvgBasis basis) {
+  switch (basis) {
+    case TimingAvgBasis.perTrade:
+      return 'Avg P&L / trade (₹)';
+    case TimingAvgBasis.perActiveDay:
+      return 'Avg P&L / active day (₹)';
+  }
+}
+
+String timingAvgKpiTitle(TimingAvgBasis basis) {
+  switch (basis) {
+    case TimingAvgBasis.perTrade:
+      return 'Avg P&L / trade';
+    case TimingAvgBasis.perActiveDay:
+      return 'Avg P&L / active day';
+  }
+}
+
 List<TimingBucket> buildTimingBuckets({
   required Map<String, int> trades,
   required Map<String, double> profit,
   Map<String, double> winRate = const {},
   Map<String, double> avgPnl = const {},
+  Map<String, double> avgPnlPerActiveDay = const {},
   Map<String, int> eligible = const {},
+  Map<String, int> activeTradingDays = const {},
+  Map<String, double> avgHoldMinutes = const {},
+  Map<String, double> riskReward = const {},
   required String Function(String key) labelFor,
   bool includeZeroTradeBuckets = false,
   List<String>? orderedKeys,
+  TimingAvgBasis avgBasis = TimingAvgBasis.perTrade,
 }) {
   final keys = orderedKeys != null
       ? [...orderedKeys]
@@ -67,17 +122,28 @@ List<TimingBucket> buildTimingBuckets({
     if (!includeZeroTradeBuckets && count <= 0) continue;
     final pnl = profit[key] ?? 0;
     final eligibleCount = eligible[key] ?? (winRate.containsKey(key) ? count : 0);
-    final serverAvg = avgPnl[key];
-    final computedAvg = eligibleCount > 0 ? pnl / eligibleCount : 0.0;
+    final days = activeTradingDays[key] ?? 0;
+    final perTrade = avgPnl[key] ??
+        (eligibleCount > 0 ? pnl / eligibleCount : null);
+    final perDay = avgPnlPerActiveDay[key] ??
+        (days > 0 ? pnl / days : null);
+    final display = avgBasis == TimingAvgBasis.perActiveDay
+        ? (perDay ?? 0.0)
+        : (perTrade ?? 0.0);
     buckets.add(
       TimingBucket(
         key: key,
         label: labelFor(key),
         trades: count,
         pnl: pnl,
-        avgPnl: serverAvg ?? computedAvg,
+        avgPnl: display,
+        avgPnlPerTrade: perTrade,
+        avgPnlPerActiveDay: perDay,
+        activeTradingDays: days,
         winRatePercent: winRate[key],
         eligibleTrades: eligibleCount,
+        avgHoldMinutes: avgHoldMinutes[key],
+        riskReward: riskReward[key],
       ),
     );
   }

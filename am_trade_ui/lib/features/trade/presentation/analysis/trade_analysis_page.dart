@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 
 import '../../internal/domain/entities/metrics/metrics_filter_request.dart';
@@ -13,9 +12,9 @@ enum _AnalysisTab { timing, strategy, direction, holding, risk }
 
 /// Analysis hub — Timing-first edge analytics.
 ///
-/// Deliberately **no** page-level portfolio dropdown (sidebar owns that) and
-/// **no** Net PnL / Win Rate KPI strip (Calendar + Portfolios own glance metrics).
-/// See Doc/analysis_ui_mock_plan.md.
+/// No page title (sidebar labels the page), no portfolio dropdown, no Export.
+/// Date range + Apply sit on the tab row. Timing shows insights + KPI cards.
+/// See Doc/analysis_ui_mock_plan.md (Timing KPI strip is intentional for this delivery).
 class TradeAnalysisPage extends ConsumerStatefulWidget {
   const TradeAnalysisPage({
     super.key,
@@ -73,7 +72,7 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
         portfolioIds: [widget.portfolioId],
         startDate: _startDate,
         endDate: _endDate,
-        metricTypes: const [MetricTypes.distribution],
+        metricTypes: const [MetricTypes.performance, MetricTypes.distribution],
         holdingStyle: _holdingStyle,
       ),
     );
@@ -95,6 +94,7 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
   }
 
   Future<void> _pickDateRange() async {
+    final colors = context.colors;
     final picked = await showDialog<DateTimeRange>(
       context: context,
       builder: (ctx) {
@@ -102,7 +102,7 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
           data: Theme.of(ctx).copyWith(
             colorScheme: Theme.of(ctx).colorScheme.copyWith(
                   primary: ModuleColors.trade,
-                  onPrimary: Colors.white,
+                  onPrimary: colors.actionPrimaryFg,
                 ),
           ),
           child: CompactDateRangePickerDialog(
@@ -140,7 +140,6 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final theme = Theme.of(context);
     final cubitAsync = ref.watch(tradeMetricsCubitProvider);
 
     return Scaffold(
@@ -155,68 +154,63 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header: title + date only — no portfolio dropdown, no KPI strip.
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            // Single header row (wraps if too narrow): Tabs + [Holding style] + Date + Apply + Refresh + Download
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              runSpacing: AppSpacing.md,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Trade Analysis',
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.4,
-                          color: colors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xxs),
-                      Text(
-                        'Execution patterns, session timing & style distribution.',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colors.textSecondary,
-                          height: 1.35,
-                        ),
-                      ),
-                    ],
-                  ),
+                _AnalysisTabBar(
+                  selected: _tab,
+                  onSelected: (tab) => setState(() => _tab = tab),
                 ),
-                const SizedBox(width: AppSpacing.md),
-                _DateApplyBar(
-                  dateLabel: _dateLabel,
-                  usingAllTime: _usingAllTime,
-                  onPickDateRange: _pickDateRange,
-                  onResetAllTime: _resetToAllTime,
-                  onApply: _loadMetrics,
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    if (_tab == _AnalysisTab.timing) ...[
+                      _HoldingStyleFilter(
+                        selected: _holdingStyle,
+                        onChanged: _onHoldingStyleChanged,
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                    ],
+                    _DateApplyBar(
+                      dateLabel: _dateLabel,
+                      usingAllTime: _usingAllTime,
+                      onPickDateRange: _pickDateRange,
+                      onResetAllTime: _resetToAllTime,
+                      onApply: _loadMetrics,
+                    ),
+                    AppButton(
+                      text: '',
+                      icon: Icons.refresh,
+                      type: AppButtonType.secondary,
+                      isOutlined: true,
+                      onPressed: _loadMetrics,
+                      height: 36,
+                    ),
+                    AppButton(
+                      text: '',
+                      icon: Icons.download_outlined,
+                      type: AppButtonType.secondary,
+                      isOutlined: true,
+                      onPressed: () {},
+                      height: 36,
+                    ),
+                  ],
                 ),
               ],
             ),
             const SizedBox(height: AppSpacing.md),
-            _AnalysisTabBar(
-              selected: _tab,
-              onSelected: (tab) => setState(() => _tab = tab),
-            ),
-            if (_tab == _AnalysisTab.timing) ...[
-              const SizedBox(height: AppSpacing.sm),
-              _HoldingStyleFilter(
-                selected: _holdingStyle,
-                onChanged: _onHoldingStyleChanged,
-              ),
-            ],
-            const SizedBox(height: AppSpacing.sm),
             Expanded(
               child: cubitAsync.when(
                 loading: () => Center(
                   child: CircularProgressIndicator(color: ModuleColors.trade),
                 ),
-                error: (e, _) => Center(
-                  child: Text(
-                    'Error: $e',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: context.statusError,
-                    ),
-                  ),
+                error: (e, _) => AmErrorWidget(
+                  message: 'Error: $e',
+                  onRetry: _loadMetrics,
                 ),
                 data: (cubit) {
                   if (_tab == _AnalysisTab.timing) {
@@ -312,26 +306,25 @@ class _HoldingStyleFilter extends StatelessWidget {
     }
 
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          'Holding style',
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+          'Holding style:',
+          style: context.text.label(compact: true).copyWith(
                 color: colors.textSecondary,
                 fontWeight: FontWeight.w600,
               ),
         ),
         const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              pill('All', null),
-              pill('Scalper', 'SCALPER'),
-              pill('Intraday', 'INTRADAY'),
-              pill('Swing', 'SWING'),
-            ],
-          ),
+        Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: [
+            pill('All', null),
+            pill('Scalper <15m', 'SCALPER'),
+            pill('Intraday 15m–24h', 'INTRADAY'),
+            pill('Swing ≥24h', 'SWING'),
+          ],
         ),
       ],
     );
@@ -363,20 +356,12 @@ class _AnalysisTabBar extends StatelessWidget {
           children: [
             for (final tab in _AnalysisTab.values) ...[
               if (tab.index > 0) const SizedBox(width: AppSpacing.xs),
-              ChoiceChip(
-                avatar: Icon(
-                  _icon(tab),
-                  size: 16,
-                  color: selected == tab
-                      ? ModuleColors.trade
-                      : colors.textSecondary,
-                ),
-                label: Text(_label(tab)),
+              AmToggleChip(
+                label: _label(tab),
                 selected: selected == tab,
-                onSelected: (_) => onSelected(tab),
-                selectedColor: ModuleColors.trade.withValues(alpha: 0.22),
-                showCheckmark: false,
-                visualDensity: VisualDensity.compact,
+                compact: true,
+                accentColor: ModuleColors.trade,
+                onTap: () => onSelected(tab),
               ),
             ],
           ],
@@ -391,14 +376,6 @@ class _AnalysisTabBar extends StatelessWidget {
         _AnalysisTab.direction => 'Direction',
         _AnalysisTab.holding => 'Holding',
         _AnalysisTab.risk => 'Risk',
-      };
-
-  IconData _icon(_AnalysisTab tab) => switch (tab) {
-        _AnalysisTab.timing => Icons.schedule_outlined,
-        _AnalysisTab.strategy => Icons.flag_outlined,
-        _AnalysisTab.direction => Icons.swap_vert,
-        _AnalysisTab.holding => Icons.hourglass_empty_outlined,
-        _AnalysisTab.risk => Icons.shield_outlined,
       };
 }
 
@@ -429,7 +406,7 @@ class _ComingSoonTab extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           Text(
             '$name analytics coming next',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            style: context.text.sectionTitle(compact: true).copyWith(
                   color: colors.textSecondary,
                 ),
           ),
