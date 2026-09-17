@@ -1,9 +1,9 @@
 {
-  "_comment": "Cluster production gateway (am.asrax.in). Munish removed as app host.",
+  "_comment": "Cluster production gateway (am.asrax.in). Munish removed as app host. google.webClientId must match Helm values.prod googleWebClientId (OAuth web client — not a secret).",
   "domain": "am.asrax.in",
   "services": {},
   "google": {
-    "webClientId": ""
+    "webClientId": "307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com"
   },
   "growthbook": {
     "enabled": true,
