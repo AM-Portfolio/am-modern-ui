@@ -42,9 +42,13 @@ class GoogleSignInService {
         return configClientId;
       }
     } catch (_) {
-      // Config may not be ready in early tests; fall back to AuthConstants.
+      // Config may not be ready in early tests.
     }
-    return AuthConstants.googleClientId;
+    // dart-define only — never a hardcoded product client ID in source.
+    if (AuthConstants.googleClientId.isNotEmpty) {
+      return AuthConstants.googleClientId;
+    }
+    throw AuthException(AuthConstants.googleSignInNotConfigured);
   }
 
   gsi.GoogleSignIn get _client {

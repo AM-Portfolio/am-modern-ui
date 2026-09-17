@@ -12,6 +12,38 @@ import '../../../domain/enums/metric_types.dart';
 
 part 'metrics_dtos.g.dart';
 
+/// Jackson may emit null map values for empty buckets, or BigDecimal as string.
+/// These helpers must live in this library (not only in generated `.g.dart`) so
+/// Docker `build_runner` cannot wipe null-safety on regenerate.
+num? _asNum(Object? value) {
+  if (value == null) return null;
+  if (value is num) return value;
+  if (value is String) return num.tryParse(value);
+  return null;
+}
+
+Map<String, int>? _distIntMap(Object? raw) {
+  if (raw is! Map) return null;
+  final out = <String, int>{};
+  for (final e in raw.entries) {
+    final n = _asNum(e.value);
+    if (n != null) out[e.key.toString()] = n.toInt();
+  }
+  return out;
+}
+
+Map<String, double>? _distDoubleMap(Object? raw) {
+  if (raw is! Map) return null;
+  final out = <String, double>{};
+  for (final e in raw.entries) {
+    final n = _asNum(e.value);
+    if (n != null && n.isFinite) out[e.key.toString()] = n.toDouble();
+  }
+  return out;
+}
+
+int _asIntOrZero(Object? value) => _asNum(value)?.toInt() ?? 0;
+
 @JsonSerializable()
 class PerformanceMetricsDto {
   final double? totalProfitLoss;
@@ -38,6 +70,10 @@ class PerformanceMetricsDto {
   final String? worstDayDate;
   final double? bestDayProfit;
   final double? worstDayLoss;
+  final double? averageHoldingTimeMinutes;
+  final int? winningTradesCount;
+  final int? losingTradesCount;
+  final int? eligibleTradesCount;
 
   PerformanceMetricsDto({
     this.totalProfitLoss,
@@ -64,14 +100,18 @@ class PerformanceMetricsDto {
     this.worstDayDate,
     this.bestDayProfit,
     this.worstDayLoss,
+    this.averageHoldingTimeMinutes,
+    this.winningTradesCount,
+    this.losingTradesCount,
+    this.eligibleTradesCount,
   });
 
   factory PerformanceMetricsDto.fromJson(Map<String, dynamic> json) => _$PerformanceMetricsDtoFromJson(json);
   Map<String, dynamic> toJson() => _$PerformanceMetricsDtoToJson(this);
 
   PerformanceMetrics toEntity() => PerformanceMetrics(
-    totalProfitLoss: totalProfitLoss ?? 0.0,
-    totalProfitLossPercentage: totalProfitLossPercentage ?? 0.0,
+    totalProfitLoss: totalProfitLoss,
+    totalProfitLossPercentage: totalProfitLossPercentage,
     winRate: winRate ?? 0.0,
     profitFactor: profitFactor ?? 0.0,
     expectancy: expectancy ?? 0.0,
@@ -86,6 +126,10 @@ class PerformanceMetricsDto {
     longestLosingStreak: longestLosingStreak ?? 0,
     returnOnCapital: returnOnCapital ?? 0.0,
     tradesPerDay: tradesPerDay ?? 0.0,
+    averageHoldingTimeMinutes: averageHoldingTimeMinutes,
+    winningTradesCount: winningTradesCount,
+    losingTradesCount: losingTradesCount,
+    eligibleTradesCount: eligibleTradesCount,
   );
 }
 
@@ -125,7 +169,48 @@ class RiskMetricsDto {
   );
 }
 
-@JsonSerializable()
+class TradingStyleHintDto {
+  final String? style;
+  final double? confidencePercent;
+  final String? basis;
+  final int? sampleSize;
+
+  TradingStyleHintDto({
+    this.style,
+    this.confidencePercent,
+    this.basis,
+    this.sampleSize,
+  });
+
+  factory TradingStyleHintDto.fromJson(Map<String, dynamic> json) =>
+      TradingStyleHintDto(
+        style: json['style'] as String?,
+        confidencePercent: (json['confidencePercent'] as num?)?.toDouble(),
+        basis: json['basis'] as String?,
+        sampleSize: (json['sampleSize'] as num?)?.toInt(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'style': style,
+        'confidencePercent': confidencePercent,
+        'basis': basis,
+        'sampleSize': sampleSize,
+      };
+
+  TradingStyleHint? toEntity() {
+    if (style == null) return null;
+    return TradingStyleHint(
+      style: style!,
+      confidencePercent: confidencePercent ?? 0,
+      basis: basis ?? 'holding_duration',
+      sampleSize: sampleSize ?? 0,
+    );
+  }
+}
+
+/// [createFactory: false] — hand-written fromJson so CI build_runner cannot
+/// regenerate `(e as num).toDouble()` and crash on Jackson null map values.
+@JsonSerializable(createFactory: false)
 class TradeDistributionMetricsDto {
   final Map<String, int>? tradesByDay;
   final Map<String, int>? tradesByMonth;
@@ -133,9 +218,36 @@ class TradeDistributionMetricsDto {
   final Map<String, double>? profitByMonth;
   final Map<String, double>? winRateByDay;
   final Map<String, double>? winRateByMonth;
+  final Map<String, double>? avgPnlByDay;
+  final Map<String, double>? avgPnlByMonth;
+  final Map<String, double>? avgPnlPerActiveDayByDay;
+  final Map<String, double>? avgPnlPerActiveDayByMonth;
+  final Map<String, int>? eligibleTradesByDay;
+  final Map<String, int>? eligibleTradesByMonth;
+  final Map<String, int>? activeTradingDaysByDay;
+  final Map<String, int>? activeTradingDaysByMonth;
   final Map<String, int>? tradesByHour;
   final Map<String, double>? profitByHour;
   final Map<String, double>? winRateByHour;
+  final Map<String, double>? avgPnlByHour;
+  final Map<String, double>? avgPnlPerActiveDayByHour;
+  final Map<String, int>? eligibleTradesByHour;
+  final Map<String, int>? activeTradingDaysByHour;
+  final Map<String, int>? tradesBySession;
+  final Map<String, double>? profitBySession;
+  final Map<String, double>? winRateBySession;
+  final Map<String, double>? avgPnlBySession;
+  final Map<String, double>? avgPnlPerActiveDayBySession;
+  final Map<String, int>? eligibleTradesBySession;
+  final Map<String, int>? activeTradingDaysBySession;
+  final Map<String, double>? avgHoldMinutesByDay;
+  final Map<String, double>? avgHoldMinutesByHour;
+  final Map<String, double>? avgHoldMinutesByMonth;
+  final Map<String, double>? avgHoldMinutesBySession;
+  final Map<String, double>? riskRewardByDay;
+  final Map<String, double>? riskRewardByHour;
+  final Map<String, double>? riskRewardByMonth;
+  final Map<String, double>? riskRewardBySession;
   final Map<String, int>? tradeCountByAssetClass;
   final Map<String, double>? profitByAssetClass;
   final Map<String, double>? winRateByAssetClass;
@@ -148,6 +260,15 @@ class TradeDistributionMetricsDto {
   final Map<String, int>? tradesByPositionSize;
   final Map<String, double>? profitByPositionSize;
   final Map<String, double>? winRateByPositionSize;
+  final int? skippedMissingEntryCount;
+  final int? openOrMissingPnlCount;
+  final int? badTimestampCount;
+  final String? timezoneNote;
+  final TradingStyleHintDto? tradingStyleHint;
+  final String? bestSessionKey;
+  final double? bestSessionAvgPnl;
+  final int? activeTradingDaysCount;
+  final double? avgPnlPerActiveDay;
 
   TradeDistributionMetricsDto({
     this.tradesByDay,
@@ -156,9 +277,36 @@ class TradeDistributionMetricsDto {
     this.profitByMonth,
     this.winRateByDay,
     this.winRateByMonth,
+    this.avgPnlByDay,
+    this.avgPnlByMonth,
+    this.avgPnlPerActiveDayByDay,
+    this.avgPnlPerActiveDayByMonth,
+    this.eligibleTradesByDay,
+    this.eligibleTradesByMonth,
+    this.activeTradingDaysByDay,
+    this.activeTradingDaysByMonth,
     this.tradesByHour,
     this.profitByHour,
     this.winRateByHour,
+    this.avgPnlByHour,
+    this.avgPnlPerActiveDayByHour,
+    this.eligibleTradesByHour,
+    this.activeTradingDaysByHour,
+    this.tradesBySession,
+    this.profitBySession,
+    this.winRateBySession,
+    this.avgPnlBySession,
+    this.avgPnlPerActiveDayBySession,
+    this.eligibleTradesBySession,
+    this.activeTradingDaysBySession,
+    this.avgHoldMinutesByDay,
+    this.avgHoldMinutesByHour,
+    this.avgHoldMinutesByMonth,
+    this.avgHoldMinutesBySession,
+    this.riskRewardByDay,
+    this.riskRewardByHour,
+    this.riskRewardByMonth,
+    this.riskRewardBySession,
     this.tradeCountByAssetClass,
     this.profitByAssetClass,
     this.winRateByAssetClass,
@@ -171,25 +319,149 @@ class TradeDistributionMetricsDto {
     this.tradesByPositionSize,
     this.profitByPositionSize,
     this.winRateByPositionSize,
+    this.skippedMissingEntryCount,
+    this.openOrMissingPnlCount,
+    this.badTimestampCount,
+    this.timezoneNote,
+    this.tradingStyleHint,
+    this.bestSessionKey,
+    this.bestSessionAvgPnl,
+    this.activeTradingDaysCount,
+    this.avgPnlPerActiveDay,
   });
 
-  factory TradeDistributionMetricsDto.fromJson(Map<String, dynamic> json) =>
-      _$TradeDistributionMetricsDtoFromJson(json);
+  factory TradeDistributionMetricsDto.fromJson(Map<String, dynamic> json) {
+    return TradeDistributionMetricsDto(
+      tradesByDay: _distIntMap(json['tradesByDay']),
+      tradesByMonth: _distIntMap(json['tradesByMonth']),
+      profitByDay: _distDoubleMap(json['profitByDay']),
+      profitByMonth: _distDoubleMap(json['profitByMonth']),
+      winRateByDay: _distDoubleMap(json['winRateByDay']),
+      winRateByMonth: _distDoubleMap(json['winRateByMonth']),
+      avgPnlByDay: _distDoubleMap(json['avgPnlByDay']),
+      avgPnlByMonth: _distDoubleMap(json['avgPnlByMonth']),
+      avgPnlPerActiveDayByDay: _distDoubleMap(json['avgPnlPerActiveDayByDay']),
+      avgPnlPerActiveDayByMonth:
+          _distDoubleMap(json['avgPnlPerActiveDayByMonth']),
+      eligibleTradesByDay: _distIntMap(json['eligibleTradesByDay']),
+      eligibleTradesByMonth: _distIntMap(json['eligibleTradesByMonth']),
+      activeTradingDaysByDay: _distIntMap(json['activeTradingDaysByDay']),
+      activeTradingDaysByMonth: _distIntMap(json['activeTradingDaysByMonth']),
+      tradesByHour: _distIntMap(json['tradesByHour']),
+      profitByHour: _distDoubleMap(json['profitByHour']),
+      winRateByHour: _distDoubleMap(json['winRateByHour']),
+      avgPnlByHour: _distDoubleMap(json['avgPnlByHour']),
+      avgPnlPerActiveDayByHour:
+          _distDoubleMap(json['avgPnlPerActiveDayByHour']),
+      eligibleTradesByHour: _distIntMap(json['eligibleTradesByHour']),
+      activeTradingDaysByHour: _distIntMap(json['activeTradingDaysByHour']),
+      tradesBySession: _distIntMap(json['tradesBySession']),
+      profitBySession: _distDoubleMap(json['profitBySession']),
+      winRateBySession: _distDoubleMap(json['winRateBySession']),
+      avgPnlBySession: _distDoubleMap(json['avgPnlBySession']),
+      avgPnlPerActiveDayBySession:
+          _distDoubleMap(json['avgPnlPerActiveDayBySession']),
+      eligibleTradesBySession: _distIntMap(json['eligibleTradesBySession']),
+      activeTradingDaysBySession:
+          _distIntMap(json['activeTradingDaysBySession']),
+      avgHoldMinutesByDay: _distDoubleMap(json['avgHoldMinutesByDay']),
+      avgHoldMinutesByHour: _distDoubleMap(json['avgHoldMinutesByHour']),
+      avgHoldMinutesByMonth: _distDoubleMap(json['avgHoldMinutesByMonth']),
+      avgHoldMinutesBySession: _distDoubleMap(json['avgHoldMinutesBySession']),
+      riskRewardByDay: _distDoubleMap(json['riskRewardByDay']),
+      riskRewardByHour: _distDoubleMap(json['riskRewardByHour']),
+      riskRewardByMonth: _distDoubleMap(json['riskRewardByMonth']),
+      riskRewardBySession: _distDoubleMap(json['riskRewardBySession']),
+      tradeCountByAssetClass: _distIntMap(json['tradeCountByAssetClass']),
+      profitByAssetClass: _distDoubleMap(json['profitByAssetClass']),
+      winRateByAssetClass: _distDoubleMap(json['winRateByAssetClass']),
+      tradeCountByStrategy: _distIntMap(json['tradeCountByStrategy']),
+      profitByStrategy: _distDoubleMap(json['profitByStrategy']),
+      winRateByStrategy: _distDoubleMap(json['winRateByStrategy']),
+      tradesByDuration: _distIntMap(json['tradesByDuration']),
+      profitByDuration: _distDoubleMap(json['profitByDuration']),
+      winRateByDuration: _distDoubleMap(json['winRateByDuration']),
+      tradesByPositionSize: _distIntMap(json['tradesByPositionSize']),
+      profitByPositionSize: _distDoubleMap(json['profitByPositionSize']),
+      winRateByPositionSize: _distDoubleMap(json['winRateByPositionSize']),
+      skippedMissingEntryCount: _asNum(json['skippedMissingEntryCount'])?.toInt(),
+      openOrMissingPnlCount: _asNum(json['openOrMissingPnlCount'])?.toInt(),
+      badTimestampCount: _asNum(json['badTimestampCount'])?.toInt(),
+      timezoneNote: json['timezoneNote'] as String?,
+      tradingStyleHint: json['tradingStyleHint'] == null
+          ? null
+          : TradingStyleHintDto.fromJson(
+              json['tradingStyleHint'] as Map<String, dynamic>,
+            ),
+      bestSessionKey: json['bestSessionKey'] as String?,
+      bestSessionAvgPnl: _asNum(json['bestSessionAvgPnl'])?.toDouble(),
+      activeTradingDaysCount: _asNum(json['activeTradingDaysCount'])?.toInt(),
+      avgPnlPerActiveDay: _asNum(json['avgPnlPerActiveDay'])?.toDouble(),
+    );
+  }
+
   Map<String, dynamic> toJson() => _$TradeDistributionMetricsDtoToJson(this);
 
   TradeDistributionMetrics toEntity() => TradeDistributionMetrics(
         tradesByDay: tradesByDay ?? {},
         profitByDay: profitByDay ?? {},
-        winRateByDay: winRateByDay ?? {},
+        winRateByDay: _nullableDoubleMap(winRateByDay),
+        avgPnlByDay: _nullableDoubleMap(avgPnlByDay),
+        avgPnlPerActiveDayByDay: _nullableDoubleMap(avgPnlPerActiveDayByDay),
+        eligibleTradesByDay: eligibleTradesByDay ?? {},
+        activeTradingDaysByDay: activeTradingDaysByDay ?? {},
+        avgHoldMinutesByDay: _nullableDoubleMap(avgHoldMinutesByDay),
+        riskRewardByDay: _nullableDoubleMap(riskRewardByDay),
         tradesByHour: tradesByHour ?? {},
         profitByHour: profitByHour ?? {},
-        winRateByHour: winRateByHour ?? {},
+        winRateByHour: _nullableDoubleMap(winRateByHour),
+        avgPnlByHour: _nullableDoubleMap(avgPnlByHour),
+        avgPnlPerActiveDayByHour: _nullableDoubleMap(avgPnlPerActiveDayByHour),
+        eligibleTradesByHour: eligibleTradesByHour ?? {},
+        activeTradingDaysByHour: activeTradingDaysByHour ?? {},
+        avgHoldMinutesByHour: _nullableDoubleMap(avgHoldMinutesByHour),
+        riskRewardByHour: _nullableDoubleMap(riskRewardByHour),
         tradesByMonth: tradesByMonth ?? {},
         profitByMonth: profitByMonth ?? {},
-        winRateByMonth: winRateByMonth ?? {},
+        winRateByMonth: _nullableDoubleMap(winRateByMonth),
+        avgPnlByMonth: _nullableDoubleMap(avgPnlByMonth),
+        avgPnlPerActiveDayByMonth:
+            _nullableDoubleMap(avgPnlPerActiveDayByMonth),
+        eligibleTradesByMonth: eligibleTradesByMonth ?? {},
+        activeTradingDaysByMonth: activeTradingDaysByMonth ?? {},
+        avgHoldMinutesByMonth: _nullableDoubleMap(avgHoldMinutesByMonth),
+        riskRewardByMonth: _nullableDoubleMap(riskRewardByMonth),
+        tradesBySession: tradesBySession ?? {},
+        profitBySession: profitBySession ?? {},
+        winRateBySession: _nullableDoubleMap(winRateBySession),
+        avgPnlBySession: _nullableDoubleMap(avgPnlBySession),
+        avgPnlPerActiveDayBySession:
+            _nullableDoubleMap(avgPnlPerActiveDayBySession),
+        eligibleTradesBySession: eligibleTradesBySession ?? {},
+        activeTradingDaysBySession: activeTradingDaysBySession ?? {},
+        avgHoldMinutesBySession: _nullableDoubleMap(avgHoldMinutesBySession),
+        riskRewardBySession: _nullableDoubleMap(riskRewardBySession),
         tradeCountByAssetClass: tradeCountByAssetClass ?? {},
         tradeCountByStrategy: tradeCountByStrategy ?? {},
+        skippedMissingEntryCount: skippedMissingEntryCount ?? 0,
+        openOrMissingPnlCount: openOrMissingPnlCount ?? 0,
+        badTimestampCount: badTimestampCount ?? 0,
+        timezoneNote: timezoneNote ?? 'entry_local_as_stored',
+        tradingStyleHint: tradingStyleHint?.toEntity(),
+        bestSessionKey: bestSessionKey,
+        bestSessionAvgPnl: bestSessionAvgPnl,
+        activeTradingDaysCount: activeTradingDaysCount ?? 0,
+        avgPnlPerActiveDay: avgPnlPerActiveDay,
       );
+}
+
+/// Keeps only non-null numeric entries (Jackson may send null win%/avg).
+Map<String, double> _nullableDoubleMap(Map<String, double>? source) {
+  if (source == null) return {};
+  return {
+    for (final e in source.entries)
+      if (e.value.isFinite) e.key: e.value,
+  };
 }
 
 @JsonSerializable()
@@ -242,7 +514,7 @@ class TradePatternMetricsDto {
   );
 }
 
-@JsonSerializable()
+@JsonSerializable(createFactory: false)
 class StrategyPerformanceMetricsDto {
   final String strategyName;
   final double totalProfitLoss;
@@ -256,7 +528,15 @@ class StrategyPerformanceMetricsDto {
     required this.sharpeRatio,
   });
 
-  factory StrategyPerformanceMetricsDto.fromJson(Map<String, dynamic> json) => _$StrategyPerformanceMetricsDtoFromJson(json);
+  factory StrategyPerformanceMetricsDto.fromJson(Map<String, dynamic> json) {
+    return StrategyPerformanceMetricsDto(
+      strategyName: json['strategyName'] as String? ?? '',
+      totalProfitLoss: _asNum(json['totalProfitLoss'])?.toDouble() ?? 0,
+      winRate: _asNum(json['winRate'])?.toDouble() ?? 0,
+      sharpeRatio: _asNum(json['sharpeRatio'])?.toDouble() ?? 0,
+    );
+  }
+
   Map<String, dynamic> toJson() => _$StrategyPerformanceMetricsDtoToJson(this);
 
   StrategyPerformanceMetrics toEntity() => StrategyPerformanceMetrics(
@@ -306,6 +586,7 @@ class TradeMetricsResponseDto {
   final List<String> portfolioIds;
   final DateTime startDate;
   final DateTime endDate;
+  @JsonKey(fromJson: _asIntOrZero)
   final int totalTradesCount;
   final List<TradeDetailsDto>? tradeDetails;
   final PerformanceMetricsDto? performanceMetrics;
@@ -343,8 +624,8 @@ class TradeMetricsResponseDto {
     totalTradesCount: totalTradesCount,
     tradeDetails: tradeDetails?.map((e) => e.toEntity()).toList(),
     performanceMetrics: performanceMetrics?.toEntity() ?? PerformanceMetrics(
-      totalProfitLoss: 0.0,
-      totalProfitLossPercentage: 0.0,
+      totalProfitLoss: null,
+      totalProfitLossPercentage: null,
       winRate: 0.0,
       profitFactor: 0.0,
       expectancy: 0.0,
@@ -417,6 +698,7 @@ class MetricsFilterRequestDto {
   final List<String>? groupBy;
   final bool includeTradeDetails;
   final Map<String, dynamic>? customFilters;
+  final Map<String, dynamic>? tradeCharacteristics;
 
   MetricsFilterRequestDto({
     required this.portfolioIds,
@@ -427,22 +709,37 @@ class MetricsFilterRequestDto {
     this.groupBy,
     this.includeTradeDetails = false,
     this.customFilters,
+    this.tradeCharacteristics,
   });
 
-  factory MetricsFilterRequestDto.fromJson(Map<String, dynamic> json) => _$MetricsFilterRequestDtoFromJson(json);
-  Map<String, dynamic> toJson() => _$MetricsFilterRequestDtoToJson(this);
+  factory MetricsFilterRequestDto.fromJson(Map<String, dynamic> json) =>
+      _$MetricsFilterRequestDtoFromJson(json);
 
-  factory MetricsFilterRequestDto.fromEntity(MetricsFilterRequest entity) => MetricsFilterRequestDto(
-    portfolioIds: entity.portfolioIds,
-    dateRange: DateRangeDto(
-      startDate: entity.startDate,
-      endDate: entity.endDate,
-    ),
-    timePeriod: entity.timePeriod,
-    metricTypes: entity.metricTypes,
-    instruments: entity.instruments,
-    groupBy: entity.groupBy,
-    includeTradeDetails: entity.includeTradeDetails,
-    customFilters: entity.customFilters,
-  );
+  Map<String, dynamic> toJson() {
+    final json = _$MetricsFilterRequestDtoToJson(this);
+    // json_serializable emits DateRangeDto object; API expects nested map.
+    json['dateRange'] = {
+      'startDate': dateRange.startDate.toIso8601String().split('T').first,
+      'endDate': dateRange.endDate.toIso8601String().split('T').first,
+    };
+    return json;
+  }
+
+  factory MetricsFilterRequestDto.fromEntity(MetricsFilterRequest entity) =>
+      MetricsFilterRequestDto(
+        portfolioIds: entity.portfolioIds,
+        dateRange: DateRangeDto(
+          startDate: entity.startDate,
+          endDate: entity.endDate,
+        ),
+        timePeriod: entity.timePeriod,
+        metricTypes: entity.metricTypes,
+        instruments: entity.instruments,
+        groupBy: entity.groupBy,
+        includeTradeDetails: entity.includeTradeDetails,
+        customFilters: entity.customFilters,
+        tradeCharacteristics: entity.holdingStyle == null
+            ? null
+            : {'holdingStyle': entity.holdingStyle},
+      );
 }

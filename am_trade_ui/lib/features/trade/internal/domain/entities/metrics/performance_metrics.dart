@@ -1,6 +1,6 @@
 class PerformanceMetrics {
-  final double totalProfitLoss;
-  final double totalProfitLossPercentage;
+  final double? totalProfitLoss;
+  final double? totalProfitLossPercentage;
   final double winRate;
   final double profitFactor;
   final double expectancy;
@@ -15,10 +15,14 @@ class PerformanceMetrics {
   final int longestLosingStreak;
   final double returnOnCapital;
   final double tradesPerDay;
+  final double? averageHoldingTimeMinutes;
+  final int? winningTradesCount;
+  final int? losingTradesCount;
+  final int? eligibleTradesCount;
 
   PerformanceMetrics({
-    required this.totalProfitLoss,
-    required this.totalProfitLossPercentage,
+    this.totalProfitLoss,
+    this.totalProfitLossPercentage,
     required this.winRate,
     required this.profitFactor,
     required this.expectancy,
@@ -33,5 +37,9 @@ class PerformanceMetrics {
     required this.longestLosingStreak,
     required this.returnOnCapital,
     required this.tradesPerDay,
+    this.averageHoldingTimeMinutes,
+    this.winningTradesCount,
+    this.losingTradesCount,
+    this.eligibleTradesCount,
   });
 }

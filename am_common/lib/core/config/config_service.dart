@@ -13,6 +13,9 @@ class ConfigService {
   static AppConfig? _config;
   static const _envFromDefine = String.fromEnvironment('AM_ENV');
   static const _domainFromDefine = String.fromEnvironment('AM_DOMAIN');
+  static const _googleClientIdFromDefine = String.fromEnvironment(
+    'AM_GOOGLE_CLIENT_ID',
+  );
 
   /// No baked env host. Prefer same-tab host on web until Helm/config loads.
   static String _domain = _bootstrapDomain();
@@ -171,12 +174,13 @@ class ConfigService {
 
     // Local web: `config.json` is usually am-dev and has no Helm `env`.
     // If AM_ENV is dart-defined (prod/dev/preprod), re-apply config.{env}.json
-    // last so localhost can hit prod without overwriting committed config.json.
+    // so localhost can hit that env without overwriting committed config.json.
     final bootstrapHasEnv = bootstrapEnv != null && bootstrapEnv.isNotEmpty;
-    if (!bootstrapHasEnv &&
+    final explicitRemoteEnv = !bootstrapHasEnv &&
         _envFromDefine.isNotEmpty &&
         _resolvedEnv.isNotEmpty &&
-        _resolvedEnv != 'local') {
+        _resolvedEnv != 'local';
+    if (explicitRemoteEnv) {
       final envConfig = await _fetchJson('/config.$_resolvedEnv.json');
       if (envConfig != null) {
         merged = _deepMerge(merged, envConfig);
@@ -184,9 +188,16 @@ class ConfigService {
     }
 
     // Gitignored overlay, like `.env`. 404 is ignored.
+    // Keeps machine-specific Google client IDs / local service ports.
+    // When AM_ENV is explicitly prod/dev/preprod, do not let the overlay
+    // override `domain` — that defeated `run:app:prod` and pointed at preprod.
     final localOverlay = await _fetchJson('/config.local.json');
     if (localOverlay != null) {
-      merged = _deepMerge(merged, localOverlay);
+      final overlay = Map<String, dynamic>.from(localOverlay);
+      if (explicitRemoteEnv) {
+        overlay.remove('domain');
+      }
+      merged = _deepMerge(merged, overlay);
     }
 
     return merged;
@@ -214,7 +225,9 @@ class ConfigService {
       (k, v) => MapEntry(k, v?.toString() ?? ''),
     )..removeWhere((_, v) => v.isEmpty);
 
-    // Extract Google Sign-In Web Client ID dynamically
+    // Extract Google Sign-In Web Client ID dynamically (config JSON first,
+    // then AM_GOOGLE_CLIENT_ID dart-define). Never bake a product client ID
+    // into source — Helm / config.*.json / .env supply it per environment.
     final google = json['google'] as Map<String, dynamic>?;
     if (google != null) {
       _googleClientId = google['webClientId']?.toString() ??
@@ -222,6 +235,9 @@ class ConfigService {
           '';
     } else if (json['googleWebClientId'] != null) {
       _googleClientId = json['googleWebClientId'].toString();
+    }
+    if (_googleClientId.isEmpty && _googleClientIdFromDefine.isNotEmpty) {
+      _googleClientId = _googleClientIdFromDefine;
     }
 
     final growthbookJson = json['growthbook'];
@@ -323,7 +339,11 @@ class ConfigService {
         _services['marketWs'] ?? '$ws/market/ws/market-data-stream';
 
     return AppConfig(
-      google: GoogleConfig(webClientId: _googleClientId),
+      google: GoogleConfig(
+        webClientId: _googleClientId.isNotEmpty
+            ? _googleClientId
+            : _googleClientIdFromDefine,
+      ),
       environment: Environment.production,
       api: ApiConfig(
         baseUrl: analysisUrl,

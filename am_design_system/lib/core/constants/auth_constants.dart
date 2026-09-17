@@ -10,6 +10,9 @@ class AuthConstants {
   static const String serverError = 'Server error. Please try again later';
   static const String googleSignInCancelled = 'Google Sign-In was cancelled';
   static const String googleSignInFailed = 'Google Sign-In failed';
+  static const String googleSignInNotConfigured =
+      'Google Sign-In is not configured. Set google.webClientId in config '
+      'or AM_GOOGLE_CLIENT_ID.';
   static const String tokenExpired = 'Session expired. Please login again';
   static const String unknownError = 'An unknown error occurred';
 
@@ -21,9 +24,13 @@ class AuthConstants {
   // Demo user credentials (overridable via AM_DEMO_EMAIL / AM_DEMO_PASSWORD)
   static String get demoEmail => DemoLoginConfig.email;
   static String get demoPassword => DemoLoginConfig.password;
-  
-  // Google Auth
-  static const String googleClientId = '307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com';
+
+  /// Google Web OAuth client ID from dart-define only (no hardcoded product ID).
+  /// Prefer [ConfigService.config.google.webClientId] at runtime.
+  static const String googleClientId = String.fromEnvironment(
+    'AM_GOOGLE_CLIENT_ID',
+    defaultValue: '',
+  );
 
   // Token settings
   static const Duration tokenExpiryDuration = Duration(hours: 24);

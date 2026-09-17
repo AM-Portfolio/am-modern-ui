@@ -10,11 +10,9 @@ class MetricsFilterRequest {
   final List<String>? groupBy;
   final bool includeTradeDetails;
   final Map<String, dynamic>? customFilters;
+  /// SCALPER | INTRADAY | SWING — null means all holding styles.
+  final String? holdingStyle;
 
-  // We could add nested filter objects here (InstrumentFilterCriteria, etc.) 
-  // but for now keeping it simple or dynamic as per schema usage complexity.
-  // Accessing specialized filters might be better done via customFilters map or dedicated objects if critical.
-  
   MetricsFilterRequest({
     required this.portfolioIds,
     required this.endDate,
@@ -25,5 +23,6 @@ class MetricsFilterRequest {
     this.groupBy,
     this.includeTradeDetails = false,
     this.customFilters,
+    this.holdingStyle,
   }) : startDate = startDate ?? DateTime(1919, 1, 1);
 }

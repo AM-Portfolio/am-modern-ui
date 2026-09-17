@@ -62,8 +62,10 @@ class GoogleSignInService {
         throw AuthException('Google ID API not available');
       }
 
-      final configClientId = ConfigService.config.google.webClientId;
-      final clientId = configClientId.isNotEmpty ? configClientId : AuthConstants.googleClientId;
+      final clientId = ConfigService.config.google.webClientId;
+      if (clientId.isEmpty) {
+        throw AuthException(AuthConstants.googleSignInNotConfigured);
+      }
 
       // Initialize Google Sign-In (once)
       if (!_initialized) {

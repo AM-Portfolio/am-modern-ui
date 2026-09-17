@@ -18,6 +18,7 @@ class TradeHoldingsAdvancedTemplate extends StatefulWidget {
     this.itemsPerPage = 20,
     this.accentColor,
     this.priceFreshnessLabel,
+    this.embedded = false,
   });
 
   final List<TradeHoldingViewModel> holdings;
@@ -30,6 +31,8 @@ class TradeHoldingsAdvancedTemplate extends StatefulWidget {
   final Color? accentColor;
   /// Collection-level Live / As-of label from portfolio holdings (Phase F).
   final String? priceFreshnessLabel;
+  /// Portfolio Holdings embed: view-only (no expand / edit).
+  final bool embedded;
 
   @override
   State<TradeHoldingsAdvancedTemplate> createState() =>
@@ -74,6 +77,7 @@ class _TradeHoldingsAdvancedTemplateState
   }
 
   void _toggleExpanded(String tradeId) {
+    if (widget.embedded) return;
     setState(() {
       if (_expandedItems.contains(tradeId)) {
         _expandedItems.remove(tradeId);
@@ -83,7 +87,8 @@ class _TradeHoldingsAdvancedTemplateState
     });
   }
 
-  bool _isExpanded(String tradeId) => _expandedItems.contains(tradeId);
+  bool _isExpanded(String tradeId) =>
+      !widget.embedded && _expandedItems.contains(tradeId);
 
   int get _totalPages => (_filteredHoldings.length / widget.itemsPerPage).ceil();
 
@@ -487,8 +492,10 @@ class _TradeHoldingsAdvancedTemplateState
     return Column(
       children: [
         InkWell(
-          onTap: () => _toggleExpanded(holding.tradeId),
-          onLongPress: widget.onHoldingSelected != null ? () => widget.onHoldingSelected!(holding) : null,
+          onTap: widget.embedded ? null : () => _toggleExpanded(holding.tradeId),
+          onLongPress: widget.embedded || widget.onHoldingSelected == null
+              ? null
+              : () => widget.onHoldingSelected!(holding),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
@@ -504,7 +511,14 @@ class _TradeHoldingsAdvancedTemplateState
                     child: _buildSymbolCell(holding),
                   ),
                 ),
-                Expanded(flex: 2, child: Text(holding.displayCompanyName, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13))),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    holding.displayCompanyName,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
                 Expanded(flex: 1, child: Align(alignment: Alignment.centerLeft, child: _buildStatusBadge(holding.displayStatus))),
                 Expanded(flex: 1, child: Text(holding.displayQuantity, textAlign: TextAlign.right, overflow: TextOverflow.ellipsis, maxLines: 1, style: const TextStyle(fontSize: 13))),
                 Expanded(flex: 1, child: Text(holding.displayEntryPrice, textAlign: TextAlign.right, overflow: TextOverflow.ellipsis, maxLines: 1, style: const TextStyle(fontSize: 13))),
@@ -517,15 +531,16 @@ class _TradeHoldingsAdvancedTemplateState
             ),
           ),
         ),
-        AnimatedCrossFade(
-          firstChild: const SizedBox.shrink(),
-          secondChild: Container(
-            color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
-            child: _buildExpandedDetails(holding, pnlColor),
+        if (!widget.embedded)
+          AnimatedCrossFade(
+            firstChild: const SizedBox.shrink(),
+            secondChild: Container(
+              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+              child: _buildExpandedDetails(holding, pnlColor),
+            ),
+            crossFadeState: isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 300),
           ),
-          crossFadeState: isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-          duration: const Duration(milliseconds: 300),
-        ),
       ],
     );
   }
@@ -647,7 +662,7 @@ class _TradeHoldingsAdvancedTemplateState
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => _toggleExpanded(holding.tradeId),
+        onTap: widget.embedded ? null : () => _toggleExpanded(holding.tradeId),
         borderRadius: AppRadii.card,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 220),
@@ -711,16 +726,18 @@ class _TradeHoldingsAdvancedTemplateState
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: AppSpacing.xxs),
-                          Text(
-                            holding.displayCompanyName,
-                            style: TextStyle(
-                              color: muted,
-                              fontSize: AppTypeScale.sm,
+                          if (holding.hasDistinctCompanyName) ...[
+                            const SizedBox(height: AppSpacing.xxs),
+                            Text(
+                              holding.displayCompanyName,
+                              style: TextStyle(
+                                color: muted,
+                                fontSize: AppTypeScale.sm,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          ],
                           if (widget.priceFreshnessLabel != null &&
                               widget.priceFreshnessLabel!.isNotEmpty) ...[
                             const SizedBox(height: AppSpacing.xxs),
@@ -817,14 +834,15 @@ class _TradeHoldingsAdvancedTemplateState
                   ],
                 ),
               ),
-              AnimatedCrossFade(
-                firstChild: const SizedBox.shrink(),
-                secondChild: _buildExpandedDetails(holding, pnlColor),
-                crossFadeState: isExpanded
-                    ? CrossFadeState.showSecond
-                    : CrossFadeState.showFirst,
-                duration: const Duration(milliseconds: 250),
-              ),
+              if (!widget.embedded)
+                AnimatedCrossFade(
+                  firstChild: const SizedBox.shrink(),
+                  secondChild: _buildExpandedDetails(holding, pnlColor),
+                  crossFadeState: isExpanded
+                      ? CrossFadeState.showSecond
+                      : CrossFadeState.showFirst,
+                  duration: const Duration(milliseconds: 250),
+                ),
             ],
           ),
         ),
@@ -981,28 +999,30 @@ class _TradeHoldingsAdvancedTemplateState
               ],
             ),
           ],
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerRight,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                OpenAddTradeNotification(
-                  portfolioId: holding.portfolioId,
-                  existingTrade: holding,
-                ).dispatch(context);
-              },
-              icon: Icon(Icons.edit, size: 16),
-              label: Text('Edit Trade'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: _accent,
-                side: BorderSide(
-                  color: _accent.withValues(alpha: 0.45),
+          if (!widget.embedded) ...[
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  OpenAddTradeNotification(
+                    portfolioId: holding.portfolioId,
+                    existingTrade: holding,
+                  ).dispatch(context);
+                },
+                icon: Icon(Icons.edit, size: 16),
+                label: Text('Edit Trade'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: _accent,
+                  side: BorderSide(
+                    color: _accent.withValues(alpha: 0.45),
+                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 ),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
