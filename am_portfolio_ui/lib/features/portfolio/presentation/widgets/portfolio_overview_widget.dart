@@ -517,13 +517,15 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
       key: ValueKey('compare_${portfolioId}_${selectedTimeFrame.code}'),
       height: isPhone ? chartH : peerTopH,
     );
+    final fillPeers = !isPhone;
+    final fillBottom = !isPhone;
     final movers = PortfolioTopMoversPanel(
       portfolioId: portfolioId,
       timeFrame: selectedTimeFrame,
       showTimeFrameSelector: false,
       compact: true,
+      fillHeight: fillBottom,
     );
-    final fillPeers = !isPhone;
     final health = showHealth
         ? PortfolioHealthCard(
             key: ValueKey('health_$portfolioId'),
@@ -554,6 +556,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
             key: ValueKey('stress_$portfolioId'),
             portfolioId: portfolioId,
             initiallyExpanded: !isPhone,
+            fillHeight: fillBottom,
           )
         : null;
     final whatIf = showWhatIf
@@ -561,6 +564,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
             key: ValueKey('whatif_$portfolioId'),
             portfolioId: portfolioId,
             initiallyExpanded: !isPhone,
+            fillHeight: fillBottom,
           )
         : null;
     final allocation = showAllocation
@@ -615,9 +619,10 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         allocation,
     ];
 
-    // Web always, and tablet ≥900: Movers | Stress | What-If one row.
+    // Web always, and tablet ≥900: Movers | Stress | What-If one equal-height band.
     // Narrow tablet 600–899 keeps Movers full-width then Stress|What-If.
     final useThreeColBottom = isWeb || width >= 900;
+    const bottomBandH = 430.0;
     if (useThreeColBottom) {
       final bottom = <Widget>[
         Expanded(child: movers),
@@ -632,9 +637,12 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
       ];
       rows.addAll([
         const SizedBox(height: 16),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: bottom,
+        SizedBox(
+          height: bottomBandH,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: bottom,
+          ),
         ),
       ]);
       return rows;

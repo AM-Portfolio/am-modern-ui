@@ -227,11 +227,21 @@ class StressResult {
     required this.portfolioId,
     this.estimateLabel = 'Scenario estimate',
     this.scenarios = const [],
+    this.method,
+    this.betaUsed,
+    this.benchmark,
+    this.historyDays,
+    this.betaAssumed,
   });
 
   final String portfolioId;
   final String estimateLabel;
   final List<StressScenario> scenarios;
+  final String? method;
+  final double? betaUsed;
+  final String? benchmark;
+  final int? historyDays;
+  final bool? betaAssumed;
 
   factory StressResult.fromJson(Map<String, dynamic> json) {
     final raw = json['scenarios'];
@@ -245,6 +255,15 @@ class StressResult {
               .map((e) => StressScenario.fromJson(Map<String, dynamic>.from(e)))
               .toList()
           : const [],
+      method: json['method']?.toString(),
+      betaUsed: _asDouble(json['betaUsed']),
+      benchmark: json['benchmark']?.toString(),
+      historyDays: json['historyDays'] is int
+          ? json['historyDays'] as int
+          : int.tryParse('${json['historyDays'] ?? ''}'),
+      betaAssumed: json['betaAssumed'] is bool
+          ? json['betaAssumed'] as bool
+          : null,
     );
   }
 }

@@ -45,12 +45,15 @@ class PortfolioStressCard extends ConsumerStatefulWidget {
     required this.portfolioId,
     this.initiallyExpanded = true,
     this.minHeight,
+    this.fillHeight = false,
     super.key,
   });
 
   final String portfolioId;
   final bool initiallyExpanded;
   final double? minHeight;
+  /// Peer stretch on Overview bottom band — scroll scenarios, pin custom.
+  final bool fillHeight;
 
   @override
   ConsumerState<PortfolioStressCard> createState() =>
@@ -68,6 +71,9 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
   StressScenario? _customRow;
   bool _customFailed = false;
   bool _loadedOnce = false;
+  double? _betaUsed;
+  bool? _betaAssumed;
+  String? _method;
 
   @override
   void initState() {
@@ -92,6 +98,9 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
       _customRow = null;
       _customFailed = false;
       _loadedOnce = false;
+      _betaUsed = null;
+      _betaAssumed = null;
+      _method = null;
     });
     if (widget.initiallyExpanded) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _loadAllPresets());
@@ -157,6 +166,9 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
         _failed
           ..clear()
           ..addAll(failed);
+        _betaUsed = result.betaUsed;
+        _betaAssumed = result.betaAssumed;
+        _method = result.method;
         _loadedOnce = true;
         _loading = false;
         if (next.isEmpty) {
@@ -226,7 +238,12 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
 
   @override
   Widget build(BuildContext context) {
-    final content = _buildBody(context);
+    final sectors = _sectorSuggestions();
+    final narrow = MediaQuery.sizeOf(context).width < 600;
+    final fill = widget.fillHeight && widget.initiallyExpanded;
+    final scenarios = _buildScenarios(context);
+    final custom = _customPanel(context, sectors, narrow: narrow);
+    final meta = _betaMetaBanner(context);
 
     if (!widget.initiallyExpanded) {
       return IntelligenceGlassCard(
@@ -247,7 +264,23 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
               'Scenarios',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
-            children: [content],
+            children: [
+              if (meta != null) ...[meta, const SizedBox(height: 6)],
+              scenarios,
+              if (_error != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  _error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+                IntelligenceTextLink(
+                  label: 'Retry →',
+                  onPressed: _loadAllPresets,
+                ),
+              ],
+              const SizedBox(height: 8),
+              custom,
+            ],
           ),
         ),
       );
@@ -257,50 +290,95 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
       title: 'Stress Test',
       icon: Icons.bolt_rounded,
       minHeight: widget.minHeight,
-      child: content,
+      fillHeight: fill,
+      scrollable: fill,
+      trailing: _methodBadge(context),
+      footer: fill ? custom : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (meta != null) ...[meta, const SizedBox(height: 6)],
+          scenarios,
+          if (_error != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              _error!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+            IntelligenceTextLink(label: 'Retry →', onPressed: _loadAllPresets),
+          ],
+          if (!fill) ...[
+            const SizedBox(height: 8),
+            custom,
+          ],
+        ],
+      ),
     );
   }
 
-  Widget _buildBody(BuildContext context) {
+  Widget? _methodBadge(BuildContext context) {
+    if (_betaAssumed == null && _betaUsed == null) return null;
+    final assumed = _betaAssumed == true;
+    final label = assumed
+        ? 'β assumed 1.0'
+        : 'β ${_betaUsed!.toStringAsFixed(2)}';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: ModuleColors.portfolio.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: ModuleColors.portfolio.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: ModuleColors.portfolio,
+            ),
+      ),
+    );
+  }
+
+  Widget? _betaMetaBanner(BuildContext context) {
+    if (_rows.isEmpty && !_loadedOnce) return null;
+    final methodBit = (_method != null && _method!.isNotEmpty)
+        ? ' · $_method'
+        : '';
+    return Text(
+      'Index shock ≠ your impact (Impact ≈ β × shock)$methodBit',
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: Theme.of(context).hintColor,
+          ),
+    );
+  }
+
+  Widget _buildScenarios(BuildContext context) {
     final currency = NumberFormat.currency(
       locale: 'en_IN',
       symbol: '₹',
       decimalDigits: 0,
     );
-    final sectors = _sectorSuggestions();
     final narrow = MediaQuery.sizeOf(context).width < 600;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (_loading && _rows.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Center(
-              child: SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-          )
-        else if (narrow)
-          _mobileScenarios(context, currency)
-        else
-          _desktopScenarios(context, currency),
-        if (_error != null) ...[
-          const SizedBox(height: 6),
-          Text(
-            _error!,
-            style: TextStyle(color: Theme.of(context).colorScheme.error),
+    if (_loading && _rows.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2),
           ),
-          IntelligenceTextLink(label: 'Retry →', onPressed: _loadAllPresets),
-        ],
-        const SizedBox(height: 8),
-        _customPanel(context, sectors, narrow: narrow),
-      ],
-    );
+        ),
+      );
+    }
+    if (narrow) {
+      return _mobileScenarios(context, currency);
+    }
+    return _desktopScenarios(context, currency);
   }
 
   Widget _desktopScenarios(BuildContext context, NumberFormat currency) {
@@ -446,17 +524,22 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
     List<String> sectors, {
     required bool narrow,
   }) {
-    final sectorField = SmartSearchAnchor(
-      controller: _sectorCtrl,
-      compact: true,
-      hintText: 'Sector',
-      accentColor: ModuleColors.portfolio,
-      forceUppercase: false,
-      resultBadge: null,
-      onSelected: (label) => setState(() => _sectorCtrl.text = label),
-      searchHandler: (q) => searchSectorsHoldingsFirst(
-        query: q,
-        holdingsSectors: sectors,
+    final sectorField = SizedBox(
+      height: _kCustomControlHeight + 8,
+      child: SmartSearchAnchor(
+        controller: _sectorCtrl,
+        compact: true,
+        hintText: 'Sector',
+        accentColor: ModuleColors.portfolio,
+        forceUppercase: false,
+        resultBadge: null,
+        // Custom row sits at card footer / near viewport bottom.
+        overlayPlacement: SmartSearchOverlayPlacement.above,
+        onSelected: (label) => setState(() => _sectorCtrl.text = label),
+        searchHandler: (q) => searchSectorsHoldingsFirst(
+          query: q,
+          holdingsSectors: sectors,
+        ),
       ),
     );
 

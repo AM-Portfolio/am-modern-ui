@@ -37,12 +37,14 @@ class PortfolioWhatIfCard extends ConsumerStatefulWidget {
     required this.portfolioId,
     this.initiallyExpanded = true,
     this.minHeight,
+    this.fillHeight = false,
     super.key,
   });
 
   final String portfolioId;
   final bool initiallyExpanded;
   final double? minHeight;
+  final bool fillHeight;
 
   @override
   ConsumerState<PortfolioWhatIfCard> createState() =>
@@ -239,6 +241,7 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
   @override
   Widget build(BuildContext context) {
     final content = _buildBody(context);
+    final fill = widget.fillHeight && widget.initiallyExpanded;
 
     if (!widget.initiallyExpanded) {
       return IntelligenceGlassCard(
@@ -266,6 +269,8 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
       title: 'What-If Simulator',
       icon: Icons.science_outlined,
       minHeight: widget.minHeight,
+      fillHeight: fill,
+      scrollable: fill,
       child: content,
     );
   }
