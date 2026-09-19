@@ -185,6 +185,9 @@ export 'shared/widgets/feedback/animated_login_elements.dart';
 export 'shared/models/user.dart';
 export 'shared/models/holding.dart';
 export 'shared/models/am_mover_item.dart';  // Generic mover tile data model
+export 'shared/widgets/holdings/universal_holdings.dart';
+export 'shared/widgets/holdings/advanced/advanced_holding_row.dart';
+export 'shared/widgets/holdings/advanced/advanced_holdings_template.dart';
 // export 'shared/models/file_upload_models.dart';\n// export 'models/investment_card/investment_data.dart'; // Missing model
 
 // --- Movers Panel ---

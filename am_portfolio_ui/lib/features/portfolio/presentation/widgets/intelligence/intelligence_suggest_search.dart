@@ -191,3 +191,123 @@ Future<List<market.SecurityDocument>?> searchMarketSecurities(String query) asyn
     return null;
   }
 }
+
+/// Common Class Add name hints by PUT wire (`bonds` | `commodities` | `cash`).
+const Map<String, List<String>> kClassAddNameCatalog = {
+  'bonds': [
+    'Sovereign Gold Bond',
+    'Government Bond',
+    'Corporate Bond',
+    'Treasury Bill',
+    'Tax-Free Bond',
+    'RBI Floating Rate Bond',
+    'State Development Loan',
+  ],
+  'commodities': [
+    'Sovereign Gold',
+    'Physical Gold',
+    'Gold ETF',
+    'Silver ETF',
+    'Physical Silver',
+    'Commodity Fund',
+  ],
+  'cash': [
+    'Savings Account',
+    'Bank Balance',
+    'Liquid Fund',
+    'Fixed Deposit',
+    'Cash',
+    'Overnight Fund',
+    'Money Market Fund',
+  ],
+};
+
+String classAddNameHint(String wire) {
+  switch (wire) {
+    case 'bonds':
+      return 'e.g. Sovereign Gold Bond';
+    case 'commodities':
+      return 'e.g. Sovereign Gold';
+    case 'cash':
+      return 'e.g. Liquid Fund';
+    default:
+      return 'Search name…';
+  }
+}
+
+/// Holdings-first name suggestions for Class Add, then wire catalog, then market.
+///
+/// [SecurityDocument.key.symbol] is the selectable **name** (for the Name field).
+/// [SecurityDocument.metadata.companyName] holds an optional ticker/subtitle.
+Future<List<market.SecurityDocument>> searchClassAddNames({
+  required String query,
+  required String wire,
+  required List<({String symbol, String name})> holdings,
+  Future<List<market.SecurityDocument>?> Function(String query)? marketSearch,
+  int limit = 8,
+}) async {
+  final q = query.trim();
+  if (q.isEmpty) return const [];
+
+  final fromHoldings = <String>[];
+  final symbolByName = <String, String>{};
+  for (final h in holdings) {
+    final name = h.name.trim();
+    final sym = h.symbol.trim();
+    final label = name.isNotEmpty ? name : sym;
+    if (label.isEmpty) continue;
+    if (!labelMatchesQuery(label, q) &&
+        (sym.isEmpty || !labelMatchesQuery(sym, q))) {
+      continue;
+    }
+    fromHoldings.add(label);
+    if (sym.isNotEmpty &&
+        sym.toUpperCase() != label.toUpperCase()) {
+      symbolByName[label.toLowerCase()] = sym;
+    }
+  }
+
+  final catalog = kClassAddNameCatalog[wire] ?? const <String>[];
+  final fromCatalog = filterLabelsByQuery(catalog, q);
+
+  final preferred = mergePreferFirst(fromHoldings, fromCatalog, limit: limit);
+
+  List<market.SecurityDocument> fromMarket = const [];
+  if (preferred.length < limit) {
+    try {
+      final search = marketSearch ?? searchMarketSecurities;
+      fromMarket = await search(q) ?? const [];
+    } catch (_) {
+      fromMarket = const [];
+    }
+  }
+
+  final out = <market.SecurityDocument>[];
+  final seen = <String>{};
+
+  void addName(String name, {String? subtitle}) {
+    final label = name.trim();
+    if (label.isEmpty) return;
+    final key = label.toLowerCase();
+    if (seen.contains(key)) return;
+    seen.add(key);
+    // SmartSearchAnchor sector mode shows companyName; selection uses key.symbol.
+    out.add(labelToSecurityDocument(label, companyName: label));
+  }
+
+  for (final label in preferred) {
+    addName(label, subtitle: symbolByName[label.toLowerCase()]);
+    if (out.length >= limit) return out;
+  }
+
+  for (final doc in fromMarket) {
+    final sym = (doc.key?.symbol ?? '').trim();
+    final company = (doc.metadata?.companyName ?? '').trim();
+    final label = company.isNotEmpty ? company : sym;
+    if (label.isEmpty) continue;
+    addName(label, subtitle: sym.isNotEmpty ? sym : null);
+    if (out.length >= limit) break;
+  }
+
+  return out;
+}

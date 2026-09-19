@@ -125,29 +125,47 @@ class PortfolioAnalyticsMapper {
     stocks: dto.stocks?.map(_stockFromDto).toList() ?? [],
   );
 
-  /// Convert stock DTO to entity
-  static Stock _stockFromDto(StockDto dto) => Stock(
-    symbol: dto.symbol ?? 'UNKNOWN',
-    companyName: dto.companyName ?? 'Unknown Company',
-    lastPrice: dto.lastPrice ?? 0.0,
-    changeAmount: dto.changeAmount ?? 0.0,
-    changePercent: dto.changePercent ?? 0.0,
-    sector: _normalizeSectorName(dto.sector),
-    quantity: dto.quantity ?? 0.0,
-    avgPrice: dto.avgPrice ?? 0.0,
-    marketValue: dto.marketValue ?? 0.0,
-    totalReturn: dto.totalReturn ?? 0.0,
-    weight: dto.weight, // Include weight field from DTO
-    previousClose: dto.previousClose,
-  );
+  /// Convert stock DTO to entity (derive day move from previousClose when flat).
+  static Stock _stockFromDto(StockDto dto) {
+    var changeAmount = dto.changeAmount ?? 0.0;
+    var changePercent = dto.changePercent ?? 0.0;
+    final last = dto.lastPrice ?? 0.0;
+    final prev = dto.previousClose;
+    if (changePercent.abs() < 0.005 &&
+        changeAmount.abs() < 0.005 &&
+        prev != null &&
+        prev > 0 &&
+        last > 0) {
+      changeAmount = last - prev;
+      changePercent = (changeAmount / prev) * 100;
+    }
+    return Stock(
+      symbol: dto.symbol ?? 'UNKNOWN',
+      companyName: dto.companyName ?? 'Unknown Company',
+      lastPrice: last,
+      changeAmount: changeAmount,
+      changePercent: changePercent,
+      sector: _normalizeSectorName(dto.sector),
+      quantity: dto.quantity ?? 0.0,
+      avgPrice: dto.avgPrice ?? 0.0,
+      marketValue: dto.marketValue ?? 0.0,
+      totalReturn: dto.totalReturn ?? 0.0,
+      weight: dto.weight,
+      previousClose: dto.previousClose,
+    );
+  }
 
   /// Convert movers DTO to entity
   static Movers _moversFromDto(MoversDto dto) {
-    // Map gainers
-    final topGainers = dto.topGainers?.map(_stockFromDto).toList() ?? <Stock>[];
+    final topGainers = (dto.topGainers ?? const <StockDto>[])
+        .map(_stockFromDto)
+        .where((s) => s.changePercent > 0.005)
+        .toList();
 
-    // Map losers
-    final topLosers = dto.topLosers?.map(_stockFromDto).toList() ?? <Stock>[];
+    final topLosers = (dto.topLosers ?? const <StockDto>[])
+        .map(_stockFromDto)
+        .where((s) => s.changePercent < -0.005)
+        .toList();
 
     return Movers(
       topGainers: List<Stock>.from(topGainers),

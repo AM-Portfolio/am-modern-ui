@@ -27,6 +27,10 @@ class PortfolioEndpoints {
   static String whatIf(String portfolioId) =>
       '/v1/analytics/portfolio/$portfolioId/what-if';
 
+  /// Replace one Option A asset-class list (bonds | commodities | cash)
+  static String assetClass(String portfolioId, String assetClass) =>
+      '/v1/portfolios/$portfolioId/asset-classes/$assetClass';
+
   /// Get user portfolio holdings
   static String userHoldings() => holdings;
 

@@ -60,6 +60,15 @@ abstract class PortfolioRemoteDataSource {
     Map<String, dynamic> body,
   );
 
+  /// Replace bonds / commodities / cash holdings on a portfolio.
+  ///
+  /// [assetClass] wire values: `bonds` | `commodities` | `cash`.
+  Future<void> replaceAssetClassList(
+    String portfolioId,
+    String assetClass,
+    List<Map<String, dynamic>> items,
+  );
+
   /// Get portfolios list from remote API
   Future<PortfolioListDto> getPortfoliosList();
 
@@ -704,6 +713,53 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
       );
       CommonLogger.methodExit(
         'getPortfolioWhatIf',
+        tag: 'PortfolioRemoteDataSource',
+        metadata: {'status': 'error'},
+      );
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> replaceAssetClassList(
+    String portfolioId,
+    String assetClass,
+    List<Map<String, dynamic>> items,
+  ) async {
+    CommonLogger.methodEntry(
+      'replaceAssetClassList',
+      tag: 'PortfolioRemoteDataSource',
+      metadata: {
+        'portfolioId': portfolioId,
+        'assetClass': assetClass,
+        'itemCount': items.length,
+      },
+    );
+
+    try {
+      final baseUri = _buildUri(
+        _baseUrl,
+        PortfolioEndpoints.assetClass(portfolioId, assetClass),
+      );
+      await _apiClient.put<void>(
+        baseUri,
+        body: <String, dynamic>{'items': items},
+        parser: (_) {},
+      );
+      CommonLogger.methodExit(
+        'replaceAssetClassList',
+        tag: 'PortfolioRemoteDataSource',
+        metadata: {'status': 'success'},
+      );
+    } catch (e) {
+      CommonLogger.error(
+        'Failed to replace asset-class list',
+        tag: 'PortfolioRemoteDataSource',
+        error: e,
+        stackTrace: StackTrace.current,
+      );
+      CommonLogger.methodExit(
+        'replaceAssetClassList',
         tag: 'PortfolioRemoteDataSource',
         metadata: {'status': 'error'},
       );
