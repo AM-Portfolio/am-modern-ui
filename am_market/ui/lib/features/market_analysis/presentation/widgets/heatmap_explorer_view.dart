@@ -121,6 +121,24 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
         bottom: false,
         child: Column(
           children: [
+            // Global timeframe (1D / 1W / …) — same control as Dashboard
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              child: Row(
+                children: [
+                  Text(
+                    'Market Analysis',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: context.colors.textPrimary,
+                    ),
+                  ),
+                  const Spacer(),
+                  GlobalTimeFrameBar(primaryColor: ModuleColors.market),
+                ],
+              ),
+            ),
             // 1. Header & Search
             Container(
               margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),

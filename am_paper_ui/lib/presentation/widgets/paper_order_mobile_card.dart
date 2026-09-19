@@ -29,7 +29,7 @@ class PaperOrderMobileCard extends StatelessWidget {
     final colors = context.colors;
     return side == 'SELL'
         ? colors.marketNegativeIndicator
-        : colors.actionPrimaryBg;
+        : ModuleColors.market;
   }
 
   @override

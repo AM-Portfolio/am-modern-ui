@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:am_common/am_common.dart';
-import 'package:am_dashboard_ui/domain/models/news_models.dart';
-import 'package:am_dashboard_ui/presentation/providers/news_provider.dart';
-import 'package:am_dashboard_ui/presentation/shared/widgets/glass_card.dart';
-import 'package:am_dashboard_ui/presentation/shared/widgets/news_feed_tab.dart';
-import 'package:am_dashboard_ui/presentation/shared/widgets/news_mobile_section.dart';
-import 'package:am_dashboard_ui/presentation/shared/widgets/news_web_section.dart';
+import 'package:am_news_ui/domain/models/news_models.dart';
+import 'package:am_news_ui/presentation/providers/news_provider.dart';
+import 'package:am_news_ui/presentation/widgets/glass_card.dart';
+import 'package:am_news_ui/presentation/widgets/news_feed_tab.dart';
+import 'package:am_news_ui/presentation/widgets/news_mobile_section.dart';
+import 'package:am_news_ui/presentation/widgets/news_web_section.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -44,7 +44,8 @@ class _DashboardNewsSectionState extends ConsumerState<DashboardNewsSection> {
 
   @override
   Widget build(BuildContext context) {
-    final enabled = ref.watch(newsUiEnabledProvider);
+    final enabled =
+        ref.watch(newsUiSurfaceEnabledProvider(NewsUiSurface.dashboard));
     ref.listen(newsInsightProvider, (prev, next) {
       final data = next.asData?.value;
       if (data != null) unawaited(_subscribeQuotes(data));

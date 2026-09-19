@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
 
-import '../config/config_service.dart';
 import 'feature_flag_keys.dart';
 import 'feature_flag_service.dart';
 
@@ -35,19 +34,6 @@ final subscriptionPageEnabledProvider = Provider<bool>((ref) {
   return ref.watch(
     featureFlagProvider(FeatureFlagKeys.subscriptionPageEnabled),
   );
-});
-
-final newsUiEnabledProvider = Provider<bool>((ref) {
-  final defaultValue = ConfigService.resolvedEnv != 'prod';
-  try {
-    ref.watch(featureFlagsReadyProvider);
-    return ref.watch(featureFlagServiceProvider).isOn(
-          FeatureFlagKeys.newsUiEnabled,
-          defaultValue: defaultValue,
-        );
-  } catch (_) {
-    return defaultValue;
-  }
 });
 
 final offlineReadsEnabledProvider = Provider<bool>((ref) {

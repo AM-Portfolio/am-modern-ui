@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_news_ui/am_news_ui.dart';
 import '../../../internal/domain/entities/portfolio_holding.dart';
 import '../../../providers/portfolio_providers.dart';
 
@@ -9,8 +11,14 @@ class PortfolioHoldingsWidget extends ConsumerStatefulWidget {
   const PortfolioHoldingsWidget({
     super.key,
     this.portfolioId,
+    this.onHoldingFocused,
+    this.showNewsSection = true,
   });
   final String? portfolioId;
+  final ValueChanged<String>? onHoldingFocused;
+
+  /// When false, host page owns the news section (e.g. web holdings page).
+  final bool showNewsSection;
 
   @override
   ConsumerState<PortfolioHoldingsWidget> createState() =>
@@ -23,6 +31,7 @@ class _PortfolioHoldingsWidgetState
   HoldingsDisplayFormat _displayFormat = HoldingsDisplayFormat.value;
   HoldingsSortBy _sortBy = HoldingsSortBy.symbol;
   bool _sortAscending = true;
+  String? _focusedSymbol;
 
   @override
   Widget build(BuildContext context) {
@@ -63,8 +72,34 @@ class _PortfolioHoldingsWidgetState
                 },
                 child: ListView.builder(
                   padding: const EdgeInsets.all(16),
-                  itemCount: sortedHoldings.length,
+                  itemCount: sortedHoldings.length +
+                      (widget.showNewsSection ? 1 : 0),
                   itemBuilder: (context, index) {
+                    if (index >= sortedHoldings.length) {
+                      final focused = _focusedSymbol?.trim() ?? '';
+                      if (focused.isNotEmpty) {
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8, bottom: 8),
+                          child: SymbolNewsSection(
+                            symbol: focused,
+                            surface: NewsUiSurface.portfolioHoldings,
+                            embedInScroll: true,
+                          ),
+                        );
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8, bottom: 8),
+                        child: HoldingsNewsSection(
+                          symbols: [
+                            for (final h in sortedHoldings)
+                              (h as PortfolioHolding).symbol,
+                          ],
+                          surface: NewsUiSurface.portfolioHoldings,
+                          embedInScroll: true,
+                        ),
+                      );
+                    }
+
                     final holding = sortedHoldings[index];
 
                     // Calculate values based on selected change type
@@ -89,7 +124,8 @@ class _PortfolioHoldingsWidgetState
                       changePercent: changePercent,
                       isPositive: isPositive,
                       onTap: () {
-                        // TODO: Navigate to holding details
+                        setState(() => _focusedSymbol = holding.symbol);
+                        widget.onHoldingFocused?.call(holding.symbol);
                       },
                       // Custom display based on format preference
                       customBottomWidget: _buildCustomBottomRow(
