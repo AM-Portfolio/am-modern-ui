@@ -50,6 +50,18 @@ class MarketAnalysisService {
     return IndicesHistoricalPerformanceResponse.fromJson(response);
   }
 
+  /// Top/worst stock among [indexSymbol] constituents per month.
+  Future<IndicesHistoricalPerformanceResponse> getConstituentsHistoricalPerformance(
+    String indexSymbol, {
+    int years = 10,
+  }) async {
+    final response = await _get('/indices/constituents/historical-performance', {
+      'symbol': indexSymbol,
+      'years': years.toString(),
+    });
+    return IndicesHistoricalPerformanceResponse.fromJson(response);
+  }
+
   Future<Map<String, dynamic>> _get(String path, Map<String, String> queryParams) async {
     try {
       final headers = await _getHeaders();

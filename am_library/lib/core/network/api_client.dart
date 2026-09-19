@@ -226,9 +226,11 @@ class ApiClient {
     Map<String, dynamic>? queryParams,
     bool requireAuth = true,
     Duration? timeout,
+    /// When false, fail once with no 5xx/timeout retries (soft-fail probes).
+    bool enableRetry = true,
   }) async {
     final effectiveTimeout = timeout ?? defaultTimeout;
-    return _requestWithRetry((attempt) async {
+    Future<T> runOnce(int attempt) async {
       Uri? uri;
       final stopwatch = Stopwatch()..start();
       try {
@@ -302,7 +304,12 @@ class ApiClient {
         }
         throw ApiException('Network error: ${e.toString()}');
       }
-    }, retryOnTimeout: false);
+    }
+
+    if (!enableRetry) {
+      return await runOnce(1);
+    }
+    return _requestWithRetry(runOnce, retryOnTimeout: false);
   }
 
   /// Make POST request

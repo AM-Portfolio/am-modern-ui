@@ -85,6 +85,18 @@ enum TimeFrame {
         TimeFrame.fiveYears,
       ];
 
+  /// Market Dashboard: app frames + long history (UI label 10Y).
+  static List<TimeFrame> get marketDashboardTimeFrames => const [
+        TimeFrame.oneDay,
+        TimeFrame.oneWeek,
+        TimeFrame.oneMonth,
+        TimeFrame.threeMonths,
+        TimeFrame.sixMonths,
+        TimeFrame.oneYear,
+        TimeFrame.fiveYears,
+        TimeFrame.all,
+      ];
+
   static List<TimeFrame> get portfolioTimeFrames => const [
         TimeFrame.oneMonth,
         TimeFrame.threeMonths,
@@ -101,10 +113,12 @@ enum TimeFrame {
         TimeFrame.threeMonths,
       ];
 
-  /// Resolve a display code (e.g. `1D`, `1M`) to a [TimeFrame], if known.
+  /// Resolve a display code (e.g. `1D`, `1M`, `10Y`) to a [TimeFrame], if known.
   static TimeFrame? tryFromCode(String code) {
+    final normalized = code.trim().toUpperCase();
+    if (normalized == '10Y' || normalized == 'ALL') return TimeFrame.all;
     for (final tf in TimeFrame.values) {
-      if (tf.code == code) return tf;
+      if (tf.code.toUpperCase() == normalized) return tf;
     }
     return null;
   }
@@ -134,7 +148,7 @@ extension TimeFrameExtension on TimeFrame {
       case TimeFrame.fiveYears:
         return '5Y';
       case TimeFrame.all:
-        return 'All';
+        return '10Y';
     }
   }
 

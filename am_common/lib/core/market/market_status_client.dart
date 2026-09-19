@@ -22,6 +22,8 @@ class MarketStatusClient {
       '/v1/market-calendar/status',
       queryParams: {'exchange': exchange},
       parser: (data) => MarketStatus.fromJson(data as Map<String, dynamic>),
+      // Soft-fail probe: one attempt only — no 5xx retry storm.
+      enableRetry: false,
     );
   }
 }

@@ -64,10 +64,10 @@ class MarketStreamingGate {
   Future<void> refresh({bool force = false}) async {
     if (_refreshing) return;
     if (!force &&
-        _status != null &&
         _lastFetchedAt != null &&
         DateTime.now().difference(_lastFetchedAt!) <
             const Duration(hours: 1)) {
+      // Cooldown covers both success and soft-fail — avoid 5xx spam.
       return;
     }
     _refreshing = true;
@@ -91,6 +91,9 @@ class MarketStreamingGate {
       _setOpen(next.open);
       _scheduleSessionBoundary(next);
     } catch (e, st) {
+      // Fail-open: assume streaming allowed; stamp cooldown so we don't tight-retry.
+      _lastFetchedAt = DateTime.now();
+      _setOpen(true);
       AppLogger.warning(
         'MarketStreamingGate: status fetch failed — keeping streaming allowed',
         tag: 'MarketStreamingGate',

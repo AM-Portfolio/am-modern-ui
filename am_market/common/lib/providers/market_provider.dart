@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../models/market_data.dart';
 import '../models/available_indices.dart';
 import '../models/indices_region.dart';
 import '../models/historical_performance_model.dart';
+import '../models/indices_performance_model.dart';
 import '../models/seasonality_model.dart';
 import '../services/api_service.dart';
 import '../data/repositories/market_data_repository.dart';
@@ -12,6 +15,7 @@ import '../data/repositories/market_data_repository.dart';
 
 import 'package:am_common/core/services/price_service.dart';
 import 'package:am_common/core/models/price_update_model.dart';
+import 'package:am_common/am_common.dart';
 
 class MarketProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -226,12 +230,23 @@ class MarketProvider with ChangeNotifier {
   HistoricalPerformanceResponse? _historicalPerformance;
   HistoricalPerformanceResponse? get historicalPerformance => _historicalPerformance;
 
+  // Constituents monthly winners (Mode B)
+  IndicesHistoricalPerformanceResponse? _constituentsHistorical;
+  IndicesHistoricalPerformanceResponse? get constituentsHistorical =>
+      _constituentsHistorical;
+  bool _isLoadingConstituentsHistorical = false;
+  bool get isLoadingConstituentsHistorical => _isLoadingConstituentsHistorical;
+
   // Seasonality Data
   SeasonalityResponse? _seasonality;
   SeasonalityResponse? get seasonality => _seasonality;
 
   String? get selectedIndex => _selectedIndex;
   bool get isLoading => _isLoading;
+  bool _isLoadingHistorical = false;
+  bool get isLoadingHistorical => _isLoadingHistorical;
+  bool _isLoadingHeatmap = false;
+  bool get isLoadingHeatmap => _isLoadingHeatmap;
   String? get error => _error;
   bool get forceRefresh => _forceRefresh;
   bool get indexSymbol => _indexSymbol;
@@ -239,6 +254,9 @@ class MarketProvider with ChangeNotifier {
   // New Heatmap Values (Symbol -> Change%)
   Map<String, double>? _heatmapValues;
   Map<String, double>? get heatmapValues => _heatmapValues;
+
+  /// In-memory heatmap cache keyed by SYMBOL|TF (survives TF flips in-session).
+  final Map<String, Map<String, double>> _heatmapValueCache = {};
 
   // Indices timeframe selection (1D uses live day change; others use historical base prices)
   String _selectedIndicesTimeframe = '1D';
@@ -756,30 +774,53 @@ class MarketProvider with ChangeNotifier {
       }
   }
 
-  Future<void> loadHistoricalPerformance(String symbol) async {
+  Future<void> loadHistoricalPerformance(String symbol, {int years = 10}) async {
       CommonLogger.info("Loading historical performance for $symbol", tag: "MarketProvider.loadHistoricalPerformance");
-      _isLoading = true; 
-      // Don't clear previous data immediately to avoid flicker, or maybe clear if symbol changed
-      // For now, let's keep it simple
+      _isLoadingHistorical = true;
       notifyListeners();
 
       try {
-          // Hardcoded 10 years as per requirement
-          _historicalPerformance = await _apiService.fetchHistoricalPerformance(symbol, years: 10);
+          _historicalPerformance = await _apiService.fetchHistoricalPerformance(symbol, years: years);
       } catch (e) {
           CommonLogger.error("Error loading historical performance", tag: "MarketProvider.loadHistoricalPerformance", error: e);
+          _historicalPerformance = null;
           _error = e.toString();
       } finally {
-          _isLoading = false;
+          _isLoadingHistorical = false;
           notifyListeners();
       }
   }
 
   Future<void> loadHeatmap(String symbol, String timeframe) async {
+    final key = _heatmapCacheKey(symbol, timeframe);
     CommonLogger.info("Loading heatmap for $symbol ($timeframe)", tag: "MarketProvider.loadHeatmap");
+
+    // In-memory hit — never re-hit API while process is alive.
+    final mem = _heatmapValueCache[key];
+    if (mem != null && mem.isNotEmpty) {
+      _heatmapValues = Map<String, double>.from(mem);
+      _isLoadingHeatmap = false;
+      notifyListeners();
+      return;
+    }
+
+    _isLoadingHeatmap = true;
+    // Clear stale tiles from another symbol/TF so UI shows spinner, not wrong map.
+    _heatmapValues = null;
+    notifyListeners();
+
+    // Same-calendar-day browser persist (esp. non-1D).
+    final persisted = await _readPersistedHeatmap(key, timeframe);
+    if (persisted != null && persisted.isNotEmpty) {
+      _heatmapValueCache[key] = persisted;
+      _heatmapValues = Map<String, double>.from(persisted);
+      _isLoadingHeatmap = false;
+      notifyListeners();
+      return;
+    }
+
     try {
       var values = await _apiService.fetchHeatmap(symbol, timeframe: timeframe);
-      // Stale/bad INDICES 1D Redis cache often returns almost all 0.0 — recompute once.
       if (_isDegenerateIndicesHeatmap(symbol, timeframe, values)) {
         CommonLogger.warning(
           "Degenerate INDICES heatmap cache detected; retrying with forceRefresh",
@@ -791,12 +832,68 @@ class MarketProvider with ChangeNotifier {
           forceRefresh: true,
         );
       }
+      _heatmapValueCache[key] = values;
       _heatmapValues = values;
+      await _writePersistedHeatmap(key, timeframe, values);
       notifyListeners();
     } catch (e) {
       CommonLogger.error("Error loading heatmap", tag: "MarketProvider.loadHeatmap", error: e);
       _heatmapValues = {};
       notifyListeners();
+    } finally {
+      _isLoadingHeatmap = false;
+      notifyListeners();
+    }
+  }
+
+  String _heatmapCacheKey(String symbol, String timeframe) =>
+      '${symbol.trim().toUpperCase()}|${timeframe.trim().toUpperCase()}';
+
+  String _calendarDayKey() {
+    final n = DateTime.now();
+    return '${n.year.toString().padLeft(4, '0')}-'
+        '${n.month.toString().padLeft(2, '0')}-'
+        '${n.day.toString().padLeft(2, '0')}';
+  }
+
+  Future<Map<String, double>?> _readPersistedHeatmap(
+    String key,
+    String timeframe,
+  ) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final day = prefs.getString('hm_day_$key');
+      if (day != _calendarDayKey()) return null;
+      final raw = prefs.getString('hm_val_$key');
+      if (raw == null || raw.isEmpty) return null;
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return null;
+      return decoded.map(
+        (k, v) => MapEntry(k.toString(), (v as num).toDouble()),
+      );
+    } catch (e) {
+      CommonLogger.warning(
+        'Heatmap persist read failed: $e',
+        tag: 'MarketProvider.loadHeatmap',
+      );
+      return null;
+    }
+  }
+
+  Future<void> _writePersistedHeatmap(
+    String key,
+    String timeframe,
+    Map<String, double> values,
+  ) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('hm_day_$key', _calendarDayKey());
+      await prefs.setString('hm_val_$key', jsonEncode(values));
+    } catch (e) {
+      CommonLogger.warning(
+        'Heatmap persist write failed: $e',
+        tag: 'MarketProvider.loadHeatmap',
+      );
     }
   }
 
@@ -820,5 +917,31 @@ class MarketProvider with ChangeNotifier {
       } catch (e) {
           CommonLogger.error("Error loading seasonality", tag: "MarketProvider.loadSeasonality", error: e);
       }
+  }
+
+  Future<void> loadConstituentsHistoricalPerformance(
+    String indexSymbol, {
+    int years = 10,
+  }) async {
+    CommonLogger.info(
+      "Loading constituents historical for $indexSymbol ($years y)",
+      tag: "MarketProvider.loadConstituentsHistoricalPerformance",
+    );
+    _isLoadingConstituentsHistorical = true;
+    notifyListeners();
+    try {
+      _constituentsHistorical = await _apiService
+          .fetchConstituentsHistoricalPerformance(indexSymbol, years: years);
+    } catch (e) {
+      CommonLogger.error(
+        "Error loading constituents historical",
+        tag: "MarketProvider.loadConstituentsHistoricalPerformance",
+        error: e,
+      );
+      _constituentsHistorical = null;
+    } finally {
+      _isLoadingConstituentsHistorical = false;
+      notifyListeners();
+    }
   }
 }
