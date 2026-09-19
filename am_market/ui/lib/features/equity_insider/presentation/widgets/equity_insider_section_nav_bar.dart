@@ -21,10 +21,14 @@ class EquityInsiderSectionNavBar extends StatelessWidget {
     'Financials',
     'Shareholding',
     'Peers',
+    'News',
   ];
 
-  List<String> get sections =>
-      showPeers ? _allSections : _allSections.sublist(0, 4);
+  List<String> get sections {
+    if (showPeers) return _allSections;
+    // Skip Peers; keep News last.
+    return [..._allSections.sublist(0, 4), _allSections.last];
+  }
 
   @override
   Widget build(BuildContext context) {

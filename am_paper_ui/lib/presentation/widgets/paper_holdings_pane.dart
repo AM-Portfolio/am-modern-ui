@@ -48,7 +48,7 @@ class PaperHoldingsPane extends StatelessWidget {
                   Icon(
                     Icons.account_balance_wallet_outlined,
                     size: 40,
-                    color: colors.actionPrimaryBg,
+                    color: ModuleColors.market,
                   ),
                   const SizedBox(height: 12),
                   Text(

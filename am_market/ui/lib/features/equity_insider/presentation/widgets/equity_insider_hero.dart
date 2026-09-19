@@ -6,11 +6,37 @@ import 'package:intl/intl.dart';
 import '../../providers/equity_insider_provider.dart';
 import '../../../../features/watchlists/providers/watchlist_provider.dart';
 import '../../../../features/watchlists/presentation/widgets/add_to_watchlist_popup.dart';
+
+/// Full hero (bar + description). Prefer [EquityInsiderHeroBar] /
+/// [EquityInsiderHeroDescription] when the bar is pinned separately.
 class EquityInsiderHero extends ConsumerWidget {
   final String symbol;
   final VoidCallback? onSearchTap;
 
   const EquityInsiderHero({
+    super.key,
+    required this.symbol,
+    this.onSearchTap,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        EquityInsiderHeroBar(symbol: symbol, onSearchTap: onSearchTap),
+        EquityInsiderHeroDescription(symbol: symbol),
+      ],
+    );
+  }
+}
+
+/// Sticky identity strip: logo, symbol, price, watchlist (no description).
+class EquityInsiderHeroBar extends ConsumerWidget {
+  final String symbol;
+  final VoidCallback? onSearchTap;
+
+  const EquityInsiderHeroBar({
     super.key,
     required this.symbol,
     this.onSearchTap,
@@ -28,99 +54,113 @@ class EquityInsiderHero extends ConsumerWidget {
         if (data == null) return const Text('No profile data');
 
         final isPos = (data.dayChangePercent ?? 0) >= 0;
-        final deltaColor = isPos ? context.marketTheme.positive : context.marketTheme.negative;
+        final deltaColor =
+            isPos ? context.marketTheme.positive : context.marketTheme.negative;
         final arrow = isPos ? '▲' : '▼';
-        final absChange = data.dayChange != null ? data.dayChange!.abs().toStringAsFixed(2) : '0.00';
-        final pctChange = data.dayChangePercent != null ? data.dayChangePercent!.abs().toStringAsFixed(2) : '0.00';
-        final exchangeBadgeColor = activeExchange == 'BSE' ? context.colors.statusWarning : context.marketTheme.chartBlue;
+        final absChange = data.dayChange != null
+            ? data.dayChange!.abs().toStringAsFixed(2)
+            : '0.00';
+        final pctChange = data.dayChangePercent != null
+            ? data.dayChangePercent!.abs().toStringAsFixed(2)
+            : '0.00';
+        final exchangeBadgeColor = activeExchange == 'BSE'
+            ? context.colors.statusWarning
+            : context.marketTheme.chartBlue;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                _buildLogo(context, data.companyName ?? data.symbol ?? symbol),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            _buildLogo(context, data.companyName ?? data.symbol ?? symbol),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    runSpacing: 4,
                     children: [
-                      Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 8,
-                        runSpacing: 4,
-                        children: [
-                          Text(
-                            data.symbol ?? symbol,
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700,
-                              color: context.textPrimary,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                          _buildBadge(context, activeExchange, customColor: exchangeBadgeColor),
-                          if (data.sector != null && data.sector!.isNotEmpty)
-                            _buildBadge(context, data.sector!, isNeutral: true),
-                          if (data.industry != null && data.industry!.isNotEmpty)
-                            _buildBadge(context, data.industry!, isNeutral: true),
-                          if (onSearchTap != null)
-                            _buildSearchCapsule(context),
-                          _buildExchangeToggle(context, ref),
-                        ],
-                      ),
-                      const SizedBox(height: 3),
                       Text(
-                        '${data.companyName ?? symbol} · ${activeExchange == 'BSE' ? 'Bombay Stock Exchange' : 'National Stock Exchange'} · Live',
+                        data.symbol ?? symbol,
                         style: TextStyle(
-                          fontSize: 12,
-                          color: context.textSecondary,
-                          letterSpacing: 0.1,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: context.textPrimary,
+                          letterSpacing: -0.5,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
+                      _buildBadge(
+                        context,
+                        activeExchange,
+                        customColor: exchangeBadgeColor,
+                      ),
+                      if (data.sector != null && data.sector!.isNotEmpty)
+                        _buildBadge(context, data.sector!, isNeutral: true),
+                      if (data.industry != null && data.industry!.isNotEmpty)
+                        _buildBadge(context, data.industry!, isNeutral: true),
+                      if (onSearchTap != null) _buildSearchCapsule(context),
+                      _buildExchangeToggle(context, ref),
                     ],
                   ),
-                ),
-                const SizedBox(width: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      '₹${_formatCurrency(data.currentPrice)}',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        color: context.textPrimary,
-                        letterSpacing: -0.8,
-                      ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '${data.companyName ?? symbol} · ${activeExchange == 'BSE' ? 'Bombay Stock Exchange' : 'National Stock Exchange'} · Live',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: context.textSecondary,
+                      letterSpacing: 0.1,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '$arrow ₹$absChange ($pctChange%)',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: deltaColor,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    _buildWatchlistButton(context, ref),
-                  ],
-                ),
-              ],
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
             ),
-            if (data.description != null && data.description!.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              _ExpandableDescription(text: data.description!),
-            ],
+            const SizedBox(width: 16),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '₹${_formatCurrency(data.currentPrice)}',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: context.textPrimary,
+                      letterSpacing: -0.8,
+                      height: 1.1,
+                    ),
+                  ),
+                  Text(
+                    '$arrow ₹$absChange ($pctChange%)',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: deltaColor,
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  _buildWatchlistButton(context, ref),
+                ],
+              ),
+            ),
           ],
         );
       },
-      loading: () => const SizedBox(height: 80, child: Center(child: CircularProgressIndicator())),
-      error: (e, st) => Text('Error loading profile: $e', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+      loading: () => const SizedBox(
+        height: 80,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, st) => Text(
+        'Error loading profile: $e',
+        style: TextStyle(color: Theme.of(context).colorScheme.error),
+      ),
     );
   }
 
@@ -197,7 +237,12 @@ class EquityInsiderHero extends ConsumerWidget {
 
   Widget _buildLogo(BuildContext context, String name) {
     final initials = name.trim().isNotEmpty
-        ? name.trim().split(RegExp(r'\s+')).take(2).map((e) => e[0].toUpperCase()).join()
+        ? name
+            .trim()
+            .split(RegExp(r'\s+'))
+            .take(2)
+            .map((e) => e[0].toUpperCase())
+            .join()
         : 'EQ';
 
     return Container(
@@ -266,30 +311,36 @@ class EquityInsiderHero extends ConsumerWidget {
     return statusAsync.when(
       data: (statuses) {
         final isAdded = statuses.any((s) => s.containsSymbol);
-        final addedToWatchlistName = isAdded ? statuses.firstWhere((s) => s.containsSymbol).name : '';
+        final addedToWatchlistName =
+            isAdded ? statuses.firstWhere((s) => s.containsSymbol).name : '';
 
         if (isAdded) {
           return SizedBox(
             height: 28,
             child: FilledButton.icon(
               onPressed: () async {
-                // Check if they want to manage it
                 final confirm = await ConfirmationDialog.show(
                   context: context,
                   title: 'Remove Stock',
                   subtitle: 'Watchlist Management',
-                  message: 'Are you sure you want to remove $symbol from $addedToWatchlistName?',
+                  message:
+                      'Are you sure you want to remove $symbol from $addedToWatchlistName?',
                   icon: Icons.bookmark_remove_rounded,
                   confirmText: 'Remove',
                   isDestructive: true,
                 );
                 if (confirm) {
-                  final wid = statuses.firstWhere((s) => s.containsSymbol).watchlistId;
+                  final wid =
+                      statuses.firstWhere((s) => s.containsSymbol).watchlistId;
                   ref.read(watchlistsProvider.notifier).removeStock(wid, symbol);
                   ref.invalidate(watchlistCheckStatusProvider(symbol));
                 }
               },
-              icon: const Icon(Icons.bookmark_added_rounded, size: 14, color: Colors.white),
+              icon: const Icon(
+                Icons.bookmark_added_rounded,
+                size: 14,
+                color: Colors.white,
+              ),
               label: const Text(
                 'Already Added',
                 style: TextStyle(
@@ -301,6 +352,8 @@ class EquityInsiderHero extends ConsumerWidget {
               style: FilledButton.styleFrom(
                 backgroundColor: ModuleColors.market,
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                visualDensity: VisualDensity.compact,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(6),
                 ),
@@ -326,6 +379,8 @@ class EquityInsiderHero extends ConsumerWidget {
             ),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+              visualDensity: VisualDensity.compact,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               side: BorderSide(
                 color: ModuleColors.market.withValues(alpha: 0.4),
                 width: 1,
@@ -337,7 +392,11 @@ class EquityInsiderHero extends ConsumerWidget {
           ),
         );
       },
-      loading: () => const SizedBox(height: 28, width: 100, child: Center(child: CircularProgressIndicator())),
+      loading: () => const SizedBox(
+        height: 28,
+        width: 100,
+        child: Center(child: CircularProgressIndicator()),
+      ),
       error: (_, __) => const SizedBox.shrink(),
     );
   }
@@ -387,6 +446,39 @@ class EquityInsiderHero extends ConsumerWidget {
           color: fg,
         ),
       ),
+    );
+  }
+}
+
+/// Company description — scrolls away under the pinned hero bar.
+class EquityInsiderHeroDescription extends ConsumerWidget {
+  final String symbol;
+
+  const EquityInsiderHeroDescription({
+    super.key,
+    required this.symbol,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeExchange = ref.watch(selectedExchangeProvider);
+    final asyncData = ref.watch(fundamentalProfileProvider(
+      EquityFundamentalQuery(symbol: symbol, exchange: activeExchange),
+    ));
+
+    return asyncData.when(
+      data: (data) {
+        final description = data?.description;
+        if (description == null || description.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        return Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: _ExpandableDescription(text: description),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }
@@ -475,7 +567,9 @@ class _ExpandableDescriptionState extends State<_ExpandableDescription> {
                     ),
                     const SizedBox(width: 2),
                     Icon(
-                      _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                      _isExpanded
+                          ? Icons.keyboard_arrow_up
+                          : Icons.keyboard_arrow_down,
                       size: 16,
                       color: context.marketTheme.chartBlue,
                     ),
@@ -489,4 +583,3 @@ class _ExpandableDescriptionState extends State<_ExpandableDescription> {
     );
   }
 }
-

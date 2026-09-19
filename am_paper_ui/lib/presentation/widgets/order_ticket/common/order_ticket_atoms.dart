@@ -106,7 +106,7 @@ class OrderTicketHeaderBlock extends StatelessWidget {
         if (loading)
           LinearProgressIndicator(
             minHeight: 2,
-            color: colors.actionPrimaryBg,
+            color: ModuleColors.market,
             backgroundColor: colors.divider,
           )
         else if (ltp > 0)
@@ -261,7 +261,7 @@ class OrderTicketBuySellToggle extends StatelessWidget {
           OrderTicketSeg(
             label: 'Buy',
             selected: isBuy,
-            color: colors.actionPrimaryBg,
+            color: ModuleColors.market,
             onTap: onBuy,
           ),
           OrderTicketSeg(
@@ -303,13 +303,13 @@ class OrderTicketExchangeToggle extends StatelessWidget {
           OrderTicketSeg(
             label: 'NSE',
             selected: isNse,
-            color: colors.actionPrimaryBg,
+            color: ModuleColors.market,
             onTap: () => onChanged?.call('NSE'),
           ),
           OrderTicketSeg(
             label: 'BSE',
             selected: !isNse,
-            color: colors.actionPrimaryBg,
+            color: ModuleColors.market,
             onTap: () => onChanged?.call('BSE'),
           ),
         ],
@@ -374,7 +374,7 @@ class OrderTicketProductTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final accent = colors.actionPrimaryBg;
+    final accent = ModuleColors.market;
     return Material(
       color: selected ? accent.withValues(alpha: 0.12) : colors.cardSurface,
       borderRadius: BorderRadius.circular(12),
@@ -475,10 +475,10 @@ class OrderTicketTypeTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final accent = colors.actionPrimaryBg;
+    final accent = ModuleColors.market;
     return Material(
       color: selected
-          ? colors.actionPrimaryBg.withValues(alpha: 0.12)
+          ? ModuleColors.market.withValues(alpha: 0.12)
           : colors.cardSurface,
       borderRadius: BorderRadius.circular(compact ? 8 : 10),
       child: InkWell(
@@ -603,7 +603,6 @@ class OrderTicketCheckFieldRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
     return Row(
       children: [
         SizedBox(
@@ -611,7 +610,7 @@ class OrderTicketCheckFieldRow extends StatelessWidget {
           height: 24,
           child: Checkbox(
             value: checked,
-            activeColor: colors.actionPrimaryBg,
+            activeColor: ModuleColors.market,
             onChanged: (v) => onChecked(v ?? false),
           ),
         ),

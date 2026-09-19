@@ -18,6 +18,8 @@ dependencies:
     path: ../am_library
   am_common:
     path: ../am_common
+  am_news_ui:
+    path: ../am_news_ui
 
   # State Management
   flutter_riverpod: ^3.0.3

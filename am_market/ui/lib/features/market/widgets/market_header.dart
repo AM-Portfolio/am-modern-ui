@@ -117,8 +117,8 @@ class _AllIndicesChipState extends State<AllIndicesChip> {
   }
 }
 
-/// Desktop/tablet header — All Indices chip only.
-/// Timeframe lives in All Indices panel / Market Heatmap section (not duplicated here).
+/// Desktop/tablet header — All Indices + global timeframe.
+/// Mobile: All Indices is a top pill; timeframe is shown on the dashboard body.
 class MarketHeader extends StatelessWidget {
   final VoidCallback onAllIndicesPressed;
 
@@ -141,6 +141,7 @@ class MarketHeader extends StatelessWidget {
         const SizedBox(width: 12),
         const MarketClosedChip(),
         const Spacer(),
+        GlobalTimeFrameBar(primaryColor: ModuleColors.market),
       ],
     );
   }

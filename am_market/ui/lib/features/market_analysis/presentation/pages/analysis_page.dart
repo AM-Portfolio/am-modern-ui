@@ -1,18 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/features/market_analysis/presentation/widgets/heatmap_explorer_view.dart';
 import 'package:am_market_ui/features/market_analysis/presentation/widgets/indices_performance_view_v2.dart';
+import 'package:am_market_ui/features/market_analysis/providers/market_analysis_providers.dart';
+import 'package:am_news_ui/am_news_ui.dart';
 
 /// Market Analysis Page with customized theme gradient and responsive global header actions.
 class AnalysisPage extends ConsumerWidget {
   const AnalysisPage({super.key});
+
+  String _newsSymbol(String raw) {
+    final t = raw.trim().toUpperCase();
+    if (t.isEmpty) return '';
+    return t.contains(':') ? t.split(':').last : t;
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isMobile = MediaQuery.of(context).size.width < 600;
     final marketColor = ModuleColors.market;
     final scaffoldBg = context.colors.scaffoldBackground;
+    final chartSymbol = ref.watch(marketAnalysisSymbolProvider);
+    final newsSymbol = _newsSymbol(chartSymbol);
     
     return Scaffold(
       body: Container(
@@ -96,6 +107,11 @@ class AnalysisPage extends ConsumerWidget {
                 const SizedBox(height: 24),
                 // Scrollable content height wrapper for sub-analytics elements
                 const SizedBox(height: 850, child: HeatmapExplorerView()),
+                const SizedBox(height: 24),
+                SymbolNewsSection(
+                  symbol: newsSymbol,
+                  surface: NewsUiSurface.marketAnalysis,
+                ),
               ],
             ),
           ),

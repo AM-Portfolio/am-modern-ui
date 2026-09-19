@@ -4,10 +4,10 @@ import 'package:am_dashboard_ui/presentation/shared/widgets/dashboard_chart_widg
 import 'package:am_dashboard_ui/presentation/shared/widgets/dashboard_portfolio_overview_card.dart';
 import 'package:am_dashboard_ui/presentation/shared/widgets/dashboard_ranking_widget.dart';
 import 'package:am_dashboard_ui/presentation/shared/widgets/dashboard_recent_activity_widget.dart';
-import 'package:am_dashboard_ui/presentation/shared/widgets/dashboard_news_section.dart';
 import 'package:am_dashboard_ui/presentation/shared/widgets/dashboard_summary_widget.dart';
 import 'package:am_dashboard_ui/presentation/shared/widgets/glass_card.dart';
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_news_ui/am_news_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
