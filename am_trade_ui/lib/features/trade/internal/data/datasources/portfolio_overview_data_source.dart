@@ -60,7 +60,7 @@ class PortfolioOverviewDataSourceImpl implements PortfolioOverviewDataSource {
 
       final response = await _apiClient.get<PortfolioSummaryResponseDto?>(
         fullUri,
-        timeout: const Duration(seconds: 5),
+        timeout: const Duration(seconds: 25),
         parser: (data) {
           if (data == null) return null;
           // Defensively handle the response — the portfolio summary can return

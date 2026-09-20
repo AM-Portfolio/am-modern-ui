@@ -121,13 +121,13 @@ final enrichedTradePortfoliosProvider =
         try {
           return await dataSource!
               .getPortfolioSummary(portfolio.id)
-              .timeout(const Duration(seconds: 4));
+              .timeout(const Duration(seconds: 20));
         } catch (_) {
           return null;
         }
       }),
     ).timeout(
-      const Duration(seconds: 6),
+      const Duration(seconds: 30),
       onTimeout: () => List<PortfolioSummaryResponseDto?>.filled(
         realized.length,
         null,
