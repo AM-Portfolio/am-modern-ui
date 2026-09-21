@@ -1,15 +1,15 @@
 import 'package:am_common/am_common.dart';
-import 'package:am_dashboard_ui/domain/models/news_models.dart';
-import 'package:am_dashboard_ui/presentation/shared/widgets/glass_card.dart';
-import 'package:am_dashboard_ui/presentation/shared/widgets/news_feed_header.dart';
-import 'package:am_dashboard_ui/presentation/shared/widgets/news_feed_tab.dart';
-import 'package:am_dashboard_ui/presentation/shared/widgets/news_pager.dart';
-import 'package:am_dashboard_ui/presentation/shared/widgets/news_story_tiles.dart';
+import 'package:am_news_ui/domain/models/news_models.dart';
+import 'package:am_news_ui/presentation/widgets/glass_card.dart';
+import 'package:am_news_ui/presentation/widgets/news_feed_header.dart';
+import 'package:am_news_ui/presentation/widgets/news_feed_tab.dart';
+import 'package:am_news_ui/presentation/widgets/news_pager.dart';
+import 'package:am_news_ui/presentation/widgets/news_story_tiles.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
-class NewsMobileSection extends StatefulWidget {
-  const NewsMobileSection({
+class NewsWebSection extends StatefulWidget {
+  const NewsWebSection({
     super.key,
     required this.data,
     required this.quotes,
@@ -23,15 +23,15 @@ class NewsMobileSection extends StatefulWidget {
   final ValueChanged<NewsFeedTab> onTabChanged;
 
   @override
-  State<NewsMobileSection> createState() => _NewsMobileSectionState();
+  State<NewsWebSection> createState() => _NewsWebSectionState();
 }
 
-class _NewsMobileSectionState extends State<NewsMobileSection> {
+class _NewsWebSectionState extends State<NewsWebSection> {
   static const _pageSize = 10;
   int _page = 0;
 
   @override
-  void didUpdateWidget(covariant NewsMobileSection oldWidget) {
+  void didUpdateWidget(covariant NewsWebSection oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.tab != widget.tab) {
       _page = 0;
@@ -60,7 +60,8 @@ class _NewsMobileSectionState extends State<NewsMobileSection> {
         pageCards.length > 1 ? pageCards.sublist(1) : const <NewsCard>[];
 
     return AmGlassCard(
-      padding: const EdgeInsets.all(12),
+      surfaceAlpha: 0.32,
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -71,7 +72,7 @@ class _NewsMobileSectionState extends State<NewsMobileSection> {
               widget.onTabChanged(tab);
             },
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.md),
           if (cards.isEmpty)
             Text(
               widget.tab.emptyLabel,
@@ -82,17 +83,9 @@ class _NewsMobileSectionState extends State<NewsMobileSection> {
             )
           else ...[
             if (featured != null)
-              NewsFeaturedStory(
-                card: featured,
-                quotes: widget.quotes,
-                compact: true,
-              ),
+              NewsFeaturedStory(card: featured, quotes: widget.quotes),
             for (final card in rest)
-              NewsCompactRow(
-                card: card,
-                quotes: widget.quotes,
-                compact: true,
-              ),
+              NewsCompactRow(card: card, quotes: widget.quotes),
             if (cards.length > _pageSize)
               NewsPager(
                 page: safePage,

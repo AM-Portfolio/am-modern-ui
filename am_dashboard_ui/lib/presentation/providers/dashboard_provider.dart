@@ -10,7 +10,7 @@ import 'package:am_dashboard_ui/domain/models/recent_activity_response.dart';
 import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_provider.dart';
 import 'package:am_dashboard_ui/presentation/layout/dashboard_widget_id.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_overlay_provider.dart';
-import 'package:am_dashboard_ui/presentation/providers/news_provider.dart';
+import 'package:am_news_ui/am_news_ui.dart';
 import 'package:am_dashboard_ui/domain/models/top_movers_response.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -113,7 +113,7 @@ void dashboardParallelKickoff(
     ref.watch(dashboardOverlayProvider(userId));
   }
   if (visible.contains(DashboardWidgetId.news) &&
-      ref.watch(newsUiEnabledProvider)) {
+      ref.watch(newsUiSurfaceEnabledProvider(NewsUiSurface.dashboard))) {
     ref.watch(newsInsightProvider);
   }
 }

@@ -10,6 +10,9 @@ import 'package:am_design_system/am_design_system.dart';
 ///
 /// **Direction:** finger swipe **left** → [onNextPage],
 /// finger swipe **right** → [onPreviousPage] (standard PageView semantics).
+///
+/// Uses [HorizontalDragGestureRecognizer] so vertical scroll / pull-to-refresh
+/// on child pages is never treated as section navigation.
 class HorizontalSectionNavigator extends StatefulWidget {
   const HorizontalSectionNavigator({
     required this.child,
@@ -40,7 +43,6 @@ class HorizontalSectionNavigator extends StatefulWidget {
 class _HorizontalSectionNavigatorState extends State<HorizontalSectionNavigator> {
   bool _isNavigating = false;
   double _dragDx = 0;
-  double _dragDy = 0;
 
   bool _isSwipeAllowed(BuildContext context) {
     if (!widget.enabled) return false;
@@ -68,27 +70,21 @@ class _HorizontalSectionNavigatorState extends State<HorizontalSectionNavigator>
 
   void _onDragStart(DragStartDetails details) {
     _dragDx = 0;
-    _dragDy = 0;
   }
 
   void _onDragUpdate(DragUpdateDetails details) {
     _dragDx += details.delta.dx;
-    _dragDy += details.delta.dy;
   }
 
   void _onDragEnd(DragEndDetails details) {
     if (!_isSwipeAllowed(context)) return;
 
     final vx = details.velocity.pixelsPerSecond.dx;
-    final vy = details.velocity.pixelsPerSecond.dy;
-
-    // Must be predominantly horizontal
-    if (vx.abs() < vy.abs()) return;
 
     if (vx.abs() >= widget.flingVelocity || _dragDx.abs() >= widget.dragDistance) {
-      if (vx < 0 || _dragDx < 0) {
+      if (vx < 0 || (_dragDx < 0 && vx.abs() < widget.flingVelocity)) {
         _handleNavigation(isNext: true);
-      } else if (vx > 0 || _dragDx > 0) {
+      } else if (vx > 0 || (_dragDx > 0 && vx.abs() < widget.flingVelocity)) {
         _handleNavigation(isNext: false);
       }
     }
@@ -102,10 +98,10 @@ class _HorizontalSectionNavigatorState extends State<HorizontalSectionNavigator>
 
     return RawGestureDetector(
       gestures: <Type, GestureRecognizerFactory>{
-        PanGestureRecognizer:
-            GestureRecognizerFactoryWithHandlers<PanGestureRecognizer>(
-          () => PanGestureRecognizer(),
-          (PanGestureRecognizer instance) {
+        HorizontalDragGestureRecognizer:
+            GestureRecognizerFactoryWithHandlers<HorizontalDragGestureRecognizer>(
+          () => HorizontalDragGestureRecognizer(),
+          (HorizontalDragGestureRecognizer instance) {
             instance
               ..onStart = _onDragStart
               ..onUpdate = _onDragUpdate

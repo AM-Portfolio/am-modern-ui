@@ -1,5 +1,5 @@
 import 'package:am_common/am_common.dart';
-import 'package:am_dashboard_ui/domain/models/news_models.dart';
+import 'package:am_news_ui/domain/models/news_models.dart';
 import 'package:am_library/am_library.dart';
 
 class NewsRepository {

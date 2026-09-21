@@ -1,8 +1,10 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/core/services/market_data_sdk_service.dart';
+import 'package:am_news_ui/am_news_ui.dart';
 
 import '../../providers/equity_insider_provider.dart';
 import '../widgets/equity_insider_hero.dart';
@@ -177,12 +179,17 @@ class _FundamentalsBody extends ConsumerStatefulWidget {
 }
 
 class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
+  static const double _stickyHeroExtent = 120;
+  static const double _stickyNavExtent = 52;
+
   final ScrollController _scrollController = ScrollController();
   late final List<GlobalKey> _sectionKeys =
-      List.generate(widget.showPeers ? 5 : 4, (_) => GlobalKey());
+      List.generate(widget.showPeers ? 6 : 5, (_) => GlobalKey());
   int _activeIndex = 0;
   bool _isManualScrolling = false;
   bool _isSearchOverlayOpen = false;
+
+  int get _newsKeyIndex => _sectionKeys.length - 1;
 
   @override
   void initState() {
@@ -214,12 +221,15 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
   void _onScroll() {
     if (_isManualScrolling) return;
 
+    // Activate when a section top crosses under the pinned hero + nav.
+    const threshold = _stickyHeroExtent + _stickyNavExtent + 180;
+
     for (int i = _sectionKeys.length - 1; i >= 0; i--) {
       final key = _sectionKeys[i];
       if (key.currentContext != null) {
         final renderBox = key.currentContext!.findRenderObject() as RenderBox;
         final position = renderBox.localToGlobal(Offset.zero).dy;
-        if (position < 300) {
+        if (position < threshold) {
           if (_activeIndex != i) {
             setState(() => _activeIndex = i);
           }
@@ -240,9 +250,14 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
         key.currentContext!,
         duration: const Duration(milliseconds: 500),
         curve: Curves.easeInOut,
-        alignment: 0.05,
+        // Leave room under the pinned section nav.
+        alignment: 0.08,
       );
-      _isManualScrolling = false;
+      if (mounted) {
+        setState(() => _isManualScrolling = false);
+      } else {
+        _isManualScrolling = false;
+      }
     }
   }
 
@@ -284,41 +299,71 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
           builder: (context, constraints) {
             final isMobile = constraints.maxWidth < 800;
 
-            return Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    controller: _scrollController,
-                    physics: const BouncingScrollPhysics(),
+            return CustomScrollView(
+              controller: _scrollController,
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _StickySectionNavDelegate(
+                    extent: _stickyHeroExtent,
+                    backgroundColor: context.colors.scaffoldBackground,
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        isMobile ? 12 : 16,
+                        isMobile ? 12 : 16,
+                        isMobile ? 12 : 16,
+                        8,
+                      ),
+                      child: KeyedSubtree(
+                        key: _sectionKeys[0],
+                        child: EquityInsiderHeroBar(
+                          symbol: widget.symbol,
+                          onSearchTap: _openSearchOverlay,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isMobile ? 12 : 16,
+                    ),
+                    child: EquityInsiderHeroDescription(
+                      symbol: widget.symbol,
+                    ),
+                  ),
+                ),
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _StickySectionNavDelegate(
+                    extent: _stickyNavExtent,
+                    backgroundColor: context.colors.scaffoldBackground,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isMobile ? 12 : 16,
+                      ),
+                      child: EquityInsiderSectionNavBar(
+                        activeIndex: _activeIndex,
+                        onTabSelected: _scrollToSection,
+                        isMobile: isMobile,
+                        showPeers: widget.showPeers,
+                      ),
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
                     padding: EdgeInsets.fromLTRB(
                       isMobile ? 12 : 16,
-                      isMobile ? 12 : 16,
+                      14,
                       isMobile ? 12 : 16,
                       32,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Section 0: Header (Company Hero + Section Nav Bar without card wrapper)
-                        Column(
-                          key: _sectionKeys[0],
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            EquityInsiderHero(
-                              symbol: widget.symbol,
-                              onSearchTap: _openSearchOverlay,
-                            ),
-                            const SizedBox(height: 24),
-                            EquityInsiderSectionNavBar(
-                              activeIndex: _activeIndex,
-                              onTabSelected: _scrollToSection,
-                              isMobile: isMobile,
-                              showPeers: widget.showPeers,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-
                         // Row 1: Valuation & Key Metrics (Left 60%) + Price Performance & Chart (Right 40%)
                         if (isMobile) ...[
                           _buildSectionCard(
@@ -404,7 +449,7 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                         const SizedBox(height: 14),
 
                         // Row 3: Full-width Peer Comparison Section
-                        if (widget.showPeers)
+                        if (widget.showPeers) ...[
                           _buildSectionCard(
                             sectionKey: _sectionKeys[4],
                             context: context,
@@ -414,6 +459,16 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                               onPeerSelected: widget.onSelectSymbol,
                             ),
                           ),
+                          const SizedBox(height: 14),
+                        ],
+                        KeyedSubtree(
+                          key: _sectionKeys[_newsKeyIndex],
+                          child: SymbolNewsSection(
+                            symbol: widget.symbol,
+                            surface: NewsUiSurface.equityInsider,
+                            embedInScroll: true,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -494,6 +549,52 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
           ),
       ],
     );
+  }
+}
+
+class _StickySectionNavDelegate extends SliverPersistentHeaderDelegate {
+  _StickySectionNavDelegate({
+    required this.child,
+    required this.backgroundColor,
+    required this.extent,
+  });
+
+  final Widget child;
+  final Color backgroundColor;
+  final double extent;
+
+  @override
+  double get minExtent => extent;
+
+  @override
+  double get maxExtent => extent;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Material(
+      color: backgroundColor,
+      elevation: overlapsContent || shrinkOffset > 0 ? 1.5 : 0,
+      shadowColor: Colors.black26,
+      child: SizedBox(
+        height: extent,
+        width: double.infinity,
+        child: Align(
+          alignment: Alignment.center,
+          child: child,
+        ),
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _StickySectionNavDelegate oldDelegate) {
+    return oldDelegate.child != child ||
+        oldDelegate.backgroundColor != backgroundColor ||
+        oldDelegate.extent != extent;
   }
 }
 

@@ -1,5 +1,6 @@
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_news_ui/am_news_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -55,6 +56,7 @@ _JournalTab _journalTabFromSlug(String slug) => switch (slug.toLowerCase()) {
 class _JournalWebPageState extends ConsumerState<JournalWebPage> {
   List<JournalEntry> _entries = const [];
   late _JournalTab _tab;
+  String _journalSymbol = '';
 
   @override
   void initState() {
@@ -196,33 +198,49 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
                         );
                       }
 
-                      return IndexedStack(
-                        index: _tab.index,
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _buildEntries(
-                            journalCubit,
-                            notebookCubit,
-                            loadedEntries,
-                            summary,
-                          ),
-                          TemplateBrowserPage(
-                            embedded: true,
-                            onTemplateSelected: (_) async {
-                              await journalCubit.loadJournalEntries();
-                              if (!context.mounted) return;
-                              setState(() => _tab = _JournalTab.entries);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: const Text(
-                                    'Playbook applied — continue in Entries',
-                                  ),
-                                  backgroundColor: ModuleColors.trade,
+                          Expanded(
+                            child: IndexedStack(
+                              index: _tab.index,
+                              children: [
+                                _buildEntries(
+                                  journalCubit,
+                                  notebookCubit,
+                                  loadedEntries,
+                                  summary,
                                 ),
-                              );
-                            },
+                                TemplateBrowserPage(
+                                  embedded: true,
+                                  onTemplateSelected: (_) async {
+                                    await journalCubit.loadJournalEntries();
+                                    if (!context.mounted) return;
+                                    setState(() => _tab = _JournalTab.entries);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: const Text(
+                                          'Playbook applied — continue in Entries',
+                                        ),
+                                        backgroundColor: ModuleColors.trade,
+                                      ),
+                                    );
+                                  },
+                                ),
+                                JournalInsightsPage(journalCubit: journalCubit),
+                                WeeklyReviewPage(journalCubit: journalCubit),
+                              ],
+                            ),
                           ),
-                          JournalInsightsPage(journalCubit: journalCubit),
-                          WeeklyReviewPage(journalCubit: journalCubit),
+                          if (_tab == _JournalTab.entries)
+                            Padding(
+                              padding:
+                                  const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                              child: SymbolNewsSection(
+                                symbol: _journalSymbol,
+                                surface: NewsUiSurface.tradeJournal,
+                              ),
+                            ),
                         ],
                       );
                     },
@@ -319,6 +337,11 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
             journalCubit: journalCubit,
             notebookCubit: notebookCubit,
             portfolioId: widget.portfolioId ?? '',
+            onSelectedSymbolChanged: (symbol) {
+              final next = symbol?.trim() ?? '';
+              if (next == _journalSymbol) return;
+              setState(() => _journalSymbol = next);
+            },
             onAddFolder: () async {
               final result = await showDialog<Map<String, dynamic>>(
                 context: context,

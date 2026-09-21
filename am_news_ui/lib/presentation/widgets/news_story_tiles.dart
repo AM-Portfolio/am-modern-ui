@@ -1,9 +1,9 @@
 import 'package:am_common/am_common.dart';
-import 'package:am_dashboard_ui/domain/models/news_models.dart';
-import 'package:am_dashboard_ui/presentation/shared/widgets/news_article_opener.dart';
-import 'package:am_dashboard_ui/presentation/shared/widgets/news_relative_time.dart';
-import 'package:am_dashboard_ui/presentation/shared/widgets/news_symbol_chip.dart';
-import 'package:am_dashboard_ui/presentation/shared/widgets/news_thumbnail.dart';
+import 'package:am_news_ui/domain/models/news_models.dart';
+import 'package:am_news_ui/presentation/widgets/news_article_opener.dart';
+import 'package:am_news_ui/presentation/widgets/news_relative_time.dart';
+import 'package:am_news_ui/presentation/widgets/news_symbol_chip.dart';
+import 'package:am_news_ui/presentation/widgets/news_thumbnail.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 

@@ -99,7 +99,7 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
               iconSize: 16,
               borderRadius: 6,
               isExpanded: true,
-              primaryColor: colors.actionPrimaryBg,
+              primaryColor: ModuleColors.market,
               backgroundColor: colors.cardSurface,
               borderColor: colors.divider,
               textColor: colors.textPrimary,
@@ -339,7 +339,7 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
     Color? countColor,
   }) {
     final colors = context.colors;
-    final accent = colors.actionPrimaryBg;
+    final accent = ModuleColors.market;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(6),
@@ -532,7 +532,7 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
 
   Widget _typeDropdown(BuildContext context) {
     final colors = context.colors;
-    final primary = colors.actionPrimaryBg;
+    final primary = ModuleColors.market;
     return SizedBox(
       width: 140,
       child: CustomDropdown<String>(
@@ -589,7 +589,7 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(6),
-            borderSide: BorderSide(color: colors.actionPrimaryBg),
+            borderSide: BorderSide(color: ModuleColors.market),
           ),
         ),
       ),
@@ -720,7 +720,7 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
 
         if (isMobile) {
           return RefreshIndicator(
-            color: colors.actionPrimaryBg,
+            color: ModuleColors.market,
             onRefresh: refresh,
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),

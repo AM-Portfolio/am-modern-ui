@@ -334,7 +334,7 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
 
         if (isMobile) {
           return RefreshIndicator(
-            color: colors.actionPrimaryBg,
+            color: ModuleColors.market,
             onRefresh: refresh,
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
