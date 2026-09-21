@@ -229,7 +229,7 @@ class GlobalSidebar extends StatelessWidget {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      'Profile & Settings',
+                      onLogout == null ? 'Sign in' : 'Profile & Settings',
                       style: TextStyle(
                         color: themeColors.textPrimary,
                         fontSize: 14,
@@ -239,28 +239,30 @@ class GlobalSidebar extends StatelessWidget {
                   ],
                 ),
               ),
-              const PopupMenuDivider(),
-              PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.logout_rounded,
-                      color: themeColors.statusError,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Logout',
-                      style: TextStyle(
+              if (onLogout != null) ...[
+                const PopupMenuDivider(),
+                PopupMenuItem(
+                  value: 'logout',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.logout_rounded,
                         color: themeColors.statusError,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
+                        size: 20,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 12),
+                      Text(
+                        'Logout',
+                        style: TextStyle(
+                          color: themeColors.statusError,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ],
             child: Container(
               width: 44,

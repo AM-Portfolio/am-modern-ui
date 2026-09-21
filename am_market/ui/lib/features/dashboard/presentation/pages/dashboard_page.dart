@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:am_market_ui/core/providers/view_mode_provider.dart' as view_mode;
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_market_common/providers/market_provider.dart';
+import 'package:go_router/go_router.dart';
 
 
 import 'package:am_market_ui/features/etf/etf_explorer_page.dart';
@@ -191,7 +194,81 @@ class _MarketContentState extends ConsumerState<MarketContent> {
   void initState() {
     super.initState();
     _initializeSwipeController();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _bindPriceService());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _bindPriceService();
+      _maybePromptAuthFromQuery();
+    });
+  }
+
+  bool _authPromptHandled = false;
+
+  /// Deep-link bounce: `/app/market/...?auth=paper|chart` opens Login / Cancel once.
+  void _maybePromptAuthFromQuery() {
+    if (_authPromptHandled || !mounted) return;
+    final uri = GoRouterState.of(context).uri;
+    final auth = uri.queryParameters['auth'];
+    if (auth != 'paper' && auth != 'chart') return;
+    _authPromptHandled = true;
+
+    final symbol = uri.queryParameters['symbol'];
+    final tf = uri.queryParameters['tf'];
+    final redirectPath = auth == 'paper'
+        ? '/app/market/paper'
+        : () {
+            final params = <String, String>{
+              if (symbol != null && symbol.isNotEmpty) 'symbol': symbol,
+              if (tf != null && tf.isNotEmpty) 'tf': tf,
+            };
+            return Uri(
+              path: '/app/chart/workspace',
+              queryParameters: params.isEmpty ? null : params,
+            ).toString();
+          }();
+
+    // Strip the one-shot query so Cancel leaves a clean Market URL.
+    final clean = Uri(
+      path: uri.path.isEmpty ? '/app/market/all-indices' : uri.path,
+    ).toString();
+    context.go(clean);
+
+    unawaited(
+      showLoginRequiredDialog(
+        context,
+        redirectPath: redirectPath,
+        title: auth == 'paper'
+            ? 'Sign in to use Paper trading'
+            : 'Sign in to open Chart',
+        message: auth == 'paper'
+            ? 'Paper trading requires an account. Cancel to keep browsing Market.'
+            : 'The chart terminal requires an account. Cancel to keep browsing Market.',
+      ),
+    );
+  }
+
+  Future<void> _openChartTerminal() async {
+    await requireAuthThen(
+      context,
+      redirectPath: '/app/chart/workspace',
+      title: 'Sign in to open Chart',
+      message:
+          'The chart terminal requires an account. Cancel to keep browsing Market.',
+      onAuthenticated: () => context.go('/app/chart/workspace'),
+    );
+  }
+
+  Future<void> _openPaperTab(int paperIndex) async {
+    await requireAuthThen(
+      context,
+      redirectPath: '/app/market/paper',
+      title: 'Sign in to use Paper trading',
+      message:
+          'Paper trading requires an account. Cancel to keep browsing Market.',
+      onAuthenticated: () {
+        _swipeController.navigateTo(paperIndex);
+        context.read<MarketProvider>().selectIndex('Paper');
+        widget.onTabChanged?.call('paper');
+      },
+    );
   }
 
   Future<void> _bindPriceService() async {
@@ -218,9 +295,42 @@ class _MarketContentState extends ConsumerState<MarketContent> {
 
     _swipeController.addListener(() {
       if (!mounted) return;
+      final currentTitle = _swipeController.currentItem.title;
+
+      // Guests cannot land on Paper via swipe — bounce back + dialog.
+      if (currentTitle == 'Paper') {
+        final auth = context.read<AuthCubit>().state;
+        if (auth is! Authenticated) {
+          final prev = _swipeController.currentIndex > 0
+              ? _swipeController.currentIndex - 1
+              : 0;
+          // Prefer Dashboard / All Indices over staying on Paper.
+          final items = _swipeController.items;
+          var bounce = 0;
+          for (var i = 0; i < items.length; i++) {
+            if (items[i].title == 'Dashboard' ||
+                items[i].title == 'All Indices') {
+              bounce = i;
+              break;
+            }
+          }
+          if (bounce == _swipeController.currentIndex) bounce = prev;
+          _swipeController.navigateTo(bounce);
+          unawaited(
+            showLoginRequiredDialog(
+              context,
+              redirectPath: '/app/market/paper',
+              title: 'Sign in to use Paper trading',
+              message:
+                  'Paper trading requires an account. Cancel to keep browsing Market.',
+            ),
+          );
+          return;
+        }
+      }
+
       setState(() {});
 
-      final currentTitle = _swipeController.currentItem.title;
       final provider = context.read<MarketProvider>();
       if (provider.selectedIndex != currentTitle) {
         provider.selectIndex(currentTitle);
@@ -492,6 +602,17 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         _createSidebarItem(i++, 'Paper', Icons.science_outlined, 'Paper trading desk'),
       _createSidebarItem(i++, 'Dashboard', Icons.home_rounded, 'Overview'),
       _createSidebarItem(i++, 'Market Analysis', Icons.analytics_rounded, 'Detailed charts'),
+      SecondarySidebarItem(
+        title: 'Chart',
+        icon: Icons.show_chart_rounded,
+        subtitle: 'Advanced chart terminal',
+        isSelected: GoRouterState.of(context)
+            .uri
+            .path
+            .startsWith('/app/chart/workspace'),
+        accentColor: ModuleColors.market,
+        onTap: () => unawaited(_openChartTerminal()),
+      ),
       _createSidebarItem(i++, 'Equity Insider', Icons.insights_rounded, 'Fundamental analysis'),
       _createSidebarItem(i++, 'Futures & Options', Icons.candlestick_chart_rounded, 'F&O contracts & chain'),
       _createSidebarItem(i++, 'Watch List', Icons.star_border_rounded, 'Custom tracking'),
@@ -520,6 +641,10 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     isSelected: _swipeController.currentIndex == index,
     accentColor: ModuleColors.market,
     onTap: () {
+      if (title == 'Paper') {
+        unawaited(_openPaperTab(index));
+        return;
+      }
       if (title == 'Equity Insider') {
         _equityInsiderKey.currentState?.resetToLanding();
       }

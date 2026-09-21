@@ -22,6 +22,7 @@ class EquityInsiderPage extends ConsumerStatefulWidget {
     super.key,
     this.initialSymbol,
     this.showPeers = true,
+    this.compactEmbed = false,
   });
 
   /// When set (e.g. paper desk watchlist), loads this symbol instead of empty search.
@@ -29,6 +30,9 @@ class EquityInsiderPage extends ConsumerStatefulWidget {
 
   /// Paper desk hides Peers; Market Equity Insider keeps it (default true).
   final bool showPeers;
+
+  /// Chart terminal embed: less chrome, tighter padding, no page gradient.
+  final bool compactEmbed;
 
   @override
   ConsumerState<EquityInsiderPage> createState() => EquityInsiderPageState();
@@ -108,6 +112,20 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
   Widget build(BuildContext context) {
     final marketCyan = ModuleColors.market;
     final scaffoldBg = context.colors.scaffoldBackground;
+    final compact = widget.compactEmbed;
+
+    final body = SafeArea(
+      child: _submittedSymbol == null
+          ? _buildEmptySearch()
+          : _buildDataView(_submittedSymbol!),
+    );
+
+    if (compact) {
+      return Scaffold(
+        backgroundColor: Colors.transparent,
+        body: body,
+      );
+    }
 
     return Scaffold(
       body: Container(
@@ -123,11 +141,7 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
             stops: const [0.0, 0.5, 1.0],
           ),
         ),
-        child: SafeArea(
-          child: _submittedSymbol == null
-              ? _buildEmptySearch()
-              : _buildDataView(_submittedSymbol!),
-        ),
+        child: body,
       ),
     );
   }
@@ -151,6 +165,7 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
       onSelectSymbol: navigateToSymbol,
       onBack: _handleBack,
       showPeers: widget.showPeers,
+      compactEmbed: widget.compactEmbed,
     );
   }
 }
@@ -164,6 +179,7 @@ class _FundamentalsBody extends ConsumerStatefulWidget {
     required this.onSelectSymbol,
     required this.onBack,
     this.showPeers = true,
+    this.compactEmbed = false,
   });
 
   final String symbol;
@@ -173,6 +189,7 @@ class _FundamentalsBody extends ConsumerStatefulWidget {
   final ValueChanged<String> onSelectSymbol;
   final VoidCallback onBack;
   final bool showPeers;
+  final bool compactEmbed;
 
   @override
   ConsumerState<_FundamentalsBody> createState() => _FundamentalsBodyState();
@@ -180,7 +197,9 @@ class _FundamentalsBody extends ConsumerStatefulWidget {
 
 class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
   static const double _stickyHeroExtent = 120;
+  static const double _stickyHeroExtentCompact = 72;
   static const double _stickyNavExtent = 52;
+  static const double _stickyNavExtentCompact = 40;
 
   final ScrollController _scrollController = ScrollController();
   late final List<GlobalKey> _sectionKeys =
@@ -190,6 +209,10 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
   bool _isSearchOverlayOpen = false;
 
   int get _newsKeyIndex => _sectionKeys.length - 1;
+  double get _heroExtent =>
+      widget.compactEmbed ? _stickyHeroExtentCompact : _stickyHeroExtent;
+  double get _navExtent =>
+      widget.compactEmbed ? _stickyNavExtentCompact : _stickyNavExtent;
 
   @override
   void initState() {
@@ -222,7 +245,7 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
     if (_isManualScrolling) return;
 
     // Activate when a section top crosses under the pinned hero + nav.
-    const threshold = _stickyHeroExtent + _stickyNavExtent + 180;
+    final threshold = _heroExtent + _navExtent + (widget.compactEmbed ? 80 : 180);
 
     for (int i = _sectionKeys.length - 1; i >= 0; i--) {
       final key = _sectionKeys[i];
@@ -267,10 +290,13 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
     GlobalKey? sectionKey,
     bool isMobile = false,
   }) {
+    final pad = widget.compactEmbed
+        ? (isMobile ? 8.0 : 10.0)
+        : (isMobile ? 16.0 : 24.0);
     return Container(
       key: sectionKey,
       child: GlassCard(
-        padding: EdgeInsets.all(isMobile ? 16 : 24),
+        padding: EdgeInsets.all(pad),
         child: child,
       ),
     );
@@ -306,48 +332,53 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                 SliverPersistentHeader(
                   pinned: true,
                   delegate: _StickySectionNavDelegate(
-                    extent: _stickyHeroExtent,
+                    extent: _heroExtent,
                     backgroundColor: context.colors.scaffoldBackground,
                     child: Padding(
                       padding: EdgeInsets.fromLTRB(
-                        isMobile ? 12 : 16,
-                        isMobile ? 12 : 16,
-                        isMobile ? 12 : 16,
-                        8,
+                        isMobile ? 8 : (widget.compactEmbed ? 8 : 16),
+                        isMobile ? 8 : (widget.compactEmbed ? 6 : 16),
+                        isMobile ? 8 : (widget.compactEmbed ? 8 : 16),
+                        widget.compactEmbed ? 4 : 8,
                       ),
                       child: KeyedSubtree(
                         key: _sectionKeys[0],
                         child: EquityInsiderHeroBar(
                           symbol: widget.symbol,
-                          onSearchTap: _openSearchOverlay,
+                          onSearchTap: widget.compactEmbed
+                              ? null
+                              : _openSearchOverlay,
                         ),
                       ),
                     ),
                   ),
                 ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isMobile ? 12 : 16,
-                    ),
-                    child: EquityInsiderHeroDescription(
-                      symbol: widget.symbol,
-                    ),
-                  ),
-                ),
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _StickySectionNavDelegate(
-                    extent: _stickyNavExtent,
-                    backgroundColor: context.colors.scaffoldBackground,
+                if (!widget.compactEmbed)
+                  SliverToBoxAdapter(
                     child: Padding(
                       padding: EdgeInsets.symmetric(
                         horizontal: isMobile ? 12 : 16,
                       ),
+                      child: EquityInsiderHeroDescription(
+                        symbol: widget.symbol,
+                      ),
+                    ),
+                  ),
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _StickySectionNavDelegate(
+                    extent: _navExtent,
+                    backgroundColor: context.colors.scaffoldBackground,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isMobile
+                            ? 8
+                            : (widget.compactEmbed ? 8 : 16),
+                      ),
                       child: EquityInsiderSectionNavBar(
                         activeIndex: _activeIndex,
                         onTabSelected: _scrollToSection,
-                        isMobile: isMobile,
+                        isMobile: isMobile || widget.compactEmbed,
                         showPeers: widget.showPeers,
                       ),
                     ),
@@ -356,22 +387,22 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(
-                      isMobile ? 12 : 16,
-                      14,
-                      isMobile ? 12 : 16,
-                      32,
+                      isMobile ? 8 : (widget.compactEmbed ? 8 : 16),
+                      widget.compactEmbed ? 8 : 14,
+                      isMobile ? 8 : (widget.compactEmbed ? 8 : 16),
+                      widget.compactEmbed ? 12 : 32,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         // Row 1: Valuation & Key Metrics (Left 60%) + Price Performance & Chart (Right 40%)
-                        if (isMobile) ...[
+                        if (isMobile || widget.compactEmbed) ...[
                           _buildSectionCard(
                             context: context,
                             isMobile: isMobile,
                             child: EquityInsiderKpis(symbol: widget.symbol),
                           ),
-                          const SizedBox(height: 14),
+                          SizedBox(height: widget.compactEmbed ? 8 : 14),
                           _buildSectionCard(
                             sectionKey: _sectionKeys[1],
                             context: context,
@@ -403,17 +434,20 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                             ],
                           ),
                         ],
-                        const SizedBox(height: 14),
+                        SizedBox(height: widget.compactEmbed ? 8 : 14),
 
                         // Row 2: Financial Performance (Left 60%) + Shareholding Pattern (Right 40%)
-                        if (isMobile) ...[
+                        if (isMobile || widget.compactEmbed) ...[
                           _buildSectionCard(
                             sectionKey: _sectionKeys[2],
                             context: context,
                             isMobile: isMobile,
-                            child: EquityInsiderFinancials(symbol: widget.symbol),
+                            child: EquityInsiderFinancials(
+                              symbol: widget.symbol,
+                              compact: widget.compactEmbed,
+                            ),
                           ),
-                          const SizedBox(height: 14),
+                          SizedBox(height: widget.compactEmbed ? 8 : 14),
                           _buildSectionCard(
                             sectionKey: _sectionKeys[3],
                             context: context,
@@ -430,7 +464,10 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                                   sectionKey: _sectionKeys[2],
                                   context: context,
                                   isMobile: false,
-                                  child: EquityInsiderFinancials(symbol: widget.symbol),
+                                  child: EquityInsiderFinancials(
+                                    symbol: widget.symbol,
+                                    compact: widget.compactEmbed,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 14),

@@ -10,8 +10,13 @@ import 'equity_insider_financials_charts.dart';
 
 class EquityInsiderFinancials extends ConsumerStatefulWidget {
   final String symbol;
+  final bool compact;
 
-  const EquityInsiderFinancials({super.key, required this.symbol});
+  const EquityInsiderFinancials({
+    super.key,
+    required this.symbol,
+    this.compact = false,
+  });
 
   @override
   ConsumerState<EquityInsiderFinancials> createState() =>
@@ -19,12 +24,26 @@ class EquityInsiderFinancials extends ConsumerStatefulWidget {
 }
 
 class _EquityInsiderFinancialsState
-    extends ConsumerState<EquityInsiderFinancials> {
+    extends ConsumerState<EquityInsiderFinancials>
+    with SingleTickerProviderStateMixin {
   bool _isQuarterly = false;
   final int _periodCount = 4;
   bool _showRevenue = true;
   bool _showPAT = true;
   bool _showPatMargin = false;
+  late final TabController _compactTabs;
+
+  @override
+  void initState() {
+    super.initState();
+    _compactTabs = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _compactTabs.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +52,19 @@ class _EquityInsiderFinancialsState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(context, 'Financial performance'),
+        if (!widget.compact) _buildSectionHeader(context, 'Financial performance'),
+        if (widget.compact)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Text(
+              'Financials',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: context.textPrimary,
+              ),
+            ),
+          ),
         asyncData.when(
           data: (data) {
             if (data == null) return const Text('No financials data available');
@@ -43,6 +74,74 @@ class _EquityInsiderFinancialsState
             final statements = _isQuarterly && quarterlyStatements.isNotEmpty
                 ? quarterlyStatements
                 : annualStatements;
+            final balanceSheets = _maps(data.balanceSheet);
+
+            if (widget.compact) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildControlBar(context),
+                  const SizedBox(height: 6),
+                  TabBar(
+                    controller: _compactTabs,
+                    isScrollable: true,
+                    tabAlignment: TabAlignment.start,
+                    labelStyle: const TextStyle(
+                        fontSize: 11, fontWeight: FontWeight.w600),
+                    tabs: const [
+                      Tab(text: 'Income', height: 32),
+                      Tab(text: 'Balance', height: 32),
+                      Tab(text: 'Takeaways', height: 32),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  SizedBox(
+                    height: 200,
+                    child: TabBarView(
+                      controller: _compactTabs,
+                      children: [
+                        SingleChildScrollView(
+                          child: FinancialComparisonSection(
+                            statements: statements,
+                            balanceSheets: const [],
+                            isQuarterly: _isQuarterly,
+                            periodCount: _periodCount,
+                            showRevenue: _showRevenue,
+                            showPAT: _showPAT,
+                            showPatMargin: _showPatMargin,
+                            tableOnly: true,
+                          ),
+                        ),
+                        SingleChildScrollView(
+                          child: FinancialComparisonSection(
+                            statements: statements,
+                            balanceSheets: balanceSheets,
+                            isQuarterly: _isQuarterly,
+                            periodCount: _periodCount,
+                            showRevenue: false,
+                            showPAT: false,
+                            showPatMargin: false,
+                            takeawaysOnly: true,
+                          ),
+                        ),
+                        SingleChildScrollView(
+                          child: FinancialComparisonSection(
+                            statements: statements,
+                            balanceSheets: balanceSheets,
+                            isQuarterly: _isQuarterly,
+                            periodCount: _periodCount,
+                            showRevenue: _showRevenue,
+                            showPAT: _showPAT,
+                            showPatMargin: _showPatMargin,
+                            takeawaysOnly: true,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            }
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,7 +172,7 @@ class _EquityInsiderFinancialsState
                 const SizedBox(height: 14),
                 FinancialComparisonSection(
                   statements: statements,
-                  balanceSheets: _maps(data.balanceSheet),
+                  balanceSheets: balanceSheets,
                   isQuarterly: _isQuarterly,
                   periodCount: _periodCount,
                   showRevenue: _showRevenue,

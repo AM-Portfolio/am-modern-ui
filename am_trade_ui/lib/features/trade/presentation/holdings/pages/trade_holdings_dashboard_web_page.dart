@@ -113,8 +113,6 @@ class _TradeHoldingsDashboardWebPageState
               final filteredHoldings = widget.embedded
                   ? tradeHoldings.holdings
                   : _applyFilters(tradeHoldings.holdings, _currentFilter);
-              final allSymbols =
-                  tradeHoldings.holdings.map((h) => h.symbol).toList();
 
               return TradeHoldingsAdvancedTemplate(
                 holdings: filteredHoldings,
@@ -130,11 +128,15 @@ class _TradeHoldingsDashboardWebPageState
                   ref.invalidate(tradeHoldingsStreamProvider(portfolioId));
                   ref.invalidate(portfolioHoldingsProvider(portfolioId));
                 },
-                listFooter: HoldingsNewsSection(
-                  symbols: allSymbols,
-                  surface: NewsUiSurface.tradeHoldings,
-                  embedInScroll: true,
-                ),
+                listFooter: widget.embedded
+                    ? null
+                    : HoldingsNewsSection(
+                        symbols: tradeHoldings.holdings
+                            .map((h) => h.symbol)
+                            .toList(),
+                        surface: NewsUiSurface.tradeHoldings,
+                        embedInScroll: true,
+                      ),
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),

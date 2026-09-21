@@ -16,7 +16,10 @@ String resolveLaunchLocation({Uri? launchUri}) {
 
   final path = AppRoutes.normalizePath(uri.path.isEmpty ? '/' : uri.path);
   if (path == '/' || path.isEmpty) {
-    return AppRoutes.login;
+    return AppRoutes.publicMarketLanding;
+  }
+  if (AppRoutes.isPublicBrowseRoute(path)) {
+    return uri.hasQuery ? '$path?${uri.query}' : path;
   }
   if (AppRoutes.isAuthenticatedAppRoute(path)) {
     return uri.hasQuery ? '$path?${uri.query}' : path;
@@ -24,5 +27,5 @@ String resolveLaunchLocation({Uri? launchUri}) {
   if (AppRoutes.isPublicAuthRoute(path)) {
     return uri.hasQuery ? '$path?${uri.query}' : path;
   }
-  return AppRoutes.login;
+  return AppRoutes.publicMarketLanding;
 }

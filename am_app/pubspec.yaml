@@ -35,6 +35,8 @@ dependencies:
     path: ../am_trade_ui
   am_paper_ui:
     path: ../am_paper_ui
+  am_chart_ui:
+    path: ../am_chart_ui
   am_ai_ui:
     path: ../am_ai_ui
   am_doc_intelligence_ui:

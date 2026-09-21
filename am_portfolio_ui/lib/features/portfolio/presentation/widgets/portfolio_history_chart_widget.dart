@@ -115,12 +115,17 @@ class _PortfolioHistoryChartWidgetState
   }
 
   void _load() {
-    // Chart fetches data based on local selection first, falls back to global
-    final selectedId = _localSelectedId ?? context.selectedPortfolioId;
-    final id = (selectedId == null || selectedId == 'all')
-        ? widget.portfolioId
-        : selectedId;
-    
+    // Embed / fixed-id charts must use widget.portfolioId, not global selection.
+    final String? id;
+    if (widget.embedMode || !widget.showPortfolioDropdown) {
+      id = widget.portfolioId;
+    } else {
+      final selectedId = _localSelectedId ?? context.selectedPortfolioId;
+      id = (selectedId == null || selectedId == 'all')
+          ? widget.portfolioId
+          : selectedId;
+    }
+
     if (widget.timeFrame == TimeFrame.oneDay) {
       context.read<PortfolioIntradayCubit>().startLiveUpdates(id);
     } else {

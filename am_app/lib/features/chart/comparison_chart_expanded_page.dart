@@ -70,7 +70,7 @@ class _ComparisonChartExpandedPageState
       final state = ref.watch(dashboardOverlayProvider(widget.userId));
       final overlay = ref.read(dashboardOverlayProvider(widget.userId).notifier);
       return Scaffold(
-        appBar: AppBar(title: const Text('Performance Chart')),
+        appBar: AppBar(title: const Text('Full overview')),
         body: Padding(
           padding: const EdgeInsets.all(16),
           child: ComparisonChartView(
@@ -80,6 +80,7 @@ class _ComparisonChartExpandedPageState
               embedMode: true,
               timeFrameCode: tf,
               showExpandButton: false,
+              preNormalizedPercent: true,
               onRemoveSeries: (label) {
                 for (final entry in state.series.entries) {
                   if (entry.value.label == label) {

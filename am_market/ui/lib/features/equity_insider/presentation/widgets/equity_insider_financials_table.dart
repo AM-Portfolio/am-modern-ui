@@ -29,6 +29,9 @@ class FinancialComparisonSection extends StatelessWidget {
   final bool showRevenue;
   final bool showPAT;
   final bool showPatMargin;
+  final bool tableOnly;
+  final bool balanceOnly;
+  final bool takeawaysOnly;
 
   const FinancialComparisonSection({
     super.key,
@@ -39,10 +42,23 @@ class FinancialComparisonSection extends StatelessWidget {
     required this.showRevenue,
     required this.showPAT,
     required this.showPatMargin,
+    this.tableOnly = false,
+    this.balanceOnly = false,
+    this.takeawaysOnly = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (takeawaysOnly) {
+      return _buildTakeawaysCard(context);
+    }
+    if (balanceOnly) {
+      return _buildTableCard(context);
+    }
+    if (tableOnly) {
+      return _buildTableCard(context);
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final isMobile = constraints.maxWidth < 750;
