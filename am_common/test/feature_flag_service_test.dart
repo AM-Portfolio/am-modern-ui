@@ -3,6 +3,7 @@ import 'package:am_common/core/feature_flags/feature_flag_config.dart';
 import 'package:am_common/core/feature_flags/feature_flag_keys.dart';
 import 'package:am_common/core/feature_flags/feature_flag_provider.dart';
 import 'package:am_common/core/feature_flags/feature_flag_service.dart';
+import 'package:am_common/core/feature_flags/news/news_feature_flag_keys.dart';
 
 void main() {
   test('FeatureFlagConfig disabled without client key', () {
@@ -32,11 +33,11 @@ void main() {
       isTrue,
     );
     expect(
-      service.isOn(FeatureFlagKeys.newsUiEnabled, defaultValue: true),
+      service.isOn(NewsFeatureFlagKeys.enabled, defaultValue: true),
       isTrue,
     );
     expect(
-      service.isOn(FeatureFlagKeys.newsUiEnabled, defaultValue: false),
+      service.isOn(NewsFeatureFlagKeys.enabled, defaultValue: false),
       isFalse,
     );
     expect(

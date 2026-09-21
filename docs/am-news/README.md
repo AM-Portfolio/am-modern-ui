@@ -1,16 +1,17 @@
 # AM News (am-modern-ui)
 
-Dashboard news slot lives on `feature/dashboard-news`. Canonical design, MCP context, TODO, and Draw.io are in the am-market hub:
+Canonical placement + module work: **[docs/news-module/](../news-module/PLAN.md)**.
 
-https://github.com/AM-Portfolio/am-market/blob/feature/am-news/am-news/docs/am-news/README.md
+Backend / ingest design remains in am-market:
 
-Local clone: `am-market/am-news/docs/am-news/`.
+https://github.com/AM-Portfolio/am-market/blob/main/am-news/docs/am-news/README.md
 
-This repo owns (after docs review):
+Local: `am-market/am-news/docs/am-news/`.
 
-- `news-ui-enabled` / `newsUiEnabledProvider` (Dart default true except production flavor false; GrowthBook force ON production/dev/preprod)
-- `DashboardWidgetId.news` on `/app/dashboard`
-- `EnvDomains.news` = `$apiBase/news`, then `POST /v1/insight`
-- Holdings symbols from portfolio holdings, not movers
+This repo owns:
 
-Do not duplicate PLAN here. Do not call Upstox or admin routes from Flutter.
+- Package `am_news_ui`
+- GrowthBook News flags under `am_common/lib/core/feature_flags/news/`
+- Host wiring on Dashboard / Market / Portfolio / Trade pages listed in `docs/news-module/PLAN.md`
+
+Do not call Upstox or admin routes from Flutter.

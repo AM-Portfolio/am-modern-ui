@@ -60,6 +60,9 @@ export 'core/feature_flags/feature_flag_config.dart';
 export 'core/feature_flags/feature_flag_service.dart';
 export 'core/feature_flags/feature_flag_provider.dart';
 export 'core/feature_flags/feature_flag_platform.dart';
+export 'core/feature_flags/news/news_ui_surface.dart';
+export 'core/feature_flags/news/news_feature_flag_keys.dart';
+export 'core/feature_flags/news/news_feature_flag_providers.dart';
 export 'core/offline_sync/offline_sync.dart';
 
 // Widgets

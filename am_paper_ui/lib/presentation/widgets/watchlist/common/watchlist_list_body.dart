@@ -33,7 +33,7 @@ class WatchlistListBody extends StatelessWidget {
 
     return Expanded(
       child: RefreshIndicator(
-        color: colors.actionPrimaryBg,
+        color: ModuleColors.market,
         onRefresh: controller.pullToRefresh,
         child: controller.loadingList
             ? ListView(

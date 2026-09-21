@@ -36,7 +36,7 @@ class PaperOrderTicketWeb extends StatelessWidget {
     final c = controller;
     final isBuy = c.side == 'BUY';
     final ctaColor =
-        isBuy ? colors.actionPrimaryBg : colors.marketNegativeIndicator;
+        isBuy ? ModuleColors.market : colors.marketNegativeIndicator;
     final fmt = NumberFormat('#,##0.00');
     final ltp = c.quote?.ltp ?? 0;
     final change = c.quote?.change ?? 0;
@@ -171,8 +171,8 @@ class PaperOrderTicketWeb extends StatelessWidget {
                               compact: compact,
                               trailing: Switch.adaptive(
                                 value: c.useLimit,
-                                activeThumbColor: colors.actionPrimaryBg,
-                                activeTrackColor: colors.actionPrimaryBg
+                                activeThumbColor: ModuleColors.market,
+                                activeTrackColor: ModuleColors.market
                                     .withValues(alpha: 0.35),
                                 onChanged: c.setUseLimit,
                               ),
@@ -249,7 +249,7 @@ class PaperOrderTicketWeb extends StatelessWidget {
                                     height: 24,
                                     child: Checkbox(
                                       value: c.showTrigger,
-                                      activeColor: colors.actionPrimaryBg,
+                                      activeColor: ModuleColors.market,
                                       onChanged: (v) =>
                                           c.setShowTrigger(v ?? false),
                                     ),
@@ -324,7 +324,7 @@ class PaperOrderTicketWeb extends StatelessWidget {
                                       vertical: 3,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: colors.actionPrimaryBg
+                                      color: ModuleColors.market
                                           .withValues(alpha: 0.12),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
@@ -334,7 +334,7 @@ class PaperOrderTicketWeb extends StatelessWidget {
                                           .textTheme
                                           .labelSmall
                                           ?.copyWith(
-                                            color: colors.actionPrimaryBg,
+                                            color: ModuleColors.market,
                                             fontWeight: FontWeight.w600,
                                           ),
                                     ),

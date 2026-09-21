@@ -26,6 +26,7 @@ class JournalThreeColumnLayout extends StatefulWidget {
     this.onAddFolder,
     this.onNewTradeTap,
     this.onEntryDropped,
+    this.onSelectedSymbolChanged,
     super.key,
   });
 
@@ -36,6 +37,7 @@ class JournalThreeColumnLayout extends StatefulWidget {
   final VoidCallback? onAddFolder;
   final VoidCallback? onNewTradeTap;
   final void Function(JournalEntry entry, String folderId)? onEntryDropped;
+  final ValueChanged<String?>? onSelectedSymbolChanged;
 
   @override
   State<JournalThreeColumnLayout> createState() =>
@@ -70,6 +72,7 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
     if (filtered.isNotEmpty) {
       _selectedEntryId = filtered.first.id;
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _notifySelectedSymbol());
   }
 
   @override
@@ -83,6 +86,14 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
         _selectedEntryId = filtered.isNotEmpty ? filtered.first.id : null;
       });
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _notifySelectedSymbol());
+  }
+
+  void _notifySelectedSymbol() {
+    final filtered = _filteredEntries;
+    final selected =
+        filtered.where((e) => e.id == _selectedEntryId).firstOrNull;
+    widget.onSelectedSymbolChanged?.call(selected?.symbol);
   }
 
   void _selectFolder(String folder) {
@@ -101,6 +112,7 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
       final entry = filtered.first;
       _useTradeWorkflow = _isTradeLike(entry);
     }
+    _notifySelectedSymbol();
   }
 
   void _startNewEntry({bool tradeWorkflow = false}) {
@@ -110,6 +122,7 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
       _useTradeWorkflow = tradeWorkflow;
       _newFormKey = GlobalKey<JournalEntryFormState>();
     });
+    widget.onSelectedSymbolChanged?.call(null);
   }
 
   bool _isTradeLike(JournalEntry? entry) {
@@ -194,11 +207,14 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
             selectedEntryId: _isCreatingNew ? null : _selectedEntryId,
             listTitle: JournalFolderFilter.listTitle(_selectedFolder),
             emptyMessage: JournalFolderFilter.emptyMessage(_selectedFolder),
-            onEntrySelected: (entry) => setState(() {
-              _selectedEntryId = entry.id;
-              _isCreatingNew = false;
-              _useTradeWorkflow = _isTradeLike(entry);
-            }),
+            onEntrySelected: (entry) {
+              setState(() {
+                _selectedEntryId = entry.id;
+                _isCreatingNew = false;
+                _useTradeWorkflow = _isTradeLike(entry);
+              });
+              widget.onSelectedSymbolChanged?.call(entry.symbol);
+            },
             onLogDayPressed: () => _startNewEntry(tradeWorkflow: false),
           ),
           VerticalDivider(

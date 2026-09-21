@@ -41,12 +41,12 @@ class PaperWalletPane extends StatelessWidget {
                 _WalletCard(
                   label: 'Available',
                   value: '₹${fmt.format(available)}',
-                  accent: colors.actionPrimaryBg,
+                  accent: ModuleColors.market,
                 ),
                 _WalletCard(
                   label: 'Reserved',
                   value: '₹${fmt.format(reserved)}',
-                  accent: colors.actionPrimaryBg,
+                  accent: ModuleColors.market,
                 ),
               ];
               if (wide) {
@@ -102,7 +102,7 @@ class PaperWalletPane extends StatelessWidget {
 
         if (isMobile) {
           return RefreshIndicator(
-            color: colors.actionPrimaryBg,
+            color: ModuleColors.market,
             onRefresh: refresh,
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
