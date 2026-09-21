@@ -202,6 +202,26 @@ void main() {
       );
     });
 
+    test('prefers sidebar portfolio when present in history', () {
+      expect(
+        defaultOverlaySelectedIds(
+          [zerodhaA, zerodhaB, groww],
+          preferredPortfolioId: groww,
+        ),
+        [OverlayChartIds.overall, OverlayChartIds.nifty50, groww],
+      );
+    });
+
+    test('falls back to first when preferred missing from history', () {
+      expect(
+        defaultOverlaySelectedIds(
+          [zerodhaA, zerodhaB],
+          preferredPortfolioId: groww,
+        ),
+        [OverlayChartIds.overall, OverlayChartIds.nifty50, zerodhaA],
+      );
+    });
+
     test('one portfolio plus Overall and NIFTY 50', () {
       expect(
         defaultOverlaySelectedIds([zerodhaA]),
@@ -217,6 +237,18 @@ void main() {
           selectionTouched: false,
         ),
         [OverlayChartIds.overall, OverlayChartIds.nifty50, zerodhaA],
+      );
+    });
+
+    test('untouched selection prefers sidebar portfolio', () {
+      expect(
+        mergeOverlaySelection(
+          previous: const [OverlayChartIds.nifty50],
+          availablePortfolioIds: [zerodhaA, zerodhaB, groww],
+          selectionTouched: false,
+          preferredPortfolioId: groww,
+        ),
+        [OverlayChartIds.overall, OverlayChartIds.nifty50, groww],
       );
     });
 
