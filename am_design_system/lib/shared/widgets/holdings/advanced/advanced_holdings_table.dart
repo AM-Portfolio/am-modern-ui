@@ -49,13 +49,15 @@ class AdvancedHoldingsTable extends StatelessWidget {
           children: [
             _headerCell(context, 'Symbol', 2, 0),
             _headerCell(context, 'Company', 2, 1),
-            _headerCell(context, 'Qty', 1, 2, isNumeric: true),
-            _headerCell(context, 'Avg Price', 1, 3, isNumeric: true),
-            _headerCell(context, 'LTP', 1, 4, isNumeric: true),
-            _headerCell(context, 'Value', 1, 5, isNumeric: true),
-            _headerCell(context, 'P&L', 1, 6, isNumeric: true),
-            _headerCell(context, 'P&L %', 1, 7, isNumeric: true),
-            _headerCell(context, 'Weight', 1, 8, isNumeric: true),
+            _headerCell(context, 'Sector', 1, 2),
+            _headerCell(context, 'Qty', 1, 3, isNumeric: true),
+            _headerCell(context, 'Avg Price', 1, 4, isNumeric: true),
+            _headerCell(context, 'LTP', 1, 5, isNumeric: true),
+            _headerCell(context, 'Value', 1, 6, isNumeric: true),
+            _headerCell(context, 'P&L', 1, 7, isNumeric: true),
+            _headerCell(context, 'P&L %', 1, 8, isNumeric: true),
+            _headerCell(context, '1D %', 1, 9, isNumeric: true),
+            _headerCell(context, 'Weight', 1, 10, isNumeric: true),
           ],
         ),
       );
@@ -142,6 +144,13 @@ class AdvancedHoldingsTable extends StatelessWidget {
             ),
             Expanded(
               child: Text(
+                holding.displaySector,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12),
+              ),
+            ),
+            Expanded(
+              child: Text(
                 holding.displayQuantity,
                 textAlign: TextAlign.right,
                 overflow: TextOverflow.ellipsis,
@@ -185,6 +194,16 @@ class AdvancedHoldingsTable extends StatelessWidget {
                   context,
                   holding.displayProfitLossPercentage,
                   isPositive,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: _pnlPctCell(
+                  context,
+                  holding.displayTodayChangePercentage,
+                  holding.isTodayUp,
                 ),
               ),
             ),
@@ -234,10 +253,26 @@ class AdvancedHoldingsTable extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Flexible(
-            child: Text(
-              holding.displaySymbol,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  holding.displaySymbol,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (holding.showAssetClassChip)
+                  Text(
+                    holding.displayAssetClass,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: accent.withValues(alpha: 0.9),
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
             ),
           ),
         ],

@@ -13,6 +13,7 @@ import 'intelligence_glass_card.dart';
 const kOverviewHealthFactorIds = <String>[
   'diversification',
   'concentration',
+  'volatility',
   'liquidity',
   'allocation',
   'risk_resilience',
@@ -30,7 +31,7 @@ const kHealthScoreCol = 36.0;
 @visibleForTesting
 const kHealthStatusCol = 96.0;
 
-/// Pick the five Overview factors from API components; skip missing ids.
+/// Pick Overview factors from API components; skip missing ids.
 @visibleForTesting
 List<HealthComponent> selectOverviewHealthFactors(
   List<HealthComponent> components,
@@ -78,6 +79,10 @@ String healthReasonDisplay(String? reason) {
     RegExp(r'\s*/\s*vol\s*/\s*', caseSensitive: false),
     ' / volatility / ',
   );
+  t = t.replaceFirst(
+    RegExp(r'^Insufficient history\b', caseSensitive: false),
+    'History short',
+  );
   t = t.replaceAll(RegExp(r',\s*'), ' • ');
   t = t.replaceAllMapped(
     RegExp(r'•\s*([a-z])'),
@@ -90,7 +95,7 @@ class PortfolioHealthCard extends ConsumerWidget {
   const PortfolioHealthCard({
     required this.portfolioId,
     this.compact = false,
-    @Deprecated('Overview always shows the five canonical factors')
+    @Deprecated('Overview shows the canonical Health factors from API')
     this.maxComponents,
     this.minHeight,
     this.fillHeight = false,
@@ -150,6 +155,10 @@ class PortfolioHealthCard extends ConsumerWidget {
           minHeight: minHeight,
           fillHeight: fillHeight,
           padding: padding,
+          // Never nest a card-level scroll here: Overview already scrolls, and
+          // fillHeight peers use _FactorList's own ListView. Nested
+          // SingleChildScrollView + ListView + BackdropFilter caused stuck /
+          // janky page scroll and a collapsed Health card.
           scrollable: false,
           child: _HealthBody(
             fillHeight: fillHeight,
@@ -177,6 +186,8 @@ IconData _factorIcon(String id) {
       return Icons.hub_outlined;
     case 'concentration':
       return Icons.gps_fixed_rounded;
+    case 'volatility':
+      return Icons.waves_outlined;
     case 'liquidity':
       return Icons.water_drop_outlined;
     case 'allocation':
@@ -222,9 +233,11 @@ class _HealthBody extends StatelessWidget {
           strongCount: strongCount,
           gaugeSize: sideBySide ? kHealthGaugeSize : 128,
         );
+        // Never nest a ListView/ScrollView here — Overview already scrolls.
+        // Nested scroll + glass blur was collapsing Health and janking the page.
         final list = _FactorList(
           factors: factors,
-          scrollable: fillHeight && sideBySide,
+          scrollable: false,
         );
 
         if (sideBySide) {
@@ -240,7 +253,7 @@ class _HealthBody extends StatelessWidget {
           return IntrinsicHeight(child: row);
         }
 
-        final column = Column(
+        return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -249,10 +262,6 @@ class _HealthBody extends StatelessWidget {
             list,
           ],
         );
-        if (fillHeight) {
-          return SingleChildScrollView(child: column);
-        }
-        return column;
       },
     );
   }
@@ -390,10 +399,15 @@ class _FactorList extends StatelessWidget {
         style: Theme.of(context).textTheme.bodySmall,
       );
     }
+    final dense = factors.length >= 6;
+    final gap = dense ? 3.0 : 6.0;
     final children = <Widget>[
       for (var i = 0; i < factors.length; i++) ...[
-        if (i > 0) const SizedBox(height: 6),
-        _FactorRow(component: factors[i]),
+        if (i > 0) SizedBox(height: gap),
+        _FactorRow(
+          component: factors[i],
+          compact: dense,
+        ),
       ],
     ];
     if (!scrollable) {
@@ -403,8 +417,10 @@ class _FactorList extends StatelessWidget {
         children: children,
       );
     }
+    // Bounded by peer Expanded — primary scroll stays on Overview page.
     return ListView(
       padding: EdgeInsets.zero,
+      primary: false,
       physics: const ClampingScrollPhysics(),
       children: children,
     );
@@ -412,9 +428,13 @@ class _FactorList extends StatelessWidget {
 }
 
 class _FactorRow extends StatelessWidget {
-  const _FactorRow({required this.component});
+  const _FactorRow({
+    required this.component,
+    this.compact = false,
+  });
 
   final HealthComponent component;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -425,9 +445,11 @@ class _FactorRow extends StatelessWidget {
     final reason = healthReasonDisplay(component.reason);
     final progress = (component.score.clamp(0, 100)) / 100;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final padV = compact ? 3.0 : 5.0;
+    final iconSize = compact ? 26.0 : 32.0;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
+      padding: EdgeInsets.fromLTRB(10, padV, 10, padV),
       decoration: BoxDecoration(
         color: isDark
             ? Colors.white.withValues(alpha: 0.03)
@@ -438,8 +460,8 @@ class _FactorRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: iconSize,
+            height: iconSize,
             decoration: BoxDecoration(
               color: accent.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(8),
@@ -457,7 +479,7 @@ class _FactorRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w700,
-                        fontSize: 13,
+                        fontSize: compact ? 12 : 13,
                       ),
                 ),
                 if (reason.isNotEmpty) ...[
@@ -473,7 +495,7 @@ class _FactorRow extends StatelessWidget {
                         ),
                   ),
                 ],
-                const SizedBox(height: 6),
+                SizedBox(height: compact ? 4 : 6),
                 Row(
                   children: [
                     Expanded(
@@ -481,7 +503,7 @@ class _FactorRow extends StatelessWidget {
                         borderRadius: BorderRadius.circular(3),
                         child: LinearProgressIndicator(
                           value: progress,
-                          minHeight: 4,
+                          minHeight: compact ? 3 : 4,
                           backgroundColor: accent.withValues(alpha: 0.12),
                           color: accent,
                         ),

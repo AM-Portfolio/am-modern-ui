@@ -73,7 +73,9 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
   bool _loadedOnce = false;
   double? _betaUsed;
   bool? _betaAssumed;
-  String? _method;
+  int? _historyDays;
+  /// One refetch after intel settles so chips leave sticky ASSUMED when hist warms.
+  bool _refetchScheduledAfterIntel = false;
 
   @override
   void initState() {
@@ -100,7 +102,8 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
       _loadedOnce = false;
       _betaUsed = null;
       _betaAssumed = null;
-      _method = null;
+      _historyDays = null;
+      _refetchScheduledAfterIntel = false;
     });
     if (widget.initiallyExpanded) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _loadAllPresets());
@@ -168,13 +171,14 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
           ..addAll(failed);
         _betaUsed = result.betaUsed;
         _betaAssumed = result.betaAssumed;
-        _method = result.method;
+        _historyDays = result.historyDays;
         _loadedOnce = true;
         _loading = false;
         if (next.isEmpty) {
           _error = 'Could not load stress scenarios';
         }
       });
+      _maybeRefetchAfterIntelWarm();
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -182,6 +186,20 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
         _error = 'Could not load stress scenarios';
       });
     }
+  }
+
+  /// After intel settles, one more stress fetch if still ASSUMED (hist may be warm).
+  void _maybeRefetchAfterIntelWarm() {
+    if (_refetchScheduledAfterIntel) return;
+    if (_betaAssumed != true) return;
+    final intel = ref.read(portfolioIntelligenceProvider(widget.portfolioId));
+    if (intel.isLoading) return;
+    if (!intel.hasValue && !intel.hasError) return;
+    _refetchScheduledAfterIntel = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_betaAssumed == true) _loadAllPresets();
+    });
   }
 
   Future<void> _runCustom() async {
@@ -238,12 +256,19 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
 
   @override
   Widget build(BuildContext context) {
+    // Parallel first load; when intel finishes and stress still ASSUMED, refetch
+    // so chips pick up PORTFOLIO_BETA after hist warm (stress waits / joins).
+    ref.listen(portfolioIntelligenceProvider(widget.portfolioId), (prev, next) {
+      final settled = next.hasValue || next.hasError;
+      if (!settled) return;
+      _maybeRefetchAfterIntelWarm();
+    });
+
     final sectors = _sectorSuggestions();
     final narrow = MediaQuery.sizeOf(context).width < 600;
     final fill = widget.fillHeight && widget.initiallyExpanded;
-    final scenarios = _buildScenarios(context);
     final custom = _customPanel(context, sectors, narrow: narrow);
-    final meta = _betaMetaBanner(context);
+    final scenarios = _buildScenarios(context, scrollable: fill);
 
     if (!widget.initiallyExpanded) {
       return IntelligenceGlassCard(
@@ -251,6 +276,7 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
         icon: Icons.bolt_rounded,
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
         minHeight: widget.minHeight,
+        trailing: _headerChips(context),
         child: Theme(
           data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
           child: ExpansionTile(
@@ -265,7 +291,8 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             children: [
-              if (meta != null) ...[meta, const SizedBox(height: 6)],
+              custom,
+              const SizedBox(height: 10),
               scenarios,
               if (_error != null) ...[
                 const SizedBox(height: 6),
@@ -278,8 +305,6 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
                   onPressed: _loadAllPresets,
                 ),
               ],
-              const SizedBox(height: 8),
-              custom,
             ],
           ),
         ),
@@ -291,15 +316,28 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
       icon: Icons.bolt_rounded,
       minHeight: widget.minHeight,
       fillHeight: fill,
-      scrollable: fill,
-      trailing: _methodBadge(context),
-      footer: fill ? custom : null,
+      scrollable: false,
+      trailing: _headerChips(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: fill ? MainAxisSize.max : MainAxisSize.min,
         children: [
-          if (meta != null) ...[meta, const SizedBox(height: 6)],
-          scenarios,
+          custom,
+          const SizedBox(height: 10),
+          if (_bandLabel() != null) ...[
+            Text(
+              _bandLabel()!,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Theme.of(context).hintColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            const SizedBox(height: 6),
+          ],
+          if (fill)
+            Expanded(child: scenarios)
+          else
+            scenarios,
           if (_error != null) ...[
             const SizedBox(height: 6),
             Text(
@@ -308,54 +346,83 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
             ),
             IntelligenceTextLink(label: 'Retry →', onPressed: _loadAllPresets),
           ],
-          if (!fill) ...[
-            const SizedBox(height: 8),
-            custom,
-          ],
         ],
       ),
     );
   }
 
-  Widget? _methodBadge(BuildContext context) {
+  String? _bandLabel() {
+    if (_betaAssumed == true) return 'Estimated';
+    final b = _betaUsed;
+    if (b == null) return null;
+    final abs = b.abs();
+    if (abs < 0.8) return 'Defensive';
+    if (abs <= 1.2) return 'Market-like';
+    return 'Aggressive';
+  }
+
+  Widget? _headerChips(BuildContext context) {
     if (_betaAssumed == null && _betaUsed == null) return null;
     final assumed = _betaAssumed == true;
-    final label = assumed
-        ? 'β assumed 1.0'
-        : 'β ${_betaUsed!.toStringAsFixed(2)}';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: ModuleColors.portfolio.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: ModuleColors.portfolio.withValues(alpha: 0.35),
+    final intelLoading =
+        ref.watch(portfolioIntelligenceProvider(widget.portfolioId)).isLoading;
+    final warming = assumed && intelLoading;
+    final String betaLabel;
+    final String estLabel;
+    if (warming) {
+      betaLabel = 'β …';
+      estLabel = 'warming';
+    } else if (assumed) {
+      betaLabel = 'β —';
+      estLabel = 'Est. · β 1.00';
+    } else {
+      betaLabel = 'β ${_betaUsed!.toStringAsFixed(2)}';
+      estLabel = (_historyDays != null && _historyDays! > 0)
+          ? 'Est. · ${_historyDays}d'
+          : 'Est. · hist';
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _chip(
+          context,
+          betaLabel,
+          tooltip: 'Portfolio beta vs benchmark',
+        ),
+        const SizedBox(width: 6),
+        _chip(
+          context,
+          estLabel,
+          tooltip: 'How beta was estimated',
+        ),
+      ],
+    );
+  }
+
+  Widget _chip(BuildContext context, String label, {required String tooltip}) {
+    return Tooltip(
+      message: tooltip,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: ModuleColors.portfolio.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: ModuleColors.portfolio.withValues(alpha: 0.35),
+          ),
+        ),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: ModuleColors.portfolio,
+              ),
         ),
       ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: ModuleColors.portfolio,
-            ),
-      ),
     );
   }
 
-  Widget? _betaMetaBanner(BuildContext context) {
-    if (_rows.isEmpty && !_loadedOnce) return null;
-    final methodBit = (_method != null && _method!.isNotEmpty)
-        ? ' · $_method'
-        : '';
-    return Text(
-      'Index shock ≠ your impact (Impact ≈ β × shock)$methodBit',
-      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: Theme.of(context).hintColor,
-          ),
-    );
-  }
-
-  Widget _buildScenarios(BuildContext context) {
+  Widget _buildScenarios(BuildContext context, {required bool scrollable}) {
     final currency = NumberFormat.currency(
       locale: 'en_IN',
       symbol: '₹',
@@ -375,10 +442,27 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
         ),
       );
     }
-    if (narrow) {
-      return _mobileScenarios(context, currency);
+    if (!_loadedOnce && !_loading) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Text(
+          'No estimates yet',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).hintColor,
+              ),
+        ),
+      );
     }
-    return _desktopScenarios(context, currency);
+    final body = narrow
+        ? _mobileScenarios(context, currency)
+        : _desktopScenarios(context, currency);
+    if (!scrollable) return body;
+    return ListView(
+      padding: EdgeInsets.zero,
+      primary: false,
+      physics: const ClampingScrollPhysics(),
+      children: [body],
+    );
   }
 
   Widget _desktopScenarios(BuildContext context, NumberFormat currency) {

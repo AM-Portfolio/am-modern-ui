@@ -15,6 +15,7 @@ List<AdvancedHoldingRow> mapPortfolioHoldingsToAdvancedRows(
           sector: h.sector.isEmpty ? null : h.sector,
           industry: h.industry.isEmpty ? null : h.industry,
           brokerLabel: h.primaryBroker?.brokerName,
+          assetClass: h.assetClass.isEmpty ? null : h.assetClass,
           quantity: h.quantity,
           avgPrice: h.avgPrice,
           currentPrice: h.currentPrice,

@@ -161,9 +161,42 @@ class _Card extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ],
+                          if (holding.displayMetaSubtitle.isNotEmpty) ...[
+                            const SizedBox(height: AppSpacing.xxs),
+                            Text(
+                              holding.displayMetaSubtitle,
+                              style: TextStyle(
+                                color: muted,
+                                fontSize: AppTypeScale.xs,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ],
                       ),
                     ),
+                    if (holding.showAssetClassChip) ...[
+                      const SizedBox(width: AppSpacing.xs),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm,
+                          vertical: AppSpacing.xxs,
+                        ),
+                        decoration: BoxDecoration(
+                          color: muted.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(AppRadii.xs),
+                        ),
+                        child: Text(
+                          holding.displayAssetClass,
+                          style: TextStyle(
+                            fontSize: AppTypeScale.xs,
+                            fontWeight: FontWeight.w600,
+                            color: muted,
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(width: AppSpacing.sm),
                     Text(
                       holding.displayCurrentValue,

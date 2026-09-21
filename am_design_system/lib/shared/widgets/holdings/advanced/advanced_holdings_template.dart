@@ -122,25 +122,32 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
           result = a.displayCompanyName.compareTo(b.displayCompanyName);
           break;
         case 2:
-          result = a.quantity.compareTo(b.quantity);
+          result = a.displaySector.compareTo(b.displaySector);
           break;
         case 3:
-          result = a.avgPrice.compareTo(b.avgPrice);
+          result = a.quantity.compareTo(b.quantity);
           break;
         case 4:
-          result = a.currentPrice.compareTo(b.currentPrice);
+          result = a.avgPrice.compareTo(b.avgPrice);
           break;
         case 5:
-          result = a.currentValue.compareTo(b.currentValue);
+          result = a.currentPrice.compareTo(b.currentPrice);
           break;
         case 6:
-          result = a.totalGainLoss.compareTo(b.totalGainLoss);
+          result = a.currentValue.compareTo(b.currentValue);
           break;
         case 7:
+          result = a.totalGainLoss.compareTo(b.totalGainLoss);
+          break;
+        case 8:
           result =
               a.totalGainLossPercentage.compareTo(b.totalGainLossPercentage);
           break;
-        case 8:
+        case 9:
+          result =
+              a.todayChangePercentage.compareTo(b.todayChangePercentage);
+          break;
+        case 10:
           result = a.portfolioWeight.compareTo(b.portfolioWeight);
           break;
         default:
