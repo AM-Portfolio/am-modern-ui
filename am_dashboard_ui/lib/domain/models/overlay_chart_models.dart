@@ -37,11 +37,20 @@ class PortfolioOverlayHistory {
     required this.aggregate,
     required this.portfolios,
     required this.byPortfolioId,
+    this.historyStatus,
+    this.phase,
+    this.startedAt,
   });
 
   final List<OverlayPoint> aggregate;
   final List<OverlayPortfolioRef> portfolios;
   final Map<String, List<OverlayPoint>> byPortfolioId;
+  final String? historyStatus;
+  final String? phase;
+  final String? startedAt;
+
+  bool get isBuilding =>
+      (historyStatus ?? '').toUpperCase() == 'BUILDING';
 }
 
 class OverlayChartState {
@@ -54,6 +63,10 @@ class OverlayChartState {
     required this.failedIds,
     this.firstWealth,
     this.lastWealth,
+    this.historyBuilding = false,
+    this.historyPhase,
+    this.historyStartedAt,
+    this.historyReadyToastPending = false,
   });
 
   factory OverlayChartState.initial(String timeFrame) {
@@ -81,6 +94,10 @@ class OverlayChartState {
   final Map<String, String> failedIds;
   final double? firstWealth;
   final double? lastWealth;
+  final bool historyBuilding;
+  final String? historyPhase;
+  final String? historyStartedAt;
+  final bool historyReadyToastPending;
 
   bool get atCap => selectedIds.length >= OverlayChartIds.maxVisibleLines;
 
@@ -105,6 +122,10 @@ class OverlayChartState {
     double? firstWealth,
     double? lastWealth,
     bool clearWealth = false,
+    bool? historyBuilding,
+    String? historyPhase,
+    String? historyStartedAt,
+    bool? historyReadyToastPending,
   }) {
     return OverlayChartState(
       timeFrame: timeFrame ?? this.timeFrame,
@@ -115,6 +136,11 @@ class OverlayChartState {
       failedIds: failedIds ?? this.failedIds,
       firstWealth: clearWealth ? null : (firstWealth ?? this.firstWealth),
       lastWealth: clearWealth ? null : (lastWealth ?? this.lastWealth),
+      historyBuilding: historyBuilding ?? this.historyBuilding,
+      historyPhase: historyPhase ?? this.historyPhase,
+      historyStartedAt: historyStartedAt ?? this.historyStartedAt,
+      historyReadyToastPending:
+          historyReadyToastPending ?? this.historyReadyToastPending,
     );
   }
 }
@@ -250,15 +276,25 @@ String _overlayDisplayName(OverlayPortfolioRef p) {
   return name;
 }
 
-/// Overall + NIFTY 50 by default; optional third line is the first portfolio.
-List<String> defaultOverlaySelectedIds(List<String> portfolioIds) {
+/// Overall + NIFTY 50 by default; optional third line prefers [preferredPortfolioId]
+/// when present in history, otherwise the first portfolio.
+List<String> defaultOverlaySelectedIds(
+  List<String> portfolioIds, {
+  String? preferredPortfolioId,
+}) {
   final selected = <String>[
     OverlayChartIds.overall,
     OverlayChartIds.nifty50,
   ];
   if (selected.length < OverlayChartIds.defaultVisibleLines &&
       portfolioIds.isNotEmpty) {
-    selected.add(portfolioIds.first);
+    final preferred = preferredPortfolioId != null &&
+            preferredPortfolioId.isNotEmpty &&
+            preferredPortfolioId != 'all' &&
+            portfolioIds.contains(preferredPortfolioId)
+        ? preferredPortfolioId
+        : portfolioIds.first;
+    selected.add(preferred);
   }
   return selected.take(OverlayChartIds.defaultVisibleLines).toList();
 }
@@ -267,6 +303,7 @@ List<String> mergeOverlaySelection({
   required List<String> previous,
   required List<String> availablePortfolioIds,
   required bool selectionTouched,
+  String? preferredPortfolioId,
 }) {
   bool isValid(String id) =>
       OverlayChartIds.isOverall(id) ||
@@ -274,9 +311,17 @@ List<String> mergeOverlaySelection({
       OverlayChartIds.isIndex(id);
 
   if (!selectionTouched) {
-    return defaultOverlaySelectedIds(availablePortfolioIds);
+    return defaultOverlaySelectedIds(
+      availablePortfolioIds,
+      preferredPortfolioId: preferredPortfolioId,
+    );
   }
   final kept = previous.where(isValid).take(OverlayChartIds.maxVisibleLines).toList();
-  if (kept.isEmpty) return defaultOverlaySelectedIds(availablePortfolioIds);
+  if (kept.isEmpty) {
+    return defaultOverlaySelectedIds(
+      availablePortfolioIds,
+      preferredPortfolioId: preferredPortfolioId,
+    );
+  }
   return kept;
 }

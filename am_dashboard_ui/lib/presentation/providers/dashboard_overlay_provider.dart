@@ -25,6 +25,20 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
   final String userId;
   int _generation = 0;
   bool _selectionTouched = false;
+  String? _preferredPortfolioId;
+
+  /// When sidebar portfolio changes, prefer that series in the default legend.
+  void setPreferredPortfolioId(String? portfolioId) {
+    final next = (portfolioId == null ||
+            portfolioId.isEmpty ||
+            portfolioId == 'all')
+        ? null
+        : portfolioId;
+    if (_preferredPortfolioId == next) return;
+    _preferredPortfolioId = next;
+    _selectionTouched = false;
+    reload();
+  }
 
   @override
   OverlayChartState build() {
@@ -60,6 +74,11 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
       return _loadIndices(_generation, state.timeFrame, [id]);
     }
     return _loadPortfolios(_generation, state.timeFrame);
+  }
+
+  void clearReadyToast() {
+    if (!state.historyReadyToastPending) return;
+    state = state.copyWith(historyReadyToastPending: false);
   }
 
   Future<void> addSeries(String id) async {
@@ -150,6 +169,7 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
         previous: List<String>.from(state.selectedIds),
         availablePortfolioIds: availableIds,
         selectionTouched: _selectionTouched,
+        preferredPortfolioId: _preferredPortfolioId,
       );
 
       final pending = Set<String>.from(state.pendingIds)
@@ -158,6 +178,8 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
         ..removeWhere((id, _) => !OverlayChartIds.needsIndexFetch(id));
 
       final aggregate = history.aggregate;
+      final wasBuilding = state.historyBuilding;
+      final nowBuilding = history.isBuilding;
       state = state.copyWith(
         selectedIds: selected,
         availablePortfolios: history.portfolios,
@@ -167,7 +189,17 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
         firstWealth: aggregate.isEmpty ? null : aggregate.first.value,
         lastWealth: aggregate.isEmpty ? null : aggregate.last.value,
         clearWealth: aggregate.isEmpty,
+        historyBuilding: nowBuilding,
+        historyPhase: history.phase,
+        historyStartedAt: history.startedAt,
+        historyReadyToastPending: wasBuilding && !nowBuilding,
       );
+
+      if (nowBuilding) {
+        Future<void>.delayed(const Duration(seconds: 3), () {
+          if (gen == _generation) reload();
+        });
+      }
 
       final extraIndices = selected
           .where(OverlayChartIds.isIndex)
