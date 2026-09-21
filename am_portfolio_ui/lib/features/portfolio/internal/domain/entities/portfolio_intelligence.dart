@@ -312,6 +312,7 @@ class StressScenario {
     this.absImpact,
     this.matchedWeightPct,
     this.matchedHoldings,
+    this.appliedShockPct,
     this.note,
   });
 
@@ -320,6 +321,7 @@ class StressScenario {
   final double? absImpact;
   final double? matchedWeightPct;
   final int? matchedHoldings;
+  final double? appliedShockPct;
   final String? note;
 
   factory StressScenario.fromJson(Map<String, dynamic> json) {
@@ -331,6 +333,7 @@ class StressScenario {
       matchedHoldings: json['matchedHoldings'] is int
           ? json['matchedHoldings'] as int
           : int.tryParse('${json['matchedHoldings'] ?? ''}'),
+      appliedShockPct: _asDouble(json['appliedShockPct']),
       note: json['note']?.toString(),
     );
   }

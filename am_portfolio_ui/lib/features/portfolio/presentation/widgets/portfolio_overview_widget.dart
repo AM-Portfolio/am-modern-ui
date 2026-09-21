@@ -505,9 +505,9 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
     const allocationH = 360.0;
     const peerPadding = EdgeInsets.all(14);
 
-    // Chart|Health peer: +48px vs prior band so 6 factors fit (no yellow overflow).
+    // Chart|Health peer: sized for 6 factors (Volatility may arrive after refresh).
     final peerTopH = showHealth
-        ? (isTablet ? 428.0 : 448.0)
+        ? (isTablet ? 440.0 : 460.0)
         : chartH;
     final chart = PortfolioComparisonChartSection(
       key: ValueKey('compare_${portfolioId}_${selectedTimeFrame.code}'),

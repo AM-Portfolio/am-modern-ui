@@ -556,6 +556,7 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
         style: TextStyle(
           color: context.colors.textPrimary,
           fontSize: widget.compact ? 13 : 15,
+          height: 1.2,
         ),
         decoration: InputDecoration(
           hintText: _typewriterController != null
@@ -563,14 +564,19 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
               : (widget.hintText ?? (widget.compact ? 'Symbol…' : 'e.g. HDFC, TCS, RELIANCE')),
           hintStyle: TextStyle(
             color: context.colors.textTertiary,
+            fontSize: widget.compact ? 13 : null,
             fontStyle: _typewriterController != null ? FontStyle.italic : FontStyle.normal,
           ),
+          isDense: widget.compact,
           filled: true,
           fillColor: context.colors.scaffoldBackground,
-          prefixIcon: Icon(Icons.search, color: effectiveAccentColor, size: widget.compact ? 18 : 22),
+          prefixIcon: Icon(Icons.search, color: effectiveAccentColor, size: widget.compact ? 16 : 22),
+          prefixIconConstraints: widget.compact
+              ? const BoxConstraints(minWidth: 34, minHeight: 32)
+              : null,
           suffixIcon: _isLoading
               ? Padding(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(widget.compact ? 8 : 12),
                   child: SizedBox(
                     width: 14,
                     height: 14,
@@ -582,6 +588,11 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
                 )
               : _controller.text.isNotEmpty
                   ? IconButton(
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: widget.compact
+                          ? const BoxConstraints(minWidth: 28, minHeight: 28)
+                          : null,
                       icon: Icon(Icons.clear, color: context.colors.textTertiary, size: widget.compact ? 16 : 18),
                       onPressed: () {
                         _controller.clear();
@@ -590,9 +601,12 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
                       },
                     )
                   : null,
+          suffixIconConstraints: widget.compact
+              ? const BoxConstraints(minWidth: 28, minHeight: 28)
+              : null,
           contentPadding: EdgeInsets.symmetric(
-            horizontal: widget.compact ? 12 : 16,
-            vertical: widget.compact ? 8 : 14,
+            horizontal: widget.compact ? 8 : 16,
+            vertical: widget.compact ? 10 : 14,
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(widget.compact ? 8 : 12),

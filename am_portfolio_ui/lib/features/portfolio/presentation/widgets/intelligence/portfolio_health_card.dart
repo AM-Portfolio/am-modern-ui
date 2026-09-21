@@ -88,10 +88,16 @@ String healthReasonDisplay(String? reason) {
     RegExp(r'•\s*([a-z])'),
     (m) => '• ${m[1]!.toUpperCase()}',
   );
+  // Legacy vol reasons concatenate raw doubles ("Daily vol 3.387555…%").
+  t = t.replaceAllMapped(RegExp(r'(\d+\.\d{3,})\s*%'), (m) {
+    final v = double.tryParse(m[1]!);
+    if (v == null) return m[0]!;
+    return '${v.toStringAsFixed(2)}%';
+  });
   return t;
 }
 
-class PortfolioHealthCard extends ConsumerWidget {
+class PortfolioHealthCard extends ConsumerStatefulWidget {
   const PortfolioHealthCard({
     required this.portfolioId,
     this.compact = false,
@@ -111,34 +117,72 @@ class PortfolioHealthCard extends ConsumerWidget {
   final EdgeInsetsGeometry padding;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(portfolioIntelligenceProvider(portfolioId));
+  ConsumerState<PortfolioHealthCard> createState() =>
+      _PortfolioHealthCardState();
+}
+
+class _PortfolioHealthCardState extends ConsumerState<PortfolioHealthCard> {
+  /// One invalidate after cold intel so Volatility upgrades without F5.
+  bool _refetchScheduledAfterCold = false;
+
+  @override
+  void didUpdateWidget(covariant PortfolioHealthCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.portfolioId != widget.portfolioId) {
+      _refetchScheduledAfterCold = false;
+    }
+  }
+
+  void _maybeRefetchAfterHistWarm(PortfolioIntelligence? intel) {
+    if (_refetchScheduledAfterCold) return;
+    if (intel == null) return;
+    final cold = (intel.confidence ?? 1) < 0.9;
+    final factors = selectOverviewHealthFactors(intel.health?.components ?? const []);
+    final hasVol = factors.any((c) => c.id.toLowerCase() == 'volatility');
+    final volInsufficient = factors.any((c) =>
+        c.id.toLowerCase() == 'volatility' &&
+        (c.reason ?? '').toLowerCase().contains('insufficient'));
+    // Refetch only when still cold / placeholder vol — hist may be warm now.
+    if (!cold && hasVol && !volInsufficient) return;
+    _refetchScheduledAfterCold = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.invalidate(portfolioIntelligenceProvider(widget.portfolioId));
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final async = ref.watch(portfolioIntelligenceProvider(widget.portfolioId));
 
     return async.when(
       loading: () => IntelligenceCardSkeleton(
-        height: minHeight ?? (fillHeight ? 420 : 280),
+        height: widget.minHeight ?? (widget.fillHeight ? 420 : 280),
       ),
       error: (e, _) => IntelligenceGlassCard(
         title: 'Health Score',
         icon: Icons.favorite_rounded,
-        minHeight: minHeight,
-        fillHeight: fillHeight,
-        padding: padding,
+        minHeight: widget.minHeight,
+        fillHeight: widget.fillHeight,
+        padding: widget.padding,
         child: IntelligenceRetryRow(
           message: 'Could not load health score',
           onRetry: () =>
-              ref.invalidate(portfolioIntelligenceProvider(portfolioId)),
+              ref.invalidate(portfolioIntelligenceProvider(widget.portfolioId)),
         ),
       ),
       data: (intel) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _maybeRefetchAfterHistWarm(intel);
+        });
         final health = intel?.health;
         if (health == null) {
           return IntelligenceGlassCard(
             title: 'Health Score',
             icon: Icons.favorite_rounded,
-            minHeight: minHeight,
-            fillHeight: fillHeight,
-            padding: padding,
+            minHeight: widget.minHeight,
+            fillHeight: widget.fillHeight,
+            padding: widget.padding,
             child: Text(
               'Health data unavailable',
               style: Theme.of(context).textTheme.bodySmall,
@@ -152,17 +196,17 @@ class PortfolioHealthCard extends ConsumerWidget {
         return IntelligenceGlassCard(
           title: 'Health Score',
           icon: Icons.favorite_rounded,
-          minHeight: minHeight,
-          fillHeight: fillHeight,
-          padding: padding,
+          minHeight: widget.minHeight,
+          fillHeight: widget.fillHeight,
+          padding: widget.padding,
           // Never nest a card-level scroll here: Overview already scrolls, and
           // fillHeight peers use _FactorList's own ListView. Nested
           // SingleChildScrollView + ListView + BackdropFilter caused stuck /
           // janky page scroll and a collapsed Health card.
           scrollable: false,
           child: _HealthBody(
-            fillHeight: fillHeight,
-            compact: compact,
+            fillHeight: widget.fillHeight,
+            compact: widget.compact,
             score: health.score,
             band: health.band,
             bandColor: _bandColor(context, health.band),
@@ -233,11 +277,12 @@ class _HealthBody extends StatelessWidget {
           strongCount: strongCount,
           gaugeSize: sideBySide ? kHealthGaugeSize : 128,
         );
-        // Never nest a ListView/ScrollView here — Overview already scrolls.
-        // Nested scroll + glass blur was collapsing Health and janking the page.
+        // When peer-stretched (fillHeight), allow a tiny inner scroll so a late
+        // 6th factor (Volatility after history warms) never yellow-overflows.
+        // Unbounded Overview scroll still owns the page when not fillHeight.
         final list = _FactorList(
           factors: factors,
-          scrollable: false,
+          scrollable: fillHeight,
         );
 
         if (sideBySide) {
@@ -400,7 +445,7 @@ class _FactorList extends StatelessWidget {
       );
     }
     final dense = factors.length >= 6;
-    final gap = dense ? 3.0 : 6.0;
+    final gap = dense ? 2.0 : 6.0;
     final children = <Widget>[
       for (var i = 0; i < factors.length; i++) ...[
         if (i > 0) SizedBox(height: gap),
@@ -414,6 +459,7 @@ class _FactorList extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: children,
       );
     }

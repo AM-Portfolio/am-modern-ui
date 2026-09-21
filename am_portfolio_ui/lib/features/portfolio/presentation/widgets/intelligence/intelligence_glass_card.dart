@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:am_design_system/am_design_system.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 /// Shared glass shell for Portfolio Intelligence overview cards.
@@ -87,46 +88,50 @@ class IntelligenceGlassCard extends StatelessWidget {
       ],
     );
 
+    // Web: skip BackdropFilter — multiple live blurs tank Overview scroll.
+    final surface = Container(
+      width: fillHeight ? double.infinity : null,
+      constraints:
+          minHeight != null ? BoxConstraints(minHeight: minHeight!) : null,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [
+                  context.colors.cardSurface.withValues(alpha: 0.95),
+                  Color.lerp(
+                        context.colors.cardSurface,
+                        ModuleColors.portfolio,
+                        ModuleColors.isBrandSynced ? 0.12 : 0.04,
+                      )!
+                      .withValues(alpha: 0.85),
+                ]
+              : [
+                  Colors.white.withValues(alpha: kIsWeb ? 0.92 : 0.45),
+                  IntelligenceColors.mist.withValues(alpha: kIsWeb ? 0.85 : 0.25),
+                ],
+        ),
+        border: Border.all(
+          color: ModuleColors.isBrandSynced
+              ? ModuleColors.portfolio.withValues(alpha: 0.28)
+              : (isDark
+                  ? Colors.white.withValues(alpha: 0.07)
+                  : Colors.black.withValues(alpha: 0.07)),
+        ),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      padding: padding,
+      child: column,
+    );
     final painted = ClipRRect(
       borderRadius: BorderRadius.circular(18),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          width: fillHeight ? double.infinity : null,
-          constraints:
-              minHeight != null ? BoxConstraints(minHeight: minHeight!) : null,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isDark
-                  ? [
-                      context.colors.cardSurface.withValues(alpha: 0.95),
-                      Color.lerp(
-                            context.colors.cardSurface,
-                            ModuleColors.portfolio,
-                            ModuleColors.isBrandSynced ? 0.12 : 0.04,
-                          )!
-                          .withValues(alpha: 0.85),
-                    ]
-                  : [
-                      Colors.white.withValues(alpha: 0.45),
-                      IntelligenceColors.mist.withValues(alpha: 0.25),
-                    ],
+      child: kIsWeb
+          ? surface
+          : BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+              child: surface,
             ),
-            border: Border.all(
-              color: ModuleColors.isBrandSynced
-                  ? ModuleColors.portfolio.withValues(alpha: 0.28)
-                  : (isDark
-                      ? Colors.white.withValues(alpha: 0.07)
-                      : Colors.black.withValues(alpha: 0.07)),
-            ),
-            borderRadius: BorderRadius.circular(18),
-          ),
-          padding: padding,
-          child: column,
-        ),
-      ),
     );
 
     // Peer rows pass a tight height — expand chrome to fill without IntrinsicHeight.
@@ -211,25 +216,32 @@ InputDecoration intelligenceFieldDecoration(
   BuildContext context, {
   required String label,
   String? hint,
+  bool compact = false,
 }) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
   return InputDecoration(
-    labelText: label,
-    hintText: hint,
+    // Compact row: avoid floating label (needs ~56px) — use hint instead.
+    labelText: compact ? null : label,
+    hintText: compact ? (hint ?? label) : hint,
+    floatingLabelBehavior:
+        compact ? FloatingLabelBehavior.never : FloatingLabelBehavior.auto,
     isDense: true,
     filled: true,
     fillColor: isDark
         ? Colors.white.withValues(alpha: 0.04)
         : Colors.black.withValues(alpha: 0.03),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+    contentPadding: EdgeInsets.symmetric(
+      horizontal: compact ? 10 : 12,
+      vertical: compact ? 10 : 12,
+    ),
     border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(compact ? 8 : 10),
       borderSide: BorderSide(
         color: ModuleColors.portfolio.withValues(alpha: 0.25),
       ),
     ),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(compact ? 8 : 10),
       borderSide: BorderSide(
         color: isDark
             ? Colors.white.withValues(alpha: 0.1)
@@ -237,7 +249,7 @@ InputDecoration intelligenceFieldDecoration(
       ),
     ),
     focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(compact ? 8 : 10),
       borderSide: BorderSide(color: ModuleColors.portfolio, width: 1.4),
     ),
   );

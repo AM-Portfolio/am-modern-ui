@@ -73,6 +73,7 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
   double? _betaUsed;
   bool? _betaAssumed;
   int? _historyDays;
+  String? _benchmark;
   /// One refetch after intel settles so chips leave sticky ASSUMED when hist warms.
   bool _refetchScheduledAfterIntel = false;
 
@@ -102,6 +103,7 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
       _betaUsed = null;
       _betaAssumed = null;
       _historyDays = null;
+      _benchmark = null;
       _refetchScheduledAfterIntel = false;
     });
     if (widget.initiallyExpanded) {
@@ -133,17 +135,37 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
       if (_customFailed) return '$base — failed';
       return base;
     }
+    final shock = row.appliedShockPct ?? double.tryParse(_shockCtrl.text.trim());
+    final shockPart = shock == null
+        ? null
+        : 'shock ${shock >= 0 ? '+' : ''}${shock.toStringAsFixed(shock == shock.roundToDouble() ? 0 : 1)}%';
     final hits = row.matchedHoldings;
     final weight = row.matchedWeightPct;
+    final parts = <String>[base];
+    if (shockPart != null) parts.add(shockPart);
     if (hits != null && hits > 0) {
+      parts.add('$hits hit');
       if (weight != null) {
-        return '$base · $hits hit · ${weight.toStringAsFixed(1)}%';
+        parts.add('${weight.toStringAsFixed(1)}% of book');
       }
-      return '$base · $hits hit';
+    } else {
+      final note = row.note?.trim();
+      if (note != null && note.isNotEmpty) parts.add(note);
     }
+    return parts.join(' · ');
+  }
+
+  String? _customPanelNote() {
+    final row = _customRow;
+    if (row == null) return null;
     final note = row.note?.trim();
-    if (note != null && note.isNotEmpty) return '$base · $note';
-    return base;
+    if (note != null && note.isNotEmpty) return note;
+    return null;
+  }
+
+  String _formatSignedPct(double v) {
+    final sign = v > 0 ? '+' : '';
+    return '$sign${v.toStringAsFixed(1)}%';
   }
 
   Future<void> _loadAllPresets() async {
@@ -183,6 +205,7 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
         _betaUsed = result.betaUsed;
         _betaAssumed = result.betaAssumed;
         _historyDays = result.historyDays;
+        _benchmark = result.benchmark;
         _loadedOnce = true;
         _loading = false;
         if (next.isEmpty) {
@@ -397,21 +420,56 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
         _chip(
           context,
           betaLabel,
-          tooltip: 'Portfolio beta vs benchmark',
+          tooltip: _betaTooltipMessage(assumed: assumed, warming: warming),
         ),
         const SizedBox(width: 6),
         _chip(
           context,
           estLabel,
-          tooltip: 'How beta was estimated',
+          tooltip: _estTooltipMessage(assumed: assumed, warming: warming),
         ),
       ],
     );
   }
 
+  String _betaTooltipMessage({required bool assumed, required bool warming}) {
+    final bench = (_benchmark != null && _benchmark!.trim().isNotEmpty)
+        ? _benchmark!.trim()
+        : 'NIFTY50';
+    if (warming) {
+      return 'Measuring portfolio beta vs $bench…';
+    }
+    if (assumed) {
+      return 'β assumed 1.00 — need ≥20 aligned daily returns vs $bench.\n'
+          'Formula: β = Cov(r_p, r_m) / Var(r_m)\n'
+          'Index presets use this proxy until history warms.';
+    }
+    final b = _betaUsed;
+    final days = _historyDays;
+    final daysPart = (days != null && days > 0) ? '$days trading days' : 'available history';
+    final betaStr = b == null ? '—' : b.toStringAsFixed(2);
+    return 'β = Cov(r_p, r_m) / Var(r_m) on daily returns\n'
+        'This book: β $betaStr vs $bench ($daysPart)\n'
+        'Index shocks scale ≈ shock% × β; sector custom uses β 1.0.';
+  }
+
+  String _estTooltipMessage({required bool assumed, required bool warming}) {
+    if (warming) return 'Waiting for price history to finish loading';
+    if (assumed) {
+      return 'Estimated path: insufficient history, so index scenarios use β 1.00';
+    }
+    final days = _historyDays;
+    if (days != null && days > 0) {
+      return 'Measured from $days days of portfolio vs benchmark closes';
+    }
+    return 'Measured from portfolio vs benchmark daily returns';
+  }
+
   Widget _chip(BuildContext context, String label, {required String tooltip}) {
     return Tooltip(
       message: tooltip,
+      waitDuration: const Duration(milliseconds: 350),
+      preferBelow: true,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
@@ -616,11 +674,11 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
     required bool narrow,
   }) {
     final sectorField = SizedBox(
-      height: _kCustomControlHeight + 8,
+      height: _kCustomControlHeight,
       child: SmartSearchAnchor(
         controller: _sectorCtrl,
         compact: true,
-        hintText: 'Sector',
+        hintText: 'Sector (e.g. IT)',
         accentColor: ModuleColors.portfolio,
         forceUppercase: false,
         resultBadge: null,
@@ -632,19 +690,20 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
     );
 
     final shockField = SizedBox(
-      height: _kCustomControlHeight + 8,
-      width: narrow ? double.infinity : 96,
+      height: _kCustomControlHeight,
+      width: narrow ? double.infinity : 88,
       child: TextField(
         controller: _shockCtrl,
         keyboardType: const TextInputType.numberWithOptions(
           signed: true,
           decimal: true,
         ),
-        style: Theme.of(context).textTheme.bodySmall,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(height: 1.2),
         decoration: intelligenceFieldDecoration(
           context,
           label: 'Shock %',
           hint: '-15',
+          compact: true,
         ),
       ),
     );
@@ -655,17 +714,27 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
         onPressed: _customLoading ? null : _runCustom,
         style: FilledButton.styleFrom(
           backgroundColor: ModuleColors.portfolio,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
           visualDensity: VisualDensity.compact,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          minimumSize: const Size(0, _kCustomControlHeight),
+          maximumSize: const Size(double.infinity, _kCustomControlHeight),
         ),
         icon: _customLoading
             ? const SizedBox(
-                width: 14,
-                height: 14,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                width: 12,
+                height: 12,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
               )
-            : const Icon(Icons.play_arrow_rounded, size: 18),
-        label: const Text('Run custom'),
+            : const Icon(Icons.play_arrow_rounded, size: 16),
+        label: const Text(
+          'Run custom',
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        ),
       ),
     );
 
@@ -709,14 +778,22 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
                 runButton,
               ],
             ),
-          if (_customRow?.note != null &&
-              _customRow!.note!.trim().isNotEmpty) ...[
+          if (_customPanelNote() != null) ...[
             const SizedBox(height: 6),
-            Text(
-              _customRow!.note!.trim(),
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Theme.of(context).hintColor,
-                  ),
+            Builder(
+              builder: (context) {
+                final note = _customPanelNote()!;
+                final impact = _customRow?.pctImpact;
+                final text = impact == null
+                    ? note
+                    : '$note → ${_formatSignedPct(impact)} impact';
+                return Text(
+                  text,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Theme.of(context).hintColor,
+                      ),
+                );
+              },
             ),
           ],
         ],

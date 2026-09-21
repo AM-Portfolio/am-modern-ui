@@ -694,6 +694,10 @@ void main() {
       healthReasonDisplay('Blend of concentration / vol / beta'),
       'Blend of concentration / volatility / beta',
     );
+    expect(
+      healthReasonDisplay('Daily vol 3.387555866355791%'),
+      'Daily vol 3.39%',
+    );
   });
 
   testWidgets('Health overview shows six factors inline without popup',
