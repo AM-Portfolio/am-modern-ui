@@ -1,6 +1,7 @@
 # Unified CI/CD Pipeline — am-modern-ui
 #
 # Replaces: modern-ui.yml (web caller) + mobile-android.yml (android caller)
+# Retrigger: feature/android-biometric-auth preprod web deploy
 #
 # Smart path routing:
 #   - Android files changed  --> Android build only
