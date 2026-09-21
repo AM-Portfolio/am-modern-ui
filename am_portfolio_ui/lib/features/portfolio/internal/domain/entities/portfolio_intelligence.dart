@@ -174,12 +174,14 @@ class PortfolioXray {
     this.sectorWeights = const [],
     this.industryWeights = const [],
     this.marketCapWeights = const [],
+    this.assetClassWeights = const [],
     this.totalValueInr,
   });
 
   final List<XrayWeight> sectorWeights;
   final List<XrayWeight> industryWeights;
   final List<XrayWeight> marketCapWeights;
+  final List<XrayWeight> assetClassWeights;
   /// Book NAV denominator from intelligence API (`xray.totalValue`).
   final double? totalValueInr;
 
@@ -188,6 +190,9 @@ class PortfolioXray {
       sectorWeights: _parseWeights(json['sectorWeights']),
       industryWeights: _parseWeights(json['industryWeights']),
       marketCapWeights: _parseWeights(json['marketCapWeights']),
+      assetClassWeights: _parseWeights(
+        json['assetClassWeights'] ?? json['byAssetClass'],
+      ),
       totalValueInr: _asDouble(json['totalValue']),
     );
   }
@@ -218,6 +223,38 @@ class XrayWeight {
       name: json['name']?.toString() ?? '',
       weightPct: _asDouble(json['weightPct']) ?? 0,
       valueInr: _asDouble(json['value']),
+    );
+  }
+}
+
+/// One row from GET …/suggest.
+class IntelligenceSuggestItem {
+  const IntelligenceSuggestItem({
+    required this.label,
+    this.subtitle,
+    this.source,
+    this.weightPct,
+    this.matchedHoldings,
+    this.symbol,
+  });
+
+  final String label;
+  final String? subtitle;
+  final String? source;
+  final double? weightPct;
+  final int? matchedHoldings;
+  final String? symbol;
+
+  factory IntelligenceSuggestItem.fromJson(Map<String, dynamic> json) {
+    return IntelligenceSuggestItem(
+      label: json['label']?.toString() ?? '',
+      subtitle: json['subtitle']?.toString(),
+      source: json['source']?.toString(),
+      weightPct: _asDouble(json['weightPct']),
+      matchedHoldings: json['matchedHoldings'] is int
+          ? json['matchedHoldings'] as int
+          : int.tryParse('${json['matchedHoldings'] ?? ''}'),
+      symbol: json['symbol']?.toString(),
     );
   }
 }
@@ -273,17 +310,28 @@ class StressScenario {
     required this.id,
     required this.pctImpact,
     this.absImpact,
+    this.matchedWeightPct,
+    this.matchedHoldings,
+    this.note,
   });
 
   final String id;
   final double pctImpact;
   final double? absImpact;
+  final double? matchedWeightPct;
+  final int? matchedHoldings;
+  final String? note;
 
   factory StressScenario.fromJson(Map<String, dynamic> json) {
     return StressScenario(
       id: json['id']?.toString() ?? '',
       pctImpact: _asDouble(json['pctImpact']) ?? 0,
       absImpact: _asDouble(json['absImpact']),
+      matchedWeightPct: _asDouble(json['matchedWeightPct']),
+      matchedHoldings: json['matchedHoldings'] is int
+          ? json['matchedHoldings'] as int
+          : int.tryParse('${json['matchedHoldings'] ?? ''}'),
+      note: json['note']?.toString(),
     );
   }
 }

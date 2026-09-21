@@ -1,14 +1,13 @@
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_market_sdk/market/api.dart' as market;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../internal/domain/entities/portfolio_holding.dart';
 import '../../../internal/domain/entities/portfolio_intelligence.dart';
 import '../../../providers/portfolio_intelligence_providers.dart';
 import '../../../providers/portfolio_providers.dart';
 import 'intelligence_glass_card.dart';
-import 'intelligence_sector_label.dart';
 import 'intelligence_suggest_search.dart';
 
 /// API preset id → display label. Impact / P&L always come from the stress API.
@@ -117,22 +116,34 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
     super.dispose();
   }
 
-  List<String> _sectorSuggestions() {
-    final names = <String>{};
-    final intel =
-        ref.watch(portfolioIntelligenceProvider(widget.portfolioId)).asData?.value;
-    for (final w in intel?.xray?.sectorWeights ?? const <XrayWeight>[]) {
-      if (isUsableIntelligenceSectorLabel(w.name)) names.add(w.name.trim());
+  Future<List<market.SecurityDocument>> _searchStressSectors(String query) async {
+    final remote = await ref.read(portfolioRemoteDataSourceProvider.future);
+    return searchStressSectors(
+      remote: remote,
+      portfolioId: widget.portfolioId,
+      query: query,
+    );
+  }
+
+  String _customScenarioLabel() {
+    final sector = _sectorCtrl.text.trim();
+    final base = 'Custom (${sector.isEmpty ? '…' : sector})';
+    final row = _customRow;
+    if (row == null) {
+      if (_customFailed) return '$base — failed';
+      return base;
     }
-    final holdings =
-        ref.watch(portfolioHoldingsProvider(widget.portfolioId)).asData?.value;
-    for (final h in holdings?.holdings ?? const <PortfolioHolding>[]) {
-      if (isUsableIntelligenceSectorLabel(h.sector)) {
-        names.add(h.sector.trim());
+    final hits = row.matchedHoldings;
+    final weight = row.matchedWeightPct;
+    if (hits != null && hits > 0) {
+      if (weight != null) {
+        return '$base · $hits hit · ${weight.toStringAsFixed(1)}%';
       }
+      return '$base · $hits hit';
     }
-    final list = names.toList()..sort();
-    return list;
+    final note = row.note?.trim();
+    if (note != null && note.isNotEmpty) return '$base · $note';
+    return base;
   }
 
   Future<void> _loadAllPresets() async {
@@ -264,10 +275,9 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
       _maybeRefetchAfterIntelWarm();
     });
 
-    final sectors = _sectorSuggestions();
     final narrow = MediaQuery.sizeOf(context).width < 600;
     final fill = widget.fillHeight && widget.initiallyExpanded;
-    final custom = _customPanel(context, sectors, narrow: narrow);
+    final custom = _customPanel(context, narrow: narrow);
     final scenarios = _buildScenarios(context, scrollable: fill);
 
     if (!widget.initiallyExpanded) {
@@ -486,8 +496,7 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
           _tableRow(
             context,
             presetId: 'CUSTOM',
-            label:
-                'Custom (${_sectorCtrl.text.trim().isEmpty ? '…' : _sectorCtrl.text.trim()})',
+            label: _customScenarioLabel(),
             scenario: _customFailed ? null : _customRow,
             currency: currency,
             failed: _customFailed,
@@ -515,8 +524,7 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
           _mobileScenarioCard(
             context,
             presetId: 'CUSTOM',
-            label:
-                'Custom (${_sectorCtrl.text.trim().isEmpty ? '…' : _sectorCtrl.text.trim()})',
+            label: _customScenarioLabel(),
             scenario: _customFailed ? null : _customRow,
             currency: currency,
             failed: _customFailed,
@@ -604,8 +612,7 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
   }
 
   Widget _customPanel(
-    BuildContext context,
-    List<String> sectors, {
+    BuildContext context, {
     required bool narrow,
   }) {
     final sectorField = SizedBox(
@@ -620,10 +627,7 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
         // Custom row sits at card footer / near viewport bottom.
         overlayPlacement: SmartSearchOverlayPlacement.above,
         onSelected: (label) => setState(() => _sectorCtrl.text = label),
-        searchHandler: (q) => searchSectorsHoldingsFirst(
-          query: q,
-          holdingsSectors: sectors,
-        ),
+        searchHandler: _searchStressSectors,
       ),
     );
 
@@ -705,6 +709,16 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
                 runButton,
               ],
             ),
+          if (_customRow?.note != null &&
+              _customRow!.note!.trim().isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              _customRow!.note!.trim(),
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Theme.of(context).hintColor,
+                  ),
+            ),
+          ],
         ],
       ),
     );
@@ -764,7 +778,7 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
                   flex: _kScenarioFlex,
                   child: Text(
                     label,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           fontWeight: FontWeight.w600,

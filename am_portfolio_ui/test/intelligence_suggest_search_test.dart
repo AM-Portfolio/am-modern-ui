@@ -1,105 +1,86 @@
-import 'package:am_market_sdk/market/api.dart' as market;
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:am_portfolio_ui/features/portfolio/internal/domain/entities/portfolio_intelligence.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intelligence/intelligence_suggest_search.dart';
 
 void main() {
-  group('mergePreferFirst', () {
-    test('prefers holdings order and dedupes case-insensitively', () {
-      final merged = mergePreferFirst(
-        ['TCS', 'TITAN'],
-        ['tcs', 'TECHM', 'INFY'],
-        limit: 8,
+  group('suggestItemsToDocuments', () {
+    test('selectLabel keeps label as selection key', () {
+      final docs = suggestItemsToDocuments(
+        const [
+          IntelligenceSuggestItem(
+            label: 'IT',
+            subtitle: '2 holdings · 10.0% of book',
+            source: 'CANONICAL',
+          ),
+        ],
+        selectLabel: true,
       );
-      expect(merged, ['TCS', 'TITAN', 'TECHM', 'INFY']);
+      expect(docs.single.key?.symbol, 'IT');
+      expect(docs.single.metadata?.companyName, contains('IT'));
+      expect(docs.single.metadata?.companyName, contains('2 holdings'));
     });
 
-    test('respects limit', () {
-      final merged = mergePreferFirst(
-        ['A', 'B'],
-        ['C', 'D', 'E'],
-        limit: 3,
-      );
-      expect(merged, ['A', 'B', 'C']);
-    });
-  });
-
-  group('searchSymbolsHoldingsFirst', () {
-    test('returns holdings matches first then market', () async {
-      final results = await searchSymbolsHoldingsFirst(
-        query: 't',
-        holdings: const [
-          (symbol: 'TCS', name: 'Tata Consultancy'),
-          (symbol: 'TITAN', name: 'Titan'),
-          (symbol: 'RELIANCE', name: 'Reliance'),
+    test('ticker mode selects symbol', () {
+      final docs = suggestItemsToDocuments(
+        const [
+          IntelligenceSuggestItem(
+            label: 'TCS',
+            symbol: 'TCS',
+            subtitle: 'Held · 5.0%',
+            source: 'HOLDING',
+          ),
         ],
-        marketSearch: (q) async => [
-          labelToSecurityDocument('TCS', companyName: 'Tata Consultancy'),
-          labelToSecurityDocument('TECHM', companyName: 'Tech Mahindra'),
-          labelToSecurityDocument('TATASTEEL', companyName: 'Tata Steel'),
-        ],
-        limit: 8,
+        selectLabel: false,
       );
-
-      expect(
-        results.map((d) => d.key?.symbol).toList(),
-        ['TCS', 'TITAN', 'TECHM', 'TATASTEEL'],
-      );
-    });
-
-    test('falls back to holdings when market search fails', () async {
-      final results = await searchSymbolsHoldingsFirst(
-        query: 't',
-        holdings: const [
-          (symbol: 'TCS', name: 'Tata Consultancy'),
-        ],
-        marketSearch: (q) async => throw Exception('network'),
-        limit: 8,
-      );
-
-      expect(results.map((d) => d.key?.symbol).toList(), ['TCS']);
-    });
-
-    test('falls back to holdings when market returns null', () async {
-      final results = await searchSymbolsHoldingsFirst(
-        query: 'tc',
-        holdings: const [
-          (symbol: 'TCS', name: 'Tata Consultancy'),
-        ],
-        marketSearch: (q) async => null,
-        limit: 8,
-      );
-
-      expect(results.single.key?.symbol, 'TCS');
+      expect(docs.single.key?.symbol, 'TCS');
+      expect(docs.single.metadata?.companyName, 'Held · 5.0%');
     });
   });
 
-  group('searchSectorsHoldingsFirst', () {
-    test('prefers holdings sectors then catalog', () async {
-      final results = await searchSectorsHoldingsFirst(
-        query: 'fin',
-        holdingsSectors: const ['Financial Services', 'Energy'],
-        marketCatalog: const [
-          'Financials',
-          'Financial Services',
-          'Information Technology',
-        ],
-        limit: 8,
-      );
-
-      expect(
-        results.map((d) => d.key?.symbol).toList(),
-        ['Financial Services', 'Financials'],
-      );
+  group('classAddNameHint', () {
+    test('returns wire-specific placeholders', () {
+      expect(classAddNameHint('bonds'), contains('Sovereign Gold Bond'));
+      expect(classAddNameHint('commodities'), contains('Sovereign Gold'));
+      expect(classAddNameHint('cash'), contains('Liquid Fund'));
     });
   });
 
   group('labelToSecurityDocument', () {
-    test('maps symbol and company name', () {
+    test('builds market document', () {
       final doc = labelToSecurityDocument('TCS', companyName: 'Tata');
-      expect(doc, isA<market.SecurityDocument>());
       expect(doc.key?.symbol, 'TCS');
       expect(doc.metadata?.companyName, 'Tata');
+    });
+  });
+
+  group('searchWhatIfSymbols market fill', () {
+    test('merges backend holdings then market when under limit', () async {
+      // Unit-level merge path via suggestItems + manual merge pattern.
+      final fromBackend = suggestItemsToDocuments(
+        const [
+          IntelligenceSuggestItem(label: 'TCS', symbol: 'TCS', source: 'HOLDING'),
+        ],
+        selectLabel: false,
+      );
+      final fromMarket = [
+        labelToSecurityDocument('TECHM', companyName: 'Tech Mahindra'),
+        labelToSecurityDocument('TCS', companyName: 'dup'),
+      ];
+      final seen = <String>{
+        for (final d in fromBackend) (d.key?.symbol ?? '').trim().toUpperCase(),
+      };
+      final merged = [...fromBackend];
+      for (final doc in fromMarket) {
+        final sym = (doc.key?.symbol ?? '').trim().toUpperCase();
+        if (sym.isEmpty || seen.contains(sym)) continue;
+        seen.add(sym);
+        merged.add(doc);
+      }
+      expect(
+        merged.map((d) => d.key?.symbol).toList(),
+        ['TCS', 'TECHM'],
+      );
     });
   });
 }

@@ -54,6 +54,15 @@ abstract class PortfolioRemoteDataSource {
     Map<String, dynamic>? custom,
   });
 
+  /// Context-aware typeahead (backend).
+  Future<List<IntelligenceSuggestItem>> getIntelligenceSuggest(
+    String portfolioId, {
+    required String context,
+    String query = '',
+    String? wire,
+    int limit = 8,
+  });
+
   /// What-If simulation (stateless)
   Future<WhatIfResult> getPortfolioWhatIf(
     String portfolioId,
@@ -674,6 +683,44 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
       );
       rethrow;
     }
+  }
+
+  @override
+  Future<List<IntelligenceSuggestItem>> getIntelligenceSuggest(
+    String portfolioId, {
+    required String context,
+    String query = '',
+    String? wire,
+    int limit = 8,
+  }) async {
+    final params = <String, String>{
+      'context': context,
+      'q': query,
+      'limit': '$limit',
+    };
+    if (wire != null && wire.trim().isNotEmpty) {
+      params['wire'] = wire.trim();
+    }
+    final base = _buildUri(
+      _baseUrl,
+      PortfolioEndpoints.suggest(portfolioId),
+    );
+    final qs = params.entries
+        .map((e) =>
+            '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
+        .join('&');
+    final baseUri = '$base?$qs';
+    final result = await _apiClient.get<Map<String, dynamic>>(
+      baseUri,
+      parser: (data) => Map<String, dynamic>.from(data! as Map),
+    );
+    final raw = result['suggestions'];
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((e) => IntelligenceSuggestItem.fromJson(Map<String, dynamic>.from(e)))
+        .where((e) => e.label.trim().isNotEmpty)
+        .toList();
   }
 
   @override

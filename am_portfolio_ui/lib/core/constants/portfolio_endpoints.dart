@@ -19,6 +19,10 @@ class PortfolioEndpoints {
   static String intelligence(String portfolioId) =>
       '/v1/analytics/portfolio/$portfolioId/intelligence';
 
+  /// Context-aware typeahead (STRESS_SECTOR | WHAT_IF_SYMBOL | …)
+  static String suggest(String portfolioId) =>
+      '/v1/analytics/portfolio/$portfolioId/suggest';
+
   /// Stress scenario estimates
   static String stress(String portfolioId) =>
       '/v1/analytics/portfolio/$portfolioId/stress';

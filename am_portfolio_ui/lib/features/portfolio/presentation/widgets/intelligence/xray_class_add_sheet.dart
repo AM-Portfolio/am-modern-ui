@@ -172,41 +172,24 @@ class _XrayClassAddSheetState extends ConsumerState<XrayClassAddSheet> {
   }
 
   Future<List<market.SecurityDocument>> _searchNames(String query) async {
-    final holdings = _holdings();
-    final holdingPairs = [
-      for (final h in holdings)
-        (
-          symbol: h.symbol,
-          name: h.companyName.isNotEmpty
-              ? h.companyName
-              : (h.name.isNotEmpty ? h.name : h.symbol),
-        ),
-    ];
+    final remote = await ref.read(portfolioRemoteDataSourceProvider.future);
     final docs = await searchClassAddNames(
+      remote: remote,
+      portfolioId: widget.portfolioId,
       query: query,
       wire: _wire,
-      holdings: holdingPairs,
     );
     _symbolByName.clear();
-    for (final h in holdingPairs) {
-      final label = h.name.trim();
+    for (final h in _holdings()) {
+      final label = (h.companyName.isNotEmpty
+              ? h.companyName
+              : (h.name.isNotEmpty ? h.name : h.symbol))
+          .trim();
       final sym = h.symbol.trim();
       if (label.isEmpty || sym.isEmpty) continue;
       if (sym.toUpperCase() == label.toUpperCase()) continue;
       _symbolByName[label.toLowerCase()] = sym;
     }
-    // Market hits: company name → ticker when they differ.
-    try {
-      final marketDocs = await searchMarketSecurities(query) ?? const [];
-      for (final doc in marketDocs) {
-        final sym = (doc.key?.symbol ?? '').trim();
-        final company = (doc.metadata?.companyName ?? '').trim();
-        final label = company.isNotEmpty ? company : sym;
-        if (label.isEmpty || sym.isEmpty) continue;
-        if (sym.toUpperCase() == label.toUpperCase()) continue;
-        _symbolByName.putIfAbsent(label.toLowerCase(), () => sym);
-      }
-    } catch (_) {}
     return docs;
   }
 

@@ -5,10 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../internal/domain/entities/portfolio_holding.dart';
 import '../../../internal/domain/entities/portfolio_intelligence.dart';
-import '../../../providers/portfolio_intelligence_providers.dart';
 import '../../../providers/portfolio_providers.dart';
 import 'intelligence_glass_card.dart';
-import 'intelligence_sector_label.dart';
 import 'intelligence_suggest_search.dart';
 
 enum _WhatIfMode { add, modify, switchAlloc }
@@ -94,22 +92,6 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
             ?.value
             .holdings ??
         const [];
-  }
-
-  List<String> _sectors() {
-    final set = <String>{};
-    final intel = ref
-        .watch(portfolioIntelligenceProvider(widget.portfolioId))
-        .asData
-        ?.value;
-    for (final w in intel?.xray?.sectorWeights ?? const <XrayWeight>[]) {
-      if (isUsableIntelligenceSectorLabel(w.name)) set.add(w.name.trim());
-    }
-    for (final h in _holdings()) {
-      if (isUsableIntelligenceSectorLabel(h.sector)) set.add(h.sector.trim());
-    }
-    final list = set.toList()..sort();
-    return list;
   }
 
   void _setMode(_WhatIfMode mode) {
@@ -270,14 +252,13 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
       icon: Icons.science_outlined,
       minHeight: widget.minHeight,
       fillHeight: fill,
-      scrollable: fill,
+      // Nested card scroll steals Overview gestures on Flutter web.
+      scrollable: false,
       child: content,
     );
   }
 
   Widget _buildBody(BuildContext context) {
-    final sectors = _sectors();
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -310,13 +291,16 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
             hintText: 'Stock / ETF',
             accentColor: ModuleColors.portfolio,
             onSelected: _pickSymbol,
-            searchHandler: (q) => searchSymbolsHoldingsFirst(
-              query: q,
-              holdings: [
-                for (final h in _holdings())
-                  (symbol: h.symbol, name: h.name),
-              ],
-            ),
+            searchHandler: (q) async {
+              final remote =
+                  await ref.read(portfolioRemoteDataSourceProvider.future);
+              return searchWhatIfSymbols(
+                remote: remote,
+                portfolioId: widget.portfolioId,
+                query: q,
+                includeMarket: _mode == _WhatIfMode.add,
+              );
+            },
           ),
           const SizedBox(height: 8),
           if (_mode == _WhatIfMode.add)
@@ -350,10 +334,15 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
             forceUppercase: false,
             resultBadge: null,
             onSelected: (label) => setState(() => _fromSectorCtrl.text = label),
-            searchHandler: (q) => searchSectorsHoldingsFirst(
-              query: q,
-              holdingsSectors: sectors,
-            ),
+            searchHandler: (q) async {
+              final remote =
+                  await ref.read(portfolioRemoteDataSourceProvider.future);
+              return searchWhatIfSectors(
+                remote: remote,
+                portfolioId: widget.portfolioId,
+                query: q,
+              );
+            },
           ),
           const SizedBox(height: 8),
           SmartSearchAnchor(
@@ -364,10 +353,15 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
             forceUppercase: false,
             resultBadge: null,
             onSelected: (label) => setState(() => _toSectorCtrl.text = label),
-            searchHandler: (q) => searchSectorsHoldingsFirst(
-              query: q,
-              holdingsSectors: sectors,
-            ),
+            searchHandler: (q) async {
+              final remote =
+                  await ref.read(portfolioRemoteDataSourceProvider.future);
+              return searchWhatIfSectors(
+                remote: remote,
+                portfolioId: widget.portfolioId,
+                query: q,
+              );
+            },
           ),
           const SizedBox(height: 8),
           TextField(

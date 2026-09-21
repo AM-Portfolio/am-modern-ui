@@ -122,6 +122,7 @@ class PortfolioXrayPanel extends ConsumerStatefulWidget {
     this.minHeight,
     this.fillHeight = false,
     this.padding = const EdgeInsets.all(20),
+    this.readOnly = false,
     @visibleForTesting this.holdingsOverride,
     super.key,
   });
@@ -131,6 +132,8 @@ class PortfolioXrayPanel extends ConsumerStatefulWidget {
   final double? minHeight;
   final bool fillHeight;
   final EdgeInsetsGeometry padding;
+  /// When true (All Portfolios), Class write CTAs are hidden.
+  final bool readOnly;
 
   /// Test-only holdings injection when PortfolioCubit is unavailable.
   @visibleForTesting
@@ -227,17 +230,7 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
       3 => xray.assetClassWeights,
       _ => xray.sectorWeights,
     };
-    // Until API ships assetClassWeights, Class still shows Equity = 100%.
-    if (_tab == 3 && raw.isEmpty) {
-      final nav = xray.totalValueInr;
-      raw = [
-        XrayWeight(
-          name: 'EQUITY',
-          weightPct: 100,
-          valueInr: nav,
-        ),
-      ];
-    }
+    // Class uses real assetClassWeights from intelligence — no EQUITY 100% fake.
     final sorted = [...raw]
       ..sort((a, b) {
         final aUnk = a.name.toLowerCase() == 'unknown';
@@ -493,7 +486,9 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
           tab: _tab,
           onTab: _onTab,
           compact: true,
-          onAddClass: _tab == 3
+          onAddClass: !widget.readOnly &&
+                  widget.portfolioId != 'all' &&
+                  _tab == 3
               ? () => showXrayClassAddSheet(
                     context: context,
                     portfolioId: widget.portfolioId,
@@ -638,9 +633,12 @@ class _XrayBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final emptyHint = tab == 3
+        ? 'No asset-class breakdown yet — use + Class'
+        : 'No allocation data';
     Widget weightList({required double paneWidth}) {
       if (weights.isEmpty) {
-        return const IntelligenceEmptyHint(message: 'No allocation data');
+        return IntelligenceEmptyHint(message: emptyHint);
       }
       final pctW = paneWidth < 280 ? 44.0 : 52.0;
       final inrW = paneWidth < 280 ? 52.0 : 64.0;
@@ -741,7 +739,7 @@ class _XrayBody extends StatelessWidget {
             ? constraints.maxWidth
             : MediaQuery.sizeOf(context).width;
         if (weights.isEmpty) {
-          return const IntelligenceEmptyHint(message: 'No allocation data');
+          return IntelligenceEmptyHint(message: emptyHint);
         }
         final list = fillHeight
             ? ClipRect(child: weightList(paneWidth: paneW))
