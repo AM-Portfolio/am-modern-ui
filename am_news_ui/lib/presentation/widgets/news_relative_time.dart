@@ -1,4 +1,4 @@
-import 'package:am_dashboard_ui/domain/models/news_models.dart';
+import 'package:am_news_ui/domain/models/news_models.dart';
 import 'package:intl/intl.dart';
 
 String formatNewsRelativeTime(String? publishedAt, {DateTime? now}) {

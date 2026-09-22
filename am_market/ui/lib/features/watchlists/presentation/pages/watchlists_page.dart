@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_news_ui/am_news_ui.dart';
 import '../../providers/watchlist_provider.dart';
 import '../../data/models/watchlist_model.dart';
 import '../widgets/watchlist_management_view.dart';
@@ -93,10 +95,23 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
               if (isMobile) {
                 if (_selectedWatchlistId != null) {
                   // Mobile Detail View
-                  return WatchlistMobileDetailView(
-                    watchlist: selectedWatchlist,
-                    onBack: () => setState(() => _selectedWatchlistId = null),
-                    onStockSelected: widget.onStockSelected,
+                  return Column(
+                    children: [
+                      Expanded(
+                        child: WatchlistMobileDetailView(
+                          watchlist: selectedWatchlist,
+                          onBack: () =>
+                              setState(() => _selectedWatchlistId = null),
+                          onStockSelected: widget.onStockSelected,
+                        ),
+                      ),
+                      HoldingsNewsSection(
+                        symbols: selectedWatchlist.items
+                            .map((e) => e.symbol)
+                            .toList(),
+                        surface: NewsUiSurface.watchList,
+                      ),
+                    ],
                   );
                 }
 
@@ -523,9 +538,22 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
               const SizedBox(width: 24),
               // Main Content
               Expanded(
-                child: WatchlistManagementView(
-                  watchlist: selectedWatchlist,
-                  onStockSelected: widget.onStockSelected,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: WatchlistManagementView(
+                        watchlist: selectedWatchlist,
+                        onStockSelected: widget.onStockSelected,
+                      ),
+                    ),
+                    HoldingsNewsSection(
+                      symbols: selectedWatchlist.items
+                          .map((e) => e.symbol)
+                          .toList(),
+                      surface: NewsUiSurface.watchList,
+                    ),
+                  ],
                 ),
               ),
             ],

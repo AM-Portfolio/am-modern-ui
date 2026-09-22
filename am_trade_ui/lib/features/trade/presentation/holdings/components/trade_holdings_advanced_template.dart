@@ -19,6 +19,7 @@ class TradeHoldingsAdvancedTemplate extends StatefulWidget {
     this.accentColor,
     this.priceFreshnessLabel,
     this.embedded = false,
+    this.listFooter,
   });
 
   final List<TradeHoldingViewModel> holdings;
@@ -33,6 +34,9 @@ class TradeHoldingsAdvancedTemplate extends StatefulWidget {
   final String? priceFreshnessLabel;
   /// Portfolio Holdings embed: view-only (no expand / edit).
   final bool embedded;
+
+  /// Appended after pagination inside the holdings scroll (e.g. News).
+  final Widget? listFooter;
 
   @override
   State<TradeHoldingsAdvancedTemplate> createState() =>
@@ -183,10 +187,8 @@ class _TradeHoldingsAdvancedTemplateState
         // Header with Controls
         _buildControlsHeader(),
         const SizedBox(height: 8),
-        // Main content
+        // Main content (rows + pagination + optional footer scroll together)
         Expanded(child: _viewMode == 'table' ? _buildAdvancedTableView() : _buildAdvancedCardView()),
-        // Footer with pagination and info
-        _buildFooter(),
       ],
     );
   }
@@ -419,22 +421,35 @@ class _TradeHoldingsAdvancedTemplateState
     );
   }
 
-  Widget _buildAdvancedTableView() => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      _buildCustomTableHeader(),
-      const Divider(height: 1),
-      Expanded(
-        child: ListView.builder(
-          itemCount: _paginatedHoldings.length,
-          itemBuilder: (context, index) {
-            final holding = _paginatedHoldings[index];
-            return _buildCustomTableRow(holding, index);
-          },
+  Widget _buildAdvancedTableView() {
+    final rowCount = _paginatedHoldings.length;
+    // rows + pagination + optional news footer
+    final trailing = 1 + (widget.listFooter != null ? 1 : 0);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildCustomTableHeader(),
+        const Divider(height: 1),
+        Expanded(
+          child: ListView.builder(
+            itemCount: rowCount + trailing,
+            itemBuilder: (context, index) {
+              if (index < rowCount) {
+                return _buildCustomTableRow(_paginatedHoldings[index], index);
+              }
+              if (index == rowCount) {
+                return _buildFooter();
+              }
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: widget.listFooter!,
+              );
+            },
+          ),
         ),
-      ),
-    ],
-  ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05, end: 0);
+      ],
+    ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05, end: 0);
+  }
 
   Widget _buildCustomTableHeader() => Padding(
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -626,19 +641,28 @@ class _TradeHoldingsAdvancedTemplateState
       final cardWidth =
           (usable - spacing * (crossAxisCount - 1)) / crossAxisCount;
 
-      return SingleChildScrollView(
+      return ListView(
         padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
-        child: Wrap(
-          spacing: spacing,
-          runSpacing: spacing,
-          children: [
-            for (var i = 0; i < _paginatedHoldings.length; i++)
-              SizedBox(
-                width: cardWidth,
-                child: _buildAdvancedHoldingCard(_paginatedHoldings[i], i),
-              ),
-          ],
-        ),
+        children: [
+          Wrap(
+            spacing: spacing,
+            runSpacing: spacing,
+            children: [
+              for (var i = 0; i < _paginatedHoldings.length; i++)
+                SizedBox(
+                  width: cardWidth,
+                  child: _buildAdvancedHoldingCard(_paginatedHoldings[i], i),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _buildFooter(),
+          if (widget.listFooter != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: widget.listFooter!,
+            ),
+        ],
       );
     },
   ).animate().fadeIn(duration: 300.ms);

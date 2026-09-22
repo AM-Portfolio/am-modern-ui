@@ -513,6 +513,8 @@ class _MidTabChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    // Paper lives under Market — match sidebar / Equity Insider cyan.
+    final accent = ModuleColors.market;
     return InkWell(
       onTap: onTap,
       child: Container(
@@ -520,7 +522,7 @@ class _MidTabChip extends StatelessWidget {
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
-              color: selected ? colors.actionPrimaryBg : Colors.transparent,
+              color: selected ? accent : Colors.transparent,
               width: 2.5,
             ),
           ),
@@ -528,7 +530,7 @@ class _MidTabChip extends StatelessWidget {
         child: Text(
           label,
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: selected ? colors.actionPrimaryBg : colors.textSecondary,
+                color: selected ? accent : colors.textSecondary,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
               ),
         ),

@@ -95,6 +95,8 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
 
   void _startSecurityAlertsIfWeb() {
     if (!kIsWeb) return;
+    // Local demo-login review runs: skip new-sign-in banner.
+    if (common.DemoLoginConfig.isDevSectionVisible) return;
     final service = AuthProviders.securityAlertService;
     service.start();
     _securityEventsSub ??= service.events.listen((events) {

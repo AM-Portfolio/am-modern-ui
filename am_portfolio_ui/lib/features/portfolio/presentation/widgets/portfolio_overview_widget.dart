@@ -14,6 +14,7 @@ import '../cubit/portfolio_analytics_cubit.dart';
 import '../cubit/portfolio_analytics_state.dart';
 import '../cubit/portfolio_intraday_cubit.dart';
 import 'package:am_common/am_common.dart';
+import 'package:am_news_ui/am_news_ui.dart';
 import 'portfolio_metric_card.dart';
 import '../../providers/portfolio_providers.dart';
 import 'intelligence/portfolio_health_card.dart';
@@ -432,6 +433,13 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                               isPhone: isPhone,
                               isCompact: !isWeb,
                             ),
+                          const SizedBox(height: 20),
+                          HoldingsNewsSection(
+                            symbols: state.holdings
+                                .map((h) => h.symbol)
+                                .toList(),
+                            surface: NewsUiSurface.portfolioOverview,
+                          ),
                           const SizedBox(height: 20),
                         ],
                       ),

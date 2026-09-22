@@ -606,7 +606,16 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                       },
                     ),
 
-                    if (!isMobile) const SizedBox(height: 16),
+                    if (isMobile) ...[
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: GlobalTimeFrameBar(
+                          primaryColor: ModuleColors.market,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ] else
+                      const SizedBox(height: 16),
 
                     // Pinned Index Cards Grid
                     PinnedIndicesGrid(
