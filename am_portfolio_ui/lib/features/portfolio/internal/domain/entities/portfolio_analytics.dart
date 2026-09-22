@@ -156,9 +156,16 @@ class Stock {
 
 /// Top movers (gainers and losers)
 class Movers {
-  const Movers({required this.topGainers, required this.topLosers});
+  const Movers({
+    required this.topGainers,
+    required this.topLosers,
+    this.sessionDate,
+    this.priceFreshness,
+  });
   final List<Stock> topGainers;
   final List<Stock> topLosers;
+  final String? sessionDate;
+  final String? priceFreshness;
 }
 
 /// Sector allocation breakdown

@@ -170,6 +170,8 @@ class PortfolioAnalyticsMapper {
     return Movers(
       topGainers: List<Stock>.from(topGainers),
       topLosers: List<Stock>.from(topLosers),
+      sessionDate: dto.sessionDate,
+      priceFreshness: dto.priceFreshness,
     );
   }
 
