@@ -266,23 +266,30 @@ class _HealthBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Need room for summary 168 + gap 16 + usable factor list (~220).
+        final maxW = constraints.maxWidth;
+        final maxH = constraints.maxHeight;
+        final hasBoundedHeight =
+            fillHeight || (maxH.isFinite && maxH < double.infinity);
+        // Desktop / wide tablet: summary | factors. Phone & narrow tablet: stack.
+        // 720 keeps iPad portrait (~768) side-by-side once chrome leaves ~700+.
         final sideBySide =
-            !compact && constraints.maxWidth >= (kHealthSummaryCol + 16 + 220);
+            !compact && maxW >= (kHealthSummaryCol + 16 + 240);
         final summary = _SummaryColumn(
           score: score,
           band: band,
           bandColor: bandColor,
           factorCount: factors.length,
           strongCount: strongCount,
-          gaugeSize: sideBySide ? kHealthGaugeSize : 128,
+          gaugeSize: sideBySide
+              ? kHealthGaugeSize
+              : (maxW < 420 ? 112.0 : 128.0),
         );
-        // When peer-stretched (fillHeight), allow a tiny inner scroll so a late
-        // 6th factor (Volatility after history warms) never yellow-overflows.
-        // Unbounded Overview scroll still owns the page when not fillHeight.
+        // Always scroll the factor list inside the card so 6 factors (incl.
+        // Volatility) fit on tablet/mobile without blowing the Overview layout.
         final list = _FactorList(
           factors: factors,
-          scrollable: fillHeight,
+          scrollable: true,
+          dense: factors.length >= 5 || maxW < 520,
         );
 
         if (sideBySide) {
@@ -294,17 +301,28 @@ class _HealthBody extends StatelessWidget {
               Expanded(child: list),
             ],
           );
-          if (fillHeight) return row;
-          return IntrinsicHeight(child: row);
+          if (hasBoundedHeight) return row;
+          // Unbounded Overview: give factors a fixed viewport that scrolls.
+          return SizedBox(
+            height: math.max(280, factors.length >= 6 ? 320.0 : 300.0),
+            child: row,
+          );
         }
 
+        // Stacked (phone / narrow tablet): gauge on top, scrollable factors.
+        final factorViewport = hasBoundedHeight
+            ? null
+            : math.max(180.0, math.min(280.0, 52.0 * factors.length + 24));
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: hasBoundedHeight ? MainAxisSize.max : MainAxisSize.min,
           children: [
             summary,
             const SizedBox(height: 12),
-            list,
+            if (hasBoundedHeight)
+              Expanded(child: list)
+            else
+              SizedBox(height: factorViewport, child: list),
           ],
         );
       },
@@ -431,10 +449,12 @@ class _FactorList extends StatelessWidget {
   const _FactorList({
     required this.factors,
     required this.scrollable,
+    this.dense = false,
   });
 
   final List<HealthComponent> factors;
   final bool scrollable;
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
@@ -444,14 +464,14 @@ class _FactorList extends StatelessWidget {
         style: Theme.of(context).textTheme.bodySmall,
       );
     }
-    final dense = factors.length >= 6;
-    final gap = dense ? 2.0 : 6.0;
+    final useDense = dense || factors.length >= 6;
+    final gap = useDense ? 2.0 : 6.0;
     final children = <Widget>[
       for (var i = 0; i < factors.length; i++) ...[
         if (i > 0) SizedBox(height: gap),
         _FactorRow(
           component: factors[i],
-          compact: dense,
+          compact: useDense,
         ),
       ],
     ];
@@ -463,7 +483,8 @@ class _FactorList extends StatelessWidget {
         children: children,
       );
     }
-    // Bounded by peer Expanded — primary scroll stays on Overview page.
+    // Inner card scroll — Overview page remains primary when this is nested
+    // in an Expanded / fixed-height viewport.
     return ListView(
       padding: EdgeInsets.zero,
       primary: false,
