@@ -54,10 +54,28 @@ abstract class PortfolioRemoteDataSource {
     Map<String, dynamic>? custom,
   });
 
+  /// Context-aware typeahead (backend).
+  Future<List<IntelligenceSuggestItem>> getIntelligenceSuggest(
+    String portfolioId, {
+    required String context,
+    String query = '',
+    String? wire,
+    int limit = 8,
+  });
+
   /// What-If simulation (stateless)
   Future<WhatIfResult> getPortfolioWhatIf(
     String portfolioId,
     Map<String, dynamic> body,
+  );
+
+  /// Replace bonds / commodities / cash holdings on a portfolio.
+  ///
+  /// [assetClass] wire values: `bonds` | `commodities` | `cash`.
+  Future<void> replaceAssetClassList(
+    String portfolioId,
+    String assetClass,
+    List<Map<String, dynamic>> items,
   );
 
   /// Get portfolios list from remote API
@@ -668,6 +686,44 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
   }
 
   @override
+  Future<List<IntelligenceSuggestItem>> getIntelligenceSuggest(
+    String portfolioId, {
+    required String context,
+    String query = '',
+    String? wire,
+    int limit = 8,
+  }) async {
+    final params = <String, String>{
+      'context': context,
+      'q': query,
+      'limit': '$limit',
+    };
+    if (wire != null && wire.trim().isNotEmpty) {
+      params['wire'] = wire.trim();
+    }
+    final base = _buildUri(
+      _baseUrl,
+      PortfolioEndpoints.suggest(portfolioId),
+    );
+    final qs = params.entries
+        .map((e) =>
+            '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
+        .join('&');
+    final baseUri = '$base?$qs';
+    final result = await _apiClient.get<Map<String, dynamic>>(
+      baseUri,
+      parser: (data) => Map<String, dynamic>.from(data! as Map),
+    );
+    final raw = result['suggestions'];
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((e) => IntelligenceSuggestItem.fromJson(Map<String, dynamic>.from(e)))
+        .where((e) => e.label.trim().isNotEmpty)
+        .toList();
+  }
+
+  @override
   Future<WhatIfResult> getPortfolioWhatIf(
     String portfolioId,
     Map<String, dynamic> body,
@@ -704,6 +760,53 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
       );
       CommonLogger.methodExit(
         'getPortfolioWhatIf',
+        tag: 'PortfolioRemoteDataSource',
+        metadata: {'status': 'error'},
+      );
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> replaceAssetClassList(
+    String portfolioId,
+    String assetClass,
+    List<Map<String, dynamic>> items,
+  ) async {
+    CommonLogger.methodEntry(
+      'replaceAssetClassList',
+      tag: 'PortfolioRemoteDataSource',
+      metadata: {
+        'portfolioId': portfolioId,
+        'assetClass': assetClass,
+        'itemCount': items.length,
+      },
+    );
+
+    try {
+      final baseUri = _buildUri(
+        _baseUrl,
+        PortfolioEndpoints.assetClass(portfolioId, assetClass),
+      );
+      await _apiClient.put<void>(
+        baseUri,
+        body: <String, dynamic>{'items': items},
+        parser: (_) {},
+      );
+      CommonLogger.methodExit(
+        'replaceAssetClassList',
+        tag: 'PortfolioRemoteDataSource',
+        metadata: {'status': 'success'},
+      );
+    } catch (e) {
+      CommonLogger.error(
+        'Failed to replace asset-class list',
+        tag: 'PortfolioRemoteDataSource',
+        error: e,
+        stackTrace: StackTrace.current,
+      );
+      CommonLogger.methodExit(
+        'replaceAssetClassList',
         tag: 'PortfolioRemoteDataSource',
         metadata: {'status': 'error'},
       );

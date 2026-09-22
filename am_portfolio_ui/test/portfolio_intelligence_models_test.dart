@@ -52,10 +52,20 @@ void main() {
       'portfolioId': 'p1',
       'estimateLabel': 'Scenario estimate',
       'scenarios': [
-        {'id': 'NIFTY_DOWN_10', 'pctImpact': -8.4, 'absImpact': -77800},
+        {
+          'id': 'CUSTOM_FMCG',
+          'pctImpact': 0.5,
+          'absImpact': 4527,
+          'matchedWeightPct': 2.9,
+          'matchedHoldings': 6,
+          'appliedShockPct': 18,
+          'note': 'shock +18% on 6 holdings (2.9% of book)',
+        },
       ],
     });
-    expect(stress.scenarios.first.pctImpact, -8.4);
+    expect(stress.scenarios.first.pctImpact, 0.5);
+    expect(stress.scenarios.first.appliedShockPct, 18);
+    expect(stress.scenarios.first.matchedWeightPct, 2.9);
 
     final whatIf = WhatIfResult.fromJson({
       'mode': 'ADD_INVESTMENT',

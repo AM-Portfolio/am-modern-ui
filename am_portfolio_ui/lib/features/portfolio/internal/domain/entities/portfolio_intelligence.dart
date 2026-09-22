@@ -174,12 +174,14 @@ class PortfolioXray {
     this.sectorWeights = const [],
     this.industryWeights = const [],
     this.marketCapWeights = const [],
+    this.assetClassWeights = const [],
     this.totalValueInr,
   });
 
   final List<XrayWeight> sectorWeights;
   final List<XrayWeight> industryWeights;
   final List<XrayWeight> marketCapWeights;
+  final List<XrayWeight> assetClassWeights;
   /// Book NAV denominator from intelligence API (`xray.totalValue`).
   final double? totalValueInr;
 
@@ -188,6 +190,9 @@ class PortfolioXray {
       sectorWeights: _parseWeights(json['sectorWeights']),
       industryWeights: _parseWeights(json['industryWeights']),
       marketCapWeights: _parseWeights(json['marketCapWeights']),
+      assetClassWeights: _parseWeights(
+        json['assetClassWeights'] ?? json['byAssetClass'],
+      ),
       totalValueInr: _asDouble(json['totalValue']),
     );
   }
@@ -222,16 +227,58 @@ class XrayWeight {
   }
 }
 
+/// One row from GET …/suggest.
+class IntelligenceSuggestItem {
+  const IntelligenceSuggestItem({
+    required this.label,
+    this.subtitle,
+    this.source,
+    this.weightPct,
+    this.matchedHoldings,
+    this.symbol,
+  });
+
+  final String label;
+  final String? subtitle;
+  final String? source;
+  final double? weightPct;
+  final int? matchedHoldings;
+  final String? symbol;
+
+  factory IntelligenceSuggestItem.fromJson(Map<String, dynamic> json) {
+    return IntelligenceSuggestItem(
+      label: json['label']?.toString() ?? '',
+      subtitle: json['subtitle']?.toString(),
+      source: json['source']?.toString(),
+      weightPct: _asDouble(json['weightPct']),
+      matchedHoldings: json['matchedHoldings'] is int
+          ? json['matchedHoldings'] as int
+          : int.tryParse('${json['matchedHoldings'] ?? ''}'),
+      symbol: json['symbol']?.toString(),
+    );
+  }
+}
+
 class StressResult {
   const StressResult({
     required this.portfolioId,
     this.estimateLabel = 'Scenario estimate',
     this.scenarios = const [],
+    this.method,
+    this.betaUsed,
+    this.benchmark,
+    this.historyDays,
+    this.betaAssumed,
   });
 
   final String portfolioId;
   final String estimateLabel;
   final List<StressScenario> scenarios;
+  final String? method;
+  final double? betaUsed;
+  final String? benchmark;
+  final int? historyDays;
+  final bool? betaAssumed;
 
   factory StressResult.fromJson(Map<String, dynamic> json) {
     final raw = json['scenarios'];
@@ -245,6 +292,15 @@ class StressResult {
               .map((e) => StressScenario.fromJson(Map<String, dynamic>.from(e)))
               .toList()
           : const [],
+      method: json['method']?.toString(),
+      betaUsed: _asDouble(json['betaUsed']),
+      benchmark: json['benchmark']?.toString(),
+      historyDays: json['historyDays'] is int
+          ? json['historyDays'] as int
+          : int.tryParse('${json['historyDays'] ?? ''}'),
+      betaAssumed: json['betaAssumed'] is bool
+          ? json['betaAssumed'] as bool
+          : null,
     );
   }
 }
@@ -254,17 +310,31 @@ class StressScenario {
     required this.id,
     required this.pctImpact,
     this.absImpact,
+    this.matchedWeightPct,
+    this.matchedHoldings,
+    this.appliedShockPct,
+    this.note,
   });
 
   final String id;
   final double pctImpact;
   final double? absImpact;
+  final double? matchedWeightPct;
+  final int? matchedHoldings;
+  final double? appliedShockPct;
+  final String? note;
 
   factory StressScenario.fromJson(Map<String, dynamic> json) {
     return StressScenario(
       id: json['id']?.toString() ?? '',
       pctImpact: _asDouble(json['pctImpact']) ?? 0,
       absImpact: _asDouble(json['absImpact']),
+      matchedWeightPct: _asDouble(json['matchedWeightPct']),
+      matchedHoldings: json['matchedHoldings'] is int
+          ? json['matchedHoldings'] as int
+          : int.tryParse('${json['matchedHoldings'] ?? ''}'),
+      appliedShockPct: _asDouble(json['appliedShockPct']),
+      note: json['note']?.toString(),
     );
   }
 }

@@ -142,12 +142,19 @@ class StockDto {
 /// Movers data (top gainers and losers)
 @JsonSerializable()
 class MoversDto {
-  const MoversDto({this.topGainers, this.topLosers});
+  const MoversDto({
+    this.topGainers,
+    this.topLosers,
+    this.sessionDate,
+    this.priceFreshness,
+  });
 
   factory MoversDto.fromJson(Map<String, dynamic> json) =>
       _$MoversDtoFromJson(json);
   final List<StockDto>? topGainers;
   final List<StockDto>? topLosers;
+  final String? sessionDate;
+  final String? priceFreshness;
 
   Map<String, dynamic> toJson() => _$MoversDtoToJson(this);
 }

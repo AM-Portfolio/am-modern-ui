@@ -1,14 +1,13 @@
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_market_sdk/market/api.dart' as market;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../internal/domain/entities/portfolio_holding.dart';
 import '../../../internal/domain/entities/portfolio_intelligence.dart';
 import '../../../providers/portfolio_intelligence_providers.dart';
 import '../../../providers/portfolio_providers.dart';
 import 'intelligence_glass_card.dart';
-import 'intelligence_sector_label.dart';
 import 'intelligence_suggest_search.dart';
 
 /// API preset id → display label. Impact / P&L always come from the stress API.
@@ -45,12 +44,15 @@ class PortfolioStressCard extends ConsumerStatefulWidget {
     required this.portfolioId,
     this.initiallyExpanded = true,
     this.minHeight,
+    this.fillHeight = false,
     super.key,
   });
 
   final String portfolioId;
   final bool initiallyExpanded;
   final double? minHeight;
+  /// Peer stretch on Overview bottom band — scroll scenarios, pin custom.
+  final bool fillHeight;
 
   @override
   ConsumerState<PortfolioStressCard> createState() =>
@@ -68,6 +70,12 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
   StressScenario? _customRow;
   bool _customFailed = false;
   bool _loadedOnce = false;
+  double? _betaUsed;
+  bool? _betaAssumed;
+  int? _historyDays;
+  String? _benchmark;
+  /// One refetch after intel settles so chips leave sticky ASSUMED when hist warms.
+  bool _refetchScheduledAfterIntel = false;
 
   @override
   void initState() {
@@ -92,6 +100,11 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
       _customRow = null;
       _customFailed = false;
       _loadedOnce = false;
+      _betaUsed = null;
+      _betaAssumed = null;
+      _historyDays = null;
+      _benchmark = null;
+      _refetchScheduledAfterIntel = false;
     });
     if (widget.initiallyExpanded) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _loadAllPresets());
@@ -105,22 +118,54 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
     super.dispose();
   }
 
-  List<String> _sectorSuggestions() {
-    final names = <String>{};
-    final intel =
-        ref.watch(portfolioIntelligenceProvider(widget.portfolioId)).asData?.value;
-    for (final w in intel?.xray?.sectorWeights ?? const <XrayWeight>[]) {
-      if (isUsableIntelligenceSectorLabel(w.name)) names.add(w.name.trim());
+  Future<List<market.SecurityDocument>> _searchStressSectors(String query) async {
+    final remote = await ref.read(portfolioRemoteDataSourceProvider.future);
+    return searchStressSectors(
+      remote: remote,
+      portfolioId: widget.portfolioId,
+      query: query,
+    );
+  }
+
+  String _customScenarioLabel() {
+    final sector = _sectorCtrl.text.trim();
+    final base = 'Custom (${sector.isEmpty ? '…' : sector})';
+    final row = _customRow;
+    if (row == null) {
+      if (_customFailed) return '$base — failed';
+      return base;
     }
-    final holdings =
-        ref.watch(portfolioHoldingsProvider(widget.portfolioId)).asData?.value;
-    for (final h in holdings?.holdings ?? const <PortfolioHolding>[]) {
-      if (isUsableIntelligenceSectorLabel(h.sector)) {
-        names.add(h.sector.trim());
+    final shock = row.appliedShockPct ?? double.tryParse(_shockCtrl.text.trim());
+    final shockPart = shock == null
+        ? null
+        : 'shock ${shock >= 0 ? '+' : ''}${shock.toStringAsFixed(shock == shock.roundToDouble() ? 0 : 1)}%';
+    final hits = row.matchedHoldings;
+    final weight = row.matchedWeightPct;
+    final parts = <String>[base];
+    if (shockPart != null) parts.add(shockPart);
+    if (hits != null && hits > 0) {
+      parts.add('$hits hit');
+      if (weight != null) {
+        parts.add('${weight.toStringAsFixed(1)}% of book');
       }
+    } else {
+      final note = row.note?.trim();
+      if (note != null && note.isNotEmpty) parts.add(note);
     }
-    final list = names.toList()..sort();
-    return list;
+    return parts.join(' · ');
+  }
+
+  String? _customPanelNote() {
+    final row = _customRow;
+    if (row == null) return null;
+    final note = row.note?.trim();
+    if (note != null && note.isNotEmpty) return note;
+    return null;
+  }
+
+  String _formatSignedPct(double v) {
+    final sign = v > 0 ? '+' : '';
+    return '$sign${v.toStringAsFixed(1)}%';
   }
 
   Future<void> _loadAllPresets() async {
@@ -157,12 +202,17 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
         _failed
           ..clear()
           ..addAll(failed);
+        _betaUsed = result.betaUsed;
+        _betaAssumed = result.betaAssumed;
+        _historyDays = result.historyDays;
+        _benchmark = result.benchmark;
         _loadedOnce = true;
         _loading = false;
         if (next.isEmpty) {
           _error = 'Could not load stress scenarios';
         }
       });
+      _maybeRefetchAfterIntelWarm();
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -170,6 +220,20 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
         _error = 'Could not load stress scenarios';
       });
     }
+  }
+
+  /// After intel settles, one more stress fetch if still ASSUMED (hist may be warm).
+  void _maybeRefetchAfterIntelWarm() {
+    if (_refetchScheduledAfterIntel) return;
+    if (_betaAssumed != true) return;
+    final intel = ref.read(portfolioIntelligenceProvider(widget.portfolioId));
+    if (intel.isLoading) return;
+    if (!intel.hasValue && !intel.hasError) return;
+    _refetchScheduledAfterIntel = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_betaAssumed == true) _loadAllPresets();
+    });
   }
 
   Future<void> _runCustom() async {
@@ -226,7 +290,18 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
 
   @override
   Widget build(BuildContext context) {
-    final content = _buildBody(context);
+    // Parallel first load; when intel finishes and stress still ASSUMED, refetch
+    // so chips pick up PORTFOLIO_BETA after hist warm (stress waits / joins).
+    ref.listen(portfolioIntelligenceProvider(widget.portfolioId), (prev, next) {
+      final settled = next.hasValue || next.hasError;
+      if (!settled) return;
+      _maybeRefetchAfterIntelWarm();
+    });
+
+    final narrow = MediaQuery.sizeOf(context).width < 600;
+    final fill = widget.fillHeight && widget.initiallyExpanded;
+    final custom = _customPanel(context, narrow: narrow);
+    final scenarios = _buildScenarios(context, scrollable: fill);
 
     if (!widget.initiallyExpanded) {
       return IntelligenceGlassCard(
@@ -234,6 +309,7 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
         icon: Icons.bolt_rounded,
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
         minHeight: widget.minHeight,
+        trailing: _headerChips(context),
         child: Theme(
           data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
           child: ExpansionTile(
@@ -247,7 +323,22 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
               'Scenarios',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
-            children: [content],
+            children: [
+              custom,
+              const SizedBox(height: 10),
+              scenarios,
+              if (_error != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  _error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+                IntelligenceTextLink(
+                  label: 'Retry →',
+                  onPressed: _loadAllPresets,
+                ),
+              ],
+            ],
           ),
         ),
       );
@@ -257,49 +348,188 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
       title: 'Stress Test',
       icon: Icons.bolt_rounded,
       minHeight: widget.minHeight,
-      child: content,
+      fillHeight: fill,
+      scrollable: false,
+      trailing: _headerChips(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: fill ? MainAxisSize.max : MainAxisSize.min,
+        children: [
+          custom,
+          const SizedBox(height: 10),
+          if (_bandLabel() != null) ...[
+            Text(
+              _bandLabel()!,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Theme.of(context).hintColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            const SizedBox(height: 6),
+          ],
+          if (fill)
+            Expanded(child: scenarios)
+          else
+            scenarios,
+          if (_error != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              _error!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+            IntelligenceTextLink(label: 'Retry →', onPressed: _loadAllPresets),
+          ],
+        ],
+      ),
     );
   }
 
-  Widget _buildBody(BuildContext context) {
+  String? _bandLabel() {
+    if (_betaAssumed == true) return 'Estimated';
+    final b = _betaUsed;
+    if (b == null) return null;
+    final abs = b.abs();
+    if (abs < 0.8) return 'Defensive';
+    if (abs <= 1.2) return 'Market-like';
+    return 'Aggressive';
+  }
+
+  Widget? _headerChips(BuildContext context) {
+    if (_betaAssumed == null && _betaUsed == null) return null;
+    final assumed = _betaAssumed == true;
+    final intelLoading =
+        ref.watch(portfolioIntelligenceProvider(widget.portfolioId)).isLoading;
+    final warming = assumed && intelLoading;
+    final String betaLabel;
+    final String estLabel;
+    if (warming) {
+      betaLabel = 'β …';
+      estLabel = 'warming';
+    } else if (assumed) {
+      betaLabel = 'β —';
+      estLabel = 'Est. · β 1.00';
+    } else {
+      betaLabel = 'β ${_betaUsed!.toStringAsFixed(2)}';
+      estLabel = (_historyDays != null && _historyDays! > 0)
+          ? 'Est. · ${_historyDays}d'
+          : 'Est. · hist';
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _chip(
+          context,
+          betaLabel,
+          tooltip: _betaTooltipMessage(assumed: assumed, warming: warming),
+        ),
+        const SizedBox(width: 6),
+        _chip(
+          context,
+          estLabel,
+          tooltip: _estTooltipMessage(assumed: assumed, warming: warming),
+        ),
+      ],
+    );
+  }
+
+  String _betaTooltipMessage({required bool assumed, required bool warming}) {
+    final bench = (_benchmark != null && _benchmark!.trim().isNotEmpty)
+        ? _benchmark!.trim()
+        : 'NIFTY50';
+    if (warming) {
+      return 'Measuring portfolio beta vs $bench…';
+    }
+    if (assumed) {
+      return 'β assumed 1.00 — need ≥20 aligned daily returns vs $bench.\n'
+          'Formula: β = Cov(r_p, r_m) / Var(r_m)\n'
+          'Index presets use this proxy until history warms.';
+    }
+    final b = _betaUsed;
+    final days = _historyDays;
+    final daysPart = (days != null && days > 0) ? '$days trading days' : 'available history';
+    final betaStr = b == null ? '—' : b.toStringAsFixed(2);
+    return 'β = Cov(r_p, r_m) / Var(r_m) on daily returns\n'
+        'This book: β $betaStr vs $bench ($daysPart)\n'
+        'Index shocks scale ≈ shock% × β; sector custom uses β 1.0.';
+  }
+
+  String _estTooltipMessage({required bool assumed, required bool warming}) {
+    if (warming) return 'Waiting for price history to finish loading';
+    if (assumed) {
+      return 'Estimated path: insufficient history, so index scenarios use β 1.00';
+    }
+    final days = _historyDays;
+    if (days != null && days > 0) {
+      return 'Measured from $days days of portfolio vs benchmark closes';
+    }
+    return 'Measured from portfolio vs benchmark daily returns';
+  }
+
+  Widget _chip(BuildContext context, String label, {required String tooltip}) {
+    return Tooltip(
+      message: tooltip,
+      waitDuration: const Duration(milliseconds: 350),
+      preferBelow: true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: ModuleColors.portfolio.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: ModuleColors.portfolio.withValues(alpha: 0.35),
+          ),
+        ),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: ModuleColors.portfolio,
+              ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScenarios(BuildContext context, {required bool scrollable}) {
     final currency = NumberFormat.currency(
       locale: 'en_IN',
       symbol: '₹',
       decimalDigits: 0,
     );
-    final sectors = _sectorSuggestions();
     final narrow = MediaQuery.sizeOf(context).width < 600;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (_loading && _rows.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Center(
-              child: SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-          )
-        else if (narrow)
-          _mobileScenarios(context, currency)
-        else
-          _desktopScenarios(context, currency),
-        if (_error != null) ...[
-          const SizedBox(height: 6),
-          Text(
-            _error!,
-            style: TextStyle(color: Theme.of(context).colorScheme.error),
+    if (_loading && _rows.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2),
           ),
-          IntelligenceTextLink(label: 'Retry →', onPressed: _loadAllPresets),
-        ],
-        const SizedBox(height: 8),
-        _customPanel(context, sectors, narrow: narrow),
-      ],
+        ),
+      );
+    }
+    if (!_loadedOnce && !_loading) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Text(
+          'No estimates yet',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).hintColor,
+              ),
+        ),
+      );
+    }
+    final body = narrow
+        ? _mobileScenarios(context, currency)
+        : _desktopScenarios(context, currency);
+    if (!scrollable) return body;
+    return ListView(
+      padding: EdgeInsets.zero,
+      primary: false,
+      physics: const ClampingScrollPhysics(),
+      children: [body],
     );
   }
 
@@ -324,8 +554,7 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
           _tableRow(
             context,
             presetId: 'CUSTOM',
-            label:
-                'Custom (${_sectorCtrl.text.trim().isEmpty ? '…' : _sectorCtrl.text.trim()})',
+            label: _customScenarioLabel(),
             scenario: _customFailed ? null : _customRow,
             currency: currency,
             failed: _customFailed,
@@ -353,8 +582,7 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
           _mobileScenarioCard(
             context,
             presetId: 'CUSTOM',
-            label:
-                'Custom (${_sectorCtrl.text.trim().isEmpty ? '…' : _sectorCtrl.text.trim()})',
+            label: _customScenarioLabel(),
             scenario: _customFailed ? null : _customRow,
             currency: currency,
             failed: _customFailed,
@@ -442,38 +670,40 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
   }
 
   Widget _customPanel(
-    BuildContext context,
-    List<String> sectors, {
+    BuildContext context, {
     required bool narrow,
   }) {
-    final sectorField = SmartSearchAnchor(
-      controller: _sectorCtrl,
-      compact: true,
-      hintText: 'Sector',
-      accentColor: ModuleColors.portfolio,
-      forceUppercase: false,
-      resultBadge: null,
-      onSelected: (label) => setState(() => _sectorCtrl.text = label),
-      searchHandler: (q) => searchSectorsHoldingsFirst(
-        query: q,
-        holdingsSectors: sectors,
+    final sectorField = SizedBox(
+      height: _kCustomControlHeight,
+      child: SmartSearchAnchor(
+        controller: _sectorCtrl,
+        compact: true,
+        hintText: 'Sector (e.g. IT)',
+        accentColor: ModuleColors.portfolio,
+        forceUppercase: false,
+        resultBadge: null,
+        // Custom row sits at card footer / near viewport bottom.
+        overlayPlacement: SmartSearchOverlayPlacement.above,
+        onSelected: (label) => setState(() => _sectorCtrl.text = label),
+        searchHandler: _searchStressSectors,
       ),
     );
 
     final shockField = SizedBox(
-      height: _kCustomControlHeight + 8,
-      width: narrow ? double.infinity : 96,
+      height: _kCustomControlHeight,
+      width: narrow ? double.infinity : 88,
       child: TextField(
         controller: _shockCtrl,
         keyboardType: const TextInputType.numberWithOptions(
           signed: true,
           decimal: true,
         ),
-        style: Theme.of(context).textTheme.bodySmall,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(height: 1.2),
         decoration: intelligenceFieldDecoration(
           context,
           label: 'Shock %',
           hint: '-15',
+          compact: true,
         ),
       ),
     );
@@ -484,17 +714,27 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
         onPressed: _customLoading ? null : _runCustom,
         style: FilledButton.styleFrom(
           backgroundColor: ModuleColors.portfolio,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
           visualDensity: VisualDensity.compact,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          minimumSize: const Size(0, _kCustomControlHeight),
+          maximumSize: const Size(double.infinity, _kCustomControlHeight),
         ),
         icon: _customLoading
             ? const SizedBox(
-                width: 14,
-                height: 14,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                width: 12,
+                height: 12,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
               )
-            : const Icon(Icons.play_arrow_rounded, size: 18),
-        label: const Text('Run custom'),
+            : const Icon(Icons.play_arrow_rounded, size: 16),
+        label: const Text(
+          'Run custom',
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        ),
       ),
     );
 
@@ -538,6 +778,24 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
                 runButton,
               ],
             ),
+          if (_customPanelNote() != null) ...[
+            const SizedBox(height: 6),
+            Builder(
+              builder: (context) {
+                final note = _customPanelNote()!;
+                final impact = _customRow?.pctImpact;
+                final text = impact == null
+                    ? note
+                    : '$note → ${_formatSignedPct(impact)} impact';
+                return Text(
+                  text,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Theme.of(context).hintColor,
+                      ),
+                );
+              },
+            ),
+          ],
         ],
       ),
     );
@@ -597,7 +855,7 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
                   flex: _kScenarioFlex,
                   child: Text(
                     label,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           fontWeight: FontWeight.w600,

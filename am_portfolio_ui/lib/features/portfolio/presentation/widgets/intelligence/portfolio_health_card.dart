@@ -13,6 +13,7 @@ import 'intelligence_glass_card.dart';
 const kOverviewHealthFactorIds = <String>[
   'diversification',
   'concentration',
+  'volatility',
   'liquidity',
   'allocation',
   'risk_resilience',
@@ -30,7 +31,7 @@ const kHealthScoreCol = 36.0;
 @visibleForTesting
 const kHealthStatusCol = 96.0;
 
-/// Pick the five Overview factors from API components; skip missing ids.
+/// Pick Overview factors from API components; skip missing ids.
 @visibleForTesting
 List<HealthComponent> selectOverviewHealthFactors(
   List<HealthComponent> components,
@@ -78,19 +79,29 @@ String healthReasonDisplay(String? reason) {
     RegExp(r'\s*/\s*vol\s*/\s*', caseSensitive: false),
     ' / volatility / ',
   );
+  t = t.replaceFirst(
+    RegExp(r'^Insufficient history\b', caseSensitive: false),
+    'History short',
+  );
   t = t.replaceAll(RegExp(r',\s*'), ' • ');
   t = t.replaceAllMapped(
     RegExp(r'•\s*([a-z])'),
     (m) => '• ${m[1]!.toUpperCase()}',
   );
+  // Legacy vol reasons concatenate raw doubles ("Daily vol 3.387555…%").
+  t = t.replaceAllMapped(RegExp(r'(\d+\.\d{3,})\s*%'), (m) {
+    final v = double.tryParse(m[1]!);
+    if (v == null) return m[0]!;
+    return '${v.toStringAsFixed(2)}%';
+  });
   return t;
 }
 
-class PortfolioHealthCard extends ConsumerWidget {
+class PortfolioHealthCard extends ConsumerStatefulWidget {
   const PortfolioHealthCard({
     required this.portfolioId,
     this.compact = false,
-    @Deprecated('Overview always shows the five canonical factors')
+    @Deprecated('Overview shows the canonical Health factors from API')
     this.maxComponents,
     this.minHeight,
     this.fillHeight = false,
@@ -106,34 +117,72 @@ class PortfolioHealthCard extends ConsumerWidget {
   final EdgeInsetsGeometry padding;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(portfolioIntelligenceProvider(portfolioId));
+  ConsumerState<PortfolioHealthCard> createState() =>
+      _PortfolioHealthCardState();
+}
+
+class _PortfolioHealthCardState extends ConsumerState<PortfolioHealthCard> {
+  /// One invalidate after cold intel so Volatility upgrades without F5.
+  bool _refetchScheduledAfterCold = false;
+
+  @override
+  void didUpdateWidget(covariant PortfolioHealthCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.portfolioId != widget.portfolioId) {
+      _refetchScheduledAfterCold = false;
+    }
+  }
+
+  void _maybeRefetchAfterHistWarm(PortfolioIntelligence? intel) {
+    if (_refetchScheduledAfterCold) return;
+    if (intel == null) return;
+    final cold = (intel.confidence ?? 1) < 0.9;
+    final factors = selectOverviewHealthFactors(intel.health?.components ?? const []);
+    final hasVol = factors.any((c) => c.id.toLowerCase() == 'volatility');
+    final volInsufficient = factors.any((c) =>
+        c.id.toLowerCase() == 'volatility' &&
+        (c.reason ?? '').toLowerCase().contains('insufficient'));
+    // Refetch only when still cold / placeholder vol — hist may be warm now.
+    if (!cold && hasVol && !volInsufficient) return;
+    _refetchScheduledAfterCold = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.invalidate(portfolioIntelligenceProvider(widget.portfolioId));
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final async = ref.watch(portfolioIntelligenceProvider(widget.portfolioId));
 
     return async.when(
       loading: () => IntelligenceCardSkeleton(
-        height: minHeight ?? (fillHeight ? 420 : 280),
+        height: widget.minHeight ?? (widget.fillHeight ? 420 : 280),
       ),
       error: (e, _) => IntelligenceGlassCard(
         title: 'Health Score',
         icon: Icons.favorite_rounded,
-        minHeight: minHeight,
-        fillHeight: fillHeight,
-        padding: padding,
+        minHeight: widget.minHeight,
+        fillHeight: widget.fillHeight,
+        padding: widget.padding,
         child: IntelligenceRetryRow(
           message: 'Could not load health score',
           onRetry: () =>
-              ref.invalidate(portfolioIntelligenceProvider(portfolioId)),
+              ref.invalidate(portfolioIntelligenceProvider(widget.portfolioId)),
         ),
       ),
       data: (intel) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _maybeRefetchAfterHistWarm(intel);
+        });
         final health = intel?.health;
         if (health == null) {
           return IntelligenceGlassCard(
             title: 'Health Score',
             icon: Icons.favorite_rounded,
-            minHeight: minHeight,
-            fillHeight: fillHeight,
-            padding: padding,
+            minHeight: widget.minHeight,
+            fillHeight: widget.fillHeight,
+            padding: widget.padding,
             child: Text(
               'Health data unavailable',
               style: Theme.of(context).textTheme.bodySmall,
@@ -147,13 +196,17 @@ class PortfolioHealthCard extends ConsumerWidget {
         return IntelligenceGlassCard(
           title: 'Health Score',
           icon: Icons.favorite_rounded,
-          minHeight: minHeight,
-          fillHeight: fillHeight,
-          padding: padding,
+          minHeight: widget.minHeight,
+          fillHeight: widget.fillHeight,
+          padding: widget.padding,
+          // Never nest a card-level scroll here: Overview already scrolls, and
+          // fillHeight peers use _FactorList's own ListView. Nested
+          // SingleChildScrollView + ListView + BackdropFilter caused stuck /
+          // janky page scroll and a collapsed Health card.
           scrollable: false,
           child: _HealthBody(
-            fillHeight: fillHeight,
-            compact: compact,
+            fillHeight: widget.fillHeight,
+            compact: widget.compact,
             score: health.score,
             band: health.band,
             bandColor: _bandColor(context, health.band),
@@ -177,6 +230,8 @@ IconData _factorIcon(String id) {
       return Icons.hub_outlined;
     case 'concentration':
       return Icons.gps_fixed_rounded;
+    case 'volatility':
+      return Icons.waves_outlined;
     case 'liquidity':
       return Icons.water_drop_outlined;
     case 'allocation':
@@ -211,20 +266,30 @@ class _HealthBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Need room for summary 168 + gap 16 + usable factor list (~220).
+        final maxW = constraints.maxWidth;
+        final maxH = constraints.maxHeight;
+        final hasBoundedHeight =
+            fillHeight || (maxH.isFinite && maxH < double.infinity);
+        // Desktop / wide tablet: summary | factors. Phone & narrow tablet: stack.
+        // 720 keeps iPad portrait (~768) side-by-side once chrome leaves ~700+.
         final sideBySide =
-            !compact && constraints.maxWidth >= (kHealthSummaryCol + 16 + 220);
+            !compact && maxW >= (kHealthSummaryCol + 16 + 240);
         final summary = _SummaryColumn(
           score: score,
           band: band,
           bandColor: bandColor,
           factorCount: factors.length,
           strongCount: strongCount,
-          gaugeSize: sideBySide ? kHealthGaugeSize : 128,
+          gaugeSize: sideBySide
+              ? kHealthGaugeSize
+              : (maxW < 420 ? 112.0 : 128.0),
         );
+        // Always scroll the factor list inside the card so 6 factors (incl.
+        // Volatility) fit on tablet/mobile without blowing the Overview layout.
         final list = _FactorList(
           factors: factors,
-          scrollable: fillHeight && sideBySide,
+          scrollable: true,
+          dense: factors.length >= 5 || maxW < 520,
         );
 
         if (sideBySide) {
@@ -236,23 +301,30 @@ class _HealthBody extends StatelessWidget {
               Expanded(child: list),
             ],
           );
-          if (fillHeight) return row;
-          return IntrinsicHeight(child: row);
+          if (hasBoundedHeight) return row;
+          // Unbounded Overview: give factors a fixed viewport that scrolls.
+          return SizedBox(
+            height: math.max(280, factors.length >= 6 ? 320.0 : 300.0),
+            child: row,
+          );
         }
 
-        final column = Column(
+        // Stacked (phone / narrow tablet): gauge on top, scrollable factors.
+        final factorViewport = hasBoundedHeight
+            ? null
+            : math.max(180.0, math.min(280.0, 52.0 * factors.length + 24));
+        return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: hasBoundedHeight ? MainAxisSize.max : MainAxisSize.min,
           children: [
             summary,
             const SizedBox(height: 12),
-            list,
+            if (hasBoundedHeight)
+              Expanded(child: list)
+            else
+              SizedBox(height: factorViewport, child: list),
           ],
         );
-        if (fillHeight) {
-          return SingleChildScrollView(child: column);
-        }
-        return column;
       },
     );
   }
@@ -377,10 +449,12 @@ class _FactorList extends StatelessWidget {
   const _FactorList({
     required this.factors,
     required this.scrollable,
+    this.dense = false,
   });
 
   final List<HealthComponent> factors;
   final bool scrollable;
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
@@ -390,21 +464,30 @@ class _FactorList extends StatelessWidget {
         style: Theme.of(context).textTheme.bodySmall,
       );
     }
+    final useDense = dense || factors.length >= 6;
+    final gap = useDense ? 2.0 : 6.0;
     final children = <Widget>[
       for (var i = 0; i < factors.length; i++) ...[
-        if (i > 0) const SizedBox(height: 6),
-        _FactorRow(component: factors[i]),
+        if (i > 0) SizedBox(height: gap),
+        _FactorRow(
+          component: factors[i],
+          compact: useDense,
+        ),
       ],
     ];
     if (!scrollable) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: children,
       );
     }
+    // Inner card scroll — Overview page remains primary when this is nested
+    // in an Expanded / fixed-height viewport.
     return ListView(
       padding: EdgeInsets.zero,
+      primary: false,
       physics: const ClampingScrollPhysics(),
       children: children,
     );
@@ -412,9 +495,13 @@ class _FactorList extends StatelessWidget {
 }
 
 class _FactorRow extends StatelessWidget {
-  const _FactorRow({required this.component});
+  const _FactorRow({
+    required this.component,
+    this.compact = false,
+  });
 
   final HealthComponent component;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -425,9 +512,11 @@ class _FactorRow extends StatelessWidget {
     final reason = healthReasonDisplay(component.reason);
     final progress = (component.score.clamp(0, 100)) / 100;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final padV = compact ? 3.0 : 5.0;
+    final iconSize = compact ? 26.0 : 32.0;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
+      padding: EdgeInsets.fromLTRB(10, padV, 10, padV),
       decoration: BoxDecoration(
         color: isDark
             ? Colors.white.withValues(alpha: 0.03)
@@ -438,8 +527,8 @@ class _FactorRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: iconSize,
+            height: iconSize,
             decoration: BoxDecoration(
               color: accent.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(8),
@@ -457,7 +546,7 @@ class _FactorRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w700,
-                        fontSize: 13,
+                        fontSize: compact ? 12 : 13,
                       ),
                 ),
                 if (reason.isNotEmpty) ...[
@@ -473,7 +562,7 @@ class _FactorRow extends StatelessWidget {
                         ),
                   ),
                 ],
-                const SizedBox(height: 6),
+                SizedBox(height: compact ? 4 : 6),
                 Row(
                   children: [
                     Expanded(
@@ -481,7 +570,7 @@ class _FactorRow extends StatelessWidget {
                         borderRadius: BorderRadius.circular(3),
                         child: LinearProgressIndicator(
                           value: progress,
-                          minHeight: 4,
+                          minHeight: compact ? 3 : 4,
                           backgroundColor: accent.withValues(alpha: 0.12),
                           color: accent,
                         ),

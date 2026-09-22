@@ -19,6 +19,10 @@ class PortfolioEndpoints {
   static String intelligence(String portfolioId) =>
       '/v1/analytics/portfolio/$portfolioId/intelligence';
 
+  /// Context-aware typeahead (STRESS_SECTOR | WHAT_IF_SYMBOL | …)
+  static String suggest(String portfolioId) =>
+      '/v1/analytics/portfolio/$portfolioId/suggest';
+
   /// Stress scenario estimates
   static String stress(String portfolioId) =>
       '/v1/analytics/portfolio/$portfolioId/stress';
@@ -26,6 +30,10 @@ class PortfolioEndpoints {
   /// What-If simulation (stateless)
   static String whatIf(String portfolioId) =>
       '/v1/analytics/portfolio/$portfolioId/what-if';
+
+  /// Replace one Option A asset-class list (bonds | commodities | cash)
+  static String assetClass(String portfolioId, String assetClass) =>
+      '/v1/portfolios/$portfolioId/asset-classes/$assetClass';
 
   /// Get user portfolio holdings
   static String userHoldings() => holdings;
