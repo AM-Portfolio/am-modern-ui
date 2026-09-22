@@ -145,6 +145,11 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
         _selectedIsins.remove(alt.isin);
         _selectedAlternatives.removeWhere((a) => a.isin == alt.isin);
       } else {
+        // Allow additional picks only while the gap still needs coverage.
+        final covered = _calculateCoverageWeight();
+        if (covered >= widget.neededWeight - 0.01) {
+          return;
+        }
         _selectedIsins.add(alt.isin);
         _selectedAlternatives.add(alt);
       }
@@ -202,14 +207,34 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
   }
 
   List<Alternative> get _visibleAlternatives {
-    var list = widget.alternatives.where((a) => a.effectiveRemainingQty > 0).toList();
+    // Weight already claimed by the current multi-select (same modal).
+    double selectedWeight = 0.0;
+    for (final alt in _selectedAlternatives) {
+      selectedWeight += alt.userWeight;
+    }
+    final gapLeft = (widget.neededWeight - selectedWeight).clamp(0.0, double.infinity);
+
+    var list = widget.alternatives.where((a) {
+      if (_selectedIsins.contains(a.isin)) {
+        return true; // keep selected rows visible
+      }
+      if (a.effectiveRemainingQty <= 0) {
+        return false;
+      }
+      // Hide peers that cannot contribute once the gap is already covered.
+      if (gapLeft <= 0.01) {
+        return false;
+      }
+      return true;
+    }).toList();
     if (widget.sectorialBasket) {
       list = list
-          .where((a) => a.isSameSector || _sectorMatches(a.sector))
+          .where((a) =>
+              _selectedIsins.contains(a.isin) ||
+              a.isSameSector ||
+              _sectorMatches(a.sector))
           .toList();
     }
-    // Live-decrement: hide or reduce remaining for already selected peer ISINs
-    // (selection itself handles over-pick via coverage; UI shows residual remaining).
     return list;
   }
 
