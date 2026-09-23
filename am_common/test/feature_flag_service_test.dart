@@ -4,6 +4,7 @@ import 'package:am_common/core/feature_flags/feature_flag_keys.dart';
 import 'package:am_common/core/feature_flags/feature_flag_provider.dart';
 import 'package:am_common/core/feature_flags/feature_flag_service.dart';
 import 'package:am_common/core/feature_flags/news/news_feature_flag_keys.dart';
+import 'package:growthbook_sdk_flutter/growthbook_sdk_flutter.dart';
 
 void main() {
   test('FeatureFlagConfig disabled without client key', () {
@@ -52,5 +53,43 @@ void main() {
 
   test('intelFlagsForcedOn is false without dart-define', () {
     expect(intelFlagsForcedOn, isFalse);
+  });
+
+  test('unknown GrowthBook feature uses defaultValue', () {
+    expect(
+      FeatureFlagService.resolveOn(
+        flagOn: false,
+        source: GBFeatureSource.unknownFeature,
+        defaultValue: true,
+      ),
+      isTrue,
+    );
+    expect(
+      FeatureFlagService.resolveOn(
+        flagOn: false,
+        source: GBFeatureSource.unknownFeature,
+        defaultValue: false,
+      ),
+      isFalse,
+    );
+  });
+
+  test('known GrowthBook feature keeps explicit off', () {
+    expect(
+      FeatureFlagService.resolveOn(
+        flagOn: false,
+        source: GBFeatureSource.force,
+        defaultValue: true,
+      ),
+      isFalse,
+    );
+    expect(
+      FeatureFlagService.resolveOn(
+        flagOn: true,
+        source: GBFeatureSource.force,
+        defaultValue: false,
+      ),
+      isTrue,
+    );
   });
 }
