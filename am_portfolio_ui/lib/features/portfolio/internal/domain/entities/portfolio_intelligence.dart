@@ -251,9 +251,7 @@ class IntelligenceSuggestItem {
       subtitle: json['subtitle']?.toString(),
       source: json['source']?.toString(),
       weightPct: _asDouble(json['weightPct']),
-      matchedHoldings: json['matchedHoldings'] is int
-          ? json['matchedHoldings'] as int
-          : int.tryParse('${json['matchedHoldings'] ?? ''}'),
+      matchedHoldings: _asInt(json['matchedHoldings']),
       symbol: json['symbol']?.toString(),
     );
   }
@@ -295,12 +293,8 @@ class StressResult {
       method: json['method']?.toString(),
       betaUsed: _asDouble(json['betaUsed']),
       benchmark: json['benchmark']?.toString(),
-      historyDays: json['historyDays'] is int
-          ? json['historyDays'] as int
-          : int.tryParse('${json['historyDays'] ?? ''}'),
-      betaAssumed: json['betaAssumed'] is bool
-          ? json['betaAssumed'] as bool
-          : null,
+      historyDays: _asInt(json['historyDays']),
+      betaAssumed: _asBetaAssumed(json['betaAssumed'], json['method']?.toString()),
     );
   }
 }
@@ -330,9 +324,7 @@ class StressScenario {
       pctImpact: _asDouble(json['pctImpact']) ?? 0,
       absImpact: _asDouble(json['absImpact']),
       matchedWeightPct: _asDouble(json['matchedWeightPct']),
-      matchedHoldings: json['matchedHoldings'] is int
-          ? json['matchedHoldings'] as int
-          : int.tryParse('${json['matchedHoldings'] ?? ''}'),
+      matchedHoldings: _asInt(json['matchedHoldings']),
       appliedShockPct: _asDouble(json['appliedShockPct']),
       note: json['note']?.toString(),
     );
@@ -392,6 +384,25 @@ double? _asDouble(dynamic value) {
   if (value == null) return null;
   if (value is num) return value.toDouble();
   return double.tryParse(value.toString());
+}
+
+int? _asInt(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return int.tryParse(value.toString()) ??
+      double.tryParse(value.toString())?.toInt();
+}
+
+bool? _asBetaAssumed(dynamic value, String? method) {
+  if (value is bool) return value;
+  if (method == 'ASSUMED_ONE') return true;
+  if (method == 'PORTFOLIO_BETA') return false;
+  if (value == null) return null;
+  final s = value.toString().toLowerCase();
+  if (s == 'true' || s == '1') return true;
+  if (s == 'false' || s == '0') return false;
+  return null;
 }
 
 Map<String, double> _stringDoubleMap(dynamic raw) {

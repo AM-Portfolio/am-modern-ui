@@ -30,6 +30,29 @@ const _kPnlFlex = 3;
 const _kRowMinHeight = 36.0;
 const _kCustomControlHeight = 36.0;
 
+const _kMaxWarmRetries = 2;
+
+/// Header chip copy for assumed vs measured β. Pure so tests can lock the contract.
+({String betaLabel, String estLabel}) stressBetaChipLabels({
+  required bool assumed,
+  required bool warming,
+  required double? betaUsed,
+  required int? historyDays,
+}) {
+  if (warming) {
+    return (betaLabel: 'β …', estLabel: 'warming');
+  }
+  if (assumed) {
+    return (betaLabel: 'β —', estLabel: 'Need ≥20d vs NIFTY');
+  }
+  final betaLabel =
+      betaUsed == null ? 'β —' : 'β ${betaUsed.toStringAsFixed(2)}';
+  final estLabel = (historyDays != null && historyDays > 0)
+      ? 'Est. · ${historyDays}d'
+      : 'Est. · hist';
+  return (betaLabel: betaLabel, estLabel: estLabel);
+}
+
 IconData _presetIcon(String presetId) {
   if (presetId.startsWith('NIFTY')) return Icons.trending_down_rounded;
   if (presetId.startsWith('BANKING')) return Icons.account_balance_rounded;
@@ -74,8 +97,10 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
   bool? _betaAssumed;
   int? _historyDays;
   String? _benchmark;
-  /// One refetch after intel settles so chips leave sticky ASSUMED when hist warms.
-  bool _refetchScheduledAfterIntel = false;
+  /// Warm-path retries after intel confidence/history is actually measured.
+  int _warmRetries = 0;
+  int _loadGeneration = 0;
+  bool _pendingWarmRefetch = false;
 
   @override
   void initState() {
@@ -104,7 +129,9 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
       _betaAssumed = null;
       _historyDays = null;
       _benchmark = null;
-      _refetchScheduledAfterIntel = false;
+      _warmRetries = 0;
+      _pendingWarmRefetch = false;
+      _loadGeneration++;
     });
     if (widget.initiallyExpanded) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _loadAllPresets());
@@ -169,7 +196,11 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
   }
 
   Future<void> _loadAllPresets() async {
-    if (_loading) return;
+    if (_loading) {
+      _pendingWarmRefetch = true;
+      return;
+    }
+    final gen = _loadGeneration;
     setState(() {
       _loading = true;
       _error = null;
@@ -181,7 +212,7 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
         widget.portfolioId,
         presets: kStressPresets.keys.toList(),
       );
-      if (!mounted) return;
+      if (!mounted || gen != _loadGeneration) return;
       final next = <String, StressScenario>{};
       final failed = <String>{};
       final byId = {
@@ -214,22 +245,34 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
       });
       _maybeRefetchAfterIntelWarm();
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || gen != _loadGeneration) return;
       setState(() {
         _loading = false;
         _error = 'Could not load stress scenarios';
       });
+    } finally {
+      if (mounted &&
+          gen == _loadGeneration &&
+          _pendingWarmRefetch &&
+          _betaAssumed == true) {
+        _pendingWarmRefetch = false;
+        _loadAllPresets();
+      }
     }
   }
 
-  /// After intel settles, one more stress fetch if still ASSUMED (hist may be warm).
+  /// Retry stress after intel is warm (not merely settled). Cold intel waits.
   void _maybeRefetchAfterIntelWarm() {
-    if (_refetchScheduledAfterIntel) return;
     if (_betaAssumed != true) return;
+    if (_warmRetries >= _kMaxWarmRetries) return;
     final intel = ref.read(portfolioIntelligenceProvider(widget.portfolioId));
     if (intel.isLoading) return;
-    if (!intel.hasValue && !intel.hasError) return;
-    _refetchScheduledAfterIntel = true;
+    final data = intel.asData?.value;
+    final warm = data != null &&
+        (((data.confidence ?? 0) >= 0.9) ||
+            (_historyDays != null && _historyDays! >= 20));
+    if (!warm) return;
+    _warmRetries++;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (_betaAssumed == true) _loadAllPresets();
@@ -290,8 +333,7 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
 
   @override
   Widget build(BuildContext context) {
-    // Parallel first load; when intel finishes and stress still ASSUMED, refetch
-    // so chips pick up PORTFOLIO_BETA after hist warm (stress waits / joins).
+    // Refetch only after intel is warm so chips leave ASSUMED when hist arrives.
     ref.listen(portfolioIntelligenceProvider(widget.portfolioId), (prev, next) {
       final settled = next.hasValue || next.hasError;
       if (!settled) return;
@@ -400,20 +442,14 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
     final intelLoading =
         ref.watch(portfolioIntelligenceProvider(widget.portfolioId)).isLoading;
     final warming = assumed && intelLoading;
-    final String betaLabel;
-    final String estLabel;
-    if (warming) {
-      betaLabel = 'β …';
-      estLabel = 'warming';
-    } else if (assumed) {
-      betaLabel = 'β —';
-      estLabel = 'Est. · β 1.00';
-    } else {
-      betaLabel = 'β ${_betaUsed!.toStringAsFixed(2)}';
-      estLabel = (_historyDays != null && _historyDays! > 0)
-          ? 'Est. · ${_historyDays}d'
-          : 'Est. · hist';
-    }
+    final chips = stressBetaChipLabels(
+      assumed: assumed,
+      warming: warming,
+      betaUsed: _betaUsed,
+      historyDays: _historyDays,
+    );
+    final betaLabel = chips.betaLabel;
+    final estLabel = chips.estLabel;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [

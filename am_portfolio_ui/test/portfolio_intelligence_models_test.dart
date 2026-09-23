@@ -83,4 +83,45 @@ void main() {
     expect(whatIf.after?.healthScore, 72);
     expect(whatIf.after?.sectorWeights['Energy'], 20.1);
   });
+
+  test('StressResult assumed JSON keeps betaUsed 1.0 and historyDays from double', () {
+    final stress = StressResult.fromJson({
+      'portfolioId': 'p1',
+      'method': 'ASSUMED_ONE',
+      'betaUsed': 1.0,
+      'betaAssumed': true,
+      'historyDays': 0,
+      'benchmark': 'NIFTY50',
+      'scenarios': [],
+    });
+    expect(stress.betaAssumed, isTrue);
+    expect(stress.betaUsed, 1.0);
+    expect(stress.method, 'ASSUMED_ONE');
+  });
+
+  test('StressResult measured JSON parses historyDays 30.0 and betaUsed', () {
+    final stress = StressResult.fromJson({
+      'portfolioId': 'p1',
+      'method': 'PORTFOLIO_BETA',
+      'betaUsed': 0.5,
+      'betaAssumed': false,
+      'historyDays': 30.0,
+      'benchmark': 'NIFTY50',
+      'scenarios': [],
+    });
+    expect(stress.betaAssumed, isFalse);
+    expect(stress.betaUsed, 0.5);
+    expect(stress.historyDays, 30);
+  });
+
+  test('StressResult method ASSUMED_ONE treats string betaAssumed as assumed', () {
+    final stress = StressResult.fromJson({
+      'portfolioId': 'p1',
+      'method': 'ASSUMED_ONE',
+      'betaUsed': 1.0,
+      'betaAssumed': 'true',
+      'historyDays': 12,
+    });
+    expect(stress.betaAssumed, isTrue);
+  });
 }

@@ -1,3 +1,4 @@
+import 'package:am_portfolio_ui/features/portfolio/internal/data/datasources/portfolio_remote_data_source.dart';
 import 'package:am_portfolio_ui/features/portfolio/internal/domain/entities/portfolio_analytics.dart';
 import 'package:am_portfolio_ui/features/portfolio/internal/domain/entities/portfolio_holding.dart';
 import 'package:am_portfolio_ui/features/portfolio/internal/domain/entities/portfolio_intelligence.dart';
@@ -782,10 +783,13 @@ void main() {
     expect(find.text('Volatility'), findsOneWidget);
     expect(find.text('Liquidity'), findsOneWidget);
     expect(find.text('Allocation'), findsOneWidget);
-    expect(find.text('Risk Resilience'), findsOneWidget);
     expect(find.textContaining('Names 110'), findsOneWidget);
     expect(find.textContaining('Liquid share 54.65%'), findsOneWidget);
     expect(find.textContaining('Ann. vol 15.9%'), findsOneWidget);
+    // 6th factor is below the inner ListView fold.
+    await tester.drag(find.byType(ListView).last, const Offset(0, -240));
+    await tester.pumpAndSettle();
+    expect(find.text('Risk Resilience'), findsOneWidget);
     expect(find.text('View Details →'), findsNothing);
     expect(find.text('Health Details'), findsNothing);
     expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
@@ -1022,6 +1026,93 @@ void main() {
     expect(find.text('No holdings for this group'), findsNothing);
   });
 
+  test('stressBetaChipLabels assumed hides 1.00 on the β chip', () {
+    final chips = stressBetaChipLabels(
+      assumed: true,
+      warming: false,
+      betaUsed: 1.0,
+      historyDays: 0,
+    );
+    expect(chips.betaLabel, 'β —');
+    expect(chips.estLabel, 'Need ≥20d vs NIFTY');
+  });
+
+  test('stressBetaChipLabels measured shows β and days', () {
+    final chips = stressBetaChipLabels(
+      assumed: false,
+      warming: false,
+      betaUsed: 0.5,
+      historyDays: 30,
+    );
+    expect(chips.betaLabel, 'β 0.50');
+    expect(chips.estLabel, 'Est. · 30d');
+  });
+
+  test('stressBetaChipLabels measured without betaUsed does not throw', () {
+    final chips = stressBetaChipLabels(
+      assumed: false,
+      warming: false,
+      betaUsed: null,
+      historyDays: null,
+    );
+    expect(chips.betaLabel, 'β —');
+    expect(chips.estLabel, 'Est. · hist');
+  });
+
+  test('stressBetaChipLabels warming', () {
+    final chips = stressBetaChipLabels(
+      assumed: true,
+      warming: true,
+      betaUsed: 1.0,
+      historyDays: 0,
+    );
+    expect(chips.betaLabel, 'β …');
+    expect(chips.estLabel, 'warming');
+  });
+
+  testWidgets('Stress card shows measured beta chips from API', (tester) async {
+    final remote = _FakeStressRemote(
+      const StressResult(
+        portfolioId: 'p1',
+        method: 'PORTFOLIO_BETA',
+        betaUsed: 0.5,
+        betaAssumed: false,
+        historyDays: 30,
+        benchmark: 'NIFTY50',
+        scenarios: [
+          StressScenario(id: 'NIFTY_DOWN_10', pctImpact: -5),
+        ],
+      ),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          portfolioRemoteDataSourceProvider.overrideWith((ref) async => remote),
+          portfolioIntelligenceProvider('p1').overrideWith(
+            (ref) async => const PortfolioIntelligence(
+              portfolioId: 'p1',
+              confidence: 0.9,
+            ),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: PortfolioStressCard(
+                portfolioId: 'p1',
+                initiallyExpanded: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('β 0.50'), findsOneWidget);
+    expect(find.text('Est. · 30d'), findsOneWidget);
+  });
+
   testWidgets('Stress rejects zero shock before API', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -1132,4 +1223,31 @@ void main() {
     expect(find.text('Sheet body content'), findsNothing);
     expect(find.text('Open sheet'), findsOneWidget);
   });
+}
+
+class _FakeStressRemote extends Fake implements PortfolioRemoteDataSource {
+  _FakeStressRemote(this.result);
+
+  final StressResult result;
+
+  @override
+  Future<StressResult> getPortfolioStress(
+    String portfolioId, {
+    String? preset,
+    List<String>? presets,
+    Map<String, dynamic>? custom,
+  }) async {
+    return result;
+  }
+
+  @override
+  Future<List<IntelligenceSuggestItem>> getIntelligenceSuggest(
+    String portfolioId, {
+    required String context,
+    String query = '',
+    String? wire,
+    int limit = 8,
+  }) async {
+    return const [];
+  }
 }
