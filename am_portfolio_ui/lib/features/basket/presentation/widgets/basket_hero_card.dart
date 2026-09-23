@@ -31,13 +31,13 @@ class BasketHeroCard extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.white.withOpacity(0.15),
-                  Colors.white.withOpacity(0.05),
+                  context.glassOverlay(0.15),
+                  context.glassOverlay(0.05),
                 ],
               ),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: Colors.white.withOpacity(0.2),
+                color: context.glassOverlay(0.2),
                 width: 1,
               ),
             ),
@@ -48,15 +48,15 @@ class BasketHeroCard extends StatelessWidget {
                 AnimatedRadialGauge(
                   percentage: matchScore,
                   size: 180,
-                  fillColor: _getColorForScore(matchScore),
+                  fillColor: _getColorForScore(context, matchScore),
                 ),
                 const SizedBox(height: 24),
                 
                 // ETF Name
                 Text(
                   etfName,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: Colors.white,
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        color: context.textPrimary,
                         fontWeight: FontWeight.bold,
                       ),
                   textAlign: TextAlign.center,
@@ -108,7 +108,7 @@ class BasketHeroCard extends StatelessWidget {
     );
   }
 
-  Color _getColorForScore(double score) {
+  Color _getColorForScore(BuildContext context, double score) {
     if (score >= 90) {
       return ModuleColors.portfolio;
     } else if (score >= 75) {
@@ -116,7 +116,7 @@ class BasketHeroCard extends StatelessWidget {
     } else if (score >= 60) {
       return Colors.orangeAccent;
     } else {
-      return Colors.redAccent;
+      return context.statusError;
     }
   }
 }

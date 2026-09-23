@@ -66,7 +66,7 @@ class _MyBasketsViewState extends ConsumerState<MyBasketsView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            Icon(Icons.error_outline, size: 48, color: context.statusError),
             const SizedBox(height: AppSpacing.md),
             Text('Failed to load baskets',
                 style: Theme.of(context).textTheme.titleMedium),
@@ -478,7 +478,7 @@ class _DraftBasketCard extends ConsumerWidget {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: c.statusError),
             onPressed: () async {
               Navigator.of(c).pop();
               try {
@@ -492,9 +492,9 @@ class _DraftBasketCard extends ConsumerWidget {
                 await onChanged();
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Draft deleted'),
-                      backgroundColor: Colors.green,
+                    SnackBar(
+                      content: const Text('Draft deleted'),
+                      backgroundColor: context.statusSuccess,
                     ),
                   );
                 }
@@ -503,13 +503,13 @@ class _DraftBasketCard extends ConsumerWidget {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(basketApiErrorMessage(e)),
-                      backgroundColor: Colors.red,
+                      backgroundColor: context.statusError,
                     ),
                   );
                 }
               }
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+            child: Text('Delete', style: TextStyle(color: c.colors.actionPrimaryFg)),
           ),
         ],
       ),
@@ -710,7 +710,7 @@ class _TrackingBasketCard extends ConsumerWidget {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: c.statusError),
             onPressed: () async {
               Navigator.of(c).pop();
               try {
@@ -727,9 +727,9 @@ class _TrackingBasketCard extends ConsumerWidget {
                 }
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Basket deleted'),
-                        backgroundColor: Colors.green),
+                    SnackBar(
+                        content: const Text('Basket deleted'),
+                        backgroundColor: context.statusSuccess),
                   );
                 }
               } catch (e) {
@@ -738,12 +738,12 @@ class _TrackingBasketCard extends ConsumerWidget {
                     SnackBar(
                         content: Text(
                             'Failed to delete basket: ${basketApiErrorMessage(e)}'),
-                        backgroundColor: Colors.red),
+                        backgroundColor: context.statusError),
                   );
                 }
               }
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+            child: Text('Delete', style: TextStyle(color: c.colors.actionPrimaryFg)),
           ),
         ],
       ),

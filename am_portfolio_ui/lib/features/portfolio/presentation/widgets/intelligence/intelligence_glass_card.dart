@@ -108,16 +108,15 @@ class IntelligenceGlassCard extends StatelessWidget {
                       .withValues(alpha: 0.85),
                 ]
               : [
-                  Colors.white.withValues(alpha: kIsWeb ? 0.92 : 0.45),
+                  context.colors.cardSurface
+                      .withValues(alpha: kIsWeb ? 0.92 : 0.45),
                   IntelligenceColors.mist.withValues(alpha: kIsWeb ? 0.85 : 0.25),
                 ],
         ),
         border: Border.all(
           color: ModuleColors.isBrandSynced
               ? ModuleColors.portfolio.withValues(alpha: 0.28)
-              : (isDark
-                  ? Colors.white.withValues(alpha: 0.07)
-                  : Colors.black.withValues(alpha: 0.07)),
+              : context.glassOverlay(0.07),
         ),
         borderRadius: BorderRadius.circular(18),
       ),
@@ -157,19 +156,12 @@ class IntelligenceInsetPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.04)
-            : Colors.black.withValues(alpha: 0.04),
+        color: context.glassOverlay(0.04),
         borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.07)
-              : Colors.black.withValues(alpha: 0.06),
-        ),
+        border: Border.all(color: context.glassOverlay(0.07)),
       ),
       padding: padding,
       child: child,
@@ -227,9 +219,7 @@ InputDecoration intelligenceFieldDecoration(
         compact ? FloatingLabelBehavior.never : FloatingLabelBehavior.auto,
     isDense: true,
     filled: true,
-    fillColor: isDark
-        ? Colors.white.withValues(alpha: 0.04)
-        : Colors.black.withValues(alpha: 0.03),
+    fillColor: context.glassOverlay(isDark ? 0.04 : 0.03),
     contentPadding: EdgeInsets.symmetric(
       horizontal: compact ? 10 : 12,
       vertical: compact ? 10 : 12,
@@ -243,9 +233,7 @@ InputDecoration intelligenceFieldDecoration(
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(compact ? 8 : 10),
       borderSide: BorderSide(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.1)
-            : Colors.black.withValues(alpha: 0.08),
+        color: context.glassOverlay(isDark ? 0.1 : 0.08),
       ),
     ),
     focusedBorder: OutlineInputBorder(
@@ -287,7 +275,7 @@ class IntelligenceCardSkeleton extends StatelessWidget {
     return Container(
       height: height,
       decoration: BoxDecoration(
-        color: isDark ? IntelligenceColors.surfaceDeep : Colors.grey.shade200,
+        color: isDark ? IntelligenceColors.surfaceDeep : context.surfaceColor,
         borderRadius: BorderRadius.circular(18),
       ),
     );
@@ -345,9 +333,7 @@ void showIntelligenceSheet({
     }
 
     return Material(
-      color: isDark
-          ? const Color(0xFF121820)
-          : Theme.of(context).colorScheme.surface,
+      color: isDark ? context.cardColor : context.surfaceColor,
       borderRadius: BorderRadius.circular(18),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),

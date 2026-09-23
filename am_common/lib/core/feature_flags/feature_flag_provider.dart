@@ -46,17 +46,18 @@ final offlineWritesEnabledProvider = Provider<bool>((ref) {
   return ref.watch(featureFlagProvider(FeatureFlagKeys.offlineWritesV1));
 });
 
-/// Fail-closed intel flags (default false when GB down / unset).
-bool _intelFlag(Ref ref, String key) {
+/// Intel flags default ON when GB is down or the key is missing.
+/// GrowthBook can still hide a card when the key exists and is off.
+bool _intelFlag(Ref ref, String key, {bool defaultValue = true}) {
   if (intelFlagsForcedOn) return true;
   try {
     ref.watch(featureFlagsReadyProvider);
     return ref.watch(featureFlagServiceProvider).isOn(
           key,
-          defaultValue: false,
+          defaultValue: defaultValue,
         );
   } catch (_) {
-    return false;
+    return defaultValue;
   }
 }
 

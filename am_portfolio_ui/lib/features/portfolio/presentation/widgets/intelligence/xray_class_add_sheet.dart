@@ -35,7 +35,7 @@ Future<void> showXrayClassAddSheet({
       useSafeArea: true,
       useRootNavigator: true,
       backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.55),
+      barrierColor: context.shadow(0.55),
       builder: (routeContext) => Padding(
         padding: EdgeInsets.only(
           bottom: MediaQuery.viewInsetsOf(routeContext).bottom,
@@ -60,7 +60,7 @@ Future<void> showXrayClassAddSheet({
     context: context,
     useRootNavigator: true,
     barrierDismissible: true,
-    barrierColor: Colors.black.withValues(alpha: 0.55),
+    barrierColor: context.shadow(0.55),
     builder: (routeContext) {
       final maxH = MediaQuery.sizeOf(routeContext).height * 0.82;
       return Dialog(
@@ -92,24 +92,20 @@ class _SheetShell extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isDark
-              ? const [
-                  Color(0xFF1A222D),
-                  Color(0xFF121820),
-                  Color(0xFF0E141C),
+              ? [
+                  context.cardColor,
+                  context.backgroundColor,
+                  context.surfaceColor,
                 ]
               : [
-                  Colors.white,
-                  Colors.grey.shade50,
+                  context.cardColor,
+                  IntelligenceColors.mist,
                 ],
         ),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.10)
-              : Colors.black.withValues(alpha: 0.06),
-        ),
+        border: Border.all(color: context.glassOverlay(isDark ? 0.10 : 0.06)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.12),
+            color: context.shadow(isDark ? 0.45 : 0.12),
             blurRadius: 32,
             offset: const Offset(0, 16),
           ),
@@ -297,9 +293,7 @@ class _XrayClassAddSheetState extends ConsumerState<XrayClassAddSheet> {
       hintText: hint ?? label,
       isDense: true,
       filled: true,
-      fillColor: isDark
-          ? Colors.white.withValues(alpha: 0.05)
-          : Colors.black.withValues(alpha: 0.03),
+      fillColor: context.glassOverlay(isDark ? 0.05 : 0.03),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -308,9 +302,7 @@ class _XrayClassAddSheetState extends ConsumerState<XrayClassAddSheet> {
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : Colors.black.withValues(alpha: 0.06),
+          color: context.glassOverlay(isDark ? 0.08 : 0.06),
         ),
       ),
       focusedBorder: OutlineInputBorder(
@@ -394,9 +386,7 @@ class _XrayClassAddSheetState extends ConsumerState<XrayClassAddSheet> {
                     ? null
                     : () => Navigator.of(context, rootNavigator: true).pop(),
                 style: IconButton.styleFrom(
-                  backgroundColor: isDark
-                      ? Colors.white.withValues(alpha: 0.06)
-                      : Colors.black.withValues(alpha: 0.04),
+                  backgroundColor: context.glassOverlay(isDark ? 0.06 : 0.04),
                 ),
                 icon: const Icon(Icons.close_rounded, size: 18),
               ),
@@ -523,7 +513,7 @@ class _XrayClassAddSheetState extends ConsumerState<XrayClassAddSheet> {
                 onPressed: _saving ? null : _save,
                 style: FilledButton.styleFrom(
                   backgroundColor: ModuleColors.portfolio,
-                  foregroundColor: Colors.white,
+                  foregroundColor: context.colors.actionPrimaryFg,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 28,
                     vertical: 14,
@@ -534,12 +524,12 @@ class _XrayClassAddSheetState extends ConsumerState<XrayClassAddSheet> {
                   elevation: 0,
                 ),
                 child: _saving
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          color: context.colors.actionPrimaryFg,
                         ),
                       )
                     : const Text(
@@ -585,15 +575,11 @@ class _ClassPickCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
             color: selected
                 ? ModuleColors.portfolio.withValues(alpha: 0.22)
-                : (isDark
-                    ? Colors.white.withValues(alpha: 0.04)
-                    : Colors.black.withValues(alpha: 0.03)),
+                : context.glassOverlay(isDark ? 0.04 : 0.03),
             border: Border.all(
               color: selected
                   ? ModuleColors.portfolio
-                  : (isDark
-                      ? Colors.white.withValues(alpha: 0.08)
-                      : Colors.black.withValues(alpha: 0.06)),
+                  : context.glassOverlay(isDark ? 0.08 : 0.06),
               width: selected ? 1.4 : 1,
             ),
           ),
@@ -620,11 +606,8 @@ class _ClassPickCard extends StatelessWidget {
                   height: 1.2,
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                   color: selected
-                      ? Colors.white
-                      : Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.75),
+                      ? context.textPrimary
+                      : context.textSecondary,
                 ),
               ),
             ],
@@ -666,14 +649,8 @@ class _HoldingCard extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.03)
-            : Colors.black.withValues(alpha: 0.02),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.07)
-              : Colors.black.withValues(alpha: 0.05),
-        ),
+        color: context.glassOverlay(isDark ? 0.03 : 0.02),
+        border: Border.all(color: context.glassOverlay(isDark ? 0.07 : 0.05)),
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(14, 12, 10, 14),

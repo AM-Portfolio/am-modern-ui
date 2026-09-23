@@ -49,9 +49,9 @@ class _GmailSyncModalState extends ConsumerState<GmailSyncModal> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Fetch your portfolio holdings from your broker email statements provided heavily by Gmail integration.',
-                style: TextStyle(fontSize: 13, color: Colors.grey),
+                style: TextStyle(fontSize: 13, color: context.textTertiary),
               ),
               const SizedBox(height: 20),
 
@@ -114,7 +114,7 @@ class _GmailSyncModalState extends ConsumerState<GmailSyncModal> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.red.shade50,
+                    color: context.statusError.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Row(
@@ -122,14 +122,14 @@ class _GmailSyncModalState extends ConsumerState<GmailSyncModal> {
                       Icon(
                         Icons.error_outline,
                         size: 20,
-                        color: Colors.red.shade700,
+                        color: context.statusError,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           _getErrorMessage(syncState.error),
                           style: TextStyle(
-                            color: Colors.red.shade700,
+                            color: context.statusError,
                             fontSize: 12,
                           ),
                         ),
@@ -150,12 +150,12 @@ class _GmailSyncModalState extends ConsumerState<GmailSyncModal> {
         ElevatedButton(
           onPressed: isLoading ? null : _handleSync,
           child: isLoading
-              ? const SizedBox(
+              ? SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Colors.white,
+                    color: context.colors.actionPrimaryFg,
                   ),
                 )
               : const Text('Scan & Sync'),
@@ -200,7 +200,7 @@ class _GmailSyncModalState extends ConsumerState<GmailSyncModal> {
             content: Text(
               'Successfully synced $count holdings from $_selectedBroker',
             ),
-            backgroundColor: Colors.green,
+            backgroundColor: context.marketPositive,
           ),
         );
         // Refresh portfolio data here if needed, or let real-time streams handle it

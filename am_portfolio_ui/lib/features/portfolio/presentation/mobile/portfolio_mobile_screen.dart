@@ -77,7 +77,7 @@ class _PortfolioMobileScreenState extends ConsumerState<PortfolioMobileScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.error, size: 64, color: Colors.red),
+                  Icon(Icons.error, size: 64, color: context.statusError),
                   const SizedBox(height: 16),
                   Text('Failed to load analytics: $error'),
                   const SizedBox(height: 16),
@@ -99,7 +99,7 @@ class _PortfolioMobileScreenState extends ConsumerState<PortfolioMobileScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error, size: 64, color: Colors.red),
+              Icon(Icons.error, size: 64, color: context.statusError),
               const SizedBox(height: 16),
               Text('Failed to load portfolio: $error'),
               const SizedBox(height: 16),
@@ -361,7 +361,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: context.statusError),
             child: const Text('Delete'),
           ),
         ],
@@ -390,15 +390,15 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
                 width: 1.2,
               ),
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.add, color: Colors.white, size: 18),
-                SizedBox(width: 6),
+                Icon(Icons.add, color: context.colors.actionPrimaryFg, size: 18),
+                const SizedBox(width: 6),
                 Text(
                   'Add Trade',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: context.colors.actionPrimaryFg,
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                   ),
@@ -437,7 +437,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Error: ${state.message}'),
-              backgroundColor: Colors.red,
+              backgroundColor: context.statusError,
             ),
           );
         }
@@ -547,12 +547,12 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
 
   Widget _buildStickyControlsRow(BuildContext context, String currentName) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final onSurface = isDark ? Colors.white : const Color(0xFF0B1C30);
+    final onSurface = context.textPrimary;
     final chipBg = isDark
-        ? Colors.white.withValues(alpha: 0.08)
+        ? context.glassOverlay(0.08)
         : const Color(0xFFEDE9FE);
     final chipBorder = isDark
-        ? Colors.white.withValues(alpha: 0.12)
+        ? context.glassOverlay(0.12)
         : const Color(0xFFDDD6FE);
 
     Widget actionChip({
@@ -667,8 +667,8 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
       borderRadius: 10,
       menuMaxHeight: 148,
       primaryColor: ModuleColors.portfolio,
-      backgroundColor: isDark ? Colors.white.withValues(alpha: 0.06) : null,
-      borderColor: isDark ? Colors.white.withValues(alpha: 0.1) : null,
+      backgroundColor: isDark ? context.glassOverlay(0.06) : null,
+      borderColor: isDark ? context.glassOverlay(0.1) : null,
       contentPadding: const EdgeInsets.symmetric(horizontal: 8),
       items: items,
       onChanged: (id) {
@@ -708,8 +708,8 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
           _deletePortfolio(portfolio);
         }
       },
-      itemBuilder: (context) => const [
-        PopupMenuItem(
+      itemBuilder: (context) => [
+        const PopupMenuItem(
           value: 'edit',
           child: Row(
             children: [
@@ -723,9 +723,9 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
           value: 'delete',
           child: Row(
             children: [
-              Icon(Icons.delete, size: 18, color: Colors.red),
-              SizedBox(width: 8),
-              Text('Delete Portfolio', style: TextStyle(color: Colors.red)),
+              Icon(Icons.delete, size: 18, color: context.statusError),
+              const SizedBox(width: 8),
+              Text('Delete Portfolio', style: TextStyle(color: context.statusError)),
             ],
           ),
         ),

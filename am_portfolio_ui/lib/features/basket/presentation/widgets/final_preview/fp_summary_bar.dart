@@ -70,7 +70,7 @@ class FpSummaryBar extends StatelessWidget {
         FilledButton.icon(
           onPressed: isSubmitting ? null : onConfirm,
           icon: isSubmitting 
-              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: context.colors.actionPrimaryFg))
               : const Icon(Icons.check, size: 18),
           label: Text(
             isSubmitting ? 'Creating...' : 'Confirm & Create Basket',
@@ -78,7 +78,7 @@ class FpSummaryBar extends StatelessWidget {
           ),
           style: FilledButton.styleFrom(
             backgroundColor: ModuleColors.portfolio,
-            foregroundColor: Colors.white,
+            foregroundColor: context.colors.actionPrimaryFg,
             padding: EdgeInsets.symmetric(
               horizontal: isDesktop ? 32 : 16, 
               vertical: isDesktop ? 20 : 16,
@@ -95,7 +95,7 @@ class FpSummaryBar extends StatelessWidget {
         border: Border(top: BorderSide(color: context.colors.border)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: context.shadow(0.05),
             offset: const Offset(0, -4),
             blurRadius: 8,
           ),

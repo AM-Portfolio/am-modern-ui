@@ -24,7 +24,7 @@ class PortfolioAnalysisWidget extends StatelessWidget {
                   Icon(
                     Icons.error_outline,
                     size: 48,
-                    color: Colors.red.shade400,
+                    color: context.statusError,
                   ),
                   const SizedBox(height: 16),
                   Text('Error: ${state.message}'),
@@ -66,12 +66,12 @@ class PortfolioAnalysisWidget extends StatelessWidget {
   Widget _buildAllocationChart(BuildContext context, PortfolioSummary summary) {
     final colors = [
       Colors.blue,
-      Colors.green,
+      context.marketPositive,
       Colors.orange,
-      Colors.red,
+      context.marketNegative,
       ModuleColors.portfolio,
       Colors.teal,
-      Colors.grey,
+      context.statusNeutral,
     ];
     final allocations = summary.sectorAllocation;
 
@@ -93,7 +93,7 @@ class PortfolioAnalysisWidget extends StatelessWidget {
                   child: Container(
                     height: 200,
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
+                      color: context.surfaceColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Center(
@@ -107,12 +107,12 @@ class PortfolioAnalysisWidget extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: allocations.isEmpty
                         ? [
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 8),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
                               child: Text(
                                 'No sector data available',
                                 style: TextStyle(
-                                  color: Colors.grey,
+                                  color: context.textTertiary,
                                   fontSize: 12,
                                 ),
                               ),
@@ -180,13 +180,13 @@ class PortfolioAnalysisWidget extends StatelessWidget {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Expanded(child: _buildMetricCard('Sharpe Ratio', '1.42')),
+                  Expanded(child: _buildMetricCard(context, 'Sharpe Ratio', '1.42')),
                   const SizedBox(width: 8),
-                  Expanded(child: _buildMetricCard('Beta', '0.95')),
+                  Expanded(child: _buildMetricCard(context, 'Beta', '0.95')),
                   const SizedBox(width: 8),
-                  Expanded(child: _buildMetricCard('Alpha', '2.1%')),
+                  Expanded(child: _buildMetricCard(context, 'Alpha', '2.1%')),
                   const SizedBox(width: 8),
-                  Expanded(child: _buildMetricCard('Volatility', '12.3%')),
+                  Expanded(child: _buildMetricCard(context, 'Volatility', '12.3%')),
                 ],
               ),
             ],
@@ -194,17 +194,17 @@ class PortfolioAnalysisWidget extends StatelessWidget {
         ),
       );
 
-  Widget _buildMetricCard(String title, String value) => Container(
+  Widget _buildMetricCard(BuildContext context, String title, String value) => Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.grey.shade50,
+          color: context.surfaceColor,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
           children: [
             Text(
               title,
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
+              style: TextStyle(fontSize: 12, color: context.textTertiary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 4),
@@ -234,12 +234,12 @@ class PortfolioAnalysisWidget extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             if (allPerformers.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Center(
                   child: Text(
                     'No performance data available',
-                    style: TextStyle(color: Colors.grey),
+                    style: TextStyle(color: context.textTertiary),
                   ),
                 ),
               )
@@ -252,14 +252,14 @@ class PortfolioAnalysisWidget extends StatelessWidget {
                   return ListTile(
                     leading: CircleAvatar(
                       backgroundColor: isPositive
-                          ? Colors.green.shade100
-                          : Colors.red.shade100,
+                          ? context.marketPositive.withValues(alpha: 0.15)
+                          : context.marketNegative.withValues(alpha: 0.15),
                       child: Text(
                         performer.symbol,
                         style: TextStyle(
                           color: isPositive
-                              ? Colors.green.shade800
-                              : Colors.red.shade800,
+                              ? context.marketPositive
+                              : context.marketNegative,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
@@ -270,7 +270,7 @@ class PortfolioAnalysisWidget extends StatelessWidget {
                     trailing: Text(
                       gainText,
                       style: TextStyle(
-                        color: isPositive ? Colors.green : Colors.red,
+                        color: isPositive ? context.marketPositive : context.marketNegative,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -295,17 +295,17 @@ class PortfolioAnalysisWidget extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 16),
-              _buildRiskIndicator('Overall Risk', 0.65, Colors.orange),
+              _buildRiskIndicator(context, 'Overall Risk', 0.65, Colors.orange),
               const SizedBox(height: 8),
-              _buildRiskIndicator('Market Risk', 0.45, Colors.blue),
+              _buildRiskIndicator(context, 'Market Risk', 0.45, Colors.blue),
               const SizedBox(height: 8),
-              _buildRiskIndicator('Concentration Risk', 0.8, Colors.red),
+              _buildRiskIndicator(context, 'Concentration Risk', 0.8, context.statusError),
             ],
           ),
         ),
       );
 
-  Widget _buildRiskIndicator(String title, double value, Color color) => Column(
+  Widget _buildRiskIndicator(BuildContext context, String title, double value, Color color) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -322,7 +322,7 @@ class PortfolioAnalysisWidget extends StatelessWidget {
           const SizedBox(height: 4),
           LinearProgressIndicator(
             value: value,
-            backgroundColor: Colors.grey.shade200,
+            backgroundColor: context.borderColor,
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
         ],

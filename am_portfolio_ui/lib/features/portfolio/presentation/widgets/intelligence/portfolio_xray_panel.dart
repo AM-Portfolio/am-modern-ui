@@ -961,8 +961,8 @@ class _Tabs extends StatelessWidget {
               fontSize: 12,
               fontWeight: selected ? FontWeight.bold : FontWeight.w500,
               color: selected
-                  ? Colors.white
-                  : (isDark ? Colors.white70 : Colors.black87),
+                  ? context.colors.actionPrimaryFg
+                  : context.textSecondary,
             ),
           ),
         ),
@@ -1058,8 +1058,8 @@ class _MobilePaneSwap extends StatelessWidget {
                   icon,
                   size: 14,
                   color: selected
-                      ? Colors.white
-                      : (isDark ? Colors.white70 : Colors.black87),
+                      ? context.colors.actionPrimaryFg
+                      : context.textSecondary,
                 ),
                 const SizedBox(width: 4),
                 Text(
@@ -1068,8 +1068,8 @@ class _MobilePaneSwap extends StatelessWidget {
                     fontSize: 12,
                     fontWeight: selected ? FontWeight.bold : FontWeight.w500,
                     color: selected
-                        ? Colors.white
-                        : (isDark ? Colors.white70 : Colors.black87),
+                        ? context.colors.actionPrimaryFg
+                        : context.textSecondary,
                   ),
                 ),
               ],

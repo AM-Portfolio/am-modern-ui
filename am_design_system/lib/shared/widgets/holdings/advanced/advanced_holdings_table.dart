@@ -131,7 +131,7 @@ class AdvancedHoldingsTable extends StatelessWidget {
                 onTap: onSymbolTap != null
                     ? () => onSymbolTap!(holding.displaySymbol)
                     : null,
-                child: _symbolCell(holding),
+                child: _symbolCell(context, holding),
               ),
             ),
             Expanded(
@@ -221,7 +221,7 @@ class AdvancedHoldingsTable extends StatelessWidget {
     );
   }
 
-  Widget _symbolCell(AdvancedHoldingRow holding) => Row(
+  Widget _symbolCell(BuildContext context, AdvancedHoldingRow holding) => Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
@@ -243,8 +243,8 @@ class AdvancedHoldingsTable extends StatelessWidget {
                 holding.displaySymbol.length >= 2
                     ? holding.displaySymbol.substring(0, 2).toUpperCase()
                     : '•',
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: context.colors.actionPrimaryFg,
                   fontWeight: FontWeight.bold,
                   fontSize: 11,
                 ),

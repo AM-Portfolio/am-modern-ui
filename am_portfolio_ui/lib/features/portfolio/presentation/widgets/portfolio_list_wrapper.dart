@@ -301,7 +301,7 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Failed to load portfolios: $message'),
-        backgroundColor: Colors.red,
+        backgroundColor: context.statusError,
       ),
     );
   }
@@ -448,7 +448,7 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              Icon(Icons.error_outline, size: 64, color: context.statusError),
               const SizedBox(height: 16),
               const Text('Failed to load portfolios'),
               const SizedBox(height: 8),
@@ -475,10 +475,10 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.account_balance_wallet_outlined,
               size: 64,
-              color: Colors.grey,
+              color: context.textTertiary,
             ),
             const SizedBox(height: 16),
             const Text(
@@ -512,7 +512,7 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error, size: 64, color: Colors.red),
+          Icon(Icons.error, size: 64, color: context.statusError),
           const SizedBox(height: 16),
           Text('Failed to initialize: $error'),
           const SizedBox(height: 16),

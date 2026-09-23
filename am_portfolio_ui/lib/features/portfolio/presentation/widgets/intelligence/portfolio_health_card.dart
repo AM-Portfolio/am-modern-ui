@@ -349,7 +349,6 @@ class _SummaryColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -365,15 +364,9 @@ class _SummaryColumn extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
           decoration: BoxDecoration(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.04)
-                : Colors.black.withValues(alpha: 0.04),
+            color: context.glassOverlay(0.04),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.06)
-                  : Colors.black.withValues(alpha: 0.06),
-            ),
+            border: Border.all(color: context.glassOverlay(0.06)),
           ),
           child: Row(
             children: [
@@ -387,9 +380,7 @@ class _SummaryColumn extends StatelessWidget {
               Container(
                 width: 1,
                 height: 36,
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.08)
-                    : Colors.black.withValues(alpha: 0.08),
+                color: context.glassOverlay(0.08),
               ),
               Expanded(
                 child: _StatCell(
@@ -511,16 +502,13 @@ class _FactorRow extends StatelessWidget {
         _bandColor(context, healthBandForScore(component.score));
     final reason = healthReasonDisplay(component.reason);
     final progress = (component.score.clamp(0, 100)) / 100;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final padV = compact ? 3.0 : 5.0;
     final iconSize = compact ? 26.0 : 32.0;
 
     return Container(
       padding: EdgeInsets.fromLTRB(10, padV, 10, padV),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.03)
-            : Colors.black.withValues(alpha: 0.03),
+        color: context.glassOverlay(0.03),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(

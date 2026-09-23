@@ -90,7 +90,7 @@ class _BasketDashboardPageState extends ConsumerState<BasketDashboardPage> {
               onTap: () => Navigator.pop(ctx, 'download'),
             ),
             ListTile(
-              leading: const Icon(Icons.delete_outline, color: Colors.red),
+              leading: Icon(Icons.delete_outline, color: ctx.statusError),
               title: const Text('Delete basket'),
               onTap: () => Navigator.pop(ctx, 'delete'),
             ),

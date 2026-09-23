@@ -750,7 +750,7 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
         onPressed: _customLoading ? null : _runCustom,
         style: FilledButton.styleFrom(
           backgroundColor: ModuleColors.portfolio,
-          foregroundColor: Colors.white,
+          foregroundColor: context.colors.actionPrimaryFg,
           padding: const EdgeInsets.symmetric(horizontal: 10),
           visualDensity: VisualDensity.compact,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -758,12 +758,12 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
           maximumSize: const Size(double.infinity, _kCustomControlHeight),
         ),
         icon: _customLoading
-            ? const SizedBox(
+            ? SizedBox(
                 width: 12,
                 height: 12,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.white,
+                  color: context.colors.actionPrimaryFg,
                 ),
               )
             : const Icon(Icons.play_arrow_rounded, size: 16),
@@ -873,9 +873,7 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
     final pct = failed ? null : scenario?.pctImpact;
     final abs = failed ? null : scenario?.absImpact;
     final pctColor = _impactColor(context, pct);
-    final dividerColor = Theme.of(context).brightness == Brightness.dark
-        ? Colors.white.withValues(alpha: 0.06)
-        : Colors.black.withValues(alpha: 0.06);
+    final dividerColor = context.glassOverlay(0.06);
 
     return Column(
       children: [

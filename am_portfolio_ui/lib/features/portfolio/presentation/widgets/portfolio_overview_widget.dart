@@ -196,7 +196,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  Icon(Icons.error_outline, size: 64, color: context.statusError),
                   const SizedBox(height: 24),
                   Text(
                     'Something went wrong',

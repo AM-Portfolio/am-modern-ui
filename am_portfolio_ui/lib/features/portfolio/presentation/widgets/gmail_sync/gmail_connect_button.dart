@@ -41,10 +41,10 @@ class GmailConnectButton extends ConsumerWidget {
       icon: const Icon(Icons.mail_outline, size: 18),
       label: const Text('Connect Gmail'),
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.red,
+        backgroundColor: context.cardColor,
+        foregroundColor: context.statusError,
         elevation: 0,
-        side: const BorderSide(color: Colors.red),
+        side: BorderSide(color: context.statusError),
       ),
     );
   }
@@ -55,8 +55,8 @@ class GmailConnectButton extends ConsumerWidget {
       icon: const Icon(Icons.sync, size: 18),
       label: Text('Sync Portfolio${email != null ? ' ($email)' : ''}'),
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.red.shade50,
-        foregroundColor: Colors.red.shade700,
+        backgroundColor: context.statusError.withValues(alpha: 0.1),
+        foregroundColor: context.statusError,
         elevation: 0,
       ),
     );

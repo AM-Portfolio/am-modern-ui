@@ -313,18 +313,18 @@ class _PortfolioHeatmapWidgetState
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.red),
+            Icon(Icons.error_outline, size: 64, color: context.statusError),
             const SizedBox(height: 16),
             Text(
               'Error: ${state.message}',
-              style: const TextStyle(color: Colors.red),
+              style: TextStyle(color: context.statusError),
               textAlign: TextAlign.center,
             ),
             if (state.details != null) ...[
               const SizedBox(height: 8),
               Text(
                 state.details!,
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
+                style: TextStyle(color: context.textTertiary, fontSize: 12),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -810,17 +810,17 @@ class _PortfolioHeatmapWidgetState
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.folder_open, size: iconSize, color: Colors.grey),
+            Icon(Icons.folder_open, size: iconSize, color: context.statusNeutral),
             const SizedBox(height: 24),
             Text(
               state.message,
-              style: TextStyle(fontSize: textSize, color: Colors.grey),
+              style: TextStyle(fontSize: textSize, color: context.textTertiary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
               'Add some investments to see the ${widget.config.compactMode ? '' : 'portfolio '}heatmap',
-              style: const TextStyle(color: Colors.grey),
+              style: TextStyle(color: context.textTertiary),
               textAlign: TextAlign.center,
             ),
           ],
@@ -842,11 +842,11 @@ class _PortfolioHeatmapWidgetState
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.bar_chart_outlined, size: iconSize, color: Colors.grey),
+          Icon(Icons.bar_chart_outlined, size: iconSize, color: context.statusNeutral),
           const SizedBox(height: 16),
           Text(
             'Loading ${widget.config.compactMode ? '' : 'portfolio '}data...',
-            style: const TextStyle(color: Colors.grey),
+            style: TextStyle(color: context.textTertiary),
           ),
           const SizedBox(height: 16),
           ElevatedButton(

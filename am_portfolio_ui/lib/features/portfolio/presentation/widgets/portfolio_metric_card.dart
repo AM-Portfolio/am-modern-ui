@@ -116,9 +116,7 @@ class PortfolioMetricCard extends StatelessWidget {
                   border: Border.all(
                     color: glowBorder
                         ? chrome.withValues(alpha: 0.35)
-                        : (context.isDark
-                            ? Colors.white.withValues(alpha: 0.07)
-                            : Colors.black.withValues(alpha: 0.06)),
+                        : context.glassOverlay(context.isDark ? 0.07 : 0.06)),
                     width: 1,
                   ),
                   // No drop shadows on compact (mobile) — keeps the grid tight.
@@ -135,8 +133,8 @@ class PortfolioMetricCard extends StatelessWidget {
                             ]
                           : [
                               BoxShadow(
-                                color: Colors.black.withValues(
-                                    alpha: context.isDark ? 0.3 : 0.06),
+                                color: context.shadow(
+                                    context.isDark ? 0.3 : 0.06),
                                 blurRadius: 12,
                                 offset: const Offset(0, 4),
                               ),
@@ -157,7 +155,7 @@ class PortfolioMetricCard extends StatelessWidget {
                               icon,
                               size: compact ? 56 : 76,
                               color: isHighlight
-                                  ? Colors.white.withValues(alpha: 0.14)
+                                  ? context.colors.actionPrimaryFg.withValues(alpha: 0.14)
                                   : chrome.withValues(alpha: 0.07),
                             ),
                           ),
@@ -179,10 +177,8 @@ class PortfolioMetricCard extends StatelessWidget {
                               style: textTheme.bodySmall?.copyWith(
                                 fontSize: compact ? 10 : 11,
                                 color: isHighlight
-                                    ? Colors.white.withValues(alpha: 0.85)
-                                    : (context.isDark
-                                        ? Colors.white.withValues(alpha: 0.5)
-                                        : Colors.black.withValues(alpha: 0.45)),
+                                    ? context.colors.actionPrimaryFg.withValues(alpha: 0.85)
+                                    : context.glassOverlay(context.isDark ? 0.5 : 0.45),
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: 0.4,
                               ),
@@ -199,12 +195,10 @@ class PortfolioMetricCard extends StatelessWidget {
                                   fontSize: compact ? 18 : 22,
                                   fontWeight: FontWeight.bold,
                                   color: isHighlight
-                                      ? Colors.white
+                                      ? context.colors.actionPrimaryFg
                                       : (useAccentValue
                                           ? accent
-                                          : (context.isDark
-                                              ? Colors.white
-                                              : context.textPrimary)),
+                                          : context.textPrimary),
                                   height: 1.1,
                                   shadows: (glowBorder && context.isDark)
                                       ? [
@@ -231,7 +225,7 @@ class PortfolioMetricCard extends StatelessWidget {
                                         : Icons.arrow_downward_rounded,
                                     size: compact ? 10 : 12,
                                     color: isHighlight
-                                        ? Colors.white.withValues(alpha: 0.9)
+                                        ? context.colors.actionPrimaryFg.withValues(alpha: 0.9)
                                         : accent,
                                   ),
                                   const SizedBox(width: 2),
@@ -242,15 +236,11 @@ class PortfolioMetricCard extends StatelessWidget {
                                     style: textTheme.bodySmall?.copyWith(
                                       fontSize: compact ? 9 : 11,
                                       color: isHighlight
-                                          ? Colors.white.withValues(alpha: 0.75)
+                                          ? context.colors.actionPrimaryFg.withValues(alpha: 0.75)
                                           : (isPositive != null
                                               ? accent
                                                   .withValues(alpha: 0.9)
-                                              : (context.isDark
-                                                  ? Colors.white
-                                                      .withValues(alpha: 0.4)
-                                                  : Colors.black
-                                                      .withValues(alpha: 0.4))),
+                                              : context.glassOverlay(0.4)),
                                       fontWeight:
                                           (isPositive != null && isPositive!)
                                               ? FontWeight.w600

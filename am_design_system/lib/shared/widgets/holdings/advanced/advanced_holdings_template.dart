@@ -248,7 +248,7 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.inbox_outlined, size: 64, color: Colors.grey.shade300)
+            Icon(Icons.inbox_outlined, size: 64, color: context.textTertiary)
                 .animate()
                 .fadeIn(duration: 600.ms)
                 .scale(begin: const Offset(0.8, 0.8)),
@@ -256,7 +256,7 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
             Text(
               'No holdings found',
               style: TextStyle(
-                color: Colors.grey.shade500,
+                color: context.textTertiary,
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
               ),
@@ -264,7 +264,7 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
             const SizedBox(height: 8),
             Text(
               'Your holdings will appear here',
-              style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+              style: TextStyle(color: context.textTertiary, fontSize: 12),
             ),
           ],
         ),
@@ -273,7 +273,7 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
   Widget _buildControlsHeader() => Container(
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
-          border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+          border: Border(bottom: BorderSide(color: context.borderColor)),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
@@ -289,7 +289,7 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
                 Container(
                   decoration: BoxDecoration(
                     color: _isDarkChrome
-                        ? Colors.white.withValues(alpha: 0.06)
+                        ? context.glassOverlay(0.06)
                         : _accent.withValues(alpha: 0.06),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: _accent.withValues(alpha: 0.2)),
@@ -330,28 +330,24 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
                   hintText: 'Search symbol or company...',
                   hintStyle: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey.withValues(alpha: 0.6),
+                    color: context.textTertiary,
                   ),
                   prefixIcon: Icon(
                     Icons.search,
                     size: 16,
-                    color: Colors.grey.withValues(alpha: 0.6),
+                    color: context.textTertiary,
                   ),
                   contentPadding:
                       const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                   filled: true,
-                  fillColor: Colors.grey.withValues(alpha: 0.08),
+                  fillColor: context.surfaceColor,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(
-                      color: Colors.grey.withValues(alpha: 0.2),
-                    ),
+                    borderSide: BorderSide(color: context.borderColor),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(
-                      color: Colors.grey.withValues(alpha: 0.2),
-                    ),
+                    borderSide: BorderSide(color: context.borderColor),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -401,7 +397,7 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
               size: 16,
               color: selected
                   ? _accent
-                  : (isDark ? Colors.white60 : Colors.grey.shade600),
+                  : context.textSecondary,
             ),
             const SizedBox(width: 4),
             Text(
@@ -409,9 +405,7 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: selected
-                    ? _accent
-                    : (isDark ? Colors.white60 : Colors.grey.shade600),
+                color: selected ? _accent : context.textSecondary,
               ),
             ),
           ],
@@ -436,14 +430,14 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
           color: selected
               ? accent.withValues(alpha: isDark ? 0.22 : 0.15)
               : (isDark
-                  ? Colors.white.withValues(alpha: 0.06)
+                  ? context.glassOverlay(0.06)
                   : _accent.withValues(alpha: 0.06)),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: selected
                 ? accent
                 : (isDark
-                    ? Colors.white.withValues(alpha: 0.14)
+                    ? context.glassOverlay(0.14)
                     : _accent.withValues(alpha: 0.25)),
             width: selected ? 1.5 : 1,
           ),
@@ -455,7 +449,7 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
             fontWeight: FontWeight.w500,
             color: selected
                 ? accent
-                : (isDark ? Colors.white70 : Colors.grey.shade700),
+                : context.textSecondary,
           ),
         ),
       ),
@@ -472,13 +466,13 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        border: Border(top: BorderSide(color: Colors.grey.shade200)),
+        border: Border(top: BorderSide(color: context.borderColor)),
       ),
       child: Row(
         children: [
           Text(
             '$from–$to of $total',
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            style: TextStyle(fontSize: 12, color: context.textSecondary),
           ),
           const Spacer(),
           IconButton(
