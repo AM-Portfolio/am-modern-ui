@@ -1,6 +1,8 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:am_design_system/shared/models/holding.dart';
-import '../../cards/investment_card.dart'; // Assuming InvestmentCard is here
+
+import '../../../../core/theme/color_extensions.dart';
+import '../../cards/investment_card.dart';
 import 'holdings_layout_builder.dart';
 
 /// Card layout builder for holdings (mobile-optimized)
@@ -27,14 +29,14 @@ class CardLayoutBuilder extends HoldingsLayoutBuilder {
             Icon(
               Icons.account_balance_wallet_outlined,
               size: 64,
-              color: Colors.grey.shade400,
+              color: context.textTertiary,
             ),
             const SizedBox(height: 16),
             Text(
               'No holdings found',
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.grey.shade600,
+                color: context.textTertiary,
               ),
             ),
           ],
@@ -64,6 +66,7 @@ class CardLayoutBuilder extends HoldingsLayoutBuilder {
           isPositive: isPositive,
           onTap: () => onHoldingTap?.call(holding),
           customBottomWidget: _buildBottomRow(
+            context,
             holding,
             changeValue,
             changePercent,
@@ -76,12 +79,15 @@ class CardLayoutBuilder extends HoldingsLayoutBuilder {
   }
 
   Widget _buildBottomRow(
+    BuildContext context,
     Holding holding,
     double changeValue,
     double changePercent,
     bool isPositive,
     HoldingsDisplayFormat displayFormat,
   ) {
+    final muted = context.textTertiary;
+    final pnl = isPositive ? context.marketPositive : context.marketNegative;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -93,7 +99,7 @@ class CardLayoutBuilder extends HoldingsLayoutBuilder {
               children: [
                 Text(
                   'Inv. ',
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                  style: TextStyle(color: muted, fontSize: 12),
                 ),
                 Text(
                   formatCurrency(holding.investedAmount),
@@ -109,24 +115,24 @@ class CardLayoutBuilder extends HoldingsLayoutBuilder {
               children: [
                 Icon(
                   isPositive ? Icons.trending_up : Icons.trending_down,
-                  color: isPositive ? Colors.green : Colors.red,
+                  color: pnl,
                   size: 12,
                 ),
                 const SizedBox(width: 2),
                 Text(
                   'Avg ${holding.avgPrice.toStringAsFixed(2)}',
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                  style: TextStyle(color: muted, fontSize: 12),
                 ),
                 const SizedBox(width: 8),
                 Icon(
                   Icons.inventory_2_outlined,
-                  color: Colors.grey.shade600,
+                  color: muted,
                   size: 12,
                 ),
                 const SizedBox(width: 2),
                 Text(
                   '${holding.quantity.toInt()}',
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                  style: TextStyle(color: muted, fontSize: 12),
                 ),
               ],
             ),
@@ -141,7 +147,7 @@ class CardLayoutBuilder extends HoldingsLayoutBuilder {
                   ? '${isPositive ? '+' : ''}${formatCurrency(changeValue)}'
                   : formatPercentage(changePercent),
               style: TextStyle(
-                color: isPositive ? Colors.green : Colors.red,
+                color: pnl,
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
               ),
@@ -152,7 +158,7 @@ class CardLayoutBuilder extends HoldingsLayoutBuilder {
               children: [
                 Text(
                   'Live ',
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                  style: TextStyle(color: muted, fontSize: 12),
                 ),
                 Text(
                   holding.currentPrice.toStringAsFixed(2),
