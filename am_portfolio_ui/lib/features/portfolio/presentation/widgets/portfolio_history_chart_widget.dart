@@ -231,9 +231,9 @@ class _PortfolioHistoryChartWidgetState
                 menuMaxHeight: 148,
                 primaryColor: ModuleColors.portfolio,
                 backgroundColor:
-                    isDark ? Colors.white.withValues(alpha: 0.06) : null,
+                    isDark ? context.glassOverlay(0.06) : null,
                 borderColor:
-                    isDark ? Colors.white.withValues(alpha: 0.1) : null,
+                    isDark ? context.glassOverlay(0.1) : null,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                 items: items
                     .map(
@@ -692,12 +692,12 @@ class _PortfolioHistoryChartWidgetState
                         ),
                       if (isDesktop) ...[
                         const SizedBox(width: 16),
-                        _buildZoomButton(Icons.remove, () => _handleZoomAdjust(-0.2), isDark),
+                        _buildZoomButton(Icons.remove, () => _handleZoomAdjust(-0.2)),
                         const SizedBox(width: 8),
                         Text('${(_zoomScale * 100).toInt()}%',
                             style: TextStyle(fontSize: 12, color: theme.hintColor)),
                         const SizedBox(width: 8),
-                        _buildZoomButton(Icons.add, () => _handleZoomAdjust(0.2), isDark),
+                        _buildZoomButton(Icons.add, () => _handleZoomAdjust(0.2)),
                       ],
                     ],
                   ),
@@ -883,11 +883,9 @@ class _PortfolioHistoryChartWidgetState
             ),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.07)
-                    : Colors.black.withValues(alpha: 0.07)),
+                color: context.glassOverlay(0.07)),
             boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 24, offset: const Offset(0, 8)),
+              BoxShadow(color: context.shadow(0.08), blurRadius: 24, offset: const Offset(0, 8)),
             ],
           ),
           child: inner,
@@ -897,16 +895,16 @@ class _PortfolioHistoryChartWidgetState
   }
 
 
-  Widget _buildZoomButton(IconData icon, VoidCallback onTap, bool isDark) {
+  Widget _buildZoomButton(IconData icon, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06),
+          color: context.glassOverlay(context.isDark ? 0.08 : 0.06),
           borderRadius: BorderRadius.circular(6),
         ),
-        child: Icon(icon, size: 14, color: isDark ? Colors.white70 : Colors.black54),
+        child: Icon(icon, size: 14, color: context.textSecondary),
       ),
     );
   }
@@ -1098,11 +1096,11 @@ class _PortfolioHistoryChartWidgetState
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.bar_chart_rounded, size: 40, color: Colors.grey),
+              Icon(Icons.bar_chart_rounded, size: 40, color: context.statusNeutral),
               const SizedBox(height: 8),
               Text(
                 'Could not load history',
-                style: TextStyle(color: Colors.grey[600]),
+                style: TextStyle(color: context.textSecondary),
               ),
               TextButton(
                 onPressed: _load,
@@ -1115,11 +1113,11 @@ class _PortfolioHistoryChartWidgetState
 
   Widget _buildEmpty() => SizedBox(
         height: widget.height,
-        child: const Center(
+        child: Center(
           child: Text(
             'No history yet.\nCheck back after market close.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
+            style: TextStyle(color: context.textTertiary),
           ),
         ),
       );
@@ -1130,12 +1128,12 @@ class _PortfolioHistoryChartWidgetState
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.access_time_rounded, size: 40, color: Colors.grey[400]),
+          Icon(Icons.access_time_rounded, size: 40, color: context.statusNeutral),
           const SizedBox(height: 12),
           Text(
             'Market Closed',
             style: TextStyle(
-              color: Colors.grey[600],
+              color: context.textSecondary,
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
@@ -1144,7 +1142,7 @@ class _PortfolioHistoryChartWidgetState
           Text(
             'Intraday chart updates from 9:15 AM – 3:30 PM IST',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+            style: TextStyle(fontSize: 12, color: context.textTertiary),
           ),
         ],
       ),
@@ -1207,8 +1205,8 @@ class _EndOfLineBadge extends StatelessWidget {
         ),
         child: Text(
           lastPoint.yLabel ?? lastPoint.y.toStringAsFixed(2),
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: context.colors.actionPrimaryFg,
             fontSize: 10,
             fontWeight: FontWeight.bold,
           ),

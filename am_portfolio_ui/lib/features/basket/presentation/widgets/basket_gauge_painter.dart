@@ -12,7 +12,7 @@ class BasketGaugePainter extends CustomPainter {
   BasketGaugePainter({
     required this.percentage,
     Color? fillColor,
-    this.backgroundColor = Colors.white24,
+    required this.backgroundColor,
     this.strokeWidth = 12.0,
   }) : fillColor = fillColor ?? ModuleColors.portfolio;
 
@@ -127,6 +127,7 @@ class _AnimatedRadialGaugeState extends State<AnimatedRadialGauge>
                 painter: BasketGaugePainter(
                   percentage: _animation.value,
                   fillColor: widget.fillColor ?? ModuleColors.portfolio,
+                  backgroundColor: context.glassOverlay(0.24),
                 ),
               ),
               Column(
@@ -136,13 +137,13 @@ class _AnimatedRadialGaugeState extends State<AnimatedRadialGauge>
                     '${_animation.value.toInt()}%',
                     style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: context.textPrimary,
                         ),
                   ),
                   Text(
                     'Match',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.white70,
+                          color: context.textSecondary,
                         ),
                   ),
                 ],

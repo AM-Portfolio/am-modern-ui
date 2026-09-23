@@ -184,15 +184,15 @@ class _HeatmapTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (currentPortfolioId == 'all') {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.info_outline, size: 48, color: Colors.grey),
-            SizedBox(height: 16),
+            Icon(Icons.info_outline, size: 48, color: context.textTertiary),
+            const SizedBox(height: 16),
             Text(
               'Select a specific portfolio to view the Heatmap',
-              style: TextStyle(color: Colors.grey, fontSize: 16),
+              style: TextStyle(color: context.textTertiary, fontSize: 16),
             ),
           ],
         ),
@@ -251,7 +251,7 @@ class PortfolioErrorWidget extends StatelessWidget {
     child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(Icons.error_outline, size: 64, color: Colors.red),
+        Icon(Icons.error_outline, size: 64, color: context.statusError),
         const SizedBox(height: 16),
         Text('Error', style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 8),

@@ -129,6 +129,7 @@ class _PortfolioHoldingsWidgetState
                       },
                       // Custom display based on format preference
                       customBottomWidget: _buildCustomBottomRow(
+                        context,
                         holding,
                         changeValue,
                         changePercent,
@@ -156,15 +157,15 @@ class _PortfolioHoldingsWidgetState
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.error_outline,
                       size: 48,
-                      color: Colors.red,
+                      color: context.statusError,
                     ),
                     const SizedBox(height: 16),
                     Text(
                       'Error loading portfolio: $error',
-                      style: const TextStyle(color: Colors.red),
+                      style: TextStyle(color: context.statusError),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
@@ -239,6 +240,7 @@ class _PortfolioHoldingsWidgetState
 
   /// Build custom bottom row with display format preference
   Widget _buildCustomBottomRow(
+    BuildContext context,
     PortfolioHolding holding,
     double changeValue,
     double changePercent,
@@ -255,7 +257,7 @@ class _PortfolioHoldingsWidgetState
             children: [
               Text(
                 'Inv. ',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                style: TextStyle(color: context.textSecondary, fontSize: 12),
               ),
               Text(
                 '₹${holding.investedAmount.toStringAsFixed(2)}',
@@ -271,24 +273,24 @@ class _PortfolioHoldingsWidgetState
             children: [
               Icon(
                 isPositive ? Icons.trending_up : Icons.trending_down,
-                color: isPositive ? Colors.green : Colors.red,
+                color: isPositive ? context.marketPositive : context.marketNegative,
                 size: 12,
               ),
               const SizedBox(width: 2),
               Text(
                 'Avg ${holding.avgPrice.toStringAsFixed(2)}',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                style: TextStyle(color: context.textSecondary, fontSize: 12),
               ),
               const SizedBox(width: 8),
               Icon(
                 Icons.inventory_2_outlined,
-                color: Colors.grey.shade600,
+                color: context.textSecondary,
                 size: 12,
               ),
               const SizedBox(width: 2),
               Text(
                 '${holding.quantity.toInt()}',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                style: TextStyle(color: context.textSecondary, fontSize: 12),
               ),
             ],
           ),
@@ -326,7 +328,7 @@ class _PortfolioHoldingsWidgetState
                 ? '${isPositive ? '+' : ''}₹${changeValue.toStringAsFixed(2)}'
                 : '${isPositive ? '+' : ''}${changePercent.toStringAsFixed(2)}%',
             style: TextStyle(
-              color: isPositive ? Colors.green : Colors.red,
+              color: isPositive ? context.marketPositive : context.marketNegative,
               fontWeight: FontWeight.bold,
               fontSize: 14,
             ),
@@ -337,7 +339,7 @@ class _PortfolioHoldingsWidgetState
             children: [
               Text(
                 '$priceLabel ',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                style: TextStyle(color: context.textSecondary, fontSize: 12),
               ),
               Text(
                 holding.currentPrice.toStringAsFixed(2),

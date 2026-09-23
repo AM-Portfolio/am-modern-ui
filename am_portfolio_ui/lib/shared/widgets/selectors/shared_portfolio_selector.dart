@@ -46,7 +46,6 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     // Priority: explicit accentColor prop > ModuleColorProvider > Theme primaryColor
     final color = accentColor ?? ModuleColorProvider.of(context);
 
@@ -96,7 +95,7 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                           Text(
                             nameExtractor(portfolio),
                             style: TextStyle(
-                              color: isDark ? Colors.white : Colors.black87,
+                              color: context.textPrimary,
                             ),
                           ),
                           if (isBasketExtractor != null && isBasketExtractor!(portfolio))
@@ -162,7 +161,7 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                           Text(
                             currentPortfolioName ?? 'No Portfolio',
                             style: TextStyle(
-                              color: isDark ? Colors.white : Colors.black87,
+                              color: context.textPrimary,
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
                             ),
@@ -197,9 +196,7 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                     height: 32,
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     decoration: BoxDecoration(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.05)
-                          : Colors.grey.shade100,
+                      color: context.glassOverlay(0.05),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: color.withValues(alpha: 0.4),

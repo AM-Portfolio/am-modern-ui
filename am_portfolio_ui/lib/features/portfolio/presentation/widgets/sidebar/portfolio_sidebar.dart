@@ -1,5 +1,5 @@
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
-import 'package:am_design_system/shared/widgets/navigation/secondary_sidebar.dart';
 
 /// Portfolio-specific sidebar that uses the shared SecondarySidebar component
 class PortfolioSidebar extends StatelessWidget {
@@ -87,10 +87,10 @@ class PortfolioSidebar extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1F222B), // Dark background for contrast
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        border: Border.all(color: context.glassOverlay(0.1)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
+            color: context.shadow(0.2),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -105,13 +105,13 @@ class PortfolioSidebar extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Icon(Icons.add, color: Colors.white, size: 20),
-              SizedBox(width: 8),
+            children: [
+              Icon(Icons.add, color: context.colors.actionPrimaryFg, size: 20),
+              const SizedBox(width: 8),
               Text(
                 'New Trade',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: context.colors.actionPrimaryFg,
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                 ),

@@ -61,11 +61,11 @@ class BasketFlowStepper extends StatelessWidget {
           ),
           alignment: Alignment.center,
           child: isCompleted
-              ? const Icon(Icons.check, size: 16, color: Colors.white)
+              ? Icon(Icons.check, size: 16, color: context.colors.actionPrimaryFg)
               : Text(
                   '${step.stepNumber}',
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: isActive ? Colors.white : color,
+                    color: isActive ? context.colors.actionPrimaryFg : color,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

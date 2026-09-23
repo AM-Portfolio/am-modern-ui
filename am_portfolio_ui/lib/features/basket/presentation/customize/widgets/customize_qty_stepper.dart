@@ -297,7 +297,7 @@ class _CustomizeQtySheetBodyState extends State<_CustomizeQtySheetBody> {
                 onPressed: () => Navigator.of(context).pop(),
                 style: FilledButton.styleFrom(
                   backgroundColor: ModuleColors.portfolio,
-                  foregroundColor: Colors.white,
+                  foregroundColor: context.colors.actionPrimaryFg,
                 ),
                 child: const Text('Done'),
               ),

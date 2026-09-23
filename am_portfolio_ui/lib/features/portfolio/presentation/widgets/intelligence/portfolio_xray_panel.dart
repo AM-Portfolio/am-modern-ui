@@ -11,6 +11,7 @@ import '../../../internal/domain/entities/portfolio_analytics.dart';
 import '../../../internal/domain/entities/portfolio_holding.dart';
 import '../../../internal/domain/entities/portfolio_intelligence.dart';
 import '../../../providers/portfolio_intelligence_providers.dart';
+import '../../../providers/portfolio_providers.dart';
 import '../../cubit/portfolio_analytics_cubit.dart';
 import '../../cubit/portfolio_analytics_state.dart';
 import '../../cubit/portfolio_cubit.dart';
@@ -18,31 +19,24 @@ import '../../cubit/portfolio_state.dart';
 import 'intelligence_currency.dart';
 import 'intelligence_donut.dart';
 import 'intelligence_glass_card.dart';
+import 'xray_class_add_sheet.dart';
+import 'xray_display_name.dart';
 
-/// FE display label for X-Ray slice names. API `name` stays unchanged for sync.
-@visibleForTesting
-String xrayDisplayName(String raw) {
-  final key = raw.trim();
-  if (key.isEmpty) return 'Unknown';
-  switch (key.toUpperCase()) {
-    case 'LARGE_CAP':
-      return 'Large Cap';
-    case 'MID_CAP':
-      return 'Mid Cap';
-    case 'SMALL_CAP':
-      return 'Small Cap';
-    case 'MICRO_CAP':
-      return 'Micro Cap';
-    case 'UNKNOWN':
-      return 'Unknown';
+export 'xray_display_name.dart' show xrayDisplayName;
+
+/// Normalize Class-tab / holdings `assetClass` for expand matching.
+String _normalizeAssetClassKey(String raw) {
+  final key = raw.trim().toUpperCase();
+  if (key.isEmpty) return 'EQUITY';
+  switch (key) {
+    case 'BOND':
+    case 'BONDS':
+      return 'FIXED_INCOME';
+    case 'PRECIOUS METAL':
+    case 'PRECIOUS_METAL':
+      return 'COMMODITY';
     default:
-      if (!key.contains('_')) return key;
-      return key
-          .toLowerCase()
-          .split('_')
-          .where((p) => p.isNotEmpty)
-          .map((p) => '${p[0].toUpperCase()}${p.substring(1)}')
-          .join(' ');
+      return key;
   }
 }
 
@@ -128,6 +122,7 @@ class PortfolioXrayPanel extends ConsumerStatefulWidget {
     this.minHeight,
     this.fillHeight = false,
     this.padding = const EdgeInsets.all(20),
+    this.readOnly = false,
     @visibleForTesting this.holdingsOverride,
     super.key,
   });
@@ -137,6 +132,8 @@ class PortfolioXrayPanel extends ConsumerStatefulWidget {
   final double? minHeight;
   final bool fillHeight;
   final EdgeInsetsGeometry padding;
+  /// When true (All Portfolios), Class write CTAs are hidden.
+  final bool readOnly;
 
   /// Test-only holdings injection when PortfolioCubit is unavailable.
   @visibleForTesting
@@ -226,11 +223,14 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
 
   List<XrayWeight> _weightsForTab(PortfolioXray? xray) {
     if (xray == null) return const [];
-    final raw = switch (_tab) {
+    // Tabs: Sector(0), Industry(1), Cap(2), Class(3).
+    List<XrayWeight> raw = switch (_tab) {
       1 => xray.industryWeights,
       2 => xray.marketCapWeights,
+      3 => xray.assetClassWeights,
       _ => xray.sectorWeights,
     };
+    // Class uses real assetClassWeights from intelligence — no EQUITY 100% fake.
     final sorted = [...raw]
       ..sort((a, b) {
         final aUnk = a.name.toLowerCase() == 'unknown';
@@ -482,7 +482,27 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
         final useFill = widget.fillHeight;
         final sideBySide = wide || useFill;
         final listVisible = sideBySide || _mobileShowList;
-        final tabs = _Tabs(tab: _tab, onTab: _onTab, compact: true);
+        final tabs = _Tabs(
+          tab: _tab,
+          onTab: _onTab,
+          compact: true,
+          onAddClass: !widget.readOnly &&
+                  widget.portfolioId != 'all' &&
+                  _tab == 3
+              ? () => showXrayClassAddSheet(
+                    context: context,
+                    portfolioId: widget.portfolioId,
+                    onSaved: () {
+                      ref.invalidate(
+                        portfolioIntelligenceProvider(widget.portfolioId),
+                      );
+                      ref.invalidate(
+                        portfolioHoldingsProvider(widget.portfolioId),
+                      );
+                    },
+                  )
+              : null,
+        );
         final active = _activeIndex(weights);
 
         final body = _XrayBody(
@@ -613,9 +633,12 @@ class _XrayBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final emptyHint = tab == 3
+        ? 'No asset-class breakdown yet — use + Class'
+        : 'No allocation data';
     Widget weightList({required double paneWidth}) {
       if (weights.isEmpty) {
-        return const IntelligenceEmptyHint(message: 'No allocation data');
+        return IntelligenceEmptyHint(message: emptyHint);
       }
       final pctW = paneWidth < 280 ? 44.0 : 52.0;
       final inrW = paneWidth < 280 ? 52.0 : 64.0;
@@ -716,7 +739,7 @@ class _XrayBody extends StatelessWidget {
             ? constraints.maxWidth
             : MediaQuery.sizeOf(context).width;
         if (weights.isEmpty) {
-          return const IntelligenceEmptyHint(message: 'No allocation data');
+          return IntelligenceEmptyHint(message: emptyHint);
         }
         final list = fillHeight
             ? ClipRect(child: weightList(paneWidth: paneW))
@@ -865,12 +888,13 @@ class _XrayBody extends StatelessWidget {
     if (all == null || all.isEmpty) {
       return (holdings: const [], emptyMessage: noHoldings);
     }
+    // Tabs: Sector(0), Industry(1), Cap(2), Class(3).
     Iterable<PortfolioHolding> filtered;
     if (tab == 0) {
       filtered = all.where((h) => h.sector == weight.name);
     } else if (tab == 1) {
       filtered = all.where((h) => h.industry == weight.name);
-    } else {
+    } else if (tab == 2) {
       final display = xrayDisplayName(weight.name);
       final tops = marketCapAllocation?.segments
           .where((s) {
@@ -886,6 +910,15 @@ class _XrayBody extends StatelessWidget {
         return (holdings: const [], emptyMessage: capUnavailable);
       }
       filtered = all.where((h) => tops.contains(h.symbol));
+    } else {
+      final target = _normalizeAssetClassKey(weight.name);
+      filtered = all.where((h) {
+        final cls = _normalizeAssetClassKey(h.assetClass);
+        if (target == 'EQUITY') {
+          return cls == 'EQUITY' || cls.isEmpty;
+        }
+        return cls == target;
+      });
     }
     final list = filtered.toList()
       ..sort((a, b) => b.portfolioWeight.compareTo(a.portfolioWeight));
@@ -898,11 +931,13 @@ class _Tabs extends StatelessWidget {
     required this.tab,
     required this.onTab,
     this.compact = false,
+    this.onAddClass,
   });
 
   final int tab;
   final ValueChanged<int> onTab;
   final bool compact;
+  final VoidCallback? onAddClass;
 
   @override
   Widget build(BuildContext context) {
@@ -913,7 +948,7 @@ class _Tabs extends StatelessWidget {
         onTap: () => onTab(i),
         child: Container(
           padding: EdgeInsets.symmetric(
-            horizontal: compact ? 10 : 12,
+            horizontal: compact ? 8 : 10,
             vertical: compact ? 4 : 6,
           ),
           decoration: BoxDecoration(
@@ -926,15 +961,15 @@ class _Tabs extends StatelessWidget {
               fontSize: 12,
               fontWeight: selected ? FontWeight.bold : FontWeight.w500,
               color: selected
-                  ? Colors.white
-                  : (isDark ? Colors.white70 : Colors.black87),
+                  ? context.colors.actionPrimaryFg
+                  : context.textSecondary,
             ),
           ),
         ),
       );
     }
 
-    return Container(
+    final tabs = Container(
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         color: isDark
@@ -951,8 +986,36 @@ class _Tabs extends StatelessWidget {
           chip(0, 'Sector'),
           chip(1, 'Industry'),
           chip(2, 'Cap'),
+          chip(3, 'Class'),
         ],
       ),
+    );
+
+    if (onAddClass == null) return tabs;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        tabs,
+        const SizedBox(width: 6),
+        TextButton(
+          onPressed: onAddClass,
+          style: TextButton.styleFrom(
+            foregroundColor: ModuleColors.portfolio,
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? 8 : 10,
+              vertical: compact ? 4 : 6,
+            ),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            visualDensity: VisualDensity.compact,
+          ),
+          child: const Text(
+            '+ Add',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -995,8 +1058,8 @@ class _MobilePaneSwap extends StatelessWidget {
                   icon,
                   size: 14,
                   color: selected
-                      ? Colors.white
-                      : (isDark ? Colors.white70 : Colors.black87),
+                      ? context.colors.actionPrimaryFg
+                      : context.textSecondary,
                 ),
                 const SizedBox(width: 4),
                 Text(
@@ -1005,8 +1068,8 @@ class _MobilePaneSwap extends StatelessWidget {
                     fontSize: 12,
                     fontWeight: selected ? FontWeight.bold : FontWeight.w500,
                     color: selected
-                        ? Colors.white
-                        : (isDark ? Colors.white70 : Colors.black87),
+                        ? context.colors.actionPrimaryFg
+                        : context.textSecondary,
                   ),
                 ),
               ],

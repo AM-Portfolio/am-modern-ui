@@ -69,13 +69,13 @@ class _ModalContainerState extends State<_ModalContainer> {
       child: Container(
         decoration: BoxDecoration(
           color: isSelected
-              ? (isDark ? const Color(0xFF1D283A) : Colors.white)
+              ? (isDark ? const Color(0xFF1D283A) : context.cardColor)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           boxShadow: isSelected && !isDark
               ? [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: context.shadow(0.05),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   )
@@ -117,12 +117,12 @@ class _ModalContainerState extends State<_ModalContainer> {
                       const Color(0xFF0A1628).withValues(alpha: 0.85),
                     ]
                   : [
-                      Colors.white.withValues(alpha: 0.98),
+                      context.cardColor.withValues(alpha: 0.98),
                       const Color(0xFFF5F7FF).withValues(alpha: 0.9),
                     ],
             ),
             border: Border.all(
-              color: Colors.white.withValues(alpha: isDark ? 0.07 : 0.4),
+              color: context.colors.actionPrimaryFg.withValues(alpha: isDark ? 0.07 : 0.4),
               width: 1,
             ),
             borderRadius: BorderRadius.circular(24),
@@ -189,7 +189,7 @@ class _ModalContainerState extends State<_ModalContainer> {
                     height: 40,
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03),
+                      color: context.glassOverlay(isDark ? 0.05 : 0.03),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(

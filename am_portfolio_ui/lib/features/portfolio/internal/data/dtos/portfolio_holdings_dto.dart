@@ -62,6 +62,7 @@ class EquityHoldingDto {
     required this.currentPrice,
     required this.percentageChange,
     required this.brokerPortfolios,
+    this.assetClass = 'EQUITY',
   });
 
   /// Create from JSON response
@@ -90,6 +91,9 @@ class EquityHoldingDto {
                   )
                   .toList()
             : [],
+        assetClass: (json['assetClass'] as String?)?.trim().isNotEmpty == true
+            ? (json['assetClass'] as String).trim().toUpperCase()
+            : 'EQUITY',
       );
 
   /// Raw API fields - exact mapping to backend response
@@ -110,6 +114,7 @@ class EquityHoldingDto {
   final double currentPrice;
   final double percentageChange;
   final List<BrokerHoldingDto> brokerPortfolios;
+  final String assetClass;
 
   /// Helper method to safely parse double values from API
   static double _parseDouble(dynamic value) {
@@ -125,6 +130,7 @@ class EquityHoldingDto {
   Map<String, dynamic> toJson() => {
     'isin': isin,
     'symbol': symbol,
+    'name': name,
     'sector': sector,
     'industry': industry,
     'marketCap': marketCap,
@@ -138,6 +144,7 @@ class EquityHoldingDto {
     'todayGainLossPercentage': todayGainLossPercentage,
     'currentPrice': currentPrice,
     'percentageChange': percentageChange,
+    'assetClass': assetClass,
     'brokerPortfolios': brokerPortfolios.map((e) => e.toJson()).toList(),
   };
 }

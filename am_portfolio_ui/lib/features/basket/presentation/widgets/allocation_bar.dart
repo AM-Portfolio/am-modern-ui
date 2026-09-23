@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 class AllocationBar extends StatelessWidget {
   final List<AllocationSegment> segments;
@@ -56,7 +57,7 @@ class AllocationBar extends StatelessWidget {
                 Text(
                   segment.label,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey,
+                        color: context.textTertiary,
                         fontSize: 11,
                       ),
                 ),

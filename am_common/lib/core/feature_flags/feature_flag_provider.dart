@@ -46,8 +46,9 @@ final offlineWritesEnabledProvider = Provider<bool>((ref) {
   return ref.watch(featureFlagProvider(FeatureFlagKeys.offlineWritesV1));
 });
 
-/// Master intel flag stays fail-closed. Child widgets default ON once master is on.
-bool _intelFlag(Ref ref, String key, {bool defaultValue = false}) {
+/// Intel flags default ON when GB is down or the key is missing.
+/// GrowthBook can still hide a card when the key exists and is off.
+bool _intelFlag(Ref ref, String key, {bool defaultValue = true}) {
   if (intelFlagsForcedOn) return true;
   try {
     ref.watch(featureFlagsReadyProvider);
@@ -61,7 +62,11 @@ bool _intelFlag(Ref ref, String key, {bool defaultValue = false}) {
 }
 
 final portfolioIntelligenceOverviewEnabledProvider = Provider<bool>((ref) {
-  return _intelFlag(ref, FeatureFlagKeys.portfolioIntelligenceOverviewV1);
+  return _intelFlag(
+    ref,
+    FeatureFlagKeys.portfolioIntelligenceOverviewV1,
+    defaultValue: true,
+  );
 });
 
 final portfolioIntelHealthEnabledProvider = Provider<bool>((ref) {

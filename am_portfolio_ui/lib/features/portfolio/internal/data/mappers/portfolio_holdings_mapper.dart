@@ -57,11 +57,15 @@ class PortfolioHoldingsMapper {
         )
         .toList();
 
+    final displayName = apiHolding.name.trim().isNotEmpty
+        ? apiHolding.name.trim()
+        : _extractCompanyName(apiHolding.symbol);
+
     return PortfolioHolding(
       id: apiHolding.isin,
       symbol: apiHolding.symbol,
-      name: _extractCompanyName(apiHolding.symbol),
-      companyName: _extractCompanyName(apiHolding.symbol),
+      name: displayName,
+      companyName: displayName,
       sector: apiHolding.sector,
       industry: apiHolding.industry,
       quantity: apiHolding.quantity,
@@ -76,6 +80,7 @@ class PortfolioHoldingsMapper {
       totalGainLoss: apiHolding.gainLoss,
       totalGainLossPercentage: apiHolding.gainLossPercentage,
       portfolioWeight: apiHolding.weightInPortfolio,
+      assetClass: apiHolding.assetClass,
       brokerHoldings: brokerHoldings,
     );
   }
@@ -96,6 +101,7 @@ class PortfolioHoldingsMapper {
     return EquityHoldingDto(
       isin: domainHolding.id,
       symbol: domainHolding.symbol,
+      name: domainHolding.name,
       sector: domainHolding.sector,
       industry: domainHolding.industry,
       marketCap:
@@ -110,6 +116,7 @@ class PortfolioHoldingsMapper {
       todayGainLossPercentage: domainHolding.todayChangePercentage,
       currentPrice: domainHolding.currentPrice,
       percentageChange: domainHolding.todayChangePercentage,
+      assetClass: domainHolding.assetClass,
       brokerPortfolios: apiBrokers,
     );
   }

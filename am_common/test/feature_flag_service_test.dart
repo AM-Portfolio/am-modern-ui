@@ -44,9 +44,9 @@ void main() {
     expect(
       service.isOn(
         FeatureFlagKeys.portfolioIntelligenceOverviewV1,
-        defaultValue: false,
+        defaultValue: true,
       ),
-      isFalse,
+      isTrue,
     );
     service.dispose();
   });
