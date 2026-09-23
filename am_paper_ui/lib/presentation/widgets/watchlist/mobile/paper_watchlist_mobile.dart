@@ -51,7 +51,7 @@ class _PaperWatchlistMobileState extends State<PaperWatchlistMobile> {
               compact: true,
               hintText: 'Search stocks',
               category: 'STOCKS',
-              accentColor: colors.actionPrimaryBg,
+              accentColor: ModuleColors.market,
               searchHandler: (q) => controller.client.search(q),
               onSelected: (sym) {
                 _searchController.clear();

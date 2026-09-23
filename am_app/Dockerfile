@@ -26,6 +26,7 @@ COPY am_diagnostic_ui/ ./am_diagnostic_ui/
 COPY am_doc_intelligence_ui/ ./am_doc_intelligence_ui/
 COPY am_subscription_ui/ ./am_subscription_ui/
 COPY am_paper_ui/ ./am_paper_ui/
+COPY am_news_ui/ ./am_news_ui/
 
 # ── CODE GENERATION ──────────────────────────────────────────────────────
 RUN for d in am_common am_design_system am_market/common am_analysis/common am_market/ui am_analysis/ui am_auth_ui am_dashboard_ui am_portfolio_ui am_trade_ui am_doc_intelligence_ui am_subscription_ui; do \

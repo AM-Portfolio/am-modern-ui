@@ -1,3 +1,5 @@
+import 'package:am_common/am_common.dart';
+import 'package:am_news_ui/am_news_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -82,7 +84,24 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
                   _buildTradeSidebar(holdings),
 
                   // Right side - Trade detail or placeholder
-                  Expanded(child: _selectedTrade != null ? _buildTradeDetailView() : _buildEmptyState()),
+                  Expanded(
+                    child: _selectedTrade != null
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(child: _buildTradeDetailView()),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                                child: SymbolNewsSection(
+                                  symbol: _selectedTrade!.symbol,
+                                  surface: NewsUiSurface.tradeTrades,
+                                ),
+                              ),
+                            ],
+                          )
+                        : _buildEmptyState(),
+                  ),
                 ],
               );
             },

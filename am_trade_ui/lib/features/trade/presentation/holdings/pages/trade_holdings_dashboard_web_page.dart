@@ -1,4 +1,6 @@
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_news_ui/am_news_ui.dart';
 import 'package:am_portfolio_ui/features/portfolio/providers/portfolio_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -111,6 +113,8 @@ class _TradeHoldingsDashboardWebPageState
               final filteredHoldings = widget.embedded
                   ? tradeHoldings.holdings
                   : _applyFilters(tradeHoldings.holdings, _currentFilter);
+              final allSymbols =
+                  tradeHoldings.holdings.map((h) => h.symbol).toList();
 
               return TradeHoldingsAdvancedTemplate(
                 holdings: filteredHoldings,
@@ -126,6 +130,11 @@ class _TradeHoldingsDashboardWebPageState
                   ref.invalidate(tradeHoldingsStreamProvider(portfolioId));
                   ref.invalidate(portfolioHoldingsProvider(portfolioId));
                 },
+                listFooter: HoldingsNewsSection(
+                  symbols: allSymbols,
+                  surface: NewsUiSurface.tradeHoldings,
+                  embedInScroll: true,
+                ),
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -318,14 +327,28 @@ class _TradeHoldingsDashboardWebPageState
         ),
         // Detail view content
         Expanded(
-          child: TradeDetailViewPage(
-            trade: _selectedTrade!,
-            portfolioId: widget.portfolioId,
-            onClose: () {
-              setState(() {
-                _selectedTrade = null;
-              });
-            },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: TradeDetailViewPage(
+                  trade: _selectedTrade!,
+                  portfolioId: widget.portfolioId,
+                  onClose: () {
+                    setState(() {
+                      _selectedTrade = null;
+                    });
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: SymbolNewsSection(
+                  symbol: _selectedTrade!.symbol,
+                  surface: NewsUiSurface.tradeHoldings,
+                ),
+              ),
+            ],
           ),
         ),
       ],

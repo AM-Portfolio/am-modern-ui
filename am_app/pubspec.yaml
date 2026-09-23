@@ -17,6 +17,8 @@ dependencies:
     path: ../am_library
   am_common:
     path: ../am_common
+  am_news_ui:
+    path: ../am_news_ui
 
   # ── FEATURE MODULES (v2.0.0 Active) ──────────────────────────────────────────
   am_auth_ui:

@@ -239,27 +239,9 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     }
   }
 
-  void _navigateToNext() {
-    // Only navigate if not at the last item
-    if (_swipeController.currentIndex < _swipeController.items.length - 1) {
-      _swipeController.navigateTo(_swipeController.currentIndex + 1);
-    }
-  }
-
-  void _navigateToPrev() {
-    // Only navigate if not at the first item
-    if (_swipeController.currentIndex > 0) {
-      _swipeController.navigateTo(_swipeController.currentIndex - 1);
-    }
-  }
-
-  Widget _wrapPage(Widget page) {
-    return VerticalScrollNavigator(
-      child: page,
-      onNextPage: _navigateToNext,
-      onPreviousPage: _navigateToPrev,
-    );
-  }
+  /// Pages are not wrapped for vertical edge nav — section changes are
+  /// left/right only via [SwipeablePageView].
+  Widget _wrapPage(Widget page) => page;
 
   @override
   Widget build(BuildContext context) {
@@ -306,7 +288,9 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         ),
         body: SwipeablePageView(
           key: const PageStorageKey('market_page_info'),
-          scrollDirection: Axis.vertical,
+          // Always horizontal: mouse wheel / vertical drag scrolls content only.
+          // Left/right swipe (or sidebar/pills) changes market sections.
+          scrollDirection: Axis.horizontal,
           controller: _swipeController,
           showIndicator: false,
         ),
@@ -560,6 +544,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     
     // Developer mode - show all items
     final accentColor = ModuleColors.market;
+    Widget wrap(Widget page) => _wrapPage(page);
 
     final items = <NavigationItem>[
       if (includeAllIndices)
@@ -567,63 +552,63 @@ class _MarketContentState extends ConsumerState<MarketContent> {
           title: 'All Indices',
           subtitle: 'Market Overview',
           icon: Icons.dashboard_rounded,
-          page: _wrapPage(const AllIndicesPage()),
+          page: wrap(const AllIndicesPage()),
           accentColor: accentColor,
         ),
       NavigationItem(
         title: 'Streamer',
         subtitle: 'Real-time data',
         icon: Icons.waves_rounded,
-        page: _wrapPage(const StreamerPage()),
+        page: wrap(const StreamerPage()),
         accentColor: accentColor,
       ),
       NavigationItem(
         title: 'Instrument Explorer',
         subtitle: 'Search instruments',
         icon: Icons.manage_search_rounded,
-        page: _wrapPage(const InstrumentExplorerPage()),
+        page: wrap(const InstrumentExplorerPage()),
         accentColor: accentColor,
       ),
       NavigationItem(
         title: 'Security Explorer',
         subtitle: 'Security details',
         icon: Icons.security_rounded,
-        page: _wrapPage(const SecurityExplorerPage()),
+        page: wrap(const SecurityExplorerPage()),
         accentColor: accentColor,
       ),
       NavigationItem(
         title: 'ETF Explorer',
         subtitle: 'ETF insights',
         icon: Icons.dashboard_customize_rounded,
-        page: _wrapPage(const EtfExplorerPage()),
+        page: wrap(const EtfExplorerPage()),
         accentColor: accentColor,
       ),
       NavigationItem(
         title: 'Price Test',
         subtitle: 'Price validation',
         icon: Icons.price_check_rounded,
-        page: _wrapPage(const PriceTestPage()),
+        page: wrap(const PriceTestPage()),
         accentColor: accentColor,
       ),
       NavigationItem(
         title: 'Market Analysis',
         subtitle: 'Detailed charts',
         icon: Icons.analytics_rounded,
-        page: _wrapPage(const HeatmapExplorerView()),
+        page: wrap(const HeatmapExplorerView()),
         accentColor: accentColor,
       ),
       NavigationItem(
         title: 'Equity Insider',
         subtitle: 'Fundamental analysis',
         icon: Icons.insights_rounded,
-        page: _wrapPage(EquityInsiderPage(key: _equityInsiderKey)),
+        page: wrap(EquityInsiderPage(key: _equityInsiderKey)),
         accentColor: accentColor,
       ),
       NavigationItem(
         title: 'Futures & Options',
         subtitle: 'Futures and Options',
         icon: Icons.candlestick_chart_rounded,
-        page: _wrapPage(const FoPage()),
+        page: wrap(const FoPage()),
         accentColor: accentColor,
       ),
     ];
@@ -649,7 +634,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
             title: indexName,
             subtitle: 'Live Index Data',
             icon: Icons.trending_up_rounded,
-            page: _wrapPage(MarketIndexDetailView(
+            page: wrap(MarketIndexDetailView(
               provider: provider,
               indexSymbol: indexName,
             )),
@@ -665,8 +650,8 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         title: 'Admin Dashboard',
         subtitle: 'System Tools',
         icon: Icons.admin_panel_settings_rounded,
-        page: _wrapPage(const AdminDashboardPage()),
-        accentColor: Color(0xFFFF6B6B),
+        page: wrap(const AdminDashboardPage()),
+        accentColor: const Color(0xFFFF6B6B),
       ),
     );
 
@@ -675,7 +660,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         title: 'Developer Dashboard',
         subtitle: 'Dev Tools & Scheduler',
         icon: Icons.developer_mode_rounded,
-        page: _wrapPage(const DeveloperDashboard()),
+        page: wrap(const DeveloperDashboard()),
         accentColor: Colors.deepPurple,
       ),
     );
@@ -689,6 +674,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
   }) {
     final accentColor = ModuleColors.market;
     final paperDesk = widget.paperDesk;
+    Widget wrap(Widget page) => _wrapPage(page);
 
     return [
       if (includeAllIndices)
@@ -696,7 +682,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
           title: 'All Indices',
           subtitle: 'Market Overview',
           icon: Icons.grid_view_rounded,
-          page: _wrapPage(const AllIndicesPage()),
+          page: wrap(const AllIndicesPage()),
           accentColor: accentColor,
         ),
       if (paperDesk != null)
@@ -712,35 +698,35 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         title: 'Dashboard',
         subtitle: 'Overview',
         icon: Icons.home_rounded,
-        page: _wrapPage(UserDashboardPage(key: _dashboardKey)),
+        page: wrap(UserDashboardPage(key: _dashboardKey)),
         accentColor: accentColor,
       ),
       NavigationItem(
         title: 'Market Analysis',
         subtitle: 'Heatmap & Details',
         icon: Icons.analytics_rounded,
-        page: _wrapPage(const HeatmapExplorerView()),
+        page: wrap(const HeatmapExplorerView()),
         accentColor: accentColor,
       ),
       NavigationItem(
         title: 'Equity Insider',
         subtitle: 'Fundamental analysis',
         icon: Icons.insights_rounded,
-        page: _wrapPage(EquityInsiderPage(key: _equityInsiderKey)),
+        page: wrap(EquityInsiderPage(key: _equityInsiderKey)),
         accentColor: accentColor,
       ),
       NavigationItem(
         title: 'Futures & Options',
         subtitle: 'F&O contracts & chain',
         icon: Icons.candlestick_chart_rounded,
-        page: _wrapPage(const FoPage()),
+        page: wrap(const FoPage()),
         accentColor: accentColor,
       ),
       NavigationItem(
         title: 'Watch List',
         subtitle: 'Custom tracking',
         icon: Icons.star_border_rounded,
-        page: _wrapPage(WatchlistsPage(
+        page: wrap(WatchlistsPage(
           onStockSelected: (symbol) {
             final items = _swipeController.items;
             final index = _indexForSlug('equity-insider', items);

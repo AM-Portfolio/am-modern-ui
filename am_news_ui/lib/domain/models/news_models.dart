@@ -104,3 +104,23 @@ List<String> uniqueNewsSymbols(InsightNews news, {int cap = 40}) {
   }
   return out;
 }
+
+/// Cards from [InsightNews.holdings] whose symbols intersect [symbols].
+/// Never falls back to current affairs.
+List<NewsCard> filterHoldingsNewsForSymbols(
+  InsightNews news,
+  Iterable<String> symbols,
+) {
+  final allowed = {
+    for (final raw in symbols)
+      raw.trim().toUpperCase(),
+  }..removeWhere((s) => s.isEmpty);
+  if (allowed.isEmpty) return const [];
+  return news.holdings.where((card) {
+    for (final raw in card.symbols) {
+      final s = raw.trim().toUpperCase();
+      if (s.isNotEmpty && allowed.contains(s)) return true;
+    }
+    return false;
+  }).toList();
+}

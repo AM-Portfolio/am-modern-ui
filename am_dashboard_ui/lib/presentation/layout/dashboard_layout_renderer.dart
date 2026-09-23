@@ -74,7 +74,8 @@ class DashboardLayoutRenderer extends ConsumerWidget {
     if (slots.isEmpty) return const SizedBox.shrink();
 
     final isCompact = MediaQuery.sizeOf(context).width < compactBreakpoint;
-    final newsEnabled = ref.watch(newsUiEnabledProvider);
+    final newsEnabled =
+        ref.watch(newsUiSurfaceEnabledProvider(NewsUiSurface.dashboard));
     final renderSlots = isCompact
         ? compactDashboardSlots(slots, newsEnabled: newsEnabled)
         : [

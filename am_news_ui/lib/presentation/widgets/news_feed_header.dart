@@ -1,4 +1,4 @@
-import 'package:am_dashboard_ui/presentation/shared/widgets/news_feed_tab.dart';
+import 'package:am_news_ui/presentation/widgets/news_feed_tab.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 

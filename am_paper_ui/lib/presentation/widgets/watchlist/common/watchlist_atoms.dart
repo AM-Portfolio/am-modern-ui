@@ -6,8 +6,8 @@ import '../../../../data/quote_models.dart';
 import '../../../../data/watchlist_models.dart';
 import '../watchlist_controller.dart';
 
-/// Watchlist interactive chrome — theme brand (Imperial Gold → gold, not LTP teal).
-Color _watchlistAccent(BuildContext context) => context.colors.actionPrimaryBg;
+/// Watchlist interactive chrome — Market accent (brand themes sync via ModuleColors).
+Color _watchlistAccent(BuildContext context) => ModuleColors.market;
 
 class WatchlistSourceDropdown extends StatelessWidget {
   const WatchlistSourceDropdown({
@@ -157,7 +157,7 @@ class WatchlistRow extends StatelessWidget {
 
     final row = Material(
       color: selected || depthExpanded
-          ? colors.actionPrimaryBg.withValues(alpha: 0.08)
+          ? ModuleColors.market.withValues(alpha: 0.08)
           : colors.surface,
       child: InkWell(
         onTap: onTap,
@@ -333,7 +333,7 @@ class WatchlistDepthExpandPanel extends StatelessWidget {
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: colors.actionPrimaryBg,
+                    color: ModuleColors.market,
                   ),
                 ),
               ),
@@ -652,7 +652,7 @@ class WatchlistLtpRangeBar extends StatelessWidget {
                             colors.marketPositiveIndicator.withValues(
                               alpha: 0.35,
                             ),
-                            colors.actionPrimaryBg.withValues(alpha: 0.55),
+                            ModuleColors.market.withValues(alpha: 0.55),
                             colors.marketNegativeIndicator.withValues(
                               alpha: 0.35,
                             ),
@@ -668,7 +668,7 @@ class WatchlistLtpRangeBar extends StatelessWidget {
                       width: 12,
                       height: 12,
                       decoration: BoxDecoration(
-                        color: colors.actionPrimaryBg,
+                        color: ModuleColors.market,
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: colors.actionPrimaryFg.withValues(alpha: 0.35),
@@ -676,7 +676,7 @@ class WatchlistLtpRangeBar extends StatelessWidget {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: colors.actionPrimaryBg.withValues(
+                            color: ModuleColors.market.withValues(
                               alpha: 0.35,
                             ),
                             blurRadius: 4,
