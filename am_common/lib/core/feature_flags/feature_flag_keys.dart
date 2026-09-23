@@ -4,6 +4,7 @@ class FeatureFlagKeys {
   static const offlineWritesV1 = 'offline_writes_v1';
 
   /// Portfolio Intelligence overview (master kill switch).
+  /// Child intel keys default ON when this is on and they are unset in GB.
   static const portfolioIntelligenceOverviewV1 =
       'portfolio-intelligence-overview-v1';
   static const portfolioIntelHealthV1 = 'portfolio-intel-health-v1';

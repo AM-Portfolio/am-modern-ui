@@ -51,9 +51,14 @@ class _TradeHoldingsAdvancedTemplateState
   bool _sortAscending = true;
   List<TradeHoldingViewModel> _sortedHoldings = [];
   late AnimationController _refreshController;
+  late final ScrollController _hScroll;
   String _viewMode = 'table';
   String _filterStatus = 'all';
   String _searchQuery = '';
+
+  /// Room for Entry / Current / Value / P&L without the amounts colliding.
+  static const double _minTableWidth = 1340;
+  static const EdgeInsets _cellPad = EdgeInsets.symmetric(horizontal: 8);
 
   Color get _accent => widget.accentColor ?? ModuleColors.trade;
   @override
@@ -61,10 +66,12 @@ class _TradeHoldingsAdvancedTemplateState
     super.initState();
     _sortedHoldings = List.from(widget.holdings);
     _refreshController = AnimationController(duration: const Duration(milliseconds: 1500), vsync: this);
+    _hScroll = ScrollController();
   }
 
   @override
   void dispose() {
+    _hScroll.dispose();
     _refreshController.dispose();
     super.dispose();
   }
@@ -252,41 +259,46 @@ class _TradeHoldingsAdvancedTemplateState
     child: Row(
       children: [
         // Filter Pills with View Mode Toggle integrated
-        Wrap(
-          spacing: 8,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            _buildFilterPill('all', 'All', _accent),
-            _buildFilterPill('profit', 'Profit', context.marketPositive),
-            _buildFilterPill('loss', 'Loss', context.marketNegative),
-            const SizedBox(width: 4),
-            // View Mode Toggle - always visible inside filter section
-            Container(
-              decoration: BoxDecoration(
-                color: _isDarkChrome
-                    ? Colors.white.withValues(alpha: 0.06)
-                    : _accent.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: _accent.withValues(alpha: 0.2),
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Wrap(
+              spacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                _buildFilterPill('all', 'All', _accent),
+                _buildFilterPill('profit', 'Profit', context.marketPositive),
+                _buildFilterPill('loss', 'Loss', context.marketNegative),
+                const SizedBox(width: 4),
+                Container(
+                  decoration: BoxDecoration(
+                    color: _isDarkChrome
+                        ? Colors.white.withValues(alpha: 0.06)
+                        : _accent.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: _accent.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildViewModeButton('table', Icons.table_chart, 'Table'),
+                      _buildViewModeButton('card', Icons.dashboard, 'Card'),
+                    ],
+                  ),
                 ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildViewModeButton('table', Icons.table_chart, 'Table'),
-                  _buildViewModeButton('card', Icons.dashboard, 'Card'),
-                ],
-              ),
+              ],
             ),
-          ],
+          ),
         ),
-        const Spacer(),
-        // Search Bar
-        SizedBox(
-          width: 240,
-          height: 36,
-          child: TextField(
+        const SizedBox(width: 12),
+        Flexible(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 240, minWidth: 96),
+            child: SizedBox(
+              height: 36,
+              child: TextField(
             onChanged: (value) => setState(() {
               _searchQuery = value;
               _currentPage = 0; // Reset pagination on search
@@ -313,9 +325,10 @@ class _TradeHoldingsAdvancedTemplateState
             ),
             style: const TextStyle(fontSize: 13),
           ),
+            ),
+          ),
         ),
-        const SizedBox(width: 12),
-        // Refresh Button
+        const SizedBox(width: 8),
         IconButton(
           onPressed: () {
             _refreshController.forward(from: 0);
@@ -425,30 +438,69 @@ class _TradeHoldingsAdvancedTemplateState
     final rowCount = _paginatedHoldings.length;
     // rows + pagination + optional news footer
     final trailing = 1 + (widget.listFooter != null ? 1 : 0);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildCustomTableHeader(),
-        const Divider(height: 1),
-        Expanded(
-          child: ListView.builder(
-            itemCount: rowCount + trailing,
-            itemBuilder: (context, index) {
-              if (index < rowCount) {
-                return _buildCustomTableRow(_paginatedHoldings[index], index);
-              }
-              if (index == rowCount) {
-                return _buildFooter();
-              }
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                child: widget.listFooter!,
-              );
-            },
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final tableWidth = constraints.maxWidth < _minTableWidth
+            ? _minTableWidth
+            : constraints.maxWidth;
+        return Scrollbar(
+          controller: _hScroll,
+          thumbVisibility: tableWidth > constraints.maxWidth,
+          notificationPredicate: (n) => n.metrics.axis == Axis.horizontal,
+          child: SingleChildScrollView(
+            controller: _hScroll,
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: tableWidth,
+              height: constraints.maxHeight,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildCustomTableHeader(),
+                  const Divider(height: 1),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: rowCount + trailing,
+                      itemBuilder: (context, index) {
+                        if (index < rowCount) {
+                          return _buildCustomTableRow(
+                            _paginatedHoldings[index],
+                            index,
+                          );
+                        }
+                        if (index == rowCount) {
+                          return _buildFooter();
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                          child: widget.listFooter!,
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-      ],
+        );
+      },
     ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05, end: 0);
+  }
+
+  Widget _tableCell({
+    required int flex,
+    required Widget child,
+    bool numeric = false,
+  }) {
+    return Expanded(
+      flex: flex,
+      child: Padding(
+        padding: _cellPad,
+        child: numeric
+            ? Align(alignment: Alignment.centerRight, child: child)
+            : child,
+      ),
+    );
   }
 
   Widget _buildCustomTableHeader() => Padding(
@@ -459,10 +511,10 @@ class _TradeHoldingsAdvancedTemplateState
         _buildHeaderCell('Company', 2, 1),
         _buildHeaderCell('Status', 1, 2),
         _buildHeaderCell('Quantity', 1, 3, isNumeric: true),
-        _buildHeaderCell('Entry Price', 1, 4, isNumeric: true),
-        _buildHeaderCell('Current Price', 1, 5, isNumeric: true),
-        _buildHeaderCell('Current Value', 1, 6, isNumeric: true),
-        _buildHeaderCell('P&L', 1, 7, isNumeric: true),
+        _buildHeaderCell('Entry Price', 2, 4, isNumeric: true),
+        _buildHeaderCell('Current Price', 2, 5, isNumeric: true),
+        _buildHeaderCell('Current Value', 2, 6, isNumeric: true),
+        _buildHeaderCell('P&L', 2, 7, isNumeric: true),
         _buildHeaderCell('P&L %', 1, 8, isNumeric: true),
         _buildHeaderCell('R:R Ratio', 1, 9, isNumeric: true),
       ],
@@ -475,24 +527,30 @@ class _TradeHoldingsAdvancedTemplateState
     
     return Expanded(
       flex: flex,
-      child: InkWell(
-        onTap: () => _sort(columnIndex, isSorted ? !_sortAscending : true),
-        child: Row(
-          mainAxisAlignment: isNumeric ? MainAxisAlignment.end : MainAxisAlignment.start,
-          children: [
-            Flexible(
-              child: Text(
-                label,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.colorScheme.onSurface.withOpacity(0.8)),
-                overflow: TextOverflow.ellipsis,
+      child: Padding(
+        padding: _cellPad,
+        child: InkWell(
+          onTap: () => _sort(columnIndex, isSorted ? !_sortAscending : true),
+          child: Row(
+            mainAxisAlignment: isNumeric ? MainAxisAlignment.end : MainAxisAlignment.start,
+            children: [
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 2,
+                  softWrap: true,
+                  textAlign: isNumeric ? TextAlign.right : TextAlign.left,
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.colorScheme.onSurface.withOpacity(0.8)),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-            if (isSorted)
-              Icon(
-                _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
-                size: 14,
-              ),
-          ],
+              if (isSorted)
+                Icon(
+                  _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                  size: 14,
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -519,29 +577,97 @@ class _TradeHoldingsAdvancedTemplateState
             ),
             child: Row(
               children: [
-                Expanded(
+                _tableCell(
                   flex: 2,
                   child: InkWell(
                     onTap: widget.onSymbolTap != null ? () => widget.onSymbolTap!(holding.displaySymbol) : null,
                     child: _buildSymbolCell(holding),
                   ),
                 ),
-                Expanded(
+                _tableCell(
                   flex: 2,
                   child: Text(
                     holding.displayCompanyName,
                     overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                     style: const TextStyle(fontSize: 13),
                   ),
                 ),
-                Expanded(flex: 1, child: Align(alignment: Alignment.centerLeft, child: _buildStatusBadge(holding.displayStatus))),
-                Expanded(flex: 1, child: Text(holding.displayQuantity, textAlign: TextAlign.right, overflow: TextOverflow.ellipsis, maxLines: 1, style: const TextStyle(fontSize: 13))),
-                Expanded(flex: 1, child: Text(holding.displayEntryPrice, textAlign: TextAlign.right, overflow: TextOverflow.ellipsis, maxLines: 1, style: const TextStyle(fontSize: 13))),
-                Expanded(flex: 1, child: Text(holding.displayCurrentPrice, textAlign: TextAlign.right, overflow: TextOverflow.ellipsis, maxLines: 1, style: const TextStyle(fontSize: 13))),
-                Expanded(flex: 1, child: Text(holding.displayCurrentValue, textAlign: TextAlign.right, overflow: TextOverflow.ellipsis, maxLines: 1, style: const TextStyle(fontSize: 13))),
-                Expanded(flex: 1, child: Align(alignment: Alignment.centerRight, child: _buildPnLCell(holding.displayProfitLoss, isPositive))),
-                Expanded(flex: 1, child: Align(alignment: Alignment.centerRight, child: _buildPnLPercentageCell(holding.displayProfitLossPercentage, isPositive))),
-                Expanded(flex: 1, child: Text(holding.displayRiskRewardRatio, textAlign: TextAlign.right, overflow: TextOverflow.ellipsis, maxLines: 1, style: const TextStyle(fontSize: 13))),
+                _tableCell(
+                  flex: 1,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: _buildStatusBadge(holding.displayStatus),
+                  ),
+                ),
+                _tableCell(
+                  flex: 1,
+                  numeric: true,
+                  child: Text(
+                    holding.displayQuantity,
+                    textAlign: TextAlign.right,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+                _tableCell(
+                  flex: 2,
+                  numeric: true,
+                  child: Text(
+                    holding.displayEntryPrice,
+                    textAlign: TextAlign.right,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+                _tableCell(
+                  flex: 2,
+                  numeric: true,
+                  child: Text(
+                    holding.displayCurrentPrice,
+                    textAlign: TextAlign.right,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+                _tableCell(
+                  flex: 2,
+                  numeric: true,
+                  child: Text(
+                    holding.displayCurrentValue,
+                    textAlign: TextAlign.right,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+                _tableCell(
+                  flex: 2,
+                  numeric: true,
+                  child: _buildPnLCell(holding.displayProfitLoss, isPositive),
+                ),
+                _tableCell(
+                  flex: 1,
+                  numeric: true,
+                  child: _buildPnLPercentageCell(
+                    holding.displayProfitLossPercentage,
+                    isPositive,
+                  ),
+                ),
+                _tableCell(
+                  flex: 1,
+                  numeric: true,
+                  child: Text(
+                    holding.displayRiskRewardRatio,
+                    textAlign: TextAlign.right,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
               ],
             ),
           ),
@@ -561,7 +687,6 @@ class _TradeHoldingsAdvancedTemplateState
   }
 
   Widget _buildSymbolCell(TradeHoldingViewModel holding) => Row(
-    mainAxisSize: MainAxisSize.min,
     children: [
       Container(
         width: 32,
@@ -582,7 +707,14 @@ class _TradeHoldingsAdvancedTemplateState
         ),
       ),
       const SizedBox(width: 8),
-      Text(holding.displaySymbol, style: const TextStyle(fontWeight: FontWeight.bold)),
+      Flexible(
+        child: Text(
+          holding.displaySymbol,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
     ],
   );
 
@@ -600,18 +732,23 @@ class _TradeHoldingsAdvancedTemplateState
   );
 
   Widget _buildPnLCell(String value, bool isPositive) => Row(
-    mainAxisSize: MainAxisSize.min,
+    mainAxisAlignment: MainAxisAlignment.end,
     children: [
       Icon(
         isPositive ? Icons.trending_up : Icons.trending_down,
         size: 14,
         color: isPositive ? context.marketPositive : context.marketNegative,
       ),
-      const SizedBox(width: 4),
+      const SizedBox(width: 6),
       Flexible(
         child: Text(
           value,
-          style: TextStyle(fontWeight: FontWeight.bold, color: isPositive ? context.marketPositive : context.marketNegative),
+          textAlign: TextAlign.right,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+            color: isPositive ? context.marketPositive : context.marketNegative,
+          ),
           overflow: TextOverflow.ellipsis,
           maxLines: 1,
         ),

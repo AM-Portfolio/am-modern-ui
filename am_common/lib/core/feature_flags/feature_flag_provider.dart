@@ -62,30 +62,54 @@ bool _intelFlag(Ref ref, String key, {bool defaultValue = true}) {
 }
 
 final portfolioIntelligenceOverviewEnabledProvider = Provider<bool>((ref) {
-  return _intelFlag(ref, FeatureFlagKeys.portfolioIntelligenceOverviewV1);
+  return _intelFlag(
+    ref,
+    FeatureFlagKeys.portfolioIntelligenceOverviewV1,
+    defaultValue: true,
+  );
 });
 
 final portfolioIntelHealthEnabledProvider = Provider<bool>((ref) {
   if (!ref.watch(portfolioIntelligenceOverviewEnabledProvider)) return false;
-  return _intelFlag(ref, FeatureFlagKeys.portfolioIntelHealthV1);
+  return _intelFlag(
+    ref,
+    FeatureFlagKeys.portfolioIntelHealthV1,
+    defaultValue: true,
+  );
 });
 
 final portfolioIntelRiskEnabledProvider = Provider<bool>((ref) {
   if (!ref.watch(portfolioIntelligenceOverviewEnabledProvider)) return false;
-  return _intelFlag(ref, FeatureFlagKeys.portfolioIntelRiskV1);
+  return _intelFlag(
+    ref,
+    FeatureFlagKeys.portfolioIntelRiskV1,
+    defaultValue: true,
+  );
 });
 
 final portfolioIntelXrayEnabledProvider = Provider<bool>((ref) {
   if (!ref.watch(portfolioIntelligenceOverviewEnabledProvider)) return false;
-  return _intelFlag(ref, FeatureFlagKeys.portfolioIntelXrayV1);
+  return _intelFlag(
+    ref,
+    FeatureFlagKeys.portfolioIntelXrayV1,
+    defaultValue: true,
+  );
 });
 
 final portfolioIntelStressEnabledProvider = Provider<bool>((ref) {
   if (!ref.watch(portfolioIntelligenceOverviewEnabledProvider)) return false;
-  return _intelFlag(ref, FeatureFlagKeys.portfolioIntelStressV1);
+  return _intelFlag(
+    ref,
+    FeatureFlagKeys.portfolioIntelStressV1,
+    defaultValue: true,
+  );
 });
 
 final portfolioIntelWhatIfEnabledProvider = Provider<bool>((ref) {
   if (!ref.watch(portfolioIntelligenceOverviewEnabledProvider)) return false;
-  return _intelFlag(ref, FeatureFlagKeys.portfolioIntelWhatIfV1);
+  return _intelFlag(
+    ref,
+    FeatureFlagKeys.portfolioIntelWhatIfV1,
+    defaultValue: true,
+  );
 });
