@@ -116,7 +116,7 @@ class PortfolioMetricCard extends StatelessWidget {
                   border: Border.all(
                     color: glowBorder
                         ? chrome.withValues(alpha: 0.35)
-                        : context.glassOverlay(context.isDark ? 0.07 : 0.06)),
+                        : context.glassOverlay(context.isDark ? 0.07 : 0.06),
                     width: 1,
                   ),
                   // No drop shadows on compact (mobile) — keeps the grid tight.
