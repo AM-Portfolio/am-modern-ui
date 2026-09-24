@@ -230,6 +230,12 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
       3 => xray.assetClassWeights,
       _ => xray.sectorWeights,
     };
+    
+    // Sector bug guard: filter out 'Unknown' sectors
+    if (_tab == 0) {
+      raw = raw.where((w) => w.name.toLowerCase() != 'unknown').toList();
+    }
+
     // Class uses real assetClassWeights from intelligence — no EQUITY 100% fake.
     final sorted = [...raw]
       ..sort((a, b) {
@@ -486,22 +492,6 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
           tab: _tab,
           onTab: _onTab,
           compact: true,
-          onAddClass: !widget.readOnly &&
-                  widget.portfolioId != 'all' &&
-                  _tab == 3
-              ? () => showXrayClassAddSheet(
-                    context: context,
-                    portfolioId: widget.portfolioId,
-                    onSaved: () {
-                      ref.invalidate(
-                        portfolioIntelligenceProvider(widget.portfolioId),
-                      );
-                      ref.invalidate(
-                        portfolioHoldingsProvider(widget.portfolioId),
-                      );
-                    },
-                  )
-              : null,
         );
         final active = _activeIndex(weights);
 
@@ -931,89 +921,41 @@ class _Tabs extends StatelessWidget {
     required this.tab,
     required this.onTab,
     this.compact = false,
-    this.onAddClass,
   });
 
   final int tab;
   final ValueChanged<int> onTab;
   final bool compact;
-  final VoidCallback? onAddClass;
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    Widget chip(int i, String label) {
-      final selected = tab == i;
-      return GestureDetector(
-        onTap: () => onTab(i),
-        child: Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: compact ? 8 : 10,
-            vertical: compact ? 4 : 6,
-          ),
-          decoration: BoxDecoration(
-            color: selected ? ModuleColors.portfolio : Colors.transparent,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: selected ? FontWeight.bold : FontWeight.w500,
-              color: selected
-                  ? context.colors.actionPrimaryFg
-                  : context.textSecondary,
-            ),
-          ),
-        ),
-      );
-    }
-
-    final tabs = Container(
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: isDark
-            ? context.colors.cardSurface.withValues(alpha: 0.55)
-            : context.colors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: context.colors.border.withValues(alpha: 0.45),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          chip(0, 'Sector'),
-          chip(1, 'Industry'),
-          chip(2, 'Cap'),
-          chip(3, 'Class'),
-        ],
-      ),
-    );
-
-    if (onAddClass == null) return tabs;
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
       children: [
-        tabs,
-        const SizedBox(width: 6),
-        TextButton(
-          onPressed: onAddClass,
-          style: TextButton.styleFrom(
-            foregroundColor: ModuleColors.portfolio,
-            padding: EdgeInsets.symmetric(
-              horizontal: compact ? 8 : 10,
-              vertical: compact ? 4 : 6,
-            ),
-            minimumSize: Size.zero,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            visualDensity: VisualDensity.compact,
-          ),
-          child: const Text(
-            '+ Add',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-          ),
+        IntelligenceModeChip(
+          label: 'Sector',
+          selected: tab == 0,
+          accentColor: ModuleColors.portfolio,
+          onTap: () => onTab(0),
+        ),
+        IntelligenceModeChip(
+          label: 'Industry',
+          selected: tab == 1,
+          accentColor: ModuleColors.portfolio,
+          onTap: () => onTab(1),
+        ),
+        IntelligenceModeChip(
+          label: 'Cap',
+          selected: tab == 2,
+          accentColor: ModuleColors.portfolio,
+          onTap: () => onTab(2),
+        ),
+        IntelligenceModeChip(
+          label: 'Class',
+          selected: tab == 3,
+          accentColor: ModuleColors.portfolio,
+          onTap: () => onTab(3),
         ),
       ],
     );
@@ -1333,19 +1275,26 @@ class _HoldingsTable extends StatelessWidget {
 
     final rows = <Widget>[
       header,
-      const SizedBox(height: 6),
-      for (final h in holdings) ...[
+      const SizedBox(height: 8),
+      for (int i = 0; i < holdings.length; i++) ...[
         _row(
           context,
-          holding: h.symbol,
-          inr: formatIntelligenceCompactInr(h.currentValue),
+          holding: holdings[i].symbol,
+          inr: formatIntelligenceCompactInr(holdings[i].currentValue),
           grp: groupPct > 0
-              ? '${((h.portfolioWeight / groupPct) * 100).toStringAsFixed(1)}%'
+              ? '${((holdings[i].portfolioWeight / groupPct) * 100).toStringAsFixed(1)}%'
               : '—',
-          pf: '${h.portfolioWeight.toStringAsFixed(1)}%',
+          pf: '${holdings[i].portfolioWeight.toStringAsFixed(1)}%',
           header: false,
         ),
-        const SizedBox(height: 6),
+        if (i < holdings.length - 1)
+          Divider(
+            height: 16,
+            thickness: 1,
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+          )
+        else
+          const SizedBox(height: 8),
       ],
     ];
 
@@ -1369,51 +1318,55 @@ class _HoldingsTable extends StatelessWidget {
     required String pf,
     required bool header,
   }) {
+    final colors = Theme.of(context).extension<AppColorsTheme>() ?? AppColorsTheme.dark;
+
     final style = header
         ? TextStyle(
-            fontSize: 9,
+            fontSize: 10,
             fontWeight: FontWeight.w700,
-            color: Theme.of(context).hintColor,
-            letterSpacing: 0.3,
+            color: colors.textTertiary,
+            letterSpacing: 0.5,
           )
-        : const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
+        : TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: colors.textPrimary,
           );
     final valueStyle = header
         ? style
         : TextStyle(
-            fontSize: 11,
+            fontSize: 12,
             color: color,
             fontWeight: FontWeight.w600,
           );
 
-    return Row(
-      children: [
-        Expanded(
-          flex: 3,
-          child: Text(
-            holding,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: header
-                ? style
-                : const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: header ? 0 : 4),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: Text(
+              holding,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: style,
+            ),
           ),
-        ),
-        SizedBox(
-          width: _inrW,
-          child: Text(inr, textAlign: TextAlign.end, style: valueStyle),
-        ),
-        SizedBox(
-          width: _grpW,
-          child: Text(grp, textAlign: TextAlign.end, style: valueStyle),
-        ),
-        SizedBox(
-          width: _pfW,
-          child: Text(pf, textAlign: TextAlign.end, style: valueStyle),
-        ),
-      ],
+          SizedBox(
+            width: _inrW + 4,
+            child: Text(inr, textAlign: TextAlign.end, style: valueStyle),
+          ),
+          SizedBox(
+            width: _grpW + 4,
+            child: Text(grp, textAlign: TextAlign.end, style: valueStyle),
+          ),
+          SizedBox(
+            width: _pfW + 4,
+            child: Text(pf, textAlign: TextAlign.end, style: valueStyle),
+          ),
+        ],
+      ),
     );
   }
 }

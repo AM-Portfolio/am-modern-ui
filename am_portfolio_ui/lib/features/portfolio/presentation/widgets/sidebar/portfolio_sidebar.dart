@@ -81,45 +81,11 @@ class PortfolioSidebar extends StatelessWidget {
     ];
 
     // New Trade Button
-    final newTradeButton = Container(
-      width: double.infinity,
-      height: 48,
-      decoration: BoxDecoration(
-        color: const Color(0xFF1F222B), // Dark background for contrast
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.glassOverlay(0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: context.shadow(0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            // Navigate to NEW TRADE
-          },
-          borderRadius: BorderRadius.circular(12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.add, color: context.colors.actionPrimaryFg, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                'New Trade',
-                style: TextStyle(
-                  color: context.colors.actionPrimaryFg,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    final newTradeButton = SidebarFloatingActionMenu(
+      onUploadPortfolio: () {},
+      onAddTrade: () {},
+      onAddAssetClass: () {},
+      onAddBasket: () {},
     );
 
     return SecondarySidebar(
