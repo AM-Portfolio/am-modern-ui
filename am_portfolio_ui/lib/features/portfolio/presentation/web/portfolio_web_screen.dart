@@ -14,6 +14,10 @@ import 'pages/portfolio_holdings_web_page.dart';
 import 'pages/portfolio_heatmap_web_page.dart';
 import 'pages/portfolio_baskets_web_page.dart';
 import 'package:am_user_ui/am_user_ui.dart';
+import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intelligence/xray_class_add_sheet.dart';
+import 'package:am_portfolio_ui/features/basket/presentation/basket_navigation.dart';
+import 'package:am_portfolio_ui/features/basket/presentation/widgets/discover/discover_view_mode.dart';
+import 'package:am_design_system/shared/widgets/navigation/floating_menu_action.dart';
 
 /// Web-specific portfolio screen implementation
 class PortfolioWebScreen extends ConsumerStatefulWidget {
@@ -31,6 +35,7 @@ class PortfolioWebScreen extends ConsumerStatefulWidget {
     this.addTradeBuilder,
     this.holdingsPageBuilder,
     this.onOpenDocIntel,
+    this.uploadPortfolioBuilder,
   });
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
@@ -45,6 +50,7 @@ class PortfolioWebScreen extends ConsumerStatefulWidget {
   /// Optional web Holdings tab body (e.g. Trade holdings dashboard from am_app).
   final Widget Function(BuildContext context, String portfolioId)? holdingsPageBuilder;
   final VoidCallback? onOpenDocIntel;
+  final Widget Function(String portfolioId, String? portfolioName, VoidCallback onCancel)? uploadPortfolioBuilder;
 
   @override
   ConsumerState<PortfolioWebScreen> createState() => _PortfolioWebScreenState();
@@ -61,6 +67,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
   String? _currentPortfolioId;
   String? _currentPortfolioName;
   bool _isAddingTrade = false;
+  bool _isUploadingPortfolio = false;
 
   @override
   void initState() {
@@ -107,8 +114,42 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
     return index >= 0 ? index : 0;
   }
 
-  void _navigateToTabSlug(String slug) {
-    widget.onTabChanged?.call(slug);
+  Future<bool> _promptDiscardChanges() async {
+    if (!_isAddingTrade && !_isUploadingPortfolio) return true;
+
+    final shouldDiscard = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        title: const Text('Discard Unsaved Changes?'),
+        content: const Text('You have an active operation. Are you sure you want to discard it and navigate away?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('Discard', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDiscard == true) {
+      setState(() {
+        _isAddingTrade = false;
+        _isUploadingPortfolio = false;
+      });
+      return true;
+    }
+    return false;
+  }
+
+  Future<void> _navigateToTabSlug(String slug) async {
+    if (await _promptDiscardChanges()) {
+      widget.onTabChanged?.call(slug);
+    }
   }
 
   void _onPortfolioChanged(String portfolioId, String portfolioName) {
@@ -304,23 +345,83 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
                         });
                       },
                     )
-                  : activePage,
+                  : (_isUploadingPortfolio && widget.uploadPortfolioBuilder != null && _currentPortfolioId != null)
+                      ? widget.uploadPortfolioBuilder!(
+                          _currentPortfolioId!,
+                          _currentPortfolioName ?? widget.selectedPortfolioName,
+                          () {
+                            setState(() {
+                              _isUploadingPortfolio = false;
+                            });
+                          },
+                        )
+                      : activePage,
             ),
           ],
         ),
         footer: (_currentPortfolioId == null || _currentPortfolioId == 'all')
             ? const SizedBox.shrink()
-            : SidebarPrimaryAction(
-                title: 'New Trade',
-                icon: Icons.add,
-                accentColor: ModuleColors.portfolio,
-                onTap: () {
-                  if (widget.addTradeBuilder != null) {
-                    setState(() {
-                      _isAddingTrade = true;
-                    });
-                  }
-                },
+            : SidebarFloatingActionMenu(
+                triggerColor: ModuleColors.portfolio,
+                actions: [
+                  FloatingMenuAction(
+                    icon: Icons.upload_file_rounded,
+                    title: 'Upload Portfolio',
+                    subtitle: 'Import from file or broker',
+                    iconColor: ModuleColors.portfolio,
+                    onTap: () async {
+                      if (_isUploadingPortfolio) return;
+                      if (await _promptDiscardChanges()) {
+                        if (widget.uploadPortfolioBuilder != null) {
+                          setState(() { _isUploadingPortfolio = true; });
+                        } else {
+                          widget.onOpenDocIntel?.call();
+                        }
+                      }
+                    },
+                  ),
+                  FloatingMenuAction(
+                    icon: Icons.add_circle_outline_rounded,
+                    title: 'Add Trade',
+                    subtitle: 'Buy or sell an asset',
+                    iconColor: ModuleColors.trade,
+                    onTap: () async {
+                      if (_isAddingTrade) return;
+                      if (await _promptDiscardChanges()) {
+                        if (widget.addTradeBuilder != null) {
+                          setState(() { _isAddingTrade = true; });
+                        } else {
+                          OpenAddTradeNotification().dispatch(context);
+                        }
+                      }
+                    },
+                  ),
+                  FloatingMenuAction(
+                    icon: Icons.account_balance_wallet_outlined,
+                    title: 'Add Asset Class',
+                    subtitle: 'Create a new asset class',
+                    iconColor: ModuleColors.market,
+                    onTap: () async {
+                      if (await _promptDiscardChanges()) {
+                        showXrayClassAddSheet(context: context, portfolioId: _currentPortfolioId!, onSaved: () {});
+                      }
+                    },
+                  ),
+                  FloatingMenuAction(
+                    icon: Icons.shopping_basket_outlined,
+                    title: 'Add Basket',
+                    subtitle: 'Create a new basket',
+                    iconColor: ModuleColors.reports,
+                    onTap: () async {
+                      if (await _promptDiscardChanges()) {
+                        widget.onTabChanged?.call('baskets');
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          BasketNavigation.setViewMode(BasketViewMode.discover);
+                        });
+                      }
+                    },
+                  ),
+                ],
               ),
         sections: [
           if (widget.portfolios != null && widget.portfolios!.isNotEmpty)

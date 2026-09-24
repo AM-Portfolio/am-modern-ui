@@ -16,6 +16,7 @@ import 'auth_refresh_listenable.dart';
 import 'deferred_routes.dart';
 import 'launch_location.dart';
 import 'share_url_builder.dart';
+import 'package:am_doc_intelligence_ui/features/document_processor/document_processor_view.dart';
 export 'launch_location.dart' show resolveLaunchLocation;
 
 bool _subscriptionPageEnabled() {
@@ -303,6 +304,21 @@ GoRouter createAppRouter({
                 },
                 onOpenDocIntel: () =>
                     context.go(AppRoutes.docIntelPath('doc-processor')),
+                uploadPortfolioBuilder: (portfolioId, portfolioName, onCancel) {
+                  return Stack(
+                    children: [
+                      const DocumentProcessorView(),
+                      Positioned(
+                        top: 12,
+                        right: 12,
+                        child: IconButton(
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: onCancel,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               );
             },
           ),
@@ -321,6 +337,21 @@ GoRouter createAppRouter({
                 },
                 onOpenDocIntel: () =>
                     context.go(AppRoutes.docIntelPath('doc-processor')),
+                uploadPortfolioBuilder: (portfolioId, portfolioName, onCancel) {
+                  return Stack(
+                    children: [
+                      const DocumentProcessorView(),
+                      Positioned(
+                        top: 12,
+                        right: 12,
+                        child: IconButton(
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: onCancel,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               );
             },
           ),

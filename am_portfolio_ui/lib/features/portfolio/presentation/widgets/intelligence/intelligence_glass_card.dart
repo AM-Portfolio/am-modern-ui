@@ -332,71 +332,102 @@ void showIntelligenceSheet({
       Navigator.of(routeContext).pop();
     }
 
-    return Material(
-      color: isDark ? context.cardColor : context.surfaceColor,
-      borderRadius: BorderRadius.circular(18),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: expandBody ? MainAxisSize.max : MainAxisSize.min,
-          children: [
-            Row(
+    final colors = Theme.of(routeContext).extension<AppColorsTheme>() ?? AppColorsTheme.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark 
+            ? colors.surface.withValues(alpha: 0.25)
+            : colors.surface.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: colors.border.withValues(alpha: 0.4),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 30,
+            spreadRadius: -5,
+            offset: const Offset(0, 10),
+          )
+        ]
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: expandBody ? MainAxisSize.max : MainAxisSize.min,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: colors.textPrimary,
+                                ),
+                          ),
+                          if (subtitle != null) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              subtitle,
+                              style:
+                                  Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        color: colors.textTertiary,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                             ),
+                          ],
+                        ],
                       ),
-                      if (subtitle != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          subtitle,
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context).hintColor,
-                                  ),
-                        ),
-                      ],
-                    ],
-                  ),
+                    ),
+                    IconButton(
+                      tooltip: 'Close',
+                      onPressed: close,
+                      icon: Icon(Icons.close_rounded, size: 24, color: colors.textSecondary),
+                    ),
+                  ],
                 ),
-                IconButton(
-                  tooltip: 'Close',
-                  onPressed: close,
-                  icon: const Icon(Icons.close_rounded, size: 20),
+                const SizedBox(height: 16),
+                if (expandBody)
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: controller,
+                      child: body,
+                    ),
+                  )
+                else
+                  Flexible(
+                    child: SingleChildScrollView(
+                      controller: controller,
+                      child: body,
+                    ),
+                  ),
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: OutlinedButton(
+                    onPressed: close,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: colors.textPrimary,
+                      side: BorderSide(color: colors.border),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                    child: const Text('Close'),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            if (expandBody)
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: controller,
-                  child: body,
-                ),
-              )
-            else
-              Flexible(
-                child: SingleChildScrollView(
-                  controller: controller,
-                  child: body,
-                ),
-              ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: IntelligenceTextLink(
-                label: 'Close',
-                onPressed: close,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -423,17 +454,40 @@ void showIntelligenceSheet({
     return;
   }
 
-  showDialog<void>(
+  showGeneralDialog(
     context: context,
-    builder: (routeContext) {
+    barrierDismissible: true,
+    barrierLabel: 'Close',
+    barrierColor: Colors.black.withValues(alpha: 0.65),
+    transitionDuration: const Duration(milliseconds: 280),
+    pageBuilder: (routeContext, animation, secondaryAnimation) {
       final maxH = MediaQuery.sizeOf(routeContext).height * 0.78;
-      return Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-        child: SizedBox(
-          width: 560,
-          height: maxH,
-          child: chrome(routeContext: routeContext, expandBody: true),
+      return SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 580,
+              maxHeight: maxH,
+            ),
+            child: Material(
+              type: MaterialType.transparency,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                child: chrome(routeContext: routeContext, expandBody: true),
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+    transitionBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(
+        opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.94, end: 1.0).animate(
+            CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
+          ),
+          child: child,
         ),
       );
     },

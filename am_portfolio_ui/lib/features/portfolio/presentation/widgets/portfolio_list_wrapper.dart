@@ -28,6 +28,7 @@ class PortfolioListWrapper extends ConsumerStatefulWidget {
     this.addTradeBuilder,
     this.holdingsPageBuilder,
     this.onOpenDocIntel,
+    this.uploadPortfolioBuilder,
   });
   final bool isMobile;
   final String? initialPortfolioId;
@@ -40,6 +41,7 @@ class PortfolioListWrapper extends ConsumerStatefulWidget {
   final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
   final Widget Function(BuildContext context, String portfolioId)? holdingsPageBuilder;
   final VoidCallback? onOpenDocIntel;
+  final Widget Function(String portfolioId, String? portfolioName, VoidCallback onCancel)? uploadPortfolioBuilder;
 
   @override
   ConsumerState<PortfolioListWrapper> createState() =>
@@ -423,6 +425,7 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
         addTradeBuilder: widget.addTradeBuilder,
         holdingsPageBuilder: widget.holdingsPageBuilder,
         onOpenDocIntel: widget.onOpenDocIntel,
+        uploadPortfolioBuilder: widget.uploadPortfolioBuilder,
       );
     }
   }

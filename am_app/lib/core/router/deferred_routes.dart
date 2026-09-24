@@ -140,6 +140,7 @@ Widget buildPortfolioRoute({
   PortfolioAddTradeBuilder? addTradeBuilder,
   PortfolioHoldingsPageBuilder? holdingsPageBuilder,
   VoidCallback? onOpenDocIntel,
+  Widget Function(String portfolioId, String? portfolioName, VoidCallback onCancel)? uploadPortfolioBuilder,
 }) {
   final tradeBuilder = addTradeBuilder ?? _defaultPortfolioAddTradeBuilder;
   final holdingsBuilder =
@@ -159,6 +160,7 @@ Widget buildPortfolioRoute({
         addTradeBuilder: tradeBuilder,
         holdingsPageBuilder: holdingsBuilder,
         onOpenDocIntel: onOpenDocIntel,
+        uploadPortfolioBuilder: uploadPortfolioBuilder,
       ),
     ),
   );
