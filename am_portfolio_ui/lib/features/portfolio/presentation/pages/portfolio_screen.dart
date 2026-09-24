@@ -21,6 +21,7 @@ class PortfolioScreen extends StatelessWidget {
     this.addTradeBuilder,
     this.holdingsPageBuilder,
     this.onOpenDocIntel,
+    this.uploadPortfolioBuilder,
   });
 
   final String? initialPortfolioId;
@@ -35,6 +36,7 @@ class PortfolioScreen extends StatelessWidget {
   /// Web-only Holdings override (mobile keeps PortfolioHoldingsWidget).
   final Widget Function(BuildContext context, String portfolioId)? holdingsPageBuilder;
   final VoidCallback? onOpenDocIntel;
+  final Widget Function(String portfolioId, String? portfolioName, VoidCallback onCancel)? uploadPortfolioBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -66,6 +68,7 @@ class PortfolioScreen extends StatelessWidget {
           addTradeBuilder: addTradeBuilder,
           holdingsPageBuilder: holdingsPageBuilder,
           onOpenDocIntel: onOpenDocIntel,
+          uploadPortfolioBuilder: uploadPortfolioBuilder,
         );
       },
     );

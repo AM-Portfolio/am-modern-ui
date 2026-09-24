@@ -266,19 +266,22 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
           spacing: 8,
           runSpacing: 8,
           children: [
-            _ModeChip(
+            IntelligenceModeChip(
               label: 'Add Investment',
               selected: _mode == _WhatIfMode.add,
+              accentColor: ModuleColors.portfolio,
               onTap: () => _setMode(_WhatIfMode.add),
             ),
-            _ModeChip(
+            IntelligenceModeChip(
               label: 'Modify Holding',
               selected: _mode == _WhatIfMode.modify,
+              accentColor: ModuleColors.portfolio,
               onTap: () => _setMode(_WhatIfMode.modify),
             ),
-            _ModeChip(
+            IntelligenceModeChip(
               label: 'Switch Allocation',
               selected: _mode == _WhatIfMode.switchAlloc,
+              accentColor: ModuleColors.portfolio,
               onTap: () => _setMode(_WhatIfMode.switchAlloc),
             ),
           ],
@@ -438,64 +441,6 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
   }
 }
 
-class _ModeChip extends StatelessWidget {
-  const _ModeChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = ModuleColors.portfolio;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-          decoration: BoxDecoration(
-            color: selected
-                ? accent.withValues(alpha: 0.22)
-                : Theme.of(context).colorScheme.surface.withValues(alpha: 0.35),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: selected
-                  ? accent
-                  : Theme.of(context).dividerColor.withValues(alpha: 0.55),
-              width: selected ? 1.4 : 1,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (selected) ...[
-                Icon(Icons.check_rounded, size: 14, color: accent),
-                const SizedBox(width: 5),
-              ],
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  color: selected
-                      ? accent
-                      : Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _BeforeAfter extends StatelessWidget {
   const _BeforeAfter({required this.result});
