@@ -138,7 +138,6 @@ class _SidebarFloatingActionMenuState extends State<SidebarFloatingActionMenu> w
         controller: _overlayController,
         overlayChildBuilder: _buildOverlay,
         child: SizedBox(
-          width: double.infinity,
           height: 44, // Fixed height for footer area
           child: Stack(
             alignment: Alignment.center,
