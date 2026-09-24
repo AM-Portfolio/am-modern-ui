@@ -469,12 +469,6 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
             isSelected: _tabController.index == 3 && !_isAddingTrade,
             onTap: () => _selectTab(3),
           ),
-          SecondarySidebarItem(
-            title: 'Add Trade',
-            icon: Icons.add,
-            isSelected: _isAddingTrade,
-            onTap: _openAddTrade,
-          ),
         ],
         body: (_isAddingTrade &&
                 widget.addTradeBuilder != null &&
@@ -589,11 +583,6 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
               ),
               const SizedBox(width: 6),
             ],
-            actionChip(
-              onTap: _showAddPortfolioModal,
-              icon: Icons.add_circle_outline,
-              label: 'Add',
-            ),
             if (_currentPortfolioId != null && _currentPortfolioId != 'all')
               _buildPortfolioMenu(context),
             GlobalTimeFrameBar(
