@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_design_system/shared/widgets/navigation/floating_menu_action.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -148,9 +149,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
   late TabController _tabController;
   String? _currentPortfolioId;
   bool _isAddingTrade = false;
-  bool _showScrollFab = false;
   bool _wasOnBasketsTab = false;
-  Timer? _scrollHideTimer;
 
   bool _isBasketsTab(String? slug) => slug?.toLowerCase() == 'baskets';
 
@@ -293,7 +292,6 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
   @override
   void dispose() {
     _tabController.dispose();
-    _scrollHideTimer?.cancel();
     super.dispose();
   }
 
@@ -303,14 +301,6 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
       context.read<PortfolioCubit>().loadPortfolioById(portfolioId);
     }
     widget.onPortfolioChanged?.call(portfolioId, portfolioName);
-  }
-
-  void _onScrollDetected() {
-    _scrollHideTimer?.cancel();
-    if (!_showScrollFab) setState(() => _showScrollFab = true);
-    _scrollHideTimer = Timer(const Duration(seconds: 3), () {
-      if (mounted) setState(() => _showScrollFab = false);
-    });
   }
 
   void _showAddPortfolioModal() {
@@ -373,41 +363,42 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     }
   }
 
-  Widget _buildGlassFab() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(30),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: GestureDetector(
-          onTap: _openAddTrade,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-            decoration: BoxDecoration(
-              color: ModuleColors.portfolio.withValues(alpha: 0.25),
-              borderRadius: BorderRadius.circular(30),
-              border: Border.all(
-                color: ModuleColors.portfolio.withValues(alpha: 0.6),
-                width: 1.2,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.add, color: context.colors.actionPrimaryFg, size: 18),
-                const SizedBox(width: 6),
-                Text(
-                  'Add Trade',
-                  style: TextStyle(
-                    color: context.colors.actionPrimaryFg,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
+  Widget _buildFloatingMenu() {
+    return SidebarFloatingActionMenu(
+      triggerColor: ModuleColors.portfolio,
+      actions: [
+        FloatingMenuAction(
+          icon: Icons.upload_file_rounded,
+          title: 'Upload Portfolio',
+          subtitle: 'Import from file or broker',
+          iconColor: ModuleColors.portfolio,
+          onTap: () async {
+            if (widget.onOpenDocIntel != null) {
+              widget.onOpenDocIntel!();
+            }
+          },
         ),
-      ),
+        FloatingMenuAction(
+          icon: Icons.add_circle_outline_rounded,
+          title: 'Add Trade',
+          subtitle: 'Buy or sell an asset',
+          iconColor: ModuleColors.trade,
+          onTap: () async {
+            if (!_isAddingTrade) {
+              _openAddTrade();
+            }
+          },
+        ),
+        FloatingMenuAction(
+          icon: Icons.account_balance_wallet_outlined,
+          title: 'Add Basket',
+          subtitle: 'Invest in ETFs',
+          iconColor: ModuleColors.market,
+          onTap: () async {
+            _selectTab(3); // Baskets tab
+          },
+        ),
+      ],
     );
   }
 
@@ -494,16 +485,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
                 currentName,
                 () => _selectTab(_tabController.index),
               )
-            : NotificationListener<ScrollNotification>(
-                onNotification: (notification) {
-                  if (_tabController.index == 0 &&
-                      notification is ScrollUpdateNotification &&
-                      (notification.scrollDelta ?? 0).abs() > 0) {
-                    _onScrollDetected();
-                  }
-                  return false;
-                },
-                child: Column(
+            : Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     if (widget.portfolios != null &&
@@ -514,33 +496,16 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
                         child: const DemoAccountInlineBanner(),
                       ),
                     Expanded(
-                      child: Stack(
-                        children: [
-                          PortfolioTabContentWidget(
-                            tabController: _tabController,
-                            currentPortfolioId: _currentPortfolioId!,
-                          ),
-                          if (widget.addTradeBuilder != null &&
-                              _tabController.index == 0)
-                            Positioned(
-                              bottom: 24,
-                              right: 16,
-                              child: AnimatedOpacity(
-                                opacity: _showScrollFab ? 1.0 : 0.0,
-                                duration: const Duration(milliseconds: 300),
-                                child: IgnorePointer(
-                                  ignoring: !_showScrollFab,
-                                  child: _buildGlassFab(),
-                                ),
-                              ),
-                            ),
-                        ],
+                      child: PortfolioTabContentWidget(
+                        tabController: _tabController,
+                        currentPortfolioId: _currentPortfolioId!,
                       ),
                     ),
                   ],
                 ),
-              ),
-        floatingActionButton: null,
+        floatingActionButton: (_currentPortfolioId == null || _currentPortfolioId == 'all')
+            ? null
+            : _buildFloatingMenu(),
       ),
     );
   }
