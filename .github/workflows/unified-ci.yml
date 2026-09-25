@@ -127,6 +127,7 @@ jobs:
               - 'am_user_ui/**'
               - 'am_diagnostic_ui/**'
               - 'am_doc_intelligence_ui/**'
+              - 'am_news_ui/**'
               - '.github/workflows/unified-ci.yml'
 
             # ANDROID: Flutter app code, all shared Dart modules, android folder
@@ -152,6 +153,7 @@ jobs:
               - 'am_user_ui/**'
               - 'am_diagnostic_ui/**'
               - 'am_doc_intelligence_ui/**'
+              - 'am_news_ui/**'
               # Do NOT include unified-ci.yml here — workflow-only edits must not
               # queue Android Play env approvals (dev/preprod/prod) on main.
   security-scan:

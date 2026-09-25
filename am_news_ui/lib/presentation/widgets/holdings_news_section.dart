@@ -69,6 +69,25 @@ class _HoldingsNewsSectionState extends ConsumerState<HoldingsNewsSection> {
     return NewsSectionViewport(child: child);
   }
 
+  Widget _buildExpandable(BuildContext context, {required Widget child}) {
+    return AmGlassCard(
+      surfaceAlpha: 0.32,
+      padding: EdgeInsets.zero,
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          title: Text(
+            widget.title,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          initiallyExpanded: true,
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          children: [child],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final enabled = ref.watch(newsUiSurfaceEnabledProvider(widget.surface));
@@ -83,17 +102,15 @@ class _HoldingsNewsSectionState extends ConsumerState<HoldingsNewsSection> {
 
     return _maybeViewport(
       insight.when(
-        loading: () => const AmGlassCard(
-          surfaceAlpha: 0.32,
-          padding: EdgeInsets.all(16),
-          child: SizedBox(
+        loading: () => _buildExpandable(
+          context,
+          child: const SizedBox(
             height: 120,
             child: Center(child: CircularProgressIndicator()),
           ),
         ),
-        error: (_, __) => AmGlassCard(
-          surfaceAlpha: 0.32,
-          padding: const EdgeInsets.all(16),
+        error: (_, __) => _buildExpandable(
+          context,
           child: AmErrorWidget(
             message: 'News unavailable',
             onRetry: () => ref.invalidate(newsInsightForSymbolsProvider(key)),
@@ -102,18 +119,12 @@ class _HoldingsNewsSectionState extends ConsumerState<HoldingsNewsSection> {
         data: (data) {
           final cards = filterHoldingsNewsForSymbols(data, widget.symbols);
           unawaited(_subscribeQuotes(cards));
-          return AmGlassCard(
-            surfaceAlpha: 0.32,
-            padding: const EdgeInsets.all(16),
+          return _buildExpandable(
+            context,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  widget.title,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 12),
                 if (cards.isEmpty)
                   Text(
                     widget.emptyMessage,
