@@ -30,6 +30,8 @@ class DirectionStatusSelector extends StatelessWidget {
     final isTablet = screenWidth >= 600 && screenWidth < 1024;
     final isDesktop = screenWidth >= 1024;
 
+    final accentColor = ModuleColorProvider.maybeOf(context) ?? theme.primaryColor;
+
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
@@ -37,7 +39,7 @@ class DirectionStatusSelector extends StatelessWidget {
         border: Border.all(color: theme.colorScheme.outline.withOpacity(0.15)),
       ),
       padding: EdgeInsets.all(isMobile ? 6 : 10),
-      child: isMobile ? _buildMobileLayout(theme) : _buildWebLayout(theme, isTablet, isDesktop),
+      child: isMobile ? _buildMobileLayout(theme) : _buildWebLayout(theme, isTablet, isDesktop, accentColor),
     );
   }
 
@@ -57,25 +59,27 @@ class DirectionStatusSelector extends StatelessWidget {
   );
 
   // Web layout: Side-by-side with labels
-  Widget _buildWebLayout(ThemeData theme, bool isTablet, bool isDesktop) => Row(
+  Widget _buildWebLayout(ThemeData theme, bool isTablet, bool isDesktop, Color accentColor) {
+    return Row(
     mainAxisSize: MainAxisSize.min,
     children: [
-      _buildDirectionSection(theme, false),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+      _buildDirectionSection(theme, false, accentColor),
+      const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 12),
       ),
-      _buildStatusSection(theme, false),
+      _buildStatusSection(theme, false, accentColor),
     ],
   );
+  }
 
   // Direction section with label (for web/tablet/desktop)
-  Widget _buildDirectionSection(ThemeData theme, bool isMobile) => Row(
+  Widget _buildDirectionSection(ThemeData theme, bool isMobile, Color accentColor) => Row(
     mainAxisSize: MainAxisSize.min,
     children: [
       Container(
         padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(color: theme.colorScheme.tertiaryContainer, borderRadius: BorderRadius.circular(6)),
-        child: Icon(Icons.swap_horiz, size: 16, color: theme.colorScheme.onTertiaryContainer),
+        decoration: BoxDecoration(color: accentColor.withOpacity(0.12), borderRadius: BorderRadius.circular(6)),
+        child: Icon(Icons.swap_horiz, size: 16, color: accentColor),
       ),
       const SizedBox(width: 8),
       const SizedBox(width: 10),
@@ -84,13 +88,13 @@ class DirectionStatusSelector extends StatelessWidget {
   );
 
   // Status section with label (for web/tablet/desktop)
-  Widget _buildStatusSection(ThemeData theme, bool isMobile) => Row(
+  Widget _buildStatusSection(ThemeData theme, bool isMobile, Color accentColor) => Row(
     mainAxisSize: MainAxisSize.min,
     children: [
       Container(
         padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(color: theme.colorScheme.secondaryContainer, borderRadius: BorderRadius.circular(6)),
-        child: Icon(Icons.info_outline, size: 16, color: theme.colorScheme.onSecondaryContainer),
+        decoration: BoxDecoration(color: accentColor.withOpacity(0.12), borderRadius: BorderRadius.circular(6)),
+        child: Icon(Icons.info_outline, size: 16, color: accentColor),
       ),
       const SizedBox(width: 8),
       const SizedBox(width: 10),

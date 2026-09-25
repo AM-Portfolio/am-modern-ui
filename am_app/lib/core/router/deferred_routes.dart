@@ -31,7 +31,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
-
+import 'package:am_design_system/am_design_system.dart';
 import '../../features/shell/skeletons/module_skeletons.dart';
 import '../di/injection.dart';
 import 'deferred_module_loader.dart';
@@ -76,15 +76,27 @@ Widget _defaultPortfolioAddTradeBuilder(
     builder: (context, ref, _) {
       final cubitAsync = ref.watch(trade_providers.tradeControllerCubitProvider);
       return cubitAsync.when(
-        data: (cubit) => BlocProvider.value(
-          value: cubit,
-          child: trade_add.AddTradeWebPage(
-            portfolioId: portfolioId,
-            portfolioName: portfolioName,
-            onTradeAdded: onComplete,
-            onCancel: onComplete,
-          ),
-        ),
+        data: (cubit) {
+          final theme = Theme.of(context);
+          return Theme(
+            data: theme.copyWith(
+              colorScheme: theme.colorScheme.copyWith(
+                primary: ModuleColors.portfolio,
+                primaryContainer: ModuleColors.portfolio.withOpacity(0.12),
+              ),
+              primaryColor: ModuleColors.portfolio,
+            ),
+            child: BlocProvider.value(
+              value: cubit,
+              child: trade_add.AddTradeWebPage(
+                portfolioId: portfolioId,
+                portfolioName: portfolioName,
+                onTradeAdded: onComplete,
+                onCancel: onComplete,
+              ),
+            ),
+          );
+        },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
       );
@@ -140,6 +152,7 @@ Widget buildPortfolioRoute({
   PortfolioAddTradeBuilder? addTradeBuilder,
   PortfolioHoldingsPageBuilder? holdingsPageBuilder,
   VoidCallback? onOpenDocIntel,
+  Widget Function(String portfolioId, String? portfolioName, VoidCallback onCancel)? uploadPortfolioBuilder,
 }) {
   final tradeBuilder = addTradeBuilder ?? _defaultPortfolioAddTradeBuilder;
   final holdingsBuilder =
@@ -159,6 +172,7 @@ Widget buildPortfolioRoute({
         addTradeBuilder: tradeBuilder,
         holdingsPageBuilder: holdingsBuilder,
         onOpenDocIntel: onOpenDocIntel,
+        uploadPortfolioBuilder: uploadPortfolioBuilder,
       ),
     ),
   );

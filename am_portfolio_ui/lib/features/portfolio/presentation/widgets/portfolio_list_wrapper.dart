@@ -10,7 +10,7 @@ import '../../internal/domain/entities/portfolio_list.dart';
 import 'package:am_common/am_common.dart';
 import '../mobile/portfolio_mobile_screen.dart';
 import '../web/portfolio_web_screen.dart';
-import 'gmail_sync/gmail_connect_button.dart';
+
 
 /// Wrapper widget that handles portfolio list loading and selection
 /// Provides portfolio selection functionality for both mobile and web screens
@@ -28,6 +28,7 @@ class PortfolioListWrapper extends ConsumerStatefulWidget {
     this.addTradeBuilder,
     this.holdingsPageBuilder,
     this.onOpenDocIntel,
+    this.uploadPortfolioBuilder,
   });
   final bool isMobile;
   final String? initialPortfolioId;
@@ -40,6 +41,7 @@ class PortfolioListWrapper extends ConsumerStatefulWidget {
   final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
   final Widget Function(BuildContext context, String portfolioId)? holdingsPageBuilder;
   final VoidCallback? onOpenDocIntel;
+  final Widget Function(String portfolioId, String? portfolioName, VoidCallback onCancel)? uploadPortfolioBuilder;
 
   @override
   ConsumerState<PortfolioListWrapper> createState() =>
@@ -407,6 +409,7 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
         onTabChanged: widget.onTabChanged,
         onPortfolioChanged: _onPortfolioChanged,
         addTradeBuilder: widget.addTradeBuilder,
+        uploadPortfolioBuilder: widget.uploadPortfolioBuilder,
         onBack: widget.onBack,
         onOpenDocIntel: widget.onOpenDocIntel,
       );
@@ -423,6 +426,7 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
         addTradeBuilder: widget.addTradeBuilder,
         holdingsPageBuilder: widget.holdingsPageBuilder,
         onOpenDocIntel: widget.onOpenDocIntel,
+        uploadPortfolioBuilder: widget.uploadPortfolioBuilder,
       );
     }
   }
@@ -487,7 +491,7 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Upload a brokerage statement or sync from Gmail to create your first portfolio.',
+              'Upload a brokerage statement to create your first portfolio.',
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -497,9 +501,7 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
                 icon: const Icon(Icons.upload_file_outlined),
                 label: const Text('Upload portfolio'),
               ),
-              const SizedBox(height: 12),
             ],
-            const GmailConnectButton(),
           ],
         ),
       ),

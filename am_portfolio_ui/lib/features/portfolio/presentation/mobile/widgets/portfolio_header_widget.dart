@@ -2,7 +2,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import '../../../internal/domain/entities/portfolio_list.dart';
 import 'package:am_common/am_common.dart';
-import '../../widgets/gmail_sync/gmail_connect_button.dart';
+
 
 /// Widget that displays the portfolio selector and tab bar
 class PortfolioHeaderWidget extends StatelessWidget {
@@ -111,9 +111,7 @@ class PortfolioHeaderWidget extends StatelessWidget {
                       ),
                     ),
                   ),
-
-                  // Actions
-                  const GmailConnectButton(),
+                  ),
                 ],
               ),
             ),

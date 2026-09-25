@@ -77,6 +77,8 @@ export 'shared/widgets/navigation/sidebar_item.dart';
 export 'shared/widgets/navigation/sidebar_layout_metrics.dart';
 export 'shared/widgets/navigation/sidebar_nav_item.dart';
 export 'shared/widgets/navigation/sidebar_primary_action.dart';
+export 'shared/widgets/navigation/sidebar_floating_action_menu.dart';
+export 'shared/widgets/navigation/floating_menu_action.dart';
 export 'shared/widgets/navigation/swipeable_page_view.dart';
 export 'shared/widgets/navigation/sidebar_selector.dart';
 export 'shared/widgets/scaffold/unified_sidebar_scaffold.dart';
@@ -179,6 +181,7 @@ export 'shared/widgets/feedback/demo_portfolio_banner.dart';
 
 // --- Filters ---
 export 'shared/widgets/filters/am_filter_panel.dart';
+export 'shared/widgets/filters/intelligence_mode_chip.dart';
 export 'shared/widgets/feedback/animated_login_elements.dart';
 
 // --- Global Models ---
