@@ -372,40 +372,29 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                                   state,
                                   compact: isTablet,
                                 );
-                                return Row(
+                                final leftGroup = Row(
                                   children: [
                                     Expanded(
-                                      child: cards[0]
-                                          .animate()
-                                          .fadeIn(duration: 400.ms)
-                                          .slideY(begin: 0.2, end: 0),
+                                      child: cards[0].animate().fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0),
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
-                                      child: cards[1]
-                                          .animate()
-                                          .fadeIn(
-                                              duration: 400.ms, delay: 100.ms)
-                                          .slideY(begin: 0.2, end: 0),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: cards[2]
-                                          .animate()
-                                          .fadeIn(
-                                              duration: 400.ms, delay: 200.ms)
-                                          .slideY(begin: 0.2, end: 0),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: cards[3]
-                                          .animate()
-                                          .fadeIn(
-                                              duration: 400.ms, delay: 300.ms)
-                                          .slideY(begin: 0.2, end: 0),
+                                      child: cards[1].animate().fadeIn(duration: 400.ms, delay: 100.ms).slideY(begin: 0.2, end: 0),
                                     ),
                                   ],
                                 );
+                                final rightGroup = Row(
+                                  children: [
+                                    Expanded(
+                                      child: cards[2].animate().fadeIn(duration: 400.ms, delay: 200.ms).slideY(begin: 0.2, end: 0),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: cards[3].animate().fadeIn(duration: 400.ms, delay: 300.ms).slideY(begin: 0.2, end: 0),
+                                    ),
+                                  ],
+                                );
+                                return _twoCol(leftGroup, rightGroup, leftFlex: 14, rightFlex: 10);
                               },
                             ),
                           SizedBox(height: isPhone ? 12 : 20),
@@ -608,8 +597,8 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
       _twoCol(
         chart,
         health,
-        leftFlex: 5,
-        rightFlex: 4,
+        leftFlex: 14,
+        rightFlex: 10,
         stretch: true,
         forceHeight: peerTopH,
       ),
@@ -618,8 +607,8 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         _twoCol(
           xray ?? allocation,
           risk,
-          leftFlex: 1,
-          rightFlex: 1,
+          leftFlex: 14,
+          rightFlex: 10,
           stretch: true,
           forceHeight: midH,
         )

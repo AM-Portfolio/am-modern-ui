@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:am_design_system/am_design_system.dart';
 
 import '../../../../journal_providers.dart';
 import '../../../../internal/domain/entities/journal_entry.dart';
@@ -92,64 +93,87 @@ class _TradeDetailJournalSectionState
     await _load();
   }
 
+  Future<void> _openEntry(JournalEntry e) async {
+    final cubit = await ref.read(journalCubitProvider.future);
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => TradeJournalWorkflowPage(
+          journalCubit: cubit,
+          initialEntry: e,
+          portfolioId: widget.portfolioId,
+        ),
+      ),
+    );
+    await _load();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  'Journal',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const Spacer(),
-                FilledButton.tonalIcon(
-                  onPressed: _openNew,
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Add journal'),
-                ),
-              ],
+    return Container(
+      height: 60,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: context.colors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: context.colors.border),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.book, size: 18, color: context.colors.textSecondary),
+          const SizedBox(width: 8),
+          Text(
+            'Journal',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: context.colors.textPrimary,
             ),
-            const SizedBox(height: 12),
-            if (_loading)
-              const Center(child: CircularProgressIndicator())
-            else if (_error != null)
-              Text(_error!)
-            else if (_entries.isEmpty)
-              const Text('No journal entries linked to this trade yet.')
-            else
-              ..._entries.map(
-                (e) => ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(e.title),
-                  subtitle: Text(e.journalStatus ?? e.entryType ?? ''),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () async {
-                    final cubit = await ref.read(journalCubitProvider.future);
-                    if (!mounted) return;
-                    await Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => TradeJournalWorkflowPage(
-                          journalCubit: cubit,
-                          initialEntry: e,
-                          portfolioId: widget.portfolioId,
-                        ),
-                      ),
-                    );
-                    await _load();
-                  },
-                ),
-              ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: _loading 
+                ? const Align(
+                    alignment: Alignment.centerLeft,
+                    child: SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                  )
+                : _error != null 
+                    ? Text(_error!, style: TextStyle(color: context.colors.statusError, fontSize: 13))
+                    : _entries.isEmpty
+                        ? Text('No journal entries linked to this trade.', style: TextStyle(color: context.colors.textSecondary, fontSize: 13))
+                        : SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: _entries.map((e) => Padding(
+                                padding: const EdgeInsets.only(right: 8.0),
+                                child: InkWell(
+                                  onTap: () => _openEntry(e),
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: context.colors.cardSurface,
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(color: context.colors.border),
+                                    ),
+                                    child: Text(e.title, style: TextStyle(fontSize: 12, color: context.colors.textPrimary)),
+                                  ),
+                                ),
+                              )).toList(),
+                            ),
+                          ),
+          ),
+          const SizedBox(width: 16),
+          TextButton.icon(
+            onPressed: _openNew,
+            icon: const Icon(Icons.add, size: 16),
+            label: const Text('Add Journal', style: TextStyle(fontSize: 12)),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              minimumSize: Size.zero,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,20 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
-
 import '../../../models/trade_holding_view_model.dart';
-import '../../../../providers/trade_controller_providers.dart';
-import '../../../../providers/trade_internal_providers.dart';
 
 class ModernTradeHeader extends ConsumerStatefulWidget {
-  const ModernTradeHeader(
-      {required this.trade,
-      required this.portfolioId,
-      required this.onClose,
-      required this.onFilterChanged,
-      this.onSymbolTap,
-      super.key});
+  const ModernTradeHeader({
+    required this.trade,
+    required this.portfolioId,
+    required this.onClose,
+    required this.onFilterChanged,
+    this.onSymbolTap,
+    super.key,
+  });
 
   final TradeHoldingViewModel trade;
   final String portfolioId;
@@ -26,892 +23,197 @@ class ModernTradeHeader extends ConsumerStatefulWidget {
   ConsumerState<ModernTradeHeader> createState() => _ModernTradeHeaderState();
 }
 
-class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _shineController;
-  late Animation<double> _shineAnimation;
-  bool _showDetails = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _shineController = AnimationController(
-        duration: const Duration(milliseconds: 2000), vsync: this)
-      ..repeat();
-
-    _shineAnimation = Tween<double>(
-      begin: -1.0,
-      end: 2.0,
-    ).animate(
-        CurvedAnimation(parent: _shineController, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _shineController.dispose();
-    super.dispose();
+class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> {
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 
   @override
   Widget build(BuildContext context) {
     final isProfit = widget.trade.isProfit;
-    final statusColor = _getStatusColor(widget.trade.status);
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isMobile = constraints.maxWidth < 800;
-        return isMobile
-            ? _buildMobileLayout(context, statusColor, isProfit)
-            : _buildDesktopLayout(context, statusColor, isProfit);
-      },
-    );
-  }
-
-  Widget _buildDesktopLayout(
-      BuildContext context, Color statusColor, bool isProfit) {
+    
     return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Theme.of(context)
-            .colorScheme
-            .surface, // Clean background for the header section
-        borderRadius: BorderRadius.circular(16), // Rounded corners
-        border: Border.all(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
+        color: context.colors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: context.colors.border),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4)),
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
-      child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildBackButton(context),
-                    if (_showDetails) ...[
-                      const SizedBox(height: 24),
-                      _buildDesktopInfoCard(context, statusColor, isProfit),
-                    ],
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  if (_showDetails) ...[
-                    _buildDesktopPnLCard(context, isProfit),
-                    const SizedBox(height: 24),
-                  ],
-                  _buildDetailsToggle(context),
-                ],
-              )
-            ],
-          )),
-    );
-  }
-
-  Widget _buildMobileLayout(
-      BuildContext context, Color statusColor, bool isProfit) {
-    return Container(
-      color: Colors.transparent, // Background color match
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+      child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Top Navigation Bar
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildBackButton(context, isCompact: true),
-                const Text(
-                  'Trade Details',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
+            // Left: Back button
+            InkWell(
+              onTap: widget.onClose,
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                // Delete Trade Action
+                child: Icon(Icons.arrow_back, size: 20, color: context.colors.textPrimary),
+              ),
+            ),
+            const SizedBox(width: 16),
+
+            // Left: Symbol and Company Name
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 Row(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    InkWell(
-                      onTap: _deleteTrade,
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(Icons.delete_outline,
-                            size: 20, color: Colors.red),
+                    Text(
+                      widget.trade.displaySymbol,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: context.colors.textPrimary,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    // Moon Icon / Context Action
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .surfaceContainerHighest,
-                        shape: BoxShape.circle,
+                        color: Colors.green.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: Colors.green.withOpacity(0.5)),
                       ),
-                      child: Icon(Icons.nightlight_round,
-                          size: 20,
-                          color:
-                              Theme.of(context).colorScheme.onSurfaceVariant),
+                      child: Text(
+                        widget.trade.displayStatus.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                        ),
+                      ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.trade.displayCompanyName,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: context.colors.textPrimary.withOpacity(0.6),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(width: 16),
 
-            // Main Compact Card (White Theme)
-            Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                    color:
-                        Theme.of(context).colorScheme.outline.withOpacity(0.1)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
+            // Left: Tags
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: Colors.red.withOpacity(0.5)),
+                    color: Colors.red.withOpacity(0.05),
                   ),
-                ],
-              ),
-              child: Stack(
-                children: [
-                  // P&L Badge (Top Right)
-                  Positioned(
-                    top: 16,
-                    right: 16,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            const Color(0xFF00C853), // Material Green A700
-                            const Color(0xFF00E676), // Material Green A400
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.green.withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                isProfit
-                                    ? Icons.trending_up_rounded
-                                    : Icons.trending_down_rounded,
-                                color: Colors.white,
-                                size: 14,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                widget.trade.displayProfitLossPercentage,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            widget.trade.displayProfitLoss,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  child: Text(
+                    widget.trade.tradePositionType ?? 'LONG',
+                    style: const TextStyle(fontSize: 11, color: Colors.red, fontWeight: FontWeight.bold),
                   ),
-
-                  // Main Content
-                  Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Symbol & Status
-                        Row(
-                          children: [
-                            Text(
-                              widget.trade.displaySymbol,
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: ModuleColors.trade, // Purple
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        // Subtitle
-                        Text(
-                          "${widget.trade.displaySymbol} - ${widget.trade.displayCompanyName} Corp.",
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Tags Row
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            // Mobile Tags (Reusing specific tag builder if possible, or recreating styles)
-                            if (widget.trade.tradePositionType != null)
-                              _buildSpecificTag(
-                                context,
-                                widget.trade.tradePositionType == 'LONG'
-                                    ? Icons.trending_up
-                                    : Icons.trending_down,
-                                widget.trade.tradePositionType!,
-                                widget.trade.tradePositionType == 'LONG'
-                                    ? const Color(0xFFFFEBEE)
-                                    : const Color(0xFFE8F5E9),
-                                widget.trade.tradePositionType == 'LONG'
-                                    ? const Color(0xFFD32F2F)
-                                    : const Color(0xFF388E3C),
-                              ),
-                            _buildSpecificTag(
-                                context,
-                                Icons.pie_chart,
-                                "Equity",
-                                const Color(0xFFE3F2FD),
-                                const Color(0xFF1976D2)),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Date
-                        Row(
-                          children: [
-                            Icon(Icons.calendar_today_outlined,
-                                size: 14, color: Colors.grey.shade500),
-                            const SizedBox(width: 6),
-                            Text(
-                              widget.trade.entryTimestamp != null
-                                  ? 'Entered: ${_formatDate(widget.trade.entryTimestamp!)}'
-                                  : 'Entry date unavailable',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey.shade600,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Search Bar
-            Container(
-              height: 44,
-              decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .surfaceContainerHighest
-                    .withOpacity(0.3),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                    color:
-                        Theme.of(context).colorScheme.outline.withOpacity(0.1)),
-              ),
-              child: TextField(
-                decoration: InputDecoration(
-                    hintText: 'Filter trade logs...',
-                    prefixIcon:
-                        const Icon(Icons.search, size: 20, color: Colors.grey),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 11),
-                    hintStyle:
-                        TextStyle(fontSize: 14, color: Colors.grey.shade400),
-                    suffixIcon: widget.onFilterChanged != null
-                        ? TextButton(
-                            onPressed: () => widget.onFilterChanged(null),
-                            child: Text("HIDE",
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    color: ModuleColors.trade,
-                                    fontWeight: FontWeight.bold)),
-                          )
-                        : null),
-                style: const TextStyle(fontSize: 14),
-                onChanged: widget.onFilterChanged,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCompactTag(
-      String label, Color bgColor, Color textColor, IconData icon) {
-    // Replaced by _buildSpecificTag but keeping for interface if needed or removing
-    return _buildSpecificTag(context, icon, label, bgColor, textColor);
-  }
-
-  Widget _buildBackButton(BuildContext context, {bool isCompact = false}) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: widget.onClose,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: Theme.of(context)
-                .colorScheme
-                .surfaceContainerHighest
-                .withOpacity(0.5),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-                color: Theme.of(context).dividerColor.withOpacity(0.1)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.arrow_back_rounded,
-                  size: 16, color: Theme.of(context).colorScheme.onSurface),
-              const SizedBox(width: 6),
-              Text(
-                'Back',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.onSurface,
                 ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    )
-        .animate()
-        .fadeIn(duration: const Duration(milliseconds: 300))
-        .scale(begin: const Offset(0.8, 0.8));
-  }
-
-  Widget _buildDesktopInfoCard(
-      BuildContext context, Color statusColor, bool isProfit) {
-    return Container(
-      padding: const EdgeInsets.all(0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Symbol Row with Status Badge
-          Row(
-            children: [
-              // Symbol
-              widget.onSymbolTap != null
-                  ? MouseRegion(
-                      cursor: SystemMouseCursors.click,
-                      child: GestureDetector(
-                        onTap: () =>
-                            widget.onSymbolTap!(widget.trade.displaySymbol),
-                        child: Text(
-                          widget.trade.displaySymbol,
-                          style: TextStyle(
-                            fontSize: 32, // Larger font like screenshot
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurface,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                    )
-                  : Text(
-                      widget.trade.displaySymbol,
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSurface,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-              const SizedBox(width: 16),
-
-              // Status Badge
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: isProfit
-                      ? Colors.green.withOpacity(0.15)
-                      : Colors.red.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                      color: isProfit
-                          ? Colors.green.withOpacity(0.3)
-                          : Colors.red.withOpacity(0.3)),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: Colors.blue.withOpacity(0.5)),
+                    color: Colors.blue.withOpacity(0.05),
+                  ),
+                  child: const Text(
+                    'EQUITY',
+                    style: TextStyle(fontSize: 11, color: Colors.blue, fontWeight: FontWeight.bold),
+                  ),
                 ),
-                child: Row(
+              ],
+            ),
+            
+            // Middle: Spacer
+            const Spacer(),
+            
+            // Right: Entry Date
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
                   children: [
-                    Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                            color: isProfit
-                                ? Colors.greenAccent
-                                : Colors.redAccent,
-                            shape: BoxShape.circle)),
-                    const SizedBox(width: 6),
+                    Icon(Icons.calendar_today, size: 14, color: context.colors.textPrimary.withOpacity(0.6)),
+                    const SizedBox(width: 4),
                     Text(
-                      widget.trade.displayStatus.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: isProfit ? Colors.greenAccent : Colors.redAccent,
-                      ),
+                      'Entry Date',
+                      style: TextStyle(fontSize: 11, color: context.colors.textPrimary.withOpacity(0.6)),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Company Name
-          Text(
-            "${widget.trade.displaySymbol} - ${widget.trade.displayCompanyName} Corp.",
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w400,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Tags Row (Long, Equity, etc)
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              // Position Type
-              if (widget.trade.tradePositionType != null)
-                _buildSpecificTag(
-                  context,
-                  widget.trade.tradePositionType == 'LONG'
-                      ? Icons.trending_up
-                      : Icons.trending_down,
-                  widget.trade.tradePositionType!,
-                  widget.trade.tradePositionType == 'LONG'
-                      ? Colors.green.withOpacity(0.15)
-                      : Colors.red.withOpacity(0.15),
-                  widget.trade.tradePositionType == 'LONG'
-                      ? Colors.greenAccent
-                      : Colors.redAccent,
+                const SizedBox(height: 4),
+                Text(
+                  widget.trade.entryTimestamp != null ? _formatDate(widget.trade.entryTimestamp!) : 'N/A',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textPrimary),
                 ),
+              ],
+            ),
+            const SizedBox(width: 24),
 
-              // Asset Class
-              _buildSpecificTag(context, Icons.pie_chart, "Equity",
-                  Colors.blue.withOpacity(0.15), Colors.lightBlueAccent),
-
-              // Market / Exchange
-              if (widget.trade.exchange != null)
-                _buildSpecificTag(
-                    context,
-                    Icons.account_balance,
-                    widget.trade.exchange!,
-                    Colors.brown.withOpacity(0.2),
-                    Colors.orangeAccent),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // Entry Date
-          Row(
-            children: [
-              Icon(Icons.calendar_month_outlined,
-                  size: 14,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
-              const SizedBox(width: 6),
-              Text(
-                widget.trade.entryTimestamp != null
-                    ? 'Entered: ${_formatDate(widget.trade.entryTimestamp!)}'
-                    : 'Entry date unavailable',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+            // Right: PnL Card
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: isProfit
+                      ? [Colors.green.shade400, Colors.green.shade600]
+                      : [Colors.red.shade400, Colors.red.shade600],
                 ),
+                borderRadius: BorderRadius.circular(8),
               ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSpecificTag(BuildContext context, IconData icon, String label,
-      Color bgColor, Color textColor) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: textColor.withOpacity(0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: textColor),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: textColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDesktopPnLCard(BuildContext context, bool isProfit) {
-    return Stack(
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isProfit
-                  ? [
-                      const Color(0xFF00C853)
-                          .withOpacity(0.9), // Material Green A700
-                      const Color(0xFF00E676)
-                          .withOpacity(0.8), // Material Green A400
-                    ]
-                  : [
-                      Colors.redAccent.shade700.withOpacity(0.9),
-                      Colors.redAccent.shade400.withOpacity(0.8),
-                    ],
-            ),
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: (isProfit ? Colors.green : Colors.red).withOpacity(0.3),
-                blurRadius: 16,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    isProfit
-                        ? Icons.trending_up_rounded
-                        : Icons.trending_down_rounded,
-                    color: Colors.black87,
-                    size: 20,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        widget.trade.displayProfitLossPercentage,
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
                   Text(
-                    widget.trade.displayProfitLossPercentage,
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                      letterSpacing: 0.3,
-                    ),
+                    widget.trade.displayProfitLoss,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                  ),
+                  const Text(
+                    'Unrealized P/L',
+                    style: TextStyle(fontSize: 9, color: Colors.white70),
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                widget.trade.displayProfitLoss,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                "UNREALIZED P/L",
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black54,
-                  letterSpacing: 1.0,
-                ),
-              ),
-            ],
-          ),
-        ),
-        // Shine Effect Overlay
-        Positioned.fill(
-          child: AnimatedBuilder(
-            animation: _shineAnimation,
-            builder: (context, child) => Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                gradient: LinearGradient(
-                  begin: Alignment(-1 - _shineAnimation.value, -1),
-                  end: Alignment(1 - _shineAnimation.value, 1),
-                  colors: [
-                    Colors.white.withOpacity(0),
-                    Colors.white.withOpacity(0.2),
-                    Colors.white.withOpacity(0),
-                  ],
-                  stops: const [0.0, 0.5, 1.0],
-                ),
-              ),
             ),
-          ),
-        ),
-      ],
-    )
-        .animate()
-        .fadeIn(duration: const Duration(milliseconds: 500))
-        .scale(begin: const Offset(0.9, 0.9));
-  }
+            const SizedBox(width: 16),
 
-  Widget _buildSearchBar(BuildContext context) {
-    return SizedBox(
-      height: 44,
-      child: TextField(
-        decoration: InputDecoration(
-          hintText: 'Filter similar trades by symbol...',
-          prefixIcon: const Icon(Icons.search, size: 18),
-          suffixIcon: IconButton(
-            icon: const Icon(Icons.clear, size: 18),
-            onPressed: () => widget.onFilterChanged(null),
-          ),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(color: Theme.of(context).dividerColor),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(
-                color: Theme.of(context).dividerColor.withOpacity(0.3)),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(color: ModuleColors.trade),
-          ),
-          isDense: true,
-        ),
-        style: const TextStyle(fontSize: 13),
-        onChanged: widget.onFilterChanged,
-      ),
-    );
-  }
-
-  Widget _buildDetailsToggle(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => setState(() => _showDetails = !_showDetails),
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: _showDetails
-                ? ModuleColors.trade.withOpacity(0.15)
-                : Theme.of(context).colorScheme.surface.withOpacity(0.8),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: _showDetails
-                  ? ModuleColors.trade.withOpacity(0.4)
-                  : Theme.of(context).dividerColor.withOpacity(0.2),
-              width: 1.5,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                _showDetails ? Icons.expand_less : Icons.expand_more,
-                size: 18,
-                color: _showDetails
-                    ? ModuleColors.trade
-                    : Theme.of(context).colorScheme.onSurface,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                _showDetails ? 'Hide' : 'Show',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: _showDetails
-                      ? ModuleColors.trade
-                      : Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Color _getStatusColor(String? status) {
-    switch (status?.toUpperCase()) {
-      case 'WIN':
-        return Colors.green;
-      case 'LOSS':
-        return Colors.red;
-      case 'BREAK_EVEN':
-        return Colors.orange;
-      case 'OPEN':
-        return Colors.blue;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  Widget _buildTagPill(BuildContext context, IconData icon, String label) =>
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: ModuleColors.trade.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-              color: ModuleColors.trade.withOpacity(0.25)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 12, color: ModuleColors.trade),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: ModuleColors.trade),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            // Right: Action button
+            IconButton(
+              icon: const Icon(Icons.more_horiz),
+              onPressed: () {},
+              color: context.colors.textPrimary,
             ),
           ],
         ),
-      );
-
-  Widget _buildInfoTag(
-          BuildContext context, IconData icon, String label, Color color) =>
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.25)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 12, color: color),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                  fontSize: 11, fontWeight: FontWeight.w600, color: color),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      );
-
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date).inDays;
-    if (difference == 0) {
-      return 'Today';
-    } else if (difference == 1) {
-      return 'Yesterday';
-    } else if (difference < 7) {
-      return '$difference days ago';
-    } else {
-      return '${date.day}/${date.month}/${date.year}';
-    }
-  }
-
-  void _deleteTrade() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Trade'),
-        content: Text(
-            'Are you sure you want to delete the trade for ${widget.trade.displaySymbol}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
     );
-
-    if (confirm == true && mounted) {
-      final cubit = await ref.read(tradeControllerCubitProvider.future);
-      await cubit.removeTradeById(widget.trade.tradeId, widget.portfolioId);
-
-      // Refresh trade list so it reflects the deletion
-      ref.invalidate(tradeHoldingsStreamProvider(widget.portfolioId));
-
-      if (mounted) {
-        widget.onClose?.call();
-      }
-    }
   }
 }
