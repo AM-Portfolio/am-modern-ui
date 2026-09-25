@@ -18,6 +18,7 @@ class GlobalBottomNavigation extends StatefulWidget {
     required this.items,
     super.key,
     this.onProfileTap,
+    this.onSearchTap,
     this.userName,
     this.isDarkMode = false,
     this.visibleCount = 4,
@@ -28,6 +29,7 @@ class GlobalBottomNavigation extends StatefulWidget {
   final Function(String) onNavigate;
   final List<SidebarItem> items;
   final VoidCallback? onProfileTap;
+  final VoidCallback? onSearchTap;
   final String? userName;
   final bool isDarkMode;
   final Map<String, String>? moduleShareUrls;

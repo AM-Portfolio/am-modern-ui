@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -20,6 +22,8 @@ bool _isDevMockPortfolioId(String portfolioId) =>
     portfolioId.startsWith('mock-');
 
 /// Main application shell with navigation — hosts [ShellRoute] child pages.
+class SearchIntent extends Intent {}
+
 class AppShell extends StatefulWidget {
   const AppShell({required this.child, super.key});
 
@@ -362,6 +366,68 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
         .onTabSelected(tabTitle);
   }
 
+    List<common.CommandItem> _getMockSearchItems(BuildContext context) {
+    return [
+      // Indices
+      common.CommandItem(title: 'NIFTY 50', subtitle: 'National Stock Exchange Index', category: 'Market', icon: Icons.show_chart, onSelected: () => context.go('/app/market/NIFTY50')),
+      common.CommandItem(title: 'NIFTY BANK', subtitle: 'Banking Sector Index', category: 'Market', icon: Icons.account_balance, onSelected: () => context.go('/app/market/BANKNIFTY')),
+      common.CommandItem(title: 'SENSEX', subtitle: 'BSE SENSEX Index', category: 'Market', icon: Icons.show_chart, onSelected: () => context.go('/app/market/SENSEX')),
+      common.CommandItem(title: 'NIFTY IT', subtitle: 'IT Sector Index', category: 'Market', icon: Icons.computer, onSelected: () => context.go('/app/market/NIFTYIT')),
+      
+      // Top Stocks
+      common.CommandItem(title: 'Reliance Industries', subtitle: 'RELIANCE - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/RELIANCE')),
+      common.CommandItem(title: 'HDFC Bank', subtitle: 'HDFCBANK - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/HDFCBANK')),
+      common.CommandItem(title: 'TCS', subtitle: 'TCS - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/TCS')),
+      common.CommandItem(title: 'ICICI Bank', subtitle: 'ICICIBANK - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/ICICIBANK')),
+      common.CommandItem(title: 'Infosys', subtitle: 'INFY - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/INFY')),
+      common.CommandItem(title: 'State Bank of India', subtitle: 'SBIN - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/SBIN')),
+      common.CommandItem(title: 'Bharti Airtel', subtitle: 'BHARTIARTL - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/BHARTIARTL')),
+      common.CommandItem(title: 'ITC', subtitle: 'ITC - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/ITC')),
+      common.CommandItem(title: 'Larsen & Toubro', subtitle: 'LT - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/LT')),
+      common.CommandItem(title: 'Bajaj Finance', subtitle: 'BAJFINANCE - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/BAJFINANCE')),
+      common.CommandItem(title: 'Hindustan Unilever', subtitle: 'HINDUNILVR - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/HINDUNILVR')),
+      common.CommandItem(title: 'Axis Bank', subtitle: 'AXISBANK - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/AXISBANK')),
+      common.CommandItem(title: 'Kotak Mahindra Bank', subtitle: 'KOTAKBANK - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/KOTAKBANK')),
+      common.CommandItem(title: 'Mahindra & Mahindra', subtitle: 'M&M - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/M&M')),
+      common.CommandItem(title: 'Tata Motors', subtitle: 'TATAMOTORS - Equity', category: 'Market', icon: Icons.directions_car, onSelected: () => context.go('/app/market/TATAMOTORS')),
+      common.CommandItem(title: 'Asian Paints', subtitle: 'ASIANPAINT - Equity', category: 'Market', icon: Icons.format_paint, onSelected: () => context.go('/app/market/ASIANPAINT')),
+      common.CommandItem(title: 'Maruti Suzuki', subtitle: 'MARUTI - Equity', category: 'Market', icon: Icons.directions_car, onSelected: () => context.go('/app/market/MARUTI')),
+      common.CommandItem(title: 'Sun Pharma', subtitle: 'SUNPHARMA - Equity', category: 'Market', icon: Icons.medical_services, onSelected: () => context.go('/app/market/SUNPHARMA')),
+      common.CommandItem(title: 'Tata Steel', subtitle: 'TATASTEEL - Equity', category: 'Market', icon: Icons.precision_manufacturing, onSelected: () => context.go('/app/market/TATASTEEL')),
+      common.CommandItem(title: 'Wipro', subtitle: 'WIPRO - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/WIPRO')),
+      common.CommandItem(title: 'Power Grid Corp', subtitle: 'POWERGRID - Equity', category: 'Market', icon: Icons.bolt, onSelected: () => context.go('/app/market/POWERGRID')),
+      common.CommandItem(title: 'NTPC', subtitle: 'NTPC - Equity', category: 'Market', icon: Icons.bolt, onSelected: () => context.go('/app/market/NTPC')),
+      common.CommandItem(title: 'Ultratech Cement', subtitle: 'ULTRACEMCO - Equity', category: 'Market', icon: Icons.construction, onSelected: () => context.go('/app/market/ULTRACEMCO')),
+      common.CommandItem(title: 'Titan Company', subtitle: 'TITAN - Equity', category: 'Market', icon: Icons.watch, onSelected: () => context.go('/app/market/TITAN')),
+      common.CommandItem(title: 'Nestle India', subtitle: 'NESTLEIND - Equity', category: 'Market', icon: Icons.fastfood, onSelected: () => context.go('/app/market/NESTLEIND')),
+      common.CommandItem(title: 'Bajaj Finserv', subtitle: 'BAJAJFINSV - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/BAJAJFINSV')),
+      common.CommandItem(title: 'Tech Mahindra', subtitle: 'TECHM - Equity', category: 'Market', icon: Icons.computer, onSelected: () => context.go('/app/market/TECHM')),
+      common.CommandItem(title: 'ONGC', subtitle: 'ONGC - Equity', category: 'Market', icon: Icons.oil_barrel, onSelected: () => context.go('/app/market/ONGC')),
+      common.CommandItem(title: 'Hindalco', subtitle: 'HINDALCO - Equity', category: 'Market', icon: Icons.precision_manufacturing, onSelected: () => context.go('/app/market/HINDALCO')),
+      common.CommandItem(title: 'HCL Tech', subtitle: 'HCLTECH - Equity', category: 'Market', icon: Icons.computer, onSelected: () => context.go('/app/market/HCLTECH')),
+      common.CommandItem(title: 'Coal India', subtitle: 'COALINDIA - Equity', category: 'Market', icon: Icons.terrain, onSelected: () => context.go('/app/market/COALINDIA')),
+      common.CommandItem(title: 'Adani Enterprises', subtitle: 'ADANIENT - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/ADANIENT')),
+      common.CommandItem(title: 'Adani Ports', subtitle: 'ADANIPORTS - Equity', category: 'Market', icon: Icons.directions_boat, onSelected: () => context.go('/app/market/ADANIPORTS')),
+      
+      // Global
+      common.CommandItem(title: 'AAPL', subtitle: 'Apple Inc. - Equity', category: 'Market', icon: Icons.show_chart, onSelected: () => context.go('/app/market/AAPL')),
+      common.CommandItem(title: 'TSLA', subtitle: 'Tesla Inc. - Equity', category: 'Market', icon: Icons.show_chart, onSelected: () => context.go('/app/market/TSLA')),
+      
+      // App Pages
+      common.CommandItem(title: 'Trade Journal', subtitle: 'Review your past performance', category: 'Trade', icon: Icons.book, onSelected: () => context.go('/app/trade/journal')),
+      common.CommandItem(title: 'Federal Reserve cuts rates', subtitle: 'Breaking News', category: 'News', icon: Icons.article, onSelected: () => context.go('/app/dashboard')),
+      common.CommandItem(title: 'My Tech Basket', subtitle: 'Custom Portfolio Basket', category: 'Portfolio', icon: Icons.pie_chart, onSelected: () => context.go('/app/portfolio/baskets')),
+      common.CommandItem(title: 'Place New Order', subtitle: 'Open the trading desk', category: 'Action', icon: Icons.add_shopping_cart, onSelected: () => context.go('/app/trade')),
+    ];
+  }
+
+  void _showSearch() {
+    common.AmCommandPalette.show(
+      context,
+      items: _getMockSearchItems(context),
+    );
+  }
+
   void _onGlobalNavigate(String title, String userId) {
     final path = AppRoutes.pathForNavTitle(title);
     if (path == null) return;
@@ -579,7 +645,23 @@ final userId =
                   }
                 },
                 child: common.OfflineShell(
-                  child: Scaffold(
+                                    child: Shortcuts(
+                    shortcuts: {
+                      LogicalKeySet(
+                        !kIsWeb && Platform.isMacOS ? LogicalKeyboardKey.meta : LogicalKeyboardKey.control,
+                        LogicalKeyboardKey.keyK
+                      ): SearchIntent(),
+                    },
+                    child: Actions(
+                      actions: {
+                        SearchIntent: CallbackAction<SearchIntent>(
+                          onInvoke: (intent) {
+                            _showSearch();
+                            return null;
+                          },
+                        ),
+                      },
+                      child: Scaffold(
                   // Body draws under the floating overlay nav — no reserved slot.
                   extendBody: !isDesktop,
                   body: Stack(
@@ -600,6 +682,7 @@ final userId =
                                 remotePhotoUrl: authState.user.photoUrl,
                               ),
                               moduleShareUrls: AppRoutes.navTitleToDefaultPath,
+                                onSearchTap: _showSearch,
                               onThemeToggle: () {
                                 try {
                                   final cubit = context.read<ThemeCubit>();
@@ -696,8 +779,9 @@ final userId =
                                   userName: authState.user.displayName,
                                   visibleCount: 5,
                                   moduleShareUrls: AppRoutes.navTitleToDefaultPath,
-                                  onNavigate: (title) =>
-                                      _onGlobalNavigate(title, userId),
+                                  onSearchTap: _showSearch,
+                              onNavigate: (title) =>
+                                  _onGlobalNavigate(title, userId),
                                   items: [
                                     const SidebarItem(
                                       title: 'Dashboard',
@@ -755,6 +839,8 @@ final userId =
                   ),
                 ),
                 ),
+              ),
+              ),
               );
             },
           );
@@ -788,3 +874,4 @@ final userId =
     );
   }
 }
+
