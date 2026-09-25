@@ -41,7 +41,7 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> {
         border: Border.all(color: context.colors.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: context.colors.textPrimary.withValues(alpha: 0.02),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -57,7 +57,7 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> {
               child: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                  border: Border.all(color: context.colors.border),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(Icons.arrow_back, size: 20, color: context.colors.textPrimary),
@@ -84,16 +84,16 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
+                        color: context.colors.statusSuccess.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: Colors.green.withOpacity(0.5)),
+                        border: Border.all(color: context.colors.statusSuccess.withValues(alpha: 0.5)),
                       ),
                       child: Text(
                         widget.trade.displayStatus.toUpperCase(),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: Colors.green,
+                          color: context.colors.statusSuccess,
                         ),
                       ),
                     ),
@@ -118,12 +118,12 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> {
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: Colors.red.withOpacity(0.5)),
-                    color: Colors.red.withOpacity(0.05),
+                    border: Border.all(color: context.colors.statusError.withValues(alpha: 0.5)),
+                    color: context.colors.statusError.withValues(alpha: 0.05),
                   ),
                   child: Text(
                     widget.trade.tradePositionType ?? 'LONG',
-                    style: const TextStyle(fontSize: 11, color: Colors.red, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 11, color: context.colors.statusError, fontWeight: FontWeight.bold),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -131,12 +131,12 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> {
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: Colors.blue.withOpacity(0.5)),
-                    color: Colors.blue.withOpacity(0.05),
+                    border: Border.all(color: context.colors.statusInfo.withValues(alpha: 0.5)),
+                    color: context.colors.statusInfo.withValues(alpha: 0.05),
                   ),
                   child: const Text(
                     'EQUITY',
-                    style: TextStyle(fontSize: 11, color: Colors.blue, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 11, color: context.colors.statusInfo, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -175,8 +175,8 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: isProfit
-                      ? [Colors.green.shade400, Colors.green.shade600]
-                      : [Colors.red.shade400, Colors.red.shade600],
+                      ? [context.colors.statusSuccess.withValues(alpha: 0.8), context.colors.statusSuccess]
+                      : [context.colors.statusError.withValues(alpha: 0.8), context.colors.statusError],
                 ),
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -189,17 +189,17 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> {
                     children: [
                       Text(
                         widget.trade.displayProfitLossPercentage,
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: context.colors.textPrimary),
                       ),
                     ],
                   ),
                   Text(
                     widget.trade.displayProfitLoss,
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.textPrimary),
                   ),
                   const Text(
                     'Unrealized P/L',
-                    style: TextStyle(fontSize: 9, color: Colors.white70),
+                    style: TextStyle(fontSize: 9, color: context.colors.textPrimary.withValues(alpha: 0.7)),
                   ),
                 ],
               ),

@@ -19,7 +19,7 @@ class TradeDetailSummary extends StatelessWidget {
         border: Border.all(color: context.colors.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: context.colors.textPrimary.withValues(alpha: 0.02),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -37,7 +37,7 @@ class TradeDetailSummary extends StatelessWidget {
             _buildMetricBlock(
               context,
               icon: Icons.swap_vert,
-              iconColor: Colors.purple,
+              iconColor: ModuleColors.trade,
               title: 'Position',
               value: trade.tradePositionType ?? 'N/A',
             ),
@@ -45,7 +45,7 @@ class TradeDetailSummary extends StatelessWidget {
             _buildMetricBlock(
               context,
               icon: Icons.tag,
-              iconColor: Colors.blue,
+              iconColor: context.colors.statusInfo,
               title: 'Quantity',
               value: trade.displayQuantity,
             ),
@@ -53,7 +53,7 @@ class TradeDetailSummary extends StatelessWidget {
             _buildMetricBlock(
               context,
               icon: Icons.price_change_outlined,
-              iconColor: Colors.orange,
+              iconColor: context.colors.statusWarning,
               title: 'Avg. Price',
               value: trade.displayAvgPrice,
             ),
@@ -61,7 +61,7 @@ class TradeDetailSummary extends StatelessWidget {
             _buildMetricBlock(
               context,
               icon: Icons.login,
-              iconColor: Colors.teal,
+              iconColor: ModuleColors.dashboard,
               title: 'Entry Price',
               value: trade.displayEntryPrice,
             ),
@@ -69,7 +69,7 @@ class TradeDetailSummary extends StatelessWidget {
             _buildMetricBlock(
               context,
               icon: Icons.account_balance_wallet_outlined,
-              iconColor: Colors.indigo,
+              iconColor: context.colors.premiumActionPrimary,
               title: 'Current Value',
               value: trade.displayCurrentValue,
             ),
@@ -77,7 +77,7 @@ class TradeDetailSummary extends StatelessWidget {
             _buildMetricBlock(
               context,
               icon: Icons.monetization_on_outlined,
-              iconColor: trade.isProfit ? Colors.green : Colors.red,
+              iconColor: trade.isProfit ? context.colors.statusSuccess : context.colors.statusError,
               title: 'Realized P/L',
               value: trade.displayProfitLoss,
             ),
@@ -85,7 +85,7 @@ class TradeDetailSummary extends StatelessWidget {
             _buildMetricBlock(
               context,
               icon: Icons.show_chart,
-              iconColor: Colors.cyan,
+              iconColor: context.colors.statusInfo,
               title: 'ROE',
               value: trade.displayReturnOnEquity,
             ),
