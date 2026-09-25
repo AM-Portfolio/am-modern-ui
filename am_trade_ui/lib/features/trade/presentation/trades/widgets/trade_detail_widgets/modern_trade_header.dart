@@ -134,7 +134,7 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> {
                     border: Border.all(color: context.colors.statusInfo.withValues(alpha: 0.5)),
                     color: context.colors.statusInfo.withValues(alpha: 0.05),
                   ),
-                  child: const Text(
+                  child: Text(
                     'EQUITY',
                     style: TextStyle(fontSize: 11, color: context.colors.statusInfo, fontWeight: FontWeight.bold),
                   ),
@@ -197,7 +197,7 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> {
                     widget.trade.displayProfitLoss,
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.textPrimary),
                   ),
-                  const Text(
+                  Text(
                     'Unrealized P/L',
                     style: TextStyle(fontSize: 9, color: context.colors.textPrimary.withValues(alpha: 0.7)),
                   ),
