@@ -74,7 +74,7 @@ class _HoldingsNewsSectionState extends ConsumerState<HoldingsNewsSection> {
       surfaceAlpha: 0.32,
       padding: EdgeInsets.zero,
       child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        data: Theme.of(context).copyWith(dividerColor: const Color(0x00000000)),
         child: ExpansionTile(
           title: Text(
             widget.title,

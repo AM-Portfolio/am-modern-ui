@@ -29,7 +29,7 @@ class AmCommandPalette extends StatefulWidget {
       context: context,
       barrierDismissible: true,
       barrierLabel: 'Command Palette',
-      barrierColor: Colors.black.withOpacity(0.6),
+      barrierColor: Theme.of(context).extension<AppColorsTheme>()?.scaffoldBackground.withValues(alpha: 0.8) ?? const Color(0xCC000000),
       transitionDuration: const Duration(milliseconds: 200),
       pageBuilder: (context, animation, secondaryAnimation) {
         return FadeTransition(
@@ -136,10 +136,10 @@ class _AmCommandPaletteState extends State<AmCommandPalette> {
           decoration: BoxDecoration(
             color: context.colors.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: context.colors.border.withOpacity(0.5)),
+            border: Border.all(color: context.colors.border.withValues(alpha: 0.5)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
+                color: context.colors.textPrimary.withValues(alpha: 0.15),
                 blurRadius: 30,
                 offset: const Offset(0, 10),
               ),
@@ -170,7 +170,7 @@ class _AmCommandPaletteState extends State<AmCommandPalette> {
                             ),
                             decoration: InputDecoration(
                               hintText: 'Search markets, portfolios, trades...',
-                              hintStyle: TextStyle(color: context.colors.textSecondary.withOpacity(0.5)),
+                              hintStyle: TextStyle(color: context.colors.textSecondary.withValues(alpha: 0.5)),
                               border: InputBorder.none,
                               isDense: true,
                             ),
@@ -212,11 +212,11 @@ class _AmCommandPaletteState extends State<AmCommandPalette> {
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                 decoration: BoxDecoration(
                                   color: isSelected 
-                                      ? context.colors.actionPrimaryBg.withOpacity(0.15) 
-                                      : context.colors.surface.withOpacity(0.5),
+                                      ? context.colors.actionPrimaryBg.withValues(alpha: 0.15) 
+                                      : context.colors.surface.withValues(alpha: 0.5),
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: isSelected ? context.colors.actionPrimaryBg : context.colors.border.withOpacity(0.5),
+                                    color: isSelected ? context.colors.actionPrimaryBg : context.colors.border.withValues(alpha: 0.5),
                                   ),
                                 ),
                                 child: Text(
@@ -234,7 +234,7 @@ class _AmCommandPaletteState extends State<AmCommandPalette> {
                       ),
                     ),
                   ),
-                  Divider(height: 1, color: context.colors.border.withOpacity(0.5)),
+                  Divider(height: 1, color: context.colors.border.withValues(alpha: 0.5)),
                   
                   // Results List
                   Flexible(
@@ -244,7 +244,7 @@ class _AmCommandPaletteState extends State<AmCommandPalette> {
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.search_off, size: 48, color: context.colors.textSecondary.withOpacity(0.5)),
+                                Icon(Icons.search_off, size: 48, color: context.colors.textSecondary.withValues(alpha: 0.5)),
                                 const SizedBox(height: 16),
                                 Text(
                                   'No results found for "$query"',
@@ -264,7 +264,7 @@ class _AmCommandPaletteState extends State<AmCommandPalette> {
                                   Navigator.of(context).pop();
                                   item.onSelected();
                                 },
-                                hoverColor: context.colors.actionPrimaryBg.withOpacity(0.1),
+                                hoverColor: context.colors.actionPrimaryBg.withValues(alpha: 0.1),
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                   child: Row(
@@ -272,7 +272,7 @@ class _AmCommandPaletteState extends State<AmCommandPalette> {
                                       Container(
                                         padding: const EdgeInsets.all(8),
                                         decoration: BoxDecoration(
-                                          color: context.colors.border.withOpacity(0.3),
+                                          color: context.colors.border.withValues(alpha: 0.3),
                                           borderRadius: BorderRadius.circular(8),
                                         ),
                                         child: Icon(item.icon, size: 20, color: context.colors.textPrimary),
@@ -301,7 +301,7 @@ class _AmCommandPaletteState extends State<AmCommandPalette> {
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                         decoration: BoxDecoration(
-                                          color: context.colors.border.withOpacity(0.2),
+                                          color: context.colors.border.withValues(alpha: 0.2),
                                           borderRadius: BorderRadius.circular(12),
                                         ),
                                         child: Text(

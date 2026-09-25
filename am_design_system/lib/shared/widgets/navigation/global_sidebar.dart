@@ -77,7 +77,7 @@ class GlobalSidebar extends StatelessWidget {
               const SizedBox(height: 12),
               IconButton(
                 icon: const Icon(Icons.search, size: 22),
-                color: isDarkMode ? Colors.white70 : Colors.black54,
+                color: Theme.of(context).extension<AppColorsTheme>()?.textSecondary ?? (isDarkMode ? const Color(0xB3FFFFFF) : const Color(0x8A000000)),
                 tooltip: 'Search (Ctrl+K)',
                 onPressed: onSearchTap,
               ),
