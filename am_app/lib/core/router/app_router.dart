@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
-
+import 'package:am_design_system/am_design_system.dart';
 import '../../features/shell/app_shell.dart';
 import '../../features/chart/comparison_chart_expanded_page.dart';
 import 'app_routes.dart';
@@ -305,18 +305,20 @@ GoRouter createAppRouter({
                 onOpenDocIntel: () =>
                     context.go(AppRoutes.docIntelPath('doc-processor')),
                 uploadPortfolioBuilder: (portfolioId, portfolioName, onCancel) {
-                  return Stack(
-                    children: [
-                      const DocumentProcessorView(),
-                      Positioned(
-                        top: 12,
-                        right: 12,
-                        child: IconButton(
-                          icon: const Icon(Icons.close_rounded),
-                          onPressed: onCancel,
+                  return Builder(
+                    builder: (context) {
+                      final theme = Theme.of(context);
+                      return Theme(
+                        data: theme.copyWith(
+                          colorScheme: theme.colorScheme.copyWith(
+                            primary: ModuleColors.portfolio,
+                            primaryContainer: ModuleColors.portfolio.withOpacity(0.12),
+                          ),
+                          primaryColor: ModuleColors.portfolio,
                         ),
-                      ),
-                    ],
+                        child: const DocumentProcessorView(),
+                      );
+                    },
                   );
                 },
               );
@@ -338,18 +340,20 @@ GoRouter createAppRouter({
                 onOpenDocIntel: () =>
                     context.go(AppRoutes.docIntelPath('doc-processor')),
                 uploadPortfolioBuilder: (portfolioId, portfolioName, onCancel) {
-                  return Stack(
-                    children: [
-                      const DocumentProcessorView(),
-                      Positioned(
-                        top: 12,
-                        right: 12,
-                        child: IconButton(
-                          icon: const Icon(Icons.close_rounded),
-                          onPressed: onCancel,
+                  return Builder(
+                    builder: (context) {
+                      final theme = Theme.of(context);
+                      return Theme(
+                        data: theme.copyWith(
+                          colorScheme: theme.colorScheme.copyWith(
+                            primary: ModuleColors.portfolio,
+                            primaryContainer: ModuleColors.portfolio.withOpacity(0.12),
+                          ),
+                          primaryColor: ModuleColors.portfolio,
                         ),
-                      ),
-                    ],
+                        child: const DocumentProcessorView(),
+                      );
+                    },
                   );
                 },
               );
