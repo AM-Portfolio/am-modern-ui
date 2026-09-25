@@ -1,8 +1,6 @@
-import 'dart:async';
-import 'dart:ui';
 import 'package:am_design_system/am_design_system.dart';
-import 'package:am_design_system/shared/widgets/navigation/floating_menu_action.dart';
 import 'package:flutter/material.dart';
+import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/portfolio_actions_sheet.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -15,6 +13,7 @@ import '../../internal/data/dtos/portfolio_create_request_dto.dart';
 import '../../internal/data/dtos/portfolio_update_request_dto.dart';
 import 'widgets/portfolio_tab_content_widget.dart';
 import 'widgets/portfolio_form_modal.dart';
+import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intelligence/xray_class_add_sheet.dart';
 
 /// Mobile-optimized portfolio screen with bottom navigation and portfolio selection
 class PortfolioMobileScreen extends ConsumerStatefulWidget {
@@ -28,6 +27,7 @@ class PortfolioMobileScreen extends ConsumerStatefulWidget {
     this.initialTab,
     this.onTabChanged,
     this.addTradeBuilder,
+    this.uploadPortfolioBuilder,
     this.onOpenDocIntel,
   });
   final String? selectedPortfolioId;
@@ -38,6 +38,7 @@ class PortfolioMobileScreen extends ConsumerStatefulWidget {
   final String? initialTab;
   final ValueChanged<String>? onTabChanged;
   final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
+  final Widget Function(String portfolioId, String? portfolioName, VoidCallback onCancel)? uploadPortfolioBuilder;
   final VoidCallback? onOpenDocIntel;
 
   @override
@@ -68,6 +69,7 @@ class _PortfolioMobileScreenState extends ConsumerState<PortfolioMobileScreen> {
               initialTab: widget.initialTab,
               onTabChanged: widget.onTabChanged,
               addTradeBuilder: widget.addTradeBuilder,
+              uploadPortfolioBuilder: widget.uploadPortfolioBuilder,
               onOpenDocIntel: widget.onOpenDocIntel,
             ),
           ),
@@ -128,6 +130,7 @@ class PortfolioMobileView extends StatefulWidget {
     this.initialTab,
     this.onTabChanged,
     this.addTradeBuilder,
+    this.uploadPortfolioBuilder,
     this.onOpenDocIntel,
   });
   final String? selectedPortfolioId;
@@ -138,6 +141,7 @@ class PortfolioMobileView extends StatefulWidget {
   final String? initialTab;
   final ValueChanged<String>? onTabChanged;
   final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
+  final Widget Function(String portfolioId, String? portfolioName, VoidCallback onCancel)? uploadPortfolioBuilder;
   final VoidCallback? onOpenDocIntel;
 
   @override
@@ -149,6 +153,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
   late TabController _tabController;
   String? _currentPortfolioId;
   bool _isAddingTrade = false;
+  bool _isUploadingPortfolio = false;
   bool _wasOnBasketsTab = false;
 
   bool _isBasketsTab(String? slug) => slug?.toLowerCase() == 'baskets';
@@ -280,6 +285,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     setState(() {
       _tabController.index = index;
       _isAddingTrade = false;
+      _isUploadingPortfolio = false;
     });
     final slug = _tabSlugFromIndex(index);
     if (_wasOnBasketsTab && !_isBasketsTab(slug)) {
@@ -363,42 +369,73 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     }
   }
 
-  Widget _buildFloatingMenu() {
-    return SidebarFloatingActionMenu(
-      triggerColor: ModuleColors.portfolio,
-      actions: [
-        FloatingMenuAction(
-          icon: Icons.upload_file_rounded,
-          title: 'Upload Portfolio',
-          subtitle: 'Import from file or broker',
-          iconColor: ModuleColors.portfolio,
-          onTap: () async {
-            if (widget.onOpenDocIntel != null) {
-              widget.onOpenDocIntel!();
-            }
-          },
-        ),
-        FloatingMenuAction(
-          icon: Icons.add_circle_outline_rounded,
-          title: 'Add Trade',
-          subtitle: 'Buy or sell an asset',
-          iconColor: ModuleColors.trade,
-          onTap: () async {
-            if (!_isAddingTrade) {
-              _openAddTrade();
-            }
-          },
-        ),
-        FloatingMenuAction(
-          icon: Icons.account_balance_wallet_outlined,
-          title: 'Add Basket',
-          subtitle: 'Invest in ETFs',
-          iconColor: ModuleColors.market,
-          onTap: () async {
-            _selectTab(3); // Baskets tab
-          },
-        ),
-      ],
+  /// Mobile FAB — shows a bottom sheet with quick portfolio actions.
+  /// Only rendered when a specific portfolio (not 'all') is selected.
+  Widget _buildMobileFab() {
+    if (_currentPortfolioId == null || _currentPortfolioId == 'all') {
+      return const SizedBox.shrink();
+    }
+    return FloatingActionButton(
+      backgroundColor: ModuleColors.portfolio,
+      foregroundColor: Colors.white,
+      tooltip: 'Quick Actions',
+      onPressed: () {
+        showPortfolioActionsSheet(
+          context: context,
+          triggerColor: ModuleColors.portfolio,
+          actions: [
+            FloatingMenuAction(
+              icon: Icons.upload_file_rounded,
+              title: 'Upload Portfolio',
+              subtitle: 'Import from file or broker',
+              iconColor: ModuleColors.portfolio,
+              onTap: () {
+                if (_isUploadingPortfolio) return;
+                if (widget.uploadPortfolioBuilder != null) {
+                  setState(() {
+                    _isUploadingPortfolio = true;
+                    _isAddingTrade = false;
+                  });
+                } else if (widget.onOpenDocIntel != null) {
+                  widget.onOpenDocIntel!();
+                }
+              },
+            ),
+            FloatingMenuAction(
+              icon: Icons.add_circle_outline_rounded,
+              title: 'Add Trade',
+              subtitle: 'Buy or sell an asset',
+              iconColor: ModuleColors.trade,
+              onTap: () {
+                if (!_isAddingTrade) _openAddTrade();
+              },
+            ),
+            FloatingMenuAction(
+              icon: Icons.account_balance_wallet_outlined,
+              title: 'Add Asset Class',
+              subtitle: 'Create a new asset class',
+              iconColor: ModuleColors.market,
+              onTap: () {
+                showXrayClassAddSheet(
+                  context: context,
+                  portfolioId: _currentPortfolioId!,
+                  onSaved: () {},
+                );
+              },
+            ),
+            FloatingMenuAction(
+              icon: Icons.shopping_basket_outlined,
+              title: 'Add Basket',
+              subtitle: 'Create a new basket',
+              iconColor: ModuleColors.reports,
+              onTap: () {
+                _selectTab(3);
+              },
+            ),
+          ],
+        );
+      },
+      child: const Icon(Icons.add_rounded),
     );
   }
 
@@ -448,25 +485,25 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
           SecondarySidebarItem(
             title: 'Overview',
             icon: Icons.dashboard_outlined,
-            isSelected: _tabController.index == 0 && !_isAddingTrade,
+            isSelected: _tabController.index == 0 && !_isAddingTrade && !_isUploadingPortfolio,
             onTap: () => _selectTab(0),
           ),
           SecondarySidebarItem(
             title: 'Holdings',
             icon: Icons.wallet,
-            isSelected: _tabController.index == 1 && !_isAddingTrade,
+            isSelected: _tabController.index == 1 && !_isAddingTrade && !_isUploadingPortfolio,
             onTap: () => _selectTab(1),
           ),
           SecondarySidebarItem(
             title: 'Heatmap',
             icon: Icons.grid_view,
-            isSelected: _tabController.index == 2 && !_isAddingTrade,
+            isSelected: _tabController.index == 2 && !_isAddingTrade && !_isUploadingPortfolio,
             onTap: () => _selectTab(2),
           ),
           SecondarySidebarItem(
             title: 'Baskets',
             icon: Icons.shopping_basket_outlined,
-            isSelected: _tabController.index == 3 && !_isAddingTrade,
+            isSelected: _tabController.index == 3 && !_isAddingTrade && !_isUploadingPortfolio,
             onTap: () => _selectTab(3),
           ),
         ],
@@ -477,9 +514,25 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
                 context,
                 _currentPortfolioId!,
                 currentName,
-                () => _selectTab(_tabController.index),
+                () {
+                  setState(() {
+                    _isAddingTrade = false;
+                  });
+                },
               )
-            : Column(
+            : (_isUploadingPortfolio &&
+                widget.uploadPortfolioBuilder != null &&
+                _currentPortfolioId != null)
+                ? widget.uploadPortfolioBuilder!(
+                    _currentPortfolioId!,
+                    currentName,
+                    () {
+                      setState(() {
+                        _isUploadingPortfolio = false;
+                      });
+                    },
+                  )
+                : Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     if (widget.portfolios != null &&
@@ -497,9 +550,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
                     ),
                   ],
                 ),
-        floatingActionButton: (_currentPortfolioId == null || _currentPortfolioId == 'all')
-            ? null
-            : _buildFloatingMenu(),
+        floatingActionButton: _buildMobileFab(),
       ),
     );
   }

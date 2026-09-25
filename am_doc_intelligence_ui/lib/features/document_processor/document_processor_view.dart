@@ -568,14 +568,16 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     final bool isMobile = ResponsiveHelper.isMobile(context);
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 16.0 : 32.0,
-        vertical: isMobile ? 16.0 : 24.0,
+        horizontal: isMobile ? 12.0 : 32.0,
+        vertical: isMobile ? 12.0 : 24.0,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(),
-          const SizedBox(height: 28),
+          if (!isMobile) ...[
+            _buildHeader(),
+            const SizedBox(height: 28),
+          ],
           if (_checkingHealth)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 40),
@@ -595,9 +597,9 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
           else ...[
             if (isMobile) ...[
               _buildConfigurationSection(),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
               _buildUploadSection(),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
               _buildDetailsPanel(),
             ] else ...[
               Row(
@@ -893,24 +895,24 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
 
     return GlassCard(
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Icon(Icons.settings_outlined,
-                    color: Theme.of(context).colorScheme.primary, size: 20),
-                const SizedBox(width: 12),
-                const Text('Parser Configuration',
+                    color: Theme.of(context).colorScheme.primary, size: isMobile ? 18 : 20),
+                const SizedBox(width: 8),
+                Text('Parser Configuration',
                     style:
-                        TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                        TextStyle(fontWeight: FontWeight.w600, fontSize: isMobile ? 14 : 15)),
               ],
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: isMobile ? 16 : 20),
             if (isMobile) ...[
               brokerSelect,
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               docTypeSelect,
             ] else ...[
               Row(

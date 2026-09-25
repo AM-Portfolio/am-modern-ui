@@ -256,7 +256,73 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         title: null,
         subtitle: null,
         showModuleBottomNavigation: false,
-        headerActions: const [],
+        headerActions: [
+          if (_currentPortfolioId != null && _currentPortfolioId != 'all')
+            SidebarFloatingActionMenu(
+              compact: true,
+              direction: AxisDirection.down,
+              triggerColor: ModuleColors.portfolio,
+              actions: [
+                FloatingMenuAction(
+                  icon: Icons.upload_file_rounded,
+                  title: 'Upload Portfolio',
+                  subtitle: 'Import from file or broker',
+                  iconColor: ModuleColors.portfolio,
+                  onTap: () async {
+                    if (_isUploadingPortfolio) return;
+                    if (await _promptDiscardChanges()) {
+                      if (widget.uploadPortfolioBuilder != null) {
+                        setState(() { _isUploadingPortfolio = true; });
+                      } else {
+                        widget.onOpenDocIntel?.call();
+                      }
+                    }
+                  },
+                ),
+                FloatingMenuAction(
+                  icon: Icons.add_circle_outline_rounded,
+                  title: 'Add Trade',
+                  subtitle: 'Buy or sell an asset',
+                  iconColor: ModuleColors.trade,
+                  onTap: () async {
+                    if (_isAddingTrade) return;
+                    if (await _promptDiscardChanges()) {
+                      if (widget.addTradeBuilder != null) {
+                        setState(() { _isAddingTrade = true; });
+                      } else {
+                        OpenAddTradeNotification().dispatch(context);
+                      }
+                    }
+                  },
+                ),
+                FloatingMenuAction(
+                  icon: Icons.account_balance_wallet_outlined,
+                  title: 'Add Asset Class',
+                  subtitle: 'Create a new asset class',
+                  iconColor: ModuleColors.market,
+                  onTap: () async {
+                    if (await _promptDiscardChanges()) {
+                      showXrayClassAddSheet(context: context, portfolioId: _currentPortfolioId!, onSaved: () {});
+                    }
+                  },
+                ),
+                FloatingMenuAction(
+                  icon: Icons.shopping_basket_outlined,
+                  title: 'Add Basket',
+                  subtitle: 'Create a new basket',
+                  iconColor: ModuleColors.reports,
+                  onTap: () async {
+                    if (await _promptDiscardChanges()) {
+                      widget.onTabChanged?.call('baskets');
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        BasketNavigation.setViewMode(BasketViewMode.discover);
+                      });
+                    }
+                  },
+                ),
+              ],
+            ),
+        ],
         onBackToGlobal: widget.onBack,
         onThemeToggle: () {
           context.read<ThemeCubit>().toggleTheme();
