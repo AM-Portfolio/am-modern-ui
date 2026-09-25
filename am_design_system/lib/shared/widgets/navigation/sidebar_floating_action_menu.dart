@@ -205,6 +205,7 @@ class _SidebarFloatingActionMenuState extends State<SidebarFloatingActionMenu> w
             ],
           ),
         ),
+        ),
       ),
     );
   }
