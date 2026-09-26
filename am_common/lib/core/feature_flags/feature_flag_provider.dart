@@ -36,6 +36,12 @@ final subscriptionPageEnabledProvider = Provider<bool>((ref) {
   );
 });
 
+final ipoPageEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(
+    featureFlagProvider(FeatureFlagKeys.ipoPageEnabled),
+  );
+});
+
 final offlineReadsEnabledProvider = Provider<bool>((ref) {
   return ref.watch(featureFlagProvider(FeatureFlagKeys.offlineReadsV1));
 });
