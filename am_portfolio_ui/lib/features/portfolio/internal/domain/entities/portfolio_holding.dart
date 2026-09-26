@@ -5,6 +5,7 @@ part 'portfolio_holding.freezed.dart';
 part 'portfolio_holding.g.dart';
 
 /// Domain entity representing a portfolio holding
+// Rebuild trigger
 @freezed
 abstract class PortfolioHolding with _$PortfolioHolding implements Holding {
   const factory PortfolioHolding({

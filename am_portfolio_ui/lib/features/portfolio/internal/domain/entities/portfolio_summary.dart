@@ -4,6 +4,7 @@ part 'portfolio_summary.freezed.dart';
 part 'portfolio_summary.g.dart';
 
 /// Domain entity representing portfolio summary
+// Rebuild trigger
 @freezed
 abstract class PortfolioSummary with _$PortfolioSummary {
   const factory PortfolioSummary({
