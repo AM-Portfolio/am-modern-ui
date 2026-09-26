@@ -1,7 +1,6 @@
 import 'package:am_market_ui/core/providers/view_mode_provider.dart' as view_mode;
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_market_common/providers/market_provider.dart';
 
@@ -15,10 +14,9 @@ import 'package:am_market_ui/features/watchlists/presentation/pages/watchlists_p
 import 'package:am_market_ui/features/market/widgets/all_indices_page.dart';
 import 'package:provider/provider.dart' hide Consumer;
 import 'package:flutter_riverpod/flutter_riverpod.dart' hide Provider;
-import 'package:am_common/core/di/price_providers.dart';
-import 'package:am_common/core/services/price_service.dart';
 
 import 'package:am_market_ui/features/market_analysis/presentation/widgets/market_index_detail_view.dart';
+import 'package:am_market_ui/features/ipo/screens/ipo_landing_screen.dart';
 
 import 'package:am_market_ui/shared/widgets/mode_toggle_widget.dart';
 import 'user_dashboard_page.dart';
@@ -147,6 +145,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     'Heatmap Explorer': 'heatmap-explorer',
     'Equity Insider': 'equity-insider',
     'Futures & Options': 'futures-options',
+    'IPO Center': 'ipo-center',
     'Watch List': 'watch-list',
   };
 
@@ -252,6 +251,8 @@ class _MarketContentState extends ConsumerState<MarketContent> {
       });
     });
 
+    final isIpoEnabled = ref.watch(ipoPageEnabledProvider);
+
     return Consumer2<MarketProvider, view_mode.ViewModeProvider>(
     builder: (context, provider, viewModeProvider, _) {
       final isMobile = MediaQuery.sizeOf(context).width < 1100;
@@ -260,6 +261,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         provider,
         viewModeProvider,
         includeAllIndices: isMobile,
+        isIpoEnabled: isIpoEnabled,
       );
       final itemsChanged = _hasItemsChanged(newItems);
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -285,6 +287,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
           provider,
           viewModeProvider,
           includeAllIndices: isMobile,
+          isIpoEnabled: isIpoEnabled,
         ),
         body: SwipeablePageView(
           key: const PageStorageKey('market_page_info'),
@@ -312,104 +315,97 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     MarketProvider provider,
     view_mode.ViewModeProvider viewModeProvider, {
     required bool includeAllIndices,
+    bool isIpoEnabled = false,
   }) {
     // If User mode, show simplified navigation
     if (viewModeProvider.isUserMode) {
       return _buildUserModeSections(
         provider,
         includeAllIndices: includeAllIndices,
+        isIpoEnabled: isIpoEnabled,
       );
     }
     
-    // Developer mode - show all sections (existing behavior)
-    // Map controller items back to sections
-    // Indices:
-    // 0: All Indices
-    // 1: Streamer
-    // 2: Instrument Explorer
-    // 3: Security Explorer
-    // 4: ETF Explorer
-    // 5: Price Test
-    // 6: Market Analysis
-    // 7..(7+N): Dynamic Indices
-    // Last: Admin
-
     final accentColor = ModuleColors.market;
     final currentIndex = _swipeController.currentIndex;
 
+    var sidebarIdx = 0;
     final mainItems = <SecondarySidebarItem>[
       if (includeAllIndices)
         _createSidebarItem(
-          0,
+          sidebarIdx++,
           'All Indices',
           Icons.dashboard_rounded,
           'Market Overview',
         ),
       _createSidebarItem(
-        includeAllIndices ? 1 : 0,
+        sidebarIdx++,
         'Streamer',
         Icons.waves_rounded,
         'Real-time data',
       ),
       _createSidebarItem(
-        includeAllIndices ? 2 : 1,
+        sidebarIdx++,
         'Instrument Explorer',
         Icons.manage_search_rounded,
         'Search instruments',
       ),
       _createSidebarItem(
-        includeAllIndices ? 3 : 2,
+        sidebarIdx++,
         'Security Explorer',
         Icons.security_rounded,
         'Security details',
       ),
       _createSidebarItem(
-        includeAllIndices ? 4 : 3,
+        sidebarIdx++,
         'ETF Explorer',
         Icons.dashboard_customize_rounded,
         'ETF insights',
       ),
       _createSidebarItem(
-        includeAllIndices ? 5 : 4,
+        sidebarIdx++,
         'Price Test',
         Icons.price_check_rounded,
         'Price validation',
       ),
       _createSidebarItem(
-        includeAllIndices ? 6 : 5,
+        sidebarIdx++,
         'Market Analysis',
         Icons.analytics_rounded,
         'Detailed charts',
       ),
       _createSidebarItem(
-        includeAllIndices ? 7 : 6,
+        sidebarIdx++,
         'Equity Insider',
         Icons.insights_rounded,
         'Fundamental analysis',
       ),
       _createSidebarItem(
-        includeAllIndices ? 8 : 7,
+        sidebarIdx++,
         'Futures & Options',
         Icons.candlestick_chart_rounded,
         'F&O contracts & chain',
       ),
+      if (isIpoEnabled)
+        _createSidebarItem(
+          sidebarIdx++,
+          'IPO Center',
+          Icons.new_releases_rounded,
+          'Upcoming & listed IPOs',
+        ),
       if (widget.paperDesk != null)
         _createSidebarItem(
-          includeAllIndices ? 9 : 8,
+          sidebarIdx++,
           'Paper',
           Icons.science_outlined,
           'Paper trading desk',
         ),
     ];
 
-    // Dynamic Indices (shift when Paper tab / All Indices present)
-    final paperOffset = widget.paperDesk != null ? 1 : 0;
-    final allIndicesOffset = includeAllIndices ? 1 : 0;
-    final dynamicIndicesCount =
-        provider.availableIndices?.broad.take(5).length ?? 0;
+    // Dynamic Indices
     final indexItems = <SecondarySidebarItem>[];
     if (provider.availableIndices != null) {
-      var baseIndex = 8 + allIndicesOffset + paperOffset;
+      var baseIndex = sidebarIdx;
       for (final indexName in provider.availableIndices!.broad.take(5)) {
         final i = baseIndex;
         indexItems.add(
@@ -423,16 +419,17 @@ class _MarketContentState extends ConsumerState<MarketContent> {
               _swipeController.navigateTo(i);
               provider.selectIndex(
                 indexName,
-              ); // Keep provider in sync if needed
+              );
             },
           ),
         );
         baseIndex++;
       }
+      sidebarIdx = baseIndex;
     }
 
-    final adminIndex = 8 + allIndicesOffset + paperOffset + dynamicIndicesCount;
-    final developerIndex = adminIndex + 1;
+    final adminIndex = sidebarIdx++;
+    final developerIndex = sidebarIdx++;
 
     final adminItem = SecondarySidebarItem(
       title: 'Admin Dashboard',
@@ -477,6 +474,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
   List<SecondarySidebarSection> _buildUserModeSections(
     MarketProvider provider, {
     required bool includeAllIndices,
+    bool isIpoEnabled = false,
   }) {
     final hasPaper = widget.paperDesk != null;
     var i = 0;
@@ -494,6 +492,8 @@ class _MarketContentState extends ConsumerState<MarketContent> {
       _createSidebarItem(i++, 'Market Analysis', Icons.analytics_rounded, 'Detailed charts'),
       _createSidebarItem(i++, 'Equity Insider', Icons.insights_rounded, 'Fundamental analysis'),
       _createSidebarItem(i++, 'Futures & Options', Icons.candlestick_chart_rounded, 'F&O contracts & chain'),
+      if (isIpoEnabled)
+        _createSidebarItem(i++, 'IPO Center', Icons.new_releases_rounded, 'Upcoming & listed IPOs'),
       _createSidebarItem(i++, 'Watch List', Icons.star_border_rounded, 'Custom tracking'),
     ];
 
@@ -533,12 +533,14 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     MarketProvider provider,
     view_mode.ViewModeProvider viewModeProvider, {
     required bool includeAllIndices,
+    bool isIpoEnabled = false,
   }) {
-    // If User mode, show only 3 pages: Dashboard, Market Analysis, Heatmap
+    // If User mode, show only user pages
     if (viewModeProvider.isUserMode) {
       return _buildUserModeNavigationItems(
         provider,
         includeAllIndices: includeAllIndices,
+        isIpoEnabled: isIpoEnabled,
       );
     }
     
@@ -611,6 +613,14 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         page: wrap(const FoPage()),
         accentColor: accentColor,
       ),
+      if (isIpoEnabled)
+        NavigationItem(
+          title: 'IPO Center',
+          subtitle: 'Upcoming & listed IPOs',
+          icon: Icons.new_releases_rounded,
+          page: wrap(const IpoLandingScreen()),
+          accentColor: accentColor,
+        ),
     ];
 
     final paperDesk = widget.paperDesk;
@@ -671,6 +681,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
   List<NavigationItem> _buildUserModeNavigationItems(
     MarketProvider provider, {
     required bool includeAllIndices,
+    bool isIpoEnabled = false,
   }) {
     final accentColor = ModuleColors.market;
     final paperDesk = widget.paperDesk;
@@ -722,6 +733,14 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         page: wrap(const FoPage()),
         accentColor: accentColor,
       ),
+      if (isIpoEnabled)
+        NavigationItem(
+          title: 'IPO Center',
+          subtitle: 'Upcoming & listed IPOs',
+          icon: Icons.new_releases_rounded,
+          page: wrap(const IpoLandingScreen()),
+          accentColor: accentColor,
+        ),
       NavigationItem(
         title: 'Watch List',
         subtitle: 'Custom tracking',
