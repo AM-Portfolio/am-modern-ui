@@ -198,9 +198,11 @@ jobs:
       preprod_namespace: "am-apps-preprod"
       prod_namespace: "am-apps-prod"
       dev_namespace: "am-apps-dev"
-      deploy_dev: true
-      deploy_prod: true
-      # Two preprod paths: GitOps (Argo on main) and/or Helm (fixed release -preprod + Kind Vault).
+      # Fleet: Argo only — never Helm prod/dev from CI (no kubeconfig in GitHub).
+      # Dev: manual set-tag. Prod: promote PR. Preprod: pin on main + feature Argo API.
+      deploy_dev: false
+      deploy_prod: false
+      # Feature branch → preprod-feature-argo (Argo API). Main → gitops_write_preprod pin.
       deploy_preprod: ${{ github.event_name != 'workflow_dispatch' && true || inputs.deploy_preprod_helm }}
       gitops_write_preprod: ${{ github.event_name != 'workflow_dispatch' && true || inputs.gitops_write_preprod }}
       force_preprod_helm: ${{ github.event_name == 'workflow_dispatch' && inputs.force_preprod_helm || false }}
