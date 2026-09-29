@@ -82,8 +82,10 @@ class PortfolioSidebar extends StatelessWidget {
 
     // New Trade Button
     final newTradeButton = SidebarFloatingActionMenu(
-      triggerColor: portfolioAccent,
-      actions: [],
+      onUploadPortfolio: () {},
+      onAddTrade: () {},
+      onAddAssetClass: () {},
+      onAddBasket: () {},
     );
 
     return SecondarySidebar(

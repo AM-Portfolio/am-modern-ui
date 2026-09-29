@@ -15,7 +15,6 @@ import 'pages/portfolio_heatmap_web_page.dart';
 import 'pages/portfolio_baskets_web_page.dart';
 import 'package:am_user_ui/am_user_ui.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intelligence/xray_class_add_sheet.dart';
-import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/asset_class/add_asset_class_workspace.dart';
 import 'package:am_portfolio_ui/features/basket/presentation/basket_navigation.dart';
 import 'package:am_portfolio_ui/features/basket/presentation/widgets/discover/discover_view_mode.dart';
 import 'package:am_design_system/shared/widgets/navigation/floating_menu_action.dart';
@@ -37,7 +36,6 @@ class PortfolioWebScreen extends ConsumerStatefulWidget {
     this.holdingsPageBuilder,
     this.onOpenDocIntel,
     this.uploadPortfolioBuilder,
-    this.addAssetClassBuilder,
   });
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
@@ -53,7 +51,6 @@ class PortfolioWebScreen extends ConsumerStatefulWidget {
   final Widget Function(BuildContext context, String portfolioId)? holdingsPageBuilder;
   final VoidCallback? onOpenDocIntel;
   final Widget Function(String portfolioId, String? portfolioName, VoidCallback onCancel)? uploadPortfolioBuilder;
-  final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addAssetClassBuilder;
 
   @override
   ConsumerState<PortfolioWebScreen> createState() => _PortfolioWebScreenState();
@@ -70,7 +67,6 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
   String? _currentPortfolioId;
   String? _currentPortfolioName;
   bool _isAddingTrade = false;
-  bool _isAddingAssetClass = false;
   bool _isUploadingPortfolio = false;
 
   @override
@@ -119,7 +115,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
   }
 
   Future<bool> _promptDiscardChanges() async {
-    if (!_isAddingTrade && !_isUploadingPortfolio && !_isAddingAssetClass) return true;
+    if (!_isAddingTrade && !_isUploadingPortfolio) return true;
 
     final shouldDiscard = await showDialog<bool>(
       context: context,
@@ -143,7 +139,6 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
     if (shouldDiscard == true) {
       setState(() {
         _isAddingTrade = false;
-        _isAddingAssetClass = false;
         _isUploadingPortfolio = false;
       });
       return true;
@@ -306,9 +301,8 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
                   subtitle: 'Create a new asset class',
                   iconColor: ModuleColors.market,
                   onTap: () async {
-                    if (_isAddingAssetClass) return;
                     if (await _promptDiscardChanges()) {
-                      setState(() { _isAddingAssetClass = true; });
+                      showXrayClassAddSheet(context: context, portfolioId: _currentPortfolioId!, onSaved: () {});
                     }
                   },
                 ),
@@ -371,7 +365,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
                     )
                   else
                     const Spacer(),
-                  if (currentIndex == 0 && !_isAddingTrade && !_isAddingAssetClass && !_isUploadingPortfolio) ...[
+                  if (currentIndex == 0) ...[
                     const SizedBox(width: 12),
                     Consumer(
                       builder: (context, ref, _) {
@@ -417,21 +411,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
                         });
                       },
                     )
-                  : (_isAddingAssetClass && _currentPortfolioId != null)
-                      ? (widget.addAssetClassBuilder != null
-                          ? widget.addAssetClassBuilder!(
-                              context,
-                              _currentPortfolioId!,
-                              _currentPortfolioName ?? widget.selectedPortfolioName,
-                              () { setState(() { _isAddingAssetClass = false; }); },
-                            )
-                          : AddAssetClassWorkspace(
-                              portfolioId: _currentPortfolioId!,
-                              portfolioName: _currentPortfolioName ?? widget.selectedPortfolioName,
-                              onOpenDocIntel: widget.onOpenDocIntel,
-                              onComplete: () { setState(() { _isAddingAssetClass = false; }); },
-                            ))
-                      : (_isUploadingPortfolio && widget.uploadPortfolioBuilder != null && _currentPortfolioId != null)
+                  : (_isUploadingPortfolio && widget.uploadPortfolioBuilder != null && _currentPortfolioId != null)
                       ? widget.uploadPortfolioBuilder!(
                           _currentPortfolioId!,
                           _currentPortfolioName ?? widget.selectedPortfolioName,
@@ -488,9 +468,8 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
                     subtitle: 'Create a new asset class',
                     iconColor: ModuleColors.market,
                     onTap: () async {
-                      if (_isAddingAssetClass) return;
                       if (await _promptDiscardChanges()) {
-                        setState(() { _isAddingAssetClass = true; });
+                        showXrayClassAddSheet(context: context, portfolioId: _currentPortfolioId!, onSaved: () {});
                       }
                     },
                   ),

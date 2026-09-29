@@ -14,7 +14,6 @@ import '../../internal/data/dtos/portfolio_update_request_dto.dart';
 import 'widgets/portfolio_tab_content_widget.dart';
 import 'widgets/portfolio_form_modal.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intelligence/xray_class_add_sheet.dart';
-import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/asset_class/add_asset_class_workspace.dart';
 
 /// Mobile-optimized portfolio screen with bottom navigation and portfolio selection
 class PortfolioMobileScreen extends ConsumerStatefulWidget {
@@ -30,7 +29,6 @@ class PortfolioMobileScreen extends ConsumerStatefulWidget {
     this.addTradeBuilder,
     this.uploadPortfolioBuilder,
     this.onOpenDocIntel,
-    this.addAssetClassBuilder,
   });
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
@@ -42,7 +40,6 @@ class PortfolioMobileScreen extends ConsumerStatefulWidget {
   final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
   final Widget Function(String portfolioId, String? portfolioName, VoidCallback onCancel)? uploadPortfolioBuilder;
   final VoidCallback? onOpenDocIntel;
-  final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addAssetClassBuilder;
 
   @override
   ConsumerState<PortfolioMobileScreen> createState() =>
@@ -74,7 +71,6 @@ class _PortfolioMobileScreenState extends ConsumerState<PortfolioMobileScreen> {
               addTradeBuilder: widget.addTradeBuilder,
               uploadPortfolioBuilder: widget.uploadPortfolioBuilder,
               onOpenDocIntel: widget.onOpenDocIntel,
-              addAssetClassBuilder: widget.addAssetClassBuilder,
             ),
           ),
           loading: () =>
@@ -136,7 +132,6 @@ class PortfolioMobileView extends StatefulWidget {
     this.addTradeBuilder,
     this.uploadPortfolioBuilder,
     this.onOpenDocIntel,
-    this.addAssetClassBuilder,
   });
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
@@ -148,7 +143,6 @@ class PortfolioMobileView extends StatefulWidget {
   final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
   final Widget Function(String portfolioId, String? portfolioName, VoidCallback onCancel)? uploadPortfolioBuilder;
   final VoidCallback? onOpenDocIntel;
-  final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addAssetClassBuilder;
 
   @override
   State<PortfolioMobileView> createState() => _PortfolioMobileViewState();
@@ -159,7 +153,6 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
   late TabController _tabController;
   String? _currentPortfolioId;
   bool _isAddingTrade = false;
-  bool _isAddingAssetClass = false;
   bool _isUploadingPortfolio = false;
   bool _wasOnBasketsTab = false;
 
@@ -292,7 +285,6 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     setState(() {
       _tabController.index = index;
       _isAddingTrade = false;
-      _isAddingAssetClass = false;
       _isUploadingPortfolio = false;
     });
     final slug = _tabSlugFromIndex(index);
@@ -424,12 +416,11 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
               subtitle: 'Create a new asset class',
               iconColor: ModuleColors.market,
               onTap: () {
-                if (_isAddingAssetClass) return;
-                setState(() {
-                  _isAddingAssetClass = true;
-                  _isAddingTrade = false;
-                  _isUploadingPortfolio = false;
-                });
+                showXrayClassAddSheet(
+                  context: context,
+                  portfolioId: _currentPortfolioId!,
+                  onSaved: () {},
+                );
               },
             ),
             FloatingMenuAction(
@@ -500,19 +491,19 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
           SecondarySidebarItem(
             title: 'Holdings',
             icon: Icons.wallet,
-            isSelected: _tabController.index == 1 && !_isAddingTrade && !_isUploadingPortfolio && !_isAddingAssetClass,
+            isSelected: _tabController.index == 1 && !_isAddingTrade && !_isUploadingPortfolio,
             onTap: () => _selectTab(1),
           ),
           SecondarySidebarItem(
             title: 'Heatmap',
             icon: Icons.grid_view,
-            isSelected: _tabController.index == 2 && !_isAddingTrade && !_isUploadingPortfolio && !_isAddingAssetClass,
+            isSelected: _tabController.index == 2 && !_isAddingTrade && !_isUploadingPortfolio,
             onTap: () => _selectTab(2),
           ),
           SecondarySidebarItem(
             title: 'Baskets',
             icon: Icons.shopping_basket_outlined,
-            isSelected: _tabController.index == 3 && !_isAddingTrade && !_isUploadingPortfolio && !_isAddingAssetClass,
+            isSelected: _tabController.index == 3 && !_isAddingTrade && !_isUploadingPortfolio,
             onTap: () => _selectTab(3),
           ),
         ],
@@ -529,21 +520,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
                   });
                 },
               )
-            : (_isAddingAssetClass && _currentPortfolioId != null)
-                ? (widget.addAssetClassBuilder != null
-                    ? widget.addAssetClassBuilder!(
-                        context,
-                        _currentPortfolioId!,
-                        currentName,
-                        () { setState(() { _isAddingAssetClass = false; }); },
-                      )
-                    : AddAssetClassWorkspace(
-                        portfolioId: _currentPortfolioId!,
-                        portfolioName: currentName,
-                        onOpenDocIntel: widget.onOpenDocIntel,
-                        onComplete: () { setState(() { _isAddingAssetClass = false; }); },
-                      ))
-                : (_isUploadingPortfolio &&
+            : (_isUploadingPortfolio &&
                 widget.uploadPortfolioBuilder != null &&
                 _currentPortfolioId != null)
                 ? widget.uploadPortfolioBuilder!(
