@@ -147,8 +147,12 @@ def run_cmd(package, cmd_parts, env_vars=None):
             p = subprocess.Popen(cmd_parts, cwd=package_dir, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", shell=is_windows)
             try:
                 for line in p.stdout:
-                    sys.stdout.write(line)
-                    sys.stdout.flush()
+                    try:
+                        sys.stdout.write(line)
+                        sys.stdout.flush()
+                    except Exception:
+                        sys.stdout.buffer.write(line.encode("utf-8", errors="replace"))
+                        sys.stdout.flush()
                     f.write(line)
                     f.flush()
             except KeyboardInterrupt:
