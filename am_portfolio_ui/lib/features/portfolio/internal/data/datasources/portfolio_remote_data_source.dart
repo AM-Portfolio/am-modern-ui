@@ -75,8 +75,9 @@ abstract class PortfolioRemoteDataSource {
   Future<void> replaceAssetClassList(
     String portfolioId,
     String assetClass,
-    List<Map<String, dynamic>> items,
-  );
+    List<Map<String, dynamic>> items, {
+    String? className,
+  });
 
   /// Get portfolios list from remote API
   Future<PortfolioListDto> getPortfoliosList();
@@ -771,8 +772,9 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
   Future<void> replaceAssetClassList(
     String portfolioId,
     String assetClass,
-    List<Map<String, dynamic>> items,
-  ) async {
+    List<Map<String, dynamic>> items, {
+    String? className,
+  }) async {
     CommonLogger.methodEntry(
       'replaceAssetClassList',
       tag: 'PortfolioRemoteDataSource',
@@ -788,9 +790,14 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
         _baseUrl,
         PortfolioEndpoints.assetClass(portfolioId, assetClass),
       );
+      final body = <String, dynamic>{'items': items};
+      if (className != null && className.isNotEmpty) {
+        body['className'] = className;
+      }
+      
       await _apiClient.put<void>(
         baseUri,
-        body: <String, dynamic>{'items': items},
+        body: body,
         parser: (_) {},
       );
       CommonLogger.methodExit(
