@@ -222,7 +222,16 @@ class _HoldingCardState extends ConsumerState<_HoldingCard> {
               final val = (doc.key?.symbol ?? '').toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
               if (val.isNotEmpty && !seen.contains(val)) {
                 seen.add(val);
-                results.add(doc);
+                var cName = doc.metadata?.companyName;
+                market.SecurityDocument finalDoc = doc;
+                if (cName != null && cName.toLowerCase().contains('template')) {
+                  cName = cName.replaceAll(RegExp(r'\s*·\s*Template', caseSensitive: false), '');
+                  finalDoc = market.SecurityDocument(
+                    key: doc.key,
+                    metadata: market.SecurityMetadata(companyName: cName),
+                  );
+                }
+                results.add(finalDoc);
               }
             }
             widget.sessionCache.put(cacheKey, results);
