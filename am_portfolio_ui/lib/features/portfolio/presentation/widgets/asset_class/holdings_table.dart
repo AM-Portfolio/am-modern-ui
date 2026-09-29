@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
@@ -7,7 +8,7 @@ import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/asset_cl
 import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intelligence/intelligence_suggest_search.dart';
 import 'package:am_portfolio_ui/features/portfolio/providers/portfolio_providers.dart';
 
-class HoldingsTable extends ConsumerWidget {
+class HoldingsTable extends ConsumerStatefulWidget {
   const HoldingsTable({
     super.key,
     required this.isDesktop,
@@ -20,7 +21,20 @@ class HoldingsTable extends ConsumerWidget {
   final VoidCallback? onOpenDocIntel;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HoldingsTable> createState() => _HoldingsTableState();
+}
+
+class _HoldingsTableState extends ConsumerState<HoldingsTable> {
+  final _SessionSearchCache _sessionCache = _SessionSearchCache();
+
+  @override
+  void dispose() {
+    _sessionCache.clear();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final type = ref.watch(addAssetClassTypeProvider);
     final holdings = ref.watch(addAssetClassHoldingsProvider);
@@ -29,16 +43,16 @@ class HoldingsTable extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Container(
-          padding: EdgeInsets.all(isDesktop ? 12 : 0),
+          padding: EdgeInsets.all(widget.isDesktop ? 12 : 0),
           decoration: BoxDecoration(
-            color: isDesktop ? theme.colorScheme.surface : Colors.transparent,
+            color: widget.isDesktop ? theme.colorScheme.surface : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
-            border: isDesktop ? Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3)) : null,
+            border: widget.isDesktop ? Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3)) : null,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (isDesktop) _TableHeader(type: type),
+              if (widget.isDesktop) _TableHeader(type: type),
               ...holdings.asMap().entries.map((entry) {
                 final index = entry.key;
                 final holding = entry.value;
@@ -48,8 +62,9 @@ class HoldingsTable extends ConsumerWidget {
                     index: index,
                     holding: holding,
                     type: type,
-                    portfolioId: portfolioId,
-                    isDesktop: isDesktop,
+                    portfolioId: widget.portfolioId,
+                    isDesktop: widget.isDesktop,
+                    sessionCache: _sessionCache,
                   ),
                 );
               }),
@@ -92,12 +107,20 @@ class HoldingsTable extends ConsumerWidget {
 }
 
 class _HoldingCard extends ConsumerStatefulWidget {
-  const _HoldingCard({required this.index, required this.holding, required this.type, required this.portfolioId, required this.isDesktop});
+  const _HoldingCard({
+    required this.index,
+    required this.holding,
+    required this.type,
+    required this.portfolioId,
+    required this.isDesktop,
+    required this.sessionCache,
+  });
   final int index;
   final HoldingFormState holding;
   final String type;
   final String portfolioId;
   final bool isDesktop;
+  final _SessionSearchCache sessionCache;
 
   @override
   ConsumerState<_HoldingCard> createState() => _HoldingCardState();
@@ -108,6 +131,8 @@ class _HoldingCardState extends ConsumerState<_HoldingCard> {
   late TextEditingController _qtyController;
   late TextEditingController _priceController;
   late TextEditingController _totalController;
+  Timer? _debounceTimer;
+  int _requestId = 0;
 
   @override
   void initState() {
@@ -147,6 +172,7 @@ class _HoldingCardState extends ConsumerState<_HoldingCard> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _nameController.dispose();
     _qtyController.dispose();
     _priceController.dispose();
@@ -167,9 +193,48 @@ class _HoldingCardState extends ConsumerState<_HoldingCard> {
       ref.read(addAssetClassHoldingsProvider.notifier).updateRow(holding.id, updater);
     }
     
-    Future<List<market.SecurityDocument>> searchNames(String query) async {
-      final remote = await ref.read(portfolioRemoteDataSourceProvider.future);
-      return searchClassAddNames(remote: remote, portfolioId: widget.portfolioId, query: query, wire: type);
+    Future<List<market.SecurityDocument>> _searchNames(String query) async {
+      if (widget.type == 'cash') return const [];
+
+      final q = query.trim();
+      if (q.isEmpty) return const [];
+
+      final cacheKey = '${widget.type}:$q';
+      final cached = widget.sessionCache.get(cacheKey);
+      if (cached != null) return cached;
+
+      _debounceTimer?.cancel();
+      final completer = Completer<List<market.SecurityDocument>>();
+      _debounceTimer = Timer(const Duration(milliseconds: 300), () async {
+        final myId = ++_requestId;
+        try {
+          final remote = await ref.read(portfolioRemoteDataSourceProvider.future);
+          final rawResults = await searchClassAddNames(
+            remote: remote,
+            portfolioId: widget.portfolioId,
+            query: q,
+            wire: widget.type,
+          );
+          if (myId == _requestId) {
+            final seen = <String>{};
+            final results = <market.SecurityDocument>[];
+            for (final doc in rawResults) {
+              final val = (doc.key?.symbol ?? '').toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+              if (val.isNotEmpty && !seen.contains(val)) {
+                seen.add(val);
+                results.add(doc);
+              }
+            }
+            widget.sessionCache.put(cacheKey, results);
+            if (!completer.isCompleted) completer.complete(results);
+          } else {
+            if (!completer.isCompleted) completer.complete(const []);
+          }
+        } catch (_) {
+          if (!completer.isCompleted) completer.complete(const []);
+        }
+      });
+      return completer.future;
     }
 
     void onNameSelected(String name) {
@@ -178,35 +243,58 @@ class _HoldingCardState extends ConsumerState<_HoldingCard> {
     }
 
     Widget buildNameField() {
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          if (isFlatLayout) ...[
-            SizedBox(
-              width: 24,
-              child: Text(
-                '${widget.index + 1}',
-                style: TextStyle(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
+      final numberLabel = isFlatLayout
+          ? [
+              SizedBox(
+                width: 24,
+                child: Text(
+                  '${widget.index + 1}',
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ]
+          : <Widget>[];
+
+      if (widget.type == 'cash') {
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            ...numberLabel,
+            Expanded(
+              child: SizedBox(
+                height: 38,
+                child: _buildInput(context,
+                  controller: _nameController,
+                  hint: classAddNameHint('cash'),
+                  onChanged: (v) => update((h) => h.copyWith(name: v)),
                 ),
               ),
             ),
-            const SizedBox(width: 8),
           ],
+        );
+      }
+
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          ...numberLabel,
           Expanded(
             child: SizedBox(
               height: 38,
               child: SmartSearchAnchor(
                 controller: _nameController,
                 compact: true,
-                hintText: classAddNameHint(type),
+                hintText: classAddNameHint(widget.type),
                 accentColor: ModuleColors.portfolio,
                 forceUppercase: false,
                 resultBadge: null,
                 overlayPlacement: SmartSearchOverlayPlacement.below,
                 onSelected: onNameSelected,
-                searchHandler: searchNames,
+                searchHandler: _searchNames,
               ),
             ),
           ),
@@ -301,6 +389,13 @@ class _HoldingCardState extends ConsumerState<_HoldingCard> {
                 Expanded(flex: 13, child: buildQuantityField()),
                 const SizedBox(width: 12),
                 Expanded(flex: 18, child: buildPriceField()),
+              ] else ...[
+                const SizedBox(width: 12),
+                const Spacer(flex: 18),
+                const SizedBox(width: 12),
+                const Spacer(flex: 13),
+                const SizedBox(width: 12),
+                const Spacer(flex: 18),
               ],
               const SizedBox(width: 12),
               Expanded(flex: 16, child: buildTotalField()),
@@ -547,6 +642,13 @@ class _TableHeader extends StatelessWidget {
             Expanded(flex: 13, child: headerText('Quantity (Optional)', align: TextAlign.right)),
             const SizedBox(width: 12),
             Expanded(flex: 18, child: headerText('Price per unit (Optional)', align: TextAlign.right)),
+          ] else ...[
+            const SizedBox(width: 12),
+            const Spacer(flex: 18),
+            const SizedBox(width: 12),
+            const Spacer(flex: 13),
+            const SizedBox(width: 12),
+            const Spacer(flex: 18),
           ],
           const SizedBox(width: 12),
           Expanded(flex: 16, child: headerText('Total Value (INR)', align: TextAlign.right)),
@@ -556,4 +658,19 @@ class _TableHeader extends StatelessWidget {
       ),
     );
   }
+}
+
+class _SessionSearchCache {
+  _SessionSearchCache({this.maxSize = 50});
+  final int maxSize;
+  final _map = <String, List<market.SecurityDocument>>{};
+
+  List<market.SecurityDocument>? get(String key) => _map[key];
+
+  void put(String key, List<market.SecurityDocument> value) {
+    if (_map.length >= maxSize) _map.remove(_map.keys.first);
+    _map[key] = value;
+  }
+
+  void clear() => _map.clear();
 }
