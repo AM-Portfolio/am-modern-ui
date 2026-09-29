@@ -111,7 +111,6 @@ class PortfolioHeaderWidget extends StatelessWidget {
                       ),
                     ),
                   ),
-                  ),
                 ],
               ),
             ),

@@ -189,29 +189,13 @@ jobs:
       contents: write
       packages: write
       id-token: write
-    uses: AM-Portfolio/am-pipelines/.github/workflows/central-build-publish.yml@main
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-build-publish-contabo.yml@main
     with:
       language: "flutter"
       working_directory: "am_app"
       build_context: ".."
       image_name: "am-modern-ui"
-      preprod_namespace: "am-apps-preprod"
-      prod_namespace: "am-apps-prod"
-      dev_namespace: "am-apps-dev"
-      deploy_dev: true
-      deploy_prod: true
-      # Two preprod paths: GitOps (Argo on main) and/or Helm (fixed release -preprod + Kind Vault).
-      deploy_preprod: ${{ github.event_name != 'workflow_dispatch' && true || inputs.deploy_preprod_helm }}
-      gitops_write_preprod: ${{ github.event_name != 'workflow_dispatch' && true || inputs.gitops_write_preprod }}
-      force_preprod_helm: ${{ github.event_name == 'workflow_dispatch' && inputs.force_preprod_helm || false }}
-      gitops_values_path: "am_app"
-      gh_env_dev: "web-dev"
-      gh_env_preprod: "web-preprod"
-      gh_env_prod: "web-prod"
-      skip_secrets_scan: true
-      skip_iac_scan: true
-      skip_vulnerability_scan: false
-      no_cache: true
+      skip_security_scan: true
     secrets: inherit
 
   # ============================================================
@@ -257,3 +241,4 @@ jobs:
       gh_env_preprod: "android-preprod"
       gh_env_prod: "android-prod"
     secrets: inherit
+
