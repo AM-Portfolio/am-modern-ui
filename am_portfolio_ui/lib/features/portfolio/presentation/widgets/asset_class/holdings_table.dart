@@ -161,6 +161,7 @@ class _HoldingCardState extends ConsumerState<_HoldingCard> {
     final holding = widget.holding;
     final type = widget.type;
     final holdingsCount = ref.watch(addAssetClassHoldingsProvider).length;
+    final isFlatLayout = MediaQuery.sizeOf(context).width >= 900;
     
     void update(HoldingFormState Function(HoldingFormState) updater) {
       ref.read(addAssetClassHoldingsProvider.notifier).updateRow(holding.id, updater);
@@ -184,7 +185,7 @@ class _HoldingCardState extends ConsumerState<_HoldingCard> {
             SizedBox(
               width: 24,
               child: Text(
-                '${index + 1}',
+                '${widget.index + 1}',
                 style: TextStyle(
                   color: theme.colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
@@ -288,7 +289,6 @@ class _HoldingCardState extends ConsumerState<_HoldingCard> {
       );
     }
 
-    final isFlatLayout = MediaQuery.sizeOf(context).width >= 900;
     final content = isFlatLayout
         ? Row(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -544,9 +544,9 @@ class _TableHeader extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(flex: 18, child: headerText('Segment (Optional)')),
             const SizedBox(width: 12),
-            Expanded(flex: 13, child: headerText('Quantity', align: TextAlign.right)),
+            Expanded(flex: 13, child: headerText('Quantity (Optional)', align: TextAlign.right)),
             const SizedBox(width: 12),
-            Expanded(flex: 18, child: headerText('Price per unit', align: TextAlign.right)),
+            Expanded(flex: 18, child: headerText('Price per unit (Optional)', align: TextAlign.right)),
           ],
           const SizedBox(width: 12),
           Expanded(flex: 16, child: headerText('Total Value (INR)', align: TextAlign.right)),
