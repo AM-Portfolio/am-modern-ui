@@ -163,13 +163,18 @@ class _SidebarFloatingActionMenuState extends State<SidebarFloatingActionMenu>
 
   @override
   Widget build(BuildContext context) {
-    return CompositedTransformTarget(
-      link: _layerLink,
-      child: OverlayPortal(
-        controller: _overlayController,
-        overlayChildBuilder: _buildOverlay,
-        child: widget.compact ? _buildCompactTrigger() : _buildFullPillTrigger(),
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isActuallyCompact = widget.compact || constraints.maxWidth < 120;
+        return CompositedTransformTarget(
+          link: _layerLink,
+          child: OverlayPortal(
+            controller: _overlayController,
+            overlayChildBuilder: _buildOverlay,
+            child: isActuallyCompact ? _buildCompactTrigger() : _buildFullPillTrigger(),
+          ),
+        );
+      },
     );
   }
 
