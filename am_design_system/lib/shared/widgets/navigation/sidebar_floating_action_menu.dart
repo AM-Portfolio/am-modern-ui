@@ -172,13 +172,13 @@ class _SidebarFloatingActionMenuState extends State<SidebarFloatingActionMenu>
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isActuallyCompact = widget.compact || constraints.maxWidth < 120;
+        _isActuallyCompact = widget.compact || constraints.maxWidth < 120;
         return CompositedTransformTarget(
           link: _layerLink,
           child: OverlayPortal(
             controller: _overlayController,
             overlayChildBuilder: _buildOverlay,
-            child: isActuallyCompact ? _buildCompactTrigger() : _buildFullPillTrigger(),
+            child: _isActuallyCompact ? _buildCompactTrigger() : _buildFullPillTrigger(),
           ),
         );
       },
@@ -380,4 +380,5 @@ class _FloatingMenuPill extends StatelessWidget {
     );
   }
 }
+
 
