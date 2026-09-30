@@ -138,7 +138,7 @@ class _AddAssetClassWorkspaceState extends ConsumerState<AddAssetClassWorkspace>
     final stickyBar = Container(
       padding: EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.md, AppSpacing.xl, AppSpacing.md + MediaQuery.viewInsetsOf(context).bottom),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1a1a2e).withValues(alpha: 0.95) : theme.colorScheme.surface,
+        color: isDark ? theme.colorScheme.surface.withValues(alpha: 0.95) : theme.colorScheme.surface,
         border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5))),
         boxShadow: [
           BoxShadow(
@@ -283,7 +283,7 @@ class StepBadge extends StatelessWidget {
       child: Center(
         child: Text(
           step,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12),
+          style: TextStyle(color: context.colors.actionPrimaryFg, fontWeight: FontWeight.w800, fontSize: 12),
         ),
       ),
     );

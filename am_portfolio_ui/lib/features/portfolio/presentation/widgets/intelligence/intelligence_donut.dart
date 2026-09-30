@@ -33,7 +33,10 @@ class IntelligenceDonutView extends StatelessWidget {
       width: size,
       height: size,
       child: CustomPaint(
-        painter: _SimpleDonutPainter(weights: weights),
+        painter: _SimpleDonutPainter(
+          weights: weights,
+          emptyTrackColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+        ),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -61,9 +64,10 @@ class IntelligenceDonutView extends StatelessWidget {
 }
 
 class _SimpleDonutPainter extends CustomPainter {
-  _SimpleDonutPainter({required this.weights});
+  _SimpleDonutPainter({required this.weights, required this.emptyTrackColor});
 
   final List<XrayWeight> weights;
+  final Color emptyTrackColor;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -79,7 +83,7 @@ class _SimpleDonutPainter extends CustomPainter {
         Paint()
           ..isAntiAlias = true
           ..style = PaintingStyle.stroke
-          ..color = const Color(0xFFE5E7EB).withValues(alpha: 0.1) // very subtle grey
+          ..color = emptyTrackColor
           ..strokeWidth = 14,
       );
       return;
