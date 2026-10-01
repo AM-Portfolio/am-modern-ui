@@ -25,7 +25,7 @@ class IpoDetailsHeader extends StatelessWidget {
                   color: context.textPrimary,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xs),
               Row(
                 children: [
                   _buildStatusBadge(context),
@@ -54,8 +54,8 @@ class IpoDetailsHeader extends StatelessWidget {
     }
 
     return Container(
-      width: 64,
-      height: 64,
+      width: AppSpacing.xxl + AppSpacing.md,
+      height: AppSpacing.xxl + AppSpacing.md,
       decoration: BoxDecoration(
         color: context.surfaceColor,
         borderRadius: BorderRadius.circular(AppRadii.md),
@@ -94,7 +94,7 @@ class IpoDetailsHeader extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
       decoration: BoxDecoration(
         color: badgeColor,
         borderRadius: BorderRadius.circular(AppRadii.sm),
@@ -111,7 +111,7 @@ class IpoDetailsHeader extends StatelessWidget {
   
   Widget _buildIssueTypeBadge(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
       decoration: BoxDecoration(
         color: context.surfaceColor,
         border: Border.all(color: context.borderColor),

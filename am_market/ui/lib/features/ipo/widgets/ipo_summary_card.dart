@@ -40,7 +40,7 @@ class IpoSummaryCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppSpacing.xxs),
                     Text(
                       ipo.biddingStartDate != null && ipo.biddingEndDate != null
                           ? '${_formatDate(ipo.biddingStartDate!)} - ${_formatDate(ipo.biddingEndDate!)}'
@@ -84,8 +84,8 @@ class IpoSummaryCard extends StatelessWidget {
     }
 
     return Container(
-      width: 48,
-      height: 48,
+      width: AppSpacing.xxl,
+      height: AppSpacing.xxl,
       decoration: BoxDecoration(
         color: context.surfaceColor,
         borderRadius: BorderRadius.circular(AppRadii.md),
@@ -123,7 +123,7 @@ class IpoSummaryCard extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
       decoration: BoxDecoration(
         color: badgeColor,
         borderRadius: BorderRadius.circular(AppRadii.sm),

@@ -101,16 +101,15 @@ class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
             if (count > 0) ...[
               const SizedBox(width: AppSpacing.xs),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: AppSpacing.xxs),
                 decoration: BoxDecoration(
                   color: isSelected ? ModuleColors.market : context.borderColor,
                   borderRadius: BorderRadius.circular(AppRadii.pill),
                 ),
                 child: Text(
                   count.toString(),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: isSelected ? context.marketTheme.accentText : context.textPrimary,
-                    fontSize: 10,
                   ),
                 ),
               ),

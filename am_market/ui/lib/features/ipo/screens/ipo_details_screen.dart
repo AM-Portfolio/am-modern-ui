@@ -4,6 +4,7 @@ import 'package:am_market_ui/features/ipo/providers/ipo_providers.dart';
 import 'package:am_market_ui/features/ipo/widgets/ipo_details_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class IpoDetailsScreen extends ConsumerWidget {
   final String ipoId;
@@ -170,7 +171,7 @@ class IpoDetailsScreen extends ConsumerWidget {
                       color: context.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: AppSpacing.xxs),
                   Text(
                     hasDate ? _formatDate(dateStr) : 'TBA',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -197,7 +198,7 @@ class IpoDetailsScreen extends ConsumerWidget {
             const Divider(),
             _buildDetailRow(context, 'Registrar', details.registrarInfo!.name ?? '--'),
           ],
-          if (details.rhpUrl != null || details.drhpUrl != null) ...[
+          if ((details.rhpUrl != null && details.rhpUrl!.isNotEmpty) || (details.drhpUrl != null && details.drhpUrl!.isNotEmpty)) ...[
             const Divider(),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -208,14 +209,14 @@ class IpoDetailsScreen extends ConsumerWidget {
                 ),
                 Row(
                   children: [
-                    if (details.drhpUrl != null)
+                    if (details.drhpUrl != null && details.drhpUrl!.isNotEmpty)
                       TextButton(
-                        onPressed: () {},
+                        onPressed: () => _launchDocumentUrl(details.drhpUrl),
                         child: const Text('DRHP'),
                       ),
-                    if (details.rhpUrl != null)
+                    if (details.rhpUrl != null && details.rhpUrl!.isNotEmpty)
                       TextButton(
-                        onPressed: () {},
+                        onPressed: () => _launchDocumentUrl(details.rhpUrl),
                         child: const Text('RHP'),
                       ),
                   ],
@@ -226,6 +227,16 @@ class IpoDetailsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _launchDocumentUrl(String? urlStr) async {
+    if (urlStr == null || urlStr.trim().isEmpty) return;
+    final uri = Uri.tryParse(urlStr.trim());
+    if (uri != null) {
+      try {
+        await launchUrl(uri);
+      } catch (_) {}
+    }
   }
 
   Widget _buildDetailRow(BuildContext context, String label, String value) {
