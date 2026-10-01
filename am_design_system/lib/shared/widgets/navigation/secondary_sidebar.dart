@@ -116,12 +116,12 @@ class SecondarySidebar extends StatelessWidget {
                     : _buildItemsList(context, items!, isDark)),
           ),
 
-          if (footer != null && !isCompact)
+          if (footer != null)
             Padding(
-              padding: const EdgeInsets.fromLTRB(
-                SidebarLayoutMetrics.contentInset,
+              padding: EdgeInsets.fromLTRB(
+                isCompact ? 16 : SidebarLayoutMetrics.contentInset,
                 16,
-                SidebarLayoutMetrics.contentInset,
+                isCompact ? 16 : SidebarLayoutMetrics.contentInset,
                 24,
               ),
               child: footer!,
