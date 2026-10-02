@@ -55,9 +55,9 @@ class FoHeaderCard extends ConsumerWidget {
     final chainChange = (chainData?['underlyingChange'] ?? chainData?['change'] as num?)?.toDouble() ?? 0.0;
     final chainPChange = (chainData?['underlyingPChange'] ?? chainData?['pChange'] as num?)?.toDouble() ?? 0.0;
 
-    final ltp = chainLtp > 0 ? chainLtp : (contractLtp > 0 ? contractLtp : 23118.60);
-    final change = chainChange != 0.0 ? chainChange : (contractChange != 0.0 ? contractChange : 80.45);
-    final pChange = chainPChange != 0.0 ? chainPChange : (contractPChange != 0.0 ? contractPChange : (ltp > 0 ? (change / ltp) * 100 : 0.35));
+    final ltp = chainLtp > 0 ? chainLtp : (contractLtp > 0 ? contractLtp : 0.0);
+    final change = chainChange != 0.0 ? chainChange : (contractChange != 0.0 ? contractChange : 0.0);
+    final pChange = chainPChange != 0.0 ? chainPChange : (contractPChange != 0.0 ? contractPChange : 0.0);
 
     final isPositive = change >= 0;
     final deltaColor = isPositive ? marketTheme.positive : marketTheme.negative;
