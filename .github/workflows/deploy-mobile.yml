@@ -119,3 +119,12 @@ jobs:
         with:
           name: ios-release-${{ github.event.inputs.environment }}
           path: am_app/build/ios/ipa/*.ipa
+
+      - name: Deploy Directly to TestFlight (App Store Connect)
+        if: ${{ github.event.inputs.upload == 'true' || github.event.inputs.upload == true }}
+        uses: apple-actions/upload-testflight-build@v1
+        with:
+          app-path: am_app/build/ios/ipa/*.ipa
+          issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          api-key-id: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          api-private-key: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
