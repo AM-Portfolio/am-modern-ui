@@ -191,6 +191,7 @@ jobs:
       id-token: write
     uses: AM-Portfolio/am-pipelines/.github/workflows/central-build-publish-contabo.yml@main
     with:
+      pipelines_ref: "main"
       language: "flutter"
       working_directory: "am_app"
       build_context: ".."
