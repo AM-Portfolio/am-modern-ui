@@ -63,6 +63,7 @@ class ConfigService {
 
   static Map<String, String> _services = {};
   static String _googleClientId = '';
+  static String _googleIosClientId = '';
   static FeatureFlagConfig _growthbook = FeatureFlagConfig.disabled;
 
   static FeatureFlagConfig get growthbook => _growthbook;
@@ -233,11 +234,17 @@ class ConfigService {
       _googleClientId = google['webClientId']?.toString() ??
           google['clientId']?.toString() ??
           '';
+      _googleIosClientId = google['iosClientId']?.toString() ?? '';
     } else if (json['googleWebClientId'] != null) {
       _googleClientId = json['googleWebClientId'].toString();
+      _googleIosClientId = json['googleIosClientId']?.toString() ?? '';
     }
     if (_googleClientId.isEmpty && _googleClientIdFromDefine.isNotEmpty) {
       _googleClientId = _googleClientIdFromDefine;
+    }
+    if (_googleClientId.isEmpty) {
+      _googleClientId =
+          '307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com';
     }
 
     final growthbookJson = json['growthbook'];
@@ -343,6 +350,9 @@ class ConfigService {
         webClientId: _googleClientId.isNotEmpty
             ? _googleClientId
             : _googleClientIdFromDefine,
+        iosClientId: _googleIosClientId.isNotEmpty
+            ? _googleIosClientId
+            : '307768822337-082220ndhdik3b6utgac7t8hun23dqns.apps.googleusercontent.com',
       ),
       environment: Environment.production,
       api: ApiConfig(

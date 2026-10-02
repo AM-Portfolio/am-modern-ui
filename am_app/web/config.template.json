@@ -3,7 +3,9 @@
   "domain": "",
   "services": {},
   "google": {
-    "webClientId": ""
+    "webClientId": "",
+    "iosClientId": "",
+    "androidClientId": ""
   },
   "growthbook": {
     "enabled": true,

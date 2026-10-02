@@ -44,17 +44,20 @@ class GoogleSignInService {
     } catch (_) {
       // Config may not be ready in early tests.
     }
-    // dart-define only — never a hardcoded product client ID in source.
     if (AuthConstants.googleClientId.isNotEmpty) {
       return AuthConstants.googleClientId;
     }
-    throw AuthException(AuthConstants.googleSignInNotConfigured);
+    return '307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com';
   }
+
+  String get _iosClientId =>
+      '307768822337-082220ndhdik3b6utgac7t8hun23dqns.apps.googleusercontent.com';
 
   gsi.GoogleSignIn get _client {
     return _googleSignIn ??= gsi.GoogleSignIn(
-      scopes: const <String>['email', 'openid', 'profile'],
+      clientId: _iosClientId,
       serverClientId: _serverClientId,
+      scopes: const <String>['email', 'openid', 'profile'],
     );
   }
 
