@@ -35,6 +35,10 @@ class GoogleSignInService {
   gsi.GoogleSignIn? _googleSignIn;
   gsi.GoogleSignInAccount? _currentUser;
 
+  static const _iosClientIdFromDefine = String.fromEnvironment(
+    'AM_GOOGLE_IOS_CLIENT_ID',
+  );
+
   String get _serverClientId {
     try {
       final configClientId = ConfigService.config.google.webClientId;
@@ -44,19 +48,25 @@ class GoogleSignInService {
     } catch (_) {
       // Config may not be ready in early tests.
     }
-    if (AuthConstants.googleClientId.isNotEmpty) {
-      return AuthConstants.googleClientId;
-    }
-    return '307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com';
+    return AuthConstants.googleClientId;
   }
 
-  String get _iosClientId =>
-      '307768822337-082220ndhdik3b6utgac7t8hun23dqns.apps.googleusercontent.com';
+  String get _iosClientId {
+    try {
+      final fromConfig = ConfigService.config.google.iosClientId;
+      if (fromConfig.isNotEmpty) return fromConfig;
+    } catch (_) {
+      // Config may not be ready in early tests.
+    }
+    return _iosClientIdFromDefine;
+  }
 
   gsi.GoogleSignIn get _client {
+    final iosId = _iosClientId;
+    final serverId = _serverClientId;
     return _googleSignIn ??= gsi.GoogleSignIn(
-      clientId: _iosClientId,
-      serverClientId: _serverClientId,
+      clientId: iosId.isNotEmpty ? iosId : null,
+      serverClientId: serverId.isNotEmpty ? serverId : null,
       scopes: const <String>['email', 'openid', 'profile'],
     );
   }

@@ -10,7 +10,7 @@ appConfig:
   growthbook:
     enabled: true
     apiHost: "https://growthbook.asrax.in/gbapi"
-    clientKey: "sdk-ymGHFQ46K2dxKaX"
+    clientKey: ""
 
 replicaCount: 1
 

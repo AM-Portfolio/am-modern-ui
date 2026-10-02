@@ -1,15 +1,15 @@
 {
-  "_comment": "Cluster dev — empty services uses https://{domain}/<service> paths.",
+  "_comment": "Cluster dev — empty services uses https://{domain}/<service> paths. Clients from GitHub secrets / local override.",
   "domain": "am-dev.asrax.in",
   "services": {},
   "google": {
-    "webClientId": "307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com",
-    "iosClientId": "307768822337-082220ndhdik3b6utgac7t8hun23dqns.apps.googleusercontent.com",
-    "androidClientId": "307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com"
+    "webClientId": "",
+    "iosClientId": "",
+    "androidClientId": ""
   },
   "growthbook": {
     "enabled": true,
     "apiHost": "https://growthbook.asrax.in/gbapi",
-    "clientKey": "sdk-GLujAhix8Foe5qoC"
+    "clientKey": ""
   }
 }

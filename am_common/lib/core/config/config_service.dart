@@ -16,6 +16,12 @@ class ConfigService {
   static const _googleClientIdFromDefine = String.fromEnvironment(
     'AM_GOOGLE_CLIENT_ID',
   );
+  static const _googleIosClientIdFromDefine = String.fromEnvironment(
+    'AM_GOOGLE_IOS_CLIENT_ID',
+  );
+  static const _growthbookClientKeyFromDefine = String.fromEnvironment(
+    'AM_GROWTHBOOK_CLIENT_KEY',
+  );
 
   /// No baked env host. Prefer same-tab host on web until Helm/config loads.
   static String _domain = _bootstrapDomain();
@@ -242,15 +248,26 @@ class ConfigService {
     if (_googleClientId.isEmpty && _googleClientIdFromDefine.isNotEmpty) {
       _googleClientId = _googleClientIdFromDefine;
     }
-    if (_googleClientId.isEmpty) {
-      _googleClientId =
-          '307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com';
+    if (_googleIosClientId.isEmpty &&
+        _googleIosClientIdFromDefine.isNotEmpty) {
+      _googleIosClientId = _googleIosClientIdFromDefine;
     }
 
     final growthbookJson = json['growthbook'];
     _growthbook = FeatureFlagConfig.fromJson(
       growthbookJson is Map<String, dynamic> ? growthbookJson : null,
     );
+    if (_growthbook.clientKey.isEmpty &&
+        _growthbookClientKeyFromDefine.isNotEmpty) {
+      final host = _growthbook.apiHost.isNotEmpty
+          ? _growthbook.apiHost
+          : 'https://growthbook.asrax.in/gbapi';
+      _growthbook = FeatureFlagConfig(
+        enabled: true,
+        apiHost: host,
+        clientKey: _growthbookClientKeyFromDefine,
+      );
+    }
 
     final envLabel = resolvedEnv;
     if (_services.isEmpty) {
@@ -352,7 +369,7 @@ class ConfigService {
             : _googleClientIdFromDefine,
         iosClientId: _googleIosClientId.isNotEmpty
             ? _googleIosClientId
-            : '307768822337-082220ndhdik3b6utgac7t8hun23dqns.apps.googleusercontent.com',
+            : _googleIosClientIdFromDefine,
       ),
       environment: Environment.production,
       api: ApiConfig(

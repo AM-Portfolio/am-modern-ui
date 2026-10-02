@@ -1,13 +1,15 @@
 {
-  "_comment": "Cluster preprod gateway (am-preprod; dual-host am.asrax.in until Phase 4).",
+  "_comment": "Cluster preprod gateway. Clients from GitHub secrets / local override.",
   "domain": "am-preprod.asrax.in",
   "services": {},
   "google": {
-    "webClientId": "307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com"
+    "webClientId": "",
+    "iosClientId": "",
+    "androidClientId": ""
   },
   "growthbook": {
     "enabled": true,
     "apiHost": "https://growthbook.asrax.in/gbapi",
-    "clientKey": "sdk-ymGHFQ46K2dxKaX"
+    "clientKey": ""
   }
 }

@@ -20,7 +20,8 @@ appConfig:
   growthbook:
     enabled: true
     apiHost: "https://growthbook.asrax.in/gbapi"
-    clientKey: "sdk-Cwr4MxBl0iqnKZJ"
+    # Set via Contabo CI helm param from GitHub secret GROWTHBOOK_CLIENT_KEY
+    clientKey: ""
 
 configMap:
   enabled: true

@@ -1,0 +1,145 @@
+# Mobile CI — Android + iOS (parallel)
+#
+# Branch policy:
+#   feature/**, develop, hotfix/**  → build artifacts only (no store upload)
+#   main                            → Internal Testing then full store deploy
+#                                     (Play Internal + TestFlight, then Production / App Store)
+#
+# Manual dispatch can force deploy flags (still prefer main for store).
+
+name: Mobile CI
+
+on:
+  push:
+    branches: ["main", "develop", "feature/**", "hotfix/**"]
+    paths:
+      - "am_app/**"
+      - "am_common/**"
+      - "am_design_system/**"
+      - "am_library/**"
+      - "am_auth_ui/**"
+      - "am_dashboard_ui/**"
+      - "am_market/**"
+      - "am_portfolio_ui/**"
+      - "am_trade_ui/**"
+      - "am_paper_ui/**"
+      - "am_user_ui/**"
+      - "am_ai_ui/**"
+      - "am_analysis/**"
+      - "am_diagnostic_ui/**"
+      - "am_doc_intelligence_ui/**"
+      - "am_subscription_ui/**"
+      - "am_news_ui/**"
+      - ".github/workflows/mobile-ci.yml"
+  pull_request:
+    branches: ["main", "develop"]
+    paths:
+      - "am_app/**"
+      - "am_common/**"
+      - "am_design_system/**"
+      - "am_library/**"
+      - "am_auth_ui/**"
+      - ".github/workflows/mobile-ci.yml"
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: "Force Internal+Production deploy (even off main; use carefully)"
+        required: false
+        type: boolean
+        default: false
+      am_domain:
+        description: "Override AM_DOMAIN dart-define (empty = prod default on main)"
+        required: false
+        type: string
+        default: ""
+      am_env:
+        description: "Override AM_ENV dart-define"
+        required: false
+        type: choice
+        options:
+          - ""
+          - dev
+          - preprod
+          - prod
+        default: ""
+
+jobs:
+  resolve:
+    name: Resolve branch policy
+    runs-on: ubuntu-latest
+    outputs:
+      deploy: ${{ steps.p.outputs.deploy }}
+      am_domain: ${{ steps.p.outputs.am_domain }}
+      am_env: ${{ steps.p.outputs.am_env }}
+    steps:
+      - id: p
+        shell: bash
+        run: |
+          REF="${GITHUB_REF_NAME}"
+          DEPLOY=false
+          if [ "$REF" = "main" ] || [ "${{ github.event.inputs.force_deploy }}" = "true" ]; then
+            DEPLOY=true
+          fi
+          DOMAIN="${{ github.event.inputs.am_domain }}"
+          ENV_LABEL="${{ github.event.inputs.am_env }}"
+          if [ -z "$DOMAIN" ]; then
+            if [ "$DEPLOY" = "true" ]; then
+              DOMAIN="am.asrax.in"
+            else
+              DOMAIN="am-preprod.asrax.in"
+            fi
+          fi
+          if [ -z "$ENV_LABEL" ]; then
+            if [ "$DEPLOY" = "true" ]; then
+              ENV_LABEL="prod"
+            else
+              ENV_LABEL="preprod"
+            fi
+          fi
+          echo "deploy=$DEPLOY" >> "$GITHUB_OUTPUT"
+          echo "am_domain=$DOMAIN" >> "$GITHUB_OUTPUT"
+          echo "am_env=$ENV_LABEL" >> "$GITHUB_OUTPUT"
+          echo "Branch=$REF deploy=$DEPLOY domain=$DOMAIN env=$ENV_LABEL"
+
+  android:
+    name: Android
+    needs: resolve
+    permissions:
+      contents: read
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@feature/mobile-android-ios-ci
+    with:
+      working_directory: am_app
+      build_mode: release
+      artifact_type: appbundle
+      run_analyze: true
+      run_tests: true
+      upload_artifact: true
+      package_name: com.asrax.aminvestment
+      am_domain: ${{ needs.resolve.outputs.am_domain }}
+      am_env: ${{ needs.resolve.outputs.am_env }}
+      deploy_internal: ${{ needs.resolve.outputs.deploy == 'true' }}
+      deploy_production: ${{ needs.resolve.outputs.deploy == 'true' }}
+      gh_env_preprod: android-internal
+      gh_env_prod: android-prod
+    secrets: inherit
+
+  ios:
+    name: iOS
+    needs: resolve
+    permissions:
+      contents: read
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-ios.yml@feature/mobile-android-ios-ci
+    with:
+      working_directory: am_app
+      build_mode: release
+      run_analyze: true
+      run_tests: true
+      upload_artifact: true
+      bundle_id: com.asrax.aminvestment
+      am_domain: ${{ needs.resolve.outputs.am_domain }}
+      am_env: ${{ needs.resolve.outputs.am_env }}
+      deploy_internal: ${{ needs.resolve.outputs.deploy == 'true' }}
+      deploy_production: ${{ needs.resolve.outputs.deploy == 'true' }}
+      gh_env_internal: ios-internal
+      gh_env_prod: ios-prod
+    secrets: inherit

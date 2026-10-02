@@ -1,8 +1,15 @@
 {
-  "_comment": "Copy to config.local.json (gitignored). Merged last for Google client ID / local service ports. Domain is ignored when AM_ENV is prod/dev/preprod (dart-define wins). For AM_ENV=local, set domain to the APIs you want (am.asrax.in or am-preprod.asrax.in).",
+  "_comment": "Copy to config.local.json (gitignored). Put real Google / GrowthBook client values here for local runs — never commit config.local.json.",
   "domain": "am.asrax.in",
   "services": {},
   "google": {
-    "webClientId": "YOUR_GOOGLE_WEB_CLIENT_ID.apps.googleusercontent.com"
+    "webClientId": "YOUR_GOOGLE_WEB_CLIENT_ID.apps.googleusercontent.com",
+    "iosClientId": "YOUR_GOOGLE_IOS_CLIENT_ID.apps.googleusercontent.com",
+    "androidClientId": "YOUR_GOOGLE_ANDROID_CLIENT_ID.apps.googleusercontent.com"
+  },
+  "growthbook": {
+    "enabled": true,
+    "apiHost": "https://growthbook.asrax.in/gbapi",
+    "clientKey": "YOUR_GROWTHBOOK_CLIENT_KEY"
   }
 }

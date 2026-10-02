@@ -1,13 +1,15 @@
 {
-  "_comment": "Cluster production gateway (am.asrax.in). Munish removed as app host.",
+  "_comment": "Cluster production gateway (am.asrax.in). Client keys injected at Contabo roll from GitHub secrets.",
   "domain": "am.asrax.in",
   "services": {},
   "google": {
-    "webClientId": ""
+    "webClientId": "",
+    "iosClientId": "",
+    "androidClientId": ""
   },
   "growthbook": {
     "enabled": true,
     "apiHost": "https://growthbook.asrax.in/gbapi",
-    "clientKey": "sdk-Cwr4MxBl0iqnKZJ"
+    "clientKey": ""
   }
 }
