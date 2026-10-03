@@ -14,6 +14,18 @@ appConfig:
 
 replicaCount: 1
 
+# Nginx SPA — probe "/" (not /health)
+probes:
+  port: 8080
+  startup:
+    path: "/"
+    failureThreshold: 30
+    periodSeconds: 10
+  liveness:
+    path: "/"
+  readiness:
+    path: "/"
+
 ingress:
   enabled: true
   className: "traefik"
