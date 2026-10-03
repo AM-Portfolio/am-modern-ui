@@ -1,8 +1,17 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:am_market_sdk/market/api.dart';
 import 'package:am_design_system/core/theme/color_extensions.dart';
 import 'typewriter_hint_controller.dart';
+
+/// Where recommendation overlay attaches relative to the text field.
+enum SmartSearchOverlayPlacement {
+  /// Open below when there is room; otherwise above (near bottom of viewport).
+  auto,
+  below,
+  above,
+}
 
 /**
  * Reusable, high-speed Smart Search & Recommendation widget.
@@ -34,6 +43,7 @@ class SmartSearchAnchor extends StatefulWidget {
     this.accentColor,
     this.forceUppercase = true,
     this.resultBadge = 'STOCK',
+    this.overlayPlacement = SmartSearchOverlayPlacement.auto,
   });
 
   final TextEditingController? controller;
@@ -52,6 +62,8 @@ class SmartSearchAnchor extends StatefulWidget {
   final bool forceUppercase;
   /// Overlay pill next to each result; null hides the badge (e.g. sectors).
   final String? resultBadge;
+  /// Stress/What-If footers often sit near the viewport bottom — use [above] or [auto].
+  final SmartSearchOverlayPlacement overlayPlacement;
 
   @override
   State<SmartSearchAnchor> createState() => _SmartSearchAnchorState();
@@ -218,15 +230,22 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
       return;
     }
 
+    // Always left-align to the field (compact used to force 320px + offset).
+    final overlayWidth = size.width;
+    final openAbove = _shouldOpenAbove(renderBox: renderBox, fieldSize: size);
+
     _overlayEntry = OverlayEntry(
       builder: (context) {
         final effectiveAccentColor = widget.accentColor ?? context.colors.actionPrimaryBg;
+        final sectorMode = widget.resultBadge == null;
         return Positioned(
-          width: widget.compact ? 320 : size.width,
+          width: overlayWidth,
           child: CompositedTransformFollower(
             link: _layerLink,
             showWhenUnlinked: false,
-            offset: Offset(widget.compact ? -(320 - size.width) : 0, size.height + 6),
+            targetAnchor: openAbove ? Alignment.topLeft : Alignment.bottomLeft,
+            followerAnchor: openAbove ? Alignment.bottomLeft : Alignment.topLeft,
+            offset: Offset(0, openAbove ? -6 : 6),
             child: Material(
               elevation: 8,
               borderRadius: BorderRadius.circular(12),
@@ -240,7 +259,7 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.35),
                     blurRadius: 12,
-                    offset: const Offset(0, 6),
+                    offset: Offset(0, openAbove ? -6 : 6),
                   ),
                 ],
               ),
@@ -368,7 +387,7 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
                 separatorBuilder: (context, index) => Divider(
                   color: context.colors.divider,
                   height: 1,
-                  indent: 48,
+                  indent: sectorMode ? 12 : 48,
                 ),
                 itemBuilder: (context, index) {
                   final item = _recommendations[index];
@@ -384,9 +403,19 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
                       onTap: () => _handleSelection(symbol),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-                        child: Row(
+                        child: sectorMode
+                            ? Text(
+                                name.isNotEmpty ? name : symbol,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: context.colors.textPrimary,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              )
+                            : Row(
                           children: [
-                            // Circular Initial Avatar Badge (e.g. 'H', 'T', 'A')
                             Container(
                               width: 30,
                               height: 30,
@@ -409,7 +438,6 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
                               ),
                             ),
                             const SizedBox(width: 10),
-                            // Company Name & Symbol
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -480,6 +508,30 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
     _overlayEntry = null;
   }
 
+  /// Prefer opening above when the field sits near the bottom of the viewport
+  /// (Stress/What-If custom rows) so recommendations stay on-screen.
+  bool _shouldOpenAbove({
+    required RenderBox renderBox,
+    required Size fieldSize,
+  }) {
+    switch (widget.overlayPlacement) {
+      case SmartSearchOverlayPlacement.above:
+        return true;
+      case SmartSearchOverlayPlacement.below:
+        return false;
+      case SmartSearchOverlayPlacement.auto:
+        final origin = renderBox.localToGlobal(Offset.zero);
+        final mq = MediaQuery.of(context);
+        final spaceBelow = mq.size.height -
+            (origin.dy + fieldSize.height) -
+            mq.viewPadding.bottom;
+        final spaceAbove = origin.dy - mq.viewPadding.top;
+        const preferred = 280.0;
+        final needBelow = math.min(preferred, 200.0);
+        return spaceBelow < needBelow && spaceAbove > spaceBelow;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final effectiveAccentColor = widget.accentColor ?? context.colors.actionPrimaryBg;
@@ -504,6 +556,7 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
         style: TextStyle(
           color: context.colors.textPrimary,
           fontSize: widget.compact ? 13 : 15,
+          height: 1.2,
         ),
         decoration: InputDecoration(
           hintText: _typewriterController != null
@@ -511,14 +564,19 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
               : (widget.hintText ?? (widget.compact ? 'Symbol…' : 'e.g. HDFC, TCS, RELIANCE')),
           hintStyle: TextStyle(
             color: context.colors.textTertiary,
+            fontSize: widget.compact ? 13 : null,
             fontStyle: _typewriterController != null ? FontStyle.italic : FontStyle.normal,
           ),
+          isDense: widget.compact,
           filled: true,
           fillColor: context.colors.scaffoldBackground,
-          prefixIcon: Icon(Icons.search, color: effectiveAccentColor, size: widget.compact ? 18 : 22),
+          prefixIcon: Icon(Icons.search, color: effectiveAccentColor, size: widget.compact ? 16 : 22),
+          prefixIconConstraints: widget.compact
+              ? const BoxConstraints(minWidth: 34, minHeight: 32)
+              : null,
           suffixIcon: _isLoading
               ? Padding(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(widget.compact ? 8 : 12),
                   child: SizedBox(
                     width: 14,
                     height: 14,
@@ -530,6 +588,11 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
                 )
               : _controller.text.isNotEmpty
                   ? IconButton(
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: widget.compact
+                          ? const BoxConstraints(minWidth: 28, minHeight: 28)
+                          : null,
                       icon: Icon(Icons.clear, color: context.colors.textTertiary, size: widget.compact ? 16 : 18),
                       onPressed: () {
                         _controller.clear();
@@ -538,9 +601,12 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
                       },
                     )
                   : null,
+          suffixIconConstraints: widget.compact
+              ? const BoxConstraints(minWidth: 28, minHeight: 28)
+              : null,
           contentPadding: EdgeInsets.symmetric(
-            horizontal: widget.compact ? 12 : 16,
-            vertical: widget.compact ? 8 : 14,
+            horizontal: widget.compact ? 8 : 16,
+            vertical: widget.compact ? 10 : 14,
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(widget.compact ? 8 : 12),

@@ -143,6 +143,9 @@ class PortfolioHoldingHiveModel extends HiveObject {
   @HiveField(15)
   final List<BrokerHoldingHiveModel> brokerHoldings;
 
+  @HiveField(16)
+  final String assetClass;
+
   PortfolioHoldingHiveModel({
     required this.id,
     required this.symbol,
@@ -160,6 +163,7 @@ class PortfolioHoldingHiveModel extends HiveObject {
     required this.totalGainLossPercentage,
     required this.portfolioWeight,
     required this.brokerHoldings,
+    this.assetClass = 'EQUITY',
   });
 
   factory PortfolioHoldingHiveModel.fromDomain(PortfolioHolding entity) {
@@ -182,6 +186,7 @@ class PortfolioHoldingHiveModel extends HiveObject {
       brokerHoldings: entity.brokerHoldings
           .map((e) => BrokerHoldingHiveModel.fromDomain(e))
           .toList(),
+      assetClass: entity.assetClass,
     );
   }
 
@@ -203,6 +208,7 @@ class PortfolioHoldingHiveModel extends HiveObject {
       totalGainLoss: totalGainLoss,
       totalGainLossPercentage: totalGainLossPercentage,
       portfolioWeight: portfolioWeight,
+      assetClass: assetClass,
       brokerHoldings: brokerHoldings.map((e) => e.toDomain()).toList(),
     );
   }
@@ -236,13 +242,14 @@ class PortfolioHoldingHiveModelAdapter
       totalGainLossPercentage: fields[13] as double,
       portfolioWeight: fields[14] as double,
       brokerHoldings: (fields[15] as List).cast<BrokerHoldingHiveModel>(),
+      assetClass: (fields[16] as String?) ?? 'EQUITY',
     );
   }
 
   @override
   void write(BinaryWriter writer, PortfolioHoldingHiveModel obj) {
     writer
-      ..writeByte(16)
+      ..writeByte(17)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -274,7 +281,9 @@ class PortfolioHoldingHiveModelAdapter
       ..writeByte(14)
       ..write(obj.portfolioWeight)
       ..writeByte(15)
-      ..write(obj.brokerHoldings);
+      ..write(obj.brokerHoldings)
+      ..writeByte(16)
+      ..write(obj.assetClass);
   }
 }
 

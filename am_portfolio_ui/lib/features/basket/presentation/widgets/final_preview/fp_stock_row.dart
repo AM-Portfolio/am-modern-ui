@@ -37,14 +37,14 @@ class FpStockRow extends StatelessWidget {
     return Color.fromARGB(255, 100 + (r % 100), 100 + (g % 100), 100 + (b % 100));
   }
 
-  Widget _buildAvatar({double radius = 16}) {
+  Widget _buildAvatar(BuildContext context, {double radius = 16}) {
     return CircleAvatar(
       radius: radius,
       backgroundColor: _getSectorColor(sector),
       child: Text(
         symbol.isNotEmpty ? symbol[0].toUpperCase() : '?',
         style: TextStyle(
-          color: Colors.white,
+          color: context.colors.actionPrimaryFg,
           fontSize: radius >= 16 ? 14 : 12,
           fontWeight: FontWeight.bold,
         ),
@@ -83,7 +83,7 @@ class FpStockRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _buildAvatar(radius: 14),
+          _buildAvatar(context, radius: 14),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -139,7 +139,7 @@ class FpStockRow extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildAvatar(),
+                _buildAvatar(context),
                 const SizedBox(width: AppSpacing.sm),
                 Flexible(
                   child: Text(

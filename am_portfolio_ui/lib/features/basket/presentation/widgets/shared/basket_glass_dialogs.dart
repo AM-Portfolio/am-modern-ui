@@ -16,10 +16,8 @@ class BasketGlassDialog extends StatelessWidget {
     final isDark = context.isDark;
     final fill = isDark
         ? const Color(0xFF1a1a2e).withValues(alpha: 0.92)
-        : Colors.white.withValues(alpha: 0.92);
-    final border = isDark
-        ? Colors.white.withValues(alpha: 0.1)
-        : Colors.black.withValues(alpha: 0.08);
+        : context.cardColor.withValues(alpha: 0.92);
+    final border = context.glassOverlay(isDark ? 0.1 : 0.08);
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isCompact = screenWidth < AmBreakpoints.mobile;
     final maxDialogWidth = isCompact
@@ -47,7 +45,7 @@ class BasketGlassDialog extends StatelessWidget {
                 border: Border.all(color: border),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.15),
+                    color: context.shadow(isDark ? 0.4 : 0.15),
                     blurRadius: 28,
                     offset: const Offset(0, 8),
                   ),
@@ -209,7 +207,7 @@ class BasketCoverageGateDialog extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
             style: FilledButton.styleFrom(
               backgroundColor: ModuleColors.portfolio,
-              foregroundColor: Colors.white,
+              foregroundColor: context.colors.actionPrimaryFg,
             ),
             child: const Text('Got it'),
           ),
@@ -257,7 +255,7 @@ class BasketLeaveCustomizeDialog extends StatelessWidget {
             onPressed: () => Navigator.of(context).pop('save'),
             style: FilledButton.styleFrom(
               backgroundColor: ModuleColors.portfolio,
-              foregroundColor: Colors.white,
+              foregroundColor: context.colors.actionPrimaryFg,
             ),
             child: const Text('Save draft & exit'),
           ),

@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:am_design_system/am_design_system.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 /// Shared glass shell for Portfolio Intelligence overview cards.
@@ -87,46 +88,49 @@ class IntelligenceGlassCard extends StatelessWidget {
       ],
     );
 
+    // Web: skip BackdropFilter — multiple live blurs tank Overview scroll.
+    final surface = Container(
+      width: fillHeight ? double.infinity : null,
+      constraints:
+          minHeight != null ? BoxConstraints(minHeight: minHeight!) : null,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [
+                  context.colors.cardSurface.withValues(alpha: 0.95),
+                  Color.lerp(
+                        context.colors.cardSurface,
+                        ModuleColors.portfolio,
+                        ModuleColors.isBrandSynced ? 0.12 : 0.04,
+                      )!
+                      .withValues(alpha: 0.85),
+                ]
+              : [
+                  context.colors.cardSurface
+                      .withValues(alpha: kIsWeb ? 0.92 : 0.45),
+                  IntelligenceColors.mist.withValues(alpha: kIsWeb ? 0.85 : 0.25),
+                ],
+        ),
+        border: Border.all(
+          color: ModuleColors.isBrandSynced
+              ? ModuleColors.portfolio.withValues(alpha: 0.28)
+              : context.glassOverlay(0.07),
+        ),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      padding: padding,
+      child: column,
+    );
     final painted = ClipRRect(
       borderRadius: BorderRadius.circular(18),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          width: fillHeight ? double.infinity : null,
-          constraints:
-              minHeight != null ? BoxConstraints(minHeight: minHeight!) : null,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isDark
-                  ? [
-                      context.colors.cardSurface.withValues(alpha: 0.95),
-                      Color.lerp(
-                            context.colors.cardSurface,
-                            ModuleColors.portfolio,
-                            ModuleColors.isBrandSynced ? 0.12 : 0.04,
-                          )!
-                          .withValues(alpha: 0.85),
-                    ]
-                  : [
-                      Colors.white.withValues(alpha: 0.45),
-                      IntelligenceColors.mist.withValues(alpha: 0.25),
-                    ],
+      child: kIsWeb
+          ? surface
+          : BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+              child: surface,
             ),
-            border: Border.all(
-              color: ModuleColors.isBrandSynced
-                  ? ModuleColors.portfolio.withValues(alpha: 0.28)
-                  : (isDark
-                      ? Colors.white.withValues(alpha: 0.07)
-                      : Colors.black.withValues(alpha: 0.07)),
-            ),
-            borderRadius: BorderRadius.circular(18),
-          ),
-          padding: padding,
-          child: column,
-        ),
-      ),
     );
 
     // Peer rows pass a tight height — expand chrome to fill without IntrinsicHeight.
@@ -152,19 +156,12 @@ class IntelligenceInsetPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.04)
-            : Colors.black.withValues(alpha: 0.04),
+        color: context.glassOverlay(0.04),
         borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.07)
-              : Colors.black.withValues(alpha: 0.06),
-        ),
+        border: Border.all(color: context.glassOverlay(0.07)),
       ),
       padding: padding,
       child: child,
@@ -211,33 +208,36 @@ InputDecoration intelligenceFieldDecoration(
   BuildContext context, {
   required String label,
   String? hint,
+  bool compact = false,
 }) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
   return InputDecoration(
-    labelText: label,
-    hintText: hint,
+    // Compact row: avoid floating label (needs ~56px) — use hint instead.
+    labelText: compact ? null : label,
+    hintText: compact ? (hint ?? label) : hint,
+    floatingLabelBehavior:
+        compact ? FloatingLabelBehavior.never : FloatingLabelBehavior.auto,
     isDense: true,
     filled: true,
-    fillColor: isDark
-        ? Colors.white.withValues(alpha: 0.04)
-        : Colors.black.withValues(alpha: 0.03),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+    fillColor: context.glassOverlay(isDark ? 0.04 : 0.03),
+    contentPadding: EdgeInsets.symmetric(
+      horizontal: compact ? 10 : 12,
+      vertical: compact ? 10 : 12,
+    ),
     border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(compact ? 8 : 10),
       borderSide: BorderSide(
         color: ModuleColors.portfolio.withValues(alpha: 0.25),
       ),
     ),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(compact ? 8 : 10),
       borderSide: BorderSide(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.1)
-            : Colors.black.withValues(alpha: 0.08),
+        color: context.glassOverlay(isDark ? 0.1 : 0.08),
       ),
     ),
     focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(compact ? 8 : 10),
       borderSide: BorderSide(color: ModuleColors.portfolio, width: 1.4),
     ),
   );
@@ -275,7 +275,7 @@ class IntelligenceCardSkeleton extends StatelessWidget {
     return Container(
       height: height,
       decoration: BoxDecoration(
-        color: isDark ? IntelligenceColors.surfaceDeep : Colors.grey.shade200,
+        color: isDark ? IntelligenceColors.surfaceDeep : context.surfaceColor,
         borderRadius: BorderRadius.circular(18),
       ),
     );
@@ -332,73 +332,102 @@ void showIntelligenceSheet({
       Navigator.of(routeContext).pop();
     }
 
-    return Material(
-      color: isDark
-          ? const Color(0xFF121820)
-          : Theme.of(context).colorScheme.surface,
-      borderRadius: BorderRadius.circular(18),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: expandBody ? MainAxisSize.max : MainAxisSize.min,
-          children: [
-            Row(
+    final colors = Theme.of(routeContext).extension<AppColorsTheme>() ?? AppColorsTheme.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark 
+            ? colors.surface.withValues(alpha: 0.25)
+            : colors.surface.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: colors.border.withValues(alpha: 0.4),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 30,
+            spreadRadius: -5,
+            offset: const Offset(0, 10),
+          )
+        ]
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: expandBody ? MainAxisSize.max : MainAxisSize.min,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: colors.textPrimary,
+                                ),
+                          ),
+                          if (subtitle != null) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              subtitle,
+                              style:
+                                  Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        color: colors.textTertiary,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                             ),
+                          ],
+                        ],
                       ),
-                      if (subtitle != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          subtitle,
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context).hintColor,
-                                  ),
-                        ),
-                      ],
-                    ],
-                  ),
+                    ),
+                    IconButton(
+                      tooltip: 'Close',
+                      onPressed: close,
+                      icon: Icon(Icons.close_rounded, size: 24, color: colors.textSecondary),
+                    ),
+                  ],
                 ),
-                IconButton(
-                  tooltip: 'Close',
-                  onPressed: close,
-                  icon: const Icon(Icons.close_rounded, size: 20),
+                const SizedBox(height: 16),
+                if (expandBody)
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: controller,
+                      child: body,
+                    ),
+                  )
+                else
+                  Flexible(
+                    child: SingleChildScrollView(
+                      controller: controller,
+                      child: body,
+                    ),
+                  ),
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: OutlinedButton(
+                    onPressed: close,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: colors.textPrimary,
+                      side: BorderSide(color: colors.border),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                    child: const Text('Close'),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            if (expandBody)
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: controller,
-                  child: body,
-                ),
-              )
-            else
-              Flexible(
-                child: SingleChildScrollView(
-                  controller: controller,
-                  child: body,
-                ),
-              ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: IntelligenceTextLink(
-                label: 'Close',
-                onPressed: close,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -425,17 +454,40 @@ void showIntelligenceSheet({
     return;
   }
 
-  showDialog<void>(
+  showGeneralDialog(
     context: context,
-    builder: (routeContext) {
+    barrierDismissible: true,
+    barrierLabel: 'Close',
+    barrierColor: Colors.black.withValues(alpha: 0.65),
+    transitionDuration: const Duration(milliseconds: 280),
+    pageBuilder: (routeContext, animation, secondaryAnimation) {
       final maxH = MediaQuery.sizeOf(routeContext).height * 0.78;
-      return Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-        child: SizedBox(
-          width: 560,
-          height: maxH,
-          child: chrome(routeContext: routeContext, expandBody: true),
+      return SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 580,
+              maxHeight: maxH,
+            ),
+            child: Material(
+              type: MaterialType.transparency,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                child: chrome(routeContext: routeContext, expandBody: true),
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+    transitionBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(
+        opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.94, end: 1.0).animate(
+            CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
+          ),
+          child: child,
         ),
       );
     },

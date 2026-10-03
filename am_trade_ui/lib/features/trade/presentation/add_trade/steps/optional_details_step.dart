@@ -38,6 +38,7 @@ class OptionalDetailsStep extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDesktop = MediaQuery.of(context).size.width > 1200;
+    final accentColor = ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade;
 
     return Padding(
       padding: EdgeInsets.all(isDesktop ? 24 : 16),
@@ -48,12 +49,12 @@ class OptionalDetailsStep extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [ModuleColors.trade.withOpacity(0.08), ModuleColors.trade.withOpacity(0.03)]),
+              gradient: LinearGradient(colors: [accentColor.withOpacity(0.08), accentColor.withOpacity(0.03)]),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               children: [
-                Icon(Icons.psychology, color: ModuleColors.trade, size: 24),
+                Icon(Icons.psychology, color: accentColor, size: 24),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(

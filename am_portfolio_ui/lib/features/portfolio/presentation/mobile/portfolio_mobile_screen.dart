@@ -1,7 +1,6 @@
-import 'dart:async';
-import 'dart:ui';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
+import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/portfolio_actions_sheet.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -14,6 +13,8 @@ import '../../internal/data/dtos/portfolio_create_request_dto.dart';
 import '../../internal/data/dtos/portfolio_update_request_dto.dart';
 import 'widgets/portfolio_tab_content_widget.dart';
 import 'widgets/portfolio_form_modal.dart';
+import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intelligence/xray_class_add_sheet.dart';
+import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/asset_class/add_asset_class_workspace.dart';
 
 /// Mobile-optimized portfolio screen with bottom navigation and portfolio selection
 class PortfolioMobileScreen extends ConsumerStatefulWidget {
@@ -27,7 +28,9 @@ class PortfolioMobileScreen extends ConsumerStatefulWidget {
     this.initialTab,
     this.onTabChanged,
     this.addTradeBuilder,
+    this.uploadPortfolioBuilder,
     this.onOpenDocIntel,
+    this.addAssetClassBuilder,
   });
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
@@ -37,7 +40,9 @@ class PortfolioMobileScreen extends ConsumerStatefulWidget {
   final String? initialTab;
   final ValueChanged<String>? onTabChanged;
   final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
+  final Widget Function(String portfolioId, String? portfolioName, VoidCallback onCancel)? uploadPortfolioBuilder;
   final VoidCallback? onOpenDocIntel;
+  final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addAssetClassBuilder;
 
   @override
   ConsumerState<PortfolioMobileScreen> createState() =>
@@ -67,7 +72,9 @@ class _PortfolioMobileScreenState extends ConsumerState<PortfolioMobileScreen> {
               initialTab: widget.initialTab,
               onTabChanged: widget.onTabChanged,
               addTradeBuilder: widget.addTradeBuilder,
+              uploadPortfolioBuilder: widget.uploadPortfolioBuilder,
               onOpenDocIntel: widget.onOpenDocIntel,
+              addAssetClassBuilder: widget.addAssetClassBuilder,
             ),
           ),
           loading: () =>
@@ -77,7 +84,7 @@ class _PortfolioMobileScreenState extends ConsumerState<PortfolioMobileScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.error, size: 64, color: Colors.red),
+                  Icon(Icons.error, size: 64, color: context.statusError),
                   const SizedBox(height: 16),
                   Text('Failed to load analytics: $error'),
                   const SizedBox(height: 16),
@@ -99,7 +106,7 @@ class _PortfolioMobileScreenState extends ConsumerState<PortfolioMobileScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error, size: 64, color: Colors.red),
+              Icon(Icons.error, size: 64, color: context.statusError),
               const SizedBox(height: 16),
               Text('Failed to load portfolio: $error'),
               const SizedBox(height: 16),
@@ -127,7 +134,9 @@ class PortfolioMobileView extends StatefulWidget {
     this.initialTab,
     this.onTabChanged,
     this.addTradeBuilder,
+    this.uploadPortfolioBuilder,
     this.onOpenDocIntel,
+    this.addAssetClassBuilder,
   });
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
@@ -137,7 +146,9 @@ class PortfolioMobileView extends StatefulWidget {
   final String? initialTab;
   final ValueChanged<String>? onTabChanged;
   final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
+  final Widget Function(String portfolioId, String? portfolioName, VoidCallback onCancel)? uploadPortfolioBuilder;
   final VoidCallback? onOpenDocIntel;
+  final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addAssetClassBuilder;
 
   @override
   State<PortfolioMobileView> createState() => _PortfolioMobileViewState();
@@ -148,9 +159,9 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
   late TabController _tabController;
   String? _currentPortfolioId;
   bool _isAddingTrade = false;
-  bool _showScrollFab = false;
+  bool _isAddingAssetClass = false;
+  bool _isUploadingPortfolio = false;
   bool _wasOnBasketsTab = false;
-  Timer? _scrollHideTimer;
 
   bool _isBasketsTab(String? slug) => slug?.toLowerCase() == 'baskets';
 
@@ -281,6 +292,8 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     setState(() {
       _tabController.index = index;
       _isAddingTrade = false;
+      _isAddingAssetClass = false;
+      _isUploadingPortfolio = false;
     });
     final slug = _tabSlugFromIndex(index);
     if (_wasOnBasketsTab && !_isBasketsTab(slug)) {
@@ -293,7 +306,6 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
   @override
   void dispose() {
     _tabController.dispose();
-    _scrollHideTimer?.cancel();
     super.dispose();
   }
 
@@ -303,14 +315,6 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
       context.read<PortfolioCubit>().loadPortfolioById(portfolioId);
     }
     widget.onPortfolioChanged?.call(portfolioId, portfolioName);
-  }
-
-  void _onScrollDetected() {
-    _scrollHideTimer?.cancel();
-    if (!_showScrollFab) setState(() => _showScrollFab = true);
-    _scrollHideTimer = Timer(const Duration(seconds: 3), () {
-      if (mounted) setState(() => _showScrollFab = false);
-    });
   }
 
   void _showAddPortfolioModal() {
@@ -361,7 +365,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: context.statusError),
             child: const Text('Delete'),
           ),
         ],
@@ -373,41 +377,74 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     }
   }
 
-  Widget _buildGlassFab() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(30),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: GestureDetector(
-          onTap: _openAddTrade,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-            decoration: BoxDecoration(
-              color: ModuleColors.portfolio.withValues(alpha: 0.25),
-              borderRadius: BorderRadius.circular(30),
-              border: Border.all(
-                color: ModuleColors.portfolio.withValues(alpha: 0.6),
-                width: 1.2,
-              ),
+  /// Mobile FAB — shows a bottom sheet with quick portfolio actions.
+  /// Only rendered when a specific portfolio (not 'all') is selected.
+  Widget _buildMobileFab() {
+    if (_currentPortfolioId == null || _currentPortfolioId == 'all') {
+      return const SizedBox.shrink();
+    }
+    return FloatingActionButton(
+      backgroundColor: ModuleColors.portfolio,
+      foregroundColor: Colors.white,
+      tooltip: 'Quick Actions',
+      onPressed: () {
+        showPortfolioActionsSheet(
+          context: context,
+          triggerColor: ModuleColors.portfolio,
+          actions: [
+            FloatingMenuAction(
+              icon: Icons.upload_file_rounded,
+              title: 'Upload Portfolio',
+              subtitle: 'Import from file or broker',
+              iconColor: ModuleColors.portfolio,
+              onTap: () {
+                if (_isUploadingPortfolio) return;
+                if (widget.uploadPortfolioBuilder != null) {
+                  setState(() {
+                    _isUploadingPortfolio = true;
+                    _isAddingTrade = false;
+                  });
+                } else if (widget.onOpenDocIntel != null) {
+                  widget.onOpenDocIntel!();
+                }
+              },
             ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.add, color: Colors.white, size: 18),
-                SizedBox(width: 6),
-                Text(
-                  'Add Trade',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
+            FloatingMenuAction(
+              icon: Icons.add_circle_outline_rounded,
+              title: 'Add Trade',
+              subtitle: 'Buy or sell an asset',
+              iconColor: ModuleColors.trade,
+              onTap: () {
+                if (!_isAddingTrade) _openAddTrade();
+              },
             ),
-          ),
-        ),
-      ),
+            FloatingMenuAction(
+              icon: Icons.account_balance_wallet_outlined,
+              title: 'Add Asset Class',
+              subtitle: 'Create a new asset class',
+              iconColor: ModuleColors.market,
+              onTap: () {
+                if (_isAddingAssetClass) return;
+                setState(() {
+                  _isAddingAssetClass = true;
+                  _isAddingTrade = false;
+                  _isUploadingPortfolio = false;
+                });
+              },
+            ),
+            FloatingMenuAction(
+              icon: Icons.shopping_basket_outlined,
+              title: 'Add Basket',
+              subtitle: 'Create a new basket',
+              iconColor: ModuleColors.reports,
+              onTap: () {
+                _selectTab(3);
+              },
+            ),
+          ],
+        );
+      },
+      child: const Icon(Icons.add_rounded),
     );
   }
 
@@ -437,7 +474,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Error: ${state.message}'),
-              backgroundColor: Colors.red,
+              backgroundColor: context.statusError,
             ),
           );
         }
@@ -457,32 +494,26 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
           SecondarySidebarItem(
             title: 'Overview',
             icon: Icons.dashboard_outlined,
-            isSelected: _tabController.index == 0 && !_isAddingTrade,
+            isSelected: _tabController.index == 0 && !_isAddingTrade && !_isUploadingPortfolio,
             onTap: () => _selectTab(0),
           ),
           SecondarySidebarItem(
             title: 'Holdings',
             icon: Icons.wallet,
-            isSelected: _tabController.index == 1 && !_isAddingTrade,
+            isSelected: _tabController.index == 1 && !_isAddingTrade && !_isUploadingPortfolio && !_isAddingAssetClass,
             onTap: () => _selectTab(1),
           ),
           SecondarySidebarItem(
             title: 'Heatmap',
             icon: Icons.grid_view,
-            isSelected: _tabController.index == 2 && !_isAddingTrade,
+            isSelected: _tabController.index == 2 && !_isAddingTrade && !_isUploadingPortfolio && !_isAddingAssetClass,
             onTap: () => _selectTab(2),
           ),
           SecondarySidebarItem(
             title: 'Baskets',
             icon: Icons.shopping_basket_outlined,
-            isSelected: _tabController.index == 3 && !_isAddingTrade,
+            isSelected: _tabController.index == 3 && !_isAddingTrade && !_isUploadingPortfolio && !_isAddingAssetClass,
             onTap: () => _selectTab(3),
-          ),
-          SecondarySidebarItem(
-            title: 'Add Trade',
-            icon: Icons.add,
-            isSelected: _isAddingTrade,
-            onTap: _openAddTrade,
           ),
         ],
         body: (_isAddingTrade &&
@@ -492,18 +523,39 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
                 context,
                 _currentPortfolioId!,
                 currentName,
-                () => _selectTab(_tabController.index),
-              )
-            : NotificationListener<ScrollNotification>(
-                onNotification: (notification) {
-                  if (_tabController.index == 0 &&
-                      notification is ScrollUpdateNotification &&
-                      (notification.scrollDelta ?? 0).abs() > 0) {
-                    _onScrollDetected();
-                  }
-                  return false;
+                () {
+                  setState(() {
+                    _isAddingTrade = false;
+                  });
                 },
-                child: Column(
+              )
+            : (_isAddingAssetClass && _currentPortfolioId != null)
+                ? (widget.addAssetClassBuilder != null
+                    ? widget.addAssetClassBuilder!(
+                        context,
+                        _currentPortfolioId!,
+                        currentName,
+                        () { setState(() { _isAddingAssetClass = false; }); },
+                      )
+                    : AddAssetClassWorkspace(
+                        portfolioId: _currentPortfolioId!,
+                        portfolioName: currentName,
+                        onOpenDocIntel: widget.onOpenDocIntel,
+                        onComplete: () { setState(() { _isAddingAssetClass = false; }); },
+                      ))
+                : (_isUploadingPortfolio &&
+                widget.uploadPortfolioBuilder != null &&
+                _currentPortfolioId != null)
+                ? widget.uploadPortfolioBuilder!(
+                    _currentPortfolioId!,
+                    currentName,
+                    () {
+                      setState(() {
+                        _isUploadingPortfolio = false;
+                      });
+                    },
+                  )
+                : Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     if (widget.portfolios != null &&
@@ -514,45 +566,26 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
                         child: const DemoAccountInlineBanner(),
                       ),
                     Expanded(
-                      child: Stack(
-                        children: [
-                          PortfolioTabContentWidget(
-                            tabController: _tabController,
-                            currentPortfolioId: _currentPortfolioId!,
-                          ),
-                          if (widget.addTradeBuilder != null &&
-                              _tabController.index == 0)
-                            Positioned(
-                              bottom: 24,
-                              right: 16,
-                              child: AnimatedOpacity(
-                                opacity: _showScrollFab ? 1.0 : 0.0,
-                                duration: const Duration(milliseconds: 300),
-                                child: IgnorePointer(
-                                  ignoring: !_showScrollFab,
-                                  child: _buildGlassFab(),
-                                ),
-                              ),
-                            ),
-                        ],
+                      child: PortfolioTabContentWidget(
+                        tabController: _tabController,
+                        currentPortfolioId: _currentPortfolioId!,
                       ),
                     ),
                   ],
                 ),
-              ),
-        floatingActionButton: null,
+        floatingActionButton: _buildMobileFab(),
       ),
     );
   }
 
   Widget _buildStickyControlsRow(BuildContext context, String currentName) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final onSurface = isDark ? Colors.white : const Color(0xFF0B1C30);
+    final onSurface = context.textPrimary;
     final chipBg = isDark
-        ? Colors.white.withValues(alpha: 0.08)
+        ? context.glassOverlay(0.08)
         : const Color(0xFFEDE9FE);
     final chipBorder = isDark
-        ? Colors.white.withValues(alpha: 0.12)
+        ? context.glassOverlay(0.12)
         : const Color(0xFFDDD6FE);
 
     Widget actionChip({
@@ -624,11 +657,6 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
               ),
               const SizedBox(width: 6),
             ],
-            actionChip(
-              onTap: _showAddPortfolioModal,
-              icon: Icons.add_circle_outline,
-              label: 'Add',
-            ),
             if (_currentPortfolioId != null && _currentPortfolioId != 'all')
               _buildPortfolioMenu(context),
             GlobalTimeFrameBar(
@@ -667,8 +695,8 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
       borderRadius: 10,
       menuMaxHeight: 148,
       primaryColor: ModuleColors.portfolio,
-      backgroundColor: isDark ? Colors.white.withValues(alpha: 0.06) : null,
-      borderColor: isDark ? Colors.white.withValues(alpha: 0.1) : null,
+      backgroundColor: isDark ? context.glassOverlay(0.06) : null,
+      borderColor: isDark ? context.glassOverlay(0.1) : null,
       contentPadding: const EdgeInsets.symmetric(horizontal: 8),
       items: items,
       onChanged: (id) {
@@ -708,8 +736,8 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
           _deletePortfolio(portfolio);
         }
       },
-      itemBuilder: (context) => const [
-        PopupMenuItem(
+      itemBuilder: (context) => [
+        const PopupMenuItem(
           value: 'edit',
           child: Row(
             children: [
@@ -723,9 +751,9 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
           value: 'delete',
           child: Row(
             children: [
-              Icon(Icons.delete, size: 18, color: Colors.red),
-              SizedBox(width: 8),
-              Text('Delete Portfolio', style: TextStyle(color: Colors.red)),
+              Icon(Icons.delete, size: 18, color: context.statusError),
+              const SizedBox(width: 8),
+              Text('Delete Portfolio', style: TextStyle(color: context.statusError)),
             ],
           ),
         ),

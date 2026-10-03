@@ -56,7 +56,7 @@ abstract final class BasketPanelStyles {
       primaryColor: accent,
       colorScheme: base.colorScheme.copyWith(
         primary: accent,
-        onPrimary: Colors.white,
+        onPrimary: context.colors.actionPrimaryFg,
         secondaryContainer: soft,
         onSecondaryContainer: accent,
         primaryContainer: soft,
@@ -69,7 +69,7 @@ abstract final class BasketPanelStyles {
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           backgroundColor: accent,
-          foregroundColor: Colors.white,
+          foregroundColor: context.colors.actionPrimaryFg,
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(

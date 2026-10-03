@@ -17,22 +17,21 @@ import 'package:am_portfolio_ui/features/portfolio/presentation/pages/portfolio_
     deferred as portfolio_pages;
 import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/global_portfolio_wrapper.dart'
     deferred as portfolio_shell;
+import 'package:am_portfolio_ui/features/portfolio/presentation/web/pages/portfolio_holdings_web_page.dart'
+    deferred as portfolio_holdings;
 import 'package:am_trade_ui/features/trade/presentation/add_trade/pages/add_trade_web_page.dart'
     deferred as trade_add;
-import 'package:am_trade_ui/features/trade/presentation/holdings/pages/trade_holdings_dashboard_web_page.dart'
-    deferred as trade_holdings;
 import 'package:am_trade_ui/features/trade/presentation/trade_responsive_layout.dart'
     deferred as trade_ui;
 import 'package:am_trade_ui/features/trade/providers/trade_controller_providers.dart'
     deferred as trade_providers;
 import 'package:am_user_ui/am_user_ui.dart' deferred as user_ui;
 import 'package:am_subscription_ui/am_subscription_ui.dart' as am_sub;
-import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
-
+import 'package:am_design_system/am_design_system.dart';
 import '../../features/shell/skeletons/module_skeletons.dart';
 import '../di/injection.dart';
 import 'deferred_module_loader.dart';
@@ -42,6 +41,7 @@ Future<void> _ensureFeatureDi() => configureFeatureDependencies();
 Future<void> _loadPortfolioLibraries() => Future.wait([
       portfolio_pages.loadLibrary(),
       portfolio_shell.loadLibrary(),
+      portfolio_holdings.loadLibrary(),
     ]);
 
 Future<void> _loadPortfolio() async {
@@ -50,7 +50,6 @@ Future<void> _loadPortfolio() async {
     _loadPortfolioLibraries(),
     trade_ui.loadLibrary(),
     trade_add.loadLibrary(),
-    trade_holdings.loadLibrary(),
     trade_providers.loadLibrary(),
   ]);
 }
@@ -77,15 +76,27 @@ Widget _defaultPortfolioAddTradeBuilder(
     builder: (context, ref, _) {
       final cubitAsync = ref.watch(trade_providers.tradeControllerCubitProvider);
       return cubitAsync.when(
-        data: (cubit) => BlocProvider.value(
-          value: cubit,
-          child: trade_add.AddTradeWebPage(
-            portfolioId: portfolioId,
-            portfolioName: portfolioName,
-            onTradeAdded: onComplete,
-            onCancel: onComplete,
-          ),
-        ),
+        data: (cubit) {
+          final theme = Theme.of(context);
+          return Theme(
+            data: theme.copyWith(
+              colorScheme: theme.colorScheme.copyWith(
+                primary: ModuleColors.portfolio,
+                primaryContainer: ModuleColors.portfolio.withOpacity(0.12),
+              ),
+              primaryColor: ModuleColors.portfolio,
+            ),
+            child: BlocProvider.value(
+              value: cubit,
+              child: trade_add.AddTradeWebPage(
+                portfolioId: portfolioId,
+                portfolioName: portfolioName,
+                onTradeAdded: onComplete,
+                onCancel: onComplete,
+              ),
+            ),
+          );
+        },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
       );
@@ -97,10 +108,8 @@ Widget _defaultPortfolioHoldingsPageBuilder(
   BuildContext context,
   String portfolioId,
 ) {
-  return trade_holdings.TradeHoldingsDashboardWebPage(
+  return portfolio_holdings.PortfolioHoldingsWebPage(
     portfolioId: portfolioId,
-    embedded: true,
-    accentColor: ModuleColors.portfolio,
   );
 }
 
@@ -143,6 +152,7 @@ Widget buildPortfolioRoute({
   PortfolioAddTradeBuilder? addTradeBuilder,
   PortfolioHoldingsPageBuilder? holdingsPageBuilder,
   VoidCallback? onOpenDocIntel,
+  Widget Function(String portfolioId, String? portfolioName, VoidCallback onCancel)? uploadPortfolioBuilder,
 }) {
   final tradeBuilder = addTradeBuilder ?? _defaultPortfolioAddTradeBuilder;
   final holdingsBuilder =
@@ -162,6 +172,7 @@ Widget buildPortfolioRoute({
         addTradeBuilder: tradeBuilder,
         holdingsPageBuilder: holdingsBuilder,
         onOpenDocIntel: onOpenDocIntel,
+        uploadPortfolioBuilder: uploadPortfolioBuilder,
       ),
     ),
   );

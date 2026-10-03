@@ -564,7 +564,7 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
               Text(
                 stock.marketCapCategory ?? '—',
                 style: TextStyle(
-                  color: unknownCap ? Colors.grey : (isMatch ? context.statusSuccess : context.statusWarning),
+                  color: unknownCap ? context.statusNeutral : (isMatch ? context.statusSuccess : context.statusWarning),
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -647,7 +647,7 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
             },
             style: FilledButton.styleFrom(
               backgroundColor: ModuleColors.portfolio,
-              foregroundColor: Colors.white,
+              foregroundColor: context.colors.actionPrimaryFg,
             ),
             child: const Text('Select Anyway'),
           ),
@@ -677,7 +677,7 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
             },
             style: FilledButton.styleFrom(
               backgroundColor: ModuleColors.portfolio,
-              foregroundColor: Colors.white,
+              foregroundColor: context.colors.actionPrimaryFg,
             ),
             child: const Text('Select Anyway'),
           ),

@@ -24,6 +24,7 @@ abstract class PortfolioHolding with _$PortfolioHolding implements Holding {
     required double totalGainLoss,
     required double totalGainLossPercentage,
     required double portfolioWeight,
+    @Default('EQUITY') String assetClass,
     @Default([]) List<BrokerHolding> brokerHoldings,
   }) = _PortfolioHolding;
   const PortfolioHolding._();

@@ -117,7 +117,7 @@ class MarketCapAllocationWidget extends StatelessWidget {
     return SingleChildScrollView(
       child: Column(
         children: segments.map((segment) {
-          final color = colors[segment.segmentName] ?? Colors.grey;
+          final color = colors[segment.segmentName] ?? context.statusNeutral;
 
           return Container(
             margin: const EdgeInsets.symmetric(vertical: 12),

@@ -181,7 +181,7 @@ class _PortfolioHoldingsWebCardState
 
                         // Summary section if enabled
                         if (widget.showDetails) ...[
-                          _buildSummarySection(theme, holdings),
+                          _buildSummarySection(context, theme, holdings),
                           SizedBox(height: cardConstraints.maxHeight * 0.01),
                         ],
 
@@ -294,11 +294,11 @@ class _PortfolioHoldingsWebCardState
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              Icon(Icons.error_outline, size: 48, color: context.statusError),
               const SizedBox(height: 16),
               Text(
                 'Error loading portfolio: $error',
-                style: const TextStyle(color: Colors.red),
+                style: TextStyle(color: context.statusError),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
@@ -325,7 +325,11 @@ class _PortfolioHoldingsWebCardState
   }
 
   /// Build summary section with dynamic sizing
-  Widget _buildSummarySection(ThemeData theme, PortfolioHoldings holdings) {
+  Widget _buildSummarySection(
+    BuildContext context,
+    ThemeData theme,
+    PortfolioHoldings holdings,
+  ) {
     // Calculate total investment and current value
     double totalInvestment = 0;
     double totalCurrentValue = 0;
@@ -343,7 +347,7 @@ class _PortfolioHoldingsWebCardState
 
     // Determine color based on gain/loss
     final isPositive = totalGainLoss >= 0;
-    final valueColor = isPositive ? Colors.green.shade700 : Colors.red.shade700;
+    final valueColor = isPositive ? context.marketPositive : context.marketNegative;
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 2.0),
@@ -515,8 +519,8 @@ class _PortfolioHoldingsWebCardState
           final gainLossPercentage = holding.totalGainLossPercentage;
           final isPositive = gainLoss >= 0;
           final valueColor = isPositive
-              ? Colors.green.shade700
-              : Colors.red.shade700;
+              ? context.marketPositive
+              : context.marketNegative;
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.end,

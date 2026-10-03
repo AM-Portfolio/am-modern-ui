@@ -52,10 +52,20 @@ void main() {
       'portfolioId': 'p1',
       'estimateLabel': 'Scenario estimate',
       'scenarios': [
-        {'id': 'NIFTY_DOWN_10', 'pctImpact': -8.4, 'absImpact': -77800},
+        {
+          'id': 'CUSTOM_FMCG',
+          'pctImpact': 0.5,
+          'absImpact': 4527,
+          'matchedWeightPct': 2.9,
+          'matchedHoldings': 6,
+          'appliedShockPct': 18,
+          'note': 'shock +18% on 6 holdings (2.9% of book)',
+        },
       ],
     });
-    expect(stress.scenarios.first.pctImpact, -8.4);
+    expect(stress.scenarios.first.pctImpact, 0.5);
+    expect(stress.scenarios.first.appliedShockPct, 18);
+    expect(stress.scenarios.first.matchedWeightPct, 2.9);
 
     final whatIf = WhatIfResult.fromJson({
       'mode': 'ADD_INVESTMENT',
@@ -72,5 +82,46 @@ void main() {
     });
     expect(whatIf.after?.healthScore, 72);
     expect(whatIf.after?.sectorWeights['Energy'], 20.1);
+  });
+
+  test('StressResult assumed JSON keeps betaUsed 1.0 and historyDays from double', () {
+    final stress = StressResult.fromJson({
+      'portfolioId': 'p1',
+      'method': 'ASSUMED_ONE',
+      'betaUsed': 1.0,
+      'betaAssumed': true,
+      'historyDays': 0,
+      'benchmark': 'NIFTY50',
+      'scenarios': [],
+    });
+    expect(stress.betaAssumed, isTrue);
+    expect(stress.betaUsed, 1.0);
+    expect(stress.method, 'ASSUMED_ONE');
+  });
+
+  test('StressResult measured JSON parses historyDays 30.0 and betaUsed', () {
+    final stress = StressResult.fromJson({
+      'portfolioId': 'p1',
+      'method': 'PORTFOLIO_BETA',
+      'betaUsed': 0.5,
+      'betaAssumed': false,
+      'historyDays': 30.0,
+      'benchmark': 'NIFTY50',
+      'scenarios': [],
+    });
+    expect(stress.betaAssumed, isFalse);
+    expect(stress.betaUsed, 0.5);
+    expect(stress.historyDays, 30);
+  });
+
+  test('StressResult method ASSUMED_ONE treats string betaAssumed as assumed', () {
+    final stress = StressResult.fromJson({
+      'portfolioId': 'p1',
+      'method': 'ASSUMED_ONE',
+      'betaUsed': 1.0,
+      'betaAssumed': 'true',
+      'historyDays': 12,
+    });
+    expect(stress.betaAssumed, isTrue);
   });
 }

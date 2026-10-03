@@ -83,7 +83,7 @@ class PortfolioSummaryWidget extends StatelessWidget {
               height: 120,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.1),
+                color: context.colors.actionPrimaryFg.withValues(alpha: 0.1),
               ),
             ),
           ),
@@ -98,7 +98,7 @@ class PortfolioSummaryWidget extends StatelessWidget {
                     Text(
                       'Total Portfolio Value',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.8),
+                        color: context.colors.actionPrimaryFg.withValues(alpha: 0.8),
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         letterSpacing: 0.5,
@@ -107,17 +107,17 @@ class PortfolioSummaryWidget extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
+                        color: context.colors.actionPrimaryFg.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.sync, size: 12, color: Colors.white.withValues(alpha: 0.9)),
+                          Icon(Icons.sync, size: 12, color: context.colors.actionPrimaryFg.withValues(alpha: 0.9)),
                           const SizedBox(width: 4),
                           Text(
                             summary.priceLabel,
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.9),
+                              color: context.colors.actionPrimaryFg.withValues(alpha: 0.9),
                               fontSize: 10,
                               fontWeight: FontWeight.w500,
                             ),
@@ -132,8 +132,8 @@ class PortfolioSummaryWidget extends StatelessWidget {
                   fit: BoxFit.scaleDown,
                   child: Text(
                     summary.formattedTotalValue,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: context.colors.actionPrimaryFg,
                       fontSize: 40,
                       fontWeight: FontWeight.bold,
                       letterSpacing: -0.5,
@@ -144,7 +144,7 @@ class PortfolioSummaryWidget extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.15),
+                    color: context.shadow(0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -167,7 +167,7 @@ class PortfolioSummaryWidget extends StatelessWidget {
                       Text(
                         ' All time',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
+                          color: context.colors.actionPrimaryFg.withValues(alpha: 0.7),
                           fontSize: 12,
                         ),
                       ),
@@ -178,11 +178,11 @@ class PortfolioSummaryWidget extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildValueLabel('Invested', '₹${summary.totalInvested.toStringAsFixed(0)}'),
-                    Container(width: 1, height: 30, color: Colors.white.withValues(alpha: 0.2)),
-                    _buildValueLabel('Holdings', summary.totalHoldings.toString()),
-                    Container(width: 1, height: 30, color: Colors.white.withValues(alpha: 0.2)),
-                    _buildValueLabel('Gainers/Losers', '${summary.gainersCount}/${summary.losersCount}'),
+                    _buildValueLabel(context, 'Invested', '₹${summary.totalInvested.toStringAsFixed(0)}'),
+                    Container(width: 1, height: 30, color: context.colors.actionPrimaryFg.withValues(alpha: 0.2)),
+                    _buildValueLabel(context, 'Holdings', summary.totalHoldings.toString()),
+                    Container(width: 1, height: 30, color: context.colors.actionPrimaryFg.withValues(alpha: 0.2)),
+                    _buildValueLabel(context, 'Gainers/Losers', '${summary.gainersCount}/${summary.losersCount}'),
                   ],
                 ),
               ],
@@ -193,14 +193,14 @@ class PortfolioSummaryWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildValueLabel(String label, String value) {
+  Widget _buildValueLabel(BuildContext context, String label, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.6),
+            color: context.colors.actionPrimaryFg.withValues(alpha: 0.6),
             fontSize: 11,
             fontWeight: FontWeight.w500,
           ),
@@ -208,8 +208,8 @@ class PortfolioSummaryWidget extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: context.colors.actionPrimaryFg,
             fontSize: 14,
             fontWeight: FontWeight.w600,
           ),
@@ -232,7 +232,7 @@ class PortfolioSummaryWidget extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: context.shadow(0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

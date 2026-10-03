@@ -183,7 +183,7 @@ class BasketSuccessPage extends StatelessWidget {
                                 },
                                 style: FilledButton.styleFrom(
                                   backgroundColor: ModuleColors.portfolio,
-                                  foregroundColor: Colors.white,
+                                  foregroundColor: context.colors.actionPrimaryFg,
                                   padding: const EdgeInsets.symmetric(
                                     vertical: AppSpacing.md,
                                   ),

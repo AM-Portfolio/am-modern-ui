@@ -31,15 +31,15 @@ class PortfolioHeatmapWebPage extends ConsumerWidget {
     }
 
     if (activePortfolioId == 'all') {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.info_outline, size: 48, color: Colors.grey),
-            SizedBox(height: 16),
+            Icon(Icons.info_outline, size: 48, color: context.statusNeutral),
+            const SizedBox(height: 16),
             Text(
               'Select a specific portfolio to view the Heatmap',
-              style: TextStyle(color: Colors.grey, fontSize: 16),
+              style: TextStyle(color: context.textTertiary, fontSize: 16),
             ),
           ],
         ),

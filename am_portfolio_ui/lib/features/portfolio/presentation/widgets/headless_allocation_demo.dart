@@ -146,7 +146,7 @@ class _HeadlessAllocationDemoState extends State<HeadlessAllocationDemo> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                Icon(Icons.error_outline, size: 48, color: context.statusError),
                 const SizedBox(height: 16),
                 Text(
                   'Failed to load allocation data',
@@ -157,7 +157,7 @@ class _HeadlessAllocationDemoState extends State<HeadlessAllocationDemo> {
                   state.message.replaceAll('Exception:', '').trim(),
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: Colors.red.shade300),
+                  ).textTheme.bodySmall?.copyWith(color: context.statusError),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),

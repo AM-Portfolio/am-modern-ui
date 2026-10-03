@@ -50,7 +50,7 @@ class BdFooterBar extends StatelessWidget {
         border: Border(top: BorderSide(color: context.colors.border)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: context.shadow(0.08),
             offset: const Offset(0, -4),
             blurRadius: 12,
           ),

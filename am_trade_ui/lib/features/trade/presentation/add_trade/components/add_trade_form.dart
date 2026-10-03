@@ -416,6 +416,7 @@ class _AddTradeFormState extends State<AddTradeForm> {
 
   Widget _buildProgressStepper(ThemeData theme) {
     final isCompact = MediaQuery.sizeOf(context).width < 700;
+    final accentColor = ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade;
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -445,7 +446,7 @@ class _AddTradeFormState extends State<AddTradeForm> {
                         height: isCompact ? 22 : 28,
                         decoration: BoxDecoration(
                           color: isActive || isCompleted
-                              ? ModuleColors.trade
+                              ? accentColor
                               : theme.colorScheme.surfaceContainerHighest,
                           shape: BoxShape.circle,
                         ),
@@ -477,7 +478,7 @@ class _AddTradeFormState extends State<AddTradeForm> {
                             fontWeight:
                                 isActive ? FontWeight.bold : FontWeight.normal,
                             color: isActive
-                                ? ModuleColors.trade
+                                ? accentColor
                                 : theme.colorScheme.onSurface.withOpacity(0.6),
                             fontSize: isCompact ? 11 : 12,
                           ),
@@ -494,7 +495,7 @@ class _AddTradeFormState extends State<AddTradeForm> {
                     child: Container(
                       height: 2,
                       color: isCompleted
-                          ? ModuleColors.trade
+                          ? accentColor
                           : theme.colorScheme.surfaceContainerHighest,
                     ),
                   ),

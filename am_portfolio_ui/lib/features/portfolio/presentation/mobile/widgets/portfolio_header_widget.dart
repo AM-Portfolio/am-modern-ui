@@ -2,7 +2,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import '../../../internal/domain/entities/portfolio_list.dart';
 import 'package:am_common/am_common.dart';
-import '../../widgets/gmail_sync/gmail_connect_button.dart';
+
 
 /// Widget that displays the portfolio selector and tab bar
 class PortfolioHeaderWidget extends StatelessWidget {
@@ -39,7 +39,7 @@ class PortfolioHeaderWidget extends StatelessWidget {
         color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: context.shadow(0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -81,7 +81,7 @@ class PortfolioHeaderWidget extends StatelessWidget {
                                 'Current Portfolio',
                                 style: Theme.of(context).textTheme.bodySmall
                                     ?.copyWith(
-                                      color: Colors.grey,
+                                      color: context.textTertiary,
                                       fontSize: 10,
                                     ),
                               ),
@@ -98,10 +98,10 @@ class PortfolioHeaderWidget extends StatelessWidget {
                                         ),
                                   ),
                                   const SizedBox(width: 4),
-                                  const Icon(
+                                  Icon(
                                     Icons.keyboard_arrow_down,
                                     size: 16,
-                                    color: Colors.grey,
+                                    color: context.textTertiary,
                                   ),
                                 ],
                               ),
@@ -111,9 +111,6 @@ class PortfolioHeaderWidget extends StatelessWidget {
                       ),
                     ),
                   ),
-
-                  // Actions
-                  const GmailConnectButton(),
                 ],
               ),
             ),
@@ -155,7 +152,7 @@ class PortfolioHeaderWidget extends StatelessWidget {
                     Icons.account_balance_wallet,
                     color: p.portfolioId == currentPortfolioId
                         ? ModuleColors.portfolio
-                        : Colors.grey,
+                        : context.textTertiary,
                   ),
                   title: Row(
                     children: [
@@ -200,8 +197,8 @@ class PortfolioHeaderWidget extends StatelessWidget {
             const Divider(height: 32),
 
             ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text('Logout', style: TextStyle(color: Colors.red)),
+              leading: Icon(Icons.logout, color: context.statusError),
+              title: Text('Logout', style: TextStyle(color: context.statusError)),
               contentPadding: const EdgeInsets.symmetric(horizontal: 24),
               onTap: () {
                 Navigator.pop(context);
@@ -219,7 +216,7 @@ class PortfolioHeaderWidget extends StatelessWidget {
   Widget _buildTabBar(BuildContext context) => TabBar(
     controller: tabController,
     labelColor: ModuleColors.portfolio,
-    unselectedLabelColor: Colors.grey,
+    unselectedLabelColor: context.textTertiary,
     indicatorColor: ModuleColors.portfolio,
     labelPadding: EdgeInsets.zero, // Optimize space
     indicatorSize: TabBarIndicatorSize.label,

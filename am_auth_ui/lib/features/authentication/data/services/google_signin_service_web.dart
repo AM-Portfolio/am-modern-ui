@@ -44,33 +44,17 @@ class GoogleSignInService {
       _signInCompleter = Completer<GoogleSignInAccount?>();
       print('🔵 Created new completer');
 
-      // Check if Google Identity Services is loaded
-      final google = js.context['google'];
-      if (google == null) {
-        throw AuthException(
-          'Google Identity Services not loaded. Check index.html',
-        );
-      }
-
-      final accounts = google['accounts'];
-      if (accounts == null) {
-        throw AuthException('Google Accounts API not available');
-      }
-
-      final id = accounts['id'];
-      if (id == null) {
-        throw AuthException('Google ID API not available');
-      }
-
       final clientId = ConfigService.config.google.webClientId;
       if (clientId.isEmpty) {
         throw AuthException(AuthConstants.googleSignInNotConfigured);
       }
 
-      // Initialize Google Sign-In (once)
-      if (!_initialized) {
+      // GIS (accounts.id) is optional — the real flow is the OAuth popup below.
+      // Still initialize when the script is present (One Tap / credential callback).
+      final google = js.context['google'];
+      final id = google?['accounts']?['id'];
+      if (id != null && !_initialized) {
         CommonLogger.info('🔵 Initializing Google Identity Services...');
-
         id.callMethod('initialize', [
           js.JsObject.jsify({
             'client_id': clientId,
@@ -78,38 +62,46 @@ class GoogleSignInService {
             'use_fedcm_for_prompt': false,
           }),
         ]);
-
         _initialized = true;
+      } else if (id == null) {
+        CommonLogger.warning(
+          'Google Identity Services not loaded yet — continuing with OAuth popup',
+        );
       }
 
       // Open Google Sign-In popup directly
       print('🔵 Opening Google Sign-In popup window...');
       CommonLogger.info('🔵 Opening Google Sign-In popup window...');
-      
-      print('🔵 Using client ID: ${clientId.substring(0, clientId.length > 20 ? 20 : clientId.length)}...');
-      
+
+      print(
+        '🔵 Using client ID: ${clientId.substring(0, clientId.length > 20 ? 20 : clientId.length)}...',
+      );
+
       // Dynamically determine redirect URI based on current origin
       final currentOrigin = html.window.location.origin;
-      final redirectUri = Uri.encodeComponent('$currentOrigin/oauth_callback.html');
+      final redirectUri =
+          Uri.encodeComponent('$currentOrigin/oauth_callback.html');
       print('🔵 Redirect URI: $redirectUri');
-      
+
       final authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?'
           'client_id=$clientId&'
           'redirect_uri=$redirectUri&'
           'response_type=token id_token&'
           'scope=openid email profile&'
           'nonce=${DateTime.now().millisecondsSinceEpoch}';
-      
+
       // Open popup window
       final popup = html.window.open(
         authUrl,
         'Google Sign-In',
         'width=500,height=600,menubar=no,toolbar=no',
       );
-      
+
       if (popup == null) {
         print('❌ Popup was blocked!');
-        throw AuthException('Popup was blocked. Please allow popups for localhost:3000');
+        throw AuthException(
+          'Popup was blocked. Please allow popups for $currentOrigin',
+        );
       }
       print('✅ Popup window opened successfully');
       

@@ -90,7 +90,7 @@ class _PortfolioAnalysisWebPageState
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
-              border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+              border: Border(bottom: BorderSide(color: context.borderColor)),
             ),
             child: _buildAnalysisControls(context),
           ).animate().fadeIn(duration: 400.ms).slideY(begin: -0.2, end: 0),
@@ -131,7 +131,7 @@ class _PortfolioAnalysisWebPageState
                       width: 350,
                       decoration: BoxDecoration(
                         border: Border(
-                          left: BorderSide(color: Colors.grey.shade300),
+                          left: BorderSide(color: context.borderColor),
                         ),
                       ),
                       child: _buildInsightsPanel(context),
@@ -225,7 +225,7 @@ class _PortfolioAnalysisWebPageState
         children: [
           Row(
             children: [
-              const Icon(Icons.trending_up, color: Colors.green),
+              Icon(Icons.trending_up, color: context.marketPositive),
               const SizedBox(width: 8),
               Text(
                 'Portfolio Performance - $timeFrameCode',
@@ -259,16 +259,16 @@ class _PortfolioAnalysisWebPageState
     String timeFrameCode,
   ) => Container(
     decoration: BoxDecoration(
-      color: Colors.grey.shade50,
+      color: context.surfaceColor,
       borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: Colors.grey.shade300),
+      border: Border.all(color: context.borderColor),
     ),
     child: Center(
       child: SingleChildScrollView(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-          Icon(Icons.bar_chart, size: 64, color: Colors.grey.shade400),
+          Icon(Icons.bar_chart, size: 64, color: context.statusNeutral),
           const SizedBox(height: 16),
           Text(
             'Interactive Performance Chart',
@@ -278,7 +278,7 @@ class _PortfolioAnalysisWebPageState
           Text(
             'Total Return: \$${summary.totalGainLoss.toStringAsFixed(2)}',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: summary.totalGainLoss >= 0 ? Colors.green : Colors.red,
+              color: summary.totalGainLoss >= 0 ? context.marketPositive : context.marketNegative,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -287,7 +287,7 @@ class _PortfolioAnalysisWebPageState
             'Time Period: $timeFrameCode',
             style: Theme.of(
               context,
-            ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
+            ).textTheme.bodyMedium?.copyWith(color: context.textSecondary),
           ),
         ],
         ),
@@ -326,7 +326,7 @@ class _PortfolioAnalysisWebPageState
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  Icon(Icons.error_outline, size: 64, color: context.statusError),
                   const SizedBox(height: 16),
                   Text(
                     'Error loading analytics',
@@ -486,11 +486,11 @@ class _PortfolioAnalysisWebPageState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(Icons.trending_up, color: Colors.green, size: 20),
-                SizedBox(width: 8),
-                Text(
+                Icon(Icons.trending_up, color: context.marketPositive, size: 20),
+                const SizedBox(width: 8),
+                const Text(
                   'Top Holdings',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                 ),
@@ -510,15 +510,15 @@ class _PortfolioAnalysisWebPageState
                           width: 32,
                           height: 32,
                           decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.2),
+                            color: context.marketPositive.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           alignment: Alignment.center,
                           child: Text(
                             '${index + 1}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Colors.green,
+                              color: context.marketPositive,
                             ),
                           ),
                         ),
@@ -538,7 +538,7 @@ class _PortfolioAnalysisWebPageState
                                 '\$${holding.currentPrice.toStringAsFixed(2)}',
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: Colors.grey[600],
+                                  color: context.textSecondary,
                                 ),
                               ),
                             ],
@@ -550,8 +550,8 @@ class _PortfolioAnalysisWebPageState
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: holding.todayChangePercentage >= 0
-                                ? Colors.green
-                                : Colors.red,
+                                ? context.marketPositive
+                                : context.marketNegative,
                           ),
                         ),
                       ],
@@ -589,9 +589,9 @@ class _PortfolioAnalysisWebPageState
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _buildRiskMetricRow('Portfolio Beta', '1.15', Colors.orange),
-                _buildRiskMetricRow('Sharpe Ratio', '0.92', Colors.green),
+                _buildRiskMetricRow('Sharpe Ratio', '0.92', context.marketPositive),
                 _buildRiskMetricRow('Volatility', '18.5%', Colors.orange),
-                _buildRiskMetricRow('Max Drawdown', '-12.3%', Colors.red),
+                _buildRiskMetricRow('Max Drawdown', '-12.3%', context.marketNegative),
               ],
             ),
           ),
@@ -623,7 +623,7 @@ class _PortfolioAnalysisWebPageState
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+            border: Border(bottom: BorderSide(color: context.borderColor)),
           ),
           child: Row(
             children: [
@@ -651,7 +651,7 @@ class _PortfolioAnalysisWebPageState
                   'Portfolio Health',
                   'Your portfolio shows strong diversification across sectors.',
                   Icons.health_and_safety,
-                  Colors.green,
+                  context.marketPositive,
                 ),
                 const SizedBox(height: 16),
 
@@ -767,20 +767,20 @@ class _PortfolioAnalysisWebPageState
     String error,
   ) => Container(
     decoration: BoxDecoration(
-      color: Colors.red.shade50,
+      color: context.statusError.withValues(alpha: 0.08),
       borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: Colors.red.shade300),
+      border: Border.all(color: context.statusError.withValues(alpha: 0.4)),
     ),
     child: Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 48, color: Colors.red),
+          Icon(Icons.error_outline, size: 48, color: context.statusError),
           const SizedBox(height: 12),
           Text(
             'Failed to load $title',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: Colors.red,
+              color: context.statusError,
               fontWeight: FontWeight.bold,
             ),
             textAlign: TextAlign.center,
@@ -790,7 +790,7 @@ class _PortfolioAnalysisWebPageState
             error,
             style: Theme.of(
               context,
-            ).textTheme.bodySmall?.copyWith(color: Colors.red.shade700),
+            ).textTheme.bodySmall?.copyWith(color: context.statusError),
             textAlign: TextAlign.center,
           ),
         ],
@@ -800,9 +800,9 @@ class _PortfolioAnalysisWebPageState
 
   Widget _buildPerformanceChartSkeleton(BuildContext context) => Container(
     decoration: BoxDecoration(
-      color: Colors.grey.shade50,
+      color: context.surfaceColor,
       borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: Colors.grey.shade200),
+      border: Border.all(color: context.borderColor),
     ),
     child: Padding(
       padding: const EdgeInsets.all(16.0),
@@ -812,12 +812,12 @@ class _PortfolioAnalysisWebPageState
                 height: 40,
                 width: 200,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
+                  color: context.borderColor,
                   borderRadius: BorderRadius.circular(4),
                 ),
               )
               .animate(onPlay: (controller) => controller.repeat())
-              .shimmer(duration: 1200.ms, color: Colors.grey.shade300),
+              .shimmer(duration: 1200.ms, color: context.borderColor),
           const SizedBox(height: 20),
           Expanded(
             child: Row(
@@ -830,7 +830,7 @@ class _PortfolioAnalysisWebPageState
                           width: 20,
                           height: 50.0 + (index * 10) % 100,
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade200,
+                            color: context.borderColor,
                             borderRadius: BorderRadius.circular(4),
                           ),
                         )
@@ -838,7 +838,7 @@ class _PortfolioAnalysisWebPageState
                         .shimmer(
                           duration: 1200.ms,
                           delay: (100 * index).ms,
-                          color: Colors.grey.shade300,
+                          color: context.borderColor,
                         ),
               ),
             ),
@@ -868,7 +868,7 @@ class _PortfolioAnalysisWebPageState
                             width: 24,
                             height: 24,
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade200,
+                              color: context.borderColor,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -877,7 +877,7 @@ class _PortfolioAnalysisWebPageState
                             width: 120,
                             height: 16,
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade200,
+                              color: context.borderColor,
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
@@ -887,7 +887,7 @@ class _PortfolioAnalysisWebPageState
                       Expanded(
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
+                            color: context.surfaceColor,
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
@@ -899,7 +899,7 @@ class _PortfolioAnalysisWebPageState
                 .shimmer(
                   duration: 1200.ms,
                   delay: (200 * index).ms,
-                  color: Colors.grey.shade100,
+                  color: context.surfaceColor,
                 ),
       ),
     ),

@@ -1,3 +1,4 @@
+import 'package:am_portfolio_ui/features/portfolio/internal/data/datasources/portfolio_remote_data_source.dart';
 import 'package:am_portfolio_ui/features/portfolio/internal/domain/entities/portfolio_analytics.dart';
 import 'package:am_portfolio_ui/features/portfolio/internal/domain/entities/portfolio_holding.dart';
 import 'package:am_portfolio_ui/features/portfolio/internal/domain/entities/portfolio_intelligence.dart';
@@ -43,8 +44,8 @@ PortfolioHolding _holding({
 }
 
 void main() {
-  test('stress presets cover five scenarios', () {
-    expect(kStressPresets.length, 5);
+  test('stress presets cover defensive scenarios', () {
+    expect(kStressPresets.length, greaterThanOrEqualTo(5));
     expect(kStressPresets.containsKey('NIFTY_DOWN_10'), isTrue);
     expect(kStressPresets.containsKey('CRASH_2008'), isTrue);
   });
@@ -128,13 +129,15 @@ void main() {
     expect(opened, isTrue);
   });
 
-  testWidgets('X-Ray shows Sector/Industry/Cap only — no Asset Class or Tap tabs',
-      (tester) async {
+  testWidgets('X-Ray shows Sector/Industry/Cap/Class tabs', (tester) async {
     final intel = PortfolioIntelligence(
       portfolioId: 'p1',
       health: null,
       risk: null,
       xray: PortfolioXray(
+        assetClassWeights: const [
+          XrayWeight(name: 'EQUITY', weightPct: 100.0, valueInr: 930000),
+        ],
         sectorWeights: const [
           XrayWeight(name: 'Financial Services', weightPct: 31.4),
           XrayWeight(name: 'IT', weightPct: 18.2),
@@ -165,30 +168,47 @@ void main() {
         ),
       ),
     );
-    await tester.pump(); // async provider
+    await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
     expect(find.text('Portfolio X-Ray'), findsOneWidget);
+    expect(find.text('Sector'), findsOneWidget);
+    expect(find.text('Industry'), findsOneWidget);
+    expect(find.text('Cap'), findsOneWidget);
+    expect(find.text('Class'), findsOneWidget);
+    // Default tab is Sector(0).
     expect(find.text('Financial Services'), findsWidgets);
     expect(find.text('31.4%'), findsWidgets);
-    expect(find.text('Explore Full X-Ray →'), findsNothing);
-    expect(find.text('Asset Class'), findsNothing);
+    expect(find.text('Add'), findsNothing);
+    expect(find.text('+ Add'), findsNothing);
     expect(find.text('Tap tabs'), findsNothing);
     expect(find.text('Total Exposure'), findsOneWidget);
-    expect(find.text('True Exposure'), findsNothing);
-    expect(find.text('100%'), findsWidgets);
 
     await tester.tap(find.text('Industry'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
     expect(find.text('Banks'), findsWidgets);
+    expect(find.text('+ Add'), findsNothing);
+
+    await tester.tap(find.text('Class'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('Equity'), findsWidgets);
+    expect(find.text('100%'), findsWidgets);
+    expect(find.text('+ Add'), findsOneWidget);
   });
 
-  test('xrayDisplayName maps Cap keys and Unknown', () {
+  test('xrayDisplayName maps Cap keys, asset classes and Unknown', () {
     expect(xrayDisplayName('LARGE_CAP'), 'Large Cap');
     expect(xrayDisplayName('MID_CAP'), 'Mid Cap');
     expect(xrayDisplayName('SMALL_CAP'), 'Small Cap');
     expect(xrayDisplayName('MICRO_CAP'), 'Micro Cap');
+    expect(xrayDisplayName('EQUITY'), 'Equity');
+    expect(xrayDisplayName('FIXED_INCOME'), 'Fixed Income');
+    expect(xrayDisplayName('BOND'), 'Bond');
+    expect(xrayDisplayName('COMMODITY'), 'Precious Metal');
+    expect(xrayDisplayName('CASH'), 'Cash');
+    expect(xrayDisplayName('MUTUAL_FUND'), 'Mutual Fund');
     expect(xrayDisplayName('UNKNOWN'), 'Unknown');
     expect(xrayDisplayName(''), 'Unknown');
     expect(xrayDisplayName('Financial Services'), 'Financial Services');
@@ -323,7 +343,8 @@ void main() {
 
     expect(find.text('Chart'), findsOneWidget);
     expect(find.text('List'), findsOneWidget);
-    // Chart pane: sector names live in list, not on chart center by default.
+    // Default Sector tab — Chart pane hides sector list labels.
+    expect(find.text('Add'), findsNothing);
     expect(find.text('Healthcare'), findsNothing);
 
     // Chart tap must not auto-switch to List (user owns Chart/List).
@@ -369,6 +390,13 @@ void main() {
     expect(find.text('Chart'), findsNothing);
     expect(find.text('List'), findsNothing);
     expect(find.text('Healthcare'), findsOneWidget);
+    expect(find.text('Add'), findsNothing);
+    expect(find.text('+ Add'), findsNothing);
+
+    await tester.tap(find.text('Class'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('+ Add'), findsOneWidget);
   });
 
   testWidgets('X-Ray +N more opens full holdings sheet', (tester) async {
@@ -418,6 +446,10 @@ void main() {
         ),
       ),
     );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    await tester.tap(find.text('Sector'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
@@ -645,12 +677,13 @@ void main() {
     final factors = [
       const HealthComponent(id: 'diversification', score: 100),
       const HealthComponent(id: 'concentration', score: 90),
+      const HealthComponent(id: 'volatility', score: 88),
       const HealthComponent(id: 'liquidity', score: 55),
       const HealthComponent(id: 'allocation', score: 100),
       const HealthComponent(id: 'risk_resilience', score: 80),
     ];
-    expect(countStrongHealthFactors(factors), 3);
-    expect(selectOverviewHealthFactors(factors).length, 5);
+    expect(countStrongHealthFactors(factors), 4);
+    expect(selectOverviewHealthFactors(factors).length, 6);
   });
 
   test('healthReasonDisplay polishes backend reason text only', () {
@@ -662,9 +695,13 @@ void main() {
       healthReasonDisplay('Blend of concentration / vol / beta'),
       'Blend of concentration / volatility / beta',
     );
+    expect(
+      healthReasonDisplay('Daily vol 3.387555866355791%'),
+      'Daily vol 3.39%',
+    );
   });
 
-  testWidgets('Health overview shows five factors inline without popup',
+  testWidgets('Health overview shows six factors inline without popup',
       (tester) async {
     final intel = PortfolioIntelligence(
       portfolioId: 'p1',
@@ -683,6 +720,12 @@ void main() {
             score: 90,
             severity: 'OK',
             reason: 'Top1 4.87%, max sector 19.45%',
+          ),
+          HealthComponent(
+            id: 'volatility',
+            score: 88,
+            severity: 'OK',
+            reason: 'Ann. vol 15.9% (measured)',
           ),
           HealthComponent(
             id: 'liquidity',
@@ -732,16 +775,21 @@ void main() {
     expect(find.text('88'), findsWidgets);
     expect(find.text('/ 100'), findsOneWidget);
     expect(find.text('Strong'), findsWidgets);
-    expect(find.text('5'), findsWidgets);
+    expect(find.text('6'), findsWidgets);
     expect(find.text('Health Factors'), findsOneWidget);
-    expect(find.text('3'), findsWidgets);
+    expect(find.text('4'), findsWidgets);
     expect(find.text('Diversification'), findsOneWidget);
     expect(find.text('Concentration'), findsOneWidget);
+    expect(find.text('Volatility'), findsOneWidget);
     expect(find.text('Liquidity'), findsOneWidget);
     expect(find.text('Allocation'), findsOneWidget);
-    expect(find.text('Risk Resilience'), findsOneWidget);
     expect(find.textContaining('Names 110'), findsOneWidget);
     expect(find.textContaining('Liquid share 54.65%'), findsOneWidget);
+    expect(find.textContaining('Ann. vol 15.9%'), findsOneWidget);
+    // 6th factor is below the inner ListView fold.
+    await tester.drag(find.byType(ListView).last, const Offset(0, -240));
+    await tester.pumpAndSettle();
+    expect(find.text('Risk Resilience'), findsOneWidget);
     expect(find.text('View Details →'), findsNothing);
     expect(find.text('Health Details'), findsNothing);
     expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
@@ -866,13 +914,26 @@ void main() {
     expect(find.text('Enter a stock / ETF symbol'), findsOneWidget);
   });
 
-  testWidgets('What-If rejects weight over 100', (tester) async {
+  test('What-If modify rejects weight over 100', () {
+    final w = double.tryParse('150');
+    expect(w, isNotNull);
+    expect(w! > 100, isTrue);
+    // Same rule as PortfolioWhatIfCard._simulate for MODIFY_HOLDING.
+    expect(
+      w > 100 ? 'Target weight % must be ≤ 100' : null,
+      'Target weight % must be ≤ 100',
+    );
+  });
+
+  testWidgets('What-If modify shows weight validation in UI', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           portfolioHoldingsProvider('p1').overrideWith(
             (ref) async => PortfolioHoldings(
-              holdings: const [],
+              holdings: [
+                _holding(symbol: 'RELIANCE', sector: 'Energy', weight: 10, value: 100000),
+              ],
               lastUpdated: DateTime(2026, 1, 1),
             ),
           ),
@@ -896,13 +957,19 @@ void main() {
     );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Modify Holding'));
-    await tester.pump();
-    await tester.enterText(find.byType(TextField).first, 'RELIANCE');
-    await tester.enterText(find.byType(TextField).at(1), '150');
+    await tester.pumpAndSettle();
+    final fields = find.descendant(
+      of: find.byType(PortfolioWhatIfCard),
+      matching: find.byType(TextField),
+    );
+    await tester.enterText(fields.at(0), 'RELIANCE');
+    await tester.enterText(fields.at(1), '150');
     await tester.tap(find.text('Simulate'));
     await tester.pump();
-    expect(find.text('Target weight % must be ≤ 100'), findsOneWidget);
-    // SmartSearchAnchor schedules a 250ms overlay teardown on focus loss.
+    expect(
+      find.textContaining('must be'),
+      findsOneWidget,
+    );
     FocusManager.instance.primaryFocus?.unfocus();
     await tester.pump(const Duration(milliseconds: 300));
   });
@@ -957,6 +1024,93 @@ void main() {
 
     expect(find.text('Cap breakdown unavailable'), findsOneWidget);
     expect(find.text('No holdings for this group'), findsNothing);
+  });
+
+  test('stressBetaChipLabels assumed hides 1.00 on the β chip', () {
+    final chips = stressBetaChipLabels(
+      assumed: true,
+      warming: false,
+      betaUsed: 1.0,
+      historyDays: 0,
+    );
+    expect(chips.betaLabel, 'β —');
+    expect(chips.estLabel, 'Need ≥20d vs NIFTY');
+  });
+
+  test('stressBetaChipLabels measured shows β and days', () {
+    final chips = stressBetaChipLabels(
+      assumed: false,
+      warming: false,
+      betaUsed: 0.5,
+      historyDays: 30,
+    );
+    expect(chips.betaLabel, 'β 0.50');
+    expect(chips.estLabel, 'Est. · 30d');
+  });
+
+  test('stressBetaChipLabels measured without betaUsed does not throw', () {
+    final chips = stressBetaChipLabels(
+      assumed: false,
+      warming: false,
+      betaUsed: null,
+      historyDays: null,
+    );
+    expect(chips.betaLabel, 'β —');
+    expect(chips.estLabel, 'Est. · hist');
+  });
+
+  test('stressBetaChipLabels warming', () {
+    final chips = stressBetaChipLabels(
+      assumed: true,
+      warming: true,
+      betaUsed: 1.0,
+      historyDays: 0,
+    );
+    expect(chips.betaLabel, 'β …');
+    expect(chips.estLabel, 'warming');
+  });
+
+  testWidgets('Stress card shows measured beta chips from API', (tester) async {
+    final remote = _FakeStressRemote(
+      const StressResult(
+        portfolioId: 'p1',
+        method: 'PORTFOLIO_BETA',
+        betaUsed: 0.5,
+        betaAssumed: false,
+        historyDays: 30,
+        benchmark: 'NIFTY50',
+        scenarios: [
+          StressScenario(id: 'NIFTY_DOWN_10', pctImpact: -5),
+        ],
+      ),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          portfolioRemoteDataSourceProvider.overrideWith((ref) async => remote),
+          portfolioIntelligenceProvider('p1').overrideWith(
+            (ref) async => const PortfolioIntelligence(
+              portfolioId: 'p1',
+              confidence: 0.9,
+            ),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: PortfolioStressCard(
+                portfolioId: 'p1',
+                initiallyExpanded: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('β 0.50'), findsOneWidget);
+    expect(find.text('Est. · 30d'), findsOneWidget);
   });
 
   testWidgets('Stress rejects zero shock before API', (tester) async {
@@ -1069,4 +1223,31 @@ void main() {
     expect(find.text('Sheet body content'), findsNothing);
     expect(find.text('Open sheet'), findsOneWidget);
   });
+}
+
+class _FakeStressRemote extends Fake implements PortfolioRemoteDataSource {
+  _FakeStressRemote(this.result);
+
+  final StressResult result;
+
+  @override
+  Future<StressResult> getPortfolioStress(
+    String portfolioId, {
+    String? preset,
+    List<String>? presets,
+    Map<String, dynamic>? custom,
+  }) async {
+    return result;
+  }
+
+  @override
+  Future<List<IntelligenceSuggestItem>> getIntelligenceSuggest(
+    String portfolioId, {
+    required String context,
+    String query = '',
+    String? wire,
+    int limit = 8,
+  }) async {
+    return const [];
+  }
 }

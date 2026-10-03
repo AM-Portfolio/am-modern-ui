@@ -174,12 +174,14 @@ class PortfolioXray {
     this.sectorWeights = const [],
     this.industryWeights = const [],
     this.marketCapWeights = const [],
+    this.assetClassWeights = const [],
     this.totalValueInr,
   });
 
   final List<XrayWeight> sectorWeights;
   final List<XrayWeight> industryWeights;
   final List<XrayWeight> marketCapWeights;
+  final List<XrayWeight> assetClassWeights;
   /// Book NAV denominator from intelligence API (`xray.totalValue`).
   final double? totalValueInr;
 
@@ -188,6 +190,9 @@ class PortfolioXray {
       sectorWeights: _parseWeights(json['sectorWeights']),
       industryWeights: _parseWeights(json['industryWeights']),
       marketCapWeights: _parseWeights(json['marketCapWeights']),
+      assetClassWeights: _parseWeights(
+        json['assetClassWeights'] ?? json['byAssetClass'],
+      ),
       totalValueInr: _asDouble(json['totalValue']),
     );
   }
@@ -222,16 +227,56 @@ class XrayWeight {
   }
 }
 
+/// One row from GET …/suggest.
+class IntelligenceSuggestItem {
+  const IntelligenceSuggestItem({
+    required this.label,
+    this.subtitle,
+    this.source,
+    this.weightPct,
+    this.matchedHoldings,
+    this.symbol,
+  });
+
+  final String label;
+  final String? subtitle;
+  final String? source;
+  final double? weightPct;
+  final int? matchedHoldings;
+  final String? symbol;
+
+  factory IntelligenceSuggestItem.fromJson(Map<String, dynamic> json) {
+    return IntelligenceSuggestItem(
+      label: json['label']?.toString() ?? '',
+      subtitle: json['subtitle']?.toString(),
+      source: json['source']?.toString(),
+      weightPct: _asDouble(json['weightPct']),
+      matchedHoldings: _asInt(json['matchedHoldings']),
+      symbol: json['symbol']?.toString(),
+    );
+  }
+}
+
 class StressResult {
   const StressResult({
     required this.portfolioId,
     this.estimateLabel = 'Scenario estimate',
     this.scenarios = const [],
+    this.method,
+    this.betaUsed,
+    this.benchmark,
+    this.historyDays,
+    this.betaAssumed,
   });
 
   final String portfolioId;
   final String estimateLabel;
   final List<StressScenario> scenarios;
+  final String? method;
+  final double? betaUsed;
+  final String? benchmark;
+  final int? historyDays;
+  final bool? betaAssumed;
 
   factory StressResult.fromJson(Map<String, dynamic> json) {
     final raw = json['scenarios'];
@@ -245,6 +290,11 @@ class StressResult {
               .map((e) => StressScenario.fromJson(Map<String, dynamic>.from(e)))
               .toList()
           : const [],
+      method: json['method']?.toString(),
+      betaUsed: _asDouble(json['betaUsed']),
+      benchmark: json['benchmark']?.toString(),
+      historyDays: _asInt(json['historyDays']),
+      betaAssumed: _asBetaAssumed(json['betaAssumed'], json['method']?.toString()),
     );
   }
 }
@@ -254,17 +304,29 @@ class StressScenario {
     required this.id,
     required this.pctImpact,
     this.absImpact,
+    this.matchedWeightPct,
+    this.matchedHoldings,
+    this.appliedShockPct,
+    this.note,
   });
 
   final String id;
   final double pctImpact;
   final double? absImpact;
+  final double? matchedWeightPct;
+  final int? matchedHoldings;
+  final double? appliedShockPct;
+  final String? note;
 
   factory StressScenario.fromJson(Map<String, dynamic> json) {
     return StressScenario(
       id: json['id']?.toString() ?? '',
       pctImpact: _asDouble(json['pctImpact']) ?? 0,
       absImpact: _asDouble(json['absImpact']),
+      matchedWeightPct: _asDouble(json['matchedWeightPct']),
+      matchedHoldings: _asInt(json['matchedHoldings']),
+      appliedShockPct: _asDouble(json['appliedShockPct']),
+      note: json['note']?.toString(),
     );
   }
 }
@@ -322,6 +384,25 @@ double? _asDouble(dynamic value) {
   if (value == null) return null;
   if (value is num) return value.toDouble();
   return double.tryParse(value.toString());
+}
+
+int? _asInt(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return int.tryParse(value.toString()) ??
+      double.tryParse(value.toString())?.toInt();
+}
+
+bool? _asBetaAssumed(dynamic value, String? method) {
+  if (value is bool) return value;
+  if (method == 'ASSUMED_ONE') return true;
+  if (method == 'PORTFOLIO_BETA') return false;
+  if (value == null) return null;
+  final s = value.toString().toLowerCase();
+  if (s == 'true' || s == '1') return true;
+  if (s == 'false' || s == '0') return false;
+  return null;
 }
 
 Map<String, double> _stringDoubleMap(dynamic raw) {

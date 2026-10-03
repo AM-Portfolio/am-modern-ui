@@ -108,7 +108,7 @@ class _PortfolioMarketMoversWidgetState extends State<PortfolioMarketMoversWidge
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: context.shadow(0.05),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -151,7 +151,7 @@ class _PortfolioMarketMoversWidgetState extends State<PortfolioMarketMoversWidge
               const SizedBox(height: 16),
               
               // Tabs
-              _buildTabs(isDark),
+              _buildTabs(),
               
               const SizedBox(height: 16),
 
@@ -161,7 +161,7 @@ class _PortfolioMarketMoversWidgetState extends State<PortfolioMarketMoversWidge
                     ? const Center(
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : _buildMoversList(isDark),
+                    : _buildMoversList(),
               ),
             ],
           ),
@@ -170,17 +170,17 @@ class _PortfolioMarketMoversWidgetState extends State<PortfolioMarketMoversWidge
     );
   }
 
-  Widget _buildTabs(bool isDark) {
+  Widget _buildTabs() {
     return Row(
       children: [
-        _buildTabButton('Top Gainers', true, isDark),
+        _buildTabButton('Top Gainers', true),
         const SizedBox(width: 8),
-        _buildTabButton('Top Losers', false, isDark),
+        _buildTabButton('Top Losers', false),
       ],
     );
   }
 
-  Widget _buildTabButton(String title, bool isGainersTab, bool isDark) {
+  Widget _buildTabButton(String title, bool isGainersTab) {
     final isSelected = _showGainers == isGainersTab;
     final color = isGainersTab ? ds.ModuleColors.portfolio : const Color(0xFFFF7675);
 
@@ -197,7 +197,7 @@ class _PortfolioMarketMoversWidgetState extends State<PortfolioMarketMoversWidge
           color: isSelected ? color.withValues(alpha: 0.15) : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? color.withValues(alpha: 0.5) : (isDark ? Colors.white24 : Colors.black12),
+            color: isSelected ? color.withValues(alpha: 0.5) : context.glassOverlay(context.isDark ? 0.24 : 0.12),
           ),
         ),
         child: Text(
@@ -205,21 +205,21 @@ class _PortfolioMarketMoversWidgetState extends State<PortfolioMarketMoversWidge
           style: TextStyle(
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            color: isSelected ? color : (isDark ? Colors.white70 : Colors.black87),
+            color: isSelected ? color : context.textSecondary,
           ),
         ),
       ),
     );
   }
 
-  Widget _buildMoversList(bool isDark) {
+  Widget _buildMoversList() {
     final list = _showGainers ? (_data?.gainers ?? []) : (_data?.losers ?? []);
 
     if (list.isEmpty) {
       return Center(
         child: Text(
           'No market data available.',
-          style: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
+          style: TextStyle(color: context.textTertiary),
         ),
       );
     }
@@ -277,7 +277,7 @@ class _PortfolioMarketMoversWidgetState extends State<PortfolioMarketMoversWidge
                     item.companyName,
                     style: TextStyle(
                       fontSize: 11,
-                      color: isDark ? Colors.white60 : Colors.black54,
+                      color: context.textTertiary,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

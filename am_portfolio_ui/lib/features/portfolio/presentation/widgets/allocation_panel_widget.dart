@@ -169,16 +169,14 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
                           .withValues(alpha: 0.85),
                     ]
                   : [
-                      Colors.white.withValues(alpha: 0.45),
+                      context.cardColor.withValues(alpha: 0.45),
                       const Color(0xFFF5F7FF).withValues(alpha: 0.25),
                     ],
             ),
             border: Border.all(
               color: ModuleColors.isBrandSynced
                   ? ModuleColors.portfolio.withValues(alpha: 0.28)
-                  : (_isDark
-                      ? Colors.white.withValues(alpha: 0.07)
-                      : Colors.black.withValues(alpha: 0.07)),
+                  : context.glassOverlay(0.07),
               width: 1,
             ),
           borderRadius: BorderRadius.circular(18),
@@ -414,9 +412,7 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
                                   Text(
                                     'Tap to explore',
                                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          color: _isDark
-                                              ? Colors.white.withValues(alpha: 0.45)
-                                              : Colors.black.withValues(alpha: 0.45),
+                                          color: context.glassOverlay(0.45),
                                           fontSize: 12,
                                         ),
                                   ),
@@ -452,9 +448,7 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
           child: Text(
             sectionTitle,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: _isDark
-                      ? Colors.white.withValues(alpha: 0.45)
-                      : Colors.black.withValues(alpha: 0.4),
+                  color: context.glassOverlay(_isDark ? 0.45 : 0.4),
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
                   letterSpacing: 0.3,
@@ -559,9 +553,7 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
                                               height: 6,
                                               width: double.infinity,
                                               decoration: BoxDecoration(
-                                                color: _isDark
-                                                    ? Colors.white.withValues(alpha: 0.08)
-                                                    : Colors.black.withValues(alpha: 0.07),
+                                                color: context.glassOverlay(_isDark ? 0.08 : 0.07),
                                                 borderRadius: BorderRadius.circular(3),
                                               ),
                                             ),
@@ -612,13 +604,13 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
     final b = ModuleColors.portfolio;
     return [
       b,
-      Color.lerp(b, Colors.white, 0.18)!,
-      Color.lerp(b, Colors.white, 0.32)!,
-      Color.lerp(b, Colors.black, 0.12)!,
-      Color.lerp(b, Colors.white, 0.45)!,
-      Color.lerp(b, Colors.black, 0.22)!,
-      Color.lerp(b, Colors.white, 0.55)!,
-      Color.lerp(b, Colors.black, 0.08)!,
+      Color.lerp(b, context.colors.actionPrimaryFg, 0.18)!,
+      Color.lerp(b, context.colors.actionPrimaryFg, 0.32)!,
+      Color.lerp(b, Theme.of(context).colorScheme.onSurface, 0.12)!,
+      Color.lerp(b, context.colors.actionPrimaryFg, 0.45)!,
+      Color.lerp(b, Theme.of(context).colorScheme.onSurface, 0.22)!,
+      Color.lerp(b, context.colors.actionPrimaryFg, 0.55)!,
+      Color.lerp(b, Theme.of(context).colorScheme.onSurface, 0.08)!,
     ];
   }
 
@@ -646,9 +638,7 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
           child: Text(
             weights[index].sectorName,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: _isDark
-                      ? Colors.white.withValues(alpha: 0.7)
-                      : Colors.black.withValues(alpha: 0.7),
+                  color: context.glassOverlay(0.7),
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
                 ),
@@ -712,8 +702,8 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
             color: isSelected 
-                ? Colors.white 
-                : (_isDark ? Colors.white70 : Colors.black87),
+                ? context.colors.actionPrimaryFg 
+                : context.textSecondary,
           ),
         ),
       ),

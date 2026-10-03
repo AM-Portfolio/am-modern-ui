@@ -78,7 +78,6 @@ class _PortfolioFormModalState extends State<PortfolioFormModal> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isEdit = widget.portfolio != null;
 
     return Container(
@@ -86,7 +85,7 @@ class _PortfolioFormModalState extends State<PortfolioFormModal> {
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+        color: context.cardColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: SafeArea(
@@ -104,7 +103,7 @@ class _PortfolioFormModalState extends State<PortfolioFormModal> {
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
-                      color: isDark ? Colors.white : Colors.black87,
+                      color: context.textPrimary,
                     ),
                   ),
                   IconButton(
@@ -149,20 +148,20 @@ class _PortfolioFormModalState extends State<PortfolioFormModal> {
                   ),
                   onPressed: _isLoading ? null : _submit,
                   child: _isLoading
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 24,
                           height: 24,
                           child: CircularProgressIndicator(
-                            color: Colors.white,
+                            color: context.colors.actionPrimaryFg,
                             strokeWidth: 2,
                           ),
                         )
                       : Text(
                           isEdit ? 'Save Changes' : 'Create',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                            color: context.colors.actionPrimaryFg,
                           ),
                         ),
                 ),

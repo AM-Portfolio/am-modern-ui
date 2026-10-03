@@ -13,6 +13,7 @@ class MoversWidget extends StatefulWidget {
     this.error,
     this.onViewAll,
     this.compact = false,
+    this.fillHeight = false,
     this.onRetry,
   });
   final Movers? movers;
@@ -21,6 +22,8 @@ class MoversWidget extends StatefulWidget {
   final ValueChanged<Movers>? onViewAll;
   /// When true, use Gainers|Losers tabs and fewer rows (Overview intel layout).
   final bool compact;
+  /// Stretch to peer row height on Overview bottom band.
+  final bool fillHeight;
   final VoidCallback? onRetry;
 
   @override
@@ -41,6 +44,8 @@ class _MoversWidgetState extends State<MoversWidget> {
       title: 'Top Movers',
       icon: Icons.auto_graph_rounded,
       padding: EdgeInsets.all(widget.compact ? 14 : 20),
+      fillHeight: widget.fillHeight,
+      scrollable: widget.fillHeight,
       trailing: showSeeAll
           ? TextButton(
               onPressed: () => widget.onViewAll!(widget.movers!),

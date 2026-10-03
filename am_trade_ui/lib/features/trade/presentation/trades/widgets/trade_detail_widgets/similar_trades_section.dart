@@ -37,9 +37,9 @@ class SimilarTradesSection extends ConsumerWidget {
         return Container(
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.15)),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 16, offset: const Offset(0, 4))],
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -49,11 +49,11 @@ class SimilarTradesSection extends ConsumerWidget {
               _buildHeader(context, similarTrades.length, filterSymbol),
               // Advanced Table with constrained height
               SizedBox(
-                height: 500,
+                height: 320,
                 child: ClipRRect(
                   borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(16),
-                    bottomRight: Radius.circular(16),
+                    bottomLeft: Radius.circular(12),
+                    bottomRight: Radius.circular(12),
                   ),
                   child: TradeHoldingsAdvancedTemplate(holdings: similarTrades, isLoading: false, itemsPerPage: 10),
                 ),
@@ -70,52 +70,52 @@ class SimilarTradesSection extends ConsumerWidget {
   }
 
   Widget _buildHeader(BuildContext context, int count, String symbol) => Container(
-    padding: const EdgeInsets.all(16),
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     decoration: BoxDecoration(
       gradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [ModuleColors.trade.withOpacity(0.08), ModuleColors.trade.withOpacity(0.03)],
       ),
-      borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
+      borderRadius: const BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
       border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.1))),
     ),
     child: Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
             color: ModuleColors.trade.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(Icons.history, size: 20, color: ModuleColors.trade),
+          child: Icon(Icons.history, size: 16, color: ModuleColors.trade),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
         Text(
-          'All Similar Trades Executed ($count)',
+          'Similar Trades ($count)',
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.bold,
-            fontSize: 14,
+            fontSize: 13,
             color: Theme.of(context).colorScheme.onSurface,
             letterSpacing: 0.2,
           ),
         ),
         const Spacer(),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
             color: ModuleColors.trade.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(6),
             border: Border.all(color: ModuleColors.trade.withOpacity(0.3)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.filter_alt, size: 14, color: ModuleColors.trade),
-              const SizedBox(width: 6),
+              Icon(Icons.filter_alt, size: 12, color: ModuleColors.trade),
+              const SizedBox(width: 4),
               Text(
                 'Symbol: $symbol',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: ModuleColors.trade),
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: ModuleColors.trade),
               ),
             ],
           ),

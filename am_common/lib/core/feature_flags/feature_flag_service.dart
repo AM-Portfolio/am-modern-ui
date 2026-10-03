@@ -127,10 +127,26 @@ class FeatureFlagService {
     final sdk = _sdk;
     if (!_config.enabled || sdk == null) return defaultValue;
     try {
-      return sdk.feature(key).on;
+      final result = sdk.feature(key);
+      return resolveOn(
+        flagOn: result.on,
+        source: result.source,
+        defaultValue: defaultValue,
+      );
     } catch (_) {
       return defaultValue;
     }
+  }
+
+  /// Unknown GB keys use [defaultValue] so intel can stay on when GB is
+  /// off or a key is missing. Explicit GB on/off still wins.
+  static bool resolveOn({
+    required bool flagOn,
+    required GBFeatureSource? source,
+    required bool defaultValue,
+  }) {
+    if (source == GBFeatureSource.unknownFeature) return defaultValue;
+    return flagOn;
   }
 
   void _bump() {

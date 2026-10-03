@@ -233,6 +233,9 @@
       if (boot) boot.remove();
     });
   </script>
+  <!-- Required by Google Sign-In web (GIS). Popup OAuth also works without it,
+       but google_signin_service_web initializes accounts.id when present. -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="flutter_bootstrap.js?v=local" async></script>
 </body>
 </html>

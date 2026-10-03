@@ -1,3 +1,4 @@
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:am_common/am_common.dart';
@@ -65,16 +66,16 @@ class _PortfolioVerificationPageState extends State<PortfolioVerificationPage> {
               Color color;
               switch (status) {
                 case StompStatus.connected:
-                  color = Colors.green;
+                  color = context.marketPositive;
                   break;
                 case StompStatus.connecting:
-                  color = Colors.orange;
+                  color = context.statusWarning;
                   break;
                 case StompStatus.error:
-                  color = Colors.red;
+                  color = context.statusError;
                   break;
                 default:
-                  color = Colors.grey;
+                  color = context.statusNeutral;
               }
               return Container(
                 padding: const EdgeInsets.all(16),

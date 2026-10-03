@@ -14,7 +14,6 @@ import 'package:am_doc_intelligence_ui/models/sync_unavailable_exception.dart';
 import 'package:am_doc_intelligence_ui/services/api_service.dart';
 import 'package:am_doc_intelligence_ui/utils/file_downloader.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:am_design_system/core/utils/responsive_helper.dart';
 
 class DocumentProcessorView extends StatefulWidget {
   const DocumentProcessorView({super.key});
@@ -565,79 +564,111 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isMobile = ResponsiveHelper.isMobile(context);
-    return SingleChildScrollView(
-      padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 16.0 : 32.0,
-        vertical: isMobile ? 16.0 : 24.0,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader(),
-          const SizedBox(height: 28),
-          if (_checkingHealth)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 40),
-              child: Center(
-                child: Column(
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('Checking service connectivity...',
-                        style: TextStyle(color: Colors.grey)),
-                  ],
-                ),
-              ),
-            )
-          else if (_isServiceConnected == false)
-            _buildConnectionError()
-          else ...[
-            if (isMobile) ...[
-              _buildConfigurationSection(),
-              const SizedBox(height: 24),
-              _buildUploadSection(),
-              const SizedBox(height: 24),
-              _buildDetailsPanel(),
-            ] else ...[
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 3,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double contentWidth = constraints.maxWidth;
+        final bool isWide = contentWidth >= 920;
+        final bool isMedium = contentWidth >= 560 && contentWidth < 920;
+        final bool isCompact = contentWidth < 560;
+        final bool stackConfigDropdowns = contentWidth < 620;
+
+        return SingleChildScrollView(
+          padding: EdgeInsets.symmetric(
+            horizontal: isCompact ? 12.0 : (isMedium ? 20.0 : 32.0),
+            vertical: isCompact ? 12.0 : 24.0,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(isCompact: isCompact),
+              SizedBox(height: isCompact ? 16 : 24),
+              if (_checkingHealth)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 40),
+                  child: Center(
                     child: Column(
                       children: [
-                        _buildConfigurationSection(),
-                        const SizedBox(height: 24),
-                        _buildUploadSection(),
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('Checking service connectivity...',
+                            style: TextStyle(color: Colors.grey)),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 24),
-                  Expanded(
-                    flex: 2,
-                    child: _buildDetailsPanel(),
+                )
+              else if (_isServiceConnected == false)
+                _buildConnectionError()
+              else ...[
+                if (isWide)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildConfigurationSection(
+                              stackDropdowns: stackConfigDropdowns,
+                              isCompact: isCompact,
+                            ),
+                            const SizedBox(height: 24),
+                            _buildUploadSection(
+                              contentWidth: contentWidth * 0.6,
+                              isCompact: isCompact,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 24),
+                      Expanded(
+                        flex: 2,
+                        child: _buildDetailsPanel(
+                          isGrid: false,
+                          isCompact: isCompact,
+                        ),
+                      ),
+                    ],
                   )
+                else
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildConfigurationSection(
+                        stackDropdowns: stackConfigDropdowns,
+                        isCompact: isCompact,
+                      ),
+                      SizedBox(height: isCompact ? 16 : 20),
+                      _buildUploadSection(
+                        contentWidth: contentWidth,
+                        isCompact: isCompact,
+                      ),
+                      SizedBox(height: isCompact ? 16 : 20),
+                      _buildDetailsPanel(
+                        isGrid: isMedium,
+                        isCompact: isCompact,
+                      ),
+                    ],
+                  ),
+                const SizedBox(height: 24),
+                if (_status.isNotEmpty || _processing) _buildStatusLog(),
+                if (_batchStatus != null) ...[
+                  const SizedBox(height: 28),
+                  _buildBatchResultSection(contentWidth: contentWidth),
                 ],
-              ),
+                if (_lastResult != null) ...[
+                  const SizedBox(height: 28),
+                  _buildResultSection(),
+                ],
+              ],
             ],
-            const SizedBox(height: 24),
-            if (_status.isNotEmpty || _processing) _buildStatusLog(),
-            if (_batchStatus != null) ...[
-              const SizedBox(height: 28),
-              _buildBatchResultSection(),
-            ],
-            if (_lastResult != null) ...[
-              const SizedBox(height: 28),
-              _buildResultSection(),
-            ],
-          ],
-        ],
-      ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader({required bool isCompact}) {
     Color statusColor = _isServiceConnected == true
         ? context.colors.statusSuccess
         : (_isServiceConnected == false
@@ -646,7 +677,6 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     String statusText = _isServiceConnected == true
         ? 'Online'
         : (_isServiceConnected == false ? 'Offline' : 'Checking...');
-    final bool isMobile = ResponsiveHelper.isMobile(context);
 
     final headerContent = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -656,7 +686,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 letterSpacing: -0.5,
-                fontSize: isMobile ? 22 : null,
+                fontSize: isCompact ? 20 : 24,
               ),
         ),
         const SizedBox(height: 4),
@@ -664,13 +694,14 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
           'Upload up to 5 broker statements at once. Each file can go to its own portfolio.',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: isCompact ? 12 : 13,
               ),
         ),
       ],
     );
 
     final statusBadge = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
         color: statusColor.withOpacity(0.08),
         borderRadius: BorderRadius.circular(24),
@@ -708,12 +739,12 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       ),
     );
 
-    if (isMobile) {
+    if (isCompact) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           headerContent,
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           statusBadge,
         ],
       );
@@ -721,6 +752,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(child: headerContent),
         const SizedBox(width: 16),
@@ -766,30 +798,69 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     );
   }
 
-  Widget _buildDetailsPanel() {
+  Widget _buildDetailsPanel({required bool isGrid, required bool isCompact}) {
+    final cap1 = _buildCapabilityTile(
+      Icons.assignment_outlined,
+      'Equity Portfolios',
+      'Extract direct stock holdings from Zerodha, Angel One, and others.',
+    );
+    final cap2 = _buildCapabilityTile(
+      Icons.pie_chart_outline,
+      'Mutual Funds',
+      'Parse CAS statements, AMFI scheme holdings, and asset breakdowns.',
+    );
+    final cap3 = _buildCapabilityTile(
+      Icons.layers_outlined,
+      'Multi-portfolio sync',
+      'Upload several broker files in one batch and name a portfolio for each.',
+    );
+
     return GlassCard(
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: EdgeInsets.all(isCompact ? 16.0 : 20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Supported Capabilities',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: Theme.of(context).colorScheme.primary,
-              ),
+            Row(
+              children: [
+                Icon(
+                  Icons.auto_awesome_outlined,
+                  size: isCompact ? 18 : 20,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Supported Capabilities',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: isCompact ? 14 : 15,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            _buildCapabilityTile(Icons.assignment_outlined, 'Equity Portfolios',
-                'Extract direct stock holdings from Zerodha, Angel One, and others.'),
-            const SizedBox(height: 16),
-            _buildCapabilityTile(Icons.pie_chart_outline, 'Mutual Funds',
-                'Parse CAS statements, AMFI scheme holdings, and asset breakdowns.'),
-            const SizedBox(height: 16),
-            _buildCapabilityTile(Icons.layers_outlined, 'Multi-portfolio sync',
-                'Upload several broker files in one batch and name a portfolio for each.'),
+            SizedBox(height: isCompact ? 12 : 16),
+            if (isGrid)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: cap1),
+                  const SizedBox(width: 12),
+                  Expanded(child: cap2),
+                  const SizedBox(width: 12),
+                  Expanded(child: cap3),
+                ],
+              )
+            else
+              Column(
+                children: [
+                  cap1,
+                  const SizedBox(height: 12),
+                  cap2,
+                  const SizedBox(height: 12),
+                  cap3,
+                ],
+              ),
           ],
         ),
       ),
@@ -797,50 +868,75 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   }
 
   Widget _buildCapabilityTile(IconData icon, String title, String desc) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(8),
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: primary.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: primary.withOpacity(0.1)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: primary.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: primary, size: 18),
           ),
-          child: Icon(icon,
-              color: Theme.of(context).colorScheme.primary, size: 20),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
                   style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 13)),
-              const SizedBox(height: 2),
-              Text(desc,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  desc,
                   style: TextStyle(
-                      fontSize: 11,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
-            ],
-          ),
-        )
-      ],
+                    fontSize: 11,
+                    height: 1.3,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          )
+        ],
+      ),
     );
   }
 
-  Widget _buildConfigurationSection() {
-    final bool isMobile = ResponsiveHelper.isMobile(context);
-
+  Widget _buildConfigurationSection({
+    required bool stackDropdowns,
+    required bool isCompact,
+  }) {
     final brokerSelect = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('DEFAULT BROKER (OPTIONAL)',
-            style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
-                color: Colors.grey)),
+        Text(
+          'DEFAULT BROKER (OPTIONAL)',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+            color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.8),
+          ),
+        ),
         const SizedBox(height: 8),
         CustomDropdown<String>(
           value: _selectedBrokerType ?? '__AUTO__',
@@ -867,12 +963,17 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     final docTypeSelect = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('DEFAULT DOCUMENT TYPE (OPTIONAL)',
-            style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
-                color: Colors.grey)),
+        Text(
+          'DEFAULT DOCUMENT TYPE (OPTIONAL)',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+            color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.8),
+          ),
+        ),
         const SizedBox(height: 8),
         _loadingTypes
             ? const ShimmerLoading(
@@ -893,35 +994,43 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
 
     return GlassCard(
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: EdgeInsets.all(isCompact ? 16.0 : 20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.settings_outlined,
-                    color: Theme.of(context).colorScheme.primary, size: 20),
-                const SizedBox(width: 12),
-                const Text('Parser Configuration',
-                    style:
-                        TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                Icon(
+                  Icons.settings_outlined,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: isCompact ? 18 : 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Parser Configuration',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: isCompact ? 14 : 15,
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 20),
-            if (isMobile) ...[
+            SizedBox(height: isCompact ? 14 : 18),
+            if (stackDropdowns) ...[
               brokerSelect,
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               docTypeSelect,
             ] else ...[
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(child: brokerSelect),
-                  const SizedBox(width: 20),
+                  const SizedBox(width: 16),
                   Expanded(child: docTypeSelect),
                 ],
               ),
             ],
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             CheckboxListTile(
               contentPadding: EdgeInsets.zero,
               value: _samePortfolioForAll,
@@ -930,12 +1039,13 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                   : (v) => setState(() => _samePortfolioForAll = v ?? true),
               title: const Text(
                 'Use the same portfolio name for every file',
-                style: TextStyle(fontSize: 13),
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
               ),
               controlAffinity: ListTileControlAffinity.leading,
+              dense: true,
             ),
             if (_samePortfolioForAll) ...[
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               AppTextField(
                 controller: _sharedPortfolioController,
                 labelText: 'Portfolio name',
@@ -948,7 +1058,10 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     );
   }
 
-  Widget _buildUploadSection() {
+  Widget _buildUploadSection({
+    required double contentWidth,
+    required bool isCompact,
+  }) {
     final bool isInteractable = !_processing && !_intakeBusy;
     final primary = Theme.of(context).colorScheme.primary;
     final batchFull = _pendingFiles.length >= _maxFiles;
@@ -975,11 +1088,12 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
           'Drop broker files here · up to $_maxFiles XLSX / PDF / CSV';
     }
 
-    final uploadVisual = AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOut,
+    final uploadVisual = Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+      padding: EdgeInsets.symmetric(
+        vertical: isCompact ? 24 : 32,
+        horizontal: isCompact ? 16 : 24,
+      ),
       decoration: BoxDecoration(
         color: _dragHover
             ? primary.withOpacity(0.10)
@@ -996,28 +1110,30 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           _processing || _intakeBusy
               ? const SizedBox(
-                  height: 52,
-                  width: 52,
+                  height: 44,
+                  width: 44,
                   child: CircularProgressIndicator(strokeWidth: 3),
                 )
               : Icon(
                   _dragHover
                       ? Icons.file_download_outlined
                       : Icons.cloud_upload_outlined,
-                  size: 52,
+                  size: isCompact ? 40 : 48,
                   color: isInteractable ? primary : Colors.grey,
                 ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Text(
             headline,
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: isInteractable ? primary : Colors.grey,
-                  fontWeight: FontWeight.bold,
-                ),
+            style: TextStyle(
+              color: isInteractable ? primary : Colors.grey,
+              fontWeight: FontWeight.bold,
+              fontSize: isCompact ? 14 : 15,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
@@ -1025,7 +1141,10 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                 ? 'Remove a file to add another · Max 10 MB each'
                 : 'Max 10 MB each · auto-detect brokers when /sync is available',
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
+            style: TextStyle(
+              fontSize: isCompact ? 11 : 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.8),
+            ),
           ),
         ],
       ),
@@ -1033,11 +1152,12 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
 
     return GlassCard(
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SizedBox(
-            height: 210,
-            width: double.infinity,
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
             child: Stack(
+              alignment: Alignment.center,
               children: [
                 // Visual behind; DropzoneView must stay on top for HTML drag events.
                 uploadVisual,
@@ -1073,65 +1193,76 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
               ],
             ),
           ),
-          if (kIsWeb) ...[
-            const SizedBox(height: 4),
-            TextButton.icon(
-              onPressed: isInteractable ? _pickAndUpload : null,
-              icon: const Icon(Icons.folder_open, size: 18),
-              label: Text(
-                batchFull ? 'Batch full — clear a file to add more' : 'Browse files',
-              ),
-            ),
-          ],
-          TextButton.icon(
-            onPressed: _downloadSample,
-            icon: const Icon(Icons.download, size: 16),
-            label: const Text(
-              'Download Sample Portfolio CSV',
-              style: TextStyle(fontSize: 12),
+          Padding(
+            padding: EdgeInsets.fromLTRB(16, 12, 16, isCompact ? 12 : 16),
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 12,
+              runSpacing: 8,
+              children: [
+                if (kIsWeb)
+                  OutlinedButton.icon(
+                    onPressed: isInteractable ? _pickAndUpload : null,
+                    icon: const Icon(Icons.folder_open, size: 18),
+                    label: Text(
+                      batchFull ? 'Batch full — clear a file to add more' : 'Browse files',
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                TextButton.icon(
+                  onPressed: _downloadSample,
+                  icon: const Icon(Icons.download, size: 16),
+                  label: const Text(
+                    'Sample Portfolio CSV',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ),
+                if (showBrokerDownload)
+                  TextButton.icon(
+                    onPressed: () {
+                      _showDownloadStepsDialog(
+                        context,
+                        _selectedBrokerType!,
+                        _selectedDocType ?? 'STOCK_PORTFOLIO',
+                      );
+                    },
+                    style: TextButton.styleFrom(
+                      backgroundColor:
+                          Theme.of(context).brightness == Brightness.dark
+                              ? primary.withOpacity(0.3)
+                              : primary.withOpacity(0.12),
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    icon: Icon(
+                      Icons.open_in_new,
+                      size: 15,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white.withOpacity(0.9)
+                          : primary,
+                    ),
+                    label: Text(
+                      "Download from ${_brokerDownloadLabel(_selectedBrokerType!)}",
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white.withOpacity(0.9)
+                            : primary,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
-          if (showBrokerDownload)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: TextButton.icon(
-                onPressed: () {
-                  _showDownloadStepsDialog(
-                    context,
-                    _selectedBrokerType!,
-                    _selectedDocType ?? 'STOCK_PORTFOLIO',
-                  );
-                },
-                style: TextButton.styleFrom(
-                  backgroundColor:
-                      Theme.of(context).brightness == Brightness.dark
-                          ? primary.withOpacity(0.3)
-                          : primary.withOpacity(0.12),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                icon: Icon(
-                  Icons.open_in_new,
-                  size: 16,
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white.withOpacity(0.9)
-                      : primary,
-                ),
-                label: Text(
-                  "Don't have the document? Download from ${_brokerDownloadLabel(_selectedBrokerType!)}",
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white.withOpacity(0.9)
-                        : primary,
-                  ),
-                ),
-              ),
-            ),
           if (_pendingFiles.isNotEmpty) ...[
             const Divider(height: 1),
             Padding(
@@ -1175,7 +1306,10 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                 ),
               ),
             ),
-            ...List.generate(_pendingFiles.length, _buildPendingFileCard),
+            ...List.generate(
+              _pendingFiles.length,
+              (index) => _buildPendingFileCard(index, contentWidth: contentWidth),
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
               child: SizedBox(
@@ -1194,7 +1328,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     );
   }
 
-  Widget _buildPendingFileCard(int index) {
+  Widget _buildPendingFileCard(int index, {double? contentWidth}) {
     final file = _pendingFiles[index];
     final primary = Theme.of(context).colorScheme.primary;
     final brokerItems = [
@@ -1210,6 +1344,32 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       ...docTypeValues
           .map((e) => e.toSimpleDropdownItem(text: _getDocTypeDisplayName(e))),
     ];
+
+    final bool stackDropdowns = contentWidth != null && contentWidth < 480;
+
+    final brokerDropdown = CustomDropdown<String>(
+      value: file.brokerType ?? '__AUTO__',
+      items: brokerItems,
+      hint: 'Broker',
+      onChanged: _processing
+          ? null
+          : (v) => _onPendingBrokerChanged(
+                file,
+                (v == null || v == '__AUTO__') ? null : v,
+              ),
+    );
+
+    final docTypeDropdown = CustomDropdown<String>(
+      value: file.documentType ?? '__AUTO__',
+      items: docItems,
+      hint: 'Doc type',
+      onChanged: _processing
+          ? null
+          : (v) => setState(() {
+                file.documentType =
+                    (v == null || v == '__AUTO__') ? null : v;
+              }),
+    );
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
@@ -1301,39 +1461,19 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                     ),
                     const SizedBox(height: 10),
                   ],
-                  Row(
-                    children: [
-                      Expanded(
-                        child: CustomDropdown<String>(
-                          value: file.brokerType ?? '__AUTO__',
-                          items: brokerItems,
-                          hint: 'Broker',
-                          onChanged: _processing
-                              ? null
-                              : (v) => _onPendingBrokerChanged(
-                                    file,
-                                    (v == null || v == '__AUTO__') ? null : v,
-                                  ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: CustomDropdown<String>(
-                          value: file.documentType ?? '__AUTO__',
-                          items: docItems,
-                          hint: 'Doc type',
-                          onChanged: _processing
-                              ? null
-                              : (v) => setState(() {
-                                    file.documentType =
-                                        (v == null || v == '__AUTO__')
-                                            ? null
-                                            : v;
-                                  }),
-                        ),
-                      ),
-                    ],
-                  ),
+                  if (stackDropdowns) ...[
+                    brokerDropdown,
+                    const SizedBox(height: 8),
+                    docTypeDropdown,
+                  ] else ...[
+                    Row(
+                      children: [
+                        Expanded(child: brokerDropdown),
+                        const SizedBox(width: 8),
+                        Expanded(child: docTypeDropdown),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 10),
                   AppTextField(
                     controller: file.passwordController,
@@ -1550,7 +1690,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     );
   }
 
-  Widget _buildBatchResultSection() {
+  Widget _buildBatchResultSection({double? contentWidth}) {
     final batch = _batchStatus;
     if (batch == null) return const SizedBox.shrink();
 
@@ -1681,6 +1821,8 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       return const SizedBox.shrink();
     }
 
+    final bool wrapStats = contentWidth != null && contentWidth < 640;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1701,41 +1843,79 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         const SizedBox(height: 12),
         GlassCard(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            child: Row(
-              children: [
-                _buildCompactStat(
-                  'Status',
-                  batch.overallStatus,
-                  Icons.flag_outlined,
-                  statusColor(batch.overallStatus),
-                ),
-                _buildCompactStat(
-                  'Done',
-                  '${batch.completed}/${batch.total}',
-                  Icons.done_all_outlined,
-                  context.colors.statusSuccess,
-                ),
-                _buildCompactStat(
-                  'Confirm',
-                  '${batch.needsConfirm}',
-                  Icons.verified_outlined,
-                  batch.needsConfirm > 0 ? Colors.blueGrey : Colors.grey,
-                ),
-                _buildCompactStat(
-                  'Needs input',
-                  '${batch.needsInput}',
-                  Icons.help_outline,
-                  batch.needsInput > 0 ? Colors.amber.shade700 : Colors.grey,
-                ),
-                _buildCompactStat(
-                  'Failed',
-                  '${batch.failed}',
-                  Icons.error_outline,
-                  batch.failed > 0 ? context.colors.statusError : Colors.grey,
-                ),
-              ],
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            child: wrapStats
+                ? Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.spaceAround,
+                    children: [
+                      _buildCompactStatChip(
+                        'Status',
+                        batch.overallStatus,
+                        Icons.flag_outlined,
+                        statusColor(batch.overallStatus),
+                      ),
+                      _buildCompactStatChip(
+                        'Done',
+                        '${batch.completed}/${batch.total}',
+                        Icons.done_all_outlined,
+                        context.colors.statusSuccess,
+                      ),
+                      _buildCompactStatChip(
+                        'Confirm',
+                        '${batch.needsConfirm}',
+                        Icons.verified_outlined,
+                        batch.needsConfirm > 0 ? Colors.blueGrey : Colors.grey,
+                      ),
+                      _buildCompactStatChip(
+                        'Needs input',
+                        '${batch.needsInput}',
+                        Icons.help_outline,
+                        batch.needsInput > 0 ? Colors.amber.shade700 : Colors.grey,
+                      ),
+                      _buildCompactStatChip(
+                        'Failed',
+                        '${batch.failed}',
+                        Icons.error_outline,
+                        batch.failed > 0 ? context.colors.statusError : Colors.grey,
+                      ),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      _buildCompactStat(
+                        'Status',
+                        batch.overallStatus,
+                        Icons.flag_outlined,
+                        statusColor(batch.overallStatus),
+                      ),
+                      _buildCompactStat(
+                        'Done',
+                        '${batch.completed}/${batch.total}',
+                        Icons.done_all_outlined,
+                        context.colors.statusSuccess,
+                      ),
+                      _buildCompactStat(
+                        'Confirm',
+                        '${batch.needsConfirm}',
+                        Icons.verified_outlined,
+                        batch.needsConfirm > 0 ? Colors.blueGrey : Colors.grey,
+                      ),
+                      _buildCompactStat(
+                        'Needs input',
+                        '${batch.needsInput}',
+                        Icons.help_outline,
+                        batch.needsInput > 0 ? Colors.amber.shade700 : Colors.grey,
+                      ),
+                      _buildCompactStat(
+                        'Failed',
+                        '${batch.failed}',
+                        Icons.error_outline,
+                        batch.failed > 0 ? context.colors.statusError : Colors.grey,
+                      ),
+                    ],
+                  ),
           ),
         ),
         const SizedBox(height: 12),
@@ -1854,6 +2034,43 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildCompactStatChip(
+      String label, String value, IconData icon, Color color) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 100),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 16),
+          const SizedBox(width: 6),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

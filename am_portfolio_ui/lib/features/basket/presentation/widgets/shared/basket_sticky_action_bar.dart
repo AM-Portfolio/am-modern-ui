@@ -128,7 +128,7 @@ class BasketStickyActionBar extends StatelessWidget {
       ),
       style: FilledButton.styleFrom(
         backgroundColor: btnColor,
-        foregroundColor: Colors.white,
+        foregroundColor: context.colors.actionPrimaryFg,
         minimumSize: Size(isDesktop ? 200 : 0, _actionHeight),
         padding: EdgeInsets.symmetric(
           horizontal: isDesktop ? AppSpacing.lg : AppSpacing.md,
@@ -261,10 +261,8 @@ class BasketStickyActionBar extends StatelessWidget {
 
     final glassFill = isDark
         ? const Color(0xFF1a1a2e).withValues(alpha: 0.85)
-        : Colors.white.withValues(alpha: 0.85);
-    final glassBorder = isDark
-        ? Colors.white.withValues(alpha: 0.08)
-        : Colors.black.withValues(alpha: 0.06);
+        : context.cardColor.withValues(alpha: 0.85);
+    final glassBorder = context.glassOverlay(isDark ? 0.08 : 0.06);
 
     final glass = ClipRRect(
       borderRadius: BorderRadius.circular(_capsuleRadius),
@@ -281,7 +279,7 @@ class BasketStickyActionBar extends StatelessWidget {
             border: Border.all(color: glassBorder),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.12),
+                color: context.shadow(isDark ? 0.35 : 0.12),
                 blurRadius: 24,
                 offset: const Offset(0, 4),
               ),

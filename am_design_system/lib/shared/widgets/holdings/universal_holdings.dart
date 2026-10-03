@@ -9,4 +9,5 @@ export 'layouts/card_layout_builder.dart';
 export 'layouts/holdings_layout_builder.dart';
 export 'layouts/table_layout_builder.dart';
 export 'universal_holdings/holdings_template_factory.dart';
-export 'universal_holdings/universal_holdings_widget.dart';
+export 'advanced/advanced_holding_row.dart';
+export 'advanced/advanced_holdings_template.dart';

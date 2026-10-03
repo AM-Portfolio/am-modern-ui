@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
 import '../../../internal/domain/entities/portfolio_intelligence.dart';
@@ -173,6 +174,7 @@ class _RiskRadarLiveViewState extends State<RiskRadarLiveView>
                           labelPad: _labelPad(side),
                           labelStyle: labelStyle,
                           reduceMotion: _reduceMotion,
+                          selectedDotColor: context.colors.actionPrimaryFg,
                         ),
                       );
                     },
@@ -196,6 +198,7 @@ class _RiskRadarLivePainter extends CustomPainter {
     required this.focusAxisId,
     required this.labelPad,
     required this.reduceMotion,
+    required this.selectedDotColor,
     this.labelStyle,
   });
 
@@ -206,6 +209,7 @@ class _RiskRadarLivePainter extends CustomPainter {
   final String? focusAxisId;
   final double labelPad;
   final bool reduceMotion;
+  final Color selectedDotColor;
   final TextStyle? labelStyle;
 
   bool _idMatch(String? a, String id) =>
@@ -413,7 +417,7 @@ class _RiskRadarLivePainter extends CustomPainter {
         canvas.drawCircle(
           p,
           r * 0.4,
-          Paint()..color = Colors.white.withValues(alpha: 0.9),
+          Paint()..color = selectedDotColor.withValues(alpha: 0.9),
         );
       }
     }
@@ -490,6 +494,7 @@ class _RiskRadarLivePainter extends CustomPainter {
         oldDelegate.labelPad != labelPad ||
         oldDelegate.labelStyle != labelStyle ||
         oldDelegate.reduceMotion != reduceMotion ||
+        oldDelegate.selectedDotColor != selectedDotColor ||
         oldDelegate.axes.length != axes.length) {
       return true;
     }

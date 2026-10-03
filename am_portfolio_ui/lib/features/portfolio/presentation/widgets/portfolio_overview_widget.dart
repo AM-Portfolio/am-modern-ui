@@ -40,7 +40,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
   // Variables for period values removed as backend handles this
 
   void _reloadAnalytics(ds.TimeFrame timeFrame) {
-    if (widget.portfolioId != null && widget.portfolioId != 'all') {
+    if (widget.portfolioId != null) {
       try {
         context.read<PortfolioAnalyticsCubit>().loadAnalytics(
           widget.portfolioId!,
@@ -74,7 +74,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
     if (widget.portfolioId != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          if (widget.portfolioId != 'all') {
+          if (widget.portfolioId != null) {
             try {
               context.read<PortfolioAnalyticsCubit>().loadAnalytics(
                     widget.portfolioId!,
@@ -83,10 +83,6 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
             } catch (_) {
               // Cubit may not be in tree, safe to ignore
             }
-          } else {
-            try {
-              context.read<PortfolioAnalyticsCubit>().reset();
-            } catch (_) {}
           }
 
           if (currentState is PortfolioLoaded &&
@@ -200,7 +196,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  Icon(Icons.error_outline, size: 64, color: context.statusError),
                   const SizedBox(height: 24),
                   Text(
                     'Something went wrong',
@@ -257,18 +253,16 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                 final isAggregate = portfolioId == 'all';
                 final masterOn =
                     ref.watch(portfolioIntelligenceOverviewEnabledProvider);
-                final showHealth = !isAggregate &&
+                final showHealth =
                     ref.watch(portfolioIntelHealthEnabledProvider);
-                final showRisk = !isAggregate &&
-                    ref.watch(portfolioIntelRiskEnabledProvider);
-                final showXray = !isAggregate &&
-                    ref.watch(portfolioIntelXrayEnabledProvider);
-                final showStress = !isAggregate &&
+                final showRisk = ref.watch(portfolioIntelRiskEnabledProvider);
+                final showXray = ref.watch(portfolioIntelXrayEnabledProvider);
+                final showStress =
                     ref.watch(portfolioIntelStressEnabledProvider);
-                final showWhatIf = !isAggregate &&
+                final showWhatIf =
                     ref.watch(portfolioIntelWhatIfEnabledProvider);
                 final showAllocation =
-                    !isAggregate && (!masterOn || !showXray);
+                    isAggregate || (!masterOn || !showXray);
 
                 return Stack(
                   children: [
@@ -378,40 +372,29 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                                   state,
                                   compact: isTablet,
                                 );
-                                return Row(
+                                final leftGroup = Row(
                                   children: [
                                     Expanded(
-                                      child: cards[0]
-                                          .animate()
-                                          .fadeIn(duration: 400.ms)
-                                          .slideY(begin: 0.2, end: 0),
+                                      child: cards[0].animate().fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0),
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
-                                      child: cards[1]
-                                          .animate()
-                                          .fadeIn(
-                                              duration: 400.ms, delay: 100.ms)
-                                          .slideY(begin: 0.2, end: 0),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: cards[2]
-                                          .animate()
-                                          .fadeIn(
-                                              duration: 400.ms, delay: 200.ms)
-                                          .slideY(begin: 0.2, end: 0),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: cards[3]
-                                          .animate()
-                                          .fadeIn(
-                                              duration: 400.ms, delay: 300.ms)
-                                          .slideY(begin: 0.2, end: 0),
+                                      child: cards[1].animate().fadeIn(duration: 400.ms, delay: 100.ms).slideY(begin: 0.2, end: 0),
                                     ),
                                   ],
                                 );
+                                final rightGroup = Row(
+                                  children: [
+                                    Expanded(
+                                      child: cards[2].animate().fadeIn(duration: 400.ms, delay: 200.ms).slideY(begin: 0.2, end: 0),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: cards[3].animate().fadeIn(duration: 400.ms, delay: 300.ms).slideY(begin: 0.2, end: 0),
+                                    ),
+                                  ],
+                                );
+                                return _twoCol(leftGroup, rightGroup, leftFlex: 14, rightFlex: 10);
                               },
                             ),
                           SizedBox(height: isPhone ? 12 : 20),
@@ -424,6 +407,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                               isPhone: isPhone,
                               isTablet: isTablet,
                               isWeb: isWeb,
+                              isAggregate: isAggregate,
                               showHealth: showHealth,
                               showRisk: showRisk,
                               showXray: showXray,
@@ -506,6 +490,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
     required bool isPhone,
     required bool isTablet,
     required bool isWeb,
+    required bool isAggregate,
     required bool showHealth,
     required bool showRisk,
     required bool showXray,
@@ -518,22 +503,27 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
     const allocationH = 360.0;
     const peerPadding = EdgeInsets.all(14);
 
-    // Chart|Health peer: shorter band so X-Ray|Risk sits higher.
+    // Chart|Health peer: sized for 6 factors (Volatility may arrive after refresh).
     final peerTopH = showHealth
-        ? (isTablet ? 350.0 : 360.0)
+        ? (isTablet ? 440.0 : 460.0)
         : chartH;
     final chart = PortfolioComparisonChartSection(
       key: ValueKey('compare_${portfolioId}_${selectedTimeFrame.code}'),
       height: isPhone ? chartH : peerTopH,
       portfolioId: portfolioId,
     );
-    final movers = PortfolioTopMoversPanel(
-      portfolioId: portfolioId,
-      timeFrame: selectedTimeFrame,
-      showTimeFrameSelector: false,
-      compact: true,
-    );
     final fillPeers = !isPhone;
+    // fillHeight only inside a fixed-height three-col band (web / ≥900).
+    // On 600–899 tablet, unbounded fillHeight collapses Movers/Stress/What-If.
+    final useThreeColBottom = isWeb || width >= 900;
+    final fillBottom = useThreeColBottom;
+    final movers = PortfolioTopMoversPanel(
+            portfolioId: portfolioId,
+            timeFrame: selectedTimeFrame,
+            showTimeFrameSelector: false,
+            compact: true,
+            fillHeight: fillBottom,
+          );
     final health = showHealth
         ? PortfolioHealthCard(
             key: ValueKey('health_$portfolioId'),
@@ -557,6 +547,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
             portfolioId: portfolioId,
             fillHeight: fillPeers,
             padding: peerPadding,
+            readOnly: isAggregate,
           )
         : null;
     final stress = showStress
@@ -564,6 +555,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
             key: ValueKey('stress_$portfolioId'),
             portfolioId: portfolioId,
             initiallyExpanded: !isPhone,
+            fillHeight: fillBottom,
           )
         : null;
     final whatIf = showWhatIf
@@ -571,6 +563,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
             key: ValueKey('whatif_$portfolioId'),
             portfolioId: portfolioId,
             initiallyExpanded: !isPhone,
+            fillHeight: fillBottom,
           )
         : null;
     final allocation = showAllocation
@@ -606,8 +599,8 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
       _twoCol(
         chart,
         health,
-        leftFlex: 5,
-        rightFlex: 4,
+        leftFlex: 14,
+        rightFlex: 10,
         stretch: true,
         forceHeight: peerTopH,
       ),
@@ -616,8 +609,8 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         _twoCol(
           xray ?? allocation,
           risk,
-          leftFlex: 1,
-          rightFlex: 1,
+          leftFlex: 14,
+          rightFlex: 10,
           stretch: true,
           forceHeight: midH,
         )
@@ -625,9 +618,9 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         allocation,
     ];
 
-    // Web always, and tablet ≥900: Movers | Stress | What-If one row.
+    // Web always, and tablet ≥900: Movers | Stress | What-If one equal-height band.
     // Narrow tablet 600–899 keeps Movers full-width then Stress|What-If.
-    final useThreeColBottom = isWeb || width >= 900;
+    const bottomBandH = 430.0;
     if (useThreeColBottom) {
       final bottom = <Widget>[
         Expanded(child: movers),
@@ -642,9 +635,12 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
       ];
       rows.addAll([
         const SizedBox(height: 16),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: bottom,
+        SizedBox(
+          height: bottomBandH,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: bottom,
+          ),
         ),
       ]);
       return rows;

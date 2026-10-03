@@ -76,17 +76,17 @@ class _TradeDetailViewPageState extends ConsumerState<TradeDetailViewPage> {
                 children: [
                   // Summary Cards (Trade Details, Price, Fees, Performance)
                   Padding(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                     child: Column(
                       children: [
                         TradeDetailSummary(trade: widget.trade),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 12),
                         TradeDetailJournalSection(
                           tradeId: widget.trade.tradeId,
                           portfolioId: widget.portfolioId,
                           symbol: widget.trade.symbol,
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 12),
 
                         // Similar Trades Section
                         SimilarTradesSection(

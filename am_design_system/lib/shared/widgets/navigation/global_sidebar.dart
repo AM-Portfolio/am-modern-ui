@@ -23,6 +23,7 @@ class GlobalSidebar extends StatelessWidget {
     required this.items,
     super.key,
     this.onLogout,
+    this.onSearchTap,
     this.onThemeToggle,
     this.onProfileTap,
     this.userName,
@@ -37,6 +38,7 @@ class GlobalSidebar extends StatelessWidget {
   final Function(String) onNavigate;
   final List<SidebarItem> items;
   final VoidCallback? onLogout;
+  final VoidCallback? onSearchTap;
   final VoidCallback? onThemeToggle;
   final VoidCallback? onProfileTap;
   final String? userName;
@@ -70,6 +72,16 @@ class GlobalSidebar extends StatelessWidget {
               height: SidebarLayoutMetrics.headerBandHeight,
               child: Center(child: _buildAppLogo()),
             ),
+
+            if (onSearchTap != null) ...[
+              const SizedBox(height: 12),
+              IconButton(
+                icon: const Icon(Icons.search, size: 22),
+                color: Theme.of(context).extension<AppColorsTheme>()?.textSecondary ?? (isDarkMode ? const Color(0xB3FFFFFF) : const Color(0x8A000000)),
+                tooltip: 'Search (Ctrl+K)',
+                onPressed: onSearchTap,
+              ),
+            ],
 
             const SizedBox(height: SidebarLayoutMetrics.afterHeaderGap),
 
