@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'dart:async'; // Required for Timer-based staggered preloading of background historical base prices
 import 'package:provider/provider.dart' hide Consumer;
@@ -6,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_library/am_library.dart';
+import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_market_common/providers/market_provider.dart';
 import 'package:am_market_common/models/market_data.dart';
 import 'package:am_market_common/models/indices_region.dart';
@@ -1037,10 +1039,26 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                           isBarChart: isBarChart,
                           timeFrameCode: selectedTimeframe,
                           expandedChartPath:
-                              '/app/chart/compare?context=market&tf=$selectedTimeframe&series=${Uri.encodeComponent(selectedIndicesForChart.join(','))}',
+                              '/app/chart/workspace?symbol=${Uri.encodeComponent(selectedIndicesForChart.isNotEmpty ? selectedIndicesForChart.first : 'NIFTY 50')}&tf=$selectedTimeframe',
                           onOpenExpanded: () {
-                            context.push(
-                              '/app/chart/compare?context=market&tf=$selectedTimeframe&series=${Uri.encodeComponent(selectedIndicesForChart.join(','))}',
+                            final sym = selectedIndicesForChart.isNotEmpty
+                                ? selectedIndicesForChart.first
+                                : 'NIFTY 50';
+                            final path =
+                                '/app/chart/workspace?symbol=${Uri.encodeComponent(sym)}&tf=$selectedTimeframe';
+                            requireAuthThen(
+                              context,
+                              redirectPath: path,
+                              title: 'Sign in to open Chart',
+                              message:
+                                  'The chart terminal requires an account. Cancel to keep browsing Market.',
+                              onAuthenticated: () {
+                                if (kIsWeb) {
+                                  AppWebNavigation.openPathInNewTab(path);
+                                } else {
+                                  context.push(path);
+                                }
+                              },
                             );
                           },
                           onRemoveSeries: (symbol) {

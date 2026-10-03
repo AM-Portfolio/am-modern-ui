@@ -1085,7 +1085,7 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
 
       final response = await _apiClient.get<List<dynamic>>(
         uri,
-        parser: (data) => data! as List<dynamic>,
+        parser: (data) => _unwrapHistoryPoints(data),
       );
 
       final result = response
@@ -1093,7 +1093,7 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
           .toList();
 
       CommonLogger.info(
-        'Portfolio history fetched successfully',
+        'Portfolio history fetched successfully (${result.length} points)',
         tag: 'PortfolioRemoteDataSource',
       );
       return result;
@@ -1118,7 +1118,7 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
 
       final response = await _apiClient.get<List<dynamic>>(
         uri,
-        parser: (data) => data! as List<dynamic>,
+        parser: (data) => _unwrapHistoryPoints(data),
       );
 
       final result = response
@@ -1126,7 +1126,7 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
           .toList();
 
       CommonLogger.info(
-        'Portfolio intraday fetched successfully',
+        'Portfolio intraday fetched successfully (${result.length} points)',
         tag: 'PortfolioRemoteDataSource',
       );
       return result;
@@ -1135,5 +1135,18 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
           tag: 'PortfolioRemoteDataSource', error: e);
       rethrow;
     }
+  }
+
+  /// Accepts legacy bare lists or the `{ points: [...] }` history envelope.
+  static List<dynamic> _unwrapHistoryPoints(dynamic data) {
+    if (data == null) return const [];
+    if (data is List) return data;
+    if (data is Map) {
+      final map = Map<String, dynamic>.from(data);
+      final points =
+          map['points'] ?? map['data'] ?? map['content'] ?? map['snapshots'];
+      if (points is List) return points;
+    }
+    return const [];
   }
 }

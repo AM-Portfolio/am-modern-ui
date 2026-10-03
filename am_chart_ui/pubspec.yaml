@@ -1,0 +1,28 @@
+name: am_chart_ui
+description: Advanced TradingView-style charting and trading terminal
+version: 0.1.0
+publish_to: "none"
+
+environment:
+  sdk: ^3.5.0
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  am_design_system:
+    path: ../am_design_system
+  am_common:
+    path: ../am_common
+  flutter_riverpod: ^3.0.3
+  equatable: ^2.0.7
+  intl: ^0.20.2
+  shared_preferences: ^2.3.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true

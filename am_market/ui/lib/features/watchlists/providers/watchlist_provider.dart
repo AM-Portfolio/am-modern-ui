@@ -19,18 +19,23 @@ class WatchlistsNotifier extends AsyncNotifier<List<Watchlist>> {
 
   Future<List<Watchlist>> _fetchWatchlists() async {
     final client = ref.read(watchlistApiClientProvider);
-    final lists = await client.getWatchlists();
-    
-    // For each list, fetch items to get complete data and counts
-    final populatedLists = await Future.wait(lists.map((list) async {
-      try {
-        final items = await client.getWatchlistItems(list.id);
-        return list.copyWith(items: items);
-      } catch (e) {
-        return list;
-      }
-    }));
-    return populatedLists;
+    try {
+      final lists = await client.getWatchlists();
+
+      // For each list, fetch items to get complete data and counts
+      final populatedLists = await Future.wait(lists.map((list) async {
+        try {
+          final items = await client.getWatchlistItems(list.id);
+          return list.copyWith(items: items);
+        } catch (e) {
+          return list;
+        }
+      }));
+      return populatedLists;
+    } catch (_) {
+      // Guest / 401: soft-empty so Watch List page stays browsable.
+      return const <Watchlist>[];
+    }
   }
 
   Future<void> refresh() async {

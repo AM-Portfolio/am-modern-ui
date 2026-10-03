@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:am_design_system/shared/widgets/navigation/secondary_sidebar.dart';
 import 'package:am_design_system/core/theme/app_colors.dart';
 import 'package:am_market_common/providers/market_provider.dart';
+import 'package:am_auth_ui/am_auth_ui.dart';
+import 'package:go_router/go_router.dart';
 
 /// Market-specific sidebar using shared SecondarySidebar component
 class MarketSidebar extends StatelessWidget {
@@ -75,6 +77,26 @@ class MarketSidebar extends StatelessWidget {
         accentColor: marketAccent,
         isSelected: selectedIndex == 'Market Analysis',
         onTap: () => provider.selectIndex('Market Analysis'),
+      ),
+      SecondarySidebarItem(
+        title: 'Chart',
+        icon: Icons.show_chart_rounded,
+        accentColor: marketAccent,
+        isSelected: GoRouterState.of(context)
+            .uri
+            .path
+            .startsWith('/app/chart/workspace'),
+        onTap: () {
+          requireAuthThen(
+            context,
+            redirectPath: '/app/chart/workspace',
+            title: 'Sign in to open Chart',
+            message:
+                'The chart terminal requires an account. Cancel to keep browsing Market.',
+            onAuthenticated: () => context.go('/app/chart/workspace'),
+          );
+        },
+        subtitle: 'Advanced terminal',
       ),
       SecondarySidebarItem(
         title: 'Analysis Dashboard',

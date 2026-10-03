@@ -407,9 +407,19 @@ class DashboardRepository {
   Future<PortfolioOverlayHistory> getPortfolioHistory(
     ApiClient portfolioClient, {
     required String timeFrame,
+    String? portfolioId,
   }) async {
     final isIntraday = timeFrame.toUpperCase() == '1D';
-    final path = isIntraday ? '/v1/portfolios/intraday' : '/v1/portfolios/history';
+    final id = (portfolioId == null ||
+            portfolioId.isEmpty ||
+            portfolioId == 'all')
+        ? null
+        : portfolioId;
+    final path = id == null
+        ? (isIntraday ? '/v1/portfolios/intraday' : '/v1/portfolios/history')
+        : (isIntraday
+            ? '/v1/portfolios/$id/intraday'
+            : '/v1/portfolios/$id/history');
     try {
       final data = await portfolioClient.get(
         path,

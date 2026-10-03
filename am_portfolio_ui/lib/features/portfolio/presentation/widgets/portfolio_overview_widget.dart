@@ -458,6 +458,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         PortfolioComparisonChartSection(
           key: ValueKey('compare_${portfolioId}_${selectedTimeFrame.code}'),
           height: 320,
+          portfolioId: portfolioId,
         ),
         const SizedBox(height: 16),
         PortfolioTopMoversPanel(
@@ -509,6 +510,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
     final chart = PortfolioComparisonChartSection(
       key: ValueKey('compare_${portfolioId}_${selectedTimeFrame.code}'),
       height: isPhone ? chartH : peerTopH,
+      portfolioId: portfolioId,
     );
     final fillPeers = !isPhone;
     // fillHeight only inside a fixed-height three-col band (web / ≥900).
@@ -1014,6 +1016,7 @@ class _ChartMoversAllocationRow extends StatelessWidget {
                   'compare_${portfolioId}_${selectedTimeFrame.code}',
                 ),
                 height: 360,
+                portfolioId: portfolioId,
               ),
               const SizedBox(height: 16),
               PortfolioTopMoversPanel(

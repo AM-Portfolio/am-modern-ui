@@ -565,7 +565,11 @@ class _TradeHoldingsAdvancedTemplateState
     return Column(
       children: [
         InkWell(
-          onTap: widget.embedded ? null : () => _toggleExpanded(holding.tradeId),
+          onTap: widget.embedded
+              ? (widget.onSymbolTap != null
+                  ? () => widget.onSymbolTap!(holding.displaySymbol)
+                  : null)
+              : () => _toggleExpanded(holding.tradeId),
           onLongPress: widget.embedded || widget.onHoldingSelected == null
               ? null
               : () => widget.onHoldingSelected!(holding),
@@ -823,7 +827,11 @@ class _TradeHoldingsAdvancedTemplateState
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: widget.embedded ? null : () => _toggleExpanded(holding.tradeId),
+        onTap: widget.embedded
+            ? (widget.onSymbolTap != null
+                ? () => widget.onSymbolTap!(holding.displaySymbol)
+                : null)
+            : () => _toggleExpanded(holding.tradeId),
         borderRadius: AppRadii.card,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 220),

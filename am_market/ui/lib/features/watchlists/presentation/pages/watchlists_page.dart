@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_news_ui/am_news_ui.dart';
 import '../../providers/watchlist_provider.dart';
 import '../../data/models/watchlist_model.dart';
@@ -68,6 +70,31 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
           child: watchlistsAsync.when(
             data: (watchlists) {
               if (watchlists.isEmpty) {
+                final isGuest =
+                    context.read<AuthCubit>().state is! Authenticated;
+                if (isGuest) {
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('Sign in to sync your watchlists.'),
+                        const SizedBox(height: 16),
+                        FilledButton(
+                          onPressed: () {
+                            showLoginRequiredDialog(
+                              context,
+                              redirectPath: '/app/market/watch-list',
+                              title: 'Sign in to sync Watch List',
+                              message:
+                                  'Sign in to create and sync watchlists. Cancel to keep browsing Market.',
+                            );
+                          },
+                          child: const Text('Sign in'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
                 return const Center(child: Text('No watchlists available.'));
               }
 

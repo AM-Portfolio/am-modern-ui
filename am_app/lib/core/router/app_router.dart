@@ -10,7 +10,7 @@ import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../../features/shell/app_shell.dart';
-import '../../features/chart/comparison_chart_expanded_page.dart';
+import '../../features/chart/chart_terminal_host_page.dart';
 import 'app_routes.dart';
 import 'auth_refresh_listenable.dart';
 import 'deferred_routes.dart';
@@ -63,10 +63,11 @@ GoRouter createAppRouter({
         return null;
       }
 
-      // Browser opens http://localhost:9000/ — no page registered for `/`.
-      // Never send auth-pending users to dashboard (spinner / no login page).
+      // Browser opens http://localhost:9000/ — land guests on public Market.
       if (location == '/' || location.isEmpty) {
-        return isAuthenticated ? AppRoutes.dashboard : AppRoutes.login;
+        return isAuthenticated
+            ? AppRoutes.dashboard
+            : AppRoutes.publicMarketLanding;
       }
 
       // Auth deep links must not bounce to login/dashboard while session restores.
@@ -85,6 +86,33 @@ GoRouter createAppRouter({
         return null;
       }
 
+      // Public Market browse (excludes Paper).
+      if (!isAuthenticated && AppRoutes.isPublicMarketRoute(location)) {
+        return null;
+      }
+
+      // Gated Paper / Chart deep links → Market + auth prompt (stay browseable).
+      if (!isAuthenticated && !authPending) {
+        if (location == AppRoutes.marketPath('paper') ||
+            location.startsWith('${AppRoutes.market}/paper')) {
+          return AppRoutes.marketAuthPromptPath(auth: 'paper');
+        }
+        if (location == AppRoutes.chartWorkspace ||
+            location.startsWith('${AppRoutes.chartWorkspace}/') ||
+            location == AppRoutes.chartCompare) {
+          final qp = state.uri.queryParameters;
+          return AppRoutes.marketAuthPromptPath(
+            auth: 'chart',
+            symbol: qp['symbol'],
+            tf: qp['tf'],
+          );
+        }
+        if (location == AppRoutes.paper ||
+            location.startsWith('${AppRoutes.paper}/')) {
+          return AppRoutes.marketAuthPromptPath(auth: 'paper');
+        }
+      }
+
       // Restoring session — stay on current /app/* URL (avoids login flash on reload).
       if (authPending && AppRoutes.isAuthenticatedAppRoute(location)) {
         return null;
@@ -92,7 +120,7 @@ GoRouter createAppRouter({
 
       if (!isAuthenticated &&
           AppRoutes.isAuthenticatedAppRoute(location) &&
-          !AppRoutes.isPublicLegalRoute(location)) {
+          !AppRoutes.isPublicBrowseRoute(location)) {
         return AuthRedirect.loginLocationFromAppUri(state.uri);
       }
 
@@ -266,19 +294,24 @@ GoRouter createAppRouter({
           ),
           GoRoute(
             path: AppRoutes.chartCompare,
-            builder: (context, state) {
+            redirect: (context, state) {
               final qp = state.uri.queryParameters;
-              final chartContext = qp['context'] ?? 'market';
-              final tf = qp['tf'] ?? '1W';
+              final tf = qp['tf'] ?? '1D';
               final seriesRaw = qp['series'] ?? '';
               final series = seriesRaw.isEmpty
                   ? <String>[]
                   : Uri.decodeComponent(seriesRaw).split(',');
-              return ComparisonChartExpandedPage(
-                chartContext: chartContext,
-                timeFrameCode: tf,
-                series: series,
-                userId: _userId(context),
+              final symbol = series.isNotEmpty ? series.first : 'NIFTY 50';
+              return AppRoutes.chartWorkspacePath(symbol: symbol, tf: tf);
+            },
+          ),
+          GoRoute(
+            path: AppRoutes.chartWorkspace,
+            builder: (context, state) {
+              final qp = state.uri.queryParameters;
+              return ChartTerminalHostPage(
+                initialSymbol: qp['symbol'],
+                initialTimeframe: qp['tf'],
               );
             },
           ),

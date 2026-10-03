@@ -160,7 +160,9 @@ class _ChartBody extends ConsumerWidget {
         embedMode: true,
         timeFrameCode: tfCode,
         showEndValuePills: false,
-        showExpandButton: false,
+        showExpandButton: true,
+        expandedChartPath:
+            '/app/chart/workspace?symbol=${Uri.encodeComponent('NIFTY 50')}&tf=${Uri.encodeComponent(tfCode)}',
         preNormalizedPercent: true,
         accentColor: accentColor,
         legendTrailing: legendTrailing,

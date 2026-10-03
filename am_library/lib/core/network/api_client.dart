@@ -10,6 +10,8 @@ import '../services/secure_storage_service.dart';
 import '../utils/logger.dart';
 import '../telemetry/product_telemetry.dart';
 import '../di/service_registry.dart';
+import 'api_http_client_stub.dart'
+    if (dart.library.html) 'api_http_client_web.dart' as platform_http;
 
 /// Base API client for handling HTTP requests
 class ApiClient {
@@ -18,7 +20,7 @@ class ApiClient {
   ApiClient({String? baseUrl, http.Client? client, String? category})
       : baseUrl = _resolveBaseUrl(baseUrl),
         category = category ?? 'API',
-        _client = client ?? http.Client();
+        _client = client ?? platform_http.createPlatformHttpClient();
 
   static String _resolveBaseUrl(String? baseUrl) {
     if (baseUrl != null && baseUrl.isNotEmpty) return baseUrl;
@@ -48,6 +50,38 @@ class ApiClient {
     AppLogger.debug('🔐 Auth Token Check: "${token ?? 'null'}"',
         tag: 'ApiClient');
     return token;
+  }
+
+  /// Match [AuthInterceptor]: only real JWTs go on Authorization.
+  /// Cookie / BFF markers must not be sent as Bearer (causes 401).
+  static bool _shouldAttachBearer(String token) {
+    if (token == 'bff_cookie_session' || token.startsWith('web-access-')) {
+      return false;
+    }
+    return token.split('.').length >= 3;
+  }
+
+  /// Create headers with authentication token
+  Future<Map<String, String>> _createHeaders({
+    Map<String, String>? additionalHeaders,
+    bool requireAuth = true,
+  }) async {
+    final token = requireAuth ? await _getAuthToken() : null;
+    final attach =
+        token != null && token.isNotEmpty && _shouldAttachBearer(token);
+
+    if (attach) {
+      AppLogger.debug('Attach token to header (length: ${token.length})');
+    } else {
+      AppLogger.debug(
+          'No Bearer auth for request (requireAuth: $requireAuth, token: ${token == null ? 'null' : 'present-non-jwt'})');
+    }
+
+    return {
+      'Content-Type': 'application/json',
+      if (attach) 'Authorization': 'Bearer $token',
+      if (additionalHeaders != null) ...additionalHeaders,
+    };
   }
 
   /// Build URI from endpoint, handling both complete URLs and relative paths
@@ -99,27 +133,6 @@ class ApiClient {
   /// Replace localhost with 10.0.2.2 for Android emulator compatibility
   String _replaceLocalhostForAndroid(String url) =>
       url.replaceAll('localhost', '10.0.2.2');
-
-  /// Create headers with authentication token
-  Future<Map<String, String>> _createHeaders({
-    Map<String, String>? additionalHeaders,
-    bool requireAuth = true,
-  }) async {
-    final token = requireAuth ? await _getAuthToken() : null;
-
-    if (token != null) {
-      AppLogger.debug('Attach token to header (length: ${token.length})');
-    } else {
-      AppLogger.debug(
-          'No auth token available for request headers (requireAuth: $requireAuth)');
-    }
-
-    return {
-      'Content-Type': 'application/json',
-      if (token != null) 'Authorization': 'Bearer $token',
-      if (additionalHeaders != null) ...additionalHeaders,
-    };
-  }
 
   /// Handle HTTP response
   T _handleResponse<T>(

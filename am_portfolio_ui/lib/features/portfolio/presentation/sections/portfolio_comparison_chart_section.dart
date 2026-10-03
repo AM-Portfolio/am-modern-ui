@@ -7,34 +7,93 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Dashboard-style overlay comparison chart (Overall vs indices) for Portfolio overview.
-class PortfolioComparisonChartSection extends ConsumerWidget {
+class PortfolioComparisonChartSection extends ConsumerStatefulWidget {
   const PortfolioComparisonChartSection({
     super.key,
     required this.height,
     this.userId,
+    this.portfolioId,
   });
 
   final double height;
   final String? userId;
+  /// Sidebar-selected portfolio — preferred as the third default chart series.
+  final String? portfolioId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final resolvedUserId = userId ?? _userIdFromAuth(context);
+  ConsumerState<PortfolioComparisonChartSection> createState() =>
+      _PortfolioComparisonChartSectionState();
+}
+
+class _PortfolioComparisonChartSectionState
+    extends ConsumerState<PortfolioComparisonChartSection> {
+  @override
+  void didUpdateWidget(covariant PortfolioComparisonChartSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.portfolioId != widget.portfolioId) {
+      _applyPreferredPortfolio();
+    }
+  }
+
+  void _applyPreferredPortfolio() {
+    final resolvedUserId = widget.userId ?? _userIdFromAuth(context);
+    if (resolvedUserId.isEmpty) return;
+    ref
+        .read(dashboardOverlayProvider(resolvedUserId).notifier)
+        .setPreferredPortfolioId(widget.portfolioId);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final resolvedUserId = widget.userId ?? _userIdFromAuth(context);
     if (resolvedUserId.isEmpty) {
       return SizedBox(
-        height: height,
+        height: widget.height,
         child: const Center(child: Text('Sign in to view performance chart')),
       );
     }
 
-    ref.watch(dashboardOverlayProvider(resolvedUserId));
+    // Keep overlay default series aligned with sidebar selection.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref
+          .read(dashboardOverlayProvider(resolvedUserId).notifier)
+          .setPreferredPortfolioId(widget.portfolioId);
+    });
 
-    return SizedBox(
-      height: height,
-      child: DashboardChartWidget(
-        userId: resolvedUserId,
-        accentColor: ModuleColors.portfolio,
-      ),
+    final overlay = ref.watch(dashboardOverlayProvider(resolvedUserId));
+
+    ref.listen(dashboardOverlayProvider(resolvedUserId), (prev, next) {
+      if (next.historyReadyToastPending &&
+          (prev?.historyReadyToastPending != true)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Portfolio synced. Chart is ready.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        ref
+            .read(dashboardOverlayProvider(resolvedUserId).notifier)
+            .clearReadyToast();
+      }
+    });
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (overlay.historyBuilding)
+          _SyncingBanner(
+            startedAtIso: overlay.historyStartedAt,
+            phase: overlay.historyPhase,
+          ),
+        SizedBox(
+          height: widget.height,
+          child: DashboardChartWidget(
+            userId: resolvedUserId,
+            accentColor: ModuleColors.portfolio,
+          ),
+        ),
+      ],
     );
   }
 
@@ -42,5 +101,71 @@ class PortfolioComparisonChartSection extends ConsumerWidget {
     final authState = context.watch<AuthCubit>().state;
     if (authState is Authenticated) return authState.user.id;
     return '';
+  }
+}
+
+class _SyncingBanner extends StatelessWidget {
+  const _SyncingBanner({this.startedAtIso, this.phase});
+
+  final String? startedAtIso;
+  final String? phase;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final subtitle = switch (phase) {
+      'BUILDING_90D' => 'Preparing last 3 months…',
+      'BUILDING_1Y' => 'Extending to 1 year…',
+      'QUEUED' => 'Queued…',
+      _ => 'Building chart history…',
+    };
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.7),
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            children: [
+              const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Syncing portfolio and building chart in the backend…',
+                      style: theme.textTheme.bodyMedium
+                          ?.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '$subtitle  ${_elapsedLabel(startedAtIso)}',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _elapsedLabel(String? startedAtIso) {
+    if (startedAtIso == null || startedAtIso.isEmpty) return '';
+    final started = DateTime.tryParse(startedAtIso);
+    if (started == null) return '';
+    final secs = DateTime.now().toUtc().difference(started.toUtc()).inSeconds;
+    if (secs < 0) return '';
+    final m = secs ~/ 60;
+    final s = secs % 60;
+    return '· ${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 }

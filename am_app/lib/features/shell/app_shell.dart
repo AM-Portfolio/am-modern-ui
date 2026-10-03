@@ -429,6 +429,33 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
   }
 
   void _onGlobalNavigate(String title, String userId) {
+    final auth = context.read<AuthCubit>().state;
+    final isGuest = auth is! Authenticated;
+
+    // Guests may browse Market only; other modules open Login / Cancel.
+    if (isGuest) {
+      if (title == 'Market') {
+        ProductTelemetry.instance.featureAction(
+          'global_nav',
+          tag: 'shell',
+          metadata: {'title': title, 'guest': true},
+        );
+        _showBottomNavWithIdleHide();
+        context.go(AppRoutes.publicMarketLanding);
+        return;
+      }
+      final path = AppRoutes.pathForNavTitle(title) ?? AppRoutes.dashboard;
+      unawaited(
+        showLoginRequiredDialog(
+          context,
+          redirectPath: path,
+          title: 'Sign in required',
+          message: 'Sign in to open $title.',
+        ),
+      );
+      return;
+    }
+
     final path = AppRoutes.pathForNavTitle(title);
     if (path == null) return;
 
@@ -443,6 +470,17 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
     common.SessionPersistenceService.instance.patch(
       userId,
       (s) => s.copyWith(globalNav: title, clearBasket: title != 'Portfolio'),
+    );
+  }
+
+  void _onGuestSignIn() {
+    final loc = GoRouterState.of(context).uri;
+    final path = loc.path.isEmpty ? AppRoutes.publicMarketLanding : loc.path;
+    context.go(
+      AuthRedirect.loginLocation(
+        appPath: path,
+        companionQuery: loc.queryParameters,
+      ),
     );
   }
 
@@ -602,15 +640,19 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
               authState is AuthLoading ||
               authState is AuthRestoreFailed;
 
-          if (authState is! Authenticated && !authPending) {
+          final isGuest = authState is Unauthenticated;
+          // Guests may use the shell on public Market; other unauth states
+          // (still restoring) keep the pending overlay path below.
+          if (authState is! Authenticated && !authPending && !isGuest) {
             return const SizedBox.shrink();
           }
 
-          if (!_shellMarked && authState is Authenticated) {
+          if (!_shellMarked &&
+              (authState is Authenticated || isGuest)) {
             _shellMarked = true;
             common.BootTrace.instance.mark('shell_visible');
-          }
-final userId =
+          } 
+          final userId =
               authState is Authenticated ? authState.user.id : '';
           final isAdmin =
               authState is Authenticated && authState.user.isAdmin;
@@ -668,19 +710,30 @@ final userId =
                     children: [
                       Row(
                         children: [
-                          if (isDesktop && authState is Authenticated)
+                          if (isDesktop &&
+                              (authState is Authenticated || isGuest))
                             GlobalSidebar(
                               activeNavItem: _activeNavItem,
                               isDarkMode: isDark,
-                              userName: authState.user.displayName,
-                              userEmail: authState.user.email,
-                              userAvatarUrl: authState.user.photoUrl,
-                              userAvatar: common.UserAvatar(
-                                radius: 20,
-                                displayName: authState.user.displayName ??
-                                    authState.user.email,
-                                remotePhotoUrl: authState.user.photoUrl,
-                              ),
+                              userName: authState is Authenticated
+                                  ? authState.user.displayName
+                                  : null,
+                              userEmail: authState is Authenticated
+                                  ? authState.user.email
+                                  : null,
+                              userAvatarUrl: authState is Authenticated
+                                  ? authState.user.photoUrl
+                                  : null,
+                              userAvatar: authState is Authenticated
+                                  ? common.UserAvatar(
+                                      radius: 20,
+                                      displayName:
+                                          authState.user.displayName ??
+                                              authState.user.email,
+                                      remotePhotoUrl:
+                                          authState.user.photoUrl,
+                                    )
+                                  : null,
                               moduleShareUrls: AppRoutes.navTitleToDefaultPath,
                                 onSearchTap: _showSearch,
                               onThemeToggle: () {
@@ -697,23 +750,32 @@ final userId =
                                   debugPrint('Theme picker error: $e');
                                 }
                               },
-                              onLogout: () async {
-                                final uid = authState.user.id;
-                                if (GetIt.I.isRegistered<common.OfflineSyncEngine>() &&
-                                    uid.isNotEmpty) {
-                                  await GetIt.I<common.OfflineSyncEngine>()
-                                      .clearUser(uid);
-                                }
-                                if (GetIt.I.isRegistered<am_sub.SubscriptionCubit>()) {
-                                  await GetIt.I<am_sub.SubscriptionCubit>()
-                                      .invalidateCache();
-                                }
-                                if (context.mounted) {
-                                  await context.read<AuthCubit>().logout();
-                                }
-                              },
-                              onProfileTap: () =>
-                                  context.go(AppRoutes.profile),
+                              onLogout: authState is Authenticated
+                                  ? () async {
+                                      final uid = authState.user.id;
+                                      if (GetIt.I.isRegistered<
+                                              common.OfflineSyncEngine>() &&
+                                          uid.isNotEmpty) {
+                                        await GetIt.I<
+                                                common.OfflineSyncEngine>()
+                                            .clearUser(uid);
+                                      }
+                                      if (GetIt.I.isRegistered<
+                                          am_sub.SubscriptionCubit>()) {
+                                        await GetIt.I<
+                                                am_sub.SubscriptionCubit>()
+                                            .invalidateCache();
+                                      }
+                                      if (context.mounted) {
+                                        await context
+                                            .read<AuthCubit>()
+                                            .logout();
+                                      }
+                                    }
+                                  : null,
+                              onProfileTap: authState is Authenticated
+                                  ? () => context.go(AppRoutes.profile)
+                                  : _onGuestSignIn,
                               onNavigate: (title) =>
                                   _onGlobalNavigate(title, userId),
                               items: _sidebarItemsFor(isAdmin: isAdmin),
@@ -751,7 +813,17 @@ final userId =
                           ),
                         ],
                       ),
-                      if (!isDesktop && authState is Authenticated)
+                      if (isGuest)
+                        Positioned(
+                          top: MediaQuery.paddingOf(context).top + 8,
+                          right: 12,
+                          child: FilledButton.tonal(
+                            onPressed: _onGuestSignIn,
+                            child: const Text('Sign in'),
+                          ),
+                        ),
+                      if (!isDesktop &&
+                          (authState is Authenticated || isGuest))
                         Positioned(
                           left: 0,
                           right: 0,
@@ -776,12 +848,15 @@ final userId =
                                 child: GlobalBottomNavigation(
                                   activeNavItem: _activeNavItem,
                                   isDarkMode: isDark,
-                                  userName: authState.user.displayName,
+                                  userName: authState is Authenticated
+                                      ? authState.user.displayName
+                                      : null,
                                   visibleCount: 5,
-                                  moduleShareUrls: AppRoutes.navTitleToDefaultPath,
+                                  moduleShareUrls:
+                                      AppRoutes.navTitleToDefaultPath,
                                   onSearchTap: _showSearch,
-                              onNavigate: (title) =>
-                                  _onGlobalNavigate(title, userId),
+                                  onNavigate: (title) =>
+                                      _onGlobalNavigate(title, userId),
                                   items: [
                                     const SidebarItem(
                                       title: 'Dashboard',

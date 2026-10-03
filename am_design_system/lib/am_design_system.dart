@@ -159,6 +159,10 @@ export 'shared/widgets/charts/multi_series_chart_data.dart';
 export 'shared/widgets/charts/multi_series_chart_config.dart';
 export 'shared/widgets/charts/comparison_chart_colors.dart';
 export 'shared/widgets/charts/comparison_chart_view.dart';
+export 'shared/widgets/charts/chart_series_window.dart';
+export 'shared/widgets/charts/candle_chart.dart';
+export 'shared/widgets/charts/indicators/chart_indicators.dart';
+export 'shared/widgets/charts/indicators/indicator_candle_chart.dart';
 
 // Portfolio Charts & Models
 export 'shared/widgets/portfolio_overview/models/portfolio_overview_data.dart';
