@@ -58,7 +58,20 @@ class StompConnectionCubit extends Cubit<StompConnectionState> {
         AppLogger.info('StompConnectionCubit: Skipping STOMP connection for mock_dev_token (Local Dev Mode)');
         return;
       }
-      
+      // Cookie / BFF markers are not JWTs — gateway CONNECT would fail.
+      if (token == 'bff_cookie_session' || token.startsWith('web-access-')) {
+        AppLogger.info(
+          'StompConnectionCubit: Skipping STOMP connection for non-JWT session token',
+        );
+        return;
+      }
+      if (token.split('.').length < 3) {
+        AppLogger.info(
+          'StompConnectionCubit: Skipping STOMP connection — token is not a JWT',
+        );
+        return;
+      }
+
       if (!_stompClient.isConnected) {
         _stompClient.connect(headers: {'Authorization': 'Bearer $token'});
       }
@@ -100,7 +113,14 @@ class StompConnectionCubit extends Cubit<StompConnectionState> {
 
   void _scheduleReconnectIfNeeded() {
     final token = _lastToken;
-    if (token == null || token.isEmpty || token == 'mock_dev_token') return;
+    if (token == null ||
+        token.isEmpty ||
+        token == 'mock_dev_token' ||
+        token == 'bff_cookie_session' ||
+        token.startsWith('web-access-') ||
+        token.split('.').length < 3) {
+      return;
+    }
     Future<void>.delayed(const Duration(seconds: 5), () {
       if (!_stompClient.isConnected && _lastToken == token) {
         AppLogger.info('StompConnectionCubit: Reconnecting after disconnect/error...');

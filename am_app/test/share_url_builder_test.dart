@@ -182,6 +182,21 @@ void main() {
         );
       });
 
+      test('doc-intel junk suffix collapses before post-login navigate', () {
+        expect(
+          AuthRedirect.sanitize('/app/doc-intel/doc-processor/eqqw]'),
+          '/app/doc-intel/doc-processor',
+        );
+        expect(
+          AuthRedirect.postLoginLocation(
+            Uri.parse(
+              '/login?redirect=${Uri.encodeComponent('/app/doc-intel/doc-processor/eqqw]')}',
+            ),
+          ),
+          '/app/doc-intel/doc-processor',
+        );
+      });
+
       test('recoverLoginLocation for unknown 404 is bare login', () {
         expect(
           AuthRedirect.recoverLoginLocation(Uri.parse('/no-such-page')),

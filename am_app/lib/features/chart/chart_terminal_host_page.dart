@@ -307,49 +307,17 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(
-              height: 36,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 4),
-                      itemCount: tags.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 6),
-                      itemBuilder: (context, i) {
-                        final (tag, label) = tags[i];
-                        return ChoiceChip(
-                          label:
-                              Text(label, style: const TextStyle(fontSize: 11)),
-                          selected: _section == tag,
-                          visualDensity: VisualDensity.compact,
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                          onSelected: (_) {
-                            setState(() => _section = tag);
-                            if (_isFoSection(tag)) {
-                              _syncFoSymbol(state.symbol);
-                            }
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: 'Full view',
-                    iconSize: 18,
-                    padding: EdgeInsets.zero,
-                    constraints:
-                        const BoxConstraints(minWidth: 32, minHeight: 32),
-                    onPressed: () => _openFullView(state.symbol),
-                    icon: const Icon(Icons.open_in_full),
-                  ),
-                ],
-              ),
+            _ChartBottomSectionBar(
+              tags: tags,
+              selected: _section,
+              onSelected: (tag) {
+                setState(() => _section = tag);
+                if (_isFoSection(tag)) {
+                  _syncFoSymbol(state.symbol);
+                }
+              },
+              onOpenFullView: () => _openFullView(state.symbol),
             ),
-            const Divider(height: 1),
             Expanded(
               child: _section == _ChartBottomSection.holdings
                   ? ChartPortfolioHoldingsPanel(
@@ -360,6 +328,120 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
           ],
         );
       },
+    );
+  }
+}
+
+/// Modern below-chart section switcher: icon + label, underline active state.
+class _ChartBottomSectionBar extends StatelessWidget {
+  const _ChartBottomSectionBar({
+    required this.tags,
+    required this.selected,
+    required this.onSelected,
+    required this.onOpenFullView,
+  });
+
+  final List<(_ChartBottomSection, String)> tags;
+  final _ChartBottomSection selected;
+  final ValueChanged<_ChartBottomSection> onSelected;
+  final VoidCallback onOpenFullView;
+
+  static IconData _iconFor(_ChartBottomSection section) {
+    return switch (section) {
+      _ChartBottomSection.holdings => Icons.account_balance_wallet_outlined,
+      _ChartBottomSection.overview => Icons.grid_view_rounded,
+      _ChartBottomSection.financials => Icons.bar_chart_rounded,
+      _ChartBottomSection.shareholding => Icons.account_tree_outlined,
+      _ChartBottomSection.news => Icons.article_outlined,
+      _ChartBottomSection.optionChain => Icons.hub_outlined,
+      _ChartBottomSection.futures => Icons.trending_up_rounded,
+      _ChartBottomSection.margin => Icons.link_rounded,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final accent = theme.colorScheme.primary;
+    final muted = theme.colorScheme.onSurface.withValues(alpha: 0.55);
+    final border = theme.dividerColor.withValues(alpha: 0.45);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface.withValues(alpha: 0.55),
+        border: Border(bottom: BorderSide(color: border)),
+      ),
+      child: SizedBox(
+        height: 44,
+        child: Row(
+          children: [
+            Expanded(
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                itemCount: tags.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 2),
+                itemBuilder: (context, i) {
+                  final (tag, label) = tags[i];
+                  final isActive = selected == tag;
+                  final color = isActive ? accent : muted;
+
+                  return Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => onSelected(tag),
+                      borderRadius: BorderRadius.circular(8),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        curve: Curves.easeOutCubic,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: isActive ? accent : Colors.transparent,
+                              width: 2.5,
+                            ),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(_iconFor(tag), size: 15, color: color),
+                            const SizedBox(width: 6),
+                            Text(
+                              label,
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight:
+                                    isActive ? FontWeight.w700 : FontWeight.w500,
+                                color: isActive
+                                    ? theme.colorScheme.onSurface
+                                    : muted,
+                                letterSpacing: 0.15,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            IconButton(
+              tooltip: 'Full view',
+              iconSize: 18,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              onPressed: onOpenFullView,
+              icon: Icon(
+                Icons.open_in_full,
+                color: muted,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

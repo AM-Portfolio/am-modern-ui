@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import '../../utils/logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:stomp_dart_client/stomp.dart';
@@ -70,14 +69,20 @@ class AmStompClient {
         final token = auth.substring(7);
         final uri = Uri.parse(connectionUrl);
         final queryParams = Map<String, String>.from(uri.queryParameters);
+        // Primary: access_token (current gateway). Also token= for older servers.
         queryParams['access_token'] = token;
+        queryParams.putIfAbsent('token', () => token);
         connectionUrl = uri.replace(queryParameters: queryParams).toString();
-        AppLogger.debug('AmStompClient: Web detected, appending access_token to URL for handshake.');
+        AppLogger.debug(
+          'AmStompClient: Web detected, appending access_token (+token) to URL for handshake.',
+        );
       }
     }
 
     _statusSubject.add(StompStatus.connecting);
-    AppLogger.info('AmStompClient: Connecting to $connectionUrl ...');
+    // Log host/path only — never log query (contains JWT).
+    final safeUrl = Uri.parse(connectionUrl).replace(queryParameters: {}).toString();
+    AppLogger.info('AmStompClient: Connecting to $safeUrl ...');
 
     _client = StompClient(
       config: StompConfig(
@@ -97,16 +102,26 @@ class AmStompClient {
         },
         onWebSocketError: (dynamic error) {
           _statusSubject.add(StompStatus.error);
-          AppLogger.error('AmStompClient: WebSocket Error', error: error);
+          AppLogger.error(
+            'AmStompClient: WebSocket Error: ${_describeWsError(error)}',
+            error: error,
+          );
           onWebSocketError?.call(error);
+        },
+        onWebSocketDone: () {
+          AppLogger.info('AmStompClient: WebSocket closed (done).');
         },
         onDisconnect: (StompFrame frame) {
           _statusSubject.add(StompStatus.disconnected);
-          AppLogger.info('AmStompClient: Disconnected.');
+          AppLogger.info(
+            'AmStompClient: Disconnected. command=${frame.command} body=${frame.body}',
+          );
           _subscriptions.clear(); 
         },
         onStompError: (StompFrame frame) {
-           AppLogger.error('AmStompClient: STOMP Error: ${frame.body}');
+           AppLogger.error(
+             'AmStompClient: STOMP Error: headers=${frame.headers} body=${frame.body}',
+           );
         },
         reconnectDelay: const Duration(seconds: 5),
         connectionTimeout: const Duration(seconds: 10),
@@ -213,5 +228,25 @@ class AmStompClient {
     disconnect();
     _messageSubject.close();
     _statusSubject.close();
+  }
+
+  /// Prefer close code/reason over `[object Event]` on web.
+  static String _describeWsError(dynamic error) {
+    if (error == null) return 'null';
+    try {
+      final dynamic e = error;
+      final code = e.code;
+      final reason = e.reason;
+      if (code != null || reason != null) {
+        return 'code=$code reason=$reason';
+      }
+    } catch (_) {
+      // not a close-like object
+    }
+    final text = error.toString();
+    if (text == 'Instance of \'Event\'' || text.contains('Instance of')) {
+      return '${error.runtimeType}';
+    }
+    return text;
   }
 }

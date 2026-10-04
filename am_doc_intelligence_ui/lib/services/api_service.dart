@@ -28,10 +28,14 @@ class ApiService {
       ? 'http://localhost:8080/api/v1'
       : '${EnvDomains.gmail}/api/v1';
 
-  // Credentials — fallback values for demo login sessions
-  static const String _authToken =
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NzkwMDcyNzUsImlhdCI6MTc3ODkyMDg3NSwic3ViIjoiYjc1NzQzYzktZmUwZS00YzU0LThlZTAtOGRhMzUwY2MyN2IzIiwidXNlcm5hbWUiOiJzc2QyNjU4QGdtYWlsLmNvbSIsImVtYWlsIjoic3NkMjY1OEBnbWFpbC5jb20iLCJzY29wZXMiOlsicmVhZCIsIndyaXRlIl19.uqaDH_iDEZeSgnjOD7Q5gnG3MrE8jnxzhrPgYQjUUpU";
-  static const String _userId = "b75743c9-fe0e-4c54-8ee0-8da350cc27b3";
+  /// Match [ApiClient]: only real JWTs go on Authorization.
+  /// Cookie / BFF markers must not be sent as Bearer (causes 401).
+  static bool _shouldAttachBearer(String token) {
+    if (token == 'bff_cookie_session' || token.startsWith('web-access-')) {
+      return false;
+    }
+    return token.split('.').length >= 3;
+  }
 
   Future<Map<String, String>> _getHeaders() async {
     String? token;
@@ -50,17 +54,17 @@ class ApiService {
       debugPrint('[ApiService] Secure storage read failed: $e');
     }
 
-    // Fallback to static demo credentials only if the session storage is completely empty
-    final finalToken = (token != null && token.isNotEmpty) ? token : _authToken;
-    final finalUserId = (userId != null && userId.isNotEmpty) ? userId : _userId;
-
-    return {
-      'Authorization': 'Bearer $finalToken',
-      // X-User-ID is redundant with JWT on the server. Sending it from a
-      // localhost UI to preprod/prod trips CORS (header not allow-listed) and
-      // surfaces as ClientException: Failed to fetch on multipart upload.
-      if (!kIsWeb) 'X-User-ID': finalUserId,
-    };
+    final headers = <String, String>{};
+    if (token != null && token.isNotEmpty && _shouldAttachBearer(token)) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    // X-User-ID is redundant with JWT on the server. Sending it from a
+    // localhost UI to preprod/prod trips CORS (header not allow-listed) and
+    // surfaces as ClientException: Failed to fetch on multipart upload.
+    if (!kIsWeb && userId != null && userId.isNotEmpty) {
+      headers['X-User-ID'] = userId;
+    }
+    return headers;
   }
 
   final List<String> brokerTypes = [

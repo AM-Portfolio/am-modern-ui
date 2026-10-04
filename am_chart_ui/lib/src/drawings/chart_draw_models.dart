@@ -29,16 +29,16 @@ extension ChartDrawToolX on ChartDrawTool {
       };
 
   IconData get icon => switch (this) {
-        ChartDrawTool.none => Icons.near_me_outlined,
-        ChartDrawTool.trendLine => Icons.show_chart,
+        ChartDrawTool.none => Icons.mouse_outlined,
+        ChartDrawTool.trendLine => Icons.timeline,
         ChartDrawTool.hLine => Icons.horizontal_rule,
-        ChartDrawTool.vLine => Icons.vertical_align_center,
-        ChartDrawTool.ray => Icons.trending_flat,
+        ChartDrawTool.vLine => Icons.height,
+        ChartDrawTool.ray => Icons.north_east,
         ChartDrawTool.channel => Icons.view_week_outlined,
         ChartDrawTool.fibRetrace => Icons.stacked_line_chart,
-        ChartDrawTool.note => Icons.sticky_note_2_outlined,
+        ChartDrawTool.note => Icons.title,
         ChartDrawTool.measure => Icons.straighten,
-        ChartDrawTool.eraser => Icons.auto_fix_high_outlined,
+        ChartDrawTool.eraser => Icons.delete_sweep_outlined,
       };
 
   /// Tools that need two clicks to complete.

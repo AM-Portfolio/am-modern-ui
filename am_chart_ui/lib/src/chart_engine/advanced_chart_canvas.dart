@@ -33,6 +33,7 @@ class AdvancedChartCanvas extends StatefulWidget {
     required this.chartType,
     this.isMock = false,
     this.onCrosshair,
+    this.externalCrosshairTime,
     this.panZoomEnabled = true,
     this.onNeedOlderHistory,
     this.viewEpoch = 0,
@@ -42,6 +43,8 @@ class AdvancedChartCanvas extends StatefulWidget {
   final ChartTypeId chartType;
   final bool isMock;
   final void Function(ChartBar? bar)? onCrosshair;
+  /// Synced multi-pane crosshair: show nearest bar at this time when not locally hovering.
+  final DateTime? externalCrosshairTime;
   /// When false, pointer drag does not pan (drawing tools own the gestures).
   final bool panZoomEnabled;
   /// Fired when wheel/pan requests older data past the left edge of loaded bars.
@@ -56,9 +59,16 @@ class AdvancedChartCanvas extends StatefulWidget {
 class _AdvancedChartCanvasState extends State<AdvancedChartCanvas> {
   double _zoom = 1.0;
   double _pan = 0;
-  int? _hoverIndex;
+  int? _localHoverIndex;
   Offset? _dragOrigin;
   double _panAtDragStart = 0;
+
+  int? get _displayHoverIndex {
+    if (_localHoverIndex != null) return _localHoverIndex;
+    final ext = widget.externalCrosshairTime;
+    if (ext == null) return null;
+    return _nearestIndexForTime(ext);
+  }
 
   @override
   void didUpdateWidget(covariant AdvancedChartCanvas oldWidget) {
@@ -67,6 +77,27 @@ class _AdvancedChartCanvasState extends State<AdvancedChartCanvas> {
       _zoom = 1.0;
       _pan = 0;
     }
+  }
+
+  int? _nearestIndexForTime(DateTime time) {
+    final bars = widget.bars;
+    if (bars.isEmpty) return null;
+    var best = 0;
+    var bestDelta = (bars[0].time.difference(time)).abs();
+    for (var i = 1; i < bars.length; i++) {
+      final d = (bars[i].time.difference(time)).abs();
+      if (d < bestDelta) {
+        bestDelta = d;
+        best = i;
+      }
+    }
+    return best;
+  }
+
+  void _clearLocalHover() {
+    if (_localHoverIndex == null) return;
+    setState(() => _localHoverIndex = null);
+    widget.onCrosshair?.call(null);
   }
 
   bool get _ctrlPressed =>
@@ -107,104 +138,109 @@ class _AdvancedChartCanvasState extends State<AdvancedChartCanvas> {
       return const Center(child: Text('No chart data'));
     }
 
+    final hover = _displayHoverIndex;
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        return Stack(
-          children: [
-            // Pointer-only gestures — avoid GestureDetector pan+scale assert.
-            Listener(
-              onPointerHover: (e) =>
-                  _updateHover(e.localPosition, constraints.biggest),
-              onPointerSignal: (e) {
-                if (e is PointerScrollEvent) _onScroll(e);
-              },
-              onPointerDown: (e) {
-                if (!widget.panZoomEnabled) return;
-                _dragOrigin = e.localPosition;
-                _panAtDragStart = _pan;
-                _updateHover(e.localPosition, constraints.biggest);
-              },
-              onPointerMove: (e) {
-                _updateHover(e.localPosition, constraints.biggest);
-                if (!widget.panZoomEnabled) return;
-                final origin = _dragOrigin;
-                if (origin == null) return;
-                final n = widget.bars.length;
-                final visible = _visibleCount(n);
-                final startBefore = _startIndex(n, visible);
-                setState(() {
-                  _pan = _panAtDragStart + (e.localPosition.dx - origin.dx);
-                });
-                final startAfter = _startIndex(n, visible);
-                if (startBefore <= 0 &&
-                    startAfter <= 0 &&
-                    e.localPosition.dx > origin.dx) {
-                  widget.onNeedOlderHistory?.call();
-                }
-              },
-              onPointerUp: (_) => _dragOrigin = null,
-              onPointerCancel: (_) => _dragOrigin = null,
-              child: CustomPaint(
-                size: Size(constraints.maxWidth, constraints.maxHeight),
-                painter: _ChartPainter(
-                  bars: widget.bars,
-                  chartType: widget.chartType,
-                  zoom: _zoom,
-                  pan: _pan,
-                  hoverIndex: _hoverIndex,
-                  gridColor: theme.dividerColor.withValues(alpha: 0.25),
-                  labelColor: theme.hintColor,
-                  upColor: const Color(0xFF26A69A),
-                  downColor: const Color(0xFFEF5350),
-                  accent: theme.colorScheme.primary,
+        return MouseRegion(
+          onExit: (_) => _clearLocalHover(),
+          child: Stack(
+            children: [
+              // Pointer-only gestures — avoid GestureDetector pan+scale assert.
+              Listener(
+                onPointerHover: (e) =>
+                    _updateHover(e.localPosition, constraints.biggest),
+                onPointerSignal: (e) {
+                  if (e is PointerScrollEvent) _onScroll(e);
+                },
+                onPointerDown: (e) {
+                  if (!widget.panZoomEnabled) return;
+                  _dragOrigin = e.localPosition;
+                  _panAtDragStart = _pan;
+                  _updateHover(e.localPosition, constraints.biggest);
+                },
+                onPointerMove: (e) {
+                  _updateHover(e.localPosition, constraints.biggest);
+                  if (!widget.panZoomEnabled) return;
+                  final origin = _dragOrigin;
+                  if (origin == null) return;
+                  final n = widget.bars.length;
+                  final visible = _visibleCount(n);
+                  final startBefore = _startIndex(n, visible);
+                  setState(() {
+                    _pan = _panAtDragStart + (e.localPosition.dx - origin.dx);
+                  });
+                  final startAfter = _startIndex(n, visible);
+                  if (startBefore <= 0 &&
+                      startAfter <= 0 &&
+                      e.localPosition.dx > origin.dx) {
+                    widget.onNeedOlderHistory?.call();
+                  }
+                },
+                onPointerUp: (_) => _dragOrigin = null,
+                onPointerCancel: (_) => _dragOrigin = null,
+                child: CustomPaint(
+                  size: Size(constraints.maxWidth, constraints.maxHeight),
+                  painter: _ChartPainter(
+                    bars: widget.bars,
+                    chartType: widget.chartType,
+                    zoom: _zoom,
+                    pan: _pan,
+                    hoverIndex: hover,
+                    gridColor: theme.dividerColor.withValues(alpha: 0.25),
+                    labelColor: theme.hintColor,
+                    upColor: const Color(0xFF26A69A),
+                    downColor: const Color(0xFFEF5350),
+                    accent: theme.colorScheme.primary,
+                  ),
                 ),
               ),
-            ),
-            if (widget.isMock)
-              Positioned(
-                left: 12,
-                top: 8,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.85),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Text(
-                    'MOCK DATA',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black,
+              if (widget.isMock)
+                Positioned(
+                  left: 12,
+                  top: 8,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text(
+                      'MOCK DATA',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            if (_hoverIndex != null &&
-                _hoverIndex! >= 0 &&
-                _hoverIndex! < widget.bars.length)
-              Positioned(
-                right: 12,
-                top: 8,
-                child: _OhlcBadge(bar: widget.bars[_hoverIndex!]),
-              ),
-          ],
+              if (hover != null && hover >= 0 && hover < widget.bars.length)
+                Positioned(
+                  right: 12,
+                  top: 8,
+                  child: _OhlcBadge(bar: widget.bars[hover]),
+                ),
+            ],
+          ),
         );
       },
     );
   }
 
   void _updateHover(Offset pos, Size size) {
-    const left = 56.0;
-    final plotW = size.width - left - 8;
+    // Price scale is on the right — plot starts flush on the left.
+    const left = 8.0;
+    const right = 56.0;
+    final plotW = size.width - left - right;
     if (plotW <= 0 || widget.bars.isEmpty) return;
     final visible = _visibleCount(widget.bars.length);
     final start = _startIndex(widget.bars.length, visible);
     final t = ((pos.dx - left) / plotW).clamp(0.0, 0.999);
     final idx = (start + t * visible).floor().clamp(0, widget.bars.length - 1);
-    if (_hoverIndex != idx) {
-      setState(() => _hoverIndex = idx);
+    if (_localHoverIndex != idx) {
+      setState(() => _localHoverIndex = idx);
       widget.onCrosshair?.call(widget.bars[idx]);
     }
   }
@@ -283,13 +319,15 @@ class _ChartPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    const left = 56.0;
+    // Left flush (shared tools rail owns the workspace left); price scale right.
+    const left = 8.0;
+    const right = 56.0;
     const bottom = 22.0;
     const top = 8.0;
     final plot = Rect.fromLTWH(
       left,
       top,
-      math.max(0, size.width - left - 8),
+      math.max(0, size.width - left - right),
       math.max(0, size.height - top - bottom),
     );
     if (plot.width <= 0 || plot.height <= 0 || bars.isEmpty) return;
@@ -329,8 +367,8 @@ class _ChartPainter extends CustomPainter {
           style: TextStyle(fontSize: 10, color: labelColor),
         ),
         textDirection: ui.TextDirection.ltr,
-      )..layout(maxWidth: left - 4);
-      tp.paint(canvas, Offset(left - 4 - tp.width, y - tp.height / 2));
+      )..layout(maxWidth: right - 4);
+      tp.paint(canvas, Offset(plot.right + 4, y - tp.height / 2));
     }
 
     final slot = plot.width / slice.length;

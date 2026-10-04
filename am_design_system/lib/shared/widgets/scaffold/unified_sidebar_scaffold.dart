@@ -50,13 +50,15 @@ class UnifiedSidebarScaffold extends StatefulWidget {
     this.sections,
     this.header,
     this.isDark = true,
-    this.desktopBreakpoint =
-        1300, // Shifted up slightly for better wide screen support
-    this.tabletBreakpoint = 1100, // Standardized Mobile/Tablet cutoff
+    // Match AppShell global-rail cutoff (~1100): expand secondary whenever
+    // the global sidebar is visible (avoid icon-compact "full page" content).
+    this.desktopBreakpoint = 1100,
+    this.tabletBreakpoint = 1100,
     this.fullWidth = 280,
     this.compactWidth = 72,
     this.condensedWidth = 200,
     this.forceCompact = false,
+    this.preferExpanded = false,
     this.floatingActionButton,
     this.onBackToGlobal,
     this.onThemeToggle,
@@ -136,6 +138,10 @@ class UnifiedSidebarScaffold extends StatefulWidget {
 
   /// Force compact mode regardless of screen width
   final bool forceCompact;
+
+  /// When true, start expanded and ignore the persisted collapsed preference
+  /// so module landings always show secondary nav for cross-section jumps.
+  final bool preferExpanded;
 
   /// Floating Action Button to display on the scaffold
   final Widget? floatingActionButton;
@@ -249,6 +255,14 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
   }
 
   Future<void> _loadCollapsedPref() async {
+    if (widget.preferExpanded) {
+      if (!mounted) return;
+      setState(() {
+        _collapsedOverride = false;
+        _animationController.value = 1.0;
+      });
+      return;
+    }
     try {
       final prefs = await SharedPreferences.getInstance();
       final collapsed = prefs.getBool(_collapsedPrefKey);

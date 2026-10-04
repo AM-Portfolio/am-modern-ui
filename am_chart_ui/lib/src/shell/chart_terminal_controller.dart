@@ -71,6 +71,7 @@ class ChartTerminalState {
     this.searchHits = const [],
     this.bottomTab = 0,
     this.fitEpoch = 0,
+    this.syncedCrosshairTime,
   });
 
   final ChartGridLayout layout;
@@ -80,6 +81,10 @@ class ChartTerminalState {
   final int bottomTab;
   /// Bumped by [ChartTerminalController.requestFit] for the active pane.
   final int fitEpoch;
+  /// Shared vertical crosshair time across multi-pane layouts (null = clear).
+  final DateTime? syncedCrosshairTime;
+
+  bool get isMultiLayout => layout != ChartGridLayout.one;
 
   ChartPaneState get active =>
       panes[activePaneIndex.clamp(0, panes.length - 1)];
@@ -102,6 +107,8 @@ class ChartTerminalState {
     List<WatchlistSymbol>? searchHits,
     int? bottomTab,
     int? fitEpoch,
+    DateTime? syncedCrosshairTime,
+    bool clearSyncedCrosshair = false,
   }) {
     return ChartTerminalState(
       layout: layout ?? this.layout,
@@ -110,6 +117,9 @@ class ChartTerminalState {
       searchHits: searchHits ?? this.searchHits,
       bottomTab: bottomTab ?? this.bottomTab,
       fitEpoch: fitEpoch ?? this.fitEpoch,
+      syncedCrosshairTime: clearSyncedCrosshair
+          ? null
+          : (syncedCrosshairTime ?? this.syncedCrosshairTime),
     );
   }
 }
@@ -231,6 +241,7 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
       layout: layout,
       panes: current,
       activePaneIndex: activeIdx,
+      clearSyncedCrosshair: true,
     );
     await Future.wait([
       for (var i = 0; i < current.length; i++)
@@ -260,21 +271,67 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
   }
 
   Future<void> setTimeframe(ChartTimeframe tf, {int? paneIndex}) async {
+    // Top-bar calls omit paneIndex — apply to all panes in multi layout.
+    if (paneIndex == null && state.isMultiLayout) {
+      await setTimeframeForAll(tf);
+      return;
+    }
     final i = paneIndex ?? state.activePaneIndex;
     final panes = [...state.panes];
     panes[i] = panes[i].copyWith(timeframe: tf, loading: true);
-    state = state.copyWith(panes: panes);
+    state = state.copyWith(panes: panes, clearSyncedCrosshair: true);
     await reloadPane(i);
+    await _persist();
+  }
+
+  Future<void> setTimeframeForAll(ChartTimeframe tf) async {
+    final panes = [
+      for (final p in state.panes) p.copyWith(timeframe: tf, loading: true),
+    ];
+    state = state.copyWith(panes: panes, clearSyncedCrosshair: true);
+    await Future.wait([
+      for (var i = 0; i < panes.length; i++) reloadPane(i),
+    ]);
     await _persist();
   }
 
   Future<void> setChartType(ChartTypeId type, {int? paneIndex}) async {
     if (!type.isAvailable) return;
+    if (paneIndex == null && state.isMultiLayout) {
+      await setChartTypeForAll(type);
+      return;
+    }
     final i = paneIndex ?? state.activePaneIndex;
     final panes = [...state.panes];
     panes[i] = panes[i].copyWith(chartType: type);
     state = state.copyWith(panes: panes);
     await _persist();
+  }
+
+  Future<void> setChartTypeForAll(ChartTypeId type) async {
+    if (!type.isAvailable) return;
+    final panes = [
+      for (final p in state.panes) p.copyWith(chartType: type),
+    ];
+    state = state.copyWith(panes: panes);
+    await _persist();
+  }
+
+  void setSyncedCrosshairTime(DateTime? time) {
+    if (!state.isMultiLayout) {
+      if (state.syncedCrosshairTime != null) {
+        state = state.copyWith(clearSyncedCrosshair: true);
+      }
+      return;
+    }
+    if (time == null) {
+      if (state.syncedCrosshairTime != null) {
+        state = state.copyWith(clearSyncedCrosshair: true);
+      }
+      return;
+    }
+    if (state.syncedCrosshairTime == time) return;
+    state = state.copyWith(syncedCrosshairTime: time);
   }
 
   DateTime? _lastWidenAt;

@@ -10,6 +10,7 @@ import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../../features/shell/app_shell.dart';
+import '../../features/shell/not_found_page.dart';
 import '../../features/chart/chart_terminal_host_page.dart';
 import 'app_routes.dart';
 import 'auth_refresh_listenable.dart';
@@ -164,34 +165,9 @@ GoRouter createAppRouter({
     errorBuilder: (context, state) {
       final authState = authCubit.state;
       final isAuthenticated = authState is Authenticated;
-      return Scaffold(
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error_outline, size: 48),
-                const SizedBox(height: 16),
-                Text(
-                  'Page not found: ${state.uri}',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: () {
-                    if (isAuthenticated) {
-                      context.go(AppRoutes.dashboard);
-                      return;
-                    }
-                    context.go(AuthRedirect.recoverLoginLocation(state.uri));
-                  },
-                  child: Text(isAuthenticated ? 'Go to dashboard' : 'Go to login'),
-                ),
-              ],
-            ),
-          ),
-        ),
+      return NotFoundPage(
+        uri: state.uri,
+        isAuthenticated: isAuthenticated,
       );
     },
     routes: [
@@ -526,6 +502,16 @@ GoRouter createAppRouter({
                 onTabChanged: (slug) =>
                     context.go(AppRoutes.docIntelPath(slug)),
               );
+            },
+          ),
+          // Junk / pasted suffixes (e.g. /doc-processor/eqqw]) → valid tab.
+          GoRoute(
+            path: '${AppRoutes.docIntel}/:tab/:path(.*)',
+            redirect: (context, state) {
+              final tab = state.pathParameters['tab'] ?? 'doc-processor';
+              final resolved =
+                  AppRoutes.isDocIntelTab(tab) ? tab : 'doc-processor';
+              return AppRoutes.docIntelPath(resolved);
             },
           ),
           GoRoute(

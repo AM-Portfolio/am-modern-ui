@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'chart_draw_models.dart';
 
-/// Collapsible left rail: click chevron to show / hide drawing tools.
+/// Single workspace drawing rail (TradingView-style left strip).
 class ChartDrawToolsRail extends StatelessWidget {
   const ChartDrawToolsRail({
     super.key,
@@ -31,98 +31,157 @@ class ChartDrawToolsRail extends StatelessWidget {
     ChartDrawTool.fibRetrace,
     ChartDrawTool.note,
     ChartDrawTool.measure,
-    ChartDrawTool.eraser,
   ];
+
+  static const double _expandedWidth = 52;
+  static const double _collapsedWidth = 28;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bg = theme.colorScheme.surfaceContainerHighest;
+    final bg = theme.brightness == Brightness.dark
+        ? const Color(0xFF131722)
+        : theme.colorScheme.surfaceContainerHighest;
+    final iconColor = theme.brightness == Brightness.dark
+        ? const Color(0xFFD1D4DC)
+        : theme.iconTheme.color;
+    final activeBg = theme.colorScheme.primary.withValues(alpha: 0.28);
+    final activeFg = theme.colorScheme.primary;
+    final edge = theme.dividerColor.withValues(alpha: 0.55);
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
+      duration: const Duration(milliseconds: 160),
       curve: Curves.easeOut,
-      width: expanded ? 48 : 28,
+      width: expanded ? _expandedWidth : _collapsedWidth,
       decoration: BoxDecoration(
-        color: bg.withValues(alpha: 0.95),
-        border: Border(
-          right: BorderSide(color: theme.dividerColor.withValues(alpha: 0.6)),
-        ),
+        color: bg,
+        border: Border(right: BorderSide(color: edge)),
       ),
       child: Column(
         children: [
-          const SizedBox(height: 4),
-          IconButton(
-            tooltip: expanded ? 'Hide drawing tools' : 'Show drawing tools',
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 28, minHeight: 32),
-            iconSize: 18,
-            onPressed: onToggleExpanded,
-            icon: Icon(
-              expanded ? Icons.chevron_left : Icons.chevron_right,
-            ),
+          const SizedBox(height: 6),
+          _RailIcon(
+            tooltip: expanded ? 'Collapse tools' : 'Expand tools',
+            icon: Icons.menu,
+            iconColor: iconColor,
+            onTap: onToggleExpanded,
           ),
           if (!expanded)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: RotatedBox(
-                quarterTurns: 3,
-                child: Text(
-                  'Draw',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: theme.hintColor,
+            Expanded(
+              child: Center(
+                child: RotatedBox(
+                  quarterTurns: 3,
+                  child: Text(
+                    'Tools',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: theme.hintColor,
+                    ),
                   ),
                 ),
               ),
-            ),
-          if (expanded) ...[
-            const Divider(height: 8),
+            )
+          else ...[
+            const SizedBox(height: 4),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: 2),
                 children: [
                   for (final t in _tools)
-                    Tooltip(
-                      message: t.label,
-                      child: InkWell(
-                        onTap: () => onSelectTool(t),
-                        child: Container(
-                          height: 36,
-                          alignment: Alignment.center,
-                          color: activeTool == t
-                              ? theme.colorScheme.primary.withValues(alpha: 0.22)
-                              : null,
-                          child: Icon(
-                            t.icon,
-                            size: 18,
-                            color: activeTool == t
-                                ? theme.colorScheme.primary
-                                : theme.iconTheme.color,
-                          ),
-                        ),
-                      ),
+                    _RailIcon(
+                      tooltip: t.label,
+                      icon: t.icon,
+                      selected: activeTool == t,
+                      iconColor: activeTool == t ? activeFg : iconColor,
+                      selectedBg: activeBg,
+                      onTap: () => onSelectTool(t),
                     ),
-                  const Divider(height: 12),
-                  Tooltip(
-                    message: drawingCount > 0
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 6),
+                    child: Divider(
+                      height: 1,
+                      color: edge,
+                    ),
+                  ),
+                  _RailIcon(
+                    tooltip: ChartDrawTool.eraser.label,
+                    icon: ChartDrawTool.eraser.icon,
+                    selected: activeTool == ChartDrawTool.eraser,
+                    iconColor: activeTool == ChartDrawTool.eraser
+                        ? activeFg
+                        : iconColor,
+                    selectedBg: activeBg,
+                    onTap: () => onSelectTool(ChartDrawTool.eraser),
+                  ),
+                  _RailIcon(
+                    tooltip: drawingCount > 0
                         ? 'Clear all drawings ($drawingCount)'
                         : 'No drawings',
-                    child: IconButton(
-                      iconSize: 18,
-                      padding: EdgeInsets.zero,
-                      constraints:
-                          const BoxConstraints(minWidth: 36, minHeight: 36),
-                      onPressed: drawingCount > 0 ? onClearAll : null,
-                      icon: const Icon(Icons.delete_outline),
-                    ),
+                    icon: Icons.delete_outline,
+                    iconColor: iconColor,
+                    enabled: drawingCount > 0,
+                    onTap: onClearAll,
                   ),
                 ],
               ),
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _RailIcon extends StatelessWidget {
+  const _RailIcon({
+    required this.tooltip,
+    required this.icon,
+    required this.onTap,
+    this.iconColor,
+    this.selected = false,
+    this.selectedBg,
+    this.enabled = true,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onTap;
+  final Color? iconColor;
+  final bool selected;
+  final Color? selectedBg;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      waitDuration: const Duration(milliseconds: 400),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        child: Material(
+          color: selected
+              ? (selectedBg ??
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.22))
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(6),
+            onTap: enabled ? onTap : null,
+            child: SizedBox(
+              height: 38,
+              width: double.infinity,
+              child: Icon(
+                icon,
+                size: 20,
+                color: enabled
+                    ? iconColor
+                    : (iconColor ?? Colors.grey).withValues(alpha: 0.35),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -390,9 +390,10 @@ class ConfigService {
         news: NewsApiConfig(baseUrl: newsUrl),
         gmail: GmailApiConfig(
           baseUrl: gmailUrl,
-          statusEndpoint: '/v1/gmail/status',
-          connectEndpoint: '/v1/gmail/connect',
-          extractEndpoint: '/v1/gmail/extract',
+          // email-extractor OpenAPI is /api/v1/gmail/* (Traefik strips /gmail).
+          statusEndpoint: '/api/v1/gmail/status',
+          connectEndpoint: '/api/v1/gmail/connect',
+          extractEndpoint: '/api/v1/gmail/extract',
         ),
       ),
     );

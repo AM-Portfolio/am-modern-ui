@@ -6,27 +6,36 @@ import '../chart_engine/advanced_chart_canvas.dart';
 import '../chart_types/chart_type_id.dart';
 import '../providers/chart_models.dart';
 import 'chart_draw_models.dart';
-import 'chart_draw_tools_rail.dart';
 
-/// Chart + left drawing rail (click to show / hide) + live annotations.
+/// Chart canvas + live annotations. Drawing tools live in a workspace rail.
 class InteractiveChartSurface extends StatefulWidget {
   const InteractiveChartSurface({
     super.key,
     required this.bars,
     required this.chartType,
     this.isMock = false,
-    this.showDrawRail = true,
     this.onNeedOlderHistory,
     this.viewEpoch = 0,
+    this.onCrosshair,
+    this.externalCrosshairTime,
+    this.drawTool = ChartDrawTool.none,
+    this.clearDrawingsEpoch = 0,
+    this.onDrawingsCountChanged,
   });
 
   final List<ChartBar> bars;
   final ChartTypeId chartType;
   final bool isMock;
-  /// When false, drawings rail is hidden (inactive multi-pane cards).
-  final bool showDrawRail;
   final VoidCallback? onNeedOlderHistory;
   final int viewEpoch;
+  final void Function(ChartBar? bar)? onCrosshair;
+  /// Synced multi-pane crosshair time from another pane.
+  final DateTime? externalCrosshairTime;
+  /// Active tool from the shared workspace draw rail (none = pan/zoom).
+  final ChartDrawTool drawTool;
+  /// Bump to clear this pane's drawings (active pane clear-all).
+  final int clearDrawingsEpoch;
+  final ValueChanged<int>? onDrawingsCountChanged;
 
   @override
   State<InteractiveChartSurface> createState() =>
@@ -34,15 +43,30 @@ class InteractiveChartSurface extends StatefulWidget {
 }
 
 class _InteractiveChartSurfaceState extends State<InteractiveChartSurface> {
-  bool _railExpanded = true;
-  ChartDrawTool _tool = ChartDrawTool.none;
   final List<ChartDrawing> _drawings = [];
   Offset? _pendingPoint;
   int _idSeq = 0;
 
+  ChartDrawTool get _tool => widget.drawTool;
+
+  @override
+  void didUpdateWidget(covariant InteractiveChartSurface oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.drawTool != widget.drawTool) {
+      _pendingPoint = null;
+    }
+    if (oldWidget.clearDrawingsEpoch != widget.clearDrawingsEpoch) {
+      _drawings.clear();
+      _pendingPoint = null;
+      widget.onDrawingsCountChanged?.call(0);
+    }
+  }
+
+  void _notifyCount() => widget.onDrawingsCountChanged?.call(_drawings.length);
+
   @override
   Widget build(BuildContext context) {
-    final canvas = LayoutBuilder(
+    return LayoutBuilder(
       builder: (context, constraints) {
         final size = Size(constraints.maxWidth, constraints.maxHeight);
         return Stack(
@@ -55,6 +79,8 @@ class _InteractiveChartSurfaceState extends State<InteractiveChartSurface> {
               panZoomEnabled: _tool == ChartDrawTool.none,
               onNeedOlderHistory: widget.onNeedOlderHistory,
               viewEpoch: widget.viewEpoch,
+              onCrosshair: widget.onCrosshair,
+              externalCrosshairTime: widget.externalCrosshairTime,
             ),
             CustomPaint(
               size: size,
@@ -81,40 +107,17 @@ class _InteractiveChartSurfaceState extends State<InteractiveChartSurface> {
         );
       },
     );
-
-    if (!widget.showDrawRail) return canvas;
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        ChartDrawToolsRail(
-          expanded: _railExpanded,
-          activeTool: _tool,
-          drawingCount: _drawings.length,
-          onToggleExpanded: () =>
-              setState(() => _railExpanded = !_railExpanded),
-          onSelectTool: (t) => setState(() {
-            _tool = t;
-            _pendingPoint = null;
-          }),
-          onClearAll: () => setState(() {
-            _drawings.clear();
-            _pendingPoint = null;
-          }),
-        ),
-        Expanded(child: canvas),
-      ],
-    );
   }
 
   void _onTap(Offset local, Size size) {
-    const left = 56.0;
+    const left = 8.0;
+    const right = 56.0;
     const top = 8.0;
     const bottom = 22.0;
     final plot = Rect.fromLTWH(
       left,
       top,
-      math.max(0, size.width - left - 8),
+      math.max(0, size.width - left - right),
       math.max(0, size.height - top - bottom),
     );
     if (!plot.contains(local) && _tool != ChartDrawTool.eraser) {
@@ -142,6 +145,7 @@ class _InteractiveChartSurfaceState extends State<InteractiveChartSurface> {
           points: [p],
         ));
       });
+      _notifyCount();
       return;
     }
 
@@ -157,6 +161,7 @@ class _InteractiveChartSurfaceState extends State<InteractiveChartSurface> {
           ));
           _pendingPoint = null;
         });
+        _notifyCount();
       }
       return;
     }
@@ -178,6 +183,7 @@ class _InteractiveChartSurfaceState extends State<InteractiveChartSurface> {
         return false;
       });
     });
+    _notifyCount();
   }
 
   Future<void> _promptNote(Offset p) async {
@@ -212,6 +218,7 @@ class _InteractiveChartSurfaceState extends State<InteractiveChartSurface> {
         text: text.trim(),
       ));
     });
+    _notifyCount();
   }
 }
 
@@ -260,13 +267,14 @@ class _DrawingsPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    const left = 56.0;
+    const left = 8.0;
+    const right = 56.0;
     const top = 8.0;
     const bottom = 22.0;
     final plot = Rect.fromLTWH(
       left,
       top,
-      math.max(0, size.width - left - 8),
+      math.max(0, size.width - left - right),
       math.max(0, size.height - top - bottom),
     );
     if (plot.width <= 0 || plot.height <= 0) return;

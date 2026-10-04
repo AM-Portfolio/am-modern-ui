@@ -60,6 +60,9 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
       title: 'Doc Intelligence',
       icon: Icons.psychology_outlined,
       accentColor: Theme.of(context).colorScheme.primary,
+      // Keep global + secondary chrome open so users can jump to other sections.
+      preferExpanded: true,
+      showModuleBottomNavigation: false,
       autoHideMobileTabsOnScroll: true,
       items: [
         SecondarySidebarItem(
