@@ -304,6 +304,8 @@ workflows:
         BUNDLE_ID: "com.asrax.aminvestment"
         AM_DOMAIN: "am.asrax.in"
         AM_ENV: "prod"
+        # Verified via ASC API 2026-10-04: max cfBundleVersion on ASC is 13
+        ASC_BUILD_FLOOR: "13"
       groups:
         - ios_credentials
     cache:
@@ -372,7 +374,13 @@ workflows:
           set -euo pipefail
           cd am_app
           rm -rf build 2>/dev/null || true
+          # ASC_MAX verified via API; never reuse ≤ ASC_BUILD_FLOOR
+          FLOOR=${ASC_BUILD_FLOOR:-0}
           BUILD_NUM=${BUILD_NUMBER:-1}
+          if [ "$BUILD_NUM" -le "$FLOOR" ]; then
+            BUILD_NUM=$((FLOOR + 1))
+          fi
+          echo "CFBundleVersion BUILD_NUM=$BUILD_NUM (floor=$FLOOR CM_BUILD_NUMBER=${BUILD_NUMBER:-})"
           keychain initialize
           # Uses APP_STORE_CONNECT_* from ios_credentials group
           app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
