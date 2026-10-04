@@ -15,7 +15,7 @@ workflows:
         AM_DOMAIN: "am.asrax.in"
         AM_ENV: "prod"
       groups:
-        - android_credentials # Codemagic environment variable group for keystore & play store secrets
+        - android_credentials
     triggering:
       events:
         - push
@@ -57,12 +57,10 @@ workflows:
           if [ -n "$KEYSTORE_B64" ]; then
             echo "Decoding Keystore..."
             echo "$KEYSTORE_B64" | base64 -d > am_app/android/app/am_investment_keystore.jks 2>/dev/null || echo "$KEYSTORE_B64" | base64 --decode > am_app/android/app/am_investment_keystore.jks 2>/dev/null || true
-            cat <<EOF > am_app/android/key.properties
-storePassword=${ANDROID_KEYSTORE_PASSWORD:-}
-keyPassword=${ANDROID_KEY_PASSWORD:-}
-keyAlias=${ANDROID_KEY_ALIAS:-}
-storeFile=am_investment_keystore.jks
-EOF
+            echo "storePassword=${ANDROID_KEYSTORE_PASSWORD:-}" > am_app/android/key.properties
+            echo "keyPassword=${ANDROID_KEY_PASSWORD:-}" >> am_app/android/key.properties
+            echo "keyAlias=${ANDROID_KEY_ALIAS:-}" >> am_app/android/key.properties
+            echo "storeFile=am_investment_keystore.jks" >> am_app/android/key.properties
           else
             echo "Keystore secret empty — building release bundle with default/debug signing"
           fi
@@ -102,7 +100,7 @@ EOF
         AM_DOMAIN: "am.asrax.in"
         AM_ENV: "prod"
       groups:
-        - ios_credentials # Codemagic environment variable group for iOS certs & App Store Connect
+        - ios_credentials
     triggering:
       events:
         - push
