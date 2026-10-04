@@ -262,27 +262,20 @@ workflows:
 
   # ---------------------------------------------------------------------------
   # iOS · TestFlight — manual Start build
-  # Requires Team → Developer Portal integration named exactly "Asrax ASC"
-  # plus App Store distribution cert/profile (or auto-create via ASC API).
+  # Uses ios_credentials group (APP_STORE_CONNECT_*), not Team integration name.
   # ---------------------------------------------------------------------------
   ios-testflight:
     name: iOS · TestFlight
     max_build_duration: 60
     instance_type: mac_mini_m2
-    integrations:
-      app_store_connect: Asrax ASC
     environment:
       flutter: stable
       xcode: latest
       cocoapods: default
-      # Do not set ios_signing.distribution_type here unless matching App Store
-      # profiles are uploaded in Codemagic Code signing identities — otherwise
-      # the build fails before scripts. fetch-signing-files --create uses ASC.
       vars:
         BUNDLE_ID: "com.asrax.aminvestment"
         AM_DOMAIN: "am.asrax.in"
         AM_ENV: "prod"
-      # Fallback API key vars (optional if Team integration is complete)
       groups:
         - ios_credentials
     # No auto triggering — Start new build only
@@ -324,7 +317,7 @@ workflows:
           rm -rf build 2>/dev/null || true
           BUILD_NUM=${BUILD_NUMBER:-1}
           keychain initialize
-          # Uses Team ASC integration + ios_signing / uploaded certs
+          # Uses APP_STORE_CONNECT_* from ios_credentials group
           app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
           keychain add-certificates
           xcode-project use-profiles
@@ -343,5 +336,7 @@ workflows:
           failure: true
           success: true
       app_store_connect:
-        auth: integration
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: true
