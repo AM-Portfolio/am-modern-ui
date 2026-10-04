@@ -20,7 +20,7 @@ Prefer this over a full Flutter rebuild:
 
 1. **Android (no Flutter rebuild):** Actions → **Mobile CI** → Run workflow → set `reuse_codemagic_android_build_id` to a Codemagic build whose AAB was signed with the **Play upload keystore** (same SHA1 as Play Console). Approves `android-internal` → Play **internal**.
 2. **Wrong-key AABs fail:** If Play returns `signed with the wrong key`, that Codemagic AAB used debug/default signing — do **not** reuse it. Rebuild with `ANDROID_KEYSTORE_*` from `keystore_base64.txt` + `key.properties` (or GitHub secrets), then reuse that AAB.
-3. **iOS:** Unsigned `Runner.app.zip` **cannot** go to TestFlight. Use **Mobile CI** → `force_deploy=true` (signed IPA + TestFlight) or Codemagic **iOS · TestFlight** after ASC integration `Asrax ASC`.
+3. **iOS:** Unsigned `Runner.app.zip` **cannot** go to TestFlight. Use **Mobile CI** → `force_deploy=true` (signed IPA + TestFlight) or Codemagic **iOS · TestFlight** with Team Developer Portal integration named exactly `Asrax ASC` plus App Store cert/profile (yaml: `integrations.app_store_connect` + `ios_signing` + `auth: integration`).
 4. Standalone [deploy-store-artifacts.yml](../.github/workflows/deploy-store-artifacts.yml) works after the file exists on the default branch; until then use Mobile CI `reuse_codemagic_android_build_id`.
 
 Requires repo secret `CODEMAGIC_API_TOKEN` for Codemagic artifact download (same token as `~/.asrax/credentials.d/codemagic.env`).
