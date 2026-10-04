@@ -53,17 +53,18 @@ workflows:
 
       - name: Setup Android Keystore & key.properties
         script: |
-          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+          KEYSTORE_B64="${ANDROID_KEYSTORE_BASE64:-}"
+          if [ -n "$KEYSTORE_B64" ]; then
             echo "Decoding Keystore..."
-            echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > am_app/android/app/am_investment_keystore.jks
+            echo "$KEYSTORE_B64" | base64 -d > am_app/android/app/am_investment_keystore.jks 2>/dev/null || echo "$KEYSTORE_B64" | base64 --decode > am_app/android/app/am_investment_keystore.jks 2>/dev/null || true
             cat <<EOF > am_app/android/key.properties
-            storePassword=$ANDROID_KEYSTORE_PASSWORD
-            keyPassword=$ANDROID_KEY_PASSWORD
-            keyAlias=$ANDROID_KEY_ALIAS
-            storeFile=am_investment_keystore.jks
-            EOF
+storePassword=${ANDROID_KEYSTORE_PASSWORD:-}
+keyPassword=${ANDROID_KEY_PASSWORD:-}
+keyAlias=${ANDROID_KEY_ALIAS:-}
+storeFile=am_investment_keystore.jks
+EOF
           else
-            echo "Keystore secret empty — building debug/unsigned bundle"
+            echo "Keystore secret empty — building release bundle with default/debug signing"
           fi
 
       - name: Build Android App Bundle (AAB)
@@ -150,7 +151,7 @@ workflows:
         script: |
           cd am_app
           BUILD_NUM=${BUILD_NUMBER:-1}
-          if [ -n "$APP_STORE_CONNECT_API_KEY_ID" ] && [ -n "$APP_STORE_CONNECT_ISSUER_ID" ]; then
+          if [ -n "${APP_STORE_CONNECT_API_KEY_ID:-}" ] && [ -n "${APP_STORE_CONNECT_ISSUER_ID:-}" ]; then
             echo "Setting up App Store Connect code signing..."
             keychain initialize
             app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
