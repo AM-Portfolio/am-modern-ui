@@ -304,8 +304,8 @@ workflows:
         BUNDLE_ID: "com.asrax.aminvestment"
         AM_DOMAIN: "am.asrax.in"
         AM_ENV: "prod"
-        # Verified via ASC API 2026-10-04: max cfBundleVersion on ASC is 13
-        ASC_BUILD_FLOOR: "13"
+        # Verified via ASC: build 14 uploaded 2026-10-04; next must be > 14
+        ASC_BUILD_FLOOR: "14"
       groups:
         - ios_credentials
     cache:

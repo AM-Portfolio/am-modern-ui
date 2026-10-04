@@ -45,6 +45,11 @@
 		<true/>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
+		<!-- Privacy — required when SDKs (e.g. image_picker) link camera/photos APIs -->
+		<key>NSCameraUsageDescription</key>
+		<string>Am App uses the camera so you can take a profile photo.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Am App accesses your photo library so you can choose a profile photo.</string>
 		<!-- Google Sign-in — CI injects GIDClientID + URL schemes from GOOGLE_IOS_CLIENT_ID / GOOGLE_WEB_CLIENT_ID -->
 		<key>GIDClientID</key>
 		<string></string>
