@@ -249,6 +249,24 @@ workflows:
           (cd am_app && flutter pub get)
           cd am_app/ios
           pod install
+      - name: Inject Google Sign-In into Info.plist
+        script: |
+          set -euo pipefail
+          PLIST="am_app/ios/Runner/Info.plist"
+          if [ -z "${GOOGLE_IOS_CLIENT_ID:-}" ]; then
+            echo "GOOGLE_IOS_CLIENT_ID empty — leaving Info.plist placeholders (unsigned CI)"
+            exit 0
+          fi
+          /usr/libexec/PlistBuddy -c "Set :GIDClientID ${GOOGLE_IOS_CLIENT_ID}" "$PLIST" \
+            || /usr/libexec/PlistBuddy -c "Add :GIDClientID string ${GOOGLE_IOS_CLIENT_ID}" "$PLIST"
+          IOS_SCHEME="com.googleusercontent.apps.${GOOGLE_IOS_CLIENT_ID%.apps.googleusercontent.com}"
+          /usr/libexec/PlistBuddy -c "Delete :CFBundleURLTypes" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0 dict" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleTypeRole string Editor" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string ${IOS_SCHEME}" "$PLIST"
+          echo "Injected GIDClientID + URL scheme $IOS_SCHEME"
       - name: Build unsigned iOS app
         script: |
           set -euo pipefail
@@ -324,6 +342,31 @@ workflows:
           (cd am_app && flutter pub get)
           cd am_app/ios
           pod install
+      - name: Inject Google Sign-In into Info.plist
+        script: |
+          set -euo pipefail
+          PLIST="am_app/ios/Runner/Info.plist"
+          if [ -z "${GOOGLE_IOS_CLIENT_ID:-}" ]; then
+            echo "GOOGLE_IOS_CLIENT_ID missing from ios_credentials — ASC upload will fail"
+            exit 1
+          fi
+          /usr/libexec/PlistBuddy -c "Set :GIDClientID ${GOOGLE_IOS_CLIENT_ID}" "$PLIST" \
+            || /usr/libexec/PlistBuddy -c "Add :GIDClientID string ${GOOGLE_IOS_CLIENT_ID}" "$PLIST"
+          IOS_SCHEME="com.googleusercontent.apps.${GOOGLE_IOS_CLIENT_ID%.apps.googleusercontent.com}"
+          WEB_SCHEME=""
+          if [ -n "${GOOGLE_WEB_CLIENT_ID:-}" ]; then
+            WEB_SCHEME="com.googleusercontent.apps.${GOOGLE_WEB_CLIENT_ID%.apps.googleusercontent.com}"
+          fi
+          /usr/libexec/PlistBuddy -c "Delete :CFBundleURLTypes" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0 dict" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleTypeRole string Editor" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string ${IOS_SCHEME}" "$PLIST"
+          if [ -n "$WEB_SCHEME" ]; then
+            /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:1 string ${WEB_SCHEME}" "$PLIST"
+          fi
+          echo "Injected GIDClientID + URL schemes (ios=$IOS_SCHEME)"
       - name: Sign and build IPA
         script: |
           set -euo pipefail
@@ -335,11 +378,19 @@ workflows:
           app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
           keychain add-certificates
           xcode-project use-profiles
+          EXTRA_DEFINES=()
+          if [ -n "${GOOGLE_IOS_CLIENT_ID:-}" ]; then
+            EXTRA_DEFINES+=(--dart-define="AM_GOOGLE_IOS_CLIENT_ID=${GOOGLE_IOS_CLIENT_ID}")
+          fi
+          if [ -n "${GOOGLE_WEB_CLIENT_ID:-}" ]; then
+            EXTRA_DEFINES+=(--dart-define="AM_GOOGLE_CLIENT_ID=${GOOGLE_WEB_CLIENT_ID}")
+          fi
           flutter build ipa --release \
             --build-name="2.0.0" \
             --build-number="$BUILD_NUM" \
             --dart-define="AM_DOMAIN=${AM_DOMAIN}" \
-            --dart-define="AM_ENV=${AM_ENV}"
+            --dart-define="AM_ENV=${AM_ENV}" \
+            "${EXTRA_DEFINES[@]}"
     artifacts:
       - am_app/build/ios/ipa/*.ipa
     publishing:
