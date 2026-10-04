@@ -245,9 +245,16 @@ class MarketProvider with ChangeNotifier {
   Map<String, double> _timeframeBasePrices = {};
   bool _isLoadingBasePrices = false;
 
+  /// Close-price series for pinned index sparklines (from [ensureIndexSparklines]).
+  Map<String, List<double>> _indexSparklines = {};
+  bool _isLoadingSparklines = false;
+  String? _sparklineRange;
+
   String get selectedIndicesTimeframe => _selectedIndicesTimeframe;
   Map<String, double> get timeframeBasePrices => _timeframeBasePrices;
   bool get isLoadingBasePrices => _isLoadingBasePrices;
+  Map<String, List<double>> get indexSparklines => _indexSparklines;
+  bool get isLoadingSparklines => _isLoadingSparklines;
 
   Future<void> setIndicesTimeframe(String timeframe) async {
     if (_selectedIndicesTimeframe == timeframe) return;
@@ -367,6 +374,65 @@ class MarketProvider with ChangeNotifier {
     if (timeframe == '1D') return;
     _timeframeBasePrices.addAll(basePrices);
     notifyListeners();
+  }
+
+  /// Loads mini close-price series for index sparkline cards.
+  /// Skips symbols already cached for [range]. Safe to call repeatedly.
+  Future<void> ensureIndexSparklines(
+    List<String> symbols, {
+    String range = '1W',
+  }) async {
+    final unique = symbols
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toSet()
+        .toList();
+    if (unique.isEmpty) return;
+
+    if (_sparklineRange != null && _sparklineRange != range) {
+      _indexSparklines.clear();
+    }
+    _sparklineRange = range;
+
+    final missing = unique
+        .where((s) => (_indexSparklines[s]?.length ?? 0) < 2)
+        .toList();
+    if (missing.isEmpty) return;
+
+    _isLoadingSparklines = true;
+    notifyListeners();
+
+    try {
+      final history = await _apiService.fetchHistoryBatch(missing, range);
+      history.forEach((sym, points) {
+        final closes = extractSparklineCloses(points);
+        if (closes.length >= 2) {
+          _indexSparklines[sym] = closes;
+        }
+      });
+    } catch (e) {
+      CommonLogger.error(
+        'Error fetching index sparklines',
+        tag: 'MarketProvider.ensureIndexSparklines',
+        error: e,
+      );
+    } finally {
+      _isLoadingSparklines = false;
+      notifyListeners();
+    }
+  }
+
+  /// Maps history data-points to a sparkline close series (testable helper).
+  static List<double> extractSparklineCloses(List<Map<String, dynamic>> points) {
+    final closes = <double>[];
+    for (final point in points) {
+      final raw =
+          point['close'] ?? point['price'] ?? point['lastPrice'] ?? point['value'];
+      if (raw is num && raw > 0) {
+        closes.add(raw.toDouble());
+      }
+    }
+    return closes;
   }
 
   void toggleForceRefresh(bool value) {

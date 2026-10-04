@@ -83,10 +83,10 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                     return const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()));
                   }
                   if (snapshot.hasError) {
-                    return Center(child: Padding(padding: EdgeInsets.all(20), child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.redAccent))));
+                    return Center(child: Padding(padding: EdgeInsets.all(20), child: Text('Error: ${snapshot.error}', style: TextStyle(color: context.statusError))));
                   }
                   if (!snapshot.hasData || snapshot.data!.monthlyPerformance.isEmpty) {
-                    return Center(child: Padding(padding: const EdgeInsets.all(20), child: Text('No data available', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54))));
+                    return Center(child: Padding(padding: const EdgeInsets.all(20), child: Text('No data available', style: TextStyle(color: context.colors.textSecondary))));
                   }
 
                   final data = snapshot.data!.monthlyPerformance;
@@ -124,10 +124,10 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                                 height: 36.0,
                                 padding: const EdgeInsets.symmetric(vertical: 8.0),
                                 decoration: BoxDecoration(
-                                  color: isDark ? context.colors.cardSurface.withValues(alpha: 0.70) : Colors.black.withOpacity(0.04),
+                                  color: context.colors.cardSurface.withValues(alpha: 0.70),
                                   border: Border(
                                     bottom: BorderSide(
-                                      color: isDark ? context.colors.border.withValues(alpha: 0.35) : Colors.black.withOpacity(0.08),
+                                      color: context.colors.border.withValues(alpha: 0.35),
                                       width: 1.0,
                                     ),
                                   ),
@@ -136,7 +136,7 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                                   child: Text(
                                     'YEAR',
                                     style: TextStyle(
-                                      color: isDark ? Colors.white54 : Colors.black54,
+                                      color: context.colors.textSecondary,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 10,
                                       letterSpacing: 0.8,
@@ -154,9 +154,7 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                                       child: Text(
                                         '$year',
                                         style: TextStyle(
-                                          color: isDark
-                                              ? Colors.white
-                                              : Colors.black87,
+                                          color: context.colors.textPrimary,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 12,
                                         ),
@@ -191,7 +189,7 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                         Padding(
                           padding: const EdgeInsets.only(top: 40.0), 
                           child: IconButton(
-                              icon: Icon(Icons.arrow_back_ios, color: isDark ? Colors.white54 : Colors.black54),
+                              icon: Icon(Icons.arrow_back_ios, color: context.colors.textSecondary),
                               onPressed: () => _scroll(-300),
                           ),
                         ),
@@ -202,10 +200,10 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                               Container(
                                 padding: const EdgeInsets.symmetric(vertical: 8.0),
                                 decoration: BoxDecoration(
-                                  color: isDark ? context.colors.cardSurface.withValues(alpha: 0.70) : Colors.black.withOpacity(0.04),
+                                  color: context.colors.cardSurface.withValues(alpha: 0.70),
                                   border: Border(
                                     bottom: BorderSide(
-                                      color: isDark ? context.colors.border.withValues(alpha: 0.35) : Colors.black.withOpacity(0.08),
+                                      color: context.colors.border.withValues(alpha: 0.35),
                                       width: 1.0,
                                     ),
                                   ),
@@ -214,7 +212,7 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                                   child: Text(
                                     'YEAR',
                                     style: TextStyle(
-                                      color: isDark ? Colors.white54 : Colors.black54,
+                                      color: context.colors.textSecondary,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 11,
                                       letterSpacing: 0.8,
@@ -231,7 +229,7 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                                     child: Center(
                                       child: Text(
                                         '$year',
-                                        style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold, fontSize: 16),
+                                        style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
                                       ),
                                     ),
                                   ),
@@ -255,10 +253,10 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                                     Container(
                                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                                       decoration: BoxDecoration(
-                                        color: isDark ? context.colors.cardSurface.withValues(alpha: 0.70) : Colors.black.withOpacity(0.04),
+                                        color: context.colors.cardSurface.withValues(alpha: 0.70),
                                         border: Border(
                                           bottom: BorderSide(
-                                            color: isDark ? context.colors.border.withValues(alpha: 0.35) : Colors.black.withOpacity(0.08),
+                                            color: context.colors.border.withValues(alpha: 0.35),
                                             width: 1.0,
                                           ),
                                         ),
@@ -270,7 +268,7 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                                             child: Text(
                                               m,
                                               style: TextStyle(
-                                                color: isDark ? Colors.white54 : Colors.black54,
+                                                color: context.colors.textSecondary,
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 12,
                                               ),
@@ -294,7 +292,7 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                                                   padding: const EdgeInsets.symmetric(horizontal: 4.0),
                                                   child: item != null 
                                                     ? MonthlyPerformanceCard(data: item, isCompactTable: true)
-                                                    : Container(decoration: BoxDecoration(color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.02), borderRadius: BorderRadius.circular(8))),
+                                                    : Container(decoration: BoxDecoration(color: context.colors.surface.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(8))),
                                                 ),
                                               );
                                             }).toList(),
@@ -311,7 +309,7 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                         Padding(
                           padding: const EdgeInsets.only(top: 40.0),
                           child: IconButton(
-                              icon: Icon(Icons.arrow_forward_ios, color: isDark ? Colors.white54 : Colors.black54),
+                              icon: Icon(Icons.arrow_forward_ios, color: context.colors.textSecondary),
                               onPressed: () => _scroll(300),
                           ),
                         ),

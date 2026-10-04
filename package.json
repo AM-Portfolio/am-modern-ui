@@ -96,5 +96,8 @@
     "test:auth:mcp": "echo Use: POST http://localhost:8120/api/v1/tools/ui-test/run-auth"
   },
   "author": "AsraX Tech",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "puppeteer": "^25.12.0"
+  }
 }
