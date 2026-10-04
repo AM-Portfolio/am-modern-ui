@@ -140,35 +140,69 @@ jobs:
           APP_ID: "6ac22a8f93e6cd231a7ad1d6"
         run: |
           set -euo pipefail
-          if [ -z "${CODEMAGIC_API_TOKEN:-}" ] || [ -z "${PLAY_JSON:-}" ]; then
-            echo "::error::CODEMAGIC_API_TOKEN and PLAY_STORE_SERVICE_ACCOUNT_JSON required"
-            exit 1
-          fi
-          GROUPS=$(curl -fsSL -H "x-auth-token: ${CODEMAGIC_API_TOKEN}" \
-            "https://codemagic.io/api/v3/apps/${APP_ID}/variable-groups")
-          GID=$(echo "$GROUPS" | python3 -c "
-          import json,sys
-          d=json.load(sys.stdin)
-          for g in d.get('data') or []:
-            if g.get('name')=='android_credentials':
-              print(g['id']); break
-          ")
-          if [ -z "$GID" ]; then
-            CREATED=$(curl -fsSL -X POST -H "x-auth-token: ${CODEMAGIC_API_TOKEN}" \
-              -H "Content-Type: application/json" \
-              -d '{"name":"android_credentials"}' \
-              "https://codemagic.io/api/v3/apps/${APP_ID}/variable-groups")
-            GID=$(echo "$CREATED" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['id'])")
-          fi
-          BODY=$(python3 - <<'PY'
-          import json,os
-          print(json.dumps({"secure": True, "variables": [{"name": "GCLOUD_SERVICE_ACCOUNT_CREDENTIALS", "value": os.environ["PLAY_JSON"]}]}))
-          PY
+          python3 <<'PY'
+          import json, os, urllib.error, urllib.request
+
+          token = os.environ.get("CODEMAGIC_API_TOKEN") or ""
+          play = (os.environ.get("PLAY_JSON") or "").strip()
+          app_id = os.environ["APP_ID"]
+          if not token or not play:
+              raise SystemExit("CODEMAGIC_API_TOKEN and PLAY_STORE_SERVICE_ACCOUNT_JSON required")
+
+          # Accept raw JSON or base64-wrapped JSON
+          try:
+              json.loads(play)
+          except json.JSONDecodeError:
+              import base64
+              play = base64.b64decode(play).decode("utf-8")
+              json.loads(play)
+
+          def cm(method, path, body=None):
+              data = None if body is None else json.dumps(body).encode("utf-8")
+              req = urllib.request.Request(
+                  f"https://codemagic.io/api/v3{path}",
+                  data=data,
+                  method=method,
+                  headers={
+                      "x-auth-token": token,
+                      "Accept": "application/json",
+                      "Content-Type": "application/json",
+                  },
+              )
+              try:
+                  with urllib.request.urlopen(req) as resp:
+                      raw = resp.read().decode("utf-8") or "{}"
+                      return json.loads(raw)
+              except urllib.error.HTTPError as e:
+                  detail = e.read().decode("utf-8", errors="replace")
+                  raise SystemExit(f"Codemagic {method} {path} -> HTTP {e.code}: {detail[:500]}")
+
+          groups = cm("GET", f"/apps/{app_id}/variable-groups").get("data") or []
+          gid = next((g["id"] for g in groups if g.get("name") == "android_credentials"), None)
+          if not gid:
+              gid = cm("POST", f"/apps/{app_id}/variable-groups", {"name": "android_credentials"})["data"]["id"]
+          print(f"android_credentials group={gid}")
+
+          existing = cm("GET", f"/variable-groups/{gid}/variables").get("data") or []
+          for ev in existing:
+              if ev.get("name") == "GCLOUD_SERVICE_ACCOUNT_CREDENTIALS":
+                  cm("DELETE", f"/variable-groups/{gid}/variables/{ev['id']}")
+                  print("deleted prior GCLOUD_SERVICE_ACCOUNT_CREDENTIALS")
+
+          cm(
+              "POST",
+              f"/variable-groups/{gid}/variables",
+              {
+                  "secure": True,
+                  "variables": [{"name": "GCLOUD_SERVICE_ACCOUNT_CREDENTIALS", "value": play}],
+              },
           )
-          curl -fsSL -X POST -H "x-auth-token: ${CODEMAGIC_API_TOKEN}" \
-            -H "Content-Type: application/json" -d "$BODY" \
-            "https://codemagic.io/api/v3/variable-groups/${GID}/variables"
-          echo "Synced GCLOUD_SERVICE_ACCOUNT_CREDENTIALS into Codemagic group $GID"
+          names = [v["name"] for v in (cm("GET", f"/variable-groups/{gid}/variables").get("data") or [])]
+          print("android vars:", ", ".join(names))
+          if "GCLOUD_SERVICE_ACCOUNT_CREDENTIALS" not in names:
+              raise SystemExit("GCLOUD_SERVICE_ACCOUNT_CREDENTIALS missing after sync")
+          print("Synced GCLOUD_SERVICE_ACCOUNT_CREDENTIALS into Codemagic")
+          PY
 
   # No Flutter rebuild — Play Internal from previous Codemagic AAB
   android-reuse-internal:
