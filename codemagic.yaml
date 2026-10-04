@@ -87,10 +87,6 @@ workflows:
         notify:
           failure: true
           success: true
-      google_play:
-        credentials: $PLAY_STORE_SERVICE_ACCOUNT_JSON
-        track: internal
-        submit_as_draft: false
 
   ios-workflow:
     name: iOS Release Build & Distribution
@@ -185,6 +181,3 @@ workflows:
         notify:
           failure: true
           success: true
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: true
