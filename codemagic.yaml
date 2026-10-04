@@ -1,7 +1,7 @@
 # Codemagic — AM Flutter Modern UI (monorepo)
 # Keep ONE Codemagic application (rename in UI to "AM Flutter · Modern UI").
-# CI workflows: auto on main only (feature/store work → GitHub Mobile CI).
-# Store workflows: manual Start build (iOS TestFlight backup until GH mac ready).
+# NO auto triggers on any branch — GitHub Mobile CI owns Internal → Production.
+# Manual Start build / codemagic-fallback.yml (Environment approval) only.
 
 workflows:
   # ---------------------------------------------------------------------------
@@ -30,14 +30,7 @@ workflows:
         - $CM_BUILD_DIR/am_auth_ui/.dart_tool
         - $CM_BUILD_DIR/am_trade_ui/.dart_tool
         - $CM_BUILD_DIR/am_design_system/.dart_tool
-    triggering:
-      events:
-        - push
-        - pull_request
-      branch_patterns:
-        - pattern: 'main'
-          include: true
-          source: true
+    # No triggering — manual Start build / codemagic-fallback.yml only
     scripts:
       - name: Disable Flutter Swift Package Manager
         script: |
@@ -225,14 +218,7 @@ workflows:
         - $CM_BUILD_DIR/am_auth_ui/.dart_tool
         - $CM_BUILD_DIR/am_trade_ui/.dart_tool
         - $CM_BUILD_DIR/am_design_system/.dart_tool
-    triggering:
-      events:
-        - push
-        - pull_request
-      branch_patterns:
-        - pattern: 'main'
-          include: true
-          source: true
+    # No triggering — manual Start build / codemagic-fallback.yml only
     scripts:
       - name: Disable Flutter Swift Package Manager
         script: |

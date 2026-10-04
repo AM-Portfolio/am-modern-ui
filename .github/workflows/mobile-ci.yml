@@ -1,11 +1,11 @@
-# Mobile CI — Android + iOS (parallel), GitHub-owned store tracks
+# Mobile CI — Android + iOS (parallel), GitHub-owned store ladder
 #
-# TEMP (workflow test): Android off by default; iOS build + TestFlight + keep artifact.
 # Branch policy:
-#   feature/** + deploy_testflight / deploy_internal → iOS TestFlight allowed
-#   main / force_deploy → full tracks (when android re-enabled)
+#   feature/** + deploy_internal / deploy_testflight → Play Internal + TestFlight
+#   main → Internal then Production (Play Production + App Store) via GH Environments
+#   Codemagic: no auto builds — use codemagic-fallback.yml (approval) only
 #
-# Pipelines ref: AM-Portfolio/am-pipelines@feature/mobile-android-ios-ci
+# Pipelines ref: AM-Portfolio/am-pipelines@main
 
 name: Mobile CI
 
@@ -43,27 +43,27 @@ on:
   workflow_dispatch:
     inputs:
       run_android:
-        description: "Run Android build / Play jobs (off for iOS-only workflow test)"
+        description: "Run Android build / Play jobs"
         required: false
         type: boolean
-        default: false
+        default: true
       run_ios:
-        description: "Run iOS build / TestFlight jobs"
+        description: "Run iOS build / TestFlight / App Store jobs"
         required: false
         type: boolean
         default: true
       deploy_internal:
-        description: "Android Play Internal (when run_android) and/or iOS TestFlight"
+        description: "Play Internal (Android) and/or TestFlight (iOS)"
         required: false
         type: boolean
-        default: true
+        default: false
       deploy_testflight:
         description: "Upload iOS IPA to TestFlight (feature branches allowed)"
         required: false
         type: boolean
-        default: true
+        default: false
       force_deploy:
-        description: "Force Internal+Production deploy (even off main; use carefully)"
+        description: "Force Internal+Production (even off main; use carefully)"
         required: false
         type: boolean
         default: false
@@ -106,13 +106,12 @@ jobs:
           DISPATCH_INTERNAL="${{ github.event.inputs.deploy_internal }}"
           DISPATCH_TF="${{ github.event.inputs.deploy_testflight }}"
 
-          # Defaults for push/PR (no inputs)
-          RUN_ANDROID=false
+          RUN_ANDROID=true
           RUN_IOS=true
           if [ "$EVENT" = "workflow_dispatch" ]; then
             RUN_ANDROID="${{ github.event.inputs.run_android }}"
             RUN_IOS="${{ github.event.inputs.run_ios }}"
-            [ -z "$RUN_ANDROID" ] && RUN_ANDROID=false
+            [ -z "$RUN_ANDROID" ] && RUN_ANDROID=true
             [ -z "$RUN_IOS" ] && RUN_IOS=true
           fi
 
@@ -122,12 +121,13 @@ jobs:
           DEPLOY_IOS_PRODUCTION=false
 
           if [ "$REF" = "main" ] || [ "$FORCE" = "true" ]; then
+            # Full ladder: Internal → Production (Play + App Store)
             DEPLOY_ANDROID_INTERNAL=true
             DEPLOY_ANDROID_PRODUCTION=true
             DEPLOY_IOS_TF=true
             DEPLOY_IOS_PRODUCTION=true
           else
-            # Feature / develop: Play Internal + TestFlight via dispatch (not App Store)
+            # Feature / develop: Internal + TestFlight only
             if [ "$DISPATCH_INTERNAL" = "true" ]; then
               DEPLOY_ANDROID_INTERNAL=true
               DEPLOY_IOS_TF=true
@@ -137,7 +137,6 @@ jobs:
             fi
           fi
 
-          # Respect platform toggles
           if [ "$RUN_ANDROID" != "true" ]; then
             DEPLOY_ANDROID_INTERNAL=false
             DEPLOY_ANDROID_PRODUCTION=false
@@ -146,7 +145,6 @@ jobs:
             DEPLOY_IOS_TF=false
             DEPLOY_IOS_PRODUCTION=false
           fi
-          # Never App Store from non-main unless force
           if [ "$REF" != "main" ] && [ "$FORCE" != "true" ]; then
             DEPLOY_IOS_PRODUCTION=false
             DEPLOY_ANDROID_PRODUCTION=false
@@ -179,7 +177,7 @@ jobs:
             echo "am_domain=$DOMAIN"
             echo "am_env=$ENV_LABEL"
           } >> "$GITHUB_OUTPUT"
-          echo "Branch=$REF run_android=$RUN_ANDROID run_ios=$RUN_IOS android_internal=$DEPLOY_ANDROID_INTERNAL ios_tf=$DEPLOY_IOS_TF domain=$DOMAIN env=$ENV_LABEL"
+          echo "Branch=$REF run_android=$RUN_ANDROID run_ios=$RUN_IOS android_internal=$DEPLOY_ANDROID_INTERNAL android_prod=$DEPLOY_ANDROID_PRODUCTION ios_tf=$DEPLOY_IOS_TF ios_prod=$DEPLOY_IOS_PRODUCTION domain=$DOMAIN env=$ENV_LABEL"
 
   validate:
     name: Common Validation
@@ -187,7 +185,7 @@ jobs:
     if: ${{ needs.resolve.outputs.run_android == 'true' || needs.resolve.outputs.run_ios == 'true' }}
     permissions:
       contents: read
-    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-validate.yml@feature/mobile-android-ios-ci
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-validate.yml@main
     with:
       working_directory: am_app
 
@@ -197,7 +195,7 @@ jobs:
     if: ${{ needs.resolve.outputs.run_android == 'true' }}
     permissions:
       contents: read
-    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@feature/mobile-android-ios-ci
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@main
     with:
       working_directory: am_app
       build_mode: release
@@ -220,7 +218,7 @@ jobs:
     if: ${{ needs.resolve.outputs.run_ios == 'true' }}
     permissions:
       contents: read
-    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-ios.yml@feature/mobile-android-ios-ci
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-ios.yml@main
     with:
       working_directory: am_app
       build_mode: release

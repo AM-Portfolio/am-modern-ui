@@ -132,12 +132,12 @@ jobs:
       contents: write
       packages: write
       id-token: write
-    uses: AM-Portfolio/am-pipelines/.github/workflows/central-build-publish-contabo.yml@feature/mobile-android-ios-ci
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-build-publish-contabo.yml@main
     with:
       language: "flutter"
       working_directory: "am_app"
       build_context: ".."
       image_name: "am-modern-ui"
       skip_security_scan: true
-      pipelines_ref: "feature/mobile-android-ios-ci"
+      pipelines_ref: "main"
     secrets: inherit

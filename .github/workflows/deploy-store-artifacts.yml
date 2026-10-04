@@ -1,8 +1,6 @@
 # Deploy previously built store artifacts (no Flutter rebuild).
-# Primary use: upload Codemagic/GitHub AAB → Play Internal; signed IPA → TestFlight.
-#
-# Android: pass codemagic_android_build_id (or android_artifact_url).
-# iOS: requires a signed .ipa URL/build — unsigned Runner.app.zip cannot upload.
+# Codemagic-sourced reuse requires Environment "codemagic-fallback" approval.
+# Prefer GitHub Mobile CI for Internal → Production ladder.
 
 name: Deploy store artifacts
 
@@ -20,9 +18,9 @@ on:
       codemagic_android_build_id:
         description: Codemagic Android build id (fetches AAB artifact)
         type: string
-        default: "6ac24b790cf7ee826cf2914e"
+        default: ""
       android_artifact_url:
-        description: Override direct AAB URL (optional)
+        description: Override direct AAB URL (optional; skips CM fetch if set)
         type: string
         default: ""
       ios_artifact_url:
@@ -37,9 +35,21 @@ on:
         default: "com.asrax.aminvestment"
 
 jobs:
+  # When fetching from Codemagic, require fallback Environment approval first
+  codemagic-reuse-gate:
+    name: Codemagic reuse approval
+    if: ${{ inputs.deploy_android && inputs.android_artifact_url == '' && inputs.codemagic_android_build_id != '' }}
+    runs-on: ubuntu-latest
+    environment: codemagic-fallback
+    steps:
+      - name: Approved
+        run: |
+          echo "codemagic-fallback approved for build ${{ inputs.codemagic_android_build_id }}"
+
   android-internal:
     name: Android -> Play Internal (reuse artifact)
-    if: ${{ inputs.deploy_android }}
+    needs: [codemagic-reuse-gate]
+    if: ${{ always() && inputs.deploy_android && (needs.codemagic-reuse-gate.result == 'success' || needs.codemagic-reuse-gate.result == 'skipped') }}
     runs-on: ubuntu-latest
     environment: android-internal
     permissions:
@@ -82,7 +92,7 @@ jobs:
               exit 1
             fi
           fi
-          echo "Downloading AAB from Codemagic..."
+          echo "Downloading AAB..."
           curl -fsSL -H "x-auth-token: ${CODEMAGIC_API_TOKEN:-}" -o android-out/app-release.aab "$URL"
           ls -lh android-out/app-release.aab
 
