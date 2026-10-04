@@ -304,8 +304,8 @@ workflows:
         BUNDLE_ID: "com.asrax.aminvestment"
         AM_DOMAIN: "am.asrax.in"
         AM_ENV: "prod"
-        # Verified via ASC: build 14 uploaded 2026-10-04; next must be > 14
-        ASC_BUILD_FLOOR: "14"
+        # Floor = last known ASC cfBundleVersion; next IPA uses max(CM, floor+1)
+        ASC_BUILD_FLOOR: "15"
       groups:
         - ios_credentials
     cache:

@@ -3,7 +3,24 @@ import 'dart:convert';
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+
+bool _isPermissionDenied(Object e) {
+  if (e is PlatformException) {
+    final code = e.code.toLowerCase();
+    final msg = (e.message ?? '').toLowerCase();
+    return code.contains('denied') ||
+        code.contains('access') ||
+        msg.contains('denied') ||
+        msg.contains('permission') ||
+        msg.contains('authorized');
+  }
+  final s = e.toString().toLowerCase();
+  return s.contains('denied') ||
+      s.contains('permission') ||
+      s.contains('not authorized');
+}
 
 /// Bottom sheet: pick a preset avatar or upload a photo.
 Future<void> showAvatarPickerSheet({
@@ -69,16 +86,17 @@ class _AvatarPickerSheetState extends State<_AvatarPickerSheet> {
     }
   }
 
-  Future<void> _pickPhoto() async {
+  Future<void> _pickPhoto(ImageSource source) async {
     setState(() => _busy = true);
     try {
       final picker = ImagePicker();
       final file = await picker.pickImage(
-        source: ImageSource.gallery,
+        source: source,
         maxWidth: 512,
         maxHeight: 512,
         imageQuality: 72,
       );
+      // User cancelled picker — no error, presets still available
       if (file == null) return;
       final bytes = await file.readAsBytes();
       final b64 = base64Encode(bytes);
@@ -91,13 +109,14 @@ class _AvatarPickerSheetState extends State<_AvatarPickerSheet> {
       await _apply(UserAvatarPreference.photo(base64: b64, mime: mime));
     } catch (e) {
       if (!mounted) return;
+      final message = e.toString().contains('too large')
+          ? 'Photo is too large. Try a smaller image.'
+          : _isPermissionDenied(e)
+              ? 'Photo access is optional. Enable it in Settings if you want a custom photo, or pick a style below.'
+              : 'Could not use that photo. Try another or pick a style below.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            e.toString().contains('too large')
-                ? 'Photo is too large. Try a smaller image.'
-                : 'Could not use that photo. Try another.',
-          ),
+          content: Text(message),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -161,7 +180,7 @@ class _AvatarPickerSheetState extends State<_AvatarPickerSheet> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
-                'Use a photo or pick a style. Saved on this device.',
+                'Photo access is optional. Use a photo or pick a style — saved on this device.',
                 style: context.text.bodyMuted().copyWith(
                   color: colors.textSecondary,
                 ),
@@ -174,9 +193,11 @@ class _AvatarPickerSheetState extends State<_AvatarPickerSheet> {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: _busy ? null : _pickPhoto,
+                      onPressed: _busy
+                          ? null
+                          : () => _pickPhoto(ImageSource.gallery),
                       icon: const Icon(Icons.photo_library_outlined, size: 18),
-                      label: const Text('Upload photo'),
+                      label: const Text('Photos'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: colors.textPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -187,29 +208,51 @@ class _AvatarPickerSheetState extends State<_AvatarPickerSheet> {
                       ),
                     ),
                   ),
-                  if (hasRemote) ...[
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed: _busy
-                            ? null
-                            : () => _apply(UserAvatarPreference.remote),
-                        icon: const Icon(Icons.account_circle_outlined, size: 18),
-                        label: const Text('Account photo'),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: ModuleColors.portfolio,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: AppRadii.button,
-                          ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _busy
+                          ? null
+                          : () => _pickPhoto(ImageSource.camera),
+                      icon: const Icon(Icons.photo_camera_outlined, size: 18),
+                      label: const Text('Camera'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: colors.textPrimary,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: BorderSide(color: colors.border),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppRadii.button,
                         ),
                       ),
                     ),
-                  ],
+                  ),
                 ],
               ),
             ),
+            if (hasRemote) ...[
+              const SizedBox(height: 10),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: _busy
+                        ? null
+                        : () => _apply(UserAvatarPreference.remote),
+                    icon: const Icon(Icons.account_circle_outlined, size: 18),
+                    label: const Text('Account photo'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: ModuleColors.portfolio,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppRadii.button,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 8),
             TextButton(
               onPressed: _busy
