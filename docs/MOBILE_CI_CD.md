@@ -18,9 +18,10 @@ Package / bundle id: `com.asrax.aminvestment`.
 
 Prefer this over a full Flutter rebuild:
 
-1. **Android:** Actions → **Deploy store artifacts** → `deploy_android=true`, `codemagic_android_build_id` = last green Codemagic Android build (e.g. tip AAB). Approves `android-internal` → Play **internal** track.
-2. **iOS:** Same workflow with `deploy_ios=true` only if you pass a **signed `.ipa` URL**. Unsigned `Runner.app.zip` **cannot** go to TestFlight.
-3. Fallback rebuild: **Mobile CI** → Run workflow → `force_deploy=true` on the feature branch (uses existing GitHub secrets).
+1. **Android (no Flutter rebuild):** Actions → **Mobile CI** → Run workflow → set `reuse_codemagic_android_build_id` to a Codemagic build whose AAB was signed with the **Play upload keystore** (same SHA1 as Play Console). Approves `android-internal` → Play **internal**.
+2. **Wrong-key AABs fail:** If Play returns `signed with the wrong key`, that Codemagic AAB used debug/default signing — do **not** reuse it. Rebuild with `ANDROID_KEYSTORE_*` from `keystore_base64.txt` + `key.properties` (or GitHub secrets), then reuse that AAB.
+3. **iOS:** Unsigned `Runner.app.zip` **cannot** go to TestFlight. Use **Mobile CI** → `force_deploy=true` (signed IPA + TestFlight) or Codemagic **iOS · TestFlight** after ASC integration `Asrax ASC`.
+4. Standalone [deploy-store-artifacts.yml](../.github/workflows/deploy-store-artifacts.yml) works after the file exists on the default branch; until then use Mobile CI `reuse_codemagic_android_build_id`.
 
 Requires repo secret `CODEMAGIC_API_TOKEN` for Codemagic artifact download (same token as `~/.asrax/credentials.d/codemagic.env`).
 
@@ -35,7 +36,7 @@ Keep **one** Codemagic application named **AM Flutter · Modern UI** (archive an
 | `android-ci-build` | Android CI · AAB | auto feature/main/PR | email only |
 | `android-play-internal` | Android · Play Internal | **manual** Start build | Play `internal` |
 | `ios-ci-build` | iOS CI · unsigned | auto feature/main/PR | email only |
-| `ios-testflight` | iOS · TestFlight | **manual** Start build | TestFlight (`Asrax ASC` integration) |
+| `ios-testflight` | iOS · TestFlight | **manual** Start build | TestFlight via `APP_STORE_CONNECT_*` env vars |
 
 Local SoT → Codemagic groups (never commit):
 
@@ -44,7 +45,7 @@ Local SoT → Codemagic groups (never commit):
 | `ANDROID_KEYSTORE_BASE64` | `~/.asrax/secrets/keystore_base64.txt` |
 | `ANDROID_KEYSTORE_PASSWORD` / `ANDROID_KEY_PASSWORD` / `ANDROID_KEY_ALIAS` | `~/.asrax/secrets/key.properties` |
 | `GCLOUD_SERVICE_ACCOUNT_CREDENTIALS` | GitHub `PLAY_STORE_SERVICE_ACCOUNT_JSON` |
-| ASC integration **Asrax ASC** | `~/.asrax/credentials.d/apple-developer.env` + `~/.asrax/secrets/AuthKey_*.p8` |
+| `APP_STORE_CONNECT_KEY_IDENTIFIER` / `ISSUER_ID` / `PRIVATE_KEY` | `apple-developer.env` + PEM from `AuthKey_*.p8` |
 
 Helper: [`scripts/ci/sync-codemagic-mobile-creds.ps1`](../scripts/ci/sync-codemagic-mobile-creds.ps1) stages copy-paste files under `%TEMP%` and prints the checklist.
 

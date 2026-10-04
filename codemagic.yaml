@@ -267,8 +267,8 @@ workflows:
     name: iOS · TestFlight
     max_build_duration: 60
     instance_type: mac_mini_m2
-    integrations:
-      app_store_connect: Asrax ASC
+    # Prefer env API key vars in ios_credentials (no named Team integration required).
+    # Optional: also add Team integration "Asrax ASC" and switch auth to integration later.
     environment:
       flutter: stable
       xcode: latest
@@ -336,5 +336,7 @@ workflows:
           failure: true
           success: true
       app_store_connect:
-        auth: integration
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: true
