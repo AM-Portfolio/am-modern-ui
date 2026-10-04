@@ -47,6 +47,11 @@ on:
         required: false
         type: boolean
         default: false
+      reuse_codemagic_android_build_id:
+        description: "Skip Flutter rebuild — download AAB from this Codemagic build and upload Play Internal only"
+        required: false
+        type: string
+        default: ""
       am_domain:
         description: "Override AM_DOMAIN dart-define (empty = prod default on main)"
         required: false
@@ -71,6 +76,7 @@ jobs:
       deploy: ${{ steps.p.outputs.deploy }}
       am_domain: ${{ steps.p.outputs.am_domain }}
       am_env: ${{ steps.p.outputs.am_env }}
+      reuse_android: ${{ steps.p.outputs.reuse_android }}
     steps:
       - id: p
         shell: bash
@@ -80,30 +86,89 @@ jobs:
           if [ "$REF" = "main" ] || [ "${{ github.event.inputs.force_deploy }}" = "true" ]; then
             DEPLOY=true
           fi
+          REUSE="${{ github.event.inputs.reuse_codemagic_android_build_id }}"
+          REUSE_ANDROID=false
+          if [ -n "$REUSE" ]; then
+            REUSE_ANDROID=true
+            DEPLOY=false
+          fi
           DOMAIN="${{ github.event.inputs.am_domain }}"
           ENV_LABEL="${{ github.event.inputs.am_env }}"
           if [ -z "$DOMAIN" ]; then
-            if [ "$DEPLOY" = "true" ]; then
+            if [ "$DEPLOY" = "true" ] || [ "$REUSE_ANDROID" = "true" ]; then
               DOMAIN="am.asrax.in"
             else
               DOMAIN="am-preprod.asrax.in"
             fi
           fi
           if [ -z "$ENV_LABEL" ]; then
-            if [ "$DEPLOY" = "true" ]; then
+            if [ "$DEPLOY" = "true" ] || [ "$REUSE_ANDROID" = "true" ]; then
               ENV_LABEL="prod"
             else
               ENV_LABEL="preprod"
             fi
           fi
           echo "deploy=$DEPLOY" >> "$GITHUB_OUTPUT"
+          echo "reuse_android=$REUSE_ANDROID" >> "$GITHUB_OUTPUT"
           echo "am_domain=$DOMAIN" >> "$GITHUB_OUTPUT"
           echo "am_env=$ENV_LABEL" >> "$GITHUB_OUTPUT"
-          echo "Branch=$REF deploy=$DEPLOY domain=$DOMAIN env=$ENV_LABEL"
+          echo "Branch=$REF deploy=$DEPLOY reuse_android=$REUSE_ANDROID domain=$DOMAIN env=$ENV_LABEL"
+
+  # No Flutter rebuild — Play Internal from previous Codemagic AAB
+  android-reuse-internal:
+    name: Android -> Play Internal (reuse Codemagic AAB)
+    needs: resolve
+    if: ${{ needs.resolve.outputs.reuse_android == 'true' }}
+    runs-on: ubuntu-latest
+    environment: android-internal
+    permissions:
+      contents: read
+    steps:
+      - name: Download AAB from Codemagic
+        env:
+          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
+          BUILD_ID: ${{ github.event.inputs.reuse_codemagic_android_build_id }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CODEMAGIC_API_TOKEN:-}" ]; then
+            echo "::error::CODEMAGIC_API_TOKEN secret required"
+            exit 1
+          fi
+          mkdir -p android-out
+          META=$(curl -fsSL -H "x-auth-token: ${CODEMAGIC_API_TOKEN}" \
+            "https://api.codemagic.io/builds/${BUILD_ID}")
+          URL=$(echo "$META" | python3 -c "
+          import json,sys
+          b=json.load(sys.stdin)
+          build=b.get('build', b)
+          arts=build.get('artefacts') or build.get('artifacts') or []
+          if isinstance(arts, dict): arts=[arts]
+          for a in arts:
+            name=(a.get('name') or '')
+            typ=(a.get('type') or '')
+            if name.endswith('.aab') or typ=='aab':
+              print(a.get('url','')); break
+          ")
+          if [ -z "$URL" ]; then
+            echo "::error::No AAB on Codemagic build ${BUILD_ID}"
+            exit 1
+          fi
+          curl -fsSL -H "x-auth-token: ${CODEMAGIC_API_TOKEN}" -o android-out/app-release.aab "$URL"
+          ls -lh android-out/app-release.aab
+
+      - name: Upload to Google Play Internal Testing
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
+          packageName: com.asrax.aminvestment
+          releaseFiles: android-out/*.aab
+          tracks: internal
+          status: completed
 
   validate:
     name: Common Validation
     needs: resolve
+    if: ${{ needs.resolve.outputs.reuse_android != 'true' }}
     permissions:
       contents: read
     uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-validate.yml@feature/mobile-android-ios-ci
@@ -113,6 +178,7 @@ jobs:
   android:
     name: Android
     needs: [resolve, validate]
+    if: ${{ needs.resolve.outputs.reuse_android != 'true' }}
     permissions:
       contents: read
     uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@feature/mobile-android-ios-ci
@@ -135,6 +201,7 @@ jobs:
   ios:
     name: iOS
     needs: [resolve, validate]
+    if: ${{ needs.resolve.outputs.reuse_android != 'true' }}
     permissions:
       contents: read
     uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-ios.yml@feature/mobile-android-ios-ci
