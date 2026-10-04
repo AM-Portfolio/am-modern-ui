@@ -275,9 +275,9 @@ workflows:
       flutter: stable
       xcode: latest
       cocoapods: default
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.asrax.aminvestment
+      # Do not set ios_signing.distribution_type here unless matching App Store
+      # profiles are uploaded in Codemagic Code signing identities — otherwise
+      # the build fails before scripts. fetch-signing-files --create uses ASC.
       vars:
         BUNDLE_ID: "com.asrax.aminvestment"
         AM_DOMAIN: "am.asrax.in"
