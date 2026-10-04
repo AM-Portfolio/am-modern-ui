@@ -114,9 +114,9 @@ workflows:
         PACKAGE_NAME: "com.asrax.aminvestment"
         AM_DOMAIN: "am.asrax.in"
         AM_ENV: "prod"
-        # Play rejects reused versionCode (last fail: code 2). Floor = last known used code.
-        # Bump when publish says "Version code N has already been used."
-        ANDROID_VERSION_CODE_FLOOR: "50"
+        # Safety floor only — build step also queries Play for live max versionCode.
+        # 51 uploaded 2026-10-04 but track assign failed (code below active track).
+        ANDROID_VERSION_CODE_FLOOR: "51"
       groups:
         - android_credentials
     cache:
@@ -163,23 +163,30 @@ workflows:
           echo "keyPassword=${ANDROID_KEY_PASSWORD:-}" >> am_app/android/key.properties
           echo "keyAlias=${ANDROID_KEY_ALIAS:-}" >> am_app/android/key.properties
           echo "storeFile=am_investment_keystore.jks" >> am_app/android/key.properties
+      - name: Resolve Play versionCode (above live track max)
+        script: |
+          set -euo pipefail
+          python3 scripts/ci/_play_max_version.py | tee /tmp/play_max.txt
+          PLAY_MAX=$(awk -F= '/^PLAY_MAX=/{print $2}' /tmp/play_max.txt | tail -1)
+          PLAY_MAX=${PLAY_MAX:-0}
+          PUBSPEC_BUILD=$(sed -nE 's/^version:[[:space:]]*[^+]+\+([0-9]+).*/\1/p' am_app/pubspec.yaml | head -1)
+          PUBSPEC_BUILD=${PUBSPEC_BUILD:-0}
+          FLOOR=${ANDROID_VERSION_CODE_FLOOR:-0}
+          BUILD_NUM=${BUILD_NUMBER:-1}
+          for c in "$PUBSPEC_BUILD" "$FLOOR" "$PLAY_MAX"; do
+            if [ "$BUILD_NUM" -le "$c" ]; then
+              BUILD_NUM=$((c + 1))
+            fi
+          done
+          echo "$BUILD_NUM" > /tmp/android_version_code.txt
+          echo "Resolved versionCode=$BUILD_NUM (play_max=$PLAY_MAX floor=$FLOOR pubspec=+$PUBSPEC_BUILD CM=${BUILD_NUMBER:-})"
       - name: Build Android App Bundle (AAB)
         script: |
           set -euo pipefail
           cd am_app
           rm -rf build 2>/dev/null || true
-          # Monotonic versionCode: max(CM BUILD_NUMBER, pubspec +N, FLOOR) then > FLOOR
-          PUBSPEC_BUILD=$(sed -nE 's/^version:[[:space:]]*[^+]+\+([0-9]+).*/\1/p' pubspec.yaml | head -1)
-          PUBSPEC_BUILD=${PUBSPEC_BUILD:-0}
-          FLOOR=${ANDROID_VERSION_CODE_FLOOR:-0}
-          BUILD_NUM=${BUILD_NUMBER:-1}
-          if [ "$BUILD_NUM" -le "$PUBSPEC_BUILD" ]; then
-            BUILD_NUM=$((PUBSPEC_BUILD + 1))
-          fi
-          if [ "$BUILD_NUM" -le "$FLOOR" ]; then
-            BUILD_NUM=$((FLOOR + 1))
-          fi
-          echo "versionCode BUILD_NUM=$BUILD_NUM (floor=$FLOOR pubspec=+$PUBSPEC_BUILD CM_BUILD_NUMBER=${BUILD_NUMBER:-})"
+          BUILD_NUM=$(cat /tmp/android_version_code.txt)
+          echo "Building AAB with versionCode=$BUILD_NUM"
           flutter build appbundle --release \
             --build-name="2.0.0" \
             --build-number="$BUILD_NUM" \
