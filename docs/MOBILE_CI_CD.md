@@ -34,7 +34,7 @@ Keep **one** Codemagic application named **AM Flutter · Modern UI** (archive an
 | Workflow id | Display name | When | Store |
 |-------------|--------------|------|-------|
 | `android-ci-build` | Android CI · AAB | auto feature/main/PR | email only |
-| `android-play-internal` | Android · Play Internal | **manual** Start build | Play `internal` |
+| `android-play-internal` | Android · Play Internal | **manual** Start build | Play `internal` (versionCode = max(CM, pubspec+N, `ANDROID_VERSION_CODE_FLOOR`)+as needed) |
 | `ios-ci-build` | iOS CI · unsigned | auto feature/main/PR | email only |
 | `ios-testflight` | iOS · TestFlight | **manual** Start build | TestFlight via `APP_STORE_CONNECT_*` env vars |
 

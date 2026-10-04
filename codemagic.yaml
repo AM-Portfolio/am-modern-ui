@@ -114,6 +114,9 @@ workflows:
         PACKAGE_NAME: "com.asrax.aminvestment"
         AM_DOMAIN: "am.asrax.in"
         AM_ENV: "prod"
+        # Play rejects reused versionCode (last fail: code 2). Floor = last known used code.
+        # Bump when publish says "Version code N has already been used."
+        ANDROID_VERSION_CODE_FLOOR: "50"
       groups:
         - android_credentials
     cache:
@@ -165,7 +168,18 @@ workflows:
           set -euo pipefail
           cd am_app
           rm -rf build 2>/dev/null || true
+          # Monotonic versionCode: max(CM BUILD_NUMBER, pubspec +N, FLOOR) then > FLOOR
+          PUBSPEC_BUILD=$(sed -nE 's/^version:[[:space:]]*[^+]+\+([0-9]+).*/\1/p' pubspec.yaml | head -1)
+          PUBSPEC_BUILD=${PUBSPEC_BUILD:-0}
+          FLOOR=${ANDROID_VERSION_CODE_FLOOR:-0}
           BUILD_NUM=${BUILD_NUMBER:-1}
+          if [ "$BUILD_NUM" -le "$PUBSPEC_BUILD" ]; then
+            BUILD_NUM=$((PUBSPEC_BUILD + 1))
+          fi
+          if [ "$BUILD_NUM" -le "$FLOOR" ]; then
+            BUILD_NUM=$((FLOOR + 1))
+          fi
+          echo "versionCode BUILD_NUM=$BUILD_NUM (floor=$FLOOR pubspec=+$PUBSPEC_BUILD CM_BUILD_NUMBER=${BUILD_NUMBER:-})"
           flutter build appbundle --release \
             --build-name="2.0.0" \
             --build-number="$BUILD_NUM" \
