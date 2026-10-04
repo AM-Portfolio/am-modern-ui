@@ -1,0 +1,8 @@
+# Example key.properties template for local Android release signing.
+# Copy this file to `am_app/android/key.properties` and fill in your local keystore credentials.
+# DO NOT commit `key.properties` or `.jks` keystore files to git!
+
+storePassword=YOUR_KEYSTORE_PASSWORD
+keyPassword=YOUR_KEY_ALIAS_PASSWORD
+keyAlias=YOUR_KEY_ALIAS
+storeFile=release-key.jks
