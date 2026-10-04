@@ -44,6 +44,10 @@ workflows:
             (cd "$dir" && flutter pub get)
           done
 
+      - name: Clean build directory if file/symlink
+        script: |
+          rm -rf am_app/build build 2>/dev/null || true
+
       - name: Run build_runner code generation
         script: |
           cd am_app
@@ -68,6 +72,7 @@ workflows:
       - name: Build Android App Bundle (AAB)
         script: |
           cd am_app
+          rm -rf build 2>/dev/null || true
           BUILD_NUM=${BUILD_NUMBER:-1}
           flutter build appbundle --release \
             --build-name="2.0.0" \
@@ -129,8 +134,9 @@ workflows:
             (cd "$dir" && flutter pub get)
           done
 
-      - name: Clean duplicate Pods files
+      - name: Clean build directory and duplicate files
         script: |
+          rm -rf am_app/build build 2>/dev/null || true
           find am_app/ios -name "* 2.*" -delete 2>/dev/null || true
 
       - name: Run build_runner code generation
@@ -148,6 +154,7 @@ workflows:
       - name: Setup iOS Signing & Build IPA
         script: |
           cd am_app
+          rm -rf build 2>/dev/null || true
           BUILD_NUM=${BUILD_NUMBER:-1}
           if [ -n "${APP_STORE_CONNECT_API_KEY_ID:-}" ] && [ -n "${APP_STORE_CONNECT_ISSUER_ID:-}" ]; then
             echo "Setting up App Store Connect code signing..."
