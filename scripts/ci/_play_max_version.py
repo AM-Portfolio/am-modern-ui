@@ -26,10 +26,22 @@ def main() -> None:
         )
         import jwt
 
-    raw = os.environ.get("GCLOUD_SERVICE_ACCOUNT_CREDENTIALS", "").strip()
+    raw = (
+        os.environ.get("GCLOUD_SERVICE_ACCOUNT_CREDENTIALS")
+        or os.environ.get("PLAY_STORE_SERVICE_ACCOUNT_JSON")
+        or ""
+    ).strip()
     if not raw:
-        raise SystemExit("GCLOUD_SERVICE_ACCOUNT_CREDENTIALS missing")
-    sa = json.loads(raw)
+        raise SystemExit(
+            "GCLOUD_SERVICE_ACCOUNT_CREDENTIALS or PLAY_STORE_SERVICE_ACCOUNT_JSON missing"
+        )
+    # Accept raw JSON or base64-wrapped JSON
+    try:
+        sa = json.loads(raw)
+    except json.JSONDecodeError:
+        import base64
+
+        sa = json.loads(base64.b64decode(raw).decode("utf-8"))
     now = int(time.time())
     assertion = jwt.encode(
         {

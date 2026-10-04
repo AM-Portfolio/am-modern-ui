@@ -1,7 +1,7 @@
 # Codemagic — AM Flutter Modern UI (monorepo)
 # Keep ONE Codemagic application (rename in UI to "AM Flutter · Modern UI").
-# CI workflows: auto on feature/develop/PR (artifacts + email only).
-# Store workflows: manual Start build (Play Internal / TestFlight).
+# CI workflows: auto on main only (feature/store work → GitHub Mobile CI).
+# Store workflows: manual Start build (iOS TestFlight backup until GH mac ready).
 
 workflows:
   # ---------------------------------------------------------------------------
@@ -36,12 +36,6 @@ workflows:
         - pull_request
       branch_patterns:
         - pattern: 'main'
-          include: true
-          source: true
-        - pattern: 'feature/**'
-          include: true
-          source: true
-        - pattern: 'develop'
           include: true
           source: true
     scripts:
@@ -237,12 +231,6 @@ workflows:
         - pull_request
       branch_patterns:
         - pattern: 'main'
-          include: true
-          source: true
-        - pattern: 'feature/**'
-          include: true
-          source: true
-        - pattern: 'develop'
           include: true
           source: true
     scripts:

@@ -1,11 +1,12 @@
-# Mobile CI — Android + iOS (parallel)
+# Mobile CI — Android + iOS (parallel), GitHub-owned Internal Testing
 #
 # Branch policy:
-#   feature/**, develop, hotfix/**  → build artifacts only (no store upload)
-#   main                            → Internal Testing then full store deploy
-#                                     (Play Internal + TestFlight, then Production / App Store)
+#   feature/**, develop, hotfix/**  → build artifacts only
+#   workflow_dispatch deploy_internal → Play Internal (Android, no Codemagic)
+#   main                            → Play Internal, then Play Production
+#   iOS TestFlight                  → Codemagic manual / main until GH mac runner
 #
-# Manual dispatch can force deploy flags (still prefer main for store).
+# Pipelines ref: AM-Portfolio/am-pipelines@feature/mobile-android-ios-ci
 
 name: Mobile CI
 
@@ -42,23 +43,18 @@ on:
       - ".github/workflows/mobile-ci.yml"
   workflow_dispatch:
     inputs:
+      deploy_internal:
+        description: "Upload Android AAB to Play Internal Testing (GitHub-native, no Codemagic)"
+        required: false
+        type: boolean
+        default: false
       force_deploy:
         description: "Force Internal+Production deploy (even off main; use carefully)"
         required: false
         type: boolean
         default: false
-      reuse_codemagic_android_build_id:
-        description: "Skip Flutter rebuild — download AAB from this Codemagic build and upload Play Internal only"
-        required: false
-        type: string
-        default: ""
-      sync_codemagic_play_sa:
-        description: "Copy PLAY_STORE_SERVICE_ACCOUNT_JSON into Codemagic android_credentials (no build)"
-        required: false
-        type: boolean
-        default: false
       am_domain:
-        description: "Override AM_DOMAIN dart-define (empty = prod default on main)"
+        description: "Override AM_DOMAIN dart-define (empty = prod default when deploying)"
         required: false
         type: string
         default: ""
@@ -78,187 +74,55 @@ jobs:
     name: Resolve branch policy
     runs-on: ubuntu-latest
     outputs:
-      deploy: ${{ steps.p.outputs.deploy }}
+      deploy_internal: ${{ steps.p.outputs.deploy_internal }}
+      deploy_production: ${{ steps.p.outputs.deploy_production }}
       am_domain: ${{ steps.p.outputs.am_domain }}
       am_env: ${{ steps.p.outputs.am_env }}
-      reuse_android: ${{ steps.p.outputs.reuse_android }}
-      sync_play: ${{ steps.p.outputs.sync_play }}
     steps:
       - id: p
         shell: bash
         run: |
           REF="${GITHUB_REF_NAME}"
-          DEPLOY=false
-          if [ "$REF" = "main" ] || [ "${{ github.event.inputs.force_deploy }}" = "true" ]; then
-            DEPLOY=true
+          FORCE="${{ github.event.inputs.force_deploy }}"
+          DISPATCH_INTERNAL="${{ github.event.inputs.deploy_internal }}"
+
+          DEPLOY_INTERNAL=false
+          DEPLOY_PRODUCTION=false
+
+          if [ "$REF" = "main" ] || [ "$FORCE" = "true" ]; then
+            DEPLOY_INTERNAL=true
+            DEPLOY_PRODUCTION=true
+          elif [ "$DISPATCH_INTERNAL" = "true" ]; then
+            DEPLOY_INTERNAL=true
+            DEPLOY_PRODUCTION=false
           fi
-          REUSE="${{ github.event.inputs.reuse_codemagic_android_build_id }}"
-          SYNC_PLAY="${{ github.event.inputs.sync_codemagic_play_sa }}"
-          REUSE_ANDROID=false
-          if [ -n "$REUSE" ]; then
-            REUSE_ANDROID=true
-            DEPLOY=false
-          fi
-          if [ "$SYNC_PLAY" = "true" ]; then
-            DEPLOY=false
-          fi
-          echo "sync_play=$SYNC_PLAY" >> "$GITHUB_OUTPUT"
+
           DOMAIN="${{ github.event.inputs.am_domain }}"
           ENV_LABEL="${{ github.event.inputs.am_env }}"
           if [ -z "$DOMAIN" ]; then
-            if [ "$DEPLOY" = "true" ] || [ "$REUSE_ANDROID" = "true" ]; then
+            if [ "$DEPLOY_INTERNAL" = "true" ] || [ "$DEPLOY_PRODUCTION" = "true" ]; then
               DOMAIN="am.asrax.in"
             else
               DOMAIN="am-preprod.asrax.in"
             fi
           fi
           if [ -z "$ENV_LABEL" ]; then
-            if [ "$DEPLOY" = "true" ] || [ "$REUSE_ANDROID" = "true" ]; then
+            if [ "$DEPLOY_INTERNAL" = "true" ] || [ "$DEPLOY_PRODUCTION" = "true" ]; then
               ENV_LABEL="prod"
             else
               ENV_LABEL="preprod"
             fi
           fi
-          echo "deploy=$DEPLOY" >> "$GITHUB_OUTPUT"
-          echo "reuse_android=$REUSE_ANDROID" >> "$GITHUB_OUTPUT"
+
+          echo "deploy_internal=$DEPLOY_INTERNAL" >> "$GITHUB_OUTPUT"
+          echo "deploy_production=$DEPLOY_PRODUCTION" >> "$GITHUB_OUTPUT"
           echo "am_domain=$DOMAIN" >> "$GITHUB_OUTPUT"
           echo "am_env=$ENV_LABEL" >> "$GITHUB_OUTPUT"
-          echo "Branch=$REF deploy=$DEPLOY reuse_android=$REUSE_ANDROID domain=$DOMAIN env=$ENV_LABEL"
-
-  sync-codemagic-play-sa:
-    name: Sync Play SA JSON to Codemagic
-    needs: resolve
-    if: ${{ needs.resolve.outputs.sync_play == 'true' }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Upsert GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
-        env:
-          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
-          PLAY_JSON: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
-          APP_ID: "6ac22a8f93e6cd231a7ad1d6"
-        run: |
-          set -euo pipefail
-          python3 <<'PY'
-          import json, os, urllib.error, urllib.request
-
-          token = os.environ.get("CODEMAGIC_API_TOKEN") or ""
-          play = (os.environ.get("PLAY_JSON") or "").strip()
-          app_id = os.environ["APP_ID"]
-          if not token or not play:
-              raise SystemExit("CODEMAGIC_API_TOKEN and PLAY_STORE_SERVICE_ACCOUNT_JSON required")
-
-          # Accept raw JSON or base64-wrapped JSON
-          try:
-              json.loads(play)
-          except json.JSONDecodeError:
-              import base64
-              play = base64.b64decode(play).decode("utf-8")
-              json.loads(play)
-
-          def cm(method, path, body=None):
-              data = None if body is None else json.dumps(body).encode("utf-8")
-              req = urllib.request.Request(
-                  f"https://codemagic.io/api/v3{path}",
-                  data=data,
-                  method=method,
-                  headers={
-                      "x-auth-token": token,
-                      "Accept": "application/json",
-                      "Content-Type": "application/json",
-                  },
-              )
-              try:
-                  with urllib.request.urlopen(req) as resp:
-                      raw = resp.read().decode("utf-8") or "{}"
-                      return json.loads(raw)
-              except urllib.error.HTTPError as e:
-                  detail = e.read().decode("utf-8", errors="replace")
-                  raise SystemExit(f"Codemagic {method} {path} -> HTTP {e.code}: {detail[:500]}")
-
-          groups = cm("GET", f"/apps/{app_id}/variable-groups").get("data") or []
-          gid = next((g["id"] for g in groups if g.get("name") == "android_credentials"), None)
-          if not gid:
-              gid = cm("POST", f"/apps/{app_id}/variable-groups", {"name": "android_credentials"})["data"]["id"]
-          print(f"android_credentials group={gid}")
-
-          existing = cm("GET", f"/variable-groups/{gid}/variables").get("data") or []
-          for ev in existing:
-              if ev.get("name") == "GCLOUD_SERVICE_ACCOUNT_CREDENTIALS":
-                  cm("DELETE", f"/variable-groups/{gid}/variables/{ev['id']}")
-                  print("deleted prior GCLOUD_SERVICE_ACCOUNT_CREDENTIALS")
-
-          cm(
-              "POST",
-              f"/variable-groups/{gid}/variables",
-              {
-                  "secure": True,
-                  "variables": [{"name": "GCLOUD_SERVICE_ACCOUNT_CREDENTIALS", "value": play}],
-              },
-          )
-          names = [v["name"] for v in (cm("GET", f"/variable-groups/{gid}/variables").get("data") or [])]
-          print("android vars:", ", ".join(names))
-          if "GCLOUD_SERVICE_ACCOUNT_CREDENTIALS" not in names:
-              raise SystemExit("GCLOUD_SERVICE_ACCOUNT_CREDENTIALS missing after sync")
-          print("Synced GCLOUD_SERVICE_ACCOUNT_CREDENTIALS into Codemagic")
-          PY
-
-  # No Flutter rebuild — Play Internal from previous Codemagic AAB
-  android-reuse-internal:
-    name: Android -> Play Internal (reuse Codemagic AAB)
-    needs: resolve
-    if: ${{ needs.resolve.outputs.reuse_android == 'true' }}
-    runs-on: ubuntu-latest
-    environment: android-internal
-    permissions:
-      contents: read
-    steps:
-      - name: Download AAB from Codemagic
-        env:
-          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
-          BUILD_ID: ${{ github.event.inputs.reuse_codemagic_android_build_id }}
-        run: |
-          set -euo pipefail
-          if [ -z "${CODEMAGIC_API_TOKEN:-}" ]; then
-            echo "::error::CODEMAGIC_API_TOKEN secret required"
-            exit 1
-          fi
-          mkdir -p android-out
-          META=$(curl -fsSL -H "x-auth-token: ${CODEMAGIC_API_TOKEN}" \
-            "https://api.codemagic.io/builds/${BUILD_ID}")
-          URL=$(echo "$META" | python3 -c "
-          import json,sys
-          b=json.load(sys.stdin)
-          build=b.get('build', b)
-          arts=build.get('artefacts') or build.get('artifacts') or []
-          if isinstance(arts, dict): arts=[arts]
-          for a in arts:
-            name=(a.get('name') or '')
-            typ=(a.get('type') or '')
-            if name.endswith('.aab') or typ=='aab':
-              print(a.get('url','')); break
-          ")
-          if [ -z "$URL" ]; then
-            echo "::error::No AAB on Codemagic build ${BUILD_ID}"
-            exit 1
-          fi
-          curl -fsSL -H "x-auth-token: ${CODEMAGIC_API_TOKEN}" -o android-out/app-release.aab "$URL"
-          ls -lh android-out/app-release.aab
-
-      - name: Upload to Google Play Internal Testing
-        uses: r0adkll/upload-google-play@v1
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
-          packageName: com.asrax.aminvestment
-          releaseFiles: android-out/*.aab
-          tracks: internal
-          status: completed
+          echo "Branch=$REF deploy_internal=$DEPLOY_INTERNAL deploy_production=$DEPLOY_PRODUCTION domain=$DOMAIN env=$ENV_LABEL"
 
   validate:
     name: Common Validation
     needs: resolve
-    if: ${{ needs.resolve.outputs.reuse_android != 'true' && needs.resolve.outputs.sync_play != 'true' }}
     permissions:
       contents: read
     uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-validate.yml@feature/mobile-android-ios-ci
@@ -268,7 +132,6 @@ jobs:
   android:
     name: Android
     needs: [resolve, validate]
-    if: ${{ needs.resolve.outputs.reuse_android != 'true' && needs.resolve.outputs.sync_play != 'true' }}
     permissions:
       contents: read
     uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@feature/mobile-android-ios-ci
@@ -282,16 +145,17 @@ jobs:
       package_name: com.asrax.aminvestment
       am_domain: ${{ needs.resolve.outputs.am_domain }}
       am_env: ${{ needs.resolve.outputs.am_env }}
-      deploy_internal: ${{ needs.resolve.outputs.deploy == 'true' }}
-      deploy_production: ${{ needs.resolve.outputs.deploy == 'true' }}
+      deploy_internal: ${{ needs.resolve.outputs.deploy_internal == 'true' }}
+      deploy_production: ${{ needs.resolve.outputs.deploy_production == 'true' }}
       gh_env_preprod: android-internal
       gh_env_prod: android-prod
     secrets: inherit
 
+  # iOS: build + artifact only until dedicated GitHub mac runner.
+  # TestFlight remains Codemagic manual / main backup (ios-testflight workflow).
   ios:
     name: iOS
     needs: [resolve, validate]
-    if: ${{ needs.resolve.outputs.reuse_android != 'true' && needs.resolve.outputs.sync_play != 'true' }}
     permissions:
       contents: read
     uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-ios.yml@feature/mobile-android-ios-ci
@@ -304,8 +168,8 @@ jobs:
       bundle_id: com.asrax.aminvestment
       am_domain: ${{ needs.resolve.outputs.am_domain }}
       am_env: ${{ needs.resolve.outputs.am_env }}
-      deploy_internal: ${{ needs.resolve.outputs.deploy == 'true' }}
-      deploy_production: ${{ needs.resolve.outputs.deploy == 'true' }}
+      deploy_internal: false
+      deploy_production: false
       gh_env_internal: ios-internal
       gh_env_prod: ios-prod
     secrets: inherit
