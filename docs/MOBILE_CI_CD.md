@@ -6,6 +6,7 @@ Caller workflows live in this repo; reusable jobs live in **am-pipelines**.
 |----------|------|
 | [`.github/workflows/web-ci.yml`](../.github/workflows/web-ci.yml) | Web Contabo only (no Android/iOS) |
 | [`.github/workflows/mobile-ci.yml`](../.github/workflows/mobile-ci.yml) | Android + iOS in parallel |
+| [`.github/workflows/deploy-store-artifacts.yml`](../.github/workflows/deploy-store-artifacts.yml) | **No rebuild** — upload existing Codemagic AAB / signed IPA to Play Internal / TestFlight |
 
 Pipelines refs (while iterating): `AM-Portfolio/am-pipelines@feature/mobile-android-ios-ci`.
 
@@ -13,11 +14,47 @@ Package / bundle id: `com.asrax.aminvestment`.
 
 ---
 
+## Fastest internal testing (reuse previous green builds)
+
+Prefer this over a full Flutter rebuild:
+
+1. **Android:** Actions → **Deploy store artifacts** → `deploy_android=true`, `codemagic_android_build_id` = last green Codemagic Android build (e.g. tip AAB). Approves `android-internal` → Play **internal** track.
+2. **iOS:** Same workflow with `deploy_ios=true` only if you pass a **signed `.ipa` URL**. Unsigned `Runner.app.zip` **cannot** go to TestFlight.
+3. Fallback rebuild: **Mobile CI** → Run workflow → `force_deploy=true` on the feature branch (uses existing GitHub secrets).
+
+Requires repo secret `CODEMAGIC_API_TOKEN` for Codemagic artifact download (same token as `~/.asrax/credentials.d/codemagic.env`).
+
+---
+
+## Codemagic (file workflows)
+
+Keep **one** Codemagic application named **AM Flutter · Modern UI** (archive any duplicate `am-modern-ui` entry). Settings source = `codemagic.yaml`.
+
+| Workflow id | Display name | When | Store |
+|-------------|--------------|------|-------|
+| `android-ci-build` | Android CI · AAB | auto feature/main/PR | email only |
+| `android-play-internal` | Android · Play Internal | **manual** Start build | Play `internal` |
+| `ios-ci-build` | iOS CI · unsigned | auto feature/main/PR | email only |
+| `ios-testflight` | iOS · TestFlight | **manual** Start build | TestFlight (`Asrax ASC` integration) |
+
+Local SoT → Codemagic groups (never commit):
+
+| CM variable / integration | Local source |
+|---------------------------|--------------|
+| `ANDROID_KEYSTORE_BASE64` | `~/.asrax/secrets/keystore_base64.txt` |
+| `ANDROID_KEYSTORE_PASSWORD` / `ANDROID_KEY_PASSWORD` / `ANDROID_KEY_ALIAS` | `~/.asrax/secrets/key.properties` |
+| `GCLOUD_SERVICE_ACCOUNT_CREDENTIALS` | GitHub `PLAY_STORE_SERVICE_ACCOUNT_JSON` |
+| ASC integration **Asrax ASC** | `~/.asrax/credentials.d/apple-developer.env` + `~/.asrax/secrets/AuthKey_*.p8` |
+
+Helper: [`scripts/ci/sync-codemagic-mobile-creds.ps1`](../scripts/ci/sync-codemagic-mobile-creds.ps1) stages copy-paste files under `%TEMP%` and prints the checklist.
+
+---
+
 ## Branch policy
 
 | Branch | Build | Store deploy |
 |--------|-------|--------------|
-| `feature/**`, `develop`, `hotfix/**` | Yes (AAB + IPA/app artifacts) | **No** |
+| `feature/**`, `develop`, `hotfix/**` | Yes (AAB + IPA/app artifacts) | Reuse via **Deploy store artifacts**, or `force_deploy`, or Codemagic manual store workflows |
 | `main` | Yes | **Internal first** (Play Internal + TestFlight), then **full** (Play Production + App Store) via GitHub Environments |
 
 Environments (create in GitHub → Settings → Environments):
@@ -25,7 +62,7 @@ Environments (create in GitHub → Settings → Environments):
 - `android-internal` / `ios-internal` — light or auto approval
 - `android-prod` / `ios-prod` — required reviewers for full release
 
-Manual dispatch on `mobile-ci` can force deploy (`force_deploy`); prefer `main` for real store uploads.
+Manual dispatch on `mobile-ci` can force deploy (`force_deploy`); prefer artifact reuse when a green AAB/IPA already exists.
 
 Retired: `deploy-mobile.yml`, `unified-ci.yml` (replaced by `web-ci` + `mobile-ci`).
 
