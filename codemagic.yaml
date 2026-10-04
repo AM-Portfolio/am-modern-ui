@@ -36,6 +36,10 @@ workflows:
         script: |
           flutter config --no-enable-swift-package-manager
 
+      - name: Clean build directory
+        script: |
+          rm -rf am_app/build build 2>/dev/null || true
+
       - name: Resolve pub dependencies across monorepo
         script: |
           dirs=$(find . -name "pubspec.yaml" -not -path "*/.*" -exec dirname {})
@@ -44,16 +48,15 @@ workflows:
             (cd "$dir" && flutter pub get)
           done
 
-      - name: Clean build directory if file/symlink
+      - name: Run build_runner code generation across all packages
         script: |
-          rm -rf am_app/build build 2>/dev/null || true
-
-      - name: Run build_runner code generation
-        script: |
-          cd am_app
-          if grep -q "build_runner" pubspec.yaml; then
-            flutter pub run build_runner build --delete-conflicting-outputs
-          fi
+          dirs=$(find . -name "pubspec.yaml" -not -path "*/.*" -exec dirname {})
+          for dir in $dirs; do
+            if grep -q "build_runner" "$dir/pubspec.yaml"; then
+              echo "Running build_runner in $dir..."
+              (cd "$dir" && flutter pub run build_runner build --delete-conflicting-outputs)
+            fi
+          done
 
       - name: Setup Android Keystore & key.properties
         script: |
@@ -126,6 +129,11 @@ workflows:
         script: |
           flutter config --no-enable-swift-package-manager
 
+      - name: Clean build directory and duplicate files
+        script: |
+          rm -rf am_app/build build 2>/dev/null || true
+          find am_app/ios -name "* 2.*" -delete 2>/dev/null || true
+
       - name: Resolve pub dependencies across monorepo
         script: |
           dirs=$(find . -name "pubspec.yaml" -not -path "*/.*" -exec dirname {})
@@ -134,20 +142,19 @@ workflows:
             (cd "$dir" && flutter pub get)
           done
 
-      - name: Clean build directory and duplicate files
+      - name: Run build_runner code generation across all packages
         script: |
-          rm -rf am_app/build build 2>/dev/null || true
-          find am_app/ios -name "* 2.*" -delete 2>/dev/null || true
-
-      - name: Run build_runner code generation
-        script: |
-          cd am_app
-          if grep -q "build_runner" pubspec.yaml; then
-            flutter pub run build_runner build --delete-conflicting-outputs
-          fi
+          dirs=$(find . -name "pubspec.yaml" -not -path "*/.*" -exec dirname {})
+          for dir in $dirs; do
+            if grep -q "build_runner" "$dir/pubspec.yaml"; then
+              echo "Running build_runner in $dir..."
+              (cd "$dir" && flutter pub run build_runner build --delete-conflicting-outputs)
+            fi
+          done
 
       - name: Install CocoaPods
         script: |
+          (cd am_app && flutter pub get)
           cd am_app/ios
           pod install
 
