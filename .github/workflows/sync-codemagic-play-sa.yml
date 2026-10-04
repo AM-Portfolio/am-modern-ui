@@ -1,0 +1,59 @@
+# One-shot: copy GitHub PLAY_STORE_SERVICE_ACCOUNT_JSON into Codemagic
+# android_credentials group as GCLOUD_SERVICE_ACCOUNT_CREDENTIALS.
+name: Sync Codemagic Play SA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Upsert GCLOUD_SERVICE_ACCOUNT_CREDENTIALS on Codemagic
+        env:
+          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
+          CODEMAGIC_APP_ID: ${{ secrets.CODEMAGIC_APP_ID }}
+          PLAY_JSON: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          APP_ID="${CODEMAGIC_APP_ID:-6ac22a8f93e6cd231a7ad1d6}"
+          if [ -z "${CODEMAGIC_API_TOKEN:-}" ] || [ -z "${PLAY_JSON:-}" ]; then
+            echo "::error::CODEMAGIC_API_TOKEN and PLAY_STORE_SERVICE_ACCOUNT_JSON required"
+            exit 1
+          fi
+          # Ensure android_credentials group exists
+          GROUPS=$(curl -fsSL -H "x-auth-token: ${CODEMAGIC_API_TOKEN}" \
+            "https://codemagic.io/api/v3/apps/${APP_ID}/variable-groups")
+          GID=$(echo "$GROUPS" | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)
+          for g in d.get('data') or []:
+            if g.get('name')=='android_credentials':
+              print(g['id']); break
+          ")
+          if [ -z "$GID" ]; then
+            CREATED=$(curl -fsSL -X POST -H "x-auth-token: ${CODEMAGIC_API_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d '{"name":"android_credentials"}' \
+              "https://codemagic.io/api/v3/apps/${APP_ID}/variable-groups")
+            GID=$(echo "$CREATED" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['id'])")
+          fi
+          echo "android_credentials group=$GID"
+          BODY=$(python3 - <<'PY'
+          import json,os
+          print(json.dumps({
+            "secure": True,
+            "variables": [{
+              "name": "GCLOUD_SERVICE_ACCOUNT_CREDENTIALS",
+              "value": os.environ["PLAY_JSON"],
+            }],
+          }))
+          PY
+          )
+          curl -fsSL -X POST -H "x-auth-token: ${CODEMAGIC_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "$BODY" \
+            "https://codemagic.io/api/v3/variable-groups/${GID}/variables"
+          echo "Synced GCLOUD_SERVICE_ACCOUNT_CREDENTIALS to Codemagic"

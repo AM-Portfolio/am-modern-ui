@@ -52,6 +52,11 @@ on:
         required: false
         type: string
         default: ""
+      sync_codemagic_play_sa:
+        description: "Copy PLAY_STORE_SERVICE_ACCOUNT_JSON into Codemagic android_credentials (no build)"
+        required: false
+        type: boolean
+        default: false
       am_domain:
         description: "Override AM_DOMAIN dart-define (empty = prod default on main)"
         required: false
@@ -77,6 +82,7 @@ jobs:
       am_domain: ${{ steps.p.outputs.am_domain }}
       am_env: ${{ steps.p.outputs.am_env }}
       reuse_android: ${{ steps.p.outputs.reuse_android }}
+      sync_play: ${{ steps.p.outputs.sync_play }}
     steps:
       - id: p
         shell: bash
@@ -87,11 +93,16 @@ jobs:
             DEPLOY=true
           fi
           REUSE="${{ github.event.inputs.reuse_codemagic_android_build_id }}"
+          SYNC_PLAY="${{ github.event.inputs.sync_codemagic_play_sa }}"
           REUSE_ANDROID=false
           if [ -n "$REUSE" ]; then
             REUSE_ANDROID=true
             DEPLOY=false
           fi
+          if [ "$SYNC_PLAY" = "true" ]; then
+            DEPLOY=false
+          fi
+          echo "sync_play=$SYNC_PLAY" >> "$GITHUB_OUTPUT"
           DOMAIN="${{ github.event.inputs.am_domain }}"
           ENV_LABEL="${{ github.event.inputs.am_env }}"
           if [ -z "$DOMAIN" ]; then
@@ -113,6 +124,51 @@ jobs:
           echo "am_domain=$DOMAIN" >> "$GITHUB_OUTPUT"
           echo "am_env=$ENV_LABEL" >> "$GITHUB_OUTPUT"
           echo "Branch=$REF deploy=$DEPLOY reuse_android=$REUSE_ANDROID domain=$DOMAIN env=$ENV_LABEL"
+
+  sync-codemagic-play-sa:
+    name: Sync Play SA JSON to Codemagic
+    needs: resolve
+    if: ${{ needs.resolve.outputs.sync_play == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Upsert GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        env:
+          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
+          PLAY_JSON: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
+          APP_ID: "6ac22a8f93e6cd231a7ad1d6"
+        run: |
+          set -euo pipefail
+          if [ -z "${CODEMAGIC_API_TOKEN:-}" ] || [ -z "${PLAY_JSON:-}" ]; then
+            echo "::error::CODEMAGIC_API_TOKEN and PLAY_STORE_SERVICE_ACCOUNT_JSON required"
+            exit 1
+          fi
+          GROUPS=$(curl -fsSL -H "x-auth-token: ${CODEMAGIC_API_TOKEN}" \
+            "https://codemagic.io/api/v3/apps/${APP_ID}/variable-groups")
+          GID=$(echo "$GROUPS" | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)
+          for g in d.get('data') or []:
+            if g.get('name')=='android_credentials':
+              print(g['id']); break
+          ")
+          if [ -z "$GID" ]; then
+            CREATED=$(curl -fsSL -X POST -H "x-auth-token: ${CODEMAGIC_API_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d '{"name":"android_credentials"}' \
+              "https://codemagic.io/api/v3/apps/${APP_ID}/variable-groups")
+            GID=$(echo "$CREATED" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['id'])")
+          fi
+          BODY=$(python3 - <<'PY'
+          import json,os
+          print(json.dumps({"secure": True, "variables": [{"name": "GCLOUD_SERVICE_ACCOUNT_CREDENTIALS", "value": os.environ["PLAY_JSON"]}]}))
+          PY
+          )
+          curl -fsSL -X POST -H "x-auth-token: ${CODEMAGIC_API_TOKEN}" \
+            -H "Content-Type: application/json" -d "$BODY" \
+            "https://codemagic.io/api/v3/variable-groups/${GID}/variables"
+          echo "Synced GCLOUD_SERVICE_ACCOUNT_CREDENTIALS into Codemagic group $GID"
 
   # No Flutter rebuild — Play Internal from previous Codemagic AAB
   android-reuse-internal:
@@ -168,7 +224,7 @@ jobs:
   validate:
     name: Common Validation
     needs: resolve
-    if: ${{ needs.resolve.outputs.reuse_android != 'true' }}
+    if: ${{ needs.resolve.outputs.reuse_android != 'true' && needs.resolve.outputs.sync_play != 'true' }}
     permissions:
       contents: read
     uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-validate.yml@feature/mobile-android-ios-ci
@@ -178,7 +234,7 @@ jobs:
   android:
     name: Android
     needs: [resolve, validate]
-    if: ${{ needs.resolve.outputs.reuse_android != 'true' }}
+    if: ${{ needs.resolve.outputs.reuse_android != 'true' && needs.resolve.outputs.sync_play != 'true' }}
     permissions:
       contents: read
     uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@feature/mobile-android-ios-ci
@@ -201,7 +257,7 @@ jobs:
   ios:
     name: iOS
     needs: [resolve, validate]
-    if: ${{ needs.resolve.outputs.reuse_android != 'true' }}
+    if: ${{ needs.resolve.outputs.reuse_android != 'true' && needs.resolve.outputs.sync_play != 'true' }}
     permissions:
       contents: read
     uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-ios.yml@feature/mobile-android-ios-ci
