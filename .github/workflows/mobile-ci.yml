@@ -101,9 +101,18 @@ jobs:
           echo "am_env=$ENV_LABEL" >> "$GITHUB_OUTPUT"
           echo "Branch=$REF deploy=$DEPLOY domain=$DOMAIN env=$ENV_LABEL"
 
+  validate:
+    name: Common Validation
+    needs: resolve
+    permissions:
+      contents: read
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-validate.yml@feature/mobile-android-ios-ci
+    with:
+      working_directory: am_app
+
   android:
     name: Android
-    needs: resolve
+    needs: [resolve, validate]
     permissions:
       contents: read
     uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@feature/mobile-android-ios-ci
@@ -111,8 +120,8 @@ jobs:
       working_directory: am_app
       build_mode: release
       artifact_type: appbundle
-      run_analyze: true
-      run_tests: true
+      run_analyze: false
+      run_tests: false
       upload_artifact: true
       package_name: com.asrax.aminvestment
       am_domain: ${{ needs.resolve.outputs.am_domain }}
@@ -125,15 +134,15 @@ jobs:
 
   ios:
     name: iOS
-    needs: resolve
+    needs: [resolve, validate]
     permissions:
       contents: read
     uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-ios.yml@feature/mobile-android-ios-ci
     with:
       working_directory: am_app
       build_mode: release
-      run_analyze: true
-      run_tests: true
+      run_analyze: false
+      run_tests: false
       upload_artifact: true
       bundle_id: com.asrax.aminvestment
       am_domain: ${{ needs.resolve.outputs.am_domain }}
