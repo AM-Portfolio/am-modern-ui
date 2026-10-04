@@ -1,10 +1,9 @@
-# Mobile CI — Android + iOS (parallel), GitHub-owned Internal Testing
+# Mobile CI — Android + iOS (parallel), GitHub-owned store tracks
 #
+# TEMP (workflow test): Android off by default; iOS build + TestFlight + keep artifact.
 # Branch policy:
-#   feature/**, develop, hotfix/**  → build artifacts only
-#   workflow_dispatch deploy_internal → Play Internal (Android, no Codemagic)
-#   main                            → Play Internal, then Play Production
-#   iOS TestFlight                  → Codemagic manual / main until GH mac runner
+#   feature/** + deploy_testflight / deploy_internal → iOS TestFlight allowed
+#   main / force_deploy → full tracks (when android re-enabled)
 #
 # Pipelines ref: AM-Portfolio/am-pipelines@feature/mobile-android-ios-ci
 
@@ -43,11 +42,26 @@ on:
       - ".github/workflows/mobile-ci.yml"
   workflow_dispatch:
     inputs:
-      deploy_internal:
-        description: "Upload Android AAB to Play Internal Testing (GitHub-native, no Codemagic)"
+      run_android:
+        description: "Run Android build / Play jobs (off for iOS-only workflow test)"
         required: false
         type: boolean
         default: false
+      run_ios:
+        description: "Run iOS build / TestFlight jobs"
+        required: false
+        type: boolean
+        default: true
+      deploy_internal:
+        description: "Android Play Internal (when run_android) and/or iOS TestFlight"
+        required: false
+        type: boolean
+        default: true
+      deploy_testflight:
+        description: "Upload iOS IPA to TestFlight (feature branches allowed)"
+        required: false
+        type: boolean
+        default: true
       force_deploy:
         description: "Force Internal+Production deploy (even off main; use carefully)"
         required: false
@@ -74,8 +88,12 @@ jobs:
     name: Resolve branch policy
     runs-on: ubuntu-latest
     outputs:
-      deploy_internal: ${{ steps.p.outputs.deploy_internal }}
-      deploy_production: ${{ steps.p.outputs.deploy_production }}
+      run_android: ${{ steps.p.outputs.run_android }}
+      run_ios: ${{ steps.p.outputs.run_ios }}
+      deploy_android_internal: ${{ steps.p.outputs.deploy_android_internal }}
+      deploy_android_production: ${{ steps.p.outputs.deploy_android_production }}
+      deploy_ios_testflight: ${{ steps.p.outputs.deploy_ios_testflight }}
+      deploy_ios_production: ${{ steps.p.outputs.deploy_ios_production }}
       am_domain: ${{ steps.p.outputs.am_domain }}
       am_env: ${{ steps.p.outputs.am_env }}
     steps:
@@ -83,46 +101,90 @@ jobs:
         shell: bash
         run: |
           REF="${GITHUB_REF_NAME}"
+          EVENT="${{ github.event_name }}"
           FORCE="${{ github.event.inputs.force_deploy }}"
           DISPATCH_INTERNAL="${{ github.event.inputs.deploy_internal }}"
+          DISPATCH_TF="${{ github.event.inputs.deploy_testflight }}"
 
-          DEPLOY_INTERNAL=false
-          DEPLOY_PRODUCTION=false
+          # Defaults for push/PR (no inputs)
+          RUN_ANDROID=false
+          RUN_IOS=true
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            RUN_ANDROID="${{ github.event.inputs.run_android }}"
+            RUN_IOS="${{ github.event.inputs.run_ios }}"
+            [ -z "$RUN_ANDROID" ] && RUN_ANDROID=false
+            [ -z "$RUN_IOS" ] && RUN_IOS=true
+          fi
+
+          DEPLOY_ANDROID_INTERNAL=false
+          DEPLOY_ANDROID_PRODUCTION=false
+          DEPLOY_IOS_TF=false
+          DEPLOY_IOS_PRODUCTION=false
 
           if [ "$REF" = "main" ] || [ "$FORCE" = "true" ]; then
-            DEPLOY_INTERNAL=true
-            DEPLOY_PRODUCTION=true
-          elif [ "$DISPATCH_INTERNAL" = "true" ]; then
-            DEPLOY_INTERNAL=true
-            DEPLOY_PRODUCTION=false
+            DEPLOY_ANDROID_INTERNAL=true
+            DEPLOY_ANDROID_PRODUCTION=true
+            DEPLOY_IOS_TF=true
+            DEPLOY_IOS_PRODUCTION=true
+          else
+            # Feature / develop: Play Internal + TestFlight via dispatch (not App Store)
+            if [ "$DISPATCH_INTERNAL" = "true" ]; then
+              DEPLOY_ANDROID_INTERNAL=true
+              DEPLOY_IOS_TF=true
+            fi
+            if [ "$DISPATCH_TF" = "true" ]; then
+              DEPLOY_IOS_TF=true
+            fi
+          fi
+
+          # Respect platform toggles
+          if [ "$RUN_ANDROID" != "true" ]; then
+            DEPLOY_ANDROID_INTERNAL=false
+            DEPLOY_ANDROID_PRODUCTION=false
+          fi
+          if [ "$RUN_IOS" != "true" ]; then
+            DEPLOY_IOS_TF=false
+            DEPLOY_IOS_PRODUCTION=false
+          fi
+          # Never App Store from non-main unless force
+          if [ "$REF" != "main" ] && [ "$FORCE" != "true" ]; then
+            DEPLOY_IOS_PRODUCTION=false
+            DEPLOY_ANDROID_PRODUCTION=false
           fi
 
           DOMAIN="${{ github.event.inputs.am_domain }}"
           ENV_LABEL="${{ github.event.inputs.am_env }}"
           if [ -z "$DOMAIN" ]; then
-            if [ "$DEPLOY_INTERNAL" = "true" ] || [ "$DEPLOY_PRODUCTION" = "true" ]; then
+            if [ "$DEPLOY_ANDROID_INTERNAL" = "true" ] || [ "$DEPLOY_IOS_TF" = "true" ] || [ "$DEPLOY_ANDROID_PRODUCTION" = "true" ]; then
               DOMAIN="am.asrax.in"
             else
               DOMAIN="am-preprod.asrax.in"
             fi
           fi
           if [ -z "$ENV_LABEL" ]; then
-            if [ "$DEPLOY_INTERNAL" = "true" ] || [ "$DEPLOY_PRODUCTION" = "true" ]; then
+            if [ "$DEPLOY_ANDROID_INTERNAL" = "true" ] || [ "$DEPLOY_IOS_TF" = "true" ] || [ "$DEPLOY_ANDROID_PRODUCTION" = "true" ]; then
               ENV_LABEL="prod"
             else
               ENV_LABEL="preprod"
             fi
           fi
 
-          echo "deploy_internal=$DEPLOY_INTERNAL" >> "$GITHUB_OUTPUT"
-          echo "deploy_production=$DEPLOY_PRODUCTION" >> "$GITHUB_OUTPUT"
-          echo "am_domain=$DOMAIN" >> "$GITHUB_OUTPUT"
-          echo "am_env=$ENV_LABEL" >> "$GITHUB_OUTPUT"
-          echo "Branch=$REF deploy_internal=$DEPLOY_INTERNAL deploy_production=$DEPLOY_PRODUCTION domain=$DOMAIN env=$ENV_LABEL"
+          {
+            echo "run_android=$RUN_ANDROID"
+            echo "run_ios=$RUN_IOS"
+            echo "deploy_android_internal=$DEPLOY_ANDROID_INTERNAL"
+            echo "deploy_android_production=$DEPLOY_ANDROID_PRODUCTION"
+            echo "deploy_ios_testflight=$DEPLOY_IOS_TF"
+            echo "deploy_ios_production=$DEPLOY_IOS_PRODUCTION"
+            echo "am_domain=$DOMAIN"
+            echo "am_env=$ENV_LABEL"
+          } >> "$GITHUB_OUTPUT"
+          echo "Branch=$REF run_android=$RUN_ANDROID run_ios=$RUN_IOS android_internal=$DEPLOY_ANDROID_INTERNAL ios_tf=$DEPLOY_IOS_TF domain=$DOMAIN env=$ENV_LABEL"
 
   validate:
     name: Common Validation
     needs: resolve
+    if: ${{ needs.resolve.outputs.run_android == 'true' || needs.resolve.outputs.run_ios == 'true' }}
     permissions:
       contents: read
     uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-validate.yml@feature/mobile-android-ios-ci
@@ -132,6 +194,7 @@ jobs:
   android:
     name: Android
     needs: [resolve, validate]
+    if: ${{ needs.resolve.outputs.run_android == 'true' }}
     permissions:
       contents: read
     uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@feature/mobile-android-ios-ci
@@ -145,17 +208,16 @@ jobs:
       package_name: com.asrax.aminvestment
       am_domain: ${{ needs.resolve.outputs.am_domain }}
       am_env: ${{ needs.resolve.outputs.am_env }}
-      deploy_internal: ${{ needs.resolve.outputs.deploy_internal == 'true' }}
-      deploy_production: ${{ needs.resolve.outputs.deploy_production == 'true' }}
+      deploy_internal: ${{ needs.resolve.outputs.deploy_android_internal == 'true' }}
+      deploy_production: ${{ needs.resolve.outputs.deploy_android_production == 'true' }}
       gh_env_preprod: android-internal
       gh_env_prod: android-prod
     secrets: inherit
 
-  # iOS: build + artifact only until dedicated GitHub mac runner.
-  # TestFlight remains Codemagic manual / main backup (ios-testflight workflow).
   ios:
     name: iOS
     needs: [resolve, validate]
+    if: ${{ needs.resolve.outputs.run_ios == 'true' }}
     permissions:
       contents: read
     uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-ios.yml@feature/mobile-android-ios-ci
@@ -165,11 +227,12 @@ jobs:
       run_analyze: false
       run_tests: false
       upload_artifact: true
+      keep_artifact: true
       bundle_id: com.asrax.aminvestment
       am_domain: ${{ needs.resolve.outputs.am_domain }}
       am_env: ${{ needs.resolve.outputs.am_env }}
-      deploy_internal: false
-      deploy_production: false
+      deploy_internal: ${{ needs.resolve.outputs.deploy_ios_testflight == 'true' }}
+      deploy_production: ${{ needs.resolve.outputs.deploy_ios_production == 'true' }}
       gh_env_internal: ios-internal
       gh_env_prod: ios-prod
     secrets: inherit
