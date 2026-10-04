@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:am_common/am_common.dart' show EnvDomains, SecureStorageService;
 import 'package:am_market_sdk/market/api.dart';
 import 'package:am_design_system/core/theme/color_extensions.dart';
+import 'package:get_it/get_it.dart';
 import 'typewriter_hint_controller.dart';
 
 /// Where recommendation overlay attaches relative to the text field.
@@ -79,9 +81,27 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
   List<SecurityDocument> _recommendations = [];
   bool _isLoading = false;
 
-  final SecurityExplorerApi _searchApi = SecurityExplorerApi();
   TypewriterHintController? _typewriterController;
   String _currentAnimatedHint = '';
+
+  /// OpenAPI defaultApiClient is http://localhost — always bind to gateway market base.
+  Future<List<SecurityDocument>?> _searchSecurities(String query) async {
+    final client = ApiClient(basePath: EnvDomains.market);
+    try {
+      if (GetIt.I.isRegistered<SecureStorageService>()) {
+        final token = await GetIt.I<SecureStorageService>().getAccessToken();
+        if (token != null && token.isNotEmpty) {
+          client.addDefaultHeader('Authorization', 'Bearer $token');
+        }
+      }
+    } catch (_) {}
+    return SecurityExplorerApi(client).search(
+      query,
+      smartRecommendations: true,
+      category: widget.category,
+      limit: 8,
+    );
+  }
 
   @override
   void initState() {
@@ -190,12 +210,7 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
         if (widget.searchHandler != null) {
           results = await widget.searchHandler!(trimmed);
         } else {
-          results = await _searchApi.search(
-            trimmed,
-            smartRecommendations: true,
-            category: widget.category,
-            limit: 8,
-          );
+          results = await _searchSecurities(trimmed);
         }
 
         if (!mounted) return;
