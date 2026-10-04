@@ -50,6 +50,7 @@ workflows:
 
       - name: Run build_runner code generation across all packages
         script: |
+          set -euo pipefail
           dirs=$(find . -name "pubspec.yaml" -not -path "*/.*" -exec dirname {} \;)
           for dir in $dirs; do
             if grep -q "build_runner" "$dir/pubspec.yaml"; then
@@ -57,6 +58,10 @@ workflows:
               (cd "$dir" && dart run build_runner build --delete-conflicting-outputs)
             fi
           done
+          # Fail closed: Freezed outputs are gitignored; AAB must see generated getters.
+          test -f am_portfolio_ui/lib/features/basket/domain/models/basket_detail.freezed.dart
+          grep -q "coversEtfSymbol" am_portfolio_ui/lib/features/basket/domain/models/basket_detail.freezed.dart
+          echo "Freezed BasketLineDetail getters OK"
 
       - name: Setup Android Keystore & key.properties
         script: |
@@ -109,8 +114,9 @@ workflows:
         BUNDLE_ID: "com.asrax.aminvestment"
         AM_DOMAIN: "am.asrax.in"
         AM_ENV: "prod"
-      groups:
-        - ios_credentials
+      # ios_credentials omitted: incomplete ASC vars + UI ASC publisher caused
+      # "integration requires app_store_connect" / identity validation failures.
+      # Re-add only when KEY_ID + ISSUER_ID + private key are all valid.
     triggering:
       events:
         - push
@@ -146,6 +152,7 @@ workflows:
 
       - name: Run build_runner code generation across all packages
         script: |
+          set -euo pipefail
           dirs=$(find . -name "pubspec.yaml" -not -path "*/.*" -exec dirname {} \;)
           for dir in $dirs; do
             if grep -q "build_runner" "$dir/pubspec.yaml"; then
@@ -153,6 +160,9 @@ workflows:
               (cd "$dir" && dart run build_runner build --delete-conflicting-outputs)
             fi
           done
+          test -f am_portfolio_ui/lib/features/basket/domain/models/basket_detail.freezed.dart
+          grep -q "coversEtfSymbol" am_portfolio_ui/lib/features/basket/domain/models/basket_detail.freezed.dart
+          echo "Freezed BasketLineDetail getters OK"
 
       - name: Install CocoaPods
         script: |
@@ -160,12 +170,19 @@ workflows:
           cd am_app/ios
           pod install
 
+      # Signed IPA only when full ASC key triad is present. Incomplete ios_credentials
+      # (KEY_ID/ISSUER without private key / team) previously triggered identity errors.
+      # Publishing stays email-only — never App Store Connect auth:integration here.
       - name: Setup iOS Signing & Build IPA
         script: |
+          set -euo pipefail
           cd am_app
           rm -rf build 2>/dev/null || true
           BUILD_NUM=${BUILD_NUMBER:-1}
-          if [ -n "${APP_STORE_CONNECT_API_KEY_ID:-}" ] && [ -n "${APP_STORE_CONNECT_ISSUER_ID:-}" ]; then
+          HAS_ASC_KEY_ID="${APP_STORE_CONNECT_KEY_IDENTIFIER:-${APP_STORE_CONNECT_API_KEY_ID:-}}"
+          HAS_ASC_ISSUER="${APP_STORE_CONNECT_ISSUER_ID:-}"
+          HAS_ASC_KEY="${APP_STORE_CONNECT_PRIVATE_KEY:-${CERTIFICATE_PRIVATE_KEY:-}}"
+          if [ -n "$HAS_ASC_KEY_ID" ] && [ -n "$HAS_ASC_ISSUER" ] && [ -n "$HAS_ASC_KEY" ]; then
             echo "Setting up App Store Connect code signing..."
             keychain initialize
             app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
@@ -177,7 +194,7 @@ workflows:
               --dart-define="AM_DOMAIN=${AM_DOMAIN}" \
               --dart-define="AM_ENV=${AM_ENV}"
           else
-            echo "App Store Connect secrets empty — building unsigned iOS app"
+            echo "ASC incomplete or empty — unsigned iOS build (feature CI / no ASC integration)"
             flutter build ios --no-codesign --release \
               --build-name="2.0.0" \
               --build-number="$BUILD_NUM" \
@@ -189,6 +206,8 @@ workflows:
       - am_app/build/ios/ipa/*.ipa
       - am_app/build/ios/iphoneos/*.app
 
+    # Email only. Do not add app_store_connect publishing here — UI Default
+    # Workflow ASC "integration" auth fails yaml validation without integrations.
     publishing:
       email:
         recipients:
