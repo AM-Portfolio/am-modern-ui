@@ -222,11 +222,15 @@ class DocumentApiConfig {
 
 /// Google Sign-In configuration
 class GoogleConfig {
-  const GoogleConfig({required this.webClientId});
+  const GoogleConfig({
+    required this.webClientId,
+    this.iosClientId = '',
+  });
   final String webClientId;
+  final String iosClientId;
 
   /// Check if Google Sign-In is configured
-  bool get isConfigured => webClientId.isNotEmpty;
+  bool get isConfigured => webClientId.isNotEmpty || iosClientId.isNotEmpty;
 }
 
 /// Authentication API configuration

@@ -1,0 +1,410 @@
+# Codemagic — AM Flutter Modern UI (monorepo)
+# Keep ONE Codemagic application (rename in UI to "AM Flutter · Modern UI").
+# NO auto triggers on any branch — GitHub Mobile CI owns Internal → Production.
+# Manual Start build / codemagic-fallback.yml (Environment approval) only.
+
+workflows:
+  # ---------------------------------------------------------------------------
+  # Android CI — AAB only (no Play upload)
+  # ---------------------------------------------------------------------------
+  android-ci-build:
+    name: Android CI · AAB
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      flutter: stable
+      java: 17
+      vars:
+        PACKAGE_NAME: "com.asrax.aminvestment"
+        AM_DOMAIN: "am.asrax.in"
+        AM_ENV: "prod"
+      groups:
+        - android_credentials
+    cache:
+      cache_paths:
+        - ~/.pub-cache
+        - ~/.gradle/caches
+        - $CM_BUILD_DIR/.cm_codegen_cache
+        - $CM_BUILD_DIR/am_portfolio_ui/.dart_tool
+        - $CM_BUILD_DIR/am_common/.dart_tool
+        - $CM_BUILD_DIR/am_auth_ui/.dart_tool
+        - $CM_BUILD_DIR/am_trade_ui/.dart_tool
+        - $CM_BUILD_DIR/am_design_system/.dart_tool
+    # No triggering — manual Start build / codemagic-fallback.yml only
+    scripts:
+      - name: Disable Flutter Swift Package Manager
+        script: |
+          flutter config --no-enable-swift-package-manager
+      - name: Clean build directory
+        script: |
+          rm -rf am_app/build build 2>/dev/null || true
+      - name: Resolve pub dependencies across monorepo
+        script: |
+          set -euo pipefail
+          dirs=$(find . -name "pubspec.yaml" -not -path "*/.*" -exec dirname {} \;)
+          for dir in $dirs; do
+            echo "Running pub get in $dir..."
+            (cd "$dir" && flutter pub get)
+          done
+      - name: Run build_runner code generation across all packages
+        script: |
+          set -euo pipefail
+          chmod +x scripts/ci/cm_codegen.sh
+          scripts/ci/cm_codegen.sh
+      - name: Setup Android Keystore & key.properties
+        script: |
+          KEYSTORE_B64="${ANDROID_KEYSTORE_BASE64:-}"
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "Decoding Keystore..."
+            echo "$KEYSTORE_B64" | base64 -d > am_app/android/app/am_investment_keystore.jks 2>/dev/null \
+              || echo "$KEYSTORE_B64" | base64 --decode > am_app/android/app/am_investment_keystore.jks
+            echo "storePassword=${ANDROID_KEYSTORE_PASSWORD:-}" > am_app/android/key.properties
+            echo "keyPassword=${ANDROID_KEY_PASSWORD:-}" >> am_app/android/key.properties
+            echo "keyAlias=${ANDROID_KEY_ALIAS:-}" >> am_app/android/key.properties
+            echo "storeFile=am_investment_keystore.jks" >> am_app/android/key.properties
+          else
+            echo "Keystore secret empty — building release bundle with default/debug signing"
+          fi
+      - name: Build Android App Bundle (AAB)
+        script: |
+          set -euo pipefail
+          cd am_app
+          rm -rf build 2>/dev/null || true
+          BUILD_NUM=${BUILD_NUMBER:-1}
+          flutter build appbundle --release \
+            --build-name="2.0.0" \
+            --build-number="$BUILD_NUM" \
+            --dart-define="AM_DOMAIN=${AM_DOMAIN}" \
+            --dart-define="AM_ENV=${AM_ENV}"
+    artifacts:
+      - am_app/build/app/outputs/bundle/**/*.aab
+      - am_app/build/app/outputs/apk/**/*.apk
+    publishing:
+      email:
+        recipients:
+          - admin@asrax.in
+        notify:
+          failure: true
+          success: true
+
+  # ---------------------------------------------------------------------------
+  # Android · Play Internal — manual Start build (feature or main)
+  # ---------------------------------------------------------------------------
+  android-play-internal:
+    name: Android · Play Internal
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      flutter: stable
+      java: 17
+      vars:
+        PACKAGE_NAME: "com.asrax.aminvestment"
+        AM_DOMAIN: "am.asrax.in"
+        AM_ENV: "prod"
+        # Safety floor only — build step also queries Play for live max versionCode.
+        # 51 uploaded 2026-10-04 but track assign failed (code below active track).
+        ANDROID_VERSION_CODE_FLOOR: "51"
+      groups:
+        - android_credentials
+    cache:
+      cache_paths:
+        - ~/.pub-cache
+        - ~/.gradle/caches
+        - $CM_BUILD_DIR/.cm_codegen_cache
+        - $CM_BUILD_DIR/am_portfolio_ui/.dart_tool
+        - $CM_BUILD_DIR/am_common/.dart_tool
+        - $CM_BUILD_DIR/am_auth_ui/.dart_tool
+        - $CM_BUILD_DIR/am_trade_ui/.dart_tool
+        - $CM_BUILD_DIR/am_design_system/.dart_tool
+    # No auto triggering — Start new build only (avoids store spam on every push)
+    scripts:
+      - name: Disable Flutter Swift Package Manager
+        script: |
+          flutter config --no-enable-swift-package-manager
+      - name: Clean build directory
+        script: |
+          rm -rf am_app/build build 2>/dev/null || true
+      - name: Resolve pub dependencies across monorepo
+        script: |
+          set -euo pipefail
+          dirs=$(find . -name "pubspec.yaml" -not -path "*/.*" -exec dirname {} \;)
+          for dir in $dirs; do
+            (cd "$dir" && flutter pub get)
+          done
+      - name: Run build_runner code generation across all packages
+        script: |
+          set -euo pipefail
+          chmod +x scripts/ci/cm_codegen.sh
+          scripts/ci/cm_codegen.sh
+      - name: Setup Android Keystore & key.properties
+        script: |
+          set -euo pipefail
+          KEYSTORE_B64="${ANDROID_KEYSTORE_BASE64:-}"
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "ANDROID_KEYSTORE_BASE64 required for Play Internal"
+            exit 1
+          fi
+          echo "$KEYSTORE_B64" | base64 -d > am_app/android/app/am_investment_keystore.jks 2>/dev/null \
+            || echo "$KEYSTORE_B64" | base64 --decode > am_app/android/app/am_investment_keystore.jks
+          echo "storePassword=${ANDROID_KEYSTORE_PASSWORD:-}" > am_app/android/key.properties
+          echo "keyPassword=${ANDROID_KEY_PASSWORD:-}" >> am_app/android/key.properties
+          echo "keyAlias=${ANDROID_KEY_ALIAS:-}" >> am_app/android/key.properties
+          echo "storeFile=am_investment_keystore.jks" >> am_app/android/key.properties
+      - name: Resolve Play versionCode (above live track max)
+        script: |
+          set -euo pipefail
+          python3 scripts/ci/_play_max_version.py | tee /tmp/play_max.txt
+          PLAY_MAX=$(awk -F= '/^PLAY_MAX=/{print $2}' /tmp/play_max.txt | tail -1)
+          PLAY_MAX=${PLAY_MAX:-0}
+          PUBSPEC_BUILD=$(sed -nE 's/^version:[[:space:]]*[^+]+\+([0-9]+).*/\1/p' am_app/pubspec.yaml | head -1)
+          PUBSPEC_BUILD=${PUBSPEC_BUILD:-0}
+          FLOOR=${ANDROID_VERSION_CODE_FLOOR:-0}
+          BUILD_NUM=${BUILD_NUMBER:-1}
+          for c in "$PUBSPEC_BUILD" "$FLOOR" "$PLAY_MAX"; do
+            if [ "$BUILD_NUM" -le "$c" ]; then
+              BUILD_NUM=$((c + 1))
+            fi
+          done
+          echo "$BUILD_NUM" > /tmp/android_version_code.txt
+          echo "Resolved versionCode=$BUILD_NUM (play_max=$PLAY_MAX floor=$FLOOR pubspec=+$PUBSPEC_BUILD CM=${BUILD_NUMBER:-})"
+      - name: Build Android App Bundle (AAB)
+        script: |
+          set -euo pipefail
+          cd am_app
+          rm -rf build 2>/dev/null || true
+          BUILD_NUM=$(cat /tmp/android_version_code.txt)
+          echo "Building AAB with versionCode=$BUILD_NUM"
+          flutter build appbundle --release \
+            --build-name="2.0.0" \
+            --build-number="$BUILD_NUM" \
+            --dart-define="AM_DOMAIN=${AM_DOMAIN}" \
+            --dart-define="AM_ENV=${AM_ENV}"
+    artifacts:
+      - am_app/build/app/outputs/bundle/**/*.aab
+    publishing:
+      email:
+        recipients:
+          - admin@asrax.in
+        notify:
+          failure: true
+          success: true
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: false
+
+  # ---------------------------------------------------------------------------
+  # iOS CI — unsigned (no ASC publish)
+  # ---------------------------------------------------------------------------
+  ios-ci-build:
+    name: iOS CI · unsigned
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      vars:
+        BUNDLE_ID: "com.asrax.aminvestment"
+        AM_DOMAIN: "am.asrax.in"
+        AM_ENV: "prod"
+    cache:
+      cache_paths:
+        - ~/.pub-cache
+        - $HOME/Library/Caches/CocoaPods
+        - $CM_BUILD_DIR/.cm_codegen_cache
+        - $CM_BUILD_DIR/am_portfolio_ui/.dart_tool
+        - $CM_BUILD_DIR/am_common/.dart_tool
+        - $CM_BUILD_DIR/am_auth_ui/.dart_tool
+        - $CM_BUILD_DIR/am_trade_ui/.dart_tool
+        - $CM_BUILD_DIR/am_design_system/.dart_tool
+    # No triggering — manual Start build / codemagic-fallback.yml only
+    scripts:
+      - name: Disable Flutter Swift Package Manager
+        script: |
+          flutter config --no-enable-swift-package-manager
+      - name: Clean build directory and duplicate files
+        script: |
+          rm -rf am_app/build build 2>/dev/null || true
+          find am_app/ios -name "* 2.*" -delete 2>/dev/null || true
+      - name: Resolve pub dependencies across monorepo
+        script: |
+          set -euo pipefail
+          dirs=$(find . -name "pubspec.yaml" -not -path "*/.*" -exec dirname {} \;)
+          for dir in $dirs; do
+            (cd "$dir" && flutter pub get)
+          done
+      - name: Run build_runner code generation across all packages
+        script: |
+          set -euo pipefail
+          chmod +x scripts/ci/cm_codegen.sh
+          scripts/ci/cm_codegen.sh
+      - name: Install CocoaPods
+        script: |
+          (cd am_app && flutter pub get)
+          cd am_app/ios
+          pod install
+      - name: Inject Google Sign-In into Info.plist
+        script: |
+          set -euo pipefail
+          PLIST="am_app/ios/Runner/Info.plist"
+          if [ -z "${GOOGLE_IOS_CLIENT_ID:-}" ]; then
+            echo "GOOGLE_IOS_CLIENT_ID empty — leaving Info.plist placeholders (unsigned CI)"
+            exit 0
+          fi
+          /usr/libexec/PlistBuddy -c "Set :GIDClientID ${GOOGLE_IOS_CLIENT_ID}" "$PLIST" \
+            || /usr/libexec/PlistBuddy -c "Add :GIDClientID string ${GOOGLE_IOS_CLIENT_ID}" "$PLIST"
+          IOS_SCHEME="com.googleusercontent.apps.${GOOGLE_IOS_CLIENT_ID%.apps.googleusercontent.com}"
+          /usr/libexec/PlistBuddy -c "Delete :CFBundleURLTypes" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0 dict" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleTypeRole string Editor" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string ${IOS_SCHEME}" "$PLIST"
+          echo "Injected GIDClientID + URL scheme $IOS_SCHEME"
+      - name: Build unsigned iOS app
+        script: |
+          set -euo pipefail
+          cd am_app
+          rm -rf build 2>/dev/null || true
+          BUILD_NUM=${BUILD_NUMBER:-1}
+          flutter build ios --no-codesign --release \
+            --build-name="2.0.0" \
+            --build-number="$BUILD_NUM" \
+            --dart-define="AM_DOMAIN=${AM_DOMAIN}" \
+            --dart-define="AM_ENV=${AM_ENV}"
+    artifacts:
+      - am_app/build/ios/iphoneos/*.app
+    publishing:
+      email:
+        recipients:
+          - admin@asrax.in
+        notify:
+          failure: true
+          success: true
+
+  # ---------------------------------------------------------------------------
+  # iOS · TestFlight — manual Start build
+  # Uses ios_credentials group (APP_STORE_CONNECT_*), not Team integration name.
+  # ---------------------------------------------------------------------------
+  ios-testflight:
+    name: iOS · TestFlight
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      vars:
+        BUNDLE_ID: "com.asrax.aminvestment"
+        AM_DOMAIN: "am.asrax.in"
+        AM_ENV: "prod"
+        # Floor = last known ASC cfBundleVersion; next IPA uses max(CM, floor+1)
+        ASC_BUILD_FLOOR: "15"
+      groups:
+        - ios_credentials
+    cache:
+      cache_paths:
+        - ~/.pub-cache
+        - $HOME/Library/Caches/CocoaPods
+        - $CM_BUILD_DIR/.cm_codegen_cache
+        - $CM_BUILD_DIR/am_portfolio_ui/.dart_tool
+        - $CM_BUILD_DIR/am_common/.dart_tool
+        - $CM_BUILD_DIR/am_auth_ui/.dart_tool
+        - $CM_BUILD_DIR/am_trade_ui/.dart_tool
+        - $CM_BUILD_DIR/am_design_system/.dart_tool
+    # No auto triggering — Start new build only
+    scripts:
+      - name: Disable Flutter Swift Package Manager
+        script: |
+          flutter config --no-enable-swift-package-manager
+      - name: Clean build directory and duplicate files
+        script: |
+          rm -rf am_app/build build 2>/dev/null || true
+          find am_app/ios -name "* 2.*" -delete 2>/dev/null || true
+      - name: Resolve pub dependencies across monorepo
+        script: |
+          set -euo pipefail
+          dirs=$(find . -name "pubspec.yaml" -not -path "*/.*" -exec dirname {} \;)
+          for dir in $dirs; do
+            (cd "$dir" && flutter pub get)
+          done
+      - name: Run build_runner code generation across all packages
+        script: |
+          set -euo pipefail
+          chmod +x scripts/ci/cm_codegen.sh
+          scripts/ci/cm_codegen.sh
+      - name: Install CocoaPods
+        script: |
+          (cd am_app && flutter pub get)
+          cd am_app/ios
+          pod install
+      - name: Inject Google Sign-In into Info.plist
+        script: |
+          set -euo pipefail
+          PLIST="am_app/ios/Runner/Info.plist"
+          if [ -z "${GOOGLE_IOS_CLIENT_ID:-}" ]; then
+            echo "GOOGLE_IOS_CLIENT_ID missing from ios_credentials — ASC upload will fail"
+            exit 1
+          fi
+          /usr/libexec/PlistBuddy -c "Set :GIDClientID ${GOOGLE_IOS_CLIENT_ID}" "$PLIST" \
+            || /usr/libexec/PlistBuddy -c "Add :GIDClientID string ${GOOGLE_IOS_CLIENT_ID}" "$PLIST"
+          IOS_SCHEME="com.googleusercontent.apps.${GOOGLE_IOS_CLIENT_ID%.apps.googleusercontent.com}"
+          WEB_SCHEME=""
+          if [ -n "${GOOGLE_WEB_CLIENT_ID:-}" ]; then
+            WEB_SCHEME="com.googleusercontent.apps.${GOOGLE_WEB_CLIENT_ID%.apps.googleusercontent.com}"
+          fi
+          /usr/libexec/PlistBuddy -c "Delete :CFBundleURLTypes" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0 dict" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleTypeRole string Editor" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string ${IOS_SCHEME}" "$PLIST"
+          if [ -n "$WEB_SCHEME" ]; then
+            /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:1 string ${WEB_SCHEME}" "$PLIST"
+          fi
+          echo "Injected GIDClientID + URL schemes (ios=$IOS_SCHEME)"
+      - name: Sign and build IPA
+        script: |
+          set -euo pipefail
+          cd am_app
+          rm -rf build 2>/dev/null || true
+          # ASC_MAX verified via API; never reuse ≤ ASC_BUILD_FLOOR
+          FLOOR=${ASC_BUILD_FLOOR:-0}
+          BUILD_NUM=${BUILD_NUMBER:-1}
+          if [ "$BUILD_NUM" -le "$FLOOR" ]; then
+            BUILD_NUM=$((FLOOR + 1))
+          fi
+          echo "CFBundleVersion BUILD_NUM=$BUILD_NUM (floor=$FLOOR CM_BUILD_NUMBER=${BUILD_NUMBER:-})"
+          keychain initialize
+          # Uses APP_STORE_CONNECT_* from ios_credentials group
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+          keychain add-certificates
+          xcode-project use-profiles
+          EXTRA_DEFINES=()
+          if [ -n "${GOOGLE_IOS_CLIENT_ID:-}" ]; then
+            EXTRA_DEFINES+=(--dart-define="AM_GOOGLE_IOS_CLIENT_ID=${GOOGLE_IOS_CLIENT_ID}")
+          fi
+          if [ -n "${GOOGLE_WEB_CLIENT_ID:-}" ]; then
+            EXTRA_DEFINES+=(--dart-define="AM_GOOGLE_CLIENT_ID=${GOOGLE_WEB_CLIENT_ID}")
+          fi
+          flutter build ipa --release \
+            --build-name="2.0.0" \
+            --build-number="$BUILD_NUM" \
+            --dart-define="AM_DOMAIN=${AM_DOMAIN}" \
+            --dart-define="AM_ENV=${AM_ENV}" \
+            "${EXTRA_DEFINES[@]}"
+    artifacts:
+      - am_app/build/ios/ipa/*.ipa
+    publishing:
+      email:
+        recipients:
+          - admin@asrax.in
+        notify:
+          failure: true
+          success: true
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true

@@ -1,0 +1,236 @@
+# Mobile CI — Android + iOS (parallel), GitHub-owned store ladder
+#
+# Branch policy:
+#   feature/** + deploy_internal / deploy_testflight → Play Internal + TestFlight
+#   main → Internal then Production (Play Production + App Store) via GH Environments
+#   Codemagic: no auto builds — use codemagic-fallback.yml (approval) only
+#
+# Pipelines ref: AM-Portfolio/am-pipelines@main
+
+name: Mobile CI
+
+on:
+  push:
+    branches: ["main", "develop", "feature/**", "hotfix/**"]
+    paths:
+      - "am_app/**"
+      - "am_common/**"
+      - "am_design_system/**"
+      - "am_library/**"
+      - "am_auth_ui/**"
+      - "am_dashboard_ui/**"
+      - "am_market/**"
+      - "am_portfolio_ui/**"
+      - "am_trade_ui/**"
+      - "am_paper_ui/**"
+      - "am_user_ui/**"
+      - "am_ai_ui/**"
+      - "am_analysis/**"
+      - "am_diagnostic_ui/**"
+      - "am_doc_intelligence_ui/**"
+      - "am_subscription_ui/**"
+      - "am_news_ui/**"
+      - ".github/workflows/mobile-ci.yml"
+  pull_request:
+    branches: ["main", "develop"]
+    paths:
+      - "am_app/**"
+      - "am_common/**"
+      - "am_design_system/**"
+      - "am_library/**"
+      - "am_auth_ui/**"
+      - ".github/workflows/mobile-ci.yml"
+  workflow_dispatch:
+    inputs:
+      run_android:
+        description: "Run Android build / Play jobs"
+        required: false
+        type: boolean
+        default: true
+      run_ios:
+        description: "Run iOS build / TestFlight / App Store jobs"
+        required: false
+        type: boolean
+        default: true
+      deploy_internal:
+        description: "Play Internal (Android) and/or TestFlight (iOS)"
+        required: false
+        type: boolean
+        default: false
+      deploy_testflight:
+        description: "Upload iOS IPA to TestFlight (feature branches allowed)"
+        required: false
+        type: boolean
+        default: false
+      force_deploy:
+        description: "Force Internal+Production (even off main; use carefully)"
+        required: false
+        type: boolean
+        default: false
+      am_domain:
+        description: "Override AM_DOMAIN dart-define (empty = prod default when deploying)"
+        required: false
+        type: string
+        default: ""
+      am_env:
+        description: "Override AM_ENV dart-define"
+        required: false
+        type: choice
+        options:
+          - ""
+          - dev
+          - preprod
+          - prod
+        default: ""
+
+jobs:
+  resolve:
+    name: Resolve branch policy
+    runs-on: ubuntu-latest
+    outputs:
+      run_android: ${{ steps.p.outputs.run_android }}
+      run_ios: ${{ steps.p.outputs.run_ios }}
+      deploy_android_internal: ${{ steps.p.outputs.deploy_android_internal }}
+      deploy_android_production: ${{ steps.p.outputs.deploy_android_production }}
+      deploy_ios_testflight: ${{ steps.p.outputs.deploy_ios_testflight }}
+      deploy_ios_production: ${{ steps.p.outputs.deploy_ios_production }}
+      am_domain: ${{ steps.p.outputs.am_domain }}
+      am_env: ${{ steps.p.outputs.am_env }}
+    steps:
+      - id: p
+        shell: bash
+        run: |
+          REF="${GITHUB_REF_NAME}"
+          EVENT="${{ github.event_name }}"
+          FORCE="${{ github.event.inputs.force_deploy }}"
+          DISPATCH_INTERNAL="${{ github.event.inputs.deploy_internal }}"
+          DISPATCH_TF="${{ github.event.inputs.deploy_testflight }}"
+
+          RUN_ANDROID=true
+          RUN_IOS=true
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            RUN_ANDROID="${{ github.event.inputs.run_android }}"
+            RUN_IOS="${{ github.event.inputs.run_ios }}"
+            [ -z "$RUN_ANDROID" ] && RUN_ANDROID=true
+            [ -z "$RUN_IOS" ] && RUN_IOS=true
+          fi
+
+          DEPLOY_ANDROID_INTERNAL=false
+          DEPLOY_ANDROID_PRODUCTION=false
+          DEPLOY_IOS_TF=false
+          DEPLOY_IOS_PRODUCTION=false
+
+          if [ "$REF" = "main" ] || [ "$FORCE" = "true" ]; then
+            # Full ladder: Internal → Production (Play + App Store)
+            DEPLOY_ANDROID_INTERNAL=true
+            DEPLOY_ANDROID_PRODUCTION=true
+            DEPLOY_IOS_TF=true
+            DEPLOY_IOS_PRODUCTION=true
+          else
+            # Feature / develop: Internal + TestFlight only
+            if [ "$DISPATCH_INTERNAL" = "true" ]; then
+              DEPLOY_ANDROID_INTERNAL=true
+              DEPLOY_IOS_TF=true
+            fi
+            if [ "$DISPATCH_TF" = "true" ]; then
+              DEPLOY_IOS_TF=true
+            fi
+          fi
+
+          if [ "$RUN_ANDROID" != "true" ]; then
+            DEPLOY_ANDROID_INTERNAL=false
+            DEPLOY_ANDROID_PRODUCTION=false
+          fi
+          if [ "$RUN_IOS" != "true" ]; then
+            DEPLOY_IOS_TF=false
+            DEPLOY_IOS_PRODUCTION=false
+          fi
+          if [ "$REF" != "main" ] && [ "$FORCE" != "true" ]; then
+            DEPLOY_IOS_PRODUCTION=false
+            DEPLOY_ANDROID_PRODUCTION=false
+          fi
+
+          DOMAIN="${{ github.event.inputs.am_domain }}"
+          ENV_LABEL="${{ github.event.inputs.am_env }}"
+          if [ -z "$DOMAIN" ]; then
+            if [ "$DEPLOY_ANDROID_INTERNAL" = "true" ] || [ "$DEPLOY_IOS_TF" = "true" ] || [ "$DEPLOY_ANDROID_PRODUCTION" = "true" ]; then
+              DOMAIN="am.asrax.in"
+            else
+              DOMAIN="am-preprod.asrax.in"
+            fi
+          fi
+          if [ -z "$ENV_LABEL" ]; then
+            if [ "$DEPLOY_ANDROID_INTERNAL" = "true" ] || [ "$DEPLOY_IOS_TF" = "true" ] || [ "$DEPLOY_ANDROID_PRODUCTION" = "true" ]; then
+              ENV_LABEL="prod"
+            else
+              ENV_LABEL="preprod"
+            fi
+          fi
+
+          {
+            echo "run_android=$RUN_ANDROID"
+            echo "run_ios=$RUN_IOS"
+            echo "deploy_android_internal=$DEPLOY_ANDROID_INTERNAL"
+            echo "deploy_android_production=$DEPLOY_ANDROID_PRODUCTION"
+            echo "deploy_ios_testflight=$DEPLOY_IOS_TF"
+            echo "deploy_ios_production=$DEPLOY_IOS_PRODUCTION"
+            echo "am_domain=$DOMAIN"
+            echo "am_env=$ENV_LABEL"
+          } >> "$GITHUB_OUTPUT"
+          echo "Branch=$REF run_android=$RUN_ANDROID run_ios=$RUN_IOS android_internal=$DEPLOY_ANDROID_INTERNAL android_prod=$DEPLOY_ANDROID_PRODUCTION ios_tf=$DEPLOY_IOS_TF ios_prod=$DEPLOY_IOS_PRODUCTION domain=$DOMAIN env=$ENV_LABEL"
+
+  validate:
+    name: Common Validation
+    needs: resolve
+    if: ${{ needs.resolve.outputs.run_android == 'true' || needs.resolve.outputs.run_ios == 'true' }}
+    permissions:
+      contents: read
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-validate.yml@main
+    with:
+      working_directory: am_app
+
+  android:
+    name: Android
+    needs: [resolve, validate]
+    if: ${{ needs.resolve.outputs.run_android == 'true' }}
+    permissions:
+      contents: read
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@main
+    with:
+      working_directory: am_app
+      build_mode: release
+      artifact_type: appbundle
+      run_analyze: false
+      run_tests: false
+      upload_artifact: true
+      package_name: com.asrax.aminvestment
+      am_domain: ${{ needs.resolve.outputs.am_domain }}
+      am_env: ${{ needs.resolve.outputs.am_env }}
+      deploy_internal: ${{ needs.resolve.outputs.deploy_android_internal == 'true' }}
+      deploy_production: ${{ needs.resolve.outputs.deploy_android_production == 'true' }}
+      gh_env_preprod: android-internal
+      gh_env_prod: android-prod
+    secrets: inherit
+
+  ios:
+    name: iOS
+    needs: [resolve, validate]
+    if: ${{ needs.resolve.outputs.run_ios == 'true' }}
+    permissions:
+      contents: read
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-ios.yml@main
+    with:
+      working_directory: am_app
+      build_mode: release
+      run_analyze: false
+      run_tests: false
+      upload_artifact: true
+      keep_artifact: true
+      bundle_id: com.asrax.aminvestment
+      am_domain: ${{ needs.resolve.outputs.am_domain }}
+      am_env: ${{ needs.resolve.outputs.am_env }}
+      deploy_internal: ${{ needs.resolve.outputs.deploy_ios_testflight == 'true' }}
+      deploy_production: ${{ needs.resolve.outputs.deploy_ios_production == 'true' }}
+      gh_env_internal: ios-internal
+      gh_env_prod: ios-prod
+    secrets: inherit
