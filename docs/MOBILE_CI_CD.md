@@ -22,8 +22,10 @@ Same GitHub Mobile CI binary promotes Internal → final stores.
 | Stage | Android | iOS | When | Environment |
 |-------|---------|-----|------|-------------|
 | Build | AAB | IPA + `ios-keep-<sha>` | when platform enabled | — |
-| Internal | Play **internal** | **TestFlight** | feature dispatch; always on `main` | `android-internal` / `ios-internal` |
-| Production | Play **production** | **App Store** | **`main` only** (or `force_deploy`) after Internal succeeds | `android-prod` / `ios-prod` (required reviewers) |
+| Internal | Play **internal** (upload AAB) | **TestFlight** | feature dispatch; always on `main` | `android-internal` / `ios-internal` |
+| Production | Play **production** (**promote** same `versionCode`; do not re-upload AAB) | **App Store** | **`main` only** (or `force_deploy`) after Internal succeeds | `android-prod` / `ios-prod` (required reviewers) |
+
+**Android:** Internal uploads the AAB once; Production assigns that `versionCode` to the production track via Play API promote. Re-uploading the same AAB fails with “Version code N has already been used.”
 
 **Operator:** confirm Internal on device / TestFlight before approving `*-prod`.
 
