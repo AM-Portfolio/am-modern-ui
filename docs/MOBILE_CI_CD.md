@@ -90,8 +90,10 @@ Environments (Settings → Environments):
 ### iOS (GitHub TestFlight / App Store)
 | Secret | Purpose |
 |--------|---------|
-| `APP_STORE_CONNECT_API_KEY_*` | ASC upload |
-| `IOS_CERTIFICATE_*` / `IOS_PROVISIONING_PROFILE_BASE64` / `IOS_KEYCHAIN_PASSWORD` | Signing |
+| `APP_STORE_CONNECT_API_KEY_*` | ASC upload **and** Codemagic-parity signing fetch when p12/profile unset |
+| `IOS_CERTIFICATE_*` / `IOS_PROVISIONING_PROFILE_BASE64` / `IOS_KEYCHAIN_PASSWORD` | Optional explicit Distribution signing |
+
+On `main`, TestFlight always runs and **requires a signed IPA**. Feature-branch green runs often only **Build** (TestFlight skipped). Prefer ASC keys (already used by Codemagic); or seed p12+profile via `scripts/ci/set-mobile-secrets.sh`.
 
 ### Codemagic fallback
 | Secret | Purpose |
