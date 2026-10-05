@@ -57,6 +57,7 @@ final _tradeRemoteDataSourceProvider =
     apiClient: apiClient,
     tradeConfig: tradeConfig,
     portfolioConfig: apiConfig.api.portfolio,
+    useMockData: apiConfig.api.useMockData,
   );
 });
 
