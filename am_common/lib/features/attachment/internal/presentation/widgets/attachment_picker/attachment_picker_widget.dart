@@ -1,5 +1,6 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -210,7 +211,21 @@ class _AttachmentPickerWidgetState
     ),
   );
 
+  bool _isPermissionDenied(Object e) {
+    if (e is PlatformException) {
+      final code = e.code.toLowerCase();
+      final msg = (e.message ?? '').toLowerCase();
+      return code.contains('denied') ||
+          code.contains('access') ||
+          msg.contains('denied') ||
+          msg.contains('permission');
+    }
+    final s = e.toString().toLowerCase();
+    return s.contains('denied') || s.contains('permission');
+  }
+
   Future<void> _pickAndUploadFile() async {
+    // Picker opens only after user tap — never at launch
     try {
       String? filePath;
 
@@ -276,9 +291,12 @@ class _AttachmentPickerWidgetState
       }
     } catch (e) {
       if (mounted) {
+        final msg = _isPermissionDenied(e)
+            ? 'Access is optional. Enable it in Settings if you want to attach a file.'
+            : 'Could not attach that file. Try again or skip.';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Error: ${e.toString()}'),
+            content: Text(msg),
             backgroundColor: Theme.of(context).colorScheme.error,
             duration: const Duration(seconds: 3),
           ),

@@ -44,7 +44,7 @@ dependencies:
   intl: ^0.20.2
   image_picker: ^1.2.1
   # 11.5.1 required for Flutter stable CI (TextInputClient.onFocusReceived).
-  flutter_quill: 11.5.1
+  flutter_quill: 11.6.0
   flutter_localizations:
     sdk: flutter
 

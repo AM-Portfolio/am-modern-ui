@@ -42,8 +42,7 @@ GoRouter createAppRouter({
       final location = AppRoutes.normalizePath(state.matchedLocation);
       final isAuthenticated = authState is Authenticated;
       final authPending = authState is AuthInitial ||
-          authState is AuthLoading ||
-          authState is AuthRestoreFailed;
+          authState is AuthLoading;
 
       if (!kIsWeb &&
           isAuthenticated &&

@@ -1,5 +1,6 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -289,7 +290,21 @@ class _AttachmentPickerMobileState
     ),
   );
 
+  bool _isPermissionDenied(Object e) {
+    if (e is PlatformException) {
+      final code = e.code.toLowerCase();
+      final msg = (e.message ?? '').toLowerCase();
+      return code.contains('denied') ||
+          code.contains('access') ||
+          msg.contains('denied') ||
+          msg.contains('permission');
+    }
+    final s = e.toString().toLowerCase();
+    return s.contains('denied') || s.contains('permission');
+  }
+
   Future<void> _pickFromGallery() async {
+    // Only runs after user taps — never at launch
     try {
       final picker = ImagePicker();
       final image = await picker.pickImage(
@@ -309,7 +324,11 @@ class _AttachmentPickerMobileState
 
       await _handlePickedFile(pending);
     } catch (e) {
-      _showError('Failed to pick image: $e');
+      _showError(
+        _isPermissionDenied(e)
+            ? 'Photo access is optional. Enable it in Settings if you want to attach a photo.'
+            : 'Failed to pick image. You can try again or skip.',
+      );
     }
   }
 
@@ -346,7 +365,11 @@ class _AttachmentPickerMobileState
 
       await _handlePickedFile(pending);
     } catch (e) {
-      _showError('Failed to pick file: $e');
+      _showError(
+        _isPermissionDenied(e)
+            ? 'File access is optional. Enable it in Settings if you want to attach a file.'
+            : 'Failed to pick file. You can try again or skip.',
+      );
     }
   }
 

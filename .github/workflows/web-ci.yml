@@ -1,0 +1,143 @@
+# Web CI/CD Pipeline — am-modern-ui (Contabo only)
+#
+# Renamed from unified-ci.yml. Android/iOS live in mobile-ci.yml.
+# Web Contabo path unchanged: Build & GitOps via central-build-publish-contabo.
+#
+# Smart path routing (web only):
+#   - Web files / shared Dart changed --> Web build
+#   - docs/README only               --> Nothing builds (fast skip)
+#
+# Security: TruffleHog secrets scan gates the web build.
+
+name: Web CI/CD
+
+on:
+  push:
+    branches: ["main", "develop", "feature/**", "hotfix/**", "fix/**"]
+    paths-ignore:
+      - "docs/**"
+      - "README.md"
+      - "ARCHITECTURE.md"
+      - "BUILD_INTEGRATION_PLAN.md"
+      - "DOCKER_README.md"
+      - ".env.example"
+      - ".env.preprod.example"
+  pull_request:
+    branches: ["main", "develop"]
+  workflow_dispatch:
+    inputs:
+      force_web:
+        description: "Force web build even if no web files changed"
+        required: false
+        type: boolean
+        default: false
+      target_env:
+        description: "Environment to Deploy to (Select 'none' just to build/test)"
+        required: true
+        type: choice
+        options:
+          - none
+          - dev
+          - preprod
+          - prod
+        default: 'none'
+      deploy_preprod_helm:
+        description: "Helm roll to Kind preprod (image_name-preprod). Feature branches always; on main needs force or gitops off."
+        required: false
+        type: boolean
+        default: true
+      gitops_write_preprod:
+        description: "On main: auto-commit image tag to am-gitops (Argo). Preferred for main."
+        required: false
+        type: boolean
+        default: true
+      force_preprod_helm:
+        description: "Helm on main even when gitops is on / Argo Auto-Sync (may fight selfHeal)."
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  detect-changes:
+    name: Detect Changed Paths
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      web: ${{ steps.filter.outputs.web }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect changed paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            web:
+              - 'am_app/Dockerfile'
+              - 'am_app/docker-entrypoint.sh'
+              - 'am_app/nginx.conf'
+              - 'am_app/nginx-docker.conf'
+              - 'am_app/nginx.profiles/**'
+              - 'am_app/helm/**'
+              - 'am_app/web/**'
+              - 'am_app/assets/**'
+              - 'am_app/pubspec.yaml'
+              - 'am_app/pubspec.lock'
+              - 'am_app/lib/**'
+              - 'am_app/analysis_options.yaml'
+              - 'am_library/**'
+              - 'am_common/**'
+              - 'am_design_system/**'
+              - 'am_analysis/**'
+              - 'am_market/**'
+              - 'am_portfolio_ui/**'
+              - 'am_trade_ui/**'
+              - 'am_auth_ui/**'
+              - 'am_dashboard_ui/**'
+              - 'am_ai_ui/**'
+              - 'am_subscription_ui/**'
+              - 'am_user_ui/**'
+              - 'am_diagnostic_ui/**'
+              - 'am_doc_intelligence_ui/**'
+              - 'am_news_ui/**'
+              - '.github/workflows/web-ci.yml'
+
+  security-scan:
+    name: Security Scan (Secrets)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog Secrets Scan
+        uses: trufflesecurity/trufflehog@v3.94.3
+        with:
+          path: ./
+          extra_args: --only-verified
+
+  web-build-gitops:
+    name: Build & GitOps
+    needs: [detect-changes, security-scan]
+    if: |
+      always() &&
+      needs.security-scan.result == 'success' &&
+      (needs.detect-changes.outputs.web == 'true' || inputs.force_web == true)
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-build-publish-contabo.yml@main
+    with:
+      language: "flutter"
+      working_directory: "am_app"
+      build_context: ".."
+      image_name: "am-modern-ui"
+      skip_security_scan: true
+      pipelines_ref: "main"
+    secrets: inherit

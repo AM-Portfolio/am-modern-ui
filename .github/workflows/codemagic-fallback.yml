@@ -1,0 +1,72 @@
+# Codemagic fallback — Internal tracks only (Play Internal / TestFlight).
+# Final Play Production / App Store stay on GitHub Mobile CI (main ladder).
+#
+# Operator TODO before approving Environment "codemagic-fallback":
+#   1. Confirm GitHub Mobile CI cannot cover this case (mac/signing/outage).
+#   2. Confirm branch + Play versionCode / ASC build floor will not collide.
+#   3. Approver reviews this Environment gate.
+#   4. After start: verify Play Internal or TestFlight in store consoles.
+
+name: Codemagic fallback
+
+on:
+  workflow_dispatch:
+    inputs:
+      workflow_id:
+        description: Codemagic file workflow to start
+        type: choice
+        options:
+          - android-play-internal
+          - ios-testflight
+        default: ios-testflight
+      branch:
+        description: Git branch for Codemagic to build
+        type: string
+        default: main
+
+jobs:
+  start-codemagic:
+    name: Approve and start Codemagic build
+    runs-on: ubuntu-latest
+    environment: codemagic-fallback
+    permissions:
+      contents: read
+    steps:
+      - name: Operator checklist
+        run: |
+          cat <<'EOF'
+          Before this job runs, Environment "codemagic-fallback" must be approved.
+          Checklist:
+            1. GH Mobile CI cannot cover this case
+            2. Branch + version floors OK
+            3. Approver reviewed
+            4. Verify store after CM finishes
+          EOF
+          echo "workflow_id=${{ inputs.workflow_id }} branch=${{ inputs.branch }}"
+
+      - name: Start Codemagic build
+        env:
+          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
+          CODEMAGIC_APP_ID: ${{ secrets.CODEMAGIC_APP_ID }}
+          WORKFLOW_ID: ${{ inputs.workflow_id }}
+          BRANCH: ${{ inputs.branch }}
+        run: |
+          set -euo pipefail
+          APP_ID="${CODEMAGIC_APP_ID:-6ac22a8f93e6cd231a7ad1d6}"
+          if [ -z "${CODEMAGIC_API_TOKEN:-}" ]; then
+            echo "::error::CODEMAGIC_API_TOKEN secret required"
+            exit 1
+          fi
+          RESP=$(curl -fsSL -X POST "https://api.codemagic.io/builds" \
+            -H "Content-Type: application/json" \
+            -H "x-auth-token: ${CODEMAGIC_API_TOKEN}" \
+            -d "{\"appId\":\"${APP_ID}\",\"workflowId\":\"${WORKFLOW_ID}\",\"branch\":\"${BRANCH}\"}")
+          echo "$RESP" | tee /tmp/cm-start.json
+          BUILD_ID=$(python3 -c "import json; print(json.load(open('/tmp/cm-start.json')).get('buildId',''))")
+          if [ -z "$BUILD_ID" ]; then
+            echo "::error::No buildId in Codemagic response"
+            exit 1
+          fi
+          echo "Started Codemagic build: https://codemagic.io/app/${APP_ID}/build/${BUILD_ID}"
+          echo "build_id=$BUILD_ID" >> "$GITHUB_STEP_SUMMARY"
+          echo "url=https://codemagic.io/app/${APP_ID}/build/${BUILD_ID}" >> "$GITHUB_STEP_SUMMARY"

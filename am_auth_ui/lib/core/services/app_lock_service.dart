@@ -59,14 +59,17 @@ class AppLockService {
         return true;
       }
 
+      // biometricOnly: false → Face ID / Touch ID, or device passcode if biometrics unavailable/denied
       return await _localAuth.authenticate(
-        localizedReason: 'Unlock AM to continue',
+        localizedReason:
+            'Unlock Am App with Face ID, Touch ID, or your device passcode',
         options: const AuthenticationOptions(
           stickyAuth: true,
           biometricOnly: false,
         ),
       );
-    } catch (e) {
+    } catch (_) {
+      // Soft-fail: caller shows retry / password sign-in; never crash
       return false;
     }
   }
