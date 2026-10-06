@@ -38,6 +38,7 @@ class _SidebarFloatingActionMenuState extends State<SidebarFloatingActionMenu>
   final _layerLink = LayerLink();
   bool _expanded = false;
   late final AnimationController _controller;
+  bool _isActuallyCompact = false;
 
   @override
   void initState() {
@@ -89,14 +90,20 @@ class _SidebarFloatingActionMenuState extends State<SidebarFloatingActionMenu>
         ),
         CompositedTransformFollower(
           link: _layerLink,
-          targetAnchor: isUp ? Alignment.topCenter : Alignment.bottomCenter,
-          followerAnchor: isUp ? Alignment.bottomCenter : Alignment.topCenter,
+          targetAnchor: _isActuallyCompact
+              ? (isUp ? Alignment.topLeft : Alignment.bottomRight)
+              : (isUp ? Alignment.topCenter : Alignment.bottomCenter),
+          followerAnchor: _isActuallyCompact
+              ? (isUp ? Alignment.bottomLeft : Alignment.topRight)
+              : (isUp ? Alignment.bottomCenter : Alignment.topCenter),
           offset: isUp ? const Offset(0, -12) : const Offset(0, 12),
           child: Material(
             type: MaterialType.transparency,
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: _isActuallyCompact
+                  ? (isUp ? CrossAxisAlignment.start : CrossAxisAlignment.end)
+                  : CrossAxisAlignment.center,
               children: [
                 // Connector line (between trigger and first item)
                 if (!isUp)
@@ -106,7 +113,7 @@ class _SidebarFloatingActionMenuState extends State<SidebarFloatingActionMenu>
                       height: 12,
                       width: 1.5,
                       color: colors.border.withValues(alpha: 0.4),
-                      margin: const EdgeInsets.only(bottom: 6.0),
+                      margin: EdgeInsets.only(bottom: 6.0, right: _isActuallyCompact ? 19.0 : 0.0),
                     ),
                   ),
 
@@ -150,7 +157,7 @@ class _SidebarFloatingActionMenuState extends State<SidebarFloatingActionMenu>
                       height: 12,
                       width: 1.5,
                       color: colors.border.withValues(alpha: 0.4),
-                      margin: const EdgeInsets.only(top: 6.0),
+                      margin: EdgeInsets.only(top: 6.0, left: _isActuallyCompact ? 19.0 : 0.0),
                     ),
                   ),
               ],
@@ -163,13 +170,18 @@ class _SidebarFloatingActionMenuState extends State<SidebarFloatingActionMenu>
 
   @override
   Widget build(BuildContext context) {
-    return CompositedTransformTarget(
-      link: _layerLink,
-      child: OverlayPortal(
-        controller: _overlayController,
-        overlayChildBuilder: _buildOverlay,
-        child: widget.compact ? _buildCompactTrigger() : _buildFullPillTrigger(),
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        _isActuallyCompact = widget.compact || constraints.maxWidth < 120;
+        return CompositedTransformTarget(
+          link: _layerLink,
+          child: OverlayPortal(
+            controller: _overlayController,
+            overlayChildBuilder: _buildOverlay,
+            child: _isActuallyCompact ? _buildCompactTrigger() : _buildFullPillTrigger(),
+          ),
+        );
+      },
     );
   }
 
@@ -368,3 +380,5 @@ class _FloatingMenuPill extends StatelessWidget {
     );
   }
 }
+
+
