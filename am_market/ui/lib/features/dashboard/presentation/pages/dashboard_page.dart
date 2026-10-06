@@ -264,14 +264,19 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         isIpoEnabled: isIpoEnabled,
       );
       final itemsChanged = _hasItemsChanged(newItems);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          if (itemsChanged) {
+      if (itemsChanged) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
             _swipeController.updateItems(newItems);
+            _syncTabFromUrl(isMobile: isMobile);
           }
-          _syncTabFromUrl(isMobile: isMobile);
-        }
-      });
+        });
+      }
+
+      final activeIndex = _swipeController.currentIndex.clamp(
+        0,
+        _swipeController.items.isEmpty ? 0 : _swipeController.items.length - 1,
+      );
 
       return UnifiedSidebarScaffold(
         module: ModuleType.market,
@@ -289,14 +294,17 @@ class _MarketContentState extends ConsumerState<MarketContent> {
           includeAllIndices: isMobile,
           isIpoEnabled: isIpoEnabled,
         ),
-        body: SwipeablePageView(
-          key: const PageStorageKey('market_page_info'),
-          // Always horizontal: mouse wheel / vertical drag scrolls content only.
-          // Left/right swipe (or sidebar/pills) changes market sections.
-          scrollDirection: Axis.horizontal,
-          controller: _swipeController,
-          showIndicator: false,
-        ),
+        body: isMobile
+            ? IndexedStack(
+                index: activeIndex,
+                children: _swipeController.items.map((item) => item.page).toList(),
+              )
+            : SwipeablePageView(
+                key: const PageStorageKey('market_page_info'),
+                scrollDirection: Axis.horizontal,
+                controller: _swipeController,
+                showIndicator: false,
+              ),
       );
     },
     );
