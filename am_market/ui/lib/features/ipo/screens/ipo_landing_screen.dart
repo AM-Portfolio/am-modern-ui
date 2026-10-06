@@ -240,10 +240,10 @@ class IpoLandingScreen extends ConsumerWidget {
       height: 38,
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: isDark ? IpoColors.darkCardBg.withValues(alpha: 0.6) : context.surfaceColor,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isDark ? IpoColors.darkCardBorder : context.borderColor,
+          color: context.borderColor,
           width: 1,
         ),
       ),
@@ -277,10 +277,10 @@ class _KpiSkeleton extends StatelessWidget {
     return Container(
       height: 80,
       decoration: BoxDecoration(
-        color: isDark ? IpoColors.darkCardBg.withValues(alpha: 0.4) : context.surfaceColor,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? IpoColors.darkCardBorder : context.borderColor,
+          color: context.borderColor,
         ),
       ),
       child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),

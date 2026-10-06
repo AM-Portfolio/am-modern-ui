@@ -102,6 +102,7 @@ class IpoDetailsScreen extends ConsumerWidget {
                         Expanded(
                           child: IpoSubscriptionStatusCard(
                             totalSubscription: ipo.totalSubscription,
+                            eligibleInvestors: ipo.eligibleInvestors ?? const [],
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -128,6 +129,7 @@ class IpoDetailsScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
                   IpoSubscriptionStatusCard(
                     totalSubscription: ipo.totalSubscription,
+                    eligibleInvestors: ipo.eligibleInvestors ?? const [],
                   ),
                   const SizedBox(height: 16),
                   IpoEligibleInvestorsCard(

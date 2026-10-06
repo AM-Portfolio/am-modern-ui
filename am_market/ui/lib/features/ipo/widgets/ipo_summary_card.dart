@@ -20,15 +20,15 @@ class IpoSummaryCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: isDark ? IpoColors.darkCardBg.withValues(alpha: 0.7) : context.surfaceColor,
+          color: context.surfaceColor,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isDark ? IpoColors.darkCardBorder : context.borderColor,
+            color: context.borderColor,
             width: 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+              color: context.colors.textPrimary.withValues(alpha: isDark ? 0.25 : 0.04),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -141,15 +141,15 @@ class IpoSummaryCard extends StatelessWidget {
             InkWell(
               onTap: () => _openDetails(context),
               borderRadius: BorderRadius.circular(6),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(vertical: 2),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       Icons.assignment_outlined,
                       size: 15,
-                      color: IpoColors.accentCyan,
+                      color: ModuleColors.market,
                     ),
                     SizedBox(width: 6),
                     Text(
@@ -157,14 +157,14 @@ class IpoSummaryCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: IpoColors.accentCyan,
+                        color: ModuleColors.market,
                       ),
                     ),
                     SizedBox(width: 4),
                     Icon(
                       Icons.arrow_forward_rounded,
                       size: 14,
-                      color: IpoColors.accentCyan,
+                      color: ModuleColors.market,
                     ),
                   ],
                 ),
@@ -213,11 +213,11 @@ class IpoSummaryCard extends StatelessWidget {
 
     Color fg;
     if (status == 'OPEN') {
-      fg = IpoColors.statusOpen;
+      fg = context.colors.statusSuccess;
     } else if (status == 'UPCOMING') {
-      fg = IpoColors.statusUpcoming;
+      fg = context.colors.statusWarning;
     } else {
-      fg = IpoColors.statusClosed;
+      fg = context.colors.statusError;
     }
 
     final bg = fg.withValues(alpha: isDark ? 0.18 : 0.12);

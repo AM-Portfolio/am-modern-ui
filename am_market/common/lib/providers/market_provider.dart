@@ -9,7 +9,6 @@ import '../models/seasonality_model.dart';
 import '../services/api_service.dart';
 import '../data/repositories/market_data_repository.dart';
 
-
 import 'package:am_common/core/services/price_service.dart';
 import 'package:am_common/core/models/price_update_model.dart';
 
@@ -24,12 +23,13 @@ class MarketProvider with ChangeNotifier {
   List<StockIndicesMarketData> _allIndicesData = []; // Indian Market Overview
   List<StockIndicesMarketData> _globalIndicesData = [];
   IndicesRegion _indicesRegion = IndicesRegion.indian;
-  
+
   String? _selectedIndex;
   bool _isLoading = false;
   String? _error;
   bool _forceRefresh = false; // "Force Refresh" toggle state
-  bool _indexSymbol = true; // True = fetch index data only, False = expand to constituents
+  bool _indexSymbol =
+      true; // True = fetch index data only, False = expand to constituents
 
   // Theme Management removed - moved to am_common_ui ThemeCubit
 
@@ -48,18 +48,19 @@ class MarketProvider with ChangeNotifier {
     }
     _priceUpdateSub?.cancel();
     _priceService = service;
-    CommonLogger.info("PriceService delegated to MarketProvider", tag: "MarketProvider");
-    
+    CommonLogger.info("PriceService delegated to MarketProvider",
+        tag: "MarketProvider");
+
     _syncWithPriceService();
-    
+
     _priceUpdateSub = _priceService!.updateStream.listen((update) {
-       if (update.quotes != null) {
-          update.quotes!.forEach((symbol, quote) {
-             final data = quote.toJson();
-             data['symbol'] = symbol;
-             _processSingleUpdate(symbol, data);
-          });
-       }
+      if (update.quotes != null) {
+        update.quotes!.forEach((symbol, quote) {
+          final data = quote.toJson();
+          data['symbol'] = symbol;
+          _processSingleUpdate(symbol, data);
+        });
+      }
     });
 
     unawaited(_resubscribeActiveSymbols());
@@ -145,7 +146,7 @@ class MarketProvider with ChangeNotifier {
   // Legacy Store Support (if needed, or just defer to PriceService)
   // We keep _livePrices as a local cache only if PriceService is null (fallback)
   // But ideally we read from PriceService.
-  
+
   // Stream is now from PriceService
   Stream<Map<String, dynamic>> get livePriceStream {
     if (_priceService != null) {
@@ -155,30 +156,33 @@ class MarketProvider with ChangeNotifier {
     }
     return _livePriceController.stream;
   }
-  
+
   // Internal Fallback State (initialized if PriceService unavailable)
-  final Map<String, Map<String, dynamic>> _internalLivePrices = {}; 
-  final StreamController<Map<String, dynamic>> _livePriceController = StreamController<Map<String, dynamic>>.broadcast();
+  final Map<String, Map<String, dynamic>> _internalLivePrices = {};
+  final StreamController<Map<String, dynamic>> _livePriceController =
+      StreamController<Map<String, dynamic>>.broadcast();
 
   // Legacy Store Support
   Map<String, Map<String, dynamic>> get livePrices {
-      return _internalLivePrices; 
+    return _internalLivePrices;
   }
 
   // Unified Price Getter
   Map<String, dynamic>? getPrice(String symbol) {
-      if (_priceService != null) {
-          final quote = _priceService!.getQuote(symbol);
-          if (quote != null) {
-              return quote.toJson()..['symbol'] = symbol;
-          }
+    if (_priceService != null) {
+      final quote = _priceService!.getQuote(symbol);
+      if (quote != null) {
+        return quote.toJson()..['symbol'] = symbol;
       }
-      return _internalLivePrices[symbol] ?? _internalLivePrices[symbol.toUpperCase()];
+    }
+    return _internalLivePrices[symbol] ??
+        _internalLivePrices[symbol.toUpperCase()];
   }
 
   // Restored Getters
   AvailableIndices? get availableIndices => _availableIndices;
   StockIndicesMarketData? get currentIndexData => _currentIndexData;
+
   /// Indian indices only (backward-compatible name used across the dashboard).
   List<StockIndicesMarketData> get allIndicesData => _allIndicesData;
   List<StockIndicesMarketData> get globalIndicesData => _globalIndicesData;
@@ -186,7 +190,9 @@ class MarketProvider with ChangeNotifier {
 
   /// Indices shown in All Indices panel for the active region toggle.
   List<StockIndicesMarketData> get indicesForActiveRegion =>
-      _indicesRegion == IndicesRegion.global ? _globalIndicesData : _allIndicesData;
+      _indicesRegion == IndicesRegion.global
+          ? _globalIndicesData
+          : _allIndicesData;
 
   /// Union used by Compare Indices (mixed Indian + Global selection).
   List<StockIndicesMarketData> get indicesForCompare {
@@ -213,7 +219,7 @@ class MarketProvider with ChangeNotifier {
       unawaited(loadGlobalIndicesData());
     }
   }
-  
+
   // Cache for specific index constituents (used by Heatmap/Explorers)
   Map<String, List<StockData>> _indexConstituents = {};
   Map<String, List<StockData>> get indexConstituents => _indexConstituents;
@@ -224,7 +230,8 @@ class MarketProvider with ChangeNotifier {
 
   // Historical Performance Data (10Y view)
   HistoricalPerformanceResponse? _historicalPerformance;
-  HistoricalPerformanceResponse? get historicalPerformance => _historicalPerformance;
+  HistoricalPerformanceResponse? get historicalPerformance =>
+      _historicalPerformance;
 
   // Seasonality Data
   SeasonalityResponse? _seasonality;
@@ -244,6 +251,7 @@ class MarketProvider with ChangeNotifier {
   String _selectedIndicesTimeframe = '1D';
   Map<String, double> _timeframeBasePrices = {};
   bool _isLoadingBasePrices = false;
+  int _indicesRequestGeneration = 0;
 
   /// Close-price series for pinned index sparklines (from [ensureIndexSparklines]).
   Map<String, List<double>> _indexSparklines = {};
@@ -260,11 +268,15 @@ class MarketProvider with ChangeNotifier {
     if (_selectedIndicesTimeframe == timeframe) return;
 
     _selectedIndicesTimeframe = timeframe;
+    final requestGeneration = ++_indicesRequestGeneration;
+    notifyListeners();
 
     if (timeframe == '1D') {
       _timeframeBasePrices.clear();
       _isLoadingBasePrices = false;
       notifyListeners();
+      // Reload without timeframe to get standard 1D data
+      await loadAllIndicesData(requestGeneration: requestGeneration);
       return;
     }
 
@@ -272,105 +284,27 @@ class MarketProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final now = DateTime.now();
-      DateTime fromDate;
-      switch (timeframe) {
-        case '1W':
-          fromDate = now.subtract(const Duration(days: 7));
-          break;
-        case '1M':
-          fromDate = DateTime(now.year, now.month - 1, now.day);
-          break;
-        case '3M':
-          fromDate = DateTime(now.year, now.month - 3, now.day);
-          break;
-        case '6M':
-          fromDate = DateTime(now.year, now.month - 6, now.day);
-          break;
-        case '1Y':
-          fromDate = DateTime(now.year - 1, now.month, now.day);
-          break;
-        case '5Y':
-          fromDate = DateTime(now.year - 5, now.month, now.day);
-          break;
-        default:
-          fromDate = now.subtract(const Duration(days: 7));
-      }
-
-      DateTime toDate;
-      switch (timeframe) {
-        case '1W':
-          toDate = fromDate.add(const Duration(days: 3));
-          break;
-        case '1M':
-          toDate = fromDate.add(const Duration(days: 5));
-          break;
-        case '3M':
-        case '6M':
-          toDate = fromDate.add(const Duration(days: 7));
-          break;
-        case '1Y':
-        case '5Y':
-          toDate = fromDate.add(const Duration(days: 10));
-          break;
-        default:
-          toDate = fromDate.add(const Duration(days: 3));
-      }
-
-      if (toDate.isAfter(now)) {
-        toDate = now;
-      }
-
-      final fromStr = fromDate.toIso8601String().split('T')[0];
-      final toStr = toDate.toIso8601String().split('T')[0];
-
-      final symbols = _allIndicesData.map((e) => e.indexSymbol).toList();
-
-      if (symbols.isNotEmpty) {
-        final history = await _apiService.fetchHistoricalData(
-          symbols: symbols,
-          from: fromStr,
-          to: toStr,
-          interval: '1d',
-          isIndexSymbol: true,
-        );
-
-        _timeframeBasePrices.clear();
-
-        if (history.containsKey('data')) {
-          final dataMap = history['data'] as Map<String, dynamic>;
-          dataMap.forEach((sym, val) {
-            if (val is Map && val.containsKey('dataPoints')) {
-              final points = List.from(val['dataPoints']);
-              if (points.isNotEmpty) {
-                for (int i = 0; i < points.length; i++) {
-                  final point = points[i];
-                  final p = point['close'] ?? point['lastPrice'] ?? point['price'];
-                  if (p != null && (p as num) > 0) {
-                    _timeframeBasePrices[sym] = p.toDouble();
-                    break;
-                  }
-                }
-              }
-            }
-          });
-        }
-      }
+      // Data format handles the timeframe changes on the backend now.
+      // So we just need to re-fetch the indices batch.
+      await loadAllIndicesData(requestGeneration: requestGeneration);
     } catch (e) {
       CommonLogger.error(
-        "Error fetching base prices for $timeframe",
+        "Error fetching timeframe data for $timeframe",
         tag: "MarketProvider.setIndicesTimeframe",
         error: e,
       );
     } finally {
-      _isLoadingBasePrices = false;
-      notifyListeners();
+      if (requestGeneration == _indicesRequestGeneration) {
+        _isLoadingBasePrices = false;
+        notifyListeners();
+      }
     }
   }
 
-  /// [SIP Optimization] Allows the preloading scheduler and on-demand fetches to register 
+  /// [SIP Optimization] Allows the preloading scheduler and on-demand fetches to register
   /// historical reference prices directly into the provider cache, synchronizing states.
-  void updateTimeframeBasePrices(String timeframe, Map<String, double> basePrices) {
+  void updateTimeframeBasePrices(
+      String timeframe, Map<String, double> basePrices) {
     if (timeframe == '1D') return;
     _timeframeBasePrices.addAll(basePrices);
     notifyListeners();
@@ -451,18 +385,19 @@ class MarketProvider with ChangeNotifier {
   }
 
   void updateLivePriceBatch(Map<String, dynamic> quotes) {
-     // No-op if using PriceService as it handles its own updates
-     if (_priceService != null) return;
-     
-     // Fallback for legacy
+    // No-op if using PriceService as it handles its own updates
+    if (_priceService != null) return;
+
+    // Fallback for legacy
     if (quotes.isEmpty) return;
 
     // 1. Summary Log (Once per batch)
     final count = quotes.length;
     final firstKey = quotes.keys.first;
     final firstVal = quotes[firstKey] as Map;
-    
-    String logMsg = "Received update for optimized batch: $count symbols. Sample: $firstKey -> Price: ${firstVal['lastPrice']}";
+
+    String logMsg =
+        "Received update for optimized batch: $count symbols. Sample: $firstKey -> Price: ${firstVal['lastPrice']}";
     if (count > 1) {
       logMsg += " and ${count - 1} others.";
     }
@@ -471,7 +406,7 @@ class MarketProvider with ChangeNotifier {
     // 2. Process all
     quotes.forEach((symbol, data) {
       if (data is Map<String, dynamic>) {
-         _processSingleUpdate(symbol, data);
+        _processSingleUpdate(symbol, data);
       }
     });
   }
@@ -484,48 +419,47 @@ class MarketProvider with ChangeNotifier {
   }
 
   void _processSingleUpdate(String rawSymbol, Map<String, dynamic> data) {
-      // 1. Store with raw key
-      _internalLivePrices[rawSymbol] = data;
-      _internalLivePrices[rawSymbol.toUpperCase()] = data;
+    // 1. Store with raw key
+    _internalLivePrices[rawSymbol] = data;
+    _internalLivePrices[rawSymbol.toUpperCase()] = data;
 
-      // 2. Store with base key
-      if (rawSymbol.contains(':')) {
-        final baseSymbol = rawSymbol.split(':').last.toUpperCase();
-        _internalLivePrices[baseSymbol] = data;
-      }
-      if (rawSymbol.contains('|')) {
-        final baseSymbol = rawSymbol.split('|').last.toUpperCase();
-        _internalLivePrices[baseSymbol] = data;
-      }
-      
-      // 3. Update allIndicesData
-      String updateSymbolBase = rawSymbol.contains('|') ? rawSymbol.split('|').last : rawSymbol;
-      
-      for (int i = 0; i < _allIndicesData.length; i++) {
-        if (_allIndicesData[i].indexSymbol.toUpperCase() == updateSymbolBase.toUpperCase()) {
-             final current = _allIndicesData[i];
-             final double? newLtp = data['lastPrice']?.toDouble();
-             final double? newPChange = data['changePercent']?.toDouble(); 
-             
-             if (newLtp != null) {
-                 _allIndicesData[i] = current.copyWith(
-                     lastPrice: newLtp,
-                     pChange: newPChange ?? current.pChange 
-                 );
-                 _notifyThrottled();
-             }
-             break; 
+    // 2. Store with base key
+    if (rawSymbol.contains(':')) {
+      final baseSymbol = rawSymbol.split(':').last.toUpperCase();
+      _internalLivePrices[baseSymbol] = data;
+    }
+    if (rawSymbol.contains('|')) {
+      final baseSymbol = rawSymbol.split('|').last.toUpperCase();
+      _internalLivePrices[baseSymbol] = data;
+    }
+
+    // 3. Update allIndicesData
+    String updateSymbolBase =
+        rawSymbol.contains('|') ? rawSymbol.split('|').last : rawSymbol;
+
+    for (int i = 0; i < _allIndicesData.length; i++) {
+      if (_allIndicesData[i].indexSymbol.toUpperCase() ==
+          updateSymbolBase.toUpperCase()) {
+        final current = _allIndicesData[i];
+        final double? newLtp = data['lastPrice']?.toDouble();
+        final double? newPChange = data['changePercent']?.toDouble();
+
+        if (newLtp != null) {
+          _allIndicesData[i] = current.copyWith(
+              lastPrice: newLtp, pChange: newPChange ?? current.pChange);
+          _notifyThrottled();
         }
+        break;
       }
+    }
 
-      // Emit event
-      _livePriceController.add(data);
+    // Emit event
+    _livePriceController.add(data);
   }
 
   void _notifyThrottled() {
     final now = DateTime.now();
-    if (_lastNotify != null &&
-        now.difference(_lastNotify!) < _notifyThrottle) {
+    if (_lastNotify != null && now.difference(_lastNotify!) < _notifyThrottle) {
       return;
     }
     _lastNotify = now;
@@ -534,26 +468,30 @@ class MarketProvider with ChangeNotifier {
 
   void _syncWithPriceService() {
     if (_priceService == null) {
-        CommonLogger.warning("Skipping sync - PriceService is null", tag: "MarketProvider._syncWithPriceService");
-        return;
+      CommonLogger.warning("Skipping sync - PriceService is null",
+          tag: "MarketProvider._syncWithPriceService");
+      return;
     }
-    
+
     if (_allIndicesData.isEmpty) {
-        CommonLogger.warning("Skipping sync - No indices loaded", tag: "MarketProvider._syncWithPriceService");
-        return; 
+      CommonLogger.warning("Skipping sync - No indices loaded",
+          tag: "MarketProvider._syncWithPriceService");
+      return;
     }
 
     final symbols = _allIndicesData.map((e) => e.indexSymbol).toList();
     final quotes = _priceService!.getQuotes(symbols);
-    
-    CommonLogger.info("Attempting to sync prices for ${symbols.length} symbols. Found ${quotes.length} in PriceService cache.", tag: "MarketProvider._syncWithPriceService");
+
+    CommonLogger.info(
+        "Attempting to sync prices for ${symbols.length} symbols. Found ${quotes.length} in PriceService cache.",
+        tag: "MarketProvider._syncWithPriceService");
 
     if (quotes.isNotEmpty) {
-       quotes.forEach((symbol, quote) {
-          final data = quote.toJson();
-          data['symbol'] = symbol; 
-          _processSingleUpdate(symbol, data);
-       });
+      quotes.forEach((symbol, quote) {
+        final data = quote.toJson();
+        data['symbol'] = symbol;
+        _processSingleUpdate(symbol, data);
+      });
     }
   }
 
@@ -602,10 +540,14 @@ class MarketProvider with ChangeNotifier {
   Future<void> selectIndex(String indexSymbol) async {
     final previous = _selectedIndex;
     if (previous == indexSymbol) {
-      if (indexSymbol == "All Indices" && _allIndicesData.isNotEmpty && !_forceRefresh) {
+      if (indexSymbol == "All Indices" &&
+          _allIndicesData.isNotEmpty &&
+          !_forceRefresh) {
         return;
       }
-      if (indexSymbol == "Dashboard" && _allIndicesData.isNotEmpty && !_forceRefresh) {
+      if (indexSymbol == "Dashboard" &&
+          _allIndicesData.isNotEmpty &&
+          !_forceRefresh) {
         return;
       }
       if (!["All Indices", "Dashboard", "Streamer"].contains(indexSymbol) &&
@@ -616,20 +558,22 @@ class MarketProvider with ChangeNotifier {
       }
     }
 
-    CommonLogger.info("Selecting: $indexSymbol", tag: "MarketProvider.selectIndex");
+    CommonLogger.info("Selecting: $indexSymbol",
+        tag: "MarketProvider.selectIndex");
 
     _selectedIndex = indexSymbol;
     if (_selectedIndex == "All Indices") {
       await loadAllIndicesData();
     } else if (_selectedIndex == "Dashboard") {
       // Dashboard needs all indices data just like "All Indices"
-      CommonLogger.debug("Loading Dashboard data", tag: "MarketProvider.selectIndex");
+      CommonLogger.debug("Loading Dashboard data",
+          tag: "MarketProvider.selectIndex");
       await loadAllIndicesData();
     } else if ([
-      "Streamer", 
-      "Instrument Explorer", 
-      "Security Explorer", 
-      "Price Test", 
+      "Streamer",
+      "Instrument Explorer",
+      "Security Explorer",
+      "Price Test",
       "ETF Explorer",
       "Admin Dashboard",
       "Analysis Dashboard",
@@ -639,7 +583,9 @@ class MarketProvider with ChangeNotifier {
       "Heatmap",
       "Heatmap Explorer",
     ].contains(_selectedIndex)) {
-      CommonLogger.debug("Selected view: $_selectedIndex (no data fetch required)", tag: "MarketProvider.selectIndex");
+      CommonLogger.debug(
+          "Selected view: $_selectedIndex (no data fetch required)",
+          tag: "MarketProvider.selectIndex");
       // Do nothing, just update selection
       notifyListeners();
     } else {
@@ -647,28 +593,34 @@ class MarketProvider with ChangeNotifier {
     }
   }
 
-
   Future<void> refreshIndexData() async {
-    if (_selectedIndex == null || _selectedIndex == "All Indices" || _selectedIndex == "Streamer") {
-      CommonLogger.debug("Skip refresh for $_selectedIndex", tag: "MarketProvider.refreshIndexData");
+    if (_selectedIndex == null ||
+        _selectedIndex == "All Indices" ||
+        _selectedIndex == "Streamer") {
+      CommonLogger.debug("Skip refresh for $_selectedIndex",
+          tag: "MarketProvider.refreshIndexData");
       return;
     }
-    
-    CommonLogger.info("Refreshing data for $_selectedIndex", tag: "MarketProvider.refreshIndexData");
+
+    CommonLogger.info("Refreshing data for $_selectedIndex",
+        tag: "MarketProvider.refreshIndexData");
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      _currentIndexData = await _apiService.fetchIndexData(_selectedIndex!, forceRefresh: _forceRefresh);
-      CommonLogger.debug("Data refreshed for $_selectedIndex. Constituents: ${_currentIndexData?.stocks.length ?? 0}", tag: "MarketProvider.refreshIndexData");
+      _currentIndexData = await _apiService.fetchIndexData(_selectedIndex!,
+          forceRefresh: _forceRefresh);
+      CommonLogger.debug(
+          "Data refreshed for $_selectedIndex. Constituents: ${_currentIndexData?.stocks.length ?? 0}",
+          tag: "MarketProvider.refreshIndexData");
       if (_selectedIndex != null) {
         await _ensurePriceSubscription([_selectedIndex!]);
         _syncWithPriceService();
       }
-
     } catch (e) {
-      CommonLogger.error("Error refreshing $_selectedIndex", tag: "MarketProvider.refreshIndexData", error: e);
+      CommonLogger.error("Error refreshing $_selectedIndex",
+          tag: "MarketProvider.refreshIndexData", error: e);
 
       _error = e.toString();
     } finally {
@@ -677,8 +629,8 @@ class MarketProvider with ChangeNotifier {
     }
   }
 
-
-  Future<void> loadAllIndicesData() async {
+  Future<void> loadAllIndicesData({int? requestGeneration}) async {
+    final currentGeneration = requestGeneration ?? ++_indicesRequestGeneration;
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -687,7 +639,8 @@ class MarketProvider with ChangeNotifier {
       // STEP 1: Fetch available indices first if not already loaded
       if (_availableIndices == null) {
         final indian = await _apiService.fetchAvailableIndices();
-        final global = await _apiService.fetchAvailableGlobalIndices().catchError((e) {
+        final global =
+            await _apiService.fetchAvailableGlobalIndices().catchError((e) {
           CommonLogger.warning(
             "Global available indices unavailable: $e",
             tag: "MarketProvider.loadAllIndicesData",
@@ -695,55 +648,75 @@ class MarketProvider with ChangeNotifier {
           return <String>[];
         });
         _availableIndices = indian.copyWith(globalIndices: global);
-        CommonLogger.info("Fetched available indices", tag: "MarketProvider.loadAllIndicesData");
+        CommonLogger.info("Fetched available indices",
+            tag: "MarketProvider.loadAllIndicesData");
       } else if (_availableIndices!.globalIndices.isEmpty) {
-        final global = await _apiService.fetchAvailableGlobalIndices().catchError((_) => <String>[]);
+        final global = await _apiService
+            .fetchAvailableGlobalIndices()
+            .catchError((_) => <String>[]);
         _availableIndices = _availableIndices!.copyWith(globalIndices: global);
       }
-      
+
       // STEP 2: Indian symbols only for _allIndicesData (NSE movers / pinned stay Indian-first)
       List<String> indianSymbols = _availableIndices?.indianSymbols ?? [];
-      
+
       if (indianSymbols.isEmpty) {
         _error = "No indices available";
-        CommonLogger.warning("No indices available", tag: "MarketProvider.loadAllIndicesData");
+        CommonLogger.warning("No indices available",
+            tag: "MarketProvider.loadAllIndicesData");
 
         return;
       }
-      
-      CommonLogger.info("Loading ${indianSymbols.length} Indian indices", tag: "MarketProvider.loadAllIndicesData");
 
-      
-      // STEP 3: Call batch endpoint with Indian symbols
-      _allIndicesData = await _apiService.fetchIndicesBatch(
-        indianSymbols, 
-        forceRefresh: _forceRefresh
-      );
-      
-      CommonLogger.info("Successfully loaded ${_allIndicesData.length} Indian indices", tag: "MarketProvider.loadAllIndicesData");
+      CommonLogger.info("Loading ${indianSymbols.length} Indian indices",
+          tag: "MarketProvider.loadAllIndicesData");
 
-      // Warm global list in parallel (non-blocking for Indian UI)
-      unawaited(loadGlobalIndicesData());
+      // STEP 3: Call batch endpoint with Indian symbols and the selected timeframe
+      final loadedIndices = await _apiService.fetchIndicesBatch(indianSymbols,
+          forceRefresh: _forceRefresh,
+          timeframe: _selectedIndicesTimeframe == '1D'
+              ? null
+              : _selectedIndicesTimeframe);
+      if (currentGeneration != _indicesRequestGeneration) return;
+      _allIndicesData = loadedIndices;
+
+      CommonLogger.info(
+          "Successfully loaded ${_allIndicesData.length} Indian indices with timeframe $_selectedIndicesTimeframe",
+          tag: "MarketProvider.loadAllIndicesData");
+
+      // Warm once; it is not needed to render the Indian indices currently on screen.
+      if (_globalIndicesData.isEmpty) {
+        unawaited(loadGlobalIndicesData());
+      }
 
       await _ensurePriceSubscription(
-        _allIndicesData.take(_maxLiveStreamSymbols).map((e) => e.indexSymbol).toList(),
+        _allIndicesData
+            .take(_maxLiveStreamSymbols)
+            .map((e) => e.indexSymbol)
+            .toList(),
       );
       _syncWithPriceService();
-
     } catch (e) {
-      CommonLogger.error("Error loading all indices", tag: "MarketProvider.loadAllIndicesData", error: e);
-      _error = e.toString();
+      CommonLogger.error("Error loading all indices",
+          tag: "MarketProvider.loadAllIndicesData", error: e);
+      if (currentGeneration == _indicesRequestGeneration) {
+        _error = e.toString();
+      }
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (currentGeneration == _indicesRequestGeneration) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 
   Future<void> loadGlobalIndicesData() async {
     try {
-      if (_availableIndices == null || _availableIndices!.globalIndices.isEmpty) {
+      if (_availableIndices == null ||
+          _availableIndices!.globalIndices.isEmpty) {
         final global = await _apiService.fetchAvailableGlobalIndices();
-        _availableIndices = (_availableIndices ?? AvailableIndices()).copyWith(globalIndices: global);
+        _availableIndices = (_availableIndices ?? AvailableIndices())
+            .copyWith(globalIndices: global);
       }
       final symbols = _availableIndices?.globalIndices ?? [];
       if (symbols.isEmpty) {
@@ -790,55 +763,62 @@ class MarketProvider with ChangeNotifier {
   }
 
   Future<void> fetchIndexConstituents(String indexSymbol) async {
-      CommonLogger.info("Fetching constituents for: $indexSymbol", tag: "MarketProvider.fetchIndexConstituents");
-      try {
-          final data = await _apiService.fetchIndexData(indexSymbol, forceRefresh: _forceRefresh);
-          if (data != null) {
-              _indexConstituents[indexSymbol] = data.stocks;
-              notifyListeners();
-          }
-      } catch (e) {
-          CommonLogger.error("Error fetching constituents for $indexSymbol", tag: "MarketProvider.fetchIndexConstituents", error: e);
-          // Don't set global error to avoid disrupting other views
+    CommonLogger.info("Fetching constituents for: $indexSymbol",
+        tag: "MarketProvider.fetchIndexConstituents");
+    try {
+      final data = await _apiService.fetchIndexData(indexSymbol,
+          forceRefresh: _forceRefresh);
+      if (data != null) {
+        _indexConstituents[indexSymbol] = data.stocks;
+        notifyListeners();
       }
+    } catch (e) {
+      CommonLogger.error("Error fetching constituents for $indexSymbol",
+          tag: "MarketProvider.fetchIndexConstituents", error: e);
+      // Don't set global error to avoid disrupting other views
+    }
   }
 
   Future<void> fetchHeatmapData(String indexSymbol, String timeFrame) async {
-      final key = "$indexSymbol:$timeFrame";
-      CommonLogger.info("Fetching heatmap data to key: $key", tag: "MarketProvider.fetchHeatmapData");
-      
-      try {
-          // Use new dedicated endpoint for full index performance
-          final result = await _apiService.fetchIndexPerformance(
-              indexSymbol: indexSymbol,
-              timeFrame: timeFrame,
-          );
-          
-          _heatmapData[key] = result;
-          notifyListeners();
-          
-      } catch (e) {
-          CommonLogger.error("Error fetching heatmap data", tag: "MarketProvider.fetchHeatmapData", error: e);
-      }
+    final key = "$indexSymbol:$timeFrame";
+    CommonLogger.info("Fetching heatmap data to key: $key",
+        tag: "MarketProvider.fetchHeatmapData");
+
+    try {
+      // Use new dedicated endpoint for full index performance
+      final result = await _apiService.fetchIndexPerformance(
+        indexSymbol: indexSymbol,
+        timeFrame: timeFrame,
+      );
+
+      _heatmapData[key] = result;
+      notifyListeners();
+    } catch (e) {
+      CommonLogger.error("Error fetching heatmap data",
+          tag: "MarketProvider.fetchHeatmapData", error: e);
+    }
   }
 
   Future<void> loadHistoricalPerformance(String symbol) async {
-      CommonLogger.info("Loading historical performance for $symbol", tag: "MarketProvider.loadHistoricalPerformance");
-      _isLoading = true; 
-      // Don't clear previous data immediately to avoid flicker, or maybe clear if symbol changed
-      // For now, let's keep it simple
-      notifyListeners();
+    CommonLogger.info("Loading historical performance for $symbol",
+        tag: "MarketProvider.loadHistoricalPerformance");
+    _isLoading = true;
+    // Don't clear previous data immediately to avoid flicker, or maybe clear if symbol changed
+    // For now, let's keep it simple
+    notifyListeners();
 
-      try {
-          // Hardcoded 10 years as per requirement
-          _historicalPerformance = await _apiService.fetchHistoricalPerformance(symbol, years: 10);
-      } catch (e) {
-          CommonLogger.error("Error loading historical performance", tag: "MarketProvider.loadHistoricalPerformance", error: e);
-          _error = e.toString();
-      } finally {
-          _isLoading = false;
-          notifyListeners();
-      }
+    try {
+      // Hardcoded 10 years as per requirement
+      _historicalPerformance =
+          await _apiService.fetchHistoricalPerformance(symbol, years: 10);
+    } catch (e) {
+      CommonLogger.error("Error loading historical performance",
+          tag: "MarketProvider.loadHistoricalPerformance", error: e);
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   int _heatmapLoadId = 0;
@@ -937,13 +917,15 @@ class MarketProvider with ChangeNotifier {
   }
 
   Future<void> loadSeasonality(String symbol) async {
-      CommonLogger.info("Loading seasonality for $symbol", tag: "MarketProvider.loadSeasonality");
-      try {
-          _seasonality = await _apiService.fetchSeasonality(symbol);
-          notifyListeners();
-      } catch (e) {
-          CommonLogger.error("Error loading seasonality", tag: "MarketProvider.loadSeasonality", error: e);
-      }
+    CommonLogger.info("Loading seasonality for $symbol",
+        tag: "MarketProvider.loadSeasonality");
+    try {
+      _seasonality = await _apiService.fetchSeasonality(symbol);
+      notifyListeners();
+    } catch (e) {
+      CommonLogger.error("Error loading seasonality",
+          tag: "MarketProvider.loadSeasonality", error: e);
+    }
   }
 }
 

@@ -375,7 +375,6 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                       }
                       Navigator.pop(context);
                     },
-                    allTimeframeBasePrices: allTimeframeBasePrices,
                   ),
                 );
               },
@@ -1380,7 +1379,6 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                   _closeDrawer();
                 },
                 onClose: _closeDrawer,
-                allTimeframeBasePrices: allTimeframeBasePrices,
               ),
             ),
           ),

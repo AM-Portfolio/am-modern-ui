@@ -76,6 +76,7 @@ class _HoldingsNewsSectionState extends ConsumerState<HoldingsNewsSection> {
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: const Color(0x00000000)),
         child: ExpansionTile(
+          key: const PageStorageKey('holdings_news_expansion_tile'),
           title: Text(
             widget.title,
             style: Theme.of(context).textTheme.titleMedium,
