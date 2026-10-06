@@ -1078,144 +1078,155 @@ class _InputBarState extends ConsumerState<_InputBar> {
         final horizontalPad =
             (constraints.maxWidth - maxContentWidth).clamp(0.0, double.infinity) /
                 2;
-        return Container(
-          padding: EdgeInsets.fromLTRB(
-            20 + horizontalPad,
-            10,
-            20 + horizontalPad,
-            16,
-          ),
-          decoration: BoxDecoration(
-            color: context.surfaceColor,
-            border: Border(top: BorderSide(color: context.dividerColor)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ClipRect(
-                child: AnimatedAlign(
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeOutCubic,
-                  heightFactor: _usagePanelOpen ? 1 : 0,
-                  alignment: Alignment.bottomCenter,
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 180),
-                    opacity: _usagePanelOpen ? 1 : 0,
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: _TokenUsagePopover(
-                        usage: usage,
-                        onClose: _closeUsagePanel,
+        // Popover sits above the composer as its own card — do not expand the
+        // opaque footer surface (that reads as a modal "background"/scrim).
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedSize(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.bottomCenter,
+              child: _usagePanelOpen
+                  ? Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        20 + horizontalPad,
+                        0,
+                        20 + horizontalPad,
+                        8,
                       ),
-                    ),
-                  ),
-                ),
+                      child: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 180),
+                        opacity: 1,
+                        child: _TokenUsagePopover(
+                          usage: usage,
+                          onClose: _closeUsagePanel,
+                        ),
+                      ),
+                    )
+                  : const SizedBox(width: double.infinity),
+            ),
+            Container(
+              padding: EdgeInsets.fromLTRB(
+                20 + horizontalPad,
+                10,
+                20 + horizontalPad,
+                16,
               ),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              decoration: BoxDecoration(
+                color: context.surfaceColor,
+                border: Border(top: BorderSide(color: context.dividerColor)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: context.cardColor,
-                        borderRadius: BorderRadius.circular(28),
-                        border: Border.all(color: context.borderColor),
-                        boxShadow: [
-                          BoxShadow(
-                            color: context.shadow(context.isDark ? 0.2 : 0.04),
-                            blurRadius: 12,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: TextField(
-                        controller: widget.controller,
-                        style: TextStyle(
-                          color: context.textPrimary,
-                          fontSize: 14,
-                        ),
-                        maxLines: 4,
-                        minLines: 1,
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: (_) => widget.onSend(),
-                        decoration: InputDecoration(
-                          hintText: 'Ask about your portfolio…',
-                          hintStyle: TextStyle(
-                            color: context.textSecondary,
-                            fontSize: 14,
-                          ),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 14,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  _TokenUsageRingButton(
-                    usage: usage,
-                    isActive: _usagePanelOpen,
-                    onTap: _toggleUsagePanel,
-                  ),
-                  const SizedBox(width: 8),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: widget.isLoading
-                        ? InkWell(
-                            key: const ValueKey('stop'),
-                            onTap: widget.onStop,
-                            borderRadius: BorderRadius.circular(24),
-                            child: Container(
-                              width: 48,
-                              height: 48,
-                              decoration: BoxDecoration(
-                                color: context.statusError.withValues(alpha: 0.15),
-                                shape: BoxShape.circle,
-                                border: Border.all(color: context.statusError),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: context.cardColor,
+                            borderRadius: BorderRadius.circular(28),
+                            border: Border.all(color: context.borderColor),
+                            boxShadow: [
+                              BoxShadow(
+                                color: context.shadow(context.isDark ? 0.2 : 0.04),
+                                blurRadius: 12,
+                                offset: const Offset(0, 3),
                               ),
-                              child: Icon(Icons.stop_rounded,
-                                  color: context.statusError, size: 22),
+                            ],
+                          ),
+                          child: TextField(
+                            controller: widget.controller,
+                            style: TextStyle(
+                              color: context.textPrimary,
+                              fontSize: 14,
                             ),
-                          )
-                        : InkWell(
-                            key: const ValueKey('send'),
-                            onTap: widget.onSend,
-                            borderRadius: BorderRadius.circular(24),
-                            child: Container(
-                              width: 48,
-                              height: 48,
-                              decoration: BoxDecoration(
-                                gradient: context.aiPrimaryGradient,
+                            maxLines: 4,
+                            minLines: 1,
+                            textInputAction: TextInputAction.send,
+                            onSubmitted: (_) => widget.onSend(),
+                            decoration: InputDecoration(
+                              hintText: 'Ask about your portfolio…',
+                              hintStyle: TextStyle(
+                                color: context.textSecondary,
+                                fontSize: 14,
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 18,
+                                vertical: 14,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      _TokenUsageRingButton(
+                        usage: usage,
+                        isActive: _usagePanelOpen,
+                        onTap: _toggleUsagePanel,
+                      ),
+                      const SizedBox(width: 8),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        child: widget.isLoading
+                            ? InkWell(
+                                key: const ValueKey('stop'),
+                                onTap: widget.onStop,
                                 borderRadius: BorderRadius.circular(24),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: context.aiPrimary
-                                        .withValues(alpha: 0.35),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
+                                child: Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: context.statusError.withValues(alpha: 0.15),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: context.statusError),
                                   ),
-                                ],
+                                  child: Icon(Icons.stop_rounded,
+                                      color: context.statusError, size: 22),
+                                ),
+                              )
+                            : InkWell(
+                                key: const ValueKey('send'),
+                                onTap: widget.onSend,
+                                borderRadius: BorderRadius.circular(24),
+                                child: Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    gradient: context.aiPrimaryGradient,
+                                    borderRadius: BorderRadius.circular(24),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: context.aiPrimary
+                                            .withValues(alpha: 0.35),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Icon(Icons.send_rounded,
+                                      color: context.aiOnPrimary, size: 18),
+                                ),
                               ),
-                              child: Icon(Icons.send_rounded,
-                                  color: context.aiOnPrimary, size: 18),
-                            ),
-                          ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'AM Finance AI can make mistakes. Verify important information.',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: context.textSecondary.withValues(alpha: 0.6),
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                'AM Finance AI can make mistakes. Verify important information.',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: context.textSecondary.withValues(alpha: 0.6),
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+            ),
+          ],
         );
       },
     );
