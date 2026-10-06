@@ -103,17 +103,25 @@ class AsraxIpoSummaryDto {
 }
 
 class AsraxIpoTimelineDto {
-  final String? biddingStartDate;
-  final String? biddingEndDate;
+  final String? preApplyStartDate;
+  final String? applicationStartDate;
+  final String? applicationEndDate;
+  final String? allotmentStartDate;
   final String? allotmentDate;
   final String? refundInitiationDate;
   final String? dematTransferDate;
   final String? listingDate;
   final String? mandateEndDate;
 
+  // Backward compatibility aliases
+  String? get biddingStartDate => applicationStartDate;
+  String? get biddingEndDate => applicationEndDate;
+
   AsraxIpoTimelineDto({
-    this.biddingStartDate,
-    this.biddingEndDate,
+    this.preApplyStartDate,
+    this.applicationStartDate,
+    this.applicationEndDate,
+    this.allotmentStartDate,
     this.allotmentDate,
     this.refundInitiationDate,
     this.dematTransferDate,
@@ -123,8 +131,10 @@ class AsraxIpoTimelineDto {
 
   factory AsraxIpoTimelineDto.fromJson(Map<String, dynamic> json) {
     return AsraxIpoTimelineDto(
-      biddingStartDate: json['biddingStartDate'] as String?,
-      biddingEndDate: json['biddingEndDate'] as String?,
+      preApplyStartDate: json['preApplyStartDate'] as String?,
+      applicationStartDate: (json['applicationStartDate'] ?? json['biddingStartDate']) as String?,
+      applicationEndDate: (json['applicationEndDate'] ?? json['biddingEndDate']) as String?,
+      allotmentStartDate: json['allotmentStartDate'] as String?,
       allotmentDate: json['allotmentDate'] as String?,
       refundInitiationDate: json['refundInitiationDate'] as String?,
       dematTransferDate: json['dematTransferDate'] as String?,
@@ -136,23 +146,34 @@ class AsraxIpoTimelineDto {
 
 class AsraxIpoRegistrarDto {
   final String? name;
+  final String? contactName;
   final String? phone;
   final String? email;
   final String? websiteUrl;
+  final String? registrarKey;
+
+  // Backward compatibility aliases
+  String? get contactPerson => contactName;
+  String? get contactNumber => phone;
+  String? get website => websiteUrl;
 
   AsraxIpoRegistrarDto({
     this.name,
+    this.contactName,
     this.phone,
     this.email,
     this.websiteUrl,
+    this.registrarKey,
   });
 
   factory AsraxIpoRegistrarDto.fromJson(Map<String, dynamic> json) {
     return AsraxIpoRegistrarDto(
       name: json['name'] as String?,
-      phone: json['phone'] as String?,
+      contactName: (json['contactName'] ?? json['contactPerson']) as String?,
+      phone: (json['contactNumber'] ?? json['phone']) as String?,
       email: json['email'] as String?,
-      websiteUrl: json['websiteUrl'] as String?,
+      websiteUrl: (json['website'] ?? json['websiteUrl']) as String?,
+      registrarKey: json['registrarKey'] as String?,
     );
   }
 }
