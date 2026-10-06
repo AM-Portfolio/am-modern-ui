@@ -441,7 +441,7 @@ class _AnalysisAllocationWidgetState extends State<AnalysisAllocationWidget> {
                                     Expanded(
                                       flex: 3,
                                       child: Text(
-                                        h.symbol,
+                                        h.name?.isNotEmpty == true ? h.name! : h.symbol,
                                         style: TextStyle(
                                           fontSize: 12, 
                                           fontWeight: FontWeight.w600,

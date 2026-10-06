@@ -789,7 +789,7 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
                 Expanded(
                   flex: 3,
                   child: Text(
-                    h.symbol,
+                    h.companyName.isNotEmpty ? h.companyName : (h.name.isNotEmpty ? h.name : h.symbol),
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
