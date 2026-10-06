@@ -10,6 +10,7 @@ export 'core/theme/am_chart_theme.dart';
 export 'core/theme/app_colors.dart';
 export 'core/theme/app_colors_theme.dart';
 export 'core/theme/intelligence_colors.dart';
+export 'core/theme/ipo_colors.dart';
 export 'core/theme/app_spacing.dart';
 export 'core/theme/app_radii.dart';
 export 'core/theme/app_type_scale.dart';
