@@ -72,8 +72,8 @@ class AmTopMoversPanel extends StatefulWidget {
     /// Card corner radius. Default: 18.
     this.borderRadius = 18.0,
 
-    /// Maximum stock tiles per Gainers/Losers column. Default: 5.
-    this.maxItemsPerColumn = 5,
+    /// Maximum stock tiles per Gainers/Losers column. Default: 4.
+    this.maxItemsPerColumn = 4,
 
     /// Width below which the widget switches to mobile segmented-toggle layout.
     this.mobileBreakpoint = 600.0,
@@ -111,16 +111,17 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
 
   // ── Resolved colors (theme-adaptive defaults with override support) ────────
 
-  Color _positiveColor(bool isDark) =>
-      widget.positiveColor ??
-      (isDark ? const Color(0xFF00B894) : const Color(0xFF00956B));
+  Color _positiveColor(BuildContext context) =>
+      widget.positiveColor ?? context.colors.marketPositiveIndicator;
 
-  Color _negativeColor(bool isDark) =>
-      widget.negativeColor ??
-      (isDark ? const Color(0xFFFF7675) : const Color(0xFFDC2626));
+  Color _negativeColor(BuildContext context) =>
+      widget.negativeColor ?? context.colors.marketNegativeIndicator;
 
-  Color _headerAccent() =>
-      widget.headerAccent ?? const Color(0xFF00C896);
+  Color _headerAccent([BuildContext? context]) {
+    if (widget.headerAccent != null) return widget.headerAccent!;
+    if (context != null) return context.colors.marketPositiveIndicator;
+    return const Color(0xFF00C896);
+  }
 
   // ── Card border color via theme ───────────────────────────────────────────
   Color _borderColor(BuildContext context, bool isDark) =>
@@ -132,7 +133,7 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = _headerAccent();
+    final accent = _headerAccent(context);
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(widget.borderRadius),
@@ -140,6 +141,8 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
         filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
+          width: double.infinity,
+          height: double.infinity,
           decoration: BoxDecoration(
             // Dynamic theme-adaptive gradient using centralized cardSurface and surface tokens
             gradient: LinearGradient(
@@ -161,13 +164,13 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
             ),
             borderRadius: BorderRadius.circular(widget.borderRadius),
           ),
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(context, accent, isDark),
-              const SizedBox(height: 16),
-              _buildContent(context, isDark),
+              const SizedBox(height: 10),
+              Expanded(child: _buildContent(context, isDark)),
             ],
           ),
         ),
@@ -235,75 +238,60 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
   Widget _buildContent(BuildContext context, bool isDark) {
     // ── Loading ──
     if (widget.isLoading) {
-      return const SizedBox(
-        height: 200,
-        child: Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFF00C896),
-            strokeWidth: 2,
-          ),
+      return Center(
+        child: CircularProgressIndicator(
+          color: _headerAccent(context),
+          strokeWidth: 2,
         ),
       );
     }
 
     // ── Error ──
     if (widget.error != null) {
-      final errColor = _negativeColor(isDark);
-      return SizedBox(
-        height: 200,
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.error_outline, color: errColor, size: 48),
-              const SizedBox(height: 8),
-              Text(
-                'Failed to load movers data',
-                style: TextStyle(color: errColor, fontSize: 14),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                widget.error!,
-                style: TextStyle(
-                    color: isDark
-                        ? Colors.white.withOpacity(0.45)
-                        : const Color(0xFF94A3B8),
-                    fontSize: 12),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+      final errColor = _negativeColor(context);
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, color: errColor, size: 48),
+            const SizedBox(height: 8),
+            Text(
+              'Failed to load movers data',
+              style: TextStyle(color: errColor, fontSize: 14),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              widget.error!,
+              style: TextStyle(
+                  color: context.colors.textTertiary,
+                  fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       );
     }
 
     // ── Empty ──
     if (widget.gainers.isEmpty && widget.losers.isEmpty) {
-      return SizedBox(
-        height: 200,
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.data_usage_outlined,
-                color: isDark
-                    ? Colors.white.withOpacity(0.35)
-                    : const Color(0xFF94A3B8),
-                size: 48,
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.data_usage_outlined,
+              color: context.colors.textTertiary,
+              size: 48,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'No movers data available',
+              style: TextStyle(
+                color: context.colors.textTertiary,
+                fontSize: 14,
               ),
-              const SizedBox(height: 8),
-              Text(
-                'No movers data available',
-                style: TextStyle(
-                  color: isDark
-                      ? Colors.white.withOpacity(0.45)
-                      : const Color(0xFF94A3B8),
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       );
     }
@@ -318,11 +306,9 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
 
   // ── Mobile layout: segmented toggle + AnimatedSwitcher ────────────────────
   Widget _buildMobileLayout(BuildContext context, bool isDark) {
-    final posColor = _positiveColor(isDark);
-    final negColor = _negativeColor(isDark);
-    final mutedColor = isDark
-        ? Colors.white.withOpacity(0.40)
-        : const Color(0xFF94A3B8);
+    final posColor = _positiveColor(context);
+    final negColor = _negativeColor(context);
+    final mutedColor = context.colors.textTertiary;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -331,10 +317,9 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
         Container(
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: isDark
-                ? Colors.black.withOpacity(0.20)
-                : const Color(0xFFCBD5E1).withOpacity(0.25),
+            color: context.colors.surface.withValues(alpha: isDark ? 0.55 : 0.85),
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: context.colors.border),
           ),
           child: Row(
             children: [
@@ -397,17 +382,19 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
             ],
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 12),
         // Fades between Gainers and Losers lists
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          child: _showGainers
-              ? _buildColumn(
-                  context, 'Gainers', widget.gainers, true, isDark,
-                  key: const ValueKey('gainers'))
-              : _buildColumn(
-                  context, 'Losers', widget.losers, false, isDark,
-                  key: const ValueKey('losers')),
+        Expanded(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: _showGainers
+                ? _buildColumn(
+                    context, 'Gainers', widget.gainers, true, isDark,
+                    key: const ValueKey('gainers'))
+                : _buildColumn(
+                    context, 'Losers', widget.losers, false, isDark,
+                    key: const ValueKey('losers')),
+          ),
         ),
       ],
     );
@@ -416,12 +403,12 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
   // ── Desktop layout: side-by-side columns ──────────────────────────────────
   Widget _buildDesktopLayout(BuildContext context, bool isDark) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(
           child: _buildColumn(context, 'Gainers', widget.gainers, true, isDark),
         ),
-        const SizedBox(width: 20),
+        const SizedBox(width: 12),
         Expanded(
           child: _buildColumn(context, 'Losers', widget.losers, false, isDark),
         ),
@@ -438,14 +425,13 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
     bool isDark, {
     Key? key,
   }) {
-    final color = isGainers ? _positiveColor(isDark) : _negativeColor(isDark);
+    final color = isGainers ? _positiveColor(context) : _negativeColor(context);
     final displayItems = items.take(widget.maxItemsPerColumn).toList();
 
     return Column(
       key: key,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Column header: trend icon + label + count
         Row(
           children: [
             Icon(
@@ -466,32 +452,29 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        // Tile list or empty state
-        if (displayItems.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20.0),
-            child: Center(
-              child: Text(
-                'No ${isGainers ? 'gainers' : 'losers'} found',
-                style: TextStyle(
-                  color: isDark
-                      ? Colors.white.withOpacity(0.40)
-                      : const Color(0xFF94A3B8),
-                  fontSize: 13,
+        const SizedBox(height: 8),
+        Expanded(
+          child: displayItems.isEmpty
+              ? Center(
+                  child: Text(
+                    'No ${isGainers ? 'gainers' : 'losers'} found',
+                    style: TextStyle(
+                      color: context.colors.textTertiary,
+                      fontSize: 13,
+                    ),
+                  ),
+                )
+              : ListView.builder(
+                  padding: EdgeInsets.zero,
+                  itemCount: displayItems.length,
+                  itemBuilder: (context, index) => AmMoverTile(
+                    item: displayItems[index],
+                    positiveColor: _positiveColor(context),
+                    negativeColor: _negativeColor(context),
+                    isDark: isDark,
+                  ),
                 ),
-              ),
-            ),
-          )
-        else
-          ...displayItems.map(
-            (item) => AmMoverTile(
-              item: item,
-              positiveColor: _positiveColor(isDark),
-              negativeColor: _negativeColor(isDark),
-              isDark: isDark,
-            ),
-          ),
+        ),
       ],
     );
   }
