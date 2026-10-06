@@ -60,6 +60,9 @@ abstract class TradeRemoteDataSource {
 
   /// Delete trade by ID
   Future<void> deleteTrade(String tradeId);
+
+  /// Get most recent trade year
+  Future<int> getMostRecentTradeYear(String portfolioId);
 }
 
 /// Concrete implementation of trade remote data source
@@ -851,5 +854,25 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
           tag: 'TradeRemoteDataSource', error: e);
       rethrow;
     }
+  }
+
+  @override
+  Future<int> getMostRecentTradeYear(String portfolioId) async {
+    AppLogger.debug('Calling remote API for most recent trade year',
+        tag: 'TradeRemoteDataSourceImpl');
+        
+    final uri = _buildUri(_tradeConfig.baseUrl, '/most-recent-date');
+    final queryParams = {'portfolioId': portfolioId};
+    
+    final response = await _apiClient.get<int>(
+      uri,
+      queryParams: queryParams,
+      parser: (data) {
+          final json = data as Map<String, dynamic>;
+          return json['year'] as int;
+      },
+    );
+    
+    return response;
   }
 }

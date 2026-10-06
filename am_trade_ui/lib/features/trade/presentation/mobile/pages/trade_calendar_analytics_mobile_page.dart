@@ -35,8 +35,11 @@ class _TradeCalendarAnalyticsMobilePageState extends ConsumerState<TradeCalendar
     final portfolioId = widget.portfolioId;
     final cubit = await ref.read(tradeCalendarCubitProvider(portfolioId).future);
 
-    // Start in yearly view
-    cubit.navigateToYearly( portfolioId: widget.portfolioId, year: _selectedYear);
+    // Start in yearly view using the most recent trade year
+    final year = await cubit.initializeToMostRecentYear(portfolioId: widget.portfolioId);
+    if (mounted) {
+      setState(() => _selectedYear = year);
+    }
   }
 
   @override

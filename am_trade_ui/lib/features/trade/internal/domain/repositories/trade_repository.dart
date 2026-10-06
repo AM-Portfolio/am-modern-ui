@@ -74,4 +74,7 @@ abstract class TradeRepository {
 
   /// Add a newly created portfolio to the local cache immediately
   void addCachedPortfolio(TradePortfolio portfolio);
+
+  /// Get most recent trade year
+  Future<int> getMostRecentTradeYear(String portfolioId);
 }
