@@ -20,10 +20,10 @@ class IpoSummaryCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF0F172A).withValues(alpha: 0.7) : context.surfaceColor,
+          color: isDark ? IpoColors.darkCardBg.withValues(alpha: 0.7) : context.surfaceColor,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isDark ? const Color(0xFF1E293B) : context.borderColor,
+            color: isDark ? IpoColors.darkCardBorder : context.borderColor,
             width: 1,
           ),
           boxShadow: [
@@ -141,30 +141,30 @@ class IpoSummaryCard extends StatelessWidget {
             InkWell(
               onTap: () => _openDetails(context),
               borderRadius: BorderRadius.circular(6),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(vertical: 2),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       Icons.assignment_outlined,
                       size: 15,
-                      color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                      color: IpoColors.accentCyan,
                     ),
-                    const SizedBox(width: 6),
+                    SizedBox(width: 6),
                     Text(
                       'View IPO Details',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                        color: IpoColors.accentCyan,
                       ),
                     ),
-                    const SizedBox(width: 4),
+                    SizedBox(width: 4),
                     Icon(
                       Icons.arrow_forward_rounded,
                       size: 14,
-                      color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                      color: IpoColors.accentCyan,
                     ),
                   ],
                 ),
@@ -186,13 +186,13 @@ class IpoSummaryCard extends StatelessWidget {
 
   Widget _buildAvatar(BuildContext context) {
     final initials = _getInitials(ipo.companyName ?? ipo.symbol ?? 'IP');
-    final colorPair = _getAvatarColor(initials);
+    final avatarColor = IpoColors.avatarColorFor(initials);
 
     return Container(
       width: 42,
       height: 42,
       decoration: BoxDecoration(
-        color: colorPair.background,
+        color: avatarColor.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(10),
       ),
       alignment: Alignment.center,
@@ -201,7 +201,7 @@ class IpoSummaryCard extends StatelessWidget {
         style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w700,
-          color: colorPair.foreground,
+          color: avatarColor,
         ),
       ),
     );
@@ -211,23 +211,17 @@ class IpoSummaryCard extends StatelessWidget {
     final status = (ipo.status ?? 'OPEN').toUpperCase();
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    Color bg;
     Color fg;
-    Color border;
-
     if (status == 'OPEN') {
-      bg = isDark ? const Color(0xFF052E16).withValues(alpha: 0.6) : const Color(0xFFDCFCE7);
-      fg = isDark ? const Color(0xFF4ADE80) : const Color(0xFF16A34A);
-      border = isDark ? const Color(0xFF16A34A).withValues(alpha: 0.5) : const Color(0xFF86EFAC);
+      fg = IpoColors.statusOpen;
     } else if (status == 'UPCOMING') {
-      bg = isDark ? const Color(0xFF451A03).withValues(alpha: 0.6) : const Color(0xFFFEF3C7);
-      fg = isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706);
-      border = isDark ? const Color(0xFFD97706).withValues(alpha: 0.5) : const Color(0xFFFCD34D);
+      fg = IpoColors.statusUpcoming;
     } else {
-      bg = isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9);
-      fg = context.textSecondary;
-      border = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+      fg = IpoColors.statusClosed;
     }
+
+    final bg = fg.withValues(alpha: isDark ? 0.18 : 0.12);
+    final border = fg.withValues(alpha: isDark ? 0.45 : 0.35);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
@@ -330,19 +324,6 @@ class IpoSummaryCard extends StatelessWidget {
     return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
   }
 
-  _AvatarColors _getAvatarColor(String initials) {
-    final colors = [
-      const _AvatarColors(Color(0xFFE0F2FE), Color(0xFF0369A1)), // Sky Blue
-      const _AvatarColors(Color(0xFFDCFCE7), Color(0xFF15803D)), // Green
-      const _AvatarColors(Color(0xFFFEF3C7), Color(0xFFB45309)), // Yellow
-      const _AvatarColors(Color(0xFFF3E8FF), Color(0xFF7E22CE)), // Purple
-      const _AvatarColors(Color(0xFFFFE4E6), Color(0xFFBE123C)), // Rose
-      const _AvatarColors(Color(0xFFCCFBF1), Color(0xFF0F766E)), // Teal
-    ];
-    final hash = initials.hashCode.abs();
-    return colors[hash % colors.length];
-  }
-
   String _formatPriceBand(double? min, double? max) {
     if (min == null && max == null) return '₹--';
     if (min != null && max != null) {
@@ -351,6 +332,22 @@ class IpoSummaryCard extends StatelessWidget {
     }
     final single = min ?? max;
     return '₹${single?.toStringAsFixed(0)}';
+  }
+
+  String _formatMinInvestment(double? amount) {
+    if (amount == null || amount <= 0) return '₹--';
+    final intVal = amount.round();
+    final s = intVal.toString();
+    if (s.length <= 3) return '₹$s';
+    final last3 = s.substring(s.length - 3);
+    var rest = s.substring(0, s.length - 3);
+    final chunks = <String>[];
+    while (rest.length > 2) {
+      chunks.insert(0, rest.substring(rest.length - 2));
+      rest = rest.substring(0, rest.length - 2);
+    }
+    if (rest.isNotEmpty) chunks.insert(0, rest);
+    return '₹${chunks.join(',')},$last3';
   }
 
   String _formatIssueSize(double? size) {
@@ -368,10 +365,4 @@ class IpoSummaryCard extends StatelessWidget {
       return dateStr;
     }
   }
-}
-
-class _AvatarColors {
-  final Color background;
-  final Color foreground;
-  const _AvatarColors(this.background, this.foreground);
 }

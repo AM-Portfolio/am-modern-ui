@@ -15,10 +15,10 @@ class IpoRegistrarCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F172A).withValues(alpha: 0.7) : context.surfaceColor,
+        color: isDark ? IpoColors.darkCardBg.withValues(alpha: 0.7) : context.surfaceColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? const Color(0xFF1E293B) : context.borderColor,
+          color: isDark ? IpoColors.darkCardBorder : context.borderColor,
           width: 1,
         ),
       ),
@@ -27,7 +27,7 @@ class IpoRegistrarCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.people_alt_outlined, size: 18, color: Color(0xFF38BDF8)),
+              const Icon(Icons.people_alt_outlined, size: 18, color: IpoColors.accentCyan),
               const SizedBox(width: 8),
               Text(
                 'Registrar Details',
@@ -121,9 +121,8 @@ class IpoRegistrarCard extends StatelessWidget {
     required IconData icon,
     VoidCallback? onTap,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isLink = onTap != null && value != 'N/A';
-    final accentColor = isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7);
+    const accentColor = IpoColors.accentCyan;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,

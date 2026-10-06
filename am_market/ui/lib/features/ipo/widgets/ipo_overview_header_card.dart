@@ -15,10 +15,10 @@ class IpoOverviewHeaderCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F172A).withValues(alpha: 0.7) : context.surfaceColor,
+        color: isDark ? IpoColors.darkCardBg.withValues(alpha: 0.7) : context.surfaceColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? const Color(0xFF1E293B) : context.borderColor,
+          color: isDark ? IpoColors.darkCardBorder : context.borderColor,
           width: 1,
         ),
       ),
@@ -101,13 +101,13 @@ class IpoOverviewHeaderCard extends StatelessWidget {
           ),
 
           const SizedBox(height: 22),
-          Divider(color: isDark ? const Color(0xFF1E293B) : context.borderColor),
+          Divider(color: isDark ? IpoColors.darkCardBorder : context.dividerColor),
           const SizedBox(height: 16),
 
-          // 2. 7-Parameter Key Metrics Strip
+          // 2. 8-Parameter Key Metrics Strip
           LayoutBuilder(
             builder: (context, constraints) {
-              final isWide = constraints.maxWidth >= 850;
+              final isWide = constraints.maxWidth >= 950;
 
               final items = [
                 _buildParamItem(
@@ -115,6 +115,12 @@ class IpoOverviewHeaderCard extends StatelessWidget {
                   icon: Icons.local_offer_outlined,
                   label: 'Price Band',
                   value: _formatPriceBand(ipo.minimumPrice, ipo.maximumPrice),
+                ),
+                _buildParamItem(
+                  context,
+                  icon: Icons.account_balance_wallet_outlined,
+                  label: 'Min. Investment',
+                  value: _formatMinInvestment(ipo.calculatedMinInvestment),
                 ),
                 _buildParamItem(
                   context,
@@ -183,20 +189,20 @@ class IpoOverviewHeaderCard extends StatelessWidget {
       width: 58,
       height: 58,
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        color: isDark ? IpoColors.darkInnerCardBg : context.surfaceColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isDark ? const Color(0xFF334155) : context.borderColor,
+          color: isDark ? IpoColors.darkCardBorder : context.borderColor,
           width: 1.2,
         ),
       ),
       alignment: Alignment.center,
       child: Text(
         initials,
-        style: TextStyle(
+        style: const TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w800,
-          color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+          color: IpoColors.accentCyan,
         ),
       ),
     );
@@ -207,8 +213,12 @@ class IpoOverviewHeaderCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+        color: isDark ? IpoColors.docRhpBg : context.surfaceColor,
         borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: isDark ? IpoColors.darkCardBorder : context.borderColor,
+          width: 0.8,
+        ),
       ),
       child: Text(
         text,
@@ -232,10 +242,10 @@ class IpoOverviewHeaderCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF052E16).withValues(alpha: 0.6) : const Color(0xFFDCFCE7),
+            color: IpoColors.statusOpen.withValues(alpha: isDark ? 0.18 : 0.12),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isDark ? const Color(0xFF16A34A).withValues(alpha: 0.5) : const Color(0xFF86EFAC),
+              color: IpoColors.statusOpen.withValues(alpha: isDark ? 0.45 : 0.35),
               width: 1,
             ),
           ),
@@ -244,7 +254,7 @@ class IpoOverviewHeaderCard extends StatelessWidget {
             style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF22C55E),
+              color: IpoColors.statusOpen,
               letterSpacing: 0.5,
             ),
           ),
@@ -264,7 +274,7 @@ class IpoOverviewHeaderCard extends StatelessWidget {
           style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w800,
-            color: Color(0xFF22C55E),
+            color: IpoColors.stepCompleted,
           ),
         ),
         if (ipo.biddingEndDate != null && ipo.biddingEndDate!.isNotEmpty) ...[
@@ -348,6 +358,22 @@ class IpoOverviewHeaderCard extends StatelessWidget {
     }
     final single = min ?? max;
     return '₹${single?.toStringAsFixed(0)}';
+  }
+
+  String _formatMinInvestment(double? amount) {
+    if (amount == null || amount <= 0) return '₹--';
+    final intVal = amount.round();
+    final s = intVal.toString();
+    if (s.length <= 3) return '₹$s';
+    final last3 = s.substring(s.length - 3);
+    var rest = s.substring(0, s.length - 3);
+    final chunks = <String>[];
+    while (rest.length > 2) {
+      chunks.insert(0, rest.substring(rest.length - 2));
+      rest = rest.substring(0, rest.length - 2);
+    }
+    if (rest.isNotEmpty) chunks.insert(0, rest);
+    return '₹${chunks.join(',')},$last3';
   }
 
   String _formatIssueSize(double? size) {

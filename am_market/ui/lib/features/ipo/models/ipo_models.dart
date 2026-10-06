@@ -62,6 +62,10 @@ class AsraxIpoSummaryDto {
   final String? biddingEndDate;
   final String? totalSubscription;
   final List<AsraxInvestorCategoryDto>? eligibleInvestors;
+  final int? lotSize;
+  final int? minimumQuantity;
+  final double? cutOffPrice;
+  final double? minInvestment;
 
   AsraxIpoSummaryDto({
     required this.id,
@@ -78,6 +82,10 @@ class AsraxIpoSummaryDto {
     this.biddingEndDate,
     this.totalSubscription,
     this.eligibleInvestors,
+    this.lotSize,
+    this.minimumQuantity,
+    this.cutOffPrice,
+    this.minInvestment,
   });
 
   factory AsraxIpoSummaryDto.fromJson(Map<String, dynamic> json) {
@@ -98,7 +106,24 @@ class AsraxIpoSummaryDto {
       eligibleInvestors: (json['eligibleInvestors'] as List<dynamic>?)
           ?.map((e) => AsraxInvestorCategoryDto.fromJson(e as Map<String, dynamic>))
           .toList(),
+      lotSize: json['lotSize'] != null ? int.tryParse(json['lotSize'].toString()) : null,
+      minimumQuantity: json['minimumQuantity'] != null ? int.tryParse(json['minimumQuantity'].toString()) : null,
+      cutOffPrice: json['cutOffPrice'] != null ? double.tryParse(json['cutOffPrice'].toString()) : null,
+      minInvestment: (json['minInvestment'] ?? json['minimumInvestment'] ?? json['min_investment']) != null
+          ? double.tryParse((json['minInvestment'] ?? json['minimumInvestment'] ?? json['min_investment']).toString())
+          : null,
     );
+  }
+
+  /// Computed minimum investment amount in INR.
+  double? get calculatedMinInvestment {
+    if (minInvestment != null && minInvestment! > 0) return minInvestment;
+    final qty = (minimumQuantity ?? lotSize)?.toDouble();
+    final price = cutOffPrice ?? maximumPrice ?? minimumPrice;
+    if (qty != null && price != null && qty > 0 && price > 0) {
+      return qty * price;
+    }
+    return null;
   }
 }
 
@@ -206,6 +231,7 @@ class AsraxIpoDetailsDto {
   final AsraxIpoRegistrarDto? registrarInfo;
   final String? totalSubscription;
   final List<AsraxInvestorCategoryDto>? eligibleInvestors;
+  final double? minInvestment;
 
   AsraxIpoDetailsDto({
     required this.id,
@@ -235,6 +261,7 @@ class AsraxIpoDetailsDto {
     this.registrarInfo,
     this.totalSubscription,
     this.eligibleInvestors,
+    this.minInvestment,
   });
 
   factory AsraxIpoDetailsDto.fromJson(Map<String, dynamic> json) {
@@ -255,9 +282,9 @@ class AsraxIpoDetailsDto {
       dailyEndTime: json['dailyEndTime'] as String?,
       faceValue: (json['faceValue'] as num?)?.toDouble(),
       tickSize: (json['tickSize'] as num?)?.toDouble(),
-      lotSize: json['lotSize'] as int?,
-      minimumQuantity: json['minimumQuantity'] as int?,
-      cutOffPrice: (json['cutOffPrice'] as num?)?.toDouble(),
+      lotSize: json['lotSize'] != null ? int.tryParse(json['lotSize'].toString()) : null,
+      minimumQuantity: json['minimumQuantity'] != null ? int.tryParse(json['minimumQuantity'].toString()) : null,
+      cutOffPrice: json['cutOffPrice'] != null ? double.tryParse(json['cutOffPrice'].toString()) : null,
       listingPrice: (json['listingPrice'] as num?)?.toDouble(),
       listingExchange: json['listingExchange'] as String?,
       rhpUrl: json['rhpUrl'] as String?,
@@ -272,6 +299,20 @@ class AsraxIpoDetailsDto {
       eligibleInvestors: (json['eligibleInvestors'] as List<dynamic>?)
           ?.map((e) => AsraxInvestorCategoryDto.fromJson(e as Map<String, dynamic>))
           .toList(),
+      minInvestment: (json['minInvestment'] ?? json['minimumInvestment'] ?? json['min_investment']) != null
+          ? double.tryParse((json['minInvestment'] ?? json['minimumInvestment'] ?? json['min_investment']).toString())
+          : null,
     );
+  }
+
+  /// Computed minimum investment amount in INR.
+  double? get calculatedMinInvestment {
+    if (minInvestment != null && minInvestment! > 0) return minInvestment;
+    final qty = (minimumQuantity ?? lotSize)?.toDouble();
+    final price = cutOffPrice ?? maximumPrice ?? minimumPrice;
+    if (qty != null && price != null && qty > 0 && price > 0) {
+      return qty * price;
+    }
+    return null;
   }
 }

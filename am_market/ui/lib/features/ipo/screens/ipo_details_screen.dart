@@ -18,10 +18,9 @@ class IpoDetailsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detailsAsync = ref.watch(ipoDetailsProvider(ipoId));
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0B0F19) : context.backgroundColor,
+      backgroundColor: context.backgroundColor,
       body: SafeArea(
         child: detailsAsync.when(
           data: (ipo) => _buildContent(context, ipo),

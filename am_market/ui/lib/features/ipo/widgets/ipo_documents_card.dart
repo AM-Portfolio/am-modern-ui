@@ -15,10 +15,10 @@ class IpoDocumentsCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F172A).withValues(alpha: 0.7) : context.surfaceColor,
+        color: isDark ? IpoColors.darkCardBg.withValues(alpha: 0.7) : context.surfaceColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? const Color(0xFF1E293B) : context.borderColor,
+          color: isDark ? IpoColors.darkCardBorder : context.borderColor,
           width: 1,
         ),
       ),
@@ -27,7 +27,7 @@ class IpoDocumentsCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.description_outlined, size: 18, color: Color(0xFF38BDF8)),
+              const Icon(Icons.description_outlined, size: 18, color: IpoColors.accentCyan),
               const SizedBox(width: 8),
               Text(
                 'Documents',
@@ -74,6 +74,7 @@ class IpoDocumentsCard extends StatelessWidget {
 
   Widget _buildRhpButton(BuildContext context) {
     final hasRhp = rhpUrl != null && rhpUrl!.isNotEmpty;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return InkWell(
       onTap: hasRhp ? () => _launchUrl(rhpUrl!) : null,
@@ -82,12 +83,12 @@ class IpoDocumentsCard extends StatelessWidget {
         height: 52,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: hasRhp ? const Color(0xFF22C55E) : const Color(0xFF1E293B),
+          color: hasRhp ? IpoColors.stepCompleted : (isDark ? IpoColors.docRhpBg : context.surfaceColor),
           borderRadius: BorderRadius.circular(10),
           boxShadow: hasRhp
               ? [
                   BoxShadow(
-                    color: const Color(0xFF22C55E).withValues(alpha: 0.3),
+                    color: IpoColors.stepCompleted.withValues(alpha: 0.3),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -143,10 +144,10 @@ class IpoDocumentsCard extends StatelessWidget {
         height: 48,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E293B).withValues(alpha: 0.5) : context.surfaceColor,
+          color: isDark ? IpoColors.docRhpBg.withValues(alpha: 0.5) : context.surfaceColor,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isDark ? const Color(0xFF334155) : context.borderColor,
+            color: isDark ? IpoColors.stepPending : context.borderColor,
             width: 1,
           ),
         ),

@@ -14,10 +14,10 @@ class IpoSubscriptionStatusCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F172A).withValues(alpha: 0.7) : context.surfaceColor,
+        color: isDark ? IpoColors.darkCardBg.withValues(alpha: 0.7) : context.surfaceColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? const Color(0xFF1E293B) : context.borderColor,
+          color: isDark ? IpoColors.darkCardBorder : context.borderColor,
           width: 1,
         ),
       ),
@@ -26,7 +26,7 @@ class IpoSubscriptionStatusCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.bar_chart_rounded, size: 18, color: Color(0xFF38BDF8)),
+              const Icon(Icons.bar_chart_rounded, size: 18, color: IpoColors.accentCyan),
               const SizedBox(width: 8),
               Text(
                 'Subscription Status',
@@ -43,10 +43,10 @@ class IpoSubscriptionStatusCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E293B).withValues(alpha: 0.4) : context.surfaceColor,
+              color: isDark ? IpoColors.docRhpBg.withValues(alpha: 0.4) : context.surfaceColor,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isDark ? const Color(0xFF334155) : context.borderColor,
+                color: isDark ? IpoColors.stepPending : context.borderColor,
                 width: 1,
               ),
             ),
@@ -57,10 +57,10 @@ class IpoSubscriptionStatusCard extends StatelessWidget {
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF22C55E).withValues(alpha: 0.15),
+                          color: IpoColors.stepCompleted.withValues(alpha: 0.15),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.check_circle_outline_rounded, color: Color(0xFF22C55E), size: 20),
+                        child: const Icon(Icons.check_circle_outline_rounded, color: IpoColors.stepCompleted, size: 20),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -94,7 +94,7 @@ class IpoSubscriptionStatusCard extends StatelessWidget {
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                          color: isDark ? IpoColors.stepPending : context.dividerColor,
                           shape: BoxShape.circle,
                         ),
                         child: Icon(Icons.remove_rounded, color: context.textTertiary, size: 20),

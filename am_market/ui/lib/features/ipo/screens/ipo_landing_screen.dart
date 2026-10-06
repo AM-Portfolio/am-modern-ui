@@ -14,10 +14,9 @@ class IpoLandingScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final countsAsync = ref.watch(ipoCountsProvider);
     final filteredIposAsync = ref.watch(filteredIposProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0B0F19) : context.backgroundColor,
+      backgroundColor: context.backgroundColor,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
@@ -228,10 +227,10 @@ class IpoLandingScreen extends ConsumerWidget {
       height: 38,
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F172A).withValues(alpha: 0.6) : context.surfaceColor,
+        color: isDark ? IpoColors.darkCardBg.withValues(alpha: 0.6) : context.surfaceColor,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isDark ? const Color(0xFF1E293B) : context.borderColor,
+          color: isDark ? IpoColors.darkCardBorder : context.borderColor,
           width: 1,
         ),
       ),
@@ -265,10 +264,10 @@ class _KpiSkeleton extends StatelessWidget {
     return Container(
       height: 80,
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F172A).withValues(alpha: 0.4) : context.surfaceColor,
+        color: isDark ? IpoColors.darkCardBg.withValues(alpha: 0.4) : context.surfaceColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? const Color(0xFF1E293B) : context.borderColor,
+          color: isDark ? IpoColors.darkCardBorder : context.borderColor,
         ),
       ),
       child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),

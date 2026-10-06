@@ -1,3 +1,4 @@
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
 class IpoBoardBadge extends StatelessWidget {
@@ -10,20 +11,12 @@ class IpoBoardBadge extends StatelessWidget {
     final type = (issueType ?? '').toLowerCase();
     final isSme = type.contains('sme');
     final label = isSme ? 'SME' : 'Mainboard';
-
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bgColor = isSme
-        ? (isDark ? const Color(0xFF0369A1).withValues(alpha: 0.35) : const Color(0xFFE0F2FE))
-        : (isDark ? const Color(0xFF581C87).withValues(alpha: 0.35) : const Color(0xFFF3E8FF));
-
-    final textColor = isSme
-        ? (isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7))
-        : (isDark ? const Color(0xFFC084FC) : const Color(0xFF7E22CE));
-
-    final borderColor = isSme
-        ? (isDark ? const Color(0xFF0284C7).withValues(alpha: 0.5) : const Color(0xFFBAE6FD))
-        : (isDark ? const Color(0xFF7E22CE).withValues(alpha: 0.5) : const Color(0xFFE9D5FF));
+    final baseColor = isSme ? IpoColors.smeBadge : IpoColors.mainboardBadge;
+    final bgColor = baseColor.withValues(alpha: isDark ? 0.2 : 0.12);
+    final textColor = isDark ? baseColor : baseColor;
+    final borderColor = baseColor.withValues(alpha: isDark ? 0.4 : 0.3);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),

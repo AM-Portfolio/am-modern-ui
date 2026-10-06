@@ -20,8 +20,8 @@ class SubscriptionProgressBar extends StatelessWidget {
     final Color statusColor = !hasData
         ? context.textTertiary
         : isSubscribed
-            ? (isDark ? const Color(0xFF4ADE80) : const Color(0xFF16A34A))
-            : (isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626));
+            ? (isDark ? IpoColors.progressSubscribed : IpoColors.progressSubscribedLight)
+            : (isDark ? IpoColors.progressUnderSubscribed : IpoColors.progressUnderSubscribedLight);
 
     final String displayValue = hasData ? '${value.toStringAsFixed(2)}x' : 'N/A';
 
@@ -70,7 +70,7 @@ class SubscriptionProgressBar extends StatelessWidget {
           height: 6,
           width: double.infinity,
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+            color: isDark ? IpoColors.darkCardBorder : context.dividerColor,
             borderRadius: BorderRadius.circular(3),
           ),
           child: FractionallySizedBox(
@@ -81,12 +81,12 @@ class SubscriptionProgressBar extends StatelessWidget {
                 gradient: LinearGradient(
                   colors: isSubscribed
                       ? [
-                          const Color(0xFF22C55E).withValues(alpha: 0.8),
-                          const Color(0xFF10B981),
+                          IpoColors.progressSubscribed.withValues(alpha: 0.8),
+                          IpoColors.stepCompleted,
                         ]
                       : [
-                          const Color(0xFFEF4444).withValues(alpha: 0.8),
-                          const Color(0xFFF97316),
+                          IpoColors.progressUnderSubscribed.withValues(alpha: 0.8),
+                          IpoColors.statusClosingSoon,
                         ],
                 ),
                 borderRadius: BorderRadius.circular(3),

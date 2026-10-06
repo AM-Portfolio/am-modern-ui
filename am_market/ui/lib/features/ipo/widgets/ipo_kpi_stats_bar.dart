@@ -17,10 +17,10 @@ class IpoKpiStatsBar extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F172A).withValues(alpha: 0.6) : context.surfaceColor,
+        color: isDark ? IpoColors.darkCardBg.withValues(alpha: 0.7) : context.surfaceColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? const Color(0xFF1E293B) : context.borderColor,
+          color: isDark ? IpoColors.darkCardBorder : context.borderColor,
           width: 1,
         ),
       ),
@@ -42,7 +42,7 @@ class IpoKpiStatsBar extends ConsumerWidget {
                   icon: Icons.inventory_2_outlined,
                   filter: IpoStatusFilter.all,
                   isSelected: activeFilter == IpoStatusFilter.all,
-                  indicatorColor: isDark ? Colors.white : Colors.black87,
+                  indicatorColor: context.textPrimary,
                 ),
                 _buildKpiCard(
                   context,
@@ -51,7 +51,7 @@ class IpoKpiStatsBar extends ConsumerWidget {
                   count: counts.open,
                   filter: IpoStatusFilter.open,
                   isSelected: activeFilter == IpoStatusFilter.open,
-                  indicatorColor: const Color(0xFF22C55E),
+                  indicatorColor: IpoColors.dotOpen,
                 ),
                 _buildKpiCard(
                   context,
@@ -60,7 +60,7 @@ class IpoKpiStatsBar extends ConsumerWidget {
                   count: counts.closingToday,
                   filter: IpoStatusFilter.closingToday,
                   isSelected: activeFilter == IpoStatusFilter.closingToday,
-                  indicatorColor: const Color(0xFFEF4444),
+                  indicatorColor: context.statusError,
                 ),
                 _buildKpiCard(
                   context,
@@ -69,7 +69,7 @@ class IpoKpiStatsBar extends ConsumerWidget {
                   count: counts.upcoming,
                   filter: IpoStatusFilter.upcoming,
                   isSelected: activeFilter == IpoStatusFilter.upcoming,
-                  indicatorColor: const Color(0xFFF59E0B),
+                  indicatorColor: IpoColors.dotUpcoming,
                 ),
                 _buildKpiCard(
                   context,
@@ -78,7 +78,7 @@ class IpoKpiStatsBar extends ConsumerWidget {
                   count: counts.closed,
                   filter: IpoStatusFilter.closed,
                   isSelected: activeFilter == IpoStatusFilter.closed,
-                  indicatorColor: const Color(0xFF38BDF8),
+                  indicatorColor: IpoColors.dotClosed,
                 ),
               ],
             );
@@ -96,7 +96,7 @@ class IpoKpiStatsBar extends ConsumerWidget {
                   icon: Icons.inventory_2_outlined,
                   filter: IpoStatusFilter.all,
                   isSelected: activeFilter == IpoStatusFilter.all,
-                  indicatorColor: isDark ? Colors.white : Colors.black87,
+                  indicatorColor: context.textPrimary,
                 ),
               ),
               _buildDivider(context),
@@ -108,7 +108,7 @@ class IpoKpiStatsBar extends ConsumerWidget {
                   count: counts.open,
                   filter: IpoStatusFilter.open,
                   isSelected: activeFilter == IpoStatusFilter.open,
-                  indicatorColor: const Color(0xFF22C55E),
+                  indicatorColor: IpoColors.dotOpen,
                 ),
               ),
               _buildDivider(context),
@@ -120,7 +120,7 @@ class IpoKpiStatsBar extends ConsumerWidget {
                   count: counts.closingToday,
                   filter: IpoStatusFilter.closingToday,
                   isSelected: activeFilter == IpoStatusFilter.closingToday,
-                  indicatorColor: const Color(0xFFEF4444),
+                  indicatorColor: context.statusError,
                 ),
               ),
               _buildDivider(context),
@@ -132,7 +132,7 @@ class IpoKpiStatsBar extends ConsumerWidget {
                   count: counts.upcoming,
                   filter: IpoStatusFilter.upcoming,
                   isSelected: activeFilter == IpoStatusFilter.upcoming,
-                  indicatorColor: const Color(0xFFF59E0B),
+                  indicatorColor: IpoColors.dotUpcoming,
                 ),
               ),
               _buildDivider(context),
@@ -144,7 +144,7 @@ class IpoKpiStatsBar extends ConsumerWidget {
                   count: counts.closed,
                   filter: IpoStatusFilter.closed,
                   isSelected: activeFilter == IpoStatusFilter.closed,
-                  indicatorColor: const Color(0xFF38BDF8),
+                  indicatorColor: IpoColors.dotClosed,
                 ),
               ),
             ],
@@ -159,7 +159,7 @@ class IpoKpiStatsBar extends ConsumerWidget {
     return Container(
       height: 36,
       width: 1,
-      color: isDark ? const Color(0xFF1E293B) : context.borderColor.withValues(alpha: 0.5),
+      color: isDark ? IpoColors.darkCardBorder : context.dividerColor,
     );
   }
 
