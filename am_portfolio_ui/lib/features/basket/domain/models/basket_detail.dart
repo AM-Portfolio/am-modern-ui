@@ -5,6 +5,7 @@ part 'basket_detail.g.dart';
 
 @freezed
 abstract class BasketDetail with _$BasketDetail {
+  const BasketDetail._();
   const factory BasketDetail({
     required String id,
     @Default('') String name,
@@ -34,6 +35,7 @@ abstract class BasketDetail with _$BasketDetail {
 
 @freezed
 abstract class BasketLineDetail with _$BasketLineDetail {
+  const BasketLineDetail._();
   const factory BasketLineDetail({
     @Default('') String symbol,
     @Default('') String isin,

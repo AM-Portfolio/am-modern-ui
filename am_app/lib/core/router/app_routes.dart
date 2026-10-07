@@ -89,6 +89,7 @@ class AppRoutes {
     'Heatmap Explorer': 'heatmap-explorer',
     'Equity Insider': 'equity-insider',
     'Futures & Options': 'futures-options',
+    'IPO Center': 'ipo-center',
     'Watch List': 'watch-list',
   };
 

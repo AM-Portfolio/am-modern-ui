@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:am_library/am_library.dart';
 import 'package:am_common/core/config/config_service.dart';
 import 'package:am_common/core/config/app_config.dart';
@@ -69,13 +68,17 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
     required ApiClient apiClient,
     required TradeApiConfig tradeConfig,
     PortfolioApiConfig? portfolioConfig,
+    bool useMockData = false,
   })  : _apiClient = apiClient,
         _tradeConfig = tradeConfig,
-        _portfolioConfig = portfolioConfig;
+        _portfolioConfig = portfolioConfig,
+        _useMockData = useMockData;
 
   final ApiClient _apiClient;
   final TradeApiConfig _tradeConfig;
   final PortfolioApiConfig? _portfolioConfig;
+  /// Only when config says so — never inject mock-pf-001 against dig/prod just because kDebugMode.
+  final bool _useMockData;
 
   /// Helper to safely build URI avoiding double slashes
   String _buildUri(String baseUrl, String resource) {
@@ -143,7 +146,7 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
         stackTrace: StackTrace.current,
       );
 
-      if (kDebugMode) {
+      if (_useMockData) {
         try {
           AppLogger.info('Loading mock trade portfolios',
               tag: 'TradeRemoteDataSource');
@@ -238,7 +241,7 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
         }
       } catch (_) {}
 
-      if (kDebugMode) {
+      if (_useMockData) {
         try {
           AppLogger.info('Loading mock trade holdings',
               tag: 'TradeRemoteDataSource');
@@ -370,7 +373,7 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
         stackTrace: StackTrace.current,
       );
 
-      if (kDebugMode) {
+      if (_useMockData) {
         try {
           AppLogger.info('Loading mock trade summary',
               tag: 'TradeRemoteDataSource');
@@ -453,7 +456,7 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
         stackTrace: StackTrace.current,
       );
 
-      if (kDebugMode) {
+      if (_useMockData) {
         try {
           AppLogger.info('Loading mock trade calendar',
               tag: 'TradeRemoteDataSource');
@@ -536,7 +539,7 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
         stackTrace: StackTrace.current,
       );
 
-      if (kDebugMode) {
+      if (_useMockData) {
         try {
           AppLogger.info('Loading mock trade calendar by day',
               tag: 'TradeRemoteDataSource');
@@ -636,7 +639,7 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
         stackTrace: StackTrace.current,
       );
 
-      if (kDebugMode) {
+      if (_useMockData) {
         try {
           AppLogger.info('Loading mock trade calendar by date range',
               tag: 'TradeRemoteDataSource');
@@ -719,7 +722,7 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
         stackTrace: StackTrace.current,
       );
 
-      if (kDebugMode) {
+      if (_useMockData) {
         try {
           AppLogger.info('Loading mock trade calendar',
               tag: 'TradeRemoteDataSource');
@@ -802,7 +805,7 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
         stackTrace: StackTrace.current,
       );
 
-      if (kDebugMode) {
+      if (_useMockData) {
         try {
           AppLogger.info('Loading mock trade calendar',
               tag: 'TradeRemoteDataSource');

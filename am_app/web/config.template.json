@@ -1,13 +1,15 @@
 {
-  "_comment": "Shared template only — no env host. Override via Helm config.json (cluster) or config.{env}.json / .env (local).",
+  "_comment": "Shared template only — no env host. Client IDs / GrowthBook keys come from CI secrets or gitignored config.local.json.",
   "domain": "",
   "services": {},
   "google": {
-    "webClientId": ""
+    "webClientId": "",
+    "iosClientId": "",
+    "androidClientId": ""
   },
   "growthbook": {
     "enabled": true,
     "apiHost": "https://growthbook.asrax.in/gbapi",
-    "clientKey": "sdk-GLujAhix8Foe5qoC"
+    "clientKey": ""
   }
 }

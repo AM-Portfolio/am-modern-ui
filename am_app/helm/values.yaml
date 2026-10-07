@@ -13,12 +13,15 @@ environment: prod
 
 appConfig:
   domain: "am.asrax.in"
-  # Runtime Google Sign-In client id (not baked into the Docker image)
-  googleWebClientId: "307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com"
+  # Runtime Google Sign-In client ids (fed dynamically via Vault at runtime)
+  googleWebClientId: ""
+  googleIosClientId: ""
+  googleAndroidClientId: ""
   growthbook:
     enabled: true
     apiHost: "https://growthbook.asrax.in/gbapi"
-    clientKey: "sdk-Cwr4MxBl0iqnKZJ"
+    # Set via Contabo CI helm param from GitHub secret GROWTHBOOK_CLIENT_KEY
+    clientKey: ""
 
 configMap:
   enabled: true

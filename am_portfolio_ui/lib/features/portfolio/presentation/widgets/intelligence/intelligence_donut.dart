@@ -33,7 +33,10 @@ class IntelligenceDonutView extends StatelessWidget {
       width: size,
       height: size,
       child: CustomPaint(
-        painter: _SimpleDonutPainter(weights: weights),
+        painter: _SimpleDonutPainter(
+          weights: weights,
+          emptyTrackColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+        ),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -61,31 +64,70 @@ class IntelligenceDonutView extends StatelessWidget {
 }
 
 class _SimpleDonutPainter extends CustomPainter {
-  _SimpleDonutPainter({required this.weights});
+  _SimpleDonutPainter({required this.weights, required this.emptyTrackColor});
 
   final List<XrayWeight> weights;
+  final Color emptyTrackColor;
 
   @override
   void paint(Canvas canvas, Size size) {
     final slices = weights.where((w) => w.weightPct > 0).take(8).toList();
-    if (slices.isEmpty) return;
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.shortestSide / 2 - 8;
+    final baseRadius = size.shortestSide / 2 - 8;
+    
+    if (slices.isEmpty) {
+      // Draw Empty State Track
+      canvas.drawCircle(
+        center,
+        baseRadius,
+        Paint()
+          ..isAntiAlias = true
+          ..style = PaintingStyle.stroke
+          ..color = emptyTrackColor
+          ..strokeWidth = 14,
+      );
+      return;
+    }
+    
+    const gap = 0.03;
     var start = -3.14159 / 2;
     final total = slices.fold<double>(0, (s, w) => s + w.weightPct);
+    
     for (var i = 0; i < slices.length; i++) {
-      final sweep = (slices[i].weightPct / total) * 6.28318;
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        start,
-        sweep - 0.04,
-        false,
-        Paint()
-          ..color = intelligenceDonutColor(i)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 18,
-      );
-      start += sweep;
+      final color = intelligenceDonutColor(i);
+      final fullSweep = (slices[i].weightPct / total) * 6.28318;
+      final sweep = (fullSweep - gap).clamp(0.0, fullSweep);
+      
+      if (sweep > 0) {
+        // Glow layer
+        canvas.drawArc(
+          Rect.fromCircle(center: center, radius: baseRadius),
+          start,
+          sweep,
+          false,
+          Paint()
+            ..isAntiAlias = true
+            ..style = PaintingStyle.stroke
+            ..strokeCap = StrokeCap.butt
+            ..color = color.withValues(alpha: 0.22)
+            ..strokeWidth = 22
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+        );
+        // Solid layer
+        canvas.drawArc(
+          Rect.fromCircle(center: center, radius: baseRadius),
+          start,
+          sweep,
+          false,
+          Paint()
+            ..isAntiAlias = true
+            ..style = PaintingStyle.stroke
+            ..strokeCap = StrokeCap.butt
+            ..color = color
+            ..strokeWidth = 18,
+        );
+      }
+      start += fullSweep;
     }
   }
 

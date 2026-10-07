@@ -1,0 +1,160 @@
+# Deploy previously built store artifacts (no Flutter rebuild).
+# Codemagic-sourced reuse requires Environment "codemagic-fallback" approval.
+# Prefer GitHub Mobile CI for Internal → Production ladder.
+
+name: Deploy store artifacts
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_android:
+        description: Upload AAB to Play Internal
+        type: boolean
+        default: true
+      deploy_ios:
+        description: Upload signed IPA to TestFlight
+        type: boolean
+        default: false
+      codemagic_android_build_id:
+        description: Codemagic Android build id (fetches AAB artifact)
+        type: string
+        default: ""
+      android_artifact_url:
+        description: Override direct AAB URL (optional; skips CM fetch if set)
+        type: string
+        default: ""
+      ios_artifact_url:
+        description: Direct signed IPA URL (required if deploy_ios)
+        type: string
+        default: ""
+      package_name:
+        type: string
+        default: "com.asrax.aminvestment"
+      bundle_id:
+        type: string
+        default: "com.asrax.aminvestment"
+
+jobs:
+  # When fetching from Codemagic, require fallback Environment approval first
+  codemagic-reuse-gate:
+    name: Codemagic reuse approval
+    if: ${{ inputs.deploy_android && inputs.android_artifact_url == '' && inputs.codemagic_android_build_id != '' }}
+    runs-on: ubuntu-latest
+    environment: codemagic-fallback
+    steps:
+      - name: Approved
+        run: |
+          echo "codemagic-fallback approved for build ${{ inputs.codemagic_android_build_id }}"
+
+  android-internal:
+    name: Android -> Play Internal (reuse artifact)
+    needs: [codemagic-reuse-gate]
+    if: ${{ always() && inputs.deploy_android && (needs.codemagic-reuse-gate.result == 'success' || needs.codemagic-reuse-gate.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    environment: android-internal
+    permissions:
+      contents: read
+    steps:
+      - name: Resolve and download AAB
+        env:
+          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
+          BUILD_ID: ${{ inputs.codemagic_android_build_id }}
+          ARTIFACT_URL: ${{ inputs.android_artifact_url }}
+        run: |
+          set -euo pipefail
+          mkdir -p android-out
+          URL="${ARTIFACT_URL}"
+          if [ -z "$URL" ]; then
+            if [ -z "${CODEMAGIC_API_TOKEN:-}" ]; then
+              echo "::error::CODEMAGIC_API_TOKEN secret required to fetch Codemagic artifacts"
+              exit 1
+            fi
+            if [ -z "$BUILD_ID" ]; then
+              echo "::error::codemagic_android_build_id or android_artifact_url required"
+              exit 1
+            fi
+            META=$(curl -fsSL -H "x-auth-token: ${CODEMAGIC_API_TOKEN}" \
+              "https://api.codemagic.io/builds/${BUILD_ID}")
+            URL=$(echo "$META" | python3 -c "
+          import json,sys
+          b=json.load(sys.stdin)
+          build=b.get('build', b)
+          arts=build.get('artefacts') or build.get('artifacts') or []
+          if isinstance(arts, dict): arts=[arts]
+          for a in arts:
+            name=(a.get('name') or '')
+            typ=(a.get('type') or '')
+            if name.endswith('.aab') or typ=='aab':
+              print(a.get('url','')); break
+          ")
+            if [ -z "$URL" ]; then
+              echo "::error::No AAB artefact on Codemagic build ${BUILD_ID}"
+              exit 1
+            fi
+          fi
+          echo "Downloading AAB..."
+          curl -fsSL -H "x-auth-token: ${CODEMAGIC_API_TOKEN:-}" -o android-out/app-release.aab "$URL"
+          ls -lh android-out/app-release.aab
+
+      - name: Upload to Google Play Internal Testing
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
+          packageName: ${{ inputs.package_name }}
+          releaseFiles: android-out/*.aab
+          tracks: internal
+          status: completed
+
+  ios-testflight:
+    name: iOS -> TestFlight (reuse signed IPA)
+    if: ${{ inputs.deploy_ios }}
+    runs-on: macos-latest
+    environment: ios-internal
+    permissions:
+      contents: read
+    steps:
+      - name: Download signed IPA
+        env:
+          IPA_URL: ${{ inputs.ios_artifact_url }}
+          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${IPA_URL:-}" ]; then
+            echo "::error::ios_artifact_url must point at a signed .ipa (unsigned Runner.app.zip cannot upload to TestFlight)"
+            exit 1
+          fi
+          case "$IPA_URL" in
+            *.ipa|*.IPA) ;;
+            *)
+              echo "::error::URL must be a .ipa file, not .app.zip"
+              exit 1
+              ;;
+          esac
+          mkdir -p ios-out
+          curl -fsSL -H "x-auth-token: ${CODEMAGIC_API_TOKEN:-}" -o ios-out/app.ipa "$IPA_URL"
+          ls -lh ios-out/app.ipa
+
+      - name: Write App Store Connect API key
+        env:
+          KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "${KEY_BASE64:-}" ] || [ -z "${KEY_ID:-}" ]; then
+            echo "::error::APP_STORE_CONNECT_API_KEY_* secrets required"
+            exit 1
+          fi
+          mkdir -p "$HOME/.private_keys"
+          echo "$KEY_BASE64" | base64 --decode > "$HOME/.private_keys/AuthKey_${KEY_ID}.p8"
+
+      - name: Upload IPA to TestFlight
+        env:
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          BUNDLE_ID: ${{ inputs.bundle_id }}
+        run: |
+          set -euo pipefail
+          xcrun altool --upload-app --type ios \
+            --file ios-out/app.ipa \
+            --apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
+            --apiIssuer "$APP_STORE_CONNECT_API_ISSUER_ID"
