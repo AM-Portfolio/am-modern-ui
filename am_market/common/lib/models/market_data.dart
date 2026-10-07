@@ -23,7 +23,11 @@ class StockIndicesMarketData {
       (segment?.toUpperCase() == 'GLOBAL') ||
       (indexSymbol.toUpperCase().startsWith('GLOBAL_'));
 
-  static double _number(dynamic value) => value is num ? value.toDouble() : 0.0;
+  static double _number(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
+  }
 
   static double _resolveLastPrice(
     Map<String, dynamic> json,
@@ -96,6 +100,7 @@ class StockData {
   final double open;
   final double dayHigh;
   final double dayLow;
+  final String? companyName;
 
   StockData({
     required this.symbol,
@@ -105,17 +110,19 @@ class StockData {
     required this.open,
     required this.dayHigh,
     required this.dayLow,
+    this.companyName,
   });
 
   factory StockData.fromJson(Map<String, dynamic> json) {
     return StockData(
       symbol: json['symbol'] ?? '',
-      lastPrice: (json['lastPrice'] ?? 0).toDouble(),
-      change: (json['change'] ?? 0).toDouble(),
-      pChange: (json['pChange'] ?? 0).toDouble(),
-      open: (json['open'] ?? 0).toDouble(),
-      dayHigh: (json['dayHigh'] ?? 0).toDouble(),
-      dayLow: (json['dayLow'] ?? 0).toDouble(),
+      companyName: json['companyName'] as String?,
+      lastPrice: StockIndicesMarketData._number(json['lastPrice'] ?? json['ltp'] ?? json['price'] ?? json['close'] ?? json['previousClose']),
+      change: StockIndicesMarketData._number(json['change'] ?? json['chg']),
+      pChange: StockIndicesMarketData._number(json['pChange'] ?? json['chgPercent'] ?? json['percentChange'] ?? json['percChange']),
+      open: StockIndicesMarketData._number(json['open']),
+      dayHigh: StockIndicesMarketData._number(json['dayHigh'] ?? json['high']),
+      dayLow: StockIndicesMarketData._number(json['dayLow'] ?? json['low']),
     );
   }
 }

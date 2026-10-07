@@ -55,6 +55,12 @@ final tradeMetricsMobileEnabledProvider = Provider<bool>((ref) {
   }
 });
 
+final securityAlertBannerEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(
+    featureFlagProvider(FeatureFlagKeys.securityAlertBannerEnabled),
+  );
+});
+
 final offlineReadsEnabledProvider = Provider<bool>((ref) {
   return ref.watch(featureFlagProvider(FeatureFlagKeys.offlineReadsV1));
 });
