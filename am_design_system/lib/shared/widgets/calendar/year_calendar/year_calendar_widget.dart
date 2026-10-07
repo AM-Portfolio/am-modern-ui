@@ -106,7 +106,8 @@ class _YearCalendarWidgetState extends State<YearCalendarWidget> {
     if (data == null || data.isEmpty) {
       return List.generate(12, (i) => (year: widget.year, month: i + 1));
     }
-    final years = data.keys.toList()..sort();
+    // Newest year first so current year is at offset 0 (no silent scroll miss).
+    final years = data.keys.toList()..sort((a, b) => b.compareTo(a));
     final entries = <({int year, int month})>[];
     for (final y in years) {
       for (var m = 1; m <= 12; m++) {
@@ -122,21 +123,70 @@ class _YearCalendarWidgetState extends State<YearCalendarWidget> {
 
   Future<void> _scrollToYear(int year, {required bool animate}) async {
     if (!mounted || widget.yearsData == null) return;
-    final key = _keyFor(year, 1);
-    final ctx = key.currentContext;
-    if (ctx == null) return;
+
+    final months = _continuousMonths();
+    final index = months.indexWhere((e) => e.year == year && e.month == 1);
+    if (index < 0) return;
+
     _suppressScrollYearSync = true;
-    await Scrollable.ensureVisible(
-      ctx,
-      alignment: 0.0,
-      duration: animate ? const Duration(milliseconds: 280) : Duration.zero,
-      curve: Curves.easeOutCubic,
-    );
-    if (mounted) {
+    if (_pinnedYear != year) {
       setState(() => _pinnedYear = year);
     }
-    // Allow scroll sync again after layout settles.
-    Future.delayed(const Duration(milliseconds: 350), () {
+
+    // Sticky header is pinned; scroll offset covers stats strip + month cards.
+    const statsHeight = 52.0;
+    const avgMonthHeight = 340.0;
+    final estimated =
+        (statsHeight + index * avgMonthHeight).clamp(0.0, double.infinity);
+
+    Future<void> applyOffset() async {
+      if (!mounted || !_scrollController.hasClients) return;
+      final maxExtent = _scrollController.position.maxScrollExtent;
+      final offset = estimated.clamp(0.0, maxExtent);
+      if (animate) {
+        await _scrollController.animateTo(
+          offset,
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOutCubic,
+        );
+      } else {
+        _scrollController.jumpTo(offset);
+      }
+    }
+
+    // Wait until the scroll view is attached (first open / remount).
+    if (!_scrollController.hasClients) {
+      await WidgetsBinding.instance.endOfFrame;
+    }
+    if (!_scrollController.hasClients) {
+      await Future<void>.delayed(const Duration(milliseconds: 16));
+      await WidgetsBinding.instance.endOfFrame;
+    }
+    await applyOffset();
+
+    // Refine with ensureVisible once Jan of [year] is built.
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
+    final key = _keyFor(year, 1);
+    var ctx = key.currentContext;
+    if (ctx == null) {
+      await WidgetsBinding.instance.endOfFrame;
+      ctx = key.currentContext;
+    }
+    if (ctx != null && mounted) {
+      await Scrollable.ensureVisible(
+        ctx,
+        alignment: 0.0,
+        duration:
+            animate ? const Duration(milliseconds: 200) : Duration.zero,
+        curve: Curves.easeOutCubic,
+      );
+    }
+
+    if (mounted && _pinnedYear != year) {
+      setState(() => _pinnedYear = year);
+    }
+    Future.delayed(const Duration(milliseconds: 400), () {
       _suppressScrollYearSync = false;
     });
   }
@@ -159,15 +209,17 @@ class _YearCalendarWidgetState extends State<YearCalendarWidget> {
     if (months.isEmpty) return;
 
     // Prefer hit-testing built month cards under the sticky edge.
-    const stickyBottom = 100.0;
+    final stickyBottom = MediaQuery.paddingOf(context).top + 96.0;
     int? bestYear;
     var bestDistance = double.infinity;
+    var anyKeyReady = false;
 
     for (final entry in _monthKeys.entries) {
       final ctx = entry.value.currentContext;
       if (ctx == null) continue;
       final box = ctx.findRenderObject() as RenderBox?;
       if (box == null || !box.hasSize) continue;
+      anyKeyReady = true;
       final top = box.localToGlobal(Offset.zero).dy;
       final bottom = top + box.size.height;
       if (bottom <= stickyBottom) continue;
@@ -179,8 +231,8 @@ class _YearCalendarWidgetState extends State<YearCalendarWidget> {
       }
     }
 
-    // Fallback: estimate from scroll offset when keys aren't ready.
-    if (bestYear == null) {
+    // Fallback only when month keys are not laid out yet.
+    if (bestYear == null && !anyKeyReady) {
       const statsHeight = 44.0;
       const avgMonthHeight = 340.0;
       final raw = (_scrollController.offset - statsHeight).clamp(0.0, double.infinity);
@@ -242,6 +294,7 @@ class _YearCalendarWidgetState extends State<YearCalendarWidget> {
                   onYearChanged: _handleYearChanged,
                   currentColorMode: _colorMode,
                   onColorModeChanged: _handleColorModeChanged,
+                  availableYears: widget.yearsData?.keys.toList(),
                 ),
               ),
             ),

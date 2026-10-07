@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:ui';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:am_common/am_common.dart'
+    show MobileInlineSearchField, MobileSearchScope;
 import '../../../core/theme/app_glassmorphism_v2.dart';
 import '../../../core/module/module_color_provider.dart';
 import '../../../core/module/module_type.dart';
@@ -9,6 +11,7 @@ import '../../../core/theme/app_glassmorphism.dart'; // For GradientBorderPainte
 
 import '../navigation/secondary_sidebar.dart';
 import '../navigation/module_bottom_navigation.dart';
+import '../navigation/navigation_chrome.dart';
 import '../zoom/browser_zoom_host.dart';
 
 /// A unified scaffold that handles the responsive sidebar logic for all AM modules.
@@ -74,6 +77,7 @@ class UnifiedSidebarScaffold extends StatefulWidget {
     this.titleWidget,
     this.mobileStickyHeader,
     this.autoHideMobileTabsOnScroll = false,
+    this.enableMobileSearch = true,
   }) : assert((items != null) != (sections != null),
             'Provide either items or sections, not both.');
 
@@ -165,6 +169,9 @@ class UnifiedSidebarScaffold extends StatefulWidget {
   /// and reappear when scrolling up (or when content is back at the top).
   final bool autoHideMobileTabsOnScroll;
 
+  /// When true, pin a search icon before mobile pill tabs and morph into search.
+  final bool enableMobileSearch;
+
   @override
   State<UnifiedSidebarScaffold> createState() => _UnifiedSidebarScaffoldState();
 }
@@ -180,6 +187,7 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
   double? _lastTargetWidth;
   int _mobileSelectedIndex = 0; // Track selected index for Bottom Nav
   bool _wantMobileTabs = true;
+  bool _mobileSearchOpen = false;
   double _mobileTabScrollAccum = 0;
   static const double _mobileTabScrollThreshold = 12;
   int? _lastEnsuredMobileTabIndex;
@@ -327,6 +335,13 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
     return false;
   }
 
+  Widget _buildMobilePillRowWithSearch(
+    BuildContext context,
+    List<SecondarySidebarItem> items,
+  ) {
+    return _buildAnimatedMobilePillTabs(context, items);
+  }
+
   Widget _buildAnimatedMobilePillTabs(
     BuildContext context,
     List<SecondarySidebarItem> items,
@@ -350,6 +365,7 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
       BuildContext context, List<SecondarySidebarItem> items) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final accent = _resolvedColor;
     // User requested up to 6 elements to be percentage based, so fillTrack up to 6
     final fillTrack = items.length <= 6;
     final selectedIndex = items.indexWhere((item) => item.isSelected);
@@ -372,6 +388,25 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
           );
         }
       });
+    }
+
+    Widget buildSearchPin() {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          MobileSearchScope.setOpen(context, true);
+          setState(() => _mobileSearchOpen = true);
+        },
+        child: SizedBox(
+          width: 44,
+          height: segmentHeight,
+          child: Icon(
+            Icons.search_rounded,
+            color: accent,
+            size: 22,
+          ),
+        ),
+      );
     }
 
     Widget buildSegment(SecondarySidebarItem item, {Key? key}) {
@@ -441,46 +476,51 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
-      child: Container(
-        height: trackHeight,
-        padding: const EdgeInsets.all(4),
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withOpacity(0.06)
-              : Colors.black.withOpacity(0.04),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: isDark
-                ? Colors.white.withOpacity(0.08)
-                : Colors.black.withOpacity(0.06),
-          ),
-        ),
-        child: fillTrack
-            ? Row(
-                children: [
-                  for (var i = 0; i < items.length; i++)
-                    Expanded(
-                      child: buildSegment(
-                        items[i],
-                        key: i == selectedIndex ? selectedKey : null,
-                      ),
-                    ),
-                ],
-              )
-            : ListView.separated(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                itemCount: items.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 2),
-                itemBuilder: (context, index) => buildSegment(
-                  items[index],
-                  key: index == selectedIndex ? selectedKey : null,
+    final trackChild = fillTrack
+        ? Row(
+            children: [
+              if (widget.enableMobileSearch) buildSearchPin(),
+              for (var i = 0; i < items.length; i++)
+                Expanded(
+                  child: buildSegment(
+                    items[i],
+                    key: i == selectedIndex ? selectedKey : null,
+                  ),
+                ),
+            ],
+          )
+        : Row(
+            children: [
+              if (widget.enableMobileSearch) buildSearchPin(),
+              Expanded(
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  itemCount: items.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 2),
+                  itemBuilder: (context, index) => buildSegment(
+                    items[index],
+                    key: index == selectedIndex ? selectedKey : null,
+                  ),
                 ),
               ),
+            ],
+          );
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
+      child: NavigationChrome.glass(
+        context: context,
+        isDark: isDark,
+        borderRadius: 24,
+        child: SizedBox(
+          height: trackHeight,
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: trackChild,
+          ),
+        ),
       ),
     );
   }
@@ -539,25 +579,56 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
                     ],
                   )
                 : null,
-            body: Column(
-              children: [
-                // Status-bar inset when AppBar is off so sticky controls clear the notch.
-                if (topInset > 0) SizedBox(height: topInset),
-                // Collapsible secondary tabs — SizeTransition slides row below up/down.
-                if (flatItems.isNotEmpty)
-                  _buildAnimatedMobilePillTabs(context, flatItems),
-                // Sticky module controls (portfolio / timeframe) — never collapse.
-                if (widget.mobileStickyHeader != null)
-                  widget.mobileStickyHeader!,
-                Expanded(
-                  child: NotificationListener<ScrollNotification>(
-                    onNotification: _handleMobileTabScroll,
-                    child: widget.body,
-                  ),
-                ),
-              ],
+            body: Builder(
+              builder: (context) {
+                final keyboardInset = _mobileSearchOpen
+                    ? MediaQuery.viewInsetsOf(context).bottom
+                    : 0.0;
+                final column = Column(
+                  children: [
+                    if (topInset > 0) SizedBox(height: topInset),
+                    if (flatItems.isNotEmpty)
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 250),
+                        switchInCurve: Curves.easeOutCubic,
+                        switchOutCurve: Curves.easeInCubic,
+                        child: _mobileSearchOpen && widget.enableMobileSearch
+                            ? MobileInlineSearchField(
+                                key: const ValueKey('module-search'),
+                                items: MobileSearchScope.itemsOf(context),
+                                onClose: () {
+                                  MobileSearchScope.setOpen(context, false);
+                                  setState(() => _mobileSearchOpen = false);
+                                },
+                              )
+                            : KeyedSubtree(
+                                key: const ValueKey('module-pills'),
+                                child: _buildMobilePillRowWithSearch(
+                                  context,
+                                  flatItems,
+                                ),
+                              ),
+                      ),
+                    if (widget.mobileStickyHeader != null && !_mobileSearchOpen)
+                      widget.mobileStickyHeader!,
+                    Expanded(
+                      child: NotificationListener<ScrollNotification>(
+                        onNotification: _handleMobileTabScroll,
+                        child: widget.body,
+                      ),
+                    ),
+                    if (keyboardInset > 0) SizedBox(height: keyboardInset),
+                  ],
+                );
+                if (widget.module == null) return column;
+                return ModuleColorProvider(
+                  module: widget.module!,
+                  child: column,
+                );
+              },
             ),
             floatingActionButton: widget.floatingActionButton,
+            resizeToAvoidBottomInset: false,
           );
         }
 

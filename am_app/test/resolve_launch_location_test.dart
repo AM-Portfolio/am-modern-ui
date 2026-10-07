@@ -1,4 +1,6 @@
+import 'package:am_common/am_common.dart' as common;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:am_app/core/router/app_routes.dart';
 import 'package:am_app/core/router/launch_location.dart';
@@ -21,6 +23,11 @@ void main() {
   });
 
   group('resolveLaunchLocation', () {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      await common.SessionPersistenceService.instance.clear('test-user');
+    });
+
     test('keeps reset-password with short code query', () {
       expect(
         resolveLaunchLocation(
@@ -83,8 +90,35 @@ void main() {
       );
     });
 
-    test('null launchUri defaults to login', () {
-      expect(resolveLaunchLocation(launchUri: null), AppRoutes.login);
+    test('null launchUri defaults to dashboard on native (no login flash)', () {
+      expect(resolveLaunchLocation(launchUri: null), AppRoutes.dashboard);
+    });
+
+    test('null launchUri uses cached session nav path when available', () async {
+      await common.SessionPersistenceService.instance.saveNow(
+        'test-user',
+        common.AppSessionState.initial(globalNav: 'Market'),
+      );
+      expect(
+        resolveLaunchLocation(launchUri: null),
+        AppRoutes.navTitleToDefaultPath['Market'],
+      );
+    });
+
+    test('null launchUri restores portfolio path from cached session', () async {
+      await common.SessionPersistenceService.instance.saveNow(
+        'test-user',
+        common.AppSessionState(
+          savedAt: DateTime.now(),
+          globalNav: 'Portfolio',
+          portfolioId: 'pf-123',
+          portfolioTabIndex: 1,
+        ),
+      );
+      expect(
+        resolveLaunchLocation(launchUri: null),
+        AppRoutes.portfolioPath('pf-123', 'holdings'),
+      );
     });
   });
 }

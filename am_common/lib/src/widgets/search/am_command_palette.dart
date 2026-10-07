@@ -40,6 +40,34 @@ class AmCommandPalette extends StatefulWidget {
     );
   }
 
+  /// Mobile-friendly top-anchored sheet (keyboard-safe). Prefer inline morph
+  /// via [MobileInlineSearchField] when embedding in module chrome.
+  static Future<void> showMobileTop(
+    BuildContext context, {
+    required List<CommandItem> items,
+  }) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(ctx).bottom,
+          ),
+          child: SizedBox(
+            height: MediaQuery.sizeOf(ctx).height * 0.72,
+            child: AmCommandPalette(globalItems: items),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   State<AmCommandPalette> createState() => _AmCommandPaletteState();
 }

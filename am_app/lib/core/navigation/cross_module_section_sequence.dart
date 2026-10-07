@@ -7,13 +7,12 @@ import '../router/share_url_builder.dart';
 class CrossModuleSectionSequence {
   CrossModuleSectionSequence._();
 
-  /// Portfolio tabs that participate in mobile swipe (plus add-trade).
+  /// Portfolio tabs that participate in mobile swipe.
   static const portfolioSwipeTabs = [
     'overview',
     'holdings',
     'heatmap',
     'baskets',
-    'add-trade',
   ];
 
   /// Trade mobile swipe tabs (URL-backed where possible).

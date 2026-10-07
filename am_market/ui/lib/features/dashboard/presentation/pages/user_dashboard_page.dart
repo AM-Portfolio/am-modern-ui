@@ -46,6 +46,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
   List<TopMoverStock> topGainers = [];
   List<TopMoverStock> topLosers = [];
   bool isLoadingMovers = false;
+  String? moversError;
   
   // Historical chart data
   Map<String, List<Map<String, dynamic>>> historicalData = {};
@@ -437,6 +438,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
     
     setState(() {
       isLoadingMovers = true;
+      moversError = null;
     });
 
     final sw = Stopwatch()..start();
@@ -467,6 +469,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
         topGainers = gainers;
         topLosers = losers;
         isLoadingMovers = false;
+        moversError = null;
       });
     } catch (e) {
       sw.stop();
@@ -480,9 +483,42 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
       if (!mounted) return;
       setState(() {
         isLoadingMovers = false;
+        moversError = 'Could not load top movers';
       });
       CommonLogger.error('Error loading top movers', tag: 'UserDashboardPage', error: e);
     }
+  }
+
+  Widget _dashboardSectionCard({
+    required bool isDark,
+    required Widget child,
+    EdgeInsetsGeometry? padding,
+    EdgeInsetsGeometry? margin,
+  }) {
+    return Container(
+      width: double.infinity,
+      margin: margin ?? EdgeInsets.zero,
+      padding: padding ?? const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark
+            ? context.colors.cardSurface.withValues(alpha: 0.60)
+            : context.colors.cardSurface.withValues(alpha: 0.90),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: context.colors.border.withValues(alpha: isDark ? 0.35 : 0.5),
+        ),
+        boxShadow: isDark
+            ? const []
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+      ),
+      child: child,
+    );
   }
 
   /// Load historical data for selected indices
@@ -550,6 +586,130 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
     }
   }
 
+  void _showCompareIndicesBottomSheet(
+    BuildContext context,
+    MarketProvider marketProvider,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final source = _compareRegion == IndicesRegion.global
+                ? marketProvider.globalIndicesData
+                : marketProvider.allIndicesData;
+            final filtered = source.where((data) {
+              final q = _popoverSearchQuery.toLowerCase();
+              if (q.isEmpty) return true;
+              return data.indexSymbol.toLowerCase().contains(q) ||
+                  (data.indexName?.toLowerCase().contains(q) ?? false);
+            }).toList();
+            final accent = ModuleColors.market;
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.viewInsetsOf(context).bottom,
+                ),
+                child: SizedBox(
+                  height: MediaQuery.sizeOf(context).height * 0.65,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 8),
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).dividerColor,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                        child: Text(
+                          'Compare Indices',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: TextField(
+                          decoration: InputDecoration(
+                            hintText: 'Search indices…',
+                            prefixIcon: const Icon(Icons.search, size: 20),
+                            isDense: true,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          onChanged: (v) {
+                            setSheetState(() => _popoverSearchQuery = v);
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: filtered.length,
+                          itemBuilder: (context, index) {
+                            final data = filtered[index];
+                            final selected = selectedIndicesForChart
+                                .contains(data.indexSymbol);
+                            return CheckboxListTile(
+                              dense: true,
+                              activeColor: accent,
+                              title: Text(data.indexSymbol),
+                              subtitle: data.indexName != null
+                                  ? Text(data.indexName!)
+                                  : null,
+                              value: selected,
+                              onChanged: (v) {
+                                setState(() {
+                                  if (v == true) {
+                                    if (!selectedIndicesForChart
+                                        .contains(data.indexSymbol)) {
+                                      selectedIndicesForChart = [
+                                        ...selectedIndicesForChart,
+                                        data.indexSymbol,
+                                      ];
+                                    }
+                                  } else {
+                                    selectedIndicesForChart =
+                                        List.from(selectedIndicesForChart)
+                                          ..remove(data.indexSymbol);
+                                  }
+                                });
+                                setSheetState(() {});
+                                _loadHistoricalData();
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    ).whenComplete(() {
+      if (mounted) setState(() => _popoverSearchQuery = '');
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -581,59 +741,79 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
     final scaffoldBg = context.colors.scaffoldBackground;
 
     return Stack(
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    scaffoldBg,
-                    Color.alphaBlend(marketColor.withValues(alpha: 0.05), scaffoldBg),
-                    context.colors.surface,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  stops: const [0.0, 0.5, 1.0],
-                ),
+      children: [
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  scaffoldBg,
+                  Color.alphaBlend(
+                      marketColor.withValues(alpha: 0.05), scaffoldBg),
+                  context.colors.surface,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                stops: const [0.0, 0.5, 1.0],
               ),
-              child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 20, vertical: 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header Section (desktop: All Indices + timeframe; mobile: in app bar)
-                    MarketHeader(
-                      onAllIndicesPressed: () {
-                        if (MediaQuery.of(context).size.width < 768) {
-                          _showMobileAllIndicesBottomSheet(context, marketProvider);
-                        } else {
-                          _openDrawer();
-                        }
-                      },
-                    ),
-
-                    if (isMobile) ...[
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: GlobalTimeFrameBar(
-                          primaryColor: ModuleColors.market,
-                        ),
+            ),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 12 : 20,
+                vertical: 12,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (isMobile)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          Text(
+                            'Dashboard',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: context.colors.textPrimary,
+                            ),
+                          ),
+                          const Spacer(),
+                          GlobalTimeFrameBar(
+                            primaryColor: ModuleColors.market,
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 8),
-                    ] else
-                      const SizedBox(height: 10),
-
-                    // Pinned Index Cards Grid
-                    PinnedIndicesGrid(
-                      indices: marketProvider.allIndicesData,
-                      selectedIndexSymbol: selectedIndexForMovers,
-                      onIndexSelected: (data) {
-                        setState(() {
-                          selectedIndexForMovers = data.indexSymbol;
-                        });
-                        marketProvider.selectIndex(data.indexSymbol);
-                        _loadTopMovers();
-                      },
                     ),
+                  MarketHeader(
+                    onAllIndicesPressed: () {
+                      if (MediaQuery.of(context).size.width < 768) {
+                        _showMobileAllIndicesBottomSheet(
+                            context, marketProvider);
+                      } else {
+                        _openDrawer();
+                      }
+                    },
+                  ),
+
+                  if (isMobile) ...[
+                    const SizedBox(height: 8),
+                  ] else ...[
+                    const SizedBox(height: 10),
+                  ],
+
+                  // Pinned Index Cards Grid
+                  PinnedIndicesGrid(
+                    indices: marketProvider.allIndicesData,
+                    selectedIndexSymbol: selectedIndexForMovers,
+                    onIndexSelected: (data) {
+                      setState(() {
+                        selectedIndexForMovers = data.indexSymbol;
+                      });
+                      marketProvider.selectIndex(data.indexSymbol);
+                      _loadTopMovers();
+                    },
+                  ),
 
                     const SizedBox(height: 12),
 
@@ -766,7 +946,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                               ),
                             ),
                             const SizedBox(width: 6),
-                            // Add Index Button (Anchored Popover)
+                            // Add Index Button (Anchored Popover on desktop; Sheet on mobile)
                             CompositedTransformTarget(
                               link: _popoverLink,
                               child: OverlayPortal(
@@ -1050,7 +1230,16 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                                   ),
                                   padding: const EdgeInsets.all(4),
                                   constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                                  onPressed: _togglePopover,
+                                  onPressed: () {
+                                    if (isMobile) {
+                                      _showCompareIndicesBottomSheet(
+                                        context,
+                                        marketProvider,
+                                      );
+                                    } else {
+                                      _togglePopover();
+                                    }
+                                  },
                                   tooltip: 'Compare Indices',
                                 ),
                               ),
@@ -1068,10 +1257,10 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                               isBarChart: isBarChart,
                               timeFrameCode: selectedTimeframe,
                               expandedChartPath:
-                                  '/app/chart/compare?context=market&tf=$selectedTimeframe&series=${Uri.encodeComponent(selectedIndicesForChart.join(','))}',
+                                  '/app/chart/compare?context=market&tf=&series=',
                               onOpenExpanded: () {
                                 context.push(
-                                  '/app/chart/compare?context=market&tf=$selectedTimeframe&series=${Uri.encodeComponent(selectedIndicesForChart.join(','))}',
+                                  '/app/chart/compare?context=market&tf=&series=',
                                 );
                               },
                               onRemoveSeries: (symbol) {
@@ -1098,6 +1287,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                       gainers: topGainers,
                       losers: topLosers,
                       isLoading: isLoadingMovers,
+                      error: moversError,
                     ),
                   ),
                 ),
@@ -1129,11 +1319,11 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                     ),
                   ),
                 ],
-                
               ],
             ),
           ),
         ),
+      ),
 
         // Drawer Overlay (semi-transparent background)
         if (_isDrawerVisible)

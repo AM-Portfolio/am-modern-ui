@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -42,9 +43,16 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
 
   late final AnimationController _bottomNavController;
   late final Animation<double> _bottomNavFactor;
+  late final ValueNotifier<bool> _mobileSearchOpen;
   bool _wantBottomNav = true;
   double _bottomNavScrollAccum = 0;
   static const double _bottomNavScrollThreshold = 12;
+  static const Duration _bottomNavIdleHide = Duration(seconds: 3);
+  static const double _bottomNavTapSlop = 18;
+  int? _chromePointer;
+  Offset? _chromePointerDown;
+  bool _chromePointerMoved = false;
+  bool _chromeScrollSessionActive = false;
   Timer? _bottomNavHideTimer;
   Timer? _securityAlertHideTimer;
   StreamSubscription<bool>? _marketGateSubscription;
@@ -70,14 +78,14 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
     super.initState();
     _bottomNavController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 400),
-      reverseDuration: const Duration(milliseconds: 250),
+      duration: const Duration(milliseconds: 280),
+      reverseDuration: const Duration(milliseconds: 220),
       value: 1.0,
     );
     final bottomNavCurve = CurvedAnimation(
       parent: _bottomNavController,
-      curve: Curves.elasticOut,
-      reverseCurve: Curves.easeInBack,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
     );
     _bottomNavFactor = Tween<double>(begin: 0.0, end: 1.0).animate(bottomNavCurve);
     // Drive overlay consumers with the linear controller value so layout
@@ -87,15 +95,25 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
     });
     GlobalBottomNavVisibility.setFactor(_bottomNavController.value);
 
+    _mobileSearchOpen = ValueNotifier<bool>(false);
+    _mobileSearchOpen.addListener(_onMobileSearchOpenChanged);
+    GlobalBottomNavVisibility.hideRequests.addListener(_onHideRequest);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkInitialAuthAndConnect();
       _restoreSessionNav();
       _seedPortfolioSelectionFromSession();
       _startSecurityAlertsIfWeb();
       _listenToFeatureFlagChanges();
+      // At top of initial page → show bottom nav for 3s.
+      if (mounted) _showBottomNavWithIdleHide();
     });
-    
-    _showBottomNavWithIdleHide();
+  }
+
+  void _onHideRequest() {
+    if (!mounted) return;
+    _bottomNavHideTimer?.cancel();
+    _setBottomNavVisible(false);
   }
 
   @override
@@ -105,6 +123,9 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
     _bottomNavHideTimer?.cancel();
     _securityAlertHideTimer?.cancel();
     _marketGateSubscription?.cancel();
+    GlobalBottomNavVisibility.hideRequests.removeListener(_onHideRequest);
+    _mobileSearchOpen.removeListener(_onMobileSearchOpenChanged);
+    _mobileSearchOpen.dispose();
     _marketGateSubscription = null;
     _securityEventsSub?.cancel();
     _securityEventsSub = null;
@@ -235,37 +256,128 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
     }
   }
 
+  void _onMobileSearchOpenChanged() {
+    if (!mounted) return;
+    if (_mobileSearchOpen.value) {
+      _bottomNavHideTimer?.cancel();
+      _setBottomNavVisible(false);
+    }
+  }
+
+  bool get _isAiChatRoute {
+    try {
+      return _currentLocation.startsWith(AppRoutes.aiChat);
+    } catch (_) {
+      return false;
+    }
+  }
+
   void _showBottomNavWithIdleHide() {
+    if (_mobileSearchOpen.value) return;
+    // AI chat + keyboard: never flash the floating nav while typing.
+    if (mounted &&
+        _isAiChatRoute &&
+        MediaQuery.viewInsetsOf(context).bottom > 0) {
+      return;
+    }
     _bottomNavHideTimer?.cancel();
     _setBottomNavVisible(true);
-    _bottomNavHideTimer = Timer(const Duration(seconds: 5), () {
+    _bottomNavHideTimer = Timer(_bottomNavIdleHide, () {
       if (mounted) _setBottomNavVisible(false);
     });
   }
 
-  /// Scroll down past threshold → hide; scroll up → show (+ idle auto-hide).
+  void _onChromePointerDown(PointerDownEvent event) {
+    if (event.kind != PointerDeviceKind.touch &&
+        event.kind != PointerDeviceKind.mouse &&
+        event.kind != PointerDeviceKind.stylus) {
+      return;
+    }
+    if (_chromePointer != null) return;
+    _chromePointer = event.pointer;
+    _chromePointerDown = event.position;
+    _chromePointerMoved = false;
+  }
+
+  void _onChromePointerMove(PointerMoveEvent event) {
+    if (event.pointer != _chromePointer || _chromePointerDown == null) return;
+    if ((event.position - _chromePointerDown!).distance > _bottomNavTapSlop) {
+      _chromePointerMoved = true;
+    }
+  }
+
+  void _onChromePointerUp(PointerUpEvent event) {
+    if (event.pointer != _chromePointer) return;
+    final wasTap = !_chromePointerMoved && !_chromeScrollSessionActive;
+    _chromePointer = null;
+    _chromePointerDown = null;
+    _chromePointerMoved = false;
+    if (GlobalBottomNavVisibility.suppressChromeTapReveal) {
+      GlobalBottomNavVisibility.suppressChromeTapReveal = false;
+      return;
+    }
+    if (wasTap) {
+      _showBottomNavWithIdleHide();
+    }
+  }
+
+  void _onChromePointerCancel(PointerCancelEvent event) {
+    if (event.pointer != _chromePointer) return;
+    _chromePointer = null;
+    _chromePointerDown = null;
+    _chromePointerMoved = false;
+    if (GlobalBottomNavVisibility.suppressChromeTapReveal) {
+      GlobalBottomNavVisibility.suppressChromeTapReveal = false;
+    }
+  }
+
+  /// Scroll away → hide; at / toward top → show for [_bottomNavIdleHide] (3s).
   bool _handleBottomNavScroll(ScrollNotification notification) {
     if (notification.metrics.axis != Axis.vertical) return false;
+
+    if (notification is ScrollStartNotification) {
+      _chromeScrollSessionActive = true;
+      return false;
+    }
+    if (notification is ScrollEndNotification) {
+      _chromeScrollSessionActive = false;
+      // Landed at top of any page → pop bottom nav for 3s.
+      if (notification.metrics.pixels <= 0.5) {
+        _showBottomNavWithIdleHide();
+      }
+      return false;
+    }
     if (notification is! ScrollUpdateNotification) return false;
+
+    // Already at (or above) the top — same as mobile section pills.
+    if (notification.metrics.pixels <= 0.5) {
+      if (!_wantBottomNav) {
+        _showBottomNavWithIdleHide();
+      }
+      _bottomNavScrollAccum = 0;
+      return false;
+    }
 
     final delta = notification.scrollDelta ?? 0.0;
     if (delta == 0) return false;
 
-    if (delta > 0) {
-      // Content moving up = finger scrolling down → hide bar.
-      _bottomNavScrollAccum += delta;
-      if (_bottomNavScrollAccum >= _bottomNavScrollThreshold) {
-        _bottomNavHideTimer?.cancel();
-        _setBottomNavVisible(false);
-        _bottomNavScrollAccum = 0;
-      }
-    } else {
-      // Scrolling up → reveal bar.
-      _bottomNavScrollAccum += delta;
-      if (_bottomNavScrollAccum.abs() >= _bottomNavScrollThreshold) {
-        _showBottomNavWithIdleHide();
-        _bottomNavScrollAccum = 0;
-      }
+    // Meaningful scroll invalidates an in-flight tap-to-reveal gesture.
+    _chromePointerMoved = true;
+
+    // Reset accum when direction flips (matches mobile section-tab chrome).
+    if ((_bottomNavScrollAccum > 0 && delta < 0) ||
+        (_bottomNavScrollAccum < 0 && delta > 0)) {
+      _bottomNavScrollAccum = 0;
+    }
+    _bottomNavScrollAccum += delta;
+
+    if (_bottomNavScrollAccum >= _bottomNavScrollThreshold && _wantBottomNav) {
+      _bottomNavHideTimer?.cancel();
+      _setBottomNavVisible(false);
+      _bottomNavScrollAccum = 0;
+    } else if (_bottomNavScrollAccum <= -_bottomNavScrollThreshold) {
+      _showBottomNavWithIdleHide();
+      _bottomNavScrollAccum = 0;
     }
     return false;
   }
@@ -274,11 +386,9 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
     if (currentLocation != _lastRecordedLocation) {
       _lastRecordedLocation = currentLocation;
       // Reveal bottom nav whenever the route changes.
-      if (!_wantBottomNav) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _showBottomNavWithIdleHide();
-        });
-      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showBottomNavWithIdleHide();
+      });
       if (_history.contains(currentLocation)) {
         final index = _history.indexOf(currentLocation);
         _history.removeRange(index + 1, _history.length);
@@ -473,10 +583,34 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
   }
 
   void _showSearch() {
-    common.AmCommandPalette.show(
-      context,
-      items: _getMockSearchItems(context),
-    );
+    final items = _getMockSearchItems(context);
+    final isMobile =
+        MediaQuery.sizeOf(context).width < UIConstants.mobileBreakpoint;
+    if (isMobile) {
+      common.AmCommandPalette.showMobileTop(context, items: items);
+    } else {
+      common.AmCommandPalette.show(context, items: items);
+    }
+  }
+
+  Color _moduleAccentFor(String title) {
+    switch (title.toLowerCase()) {
+      case 'dashboard':
+        return ModuleColors.dashboard;
+      case 'portfolio':
+        return ModuleColors.portfolio;
+      case 'trade':
+        return ModuleColors.trade;
+      case 'market':
+        return ModuleColors.market;
+      case 'ai chat':
+        return ModuleColors.aiChat;
+      case 'analysis':
+      case 'doc intel':
+        return ModuleColors.analytics;
+      default:
+        return ModuleColors.dashboard;
+    }
   }
 
   void _onGlobalNavigate(String title, String userId) {
@@ -685,6 +819,17 @@ final userId =
           final currentLocation = GoRouterState.of(context).matchedLocation;
           _updateHistory(currentLocation);
 
+          // AI chat + soft keyboard: keep floating nav hidden for the session.
+          final aiChatKeyboardOpen = currentLocation.startsWith(AppRoutes.aiChat) &&
+              MediaQuery.viewInsetsOf(context).bottom > 0;
+          if (aiChatKeyboardOpen && _wantBottomNav) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              _bottomNavHideTimer?.cancel();
+              _setBottomNavVisible(false);
+            });
+          }
+
           final shell = LayoutBuilder(
             builder: (context, constraints) {
               final isDesktop = BrowserZoomScope.layoutWidthOf(context) > 1100;
@@ -710,7 +855,10 @@ final userId =
                     );
                   }
                 },
-                child: common.OfflineShell(
+                child: common.MobileSearchScope(
+                  getItems: () => _getMockSearchItems(context),
+                  searchOpen: _mobileSearchOpen,
+                  child: common.OfflineShell(
                                     child: Shortcuts(
                     shortcuts: {
                       LogicalKeySet(
@@ -730,6 +878,7 @@ final userId =
                       child: Scaffold(
                   // Body draws under the floating overlay nav — no reserved slot.
                   extendBody: !isDesktop,
+                  resizeToAvoidBottomInset: false,
                   body: Stack(
                     children: [
                       Row(
@@ -785,35 +934,57 @@ final userId =
                               items: _sidebarItemsFor(isAdmin: isAdmin),
                             ),
                           Expanded(
-                            child: NotificationListener<ScrollNotification>(
-                              onNotification: isDesktop
-                                  ? (_) => false
-                                  : _handleBottomNavScroll,
-                              child: authState is Authenticated
-                                  ? common.CrossSectionNavScope(
-                                      controller:
-                                          common.CrossSectionNavController(
-                                        goNextModule: () =>
-                                            _onCrossSectionNext(userId),
-                                        goPreviousModule: () =>
-                                            _onCrossSectionPrevious(userId),
-                                      ),
-                                      child: common.PortfolioSelectionScope(
-                                        child: isDesktop
-                                            ? widget.child
-                                            : CrossSectionSwipeHost(
-                                                onNext: () =>
+                            child: isDesktop
+                                ? (authState is Authenticated
+                                    ? common.CrossSectionNavScope(
+                                        controller:
+                                            common.CrossSectionNavController(
+                                          goNextModule: () =>
+                                              _onCrossSectionNext(userId),
+                                          goPreviousModule: () =>
+                                              _onCrossSectionPrevious(userId),
+                                        ),
+                                        child: common.PortfolioSelectionScope(
+                                          child: widget.child,
+                                        ),
+                                      )
+                                    : widget.child)
+                                : Listener(
+                                    behavior: HitTestBehavior.translucent,
+                                    onPointerDown: _onChromePointerDown,
+                                    onPointerMove: _onChromePointerMove,
+                                    onPointerUp: _onChromePointerUp,
+                                    onPointerCancel: _onChromePointerCancel,
+                                    child: NotificationListener<
+                                        ScrollNotification>(
+                                      onNotification: _handleBottomNavScroll,
+                                      child: authState is Authenticated
+                                          ? common.CrossSectionNavScope(
+                                              controller: common
+                                                  .CrossSectionNavController(
+                                                goNextModule: () =>
                                                     _onCrossSectionNext(
                                                         userId),
-                                                onPrevious: () =>
+                                                goPreviousModule: () =>
                                                     _onCrossSectionPrevious(
                                                         userId),
-                                                child: widget.child,
                                               ),
-                                      ),
-                                    )
-                                  : widget.child,
-                            ),
+                                              child:
+                                                  common.PortfolioSelectionScope(
+                                                child: CrossSectionSwipeHost(
+                                                  onNext: () =>
+                                                      _onCrossSectionNext(
+                                                          userId),
+                                                  onPrevious: () =>
+                                                      _onCrossSectionPrevious(
+                                                          userId),
+                                                  child: widget.child,
+                                                ),
+                                              ),
+                                            )
+                                          : widget.child,
+                                    ),
+                                  ),
                           ),
                         ],
                       ),
@@ -822,7 +993,15 @@ final userId =
                           left: 0,
                           right: 0,
                           bottom: 0,
-                          child: AnimatedBuilder(
+                          child: ValueListenableBuilder<bool>(
+                            valueListenable: _mobileSearchOpen,
+                            builder: (context, searchOpen, child) {
+                              if (searchOpen) {
+                                return const SizedBox.shrink();
+                              }
+                              return child!;
+                            },
+                            child: AnimatedBuilder(
                             animation: _bottomNavController,
                             builder: (context, child) {
                               final visible =
@@ -842,6 +1021,7 @@ final userId =
                                 child: GlobalBottomNavigation(
                                   activeNavItem: _activeNavItem,
                                   isDarkMode: isDark,
+                                  accentColor: _moduleAccentFor(_activeNavItem),
                                   userName: authState.user.displayName,
                                   visibleCount: 5,
                                   moduleShareUrls: AppRoutes.navTitleToDefaultPath,
@@ -885,6 +1065,7 @@ final userId =
                               ),
                             ),
                           ),
+                          ),
                         ),
                       if (kIsWeb && _isSecurityAlertBannerEnabled && _securityAlert != null)
                         Positioned(
@@ -907,11 +1088,14 @@ final userId =
                 ),
               ),
               ),
+              ),
               );
             },
           );
 
-          if (!kIsWeb || !authPending) return shell;
+          // Cover shell while auth restores (web + native). Authenticated users
+          // never hit this branch — [authPending] is false once session lands.
+          if (!authPending) return shell;
 
           final failed = authState is AuthRestoreFailed;
           return Stack(

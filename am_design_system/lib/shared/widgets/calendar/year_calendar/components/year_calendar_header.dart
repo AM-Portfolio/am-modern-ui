@@ -114,12 +114,14 @@ class YearCalendarStickyControls extends StatelessWidget {
     this.onYearChanged,
     this.currentColorMode,
     this.onColorModeChanged,
+    this.availableYears,
   });
 
   final int year;
   final Function(int newYear)? onYearChanged;
   final CalendarColorMode? currentColorMode;
   final ValueChanged<CalendarColorMode>? onColorModeChanged;
+  final List<int>? availableYears;
 
   @override
   Widget build(BuildContext context) {
@@ -132,6 +134,7 @@ class YearCalendarStickyControls extends StatelessWidget {
             year: year,
             onYearChanged: onYearChanged,
             compact: true,
+            availableYears: availableYears,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -289,16 +292,20 @@ class YearCalendarYearPicker extends StatelessWidget {
     super.key,
     this.onYearChanged,
     this.compact = false,
+    this.availableYears,
   });
 
   final int year;
   final Function(int newYear)? onYearChanged;
   final bool compact;
+  final List<int>? availableYears;
 
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
-    final years = List.generate(15, (index) => DateTime.now().year - index);
+    final years = availableYears != null && availableYears!.isNotEmpty
+        ? (List<int>.from(availableYears!)..sort((a, b) => b.compareTo(a)))
+        : List.generate(15, (index) => DateTime.now().year - index);
 
     return Padding(
       padding: compact
