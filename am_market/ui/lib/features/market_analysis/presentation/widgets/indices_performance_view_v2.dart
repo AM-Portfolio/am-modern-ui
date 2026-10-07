@@ -172,7 +172,6 @@ class _IndicesPerformanceViewV2State extends ConsumerState<IndicesPerformanceVie
                     indices: allIndices, 
                     isDark: isDark,
                     timeframe: timeframe,
-                    basePrices: basePrices,
                     onTap: (symbol) => provider.selectIndex(symbol),
                   ),
                 ),
@@ -286,14 +285,12 @@ class _AutoScrollingTicker extends StatefulWidget {
   final List<StockIndicesMarketData> indices;
   final bool isDark;
   final String timeframe;
-  final Map<String, double> basePrices;
   final Function(String) onTap;
 
   const _AutoScrollingTicker({
     required this.indices,
     required this.isDark,
     required this.timeframe,
-    required this.basePrices,
     required this.onTap,
   });
 
@@ -379,14 +376,7 @@ class _AutoScrollingTickerState extends State<_AutoScrollingTicker> {
         itemCount: displayList.length,
         itemBuilder: (context, index) {
           final data = displayList[index];
-          
-          double pChange = data.pChange;
-          if (widget.timeframe != '1D') {
-            final basePrice = widget.basePrices[data.indexSymbol];
-            if (basePrice != null && basePrice > 0) {
-              pChange = ((data.lastPrice - basePrice) / basePrice) * 100;
-            }
-          }
+          final pChange = data.pChange;
           
           // Cycle schemes
           final schemes = ['primary', 'accent', 'neutral', 'info', 'success'];
