@@ -40,6 +40,34 @@ class AmCommandPalette extends StatefulWidget {
     );
   }
 
+  /// Mobile-friendly top-anchored sheet (keyboard-safe). Prefer inline morph
+  /// via [MobileInlineSearchField] when embedding in module chrome.
+  static Future<void> showMobileTop(
+    BuildContext context, {
+    required List<CommandItem> items,
+  }) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(ctx).bottom,
+          ),
+          child: SizedBox(
+            height: MediaQuery.sizeOf(ctx).height * 0.72,
+            child: AmCommandPalette(globalItems: items),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   State<AmCommandPalette> createState() => _AmCommandPaletteState();
 }
@@ -134,12 +162,12 @@ class _AmCommandPaletteState extends State<AmCommandPalette> {
           constraints: const BoxConstraints(maxHeight: 500),
           margin: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: context.colors.surface,
+            color: context.colors.surface.withValues(alpha: 0.70),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: context.colors.border.withValues(alpha: 0.5)),
             boxShadow: [
               BoxShadow(
-                color: context.colors.textPrimary.withValues(alpha: 0.15),
+                color: Colors.black.withValues(alpha: 0.35),
                 blurRadius: 30,
                 offset: const Offset(0, 10),
               ),

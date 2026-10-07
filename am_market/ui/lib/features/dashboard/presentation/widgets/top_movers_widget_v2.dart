@@ -31,6 +31,7 @@ class TopMoversWidgetV2 extends StatelessWidget {
   final bool isLoading;
   final String? error;
   final Widget? headerTrailing;
+  final bool scrollEmbedded;
 
   const TopMoversWidgetV2({
     required this.gainers,
@@ -38,6 +39,7 @@ class TopMoversWidgetV2 extends StatelessWidget {
     this.isLoading = false,
     this.error,
     this.headerTrailing,
+    this.scrollEmbedded = false,
     super.key,
   });
 
@@ -59,6 +61,7 @@ class TopMoversWidgetV2 extends StatelessWidget {
       negativeColor: negativeColor,
       headerAccent: headerAccent,
       headerTrailing: headerTrailing,
+      scrollEmbedded: scrollEmbedded,
     );
   }
 

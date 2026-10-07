@@ -22,10 +22,10 @@ class TopMoverStock {
     return TopMoverStock(
       symbol: json['symbol'] as String? ?? '',
       companyName: json['companyName'] as String? ?? json['symbol'] as String? ?? '',
-      lastPrice: (json['lastPrice'] as num?)?.toDouble() ?? 0.0,
-      change: (json['change'] as num?)?.toDouble() ?? 0.0,
-      changePercent: (json['changePercent'] as num?)?.toDouble() ?? (json['pChange'] as num?)?.toDouble() ?? 0.0,
-      volume: (json['volume'] as num?)?.toInt() ?? 0,
+      lastPrice: double.tryParse(json['lastPrice']?.toString() ?? '') ?? 0.0,
+      change: double.tryParse(json['change']?.toString() ?? '') ?? 0.0,
+      changePercent: double.tryParse(json['changePercent']?.toString() ?? json['pChange']?.toString() ?? '') ?? 0.0,
+      volume: int.tryParse(json['volume']?.toString() ?? '') ?? 0,
     );
   }
 }

@@ -41,7 +41,7 @@ class _TradePortfolioMobileFilterState extends State<TradePortfolioMobileFilter>
             });
           },
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
               children: [
                 Container(

@@ -377,74 +377,65 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     }
   }
 
-  /// Mobile FAB — shows a bottom sheet with quick portfolio actions.
-  /// Only rendered when a specific portfolio (not 'all') is selected.
-  Widget _buildMobileFab() {
-    if (_currentPortfolioId == null || _currentPortfolioId == 'all') {
-      return const SizedBox.shrink();
-    }
-    return FloatingActionButton(
-      backgroundColor: ModuleColors.portfolio,
-      foregroundColor: Colors.white,
-      tooltip: 'Quick Actions',
-      onPressed: () {
-        showPortfolioActionsSheet(
-          context: context,
-          triggerColor: ModuleColors.portfolio,
-          actions: [
-            FloatingMenuAction(
-              icon: Icons.upload_file_rounded,
-              title: 'Upload Portfolio',
-              subtitle: 'Import from file or broker',
-              iconColor: ModuleColors.portfolio,
-              onTap: () {
-                if (_isUploadingPortfolio) return;
-                if (widget.uploadPortfolioBuilder != null) {
-                  setState(() {
-                    _isUploadingPortfolio = true;
-                    _isAddingTrade = false;
-                  });
-                } else if (widget.onOpenDocIntel != null) {
-                  widget.onOpenDocIntel!();
-                }
-              },
-            ),
-            FloatingMenuAction(
-              icon: Icons.add_circle_outline_rounded,
-              title: 'Add Trade',
-              subtitle: 'Buy or sell an asset',
-              iconColor: ModuleColors.trade,
-              onTap: () {
-                if (!_isAddingTrade) _openAddTrade();
-              },
-            ),
-            FloatingMenuAction(
-              icon: Icons.account_balance_wallet_outlined,
-              title: 'Add Asset Class',
-              subtitle: 'Create a new asset class',
-              iconColor: ModuleColors.market,
-              onTap: () {
-                if (_isAddingAssetClass) return;
-                setState(() {
-                  _isAddingAssetClass = true;
-                  _isAddingTrade = false;
-                  _isUploadingPortfolio = false;
-                });
-              },
-            ),
-            FloatingMenuAction(
-              icon: Icons.shopping_basket_outlined,
-              title: 'Add Basket',
-              subtitle: 'Create a new basket',
-              iconColor: ModuleColors.reports,
-              onTap: () {
-                _selectTab(3);
-              },
-            ),
-          ],
-        );
-      },
-      child: const Icon(Icons.add_rounded),
+  /// Opens Sync / quick portfolio actions sheet.
+  void _openSyncActions() {
+    if (_currentPortfolioId == null || _currentPortfolioId == 'all') return;
+    GlobalBottomNavVisibility.suppressChromeTapReveal = true;
+    GlobalBottomNavVisibility.requestHide();
+    showPortfolioActionsSheet(
+      context: context,
+      triggerColor: ModuleColors.portfolio,
+      actions: [
+        FloatingMenuAction(
+          icon: Icons.upload_file_rounded,
+          title: 'Upload Portfolio',
+          subtitle: 'Import from file or broker',
+          iconColor: ModuleColors.portfolio,
+          onTap: () {
+            if (_isUploadingPortfolio) return;
+            if (widget.uploadPortfolioBuilder != null) {
+              setState(() {
+                _isUploadingPortfolio = true;
+                _isAddingTrade = false;
+              });
+            } else if (widget.onOpenDocIntel != null) {
+              widget.onOpenDocIntel!();
+            }
+          },
+        ),
+        FloatingMenuAction(
+          icon: Icons.add_circle_outline_rounded,
+          title: 'Add Trade',
+          subtitle: 'Buy or sell an asset',
+          iconColor: ModuleColors.trade,
+          onTap: () {
+            if (!_isAddingTrade) _openAddTrade();
+          },
+        ),
+        FloatingMenuAction(
+          icon: Icons.account_balance_wallet_outlined,
+          title: 'Add Asset Class',
+          subtitle: 'Create a new asset class',
+          iconColor: ModuleColors.market,
+          onTap: () {
+            if (_isAddingAssetClass) return;
+            setState(() {
+              _isAddingAssetClass = true;
+              _isAddingTrade = false;
+              _isUploadingPortfolio = false;
+            });
+          },
+        ),
+        FloatingMenuAction(
+          icon: Icons.shopping_basket_outlined,
+          title: 'Add Basket',
+          subtitle: 'Create a new basket',
+          iconColor: ModuleColors.reports,
+          onTap: () {
+            _selectTab(3);
+          },
+        ),
+      ],
     );
   }
 
@@ -562,7 +553,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
                         widget.portfolios!.any((p) => p.isDummy))
                       Padding(
                         padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-                        // Sticky row already has Doc Intel / Add — no second Upload.
+                        // Upload lives under Sync sheet — no second Upload here.
                         child: const DemoAccountInlineBanner(),
                       ),
                     Expanded(
@@ -573,7 +564,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
                     ),
                   ],
                 ),
-        floatingActionButton: _buildMobileFab(),
+        floatingActionButton: null,
       ),
     );
   }
@@ -630,10 +621,13 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
       );
     }
 
+    final hasSelectedPortfolio =
+        _currentPortfolioId != null && _currentPortfolioId != 'all';
+
     return SizedBox(
       width: double.infinity,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 2, 12, 6),
+        padding: const EdgeInsets.fromLTRB(12, 2, 8, 6),
         child: Row(
           children: [
             // Shrinks first when space is tight — never nest Flexible+min Rows.
@@ -646,22 +640,35 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
                 ),
               ),
             ),
-            const SizedBox(width: 6),
-            if (widget.onOpenDocIntel != null) ...[
-              actionChip(
-                onTap: widget.onOpenDocIntel!,
-                icon: Icons.psychology_outlined,
-                iconColor: const Color(0xFF00D2D3),
-                label: 'Doc Intel',
-                iconOnly: true,
+            const Spacer(),
+            Listener(
+              behavior: HitTestBehavior.opaque,
+              onPointerDown: (_) {
+                GlobalBottomNavVisibility.suppressChromeTapReveal = true;
+                GlobalBottomNavVisibility.requestHide();
+              },
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (hasSelectedPortfolio) ...[
+                    actionChip(
+                      onTap: _openSyncActions,
+                      icon: Icons.add_rounded,
+                      iconColor: ModuleColors.portfolio,
+                      label: 'Sync',
+                    ),
+                    const SizedBox(width: 4),
+                  ],
+                  GlobalTimeFrameBar(
+                    variant: GlobalTimeFrameVariant.dropdown,
+                    primaryColor: ModuleColors.portfolio,
+                  ),
+                  if (hasSelectedPortfolio) ...[
+                    const SizedBox(width: 4),
+                    _buildPortfolioMenu(context),
+                  ],
+                ],
               ),
-              const SizedBox(width: 6),
-            ],
-            if (_currentPortfolioId != null && _currentPortfolioId != 'all')
-              _buildPortfolioMenu(context),
-            GlobalTimeFrameBar(
-              variant: GlobalTimeFrameVariant.dropdown,
-              primaryColor: ModuleColors.portfolio,
             ),
           ],
         ),

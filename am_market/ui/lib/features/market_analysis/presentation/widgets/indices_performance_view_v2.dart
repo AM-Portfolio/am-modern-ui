@@ -122,13 +122,9 @@ class _IndicesPerformanceViewV2State extends ConsumerState<IndicesPerformanceVie
         }
 
         final timeframe = provider.selectedIndicesTimeframe;
-        final basePrices = provider.timeframeBasePrices;
-
+        
         double getPChange(StockIndicesMarketData data) {
-          if (timeframe == '1D') return data.pChange;
-          final basePrice = basePrices[data.indexSymbol];
-          if (basePrice == null || basePrice == 0) return data.pChange;
-          return ((data.lastPrice - basePrice) / basePrice) * 100;
+          return data.pChange;
         }
 
         final allIndices = provider.allIndicesData

@@ -15,7 +15,6 @@ class AllIndicesDrawer extends StatelessWidget {
   final String selectedIndexSymbol;
   final ValueChanged<StockIndicesMarketData> onIndexSelected;
   final VoidCallback onClose;
-  final Map<String, Map<String, double>> allTimeframeBasePrices;
 
   const AllIndicesDrawer({
     required this.indices,
@@ -26,34 +25,17 @@ class AllIndicesDrawer extends StatelessWidget {
     required this.selectedIndexSymbol,
     required this.onIndexSelected,
     required this.onClose,
-    required this.allTimeframeBasePrices,
     super.key,
   });
 
   List<StockIndicesMarketData> get _activeIndices =>
       region == IndicesRegion.global ? globalIndices : indices;
 
-  double _displayPChange(
-    StockIndicesMarketData data,
-    Map<String, double> basePricesForTf,
-  ) {
-    if (initialTimeframe != '1D') {
-      final base = basePricesForTf[data.indexSymbol];
-      if (base != null && base > 0) {
-        return ((data.lastPrice - base) / base) * 100;
-      }
-      return 0.0;
-    }
-    return data.pChange;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final basePricesForTf = allTimeframeBasePrices[initialTimeframe] ?? {};
     final active = List<StockIndicesMarketData>.from(_activeIndices)
       ..sort(
-        (a, b) => _displayPChange(b, basePricesForTf)
-            .compareTo(_displayPChange(a, basePricesForTf)),
+        (a, b) => b.pChange.compareTo(a.pChange),
       );
 
     return Container(
@@ -135,10 +117,8 @@ class AllIndicesDrawer extends StatelessWidget {
                       final data = active[index];
                       return DrawerIndexCard(
                         data: data,
-                        isSelected:
-                            data.indexSymbol == selectedIndexSymbol,
+                        isSelected: data.indexSymbol == selectedIndexSymbol,
                         timeframe: initialTimeframe,
-                        basePrice: basePricesForTf[data.indexSymbol],
                         onTap: () => onIndexSelected(data),
                       );
                     },

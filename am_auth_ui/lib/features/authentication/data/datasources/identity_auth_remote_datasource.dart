@@ -48,6 +48,60 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
     }
   }
 
+  String _parseErrorMessage(
+    dynamic data, {
+    String fallback = AuthConstants.serverError,
+  }) {
+    if (data == null) return fallback;
+    if (data is Map) {
+      final detail = data['detail'];
+      if (detail is List && detail.isNotEmpty) {
+        final first = detail.first;
+        if (first is Map && first['msg'] != null) {
+          String msg = first['msg'].toString();
+          if (msg.startsWith('Value error, ')) {
+            msg = msg.substring('Value error, '.length);
+          }
+          return msg;
+        }
+        return detail.first.toString();
+      } else if (detail is Map) {
+        return detail['error_description']?.toString() ??
+            detail['message']?.toString() ??
+            detail['error']?.toString() ??
+            fallback;
+      } else if (detail is String) {
+        if (detail.contains('Token request failed:')) {
+          final jsonStart = detail.indexOf('{');
+          if (jsonStart != -1) {
+            try {
+              final rawJson = detail.substring(jsonStart);
+              final parsed = jsonDecode(rawJson) as Map<String, dynamic>;
+              final err = parsed['error']?.toString();
+              final desc = parsed['error_description']?.toString();
+              if (err == 'invalid_grant' ||
+                  desc?.toLowerCase().contains('invalid user credentials') ==
+                      true) {
+                return 'Invalid email or password.';
+              }
+              if (err == 'unauthorized_client' || err == 'invalid_client') {
+                return 'Authentication service configuration error. Please try again later.';
+              }
+              if (desc != null && desc.isNotEmpty) {
+                return desc;
+              }
+            } catch (_) {}
+          }
+        }
+        return detail;
+      }
+      return data['message']?.toString() ??
+          data['error']?.toString() ??
+          fallback;
+    }
+    return data.toString();
+  }
+
   @override
   Future<AuthResultModel> emailLogin(String email, String password) async {
     try {
@@ -55,7 +109,11 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
       AppLogger.info('🔵 [IdentityAuthRemoteDataSource] Login URL: $fullUrl');
       final response = await _dio.post(
         fullUrl,
-        data: {'username': email, 'password': password},
+        data: {
+          'username': email,
+          'password': password,
+          'platform': 'web',
+        },
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
@@ -92,23 +150,7 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
         throw NetworkException(AuthConstants.networkError);
       }
 
-      var errorMessage = AuthConstants.serverError;
-      if (e.response?.data != null && e.response!.data is Map) {
-        final data = e.response!.data;
-        final detail = data['detail'];
-        if (detail is Map) {
-          errorMessage = detail['error_description']?.toString() ?? 
-                         detail['message']?.toString() ?? 
-                         detail['error']?.toString() ?? 
-                         errorMessage;
-        } else if (detail != null) {
-          errorMessage = detail.toString();
-        } else {
-          errorMessage = data['message']?.toString() ?? 
-                         data['error']?.toString() ?? 
-                         errorMessage;
-        }
-      }
+      final errorMessage = _parseErrorMessage(e.response?.data);
 
       throw ServerException(
         errorMessage,
@@ -167,23 +209,7 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
         throw NetworkException(AuthConstants.networkError);
       }
 
-      var errorMessage = AuthConstants.serverError;
-      if (e.response?.data != null && e.response!.data is Map) {
-        final data = e.response!.data;
-        final detail = data['detail'];
-        if (detail is Map) {
-          errorMessage = detail['error_description']?.toString() ?? 
-                         detail['message']?.toString() ?? 
-                         detail['error']?.toString() ?? 
-                         errorMessage;
-        } else if (detail != null) {
-          errorMessage = detail.toString();
-        } else {
-          errorMessage = data['message']?.toString() ?? 
-                         data['error']?.toString() ?? 
-                         errorMessage;
-        }
-      }
+      final errorMessage = _parseErrorMessage(e.response?.data);
 
       throw ServerException(
         errorMessage,
@@ -295,23 +321,10 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
         throw NetworkException(AuthConstants.networkError);
       }
 
-      var errorMessage = 'Registration failed';
-      if (e.response?.data != null && e.response!.data is Map) {
-        final data = e.response!.data;
-        final detail = data['detail'];
-        if (detail is Map) {
-          errorMessage = detail['error_description']?.toString() ?? 
-                         detail['message']?.toString() ?? 
-                         detail['error']?.toString() ?? 
-                         errorMessage;
-        } else if (detail != null) {
-          errorMessage = detail.toString();
-        } else {
-          errorMessage = data['message']?.toString() ?? 
-                         data['error']?.toString() ?? 
-                         errorMessage;
-        }
-      }
+      final errorMessage = _parseErrorMessage(
+        e.response?.data,
+        fallback: 'Registration failed',
+      );
 
       throw ServerException(
         errorMessage,
@@ -402,23 +415,7 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
         throw NetworkException(AuthConstants.networkError);
       }
 
-      var errorMessage = AuthConstants.serverError;
-      if (e.response?.data != null && e.response!.data is Map) {
-        final data = e.response!.data;
-        final detail = data['detail'];
-        if (detail is Map) {
-          errorMessage = detail['error_description']?.toString() ??
-              detail['message']?.toString() ??
-              detail['error']?.toString() ??
-              errorMessage;
-        } else if (detail != null) {
-          errorMessage = detail.toString();
-        } else {
-          errorMessage = data['message']?.toString() ??
-              data['error']?.toString() ??
-              errorMessage;
-        }
-      }
+      final errorMessage = _parseErrorMessage(e.response?.data);
 
       throw ServerException(
         errorMessage,
@@ -510,14 +507,10 @@ class IdentityAuthRemoteDataSource implements AuthDataSource {
           e.type == DioExceptionType.connectionTimeout) {
         throw NetworkException(AuthConstants.networkError);
       }
-      var errorMessage = '$action failed';
-      final body = e.response?.data;
-      if (body is Map) {
-        final detail = body['detail'];
-        if (detail != null) {
-          errorMessage = detail.toString();
-        }
-      }
+      final errorMessage = _parseErrorMessage(
+        e.response?.data,
+        fallback: '$action failed',
+      );
       throw ServerException(
         errorMessage,
         statusCode: e.response?.statusCode ?? 500,

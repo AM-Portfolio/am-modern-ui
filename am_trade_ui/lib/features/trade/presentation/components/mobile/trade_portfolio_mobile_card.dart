@@ -25,17 +25,19 @@ class TradePortfolioMobileCard extends StatelessWidget {
         : 'N/A';
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      margin: const EdgeInsets.only(bottom: 8),
       elevation: 1,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: isPositive ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2)),
+        side: BorderSide(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.35),
+        ),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -59,7 +61,7 @@ class TradePortfolioMobileCard extends StatelessWidget {
                     ),
                     child: Icon(Icons.assessment, color: isPositive ? Colors.green : Colors.red, size: 16),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,7 +149,7 @@ class TradePortfolioMobileCard extends StatelessWidget {
               ),
 
               if (portfolio.description != null) ...[
-                const SizedBox(height: 6),
+                const SizedBox(height: AppSpacing.xs + 2),
                 Text(
                   portfolio.description!,
                   maxLines: 1,
@@ -156,21 +158,12 @@ class TradePortfolioMobileCard extends StatelessWidget {
                 ),
               ],
 
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
 
-              // Trade Metrics - Compact 3 columns
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 6),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.1)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+              // Trade Metrics — equal Expanded columns (flat, no nested outline)
+              Row(
                   children: [
                     _buildMetric(context, 'Trades', portfolio.displayTotalTrades, Icons.swap_horiz, ModuleColors.trade),
-                    Container(width: 1, height: 24, color: Theme.of(context).dividerColor),
                     _buildMetric(
                       context,
                       'Realized',
@@ -178,7 +171,6 @@ class TradePortfolioMobileCard extends StatelessWidget {
                       portfolio.isTradeProfit ? Icons.trending_up : Icons.trending_down,
                       portfolio.isTradeProfit ? Colors.green : Colors.red,
                     ),
-                    Container(width: 1, height: 24, color: Theme.of(context).dividerColor),
                     _buildMetric(
                       context,
                       'Live P&L',
@@ -186,7 +178,6 @@ class TradePortfolioMobileCard extends StatelessWidget {
                       portfolio.isProfit ? Icons.show_chart : Icons.trending_down,
                       portfolio.isProfit ? Colors.green : Colors.red,
                     ),
-                    Container(width: 1, height: 24, color: Theme.of(context).dividerColor),
                     _buildMetric(
                       context,
                       'Win %',
@@ -196,9 +187,8 @@ class TradePortfolioMobileCard extends StatelessWidget {
                     ),
                   ],
                 ),
-              ),
 
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
 
               // Portfolio Value and Gain/Loss - Compact
               Row(
@@ -294,7 +284,7 @@ class TradePortfolioMobileCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, color: color, size: 11),
-            const SizedBox(width: 2),
+            const SizedBox(width: AppSpacing.xxs),
             Flexible(
               child: Text(
                 label,
@@ -304,7 +294,7 @@ class TradePortfolioMobileCard extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: AppSpacing.xs),
         Text(
           value,
           style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color),

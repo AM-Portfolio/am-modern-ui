@@ -29,15 +29,6 @@ class IndexCard extends StatelessWidget {
           timeframeLabel = ' (${provider.selectedIndicesTimeframe})';
           if (provider.isLoadingBasePrices) {
             isLoading = true;
-          } else {
-            final basePrice = provider.timeframeBasePrices[data.indexSymbol];
-            if (basePrice != null && basePrice > 0) {
-              displayChange = data.lastPrice - basePrice;
-              displayPChange = (displayChange / basePrice) * 100;
-            } else {
-              displayChange = 0;
-              displayPChange = 0;
-            }
           }
         }
 

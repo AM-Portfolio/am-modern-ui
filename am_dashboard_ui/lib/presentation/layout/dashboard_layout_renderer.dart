@@ -219,14 +219,6 @@ class DashboardLayoutRenderer extends ConsumerWidget {
             ),
           ),
         );
-      } else if (slot.id == DashboardWidgetId.movers && isCompact) {
-        _appendSlot(
-          children,
-          SizedBox(
-            height: chartHeight,
-            child: _buildSlot(context, ref, slot.id),
-          ),
-        );
       } else {
         _appendSlot(children, _buildSlot(context, ref, slot.id));
       }

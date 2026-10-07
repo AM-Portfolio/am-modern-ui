@@ -36,6 +36,7 @@ class DashboardMobileScreen extends ConsumerStatefulWidget {
 class _DashboardMobileScreenState
     extends ConsumerState<DashboardMobileScreen> {
   late final PageController _pageController;
+  bool _searchOpen = false;
 
   @override
   void initState() {
@@ -108,6 +109,17 @@ class _DashboardMobileScreenState
     required Color chipBorder,
     required bool showDemoBadge,
   }) {
+    if (_searchOpen) {
+      return MobileInlineSearchField(
+        items: MobileSearchScope.itemsOf(context),
+        onClose: () {
+          MobileSearchScope.setOpen(context, false);
+          setState(() => _searchOpen = false);
+        },
+      );
+    }
+
+    final narrow = MediaQuery.sizeOf(context).width < 360;
     return Material(
       color: Colors.transparent,
       child: Padding(
@@ -119,61 +131,76 @@ class _DashboardMobileScreenState
         ),
         child: Row(
           children: [
-            Flexible(
-              child: Text(
-                'Dashboard',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: context.text.pageTitle(compact: true).copyWith(
-                      color: onSurface,
-                      height: 1.1,
-                      letterSpacing: -0.3,
-                    ),
-              ),
+            IconButton(
+              tooltip: 'Search',
+              onPressed: () {
+                MobileSearchScope.setOpen(context, true);
+                setState(() => _searchOpen = true);
+              },
+              icon: Icon(Icons.search_rounded, color: onSurface, size: 22),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
             ),
             if (showDemoBadge) ...[
               const SizedBox(width: AppSpacing.sm),
               const DemoAccountBadge(),
             ],
-            const Spacer(),
-            const SizedBox(width: AppSpacing.sm),
-            // Controls hug the trailing edge — equal height, tight gap.
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (kDashboardCustomizeEnabled) ...[
-                  IconButton(
-                    tooltip: 'Customize dashboard',
-                    onPressed: () => DashboardCustomizeSheet.show(context),
-                    icon: Icon(Icons.tune, color: onSurface, size: 22),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            Expanded(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  if (kDashboardCustomizeEnabled) ...[
+                    IconButton(
+                      tooltip: 'Customize dashboard',
+                      onPressed: () => DashboardCustomizeSheet.show(context),
+                      icon: Icon(Icons.tune, color: onSurface, size: 22),
+                      padding: EdgeInsets.zero,
+                      constraints:
+                          const BoxConstraints(minWidth: 36, minHeight: 36),
+                    ),
+                    const SizedBox(width: 4),
+                  ],
+                  if (widget.onOpenDocIntel != null) ...[
+                    if (narrow)
+                      IconButton(
+                        tooltip: 'Add Portfolio',
+                        onPressed: widget.onOpenDocIntel,
+                        icon: Icon(
+                          Icons.psychology_outlined,
+                          color: context.colors.statusInfo,
+                          size: 22,
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints:
+                            const BoxConstraints(minWidth: 36, minHeight: 36),
+                      )
+                    else
+                      _DocIntelAddPortfolioButton(
+                        onTap: widget.onOpenDocIntel!,
+                        backgroundColor: chipBg,
+                        borderColor: chipBorder,
+                        foregroundColor: onSurface,
+                      ),
+                    const SizedBox(width: 8),
+                  ],
+                  if (widget.onOpenPaper != null) ...[
+                    IconButton(
+                      tooltip: 'Paper trading',
+                      onPressed: widget.onOpenPaper,
+                      icon: Icon(Icons.science_outlined,
+                          color: onSurface, size: 22),
+                      padding: EdgeInsets.zero,
+                      constraints:
+                          const BoxConstraints(minWidth: 36, minHeight: 36),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  const GlobalTimeFrameBar(
+                    variant: GlobalTimeFrameVariant.dropdown,
                   ),
-                  const SizedBox(width: 4),
                 ],
-                if (widget.onOpenDocIntel != null) ...[
-                  _DocIntelAddPortfolioButton(
-                    onTap: widget.onOpenDocIntel!,
-                    backgroundColor: chipBg,
-                    borderColor: chipBorder,
-                    foregroundColor: onSurface,
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                if (widget.onOpenPaper != null) ...[
-                  IconButton(
-                    tooltip: 'Paper trading',
-                    onPressed: widget.onOpenPaper,
-                    icon: Icon(Icons.science_outlined, color: onSurface, size: 22),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                const GlobalTimeFrameBar(
-                  variant: GlobalTimeFrameVariant.dropdown,
-                ),
-              ],
+              ),
             ),
           ],
         ),
@@ -267,7 +294,7 @@ class _DashboardMobileScreenState
           SafeArea(
             child: Column(
               children: [
-                // Sticky top: Dashboard title · Doc Intel CTA · timeframe
+                // Sticky top: actions (customize · Doc Intel · paper · timeframe)
                 _buildStickyHeader(
                   onSurface: onSurface,
                   chipBg: chipBg,
@@ -277,15 +304,18 @@ class _DashboardMobileScreenState
                 Expanded(
                   child: RefreshIndicator(
                     onRefresh: refresh,
-                    color: const Color(0xFF00D2D3),
-                    backgroundColor: Theme.of(context).brightness == Brightness.dark
-                        ? const Color(0xFF1E293B)
-                        : Colors.white,
+                    color: ModuleColors.dashboard,
+                    backgroundColor: context.colors.surface,
                     child: SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(
                         parent: BouncingScrollPhysics(),
                       ),
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+                      padding: EdgeInsets.fromLTRB(
+                        16,
+                        8,
+                        16,
+                        PlatformConstants.globalBottomNavReserve(context) + 16,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
@@ -348,7 +378,7 @@ class _DocIntelAddPortfolioButton extends StatelessWidget {
               Icon(
                 Icons.psychology_outlined,
                 size: 17,
-                color: Theme.of(context).extension<AppColorsTheme>()?.statusInfo ?? const Color(0xFF00D2D3),
+                color: context.colors.statusInfo,
               ),
               const SizedBox(width: 5),
               Text(

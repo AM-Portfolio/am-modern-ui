@@ -33,15 +33,32 @@ class _FoPageState extends ConsumerState<FoPage> {
   Widget build(BuildContext context) {
     final activeSymbol = ref.watch(foActiveSymbolProvider);
     final colors = context.colors;
+    final marketCyan = ModuleColors.market;
+    final scaffoldBg = colors.scaffoldBackground;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: activeSymbol == null
-          ? FoEmptyLandingView(
-              controller: _searchController,
-              onSelected: _onSymbolSelected,
-            )
-          : _buildDetailView(activeSymbol, colors),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              scaffoldBg,
+              Color.alphaBlend(marketCyan.withValues(alpha: 0.05), scaffoldBg),
+              colors.surface,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            stops: const [0.0, 0.5, 1.0],
+          ),
+        ),
+        child: SafeArea(
+          child: activeSymbol == null
+              ? FoEmptyLandingView(
+                  controller: _searchController,
+                  onSelected: _onSymbolSelected,
+                )
+              : _buildDetailView(activeSymbol, colors),
+        ),
+      ),
     );
   }
 

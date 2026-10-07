@@ -117,3 +117,4 @@ export 'core/network/websocket/stomp_connection_cubit.dart';
 // export 'shared/extensions/num_extensions.dart';
 // export 'shared/extensions/string_extensions.dart';
 export 'src/widgets/search/am_command_palette.dart';
+export 'src/widgets/search/mobile_search_scope.dart';

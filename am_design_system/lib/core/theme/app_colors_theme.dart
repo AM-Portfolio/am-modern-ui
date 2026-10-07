@@ -99,6 +99,9 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
   final Color textTertiary;
   final Color textDisabled;
 
+  /// Alias for [textSecondary] for muted secondary labels.
+  Color get textMuted => textSecondary;
+
   LinearGradient get authBackdropGradient => LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
