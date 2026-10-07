@@ -179,7 +179,7 @@ class _MobileInlineSearchFieldState extends State<MobileInlineSearchField>
       accent.withValues(alpha: isDark ? 0.08 : 0.04),
       isDark
           ? (theme.cardColor.withValues(alpha: 0.95))
-          : Colors.white.withValues(alpha: 0.95),
+          : Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
     );
     final borderColor = accent.withValues(alpha: isDark ? 0.35 : 0.28);
 

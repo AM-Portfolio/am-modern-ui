@@ -856,6 +856,7 @@ class ApiService {
           '$baseUrl/v1/analysis/heatmap?symbol=${Uri.encodeQueryComponent(symbol)}&timeframe=${Uri.encodeQueryComponent(timeframe)}&forceRefresh=$forceRefresh';
       final response = await http.get(Uri.parse(url), headers: headers);
 
+      if (response.statusCode == 200) {
         final decoded = json.decode(response.body);
         return parseHeatmapPayload(decoded);
       } else {

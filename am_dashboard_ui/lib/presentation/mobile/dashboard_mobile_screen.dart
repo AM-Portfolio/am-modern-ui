@@ -168,10 +168,7 @@ class _DashboardMobileScreenState
                         onPressed: widget.onOpenDocIntel,
                         icon: Icon(
                           Icons.psychology_outlined,
-                          color: Theme.of(context)
-                                  .extension<AppColorsTheme>()
-                                  ?.statusInfo ??
-                              const Color(0xFF00D2D3),
+                          color: context.colors.statusInfo,
                           size: 22,
                         ),
                         padding: EdgeInsets.zero,
@@ -307,10 +304,8 @@ class _DashboardMobileScreenState
                 Expanded(
                   child: RefreshIndicator(
                     onRefresh: refresh,
-                    color: const Color(0xFF00D2D3),
-                    backgroundColor: Theme.of(context).brightness == Brightness.dark
-                        ? const Color(0xFF1E293B)
-                        : Colors.white,
+                    color: ModuleColors.dashboard,
+                    backgroundColor: context.colors.surface,
                     child: SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(
                         parent: BouncingScrollPhysics(),
@@ -383,7 +378,7 @@ class _DocIntelAddPortfolioButton extends StatelessWidget {
               Icon(
                 Icons.psychology_outlined,
                 size: 17,
-                color: Theme.of(context).extension<AppColorsTheme>()?.statusInfo ?? const Color(0xFF00D2D3),
+                color: context.colors.statusInfo,
               ),
               const SizedBox(width: 5),
               Text(

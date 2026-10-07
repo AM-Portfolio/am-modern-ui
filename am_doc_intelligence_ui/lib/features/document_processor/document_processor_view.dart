@@ -1215,7 +1215,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
             ),
             style: FilledButton.styleFrom(
               backgroundColor: primary,
-              foregroundColor: Colors.white,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
               disabledBackgroundColor: primary.withOpacity(0.35),
               padding:
                   const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -1270,14 +1270,14 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                     ? Icons.file_download_outlined
                     : Icons.cloud_upload_outlined,
                 size: isCompact ? 30 : 44,
-                color: isInteractable ? primary : Colors.grey,
+                color: isInteractable ? primary : context.colors.textMuted,
               ),
         SizedBox(height: isCompact ? 8 : 10),
         Text(
           headline,
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: isInteractable ? primary : Colors.grey,
+            color: isInteractable ? primary : context.colors.textMuted,
             fontWeight: FontWeight.bold,
             fontSize: isCompact ? 13 : 15,
           ),
@@ -1423,7 +1423,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                           fontWeight: FontWeight.bold,
                           color:
                               Theme.of(context).brightness == Brightness.dark
-                                  ? Colors.white.withOpacity(0.9)
+                                  ? context.colors.surface
                                   : primary,
                         ),
                       ),
@@ -2012,21 +2012,21 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       'Confirm',
       '${batch.needsConfirm}',
       Icons.verified_outlined,
-      batch.needsConfirm > 0 ? Colors.blueGrey : Colors.grey,
+      batch.needsConfirm > 0 ? context.colors.statusInfo : context.colors.textMuted,
       expand: isCompact,
     );
     final needsChip = _buildCompactStatChip(
       'Needs input',
       '${batch.needsInput}',
       Icons.help_outline,
-      batch.needsInput > 0 ? Colors.amber.shade700 : Colors.grey,
+      batch.needsInput > 0 ? context.colors.statusWarning : context.colors.textMuted,
       expand: isCompact,
     );
     final failedChip = _buildCompactStatChip(
       'Failed',
       '${batch.failed}',
       Icons.error_outline,
-      batch.failed > 0 ? context.colors.statusError : Colors.grey,
+      batch.failed > 0 ? context.colors.statusError : context.colors.textMuted,
       expand: isCompact,
     );
 
@@ -2086,19 +2086,19 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
             'Confirm',
             '${batch.needsConfirm}',
             Icons.verified_outlined,
-            batch.needsConfirm > 0 ? Colors.blueGrey : Colors.grey,
+            batch.needsConfirm > 0 ? context.colors.statusInfo : context.colors.textMuted,
           ),
           _buildCompactStat(
             'Needs input',
             '${batch.needsInput}',
             Icons.help_outline,
-            batch.needsInput > 0 ? Colors.amber.shade700 : Colors.grey,
+            batch.needsInput > 0 ? context.colors.statusWarning : context.colors.textMuted,
           ),
           _buildCompactStat(
             'Failed',
             '${batch.failed}',
             Icons.error_outline,
-            batch.failed > 0 ? context.colors.statusError : Colors.grey,
+            batch.failed > 0 ? context.colors.statusError : context.colors.textMuted,
           ),
         ],
       );
