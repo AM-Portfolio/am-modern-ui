@@ -841,7 +841,58 @@ class MarketProvider with ChangeNotifier {
       }
   }
 
-  Future<void> loadHeatmap(String symbol, String timeframe) async {
+  int _heatmapLoadId = 0;
+
+  /// Dashboard heatmap: prefer full index constituents (NIFTY 500 ≈ 500 tiles),
+  /// enrich % from analysis heatmap when present, else stock batch pChange.
+  Future<List<MapEntry<String, double>>> loadDashboardIndexHeatmap(
+    String symbol,
+    String timeframe,
+  ) async {
+    final trimmed = symbol.trim();
+    final heatmapFuture = loadHeatmap(trimmed, timeframe);
+    final indexFuture = () async {
+      try {
+        return await _apiService.fetchIndexData(trimmed);
+      } catch (e) {
+        CommonLogger.warning(
+          'Index constituents unavailable for $trimmed: $e',
+          tag: 'MarketProvider.loadDashboardIndexHeatmap',
+        );
+        return null;
+      }
+    }();
+
+    final heatmap = await heatmapFuture;
+    final indexData = await indexFuture;
+    var heatmapMap = heatmap;
+    // If analysis heatmap is mostly zeros but we have constituents, force-refresh once.
+    if (indexData != null &&
+        indexData.stocks.length >= 20 &&
+        heatmapMap.isNotEmpty &&
+        _isMostlyZeroHeatmap(heatmapMap)) {
+      heatmapMap = await _apiService.fetchHeatmap(
+        trimmed,
+        timeframe: timeframe,
+        forceRefresh: true,
+      );
+    }
+    return mergeDashboardHeatmapEntries(
+      heatmap: heatmapMap,
+      stocks: indexData?.stocks ?? const [],
+    );
+  }
+
+  bool _isMostlyZeroHeatmap(Map<String, double> values) {
+    if (values.isEmpty) return true;
+    final zeros = values.values.where((v) => v.abs() < 1e-9).length;
+    return zeros * 10 >= values.length * 7;
+  }
+
+  /// Loads heatmap for [symbol]. Always returns the fetched map for the caller
+  /// (dashboard must not rely on shared [heatmapValues], which Analysis can race).
+  Future<Map<String, double>> loadHeatmap(String symbol, String timeframe) async {
+    final loadId = ++_heatmapLoadId;
     CommonLogger.info("Loading heatmap for $symbol ($timeframe)", tag: "MarketProvider.loadHeatmap");
     try {
       var values = await _apiService.fetchHeatmap(symbol, timeframe: timeframe);
@@ -857,12 +908,19 @@ class MarketProvider with ChangeNotifier {
           forceRefresh: true,
         );
       }
-      _heatmapValues = values;
-      notifyListeners();
+      // Only publish to shared state if this is still the latest request.
+      if (loadId == _heatmapLoadId) {
+        _heatmapValues = values;
+        notifyListeners();
+      }
+      return values;
     } catch (e) {
       CommonLogger.error("Error loading heatmap", tag: "MarketProvider.loadHeatmap", error: e);
-      _heatmapValues = {};
-      notifyListeners();
+      if (loadId == _heatmapLoadId) {
+        _heatmapValues = {};
+        notifyListeners();
+      }
+      return {};
     }
   }
 
@@ -887,4 +945,57 @@ class MarketProvider with ChangeNotifier {
           CommonLogger.error("Error loading seasonality", tag: "MarketProvider.loadSeasonality", error: e);
       }
   }
+}
+
+/// Merge analysis heatmap % with index constituents.
+/// When constituents are many (e.g. NIFTY 500), they drive the tile list.
+List<MapEntry<String, double>> mergeDashboardHeatmapEntries({
+  required Map<String, double> heatmap,
+  required List<StockData> stocks,
+}) {
+  if (stocks.length >= 20) {
+    final entries = <MapEntry<String, double>>[];
+    for (final stock in stocks) {
+      final symbol = stock.symbol.trim();
+      if (symbol.isEmpty) continue;
+      final fromHeat = heatmap[symbol];
+      final pct = (fromHeat != null && fromHeat.abs() > 1e-9)
+          ? fromHeat
+          : stock.pChange;
+      entries.add(MapEntry(symbol, pct));
+    }
+    entries.sort((a, b) => b.value.compareTo(a.value));
+    return entries;
+  }
+
+  if (heatmap.isNotEmpty) {
+    final entries = heatmap.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return entries;
+  }
+
+  final entries = <MapEntry<String, double>>[];
+  for (final stock in stocks) {
+    final symbol = stock.symbol.trim();
+    if (symbol.isEmpty) continue;
+    entries.add(MapEntry(symbol, stock.pChange));
+  }
+  entries.sort((a, b) => b.value.compareTo(a.value));
+  return entries;
+}
+
+/// Paging window for dashboard heatmap grids (unit-tested).
+({int pageCount, int start, int end}) dashboardHeatmapPageWindow({
+  required int total,
+  required int page,
+  required int pageSize,
+}) {
+  if (total <= 0 || pageSize <= 0) {
+    return (pageCount: 1, start: 0, end: 0);
+  }
+  final pageCount = (total + pageSize - 1) ~/ pageSize;
+  final safePage = page.clamp(0, pageCount - 1);
+  final start = safePage * pageSize;
+  final end = (start + pageSize).clamp(0, total);
+  return (pageCount: pageCount, start: start, end: end);
 }

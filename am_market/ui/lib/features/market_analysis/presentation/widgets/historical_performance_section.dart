@@ -8,7 +8,13 @@ import 'package:am_market_ui/features/market_analysis/presentation/widgets/cylin
 import 'package:get_it/get_it.dart';
 
 class HistoricalPerformanceSection extends StatefulWidget {
-  const HistoricalPerformanceSection({Key? key}) : super(key: key);
+  const HistoricalPerformanceSection({
+    Key? key,
+    this.focusSymbol,
+  }) : super(key: key);
+
+  /// When set (e.g. pinned dashboard index), shown in the section title.
+  final String? focusSymbol;
 
   @override
   State<HistoricalPerformanceSection> createState() => _HistoricalPerformanceSectionState();
@@ -48,35 +54,40 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
     return LayoutBuilder(
       builder: (context, constraints) {
         final isMobile = constraints.maxWidth < 600;
-        
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                   Expanded(
-                    child: Text(
-                      'Historical Monthly Performance (10 Years)',
-                      style: AmTextStyles.h6.copyWith(
-                        color: context.colors.textPrimary,
-                        fontSize: isMobile ? 14 : 18,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+        final hasBoundedHeight = constraints.hasBoundedHeight &&
+            constraints.maxHeight.isFinite;
+
+        final header = Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  widget.focusSymbol != null &&
+                          widget.focusSymbol!.trim().isNotEmpty
+                      ? 'Historical Monthly Performance · ${widget.focusSymbol}'
+                      : 'Historical Monthly Performance (10 Years)',
+                  style: AmTextStyles.h6.copyWith(
+                    color: context.colors.textPrimary,
+                    fontSize: isMobile ? 14 : 18,
                   ),
-                  // Hint text (Hide on very small screens)
-                  if (!isMobile)
-                  Text(
-                    'Scroll to view more months  ➡',
-                    style: TextStyle(color: context.colors.textSecondary.withValues(alpha: 0.5), fontSize: 12),
-                  ),
-                ],
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-              FutureBuilder<IndicesHistoricalPerformanceResponse>(
+              if (!isMobile)
+                Text(
+                  'Scroll to view more months  ➡',
+                  style: TextStyle(
+                    color: context.colors.textSecondary.withValues(alpha: 0.5),
+                    fontSize: 12,
+                  ),
+                ),
+            ],
+          ),
+        );
+
+        final table = FutureBuilder<IndicesHistoricalPerformanceResponse>(
                 future: _future,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
@@ -106,9 +117,16 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                   final months = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
                   final shortMonths = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
-                  // Dimensions
+                  // Dimensions — fill available width on desktop so months
+                  // don't leave a large empty strip on the right.
                   final double yearColWidth = isMobile ? 44.0 : 60.0;
-                  final double cellWidth = isMobile ? 140.0 : 180.0;
+                  final double arrowReserve = isMobile ? 0.0 : 96.0;
+                  final double availableForMonths =
+                      (constraints.maxWidth - yearColWidth - arrowReserve)
+                          .clamp(600.0, double.infinity);
+                  final double cellWidth = isMobile
+                      ? 140.0
+                      : (availableForMonths / 12).clamp(120.0, 200.0);
 
                   // ── MOBILE: Cylinder drum-roll layout ─────────────────
                   if (isMobile) {
@@ -316,10 +334,25 @@ class _HistoricalPerformanceSectionState extends State<HistoricalPerformanceSect
                       ],
                     );
                 },
-              ),
+              );
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize:
+              hasBoundedHeight ? MainAxisSize.max : MainAxisSize.min,
+          children: [
+            header,
+            if (hasBoundedHeight)
+              Expanded(
+                child: SingleChildScrollView(
+                  child: table,
+                ),
+              )
+            else
+              table,
           ],
         );
-      }
+      },
     );
   }
 }
