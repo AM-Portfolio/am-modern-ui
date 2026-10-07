@@ -56,6 +56,9 @@ extension ThemeColorExtensions on BuildContext {
   /// Get theme-aware disabled text color
   Color get textDisabled => colors.textDisabled;
 
+  /// Get theme-aware muted secondary text color
+  Color get textMuted => colors.textMuted;
+
   // ==========================================================================
   // STATUS / MARKET / PREMIUM (semantic)
   // ==========================================================================

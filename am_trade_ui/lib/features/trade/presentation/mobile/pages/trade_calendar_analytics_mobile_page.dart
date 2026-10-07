@@ -64,7 +64,7 @@ class _TradeCalendarAnalyticsMobilePageState extends ConsumerState<TradeCalendar
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error_outline, size: 64, color: Colors.red.withOpacity(0.5)),
+                  Icon(Icons.error_outline, size: 64, color: context.colors.statusError.withValues(alpha: 0.5)),
                   const SizedBox(height: 16),
                   Text('Error: ${state.message}'),
                   const SizedBox(height: 16),
@@ -151,7 +151,7 @@ class _TradeCalendarAnalyticsMobilePageState extends ConsumerState<TradeCalendar
                 width: 40,
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(color: Theme.of(context).dividerColor, borderRadius: BorderRadius.circular(2)),
               ),
             ),
             Text(
@@ -166,7 +166,9 @@ class _TradeCalendarAnalyticsMobilePageState extends ConsumerState<TradeCalendar
               'P&L',
               dayData.pnl >= 0 ? '+₹${dayData.pnl.toStringAsFixed(2)}' : '-₹${dayData.pnl.abs().toStringAsFixed(2)}',
               Icons.trending_up,
-              color: dayData.pnl >= 0 ? Colors.green : Colors.red,
+              color: dayData.pnl >= 0
+                  ? context.colors.marketPositiveIndicator
+                  : context.colors.marketNegativeIndicator,
             ),
           ],
         ),

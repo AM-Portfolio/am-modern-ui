@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:am_design_system/core/theme/app_colors.dart';
 import 'package:am_design_system/core/theme/app_colors_theme.dart';
 
 /// Shared floating navigation chrome (top pill track + bottom bar).
@@ -10,7 +11,7 @@ import 'package:am_design_system/core/theme/app_colors_theme.dart';
 class NavigationChrome {
   NavigationChrome._();
 
-  static const Color darkSurface = Color(0xFF1a1a2e);
+  static const Color darkSurface = AppColors.darkSurface;
   static const double blurSigma = 20;
   static const double surfaceAlpha = 0.85;
 
