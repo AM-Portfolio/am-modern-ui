@@ -21,11 +21,15 @@ class TradeAnalysisPage extends ConsumerStatefulWidget {
     required this.portfolioId,
     this.onOpenCalendar,
     this.onOpenJournalInsights,
+    this.embedded = false,
   });
 
   final String portfolioId;
   final VoidCallback? onOpenCalendar;
   final VoidCallback? onOpenJournalInsights;
+
+  /// When true (mobile tab body), skip outer [Scaffold] to avoid nesting.
+  final bool embedded;
 
   @override
   ConsumerState<TradeAnalysisPage> createState() => _TradeAnalysisPageState();
@@ -142,93 +146,97 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
     final colors = context.colors;
     final cubitAsync = ref.watch(tradeMetricsCubitProvider);
 
+    final body = Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.md,
+        AppSpacing.lg,
+        AppSpacing.md,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Single header row (wraps if too narrow): Tabs + [Holding style] + Date + Apply + Refresh + Download
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            runSpacing: AppSpacing.md,
+            children: [
+              _AnalysisTabBar(
+                selected: _tab,
+                onSelected: (tab) => setState(() => _tab = tab),
+              ),
+              Wrap(
+                spacing: AppSpacing.sm,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  if (_tab == _AnalysisTab.timing) ...[
+                    _HoldingStyleFilter(
+                      selected: _holdingStyle,
+                      onChanged: _onHoldingStyleChanged,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                  ],
+                  _DateApplyBar(
+                    dateLabel: _dateLabel,
+                    usingAllTime: _usingAllTime,
+                    onPickDateRange: _pickDateRange,
+                    onResetAllTime: _resetToAllTime,
+                    onApply: _loadMetrics,
+                  ),
+                  AppButton(
+                    text: '',
+                    icon: Icons.refresh,
+                    type: AppButtonType.secondary,
+                    isOutlined: true,
+                    onPressed: _loadMetrics,
+                    height: 36,
+                  ),
+                  AppButton(
+                    text: '',
+                    icon: Icons.download_outlined,
+                    type: AppButtonType.secondary,
+                    isOutlined: true,
+                    onPressed: () {},
+                    height: 36,
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Expanded(
+            child: cubitAsync.when(
+              loading: () => Center(
+                child: CircularProgressIndicator(color: ModuleColors.trade),
+              ),
+              error: (e, _) => AmErrorWidget(
+                message: 'Error: $e',
+                onRetry: _loadMetrics,
+              ),
+              data: (cubit) {
+                if (_tab == _AnalysisTab.timing) {
+                  return TimingAnalysisTab(
+                    cubit: cubit,
+                    onApply: _loadMetrics,
+                    onOpenCalendar: widget.onOpenCalendar ?? () {},
+                    onOpenJournalInsights:
+                        widget.onOpenJournalInsights ?? () {},
+                  );
+                }
+                return _ComingSoonTab(tab: _tab);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (widget.embedded) return body;
+
     return Scaffold(
       backgroundColor: colors.surface,
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          AppSpacing.md,
-          AppSpacing.lg,
-          AppSpacing.md,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Single header row (wraps if too narrow): Tabs + [Holding style] + Date + Apply + Refresh + Download
-            Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              runSpacing: AppSpacing.md,
-              children: [
-                _AnalysisTabBar(
-                  selected: _tab,
-                  onSelected: (tab) => setState(() => _tab = tab),
-                ),
-                Wrap(
-                  spacing: AppSpacing.sm,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    if (_tab == _AnalysisTab.timing) ...[
-                      _HoldingStyleFilter(
-                        selected: _holdingStyle,
-                        onChanged: _onHoldingStyleChanged,
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                    ],
-                    _DateApplyBar(
-                      dateLabel: _dateLabel,
-                      usingAllTime: _usingAllTime,
-                      onPickDateRange: _pickDateRange,
-                      onResetAllTime: _resetToAllTime,
-                      onApply: _loadMetrics,
-                    ),
-                    AppButton(
-                      text: '',
-                      icon: Icons.refresh,
-                      type: AppButtonType.secondary,
-                      isOutlined: true,
-                      onPressed: _loadMetrics,
-                      height: 36,
-                    ),
-                    AppButton(
-                      text: '',
-                      icon: Icons.download_outlined,
-                      type: AppButtonType.secondary,
-                      isOutlined: true,
-                      onPressed: () {},
-                      height: 36,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Expanded(
-              child: cubitAsync.when(
-                loading: () => Center(
-                  child: CircularProgressIndicator(color: ModuleColors.trade),
-                ),
-                error: (e, _) => AmErrorWidget(
-                  message: 'Error: $e',
-                  onRetry: _loadMetrics,
-                ),
-                data: (cubit) {
-                  if (_tab == _AnalysisTab.timing) {
-                    return TimingAnalysisTab(
-                      cubit: cubit,
-                      onApply: _loadMetrics,
-                      onOpenCalendar: widget.onOpenCalendar ?? () {},
-                      onOpenJournalInsights:
-                          widget.onOpenJournalInsights ?? () {},
-                    );
-                  }
-                  return _ComingSoonTab(tab: _tab);
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
+      body: body,
     );
   }
 }

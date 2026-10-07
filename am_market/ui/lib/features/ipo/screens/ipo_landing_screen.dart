@@ -8,36 +8,39 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class IpoLandingScreen extends ConsumerWidget {
-  const IpoLandingScreen({super.key});
+  const IpoLandingScreen({
+    super.key,
+    this.embedded = false,
+  });
+
+  /// When true (Market shell host), skip outer Scaffold/SafeArea.
+  final bool embedded;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final countsAsync = ref.watch(ipoCountsProvider);
     final filteredIposAsync = ref.watch(filteredIposProvider);
 
-    return Scaffold(
-      backgroundColor: context.backgroundColor,
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () async {
-            ref.invalidate(ipoCountsProvider);
-            ref.invalidate(allIposProvider);
-          },
-          child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-            slivers: [
-              // 1. Header Section
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
+    final body = RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(ipoCountsProvider);
+        ref.invalidate(allIposProvider);
+      },
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        slivers: [
+          // 1. Header Section
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(20, embedded ? 8 : 16, 20, 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          if (Navigator.of(context).canPop()) ...[
-                            const AmBackButton(),
+                      if (!embedded && Navigator.of(context).canPop()) ...[
+                        const AmBackButton(),
                             const SizedBox(width: 8),
                           ],
                           Column(
@@ -215,8 +218,18 @@ class IpoLandingScreen extends ConsumerWidget {
               ),
             ],
           ),
-        ),
-      ),
+    );
+
+    if (embedded) {
+      return ColoredBox(
+        color: context.backgroundColor,
+        child: body,
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: context.backgroundColor,
+      body: SafeArea(child: body),
     );
   }
 

@@ -81,6 +81,10 @@ class AmTopMoversPanel extends StatefulWidget {
     /// Optional "See All" callback — renders a button in the header when set.
     this.onViewAll,
     this.headerTrailing,
+
+    /// When true, panel sizes to its content (no `height: infinity` / `Expanded`).
+    /// Use inside a parent [SingleChildScrollView] to avoid unbounded flex errors.
+    this.scrollEmbedded = false,
   });
 
   final List<AmMoverItem> gainers;
@@ -100,6 +104,9 @@ class AmTopMoversPanel extends StatefulWidget {
 
   /// Optional widget shown on the right of the header (e.g. selected index chip).
   final Widget? headerTrailing;
+
+  /// Scroll-safe layout for embedding in unbounded vertical parents.
+  final bool scrollEmbedded;
 
   @override
   State<AmTopMoversPanel> createState() => _AmTopMoversPanelState();
@@ -135,6 +142,7 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = _headerAccent(context);
 
+    final embedded = widget.scrollEmbedded;
     return ClipRRect(
       borderRadius: BorderRadius.circular(widget.borderRadius),
       child: BackdropFilter(
@@ -142,7 +150,7 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           width: double.infinity,
-          height: double.infinity,
+          height: embedded ? null : double.infinity,
           decoration: BoxDecoration(
             // Dynamic theme-adaptive gradient using centralized cardSurface and surface tokens
             gradient: LinearGradient(
@@ -167,10 +175,14 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: embedded ? MainAxisSize.min : MainAxisSize.max,
             children: [
               _buildHeader(context, accent, isDark),
               const SizedBox(height: 10),
-              Expanded(child: _buildContent(context, isDark)),
+              if (embedded)
+                _buildContent(context, isDark)
+              else
+                Expanded(child: _buildContent(context, isDark)),
             ],
           ),
         ),
@@ -384,8 +396,8 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
         ),
         const SizedBox(height: 12),
         // Fades between Gainers and Losers lists
-        Expanded(
-          child: AnimatedSwitcher(
+        if (widget.scrollEmbedded)
+          AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
             child: _showGainers
                 ? _buildColumn(
@@ -394,8 +406,20 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
                 : _buildColumn(
                     context, 'Losers', widget.losers, false, isDark,
                     key: const ValueKey('losers')),
+          )
+        else
+          Expanded(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: _showGainers
+                  ? _buildColumn(
+                      context, 'Gainers', widget.gainers, true, isDark,
+                      key: const ValueKey('gainers'))
+                  : _buildColumn(
+                      context, 'Losers', widget.losers, false, isDark,
+                      key: const ValueKey('losers')),
+            ),
           ),
-        ),
       ],
     );
   }
@@ -403,7 +427,9 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
   // ── Desktop layout: side-by-side columns ──────────────────────────────────
   Widget _buildDesktopLayout(BuildContext context, bool isDark) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+      crossAxisAlignment: widget.scrollEmbedded
+          ? CrossAxisAlignment.start
+          : CrossAxisAlignment.stretch,
       children: [
         Expanded(
           child: _buildColumn(context, 'Gainers', widget.gainers, true, isDark),
@@ -427,10 +453,47 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
   }) {
     final color = isGainers ? _positiveColor(context) : _negativeColor(context);
     final displayItems = items.take(widget.maxItemsPerColumn).toList();
+    final embedded = widget.scrollEmbedded;
+
+    final listBody = displayItems.isEmpty
+        ? Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Text(
+              'No ${isGainers ? 'gainers' : 'losers'} found',
+              style: TextStyle(
+                color: context.colors.textTertiary,
+                fontSize: 13,
+              ),
+            ),
+          )
+        : (embedded
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final item in displayItems)
+                    AmMoverTile(
+                      item: item,
+                      positiveColor: _positiveColor(context),
+                      negativeColor: _negativeColor(context),
+                      isDark: isDark,
+                    ),
+                ],
+              )
+            : ListView.builder(
+                padding: EdgeInsets.zero,
+                itemCount: displayItems.length,
+                itemBuilder: (context, index) => AmMoverTile(
+                  item: displayItems[index],
+                  positiveColor: _positiveColor(context),
+                  negativeColor: _negativeColor(context),
+                  isDark: isDark,
+                ),
+              ));
 
     return Column(
       key: key,
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: embedded ? MainAxisSize.min : MainAxisSize.max,
       children: [
         Row(
           children: [
@@ -453,28 +516,7 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
           ],
         ),
         const SizedBox(height: 8),
-        Expanded(
-          child: displayItems.isEmpty
-              ? Center(
-                  child: Text(
-                    'No ${isGainers ? 'gainers' : 'losers'} found',
-                    style: TextStyle(
-                      color: context.colors.textTertiary,
-                      fontSize: 13,
-                    ),
-                  ),
-                )
-              : ListView.builder(
-                  padding: EdgeInsets.zero,
-                  itemCount: displayItems.length,
-                  itemBuilder: (context, index) => AmMoverTile(
-                    item: displayItems[index],
-                    positiveColor: _positiveColor(context),
-                    negativeColor: _negativeColor(context),
-                    isDark: isDark,
-                  ),
-                ),
-        ),
+        if (embedded) listBody else Expanded(child: listBody),
       ],
     );
   }

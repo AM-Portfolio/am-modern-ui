@@ -72,17 +72,22 @@ class SwipeNavigationController extends ChangeNotifier {
     );
   }
 
-  /// Update navigation items dynamically
+  /// Update navigation items dynamically, preserving selection by title.
   void updateItems(List<NavigationItem> newItems) {
     if (newItems.isEmpty) return;
+    final oldTitle = _items[_currentIndex].title;
     _items = newItems;
-    
-    // Ensure index is valid
-    if (_currentIndex >= _items.length) {
-      _currentIndex = _items.length - 1;
-      // We might want to jump to the new valid index effectively?
+    final byTitle = newItems.indexWhere((e) => e.title == oldTitle);
+    final nextIndex = byTitle >= 0
+        ? byTitle
+        : _currentIndex.clamp(0, newItems.length - 1);
+    _currentIndex = nextIndex;
+    if (pageController.hasClients) {
+      final page = pageController.page?.round() ?? nextIndex;
+      if (page != nextIndex) {
+        pageController.jumpToPage(nextIndex);
+      }
     }
-    
     notifyListeners();
   }
 

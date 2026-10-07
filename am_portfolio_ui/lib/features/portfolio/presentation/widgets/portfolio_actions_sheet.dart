@@ -50,7 +50,9 @@ class _PortfolioActionsSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<AppColorsTheme>() ?? AppColorsTheme.dark;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bottomPad = MediaQuery.paddingOf(context).bottom;
+    // Clear floating bottom nav (shell Stack paints above modal routes).
+    final bottomPad = MediaQuery.paddingOf(context).bottom +
+        PlatformConstants.globalBottomNavReserve(context);
 
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),

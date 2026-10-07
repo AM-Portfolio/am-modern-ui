@@ -695,13 +695,13 @@ class _TradePortfolioDiscoveryTemplateState
         final isMobile = constraints.maxWidth < 600;
 
         Widget listView = ListView.builder(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          padding: EdgeInsets.fromLTRB(isMobile ? 16 : 20, 0, isMobile ? 16 : 20, isMobile ? 24 : 20),
           itemCount: paginatedPortfolios.length,
           itemBuilder: (context, index) {
             final portfolio = paginatedPortfolios[index];
             if (isMobile) {
               return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.only(bottom: 8),
                 child: TradePortfolioMobileCard(
                   portfolio: portfolio,
                   onTap: () => widget.onPortfolioSelected(portfolio),

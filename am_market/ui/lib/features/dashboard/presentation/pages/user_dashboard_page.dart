@@ -45,6 +45,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
   List<TopMoverStock> topGainers = [];
   List<TopMoverStock> topLosers = [];
   bool isLoadingMovers = false;
+  String? moversError;
   
   // Historical chart data
   Map<String, List<Map<String, dynamic>>> historicalData = {};
@@ -431,6 +432,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
     
     setState(() {
       isLoadingMovers = true;
+      moversError = null;
     });
 
     final sw = Stopwatch()..start();
@@ -461,6 +463,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
         topGainers = gainers;
         topLosers = losers;
         isLoadingMovers = false;
+        moversError = null;
       });
     } catch (e) {
       sw.stop();
@@ -474,9 +477,42 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
       if (!mounted) return;
       setState(() {
         isLoadingMovers = false;
+        moversError = 'Could not load top movers';
       });
       CommonLogger.error('Error loading top movers', tag: 'UserDashboardPage', error: e);
     }
+  }
+
+  Widget _dashboardSectionCard({
+    required bool isDark,
+    required Widget child,
+    EdgeInsetsGeometry? padding,
+    EdgeInsetsGeometry? margin,
+  }) {
+    return Container(
+      width: double.infinity,
+      margin: margin ?? EdgeInsets.zero,
+      padding: padding ?? const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark
+            ? context.colors.cardSurface.withValues(alpha: 0.60)
+            : context.colors.cardSurface.withValues(alpha: 0.90),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: context.colors.border.withValues(alpha: isDark ? 0.35 : 0.5),
+        ),
+        boxShadow: isDark
+            ? const []
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+      ),
+      child: child,
+    );
   }
 
   /// Load historical data for selected indices
@@ -544,6 +580,130 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
     }
   }
 
+  void _showCompareIndicesBottomSheet(
+    BuildContext context,
+    MarketProvider marketProvider,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final source = _compareRegion == IndicesRegion.global
+                ? marketProvider.globalIndicesData
+                : marketProvider.allIndicesData;
+            final filtered = source.where((data) {
+              final q = _popoverSearchQuery.toLowerCase();
+              if (q.isEmpty) return true;
+              return data.indexSymbol.toLowerCase().contains(q) ||
+                  (data.indexName?.toLowerCase().contains(q) ?? false);
+            }).toList();
+            final accent = ModuleColors.market;
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.viewInsetsOf(context).bottom,
+                ),
+                child: SizedBox(
+                  height: MediaQuery.sizeOf(context).height * 0.65,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 8),
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).dividerColor,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                        child: Text(
+                          'Compare Indices',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: TextField(
+                          decoration: InputDecoration(
+                            hintText: 'Search indices…',
+                            prefixIcon: const Icon(Icons.search, size: 20),
+                            isDense: true,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          onChanged: (v) {
+                            setSheetState(() => _popoverSearchQuery = v);
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: filtered.length,
+                          itemBuilder: (context, index) {
+                            final data = filtered[index];
+                            final selected = selectedIndicesForChart
+                                .contains(data.indexSymbol);
+                            return CheckboxListTile(
+                              dense: true,
+                              activeColor: accent,
+                              title: Text(data.indexSymbol),
+                              subtitle: data.indexName != null
+                                  ? Text(data.indexName!)
+                                  : null,
+                              value: selected,
+                              onChanged: (v) {
+                                setState(() {
+                                  if (v == true) {
+                                    if (!selectedIndicesForChart
+                                        .contains(data.indexSymbol)) {
+                                      selectedIndicesForChart = [
+                                        ...selectedIndicesForChart,
+                                        data.indexSymbol,
+                                      ];
+                                    }
+                                  } else {
+                                    selectedIndicesForChart =
+                                        List.from(selectedIndicesForChart)
+                                          ..remove(data.indexSymbol);
+                                  }
+                                });
+                                setSheetState(() {});
+                                _loadHistoricalData();
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    ).whenComplete(() {
+      if (mounted) setState(() => _popoverSearchQuery = '');
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -576,58 +736,91 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
     final scaffoldBg = context.colors.scaffoldBackground;
 
     return Stack(
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    scaffoldBg,
-                    Color.alphaBlend(marketColor.withValues(alpha: 0.05), scaffoldBg),
-                    context.colors.surface,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  stops: const [0.0, 0.5, 1.0],
-                ),
+      children: [
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  scaffoldBg,
+                  Color.alphaBlend(
+                      marketColor.withValues(alpha: 0.05), scaffoldBg),
+                  context.colors.surface,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                stops: const [0.0, 0.5, 1.0],
               ),
-              child: SingleChildScrollView(
-                padding: EdgeInsets.all(isMobile ? 12 : 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header Section (desktop: All Indices + timeframe; mobile: in app bar)
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (isMobile)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                    child: Row(
+                      children: [
+                        Text(
+                          'Dashboard',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: context.colors.textPrimary,
+                          ),
+                        ),
+                        const Spacer(),
+                        GlobalTimeFrameBar(
+                          primaryColor: ModuleColors.market,
+                        ),
+                      ],
+                    ),
+                  ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.all(isMobile ? 12 : 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                    // Header Section (desktop: All Indices + timeframe; mobile: shrink)
                     MarketHeader(
                       onAllIndicesPressed: () {
                         if (MediaQuery.of(context).size.width < 768) {
-                          _showMobileAllIndicesBottomSheet(context, marketProvider);
+                          _showMobileAllIndicesBottomSheet(
+                              context, marketProvider);
                         } else {
                           _openDrawer();
                         }
                       },
                     ),
 
-                    if (isMobile) ...[
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: GlobalTimeFrameBar(
-                          primaryColor: ModuleColors.market,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                    ] else
-                      const SizedBox(height: 16),
+                    if (!isMobile) const SizedBox(height: 16),
 
                     // Pinned Index Cards Grid
-                    PinnedIndicesGrid(
-                      indices: marketProvider.allIndicesData,
-                      selectedIndexSymbol: selectedIndexForMovers,
-                      onIndexSelected: (data) {
-                        setState(() {
-                          selectedIndexForMovers = data.indexSymbol;
-                        });
-                        _loadTopMovers();
-                      },
-                    ),
+                    if (isMobile)
+                      _dashboardSectionCard(
+                        isDark: isDark,
+                        child: PinnedIndicesGrid(
+                          indices: marketProvider.allIndicesData,
+                          selectedIndexSymbol: selectedIndexForMovers,
+                          onIndexSelected: (data) {
+                            setState(() {
+                              selectedIndexForMovers = data.indexSymbol;
+                            });
+                            _loadTopMovers();
+                          },
+                        ),
+                      )
+                    else
+                      PinnedIndicesGrid(
+                        indices: marketProvider.allIndicesData,
+                        selectedIndexSymbol: selectedIndexForMovers,
+                        onIndexSelected: (data) {
+                          setState(() {
+                            selectedIndexForMovers = data.indexSymbol;
+                          });
+                          _loadTopMovers();
+                        },
+                      ),
 
                     /* // REMOVED:
                     // Index Cards Carousel  
@@ -678,7 +871,8 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                     SizedBox(height: isMobile ? 10 : 20),
 
                 // --- INDICES COMPARISON SECTION (Moved Up) ---
-                Column(
+                Builder(builder: (context) {
+                final comparisonBody = Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
@@ -726,7 +920,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                               ),
                             ),
                             const SizedBox(width: 8),
-                             // Add Index Button (Anchored Popover)
+                             // Add Index Button (Anchored Popover on desktop; sheet on mobile)
                              CompositedTransformTarget(
                                link: _popoverLink,
                                child: OverlayPortal(
@@ -1014,7 +1208,16 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                                      turns: Tween<double>(begin: 0.0, end: 0.125).animate(_popoverAnimationController),
                                      child: Icon(Icons.add, color: ModuleColors.market),
                                    ),
-                                   onPressed: _togglePopover,
+                                   onPressed: () {
+                                     if (isMobile) {
+                                       _showCompareIndicesBottomSheet(
+                                         context,
+                                         marketProvider,
+                                       );
+                                     } else {
+                                       _togglePopover();
+                                     }
+                                   },
                                    tooltip: 'Compare Indices',
                                  ),
                                ),
@@ -1054,61 +1257,80 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                       ),
                     ),
                   ],
-                ),
+                );
+                return isMobile
+                    ? _dashboardSectionCard(isDark: isDark, child: comparisonBody)
+                    : comparisonBody;
+                }),
 
                 SizedBox(height: isMobile ? 24 : 40),
                 
                 // --- TOP MOVERS SECTION ---
-                TopMoversWidgetV2(
-                  gainers: topGainers,
-                  losers: topLosers,
-                  isLoading: isLoadingMovers,
-                  headerTrailing: GestureDetector(
-                    onTap: () {
-                      if (MediaQuery.sizeOf(context).width < 768) {
-                        _showMobileAllIndicesBottomSheet(
-                          context,
-                          marketProvider,
-                        );
-                      } else {
-                        _openDrawer();
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: ModuleColors.market.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: ModuleColors.market.withValues(alpha: 0.35),
+                Builder(builder: (context) {
+                  final movers = TopMoversWidgetV2(
+                    gainers: topGainers,
+                    losers: topLosers,
+                    isLoading: isLoadingMovers,
+                    error: moversError,
+                    scrollEmbedded: true,
+                    headerTrailing: GestureDetector(
+                      onTap: () {
+                        if (MediaQuery.sizeOf(context).width < 768) {
+                          _showMobileAllIndicesBottomSheet(
+                            context,
+                            marketProvider,
+                          );
+                        } else {
+                          _openDrawer();
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: ModuleColors.market.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: ModuleColors.market.withValues(alpha: 0.35),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              selectedIndexForMovers,
+                              style: TextStyle(
+                                color: ModuleColors.market,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              size: 16,
+                              color: ModuleColors.market.withValues(alpha: 0.9),
+                            ),
+                          ],
                         ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            selectedIndexForMovers,
-                            style: TextStyle(
-                              color: ModuleColors.market,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            size: 16,
-                            color: ModuleColors.market.withValues(alpha: 0.9),
-                          ),
-                        ],
-                      ),
+                    ),
+                  );
+                  return isMobile
+                      ? _dashboardSectionCard(
+                          isDark: isDark,
+                          padding: const EdgeInsets.all(8),
+                          child: movers,
+                        )
+                      : SizedBox(height: 380, child: movers);
+                }),
+                
+                      ],
                     ),
                   ),
                 ),
-                
               ],
             ),
           ),
