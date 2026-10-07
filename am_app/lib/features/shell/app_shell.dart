@@ -49,7 +49,21 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
   Timer? _securityAlertHideTimer;
   StreamSubscription<bool>? _marketGateSubscription;
   StreamSubscription<List<SecurityEventModel>>? _securityEventsSub;
+  StreamSubscription<void>? _featureFlagServiceSub;
   SecurityEventModel? _securityAlert;
+
+  bool get _isSecurityAlertBannerEnabled {
+    if (FeatureFlags().enableSecurityAlertBanner) {
+      return true;
+    }
+    if (GetIt.instance.isRegistered<common.FeatureFlagService>()) {
+      return GetIt.instance<common.FeatureFlagService>().isOn(
+        common.FeatureFlagKeys.securityAlertBannerEnabled,
+        defaultValue: false,
+      );
+    }
+    return false;
+  }
 
   @override
   void initState() {
@@ -78,6 +92,7 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
       _restoreSessionNav();
       _seedPortfolioSelectionFromSession();
       _startSecurityAlertsIfWeb();
+      _listenToFeatureFlagChanges();
     });
     
     _showBottomNavWithIdleHide();
@@ -85,11 +100,14 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
 
   @override
   void dispose() {
+    _featureFlagServiceSub?.cancel();
+    _featureFlagServiceSub = null;
     _bottomNavHideTimer?.cancel();
     _securityAlertHideTimer?.cancel();
     _marketGateSubscription?.cancel();
     _marketGateSubscription = null;
     _securityEventsSub?.cancel();
+    _securityEventsSub = null;
     if (kIsWeb) {
       AuthProviders.securityAlertService.stop();
     }
@@ -97,14 +115,47 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
     super.dispose();
   }
 
+  void _listenToFeatureFlagChanges() {
+    if (!GetIt.instance.isRegistered<common.FeatureFlagService>()) return;
+    _featureFlagServiceSub ??= GetIt.instance<common.FeatureFlagService>()
+        .changes
+        .listen((_) {
+      if (!mounted) return;
+      if (!_isSecurityAlertBannerEnabled) {
+        _securityAlertHideTimer?.cancel();
+        if (kIsWeb) {
+          AuthProviders.securityAlertService.stop();
+        }
+        if (_securityAlert != null) {
+          setState(() => _securityAlert = null);
+        }
+      } else {
+        _startSecurityAlertsIfWeb();
+      }
+    });
+  }
+
   void _startSecurityAlertsIfWeb() {
     if (!kIsWeb) return;
+    if (!_isSecurityAlertBannerEnabled) {
+      AuthProviders.securityAlertService.stop();
+      _securityAlertHideTimer?.cancel();
+      if (_securityAlert != null) {
+        setState(() => _securityAlert = null);
+      }
+      return;
+    }
     // Local demo-login review runs: skip new-sign-in banner.
     if (common.DemoLoginConfig.isDevSectionVisible) return;
     final service = AuthProviders.securityAlertService;
     service.start();
     _securityEventsSub ??= service.events.listen((events) {
       if (!mounted) return;
+      if (!_isSecurityAlertBannerEnabled) {
+        _securityAlertHideTimer?.cancel();
+        setState(() => _securityAlert = null);
+        return;
+      }
       final next = events.isNotEmpty ? events.first : null;
       if (next == null) {
         _securityAlertHideTimer?.cancel();
@@ -595,6 +646,21 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
             }
           },
         ),
+        BlocListener<FeatureFlagCubit, FeatureFlagState>(
+          listener: (context, state) {
+            if (!_isSecurityAlertBannerEnabled) {
+              _securityAlertHideTimer?.cancel();
+              if (kIsWeb) {
+                AuthProviders.securityAlertService.stop();
+              }
+              if (_securityAlert != null) {
+                setState(() => _securityAlert = null);
+              }
+            } else {
+              _startSecurityAlertsIfWeb();
+            }
+          },
+        ),
       ],
       child: BlocBuilder<AuthCubit, AuthState>(
         builder: (context, authState) {
@@ -820,7 +886,7 @@ final userId =
                             ),
                           ),
                         ),
-                      if (kIsWeb && _securityAlert != null)
+                      if (kIsWeb && _isSecurityAlertBannerEnabled && _securityAlert != null)
                         Positioned(
                           top: 0,
                           left: 0,

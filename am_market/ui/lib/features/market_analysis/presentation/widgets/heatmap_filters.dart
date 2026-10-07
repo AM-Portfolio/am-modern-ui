@@ -1,87 +1,104 @@
 import 'package:flutter/material.dart';
+import 'package:am_design_system/am_design_system.dart';
+import 'package:am_market_ui/features/market/widgets/market_colors.dart';
 
 class HeatmapFilters extends StatelessWidget {
-  final String timeFrame;
-  final ValueChanged<String?> onTimeFrameChanged;
   final String? percentFilter;
   final ValueChanged<String?> onPercentFilterChanged;
-  
-  final List<String> timeFrames;
   final List<String> filters;
+  final String? title;
 
   const HeatmapFilters({
     super.key,
-    required this.timeFrame,
-    required this.onTimeFrameChanged,
     required this.percentFilter,
     required this.onPercentFilterChanged,
-    this.timeFrames = const ['5M', '10M', '15M', '30M', '1H', '1D'],
-    this.filters = const ['Above +5%', '+2 to +5%', '0 to +2%', '0 to -2%', '-2 to -5%', 'Below -5%'],
+    this.filters = const [
+      'Above +5%',
+      '+2 to +5%',
+      '0 to +2%',
+      '0 to -2%',
+      '-2 to -5%',
+      'Below -5%',
+    ],
+    this.title,
   });
+
+  Color _filterColor(BuildContext context, String f) {
+    final pos = MarketColors.positive(context);
+    final neg = MarketColors.negative(context);
+    if (f.contains('Above')) return pos;
+    if (f.contains('+2')) return Color.lerp(pos, context.colors.surface, 0.15)!;
+    if (f.contains('0 to +2')) {
+      return Color.lerp(pos, context.colors.surface, 0.35)!;
+    }
+    if (f.contains('0 to -2')) {
+      return Color.lerp(neg, context.colors.surface, 0.35)!;
+    }
+    if (f.contains('-2 to')) {
+      return Color.lerp(neg, context.colors.surface, 0.15)!;
+    }
+    return neg;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
-        ],
+        color: MarketColors.cardSurface(context),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+        border: Border(
+          bottom: BorderSide(color: MarketColors.borderDefault(context)),
+        ),
       ),
       child: Wrap(
-        spacing: 20,
-        runSpacing: 10,
+        spacing: 12,
+        runSpacing: 8,
         crossAxisAlignment: WrapCrossAlignment.center,
         alignment: WrapAlignment.spaceBetween,
         children: [
-          // Time Frame Dropdown
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(8),
-              color: Colors.grey.shade50,
+          if (title != null)
+            Text(
+              title!,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: MarketColors.textPrimary(context),
+              ),
             ),
-            child: DropdownButton<String>(
-              value: timeFrame,
-              dropdownColor: Colors.white,
-              style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
-              underline: const SizedBox(),
-              items: timeFrames.map((tf) => DropdownMenuItem(value: tf, child: Text(tf))).toList(),
-              onChanged: onTimeFrameChanged,
-            ),
-          ),
-          
-          // Percent Filters
           Wrap(
-            spacing: 8,
+            spacing: 6,
+            runSpacing: 6,
             children: filters.map((f) {
               final isSelected = percentFilter == f;
-              Color color;
-              Color textColor = isSelected ? Colors.white : Colors.black87;
-              
-                if (f.contains('Above')) color = Colors.green[700]!;
-                else if (f.contains('+2')) color = Colors.green[500]!;
-                else if (f.contains('0 to +2')) color = Colors.green[300]!;
-                else if (f.contains('0 to -2')) color = Colors.red[300]!;
-                else if (f.contains('-2 to')) color = Colors.red[500]!;
-                else color = Colors.red[900]!;
+              final selectedColor = _filterColor(context, f);
+              final onSelected = context.colors.actionPrimaryFg;
 
               return FilterChip(
-                label: Text(f, style: const TextStyle(fontSize: 12)),
+                label: Text(f, style: const TextStyle(fontSize: 11)),
                 selected: isSelected,
                 onSelected: (selected) {
                   onPercentFilterChanged(selected ? f : null);
                 },
-                backgroundColor: Colors.grey.shade100,
-                selectedColor: color,
-                checkmarkColor: Colors.white,
-                labelStyle: TextStyle(color: textColor),
-                side: BorderSide.none,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                backgroundColor: MarketColors.cardSurface(context),
+                selectedColor: selectedColor,
+                checkmarkColor: onSelected,
+                labelStyle: TextStyle(
+                  color: isSelected
+                      ? onSelected
+                      : MarketColors.textSecondary(context),
+                ),
+                side: BorderSide(
+                  color: isSelected
+                      ? selectedColor
+                      : MarketColors.borderDefault(context),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               );
             }).toList(),
           ),

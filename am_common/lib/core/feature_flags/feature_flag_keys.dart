@@ -3,6 +3,7 @@ class FeatureFlagKeys {
   static const ipoPageEnabled = 'ipo-page-enabled';
   static const offlineReadsV1 = 'offline_reads_v1';
   static const offlineWritesV1 = 'offline_writes_v1';
+  static const securityAlertBannerEnabled = 'security-alert-banner-enabled';
 
   /// Portfolio Intelligence overview (master kill switch).
   /// Child intel keys default ON when this is on and they are unset in GB.

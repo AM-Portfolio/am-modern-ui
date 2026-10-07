@@ -26,6 +26,7 @@ export 'core/theme/theme_repository.dart';
 export 'core/config/design_system_config.dart';
 export 'core/config/design_system_provider.dart';
 export 'core/config/brand_config.dart';
+export 'core/config/feature_flags.dart';
 
 // Contracts
 export 'core/contracts/design_contract.dart';

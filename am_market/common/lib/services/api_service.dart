@@ -777,9 +777,8 @@ class ApiService {
       final response = await http.get(Uri.parse(url), headers: headers);
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
-        // Cast values to double, handling integers if any
-        return data.map((key, value) => MapEntry(key, (value as num).toDouble()));
+        final decoded = json.decode(response.body);
+        return parseHeatmapPayload(decoded);
       } else {
         throw Exception('Failed to fetch heatmap: ${response.statusCode}');
       }
@@ -788,4 +787,35 @@ class ApiService {
       return {};
     }
   }
+}
+
+/// Accepts either a flat `{symbol: pct}` map or a wrapped body
+/// (`data` / `heatmap` / `values` / `constituents`).
+Map<String, double> parseHeatmapPayload(dynamic decoded) {
+  if (decoded is! Map) return {};
+  final root = Map<String, dynamic>.from(decoded);
+
+  Map<String, dynamic> candidate = root;
+  for (final key in const ['data', 'heatmap', 'values', 'constituents', 'items']) {
+    final nested = root[key];
+    if (nested is Map && nested.isNotEmpty) {
+      candidate = Map<String, dynamic>.from(nested);
+      break;
+    }
+  }
+
+  final out = <String, double>{};
+  candidate.forEach((key, value) {
+    if (value is num) {
+      out[key] = value.toDouble();
+    } else if (value is Map) {
+      final pct = value['pChange'] ??
+          value['changePercent'] ??
+          value['percentChange'] ??
+          value['value'] ??
+          value['change'];
+      if (pct is num) out[key] = pct.toDouble();
+    }
+  });
+  return out;
 }
