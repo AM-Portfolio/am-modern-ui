@@ -201,7 +201,7 @@ class IpoFilterToolbar extends ConsumerWidget {
     return Container(
       height: 20,
       width: 1,
-      color: isDark ? IpoColors.progressTrack : context.dividerColor,
+      color: isDark ? context.dividerColor : context.dividerColor,
     );
   }
 
@@ -225,13 +225,13 @@ class IpoFilterToolbar extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: isSelected
-              ? (isDark ? IpoColors.docRhpBg : context.textPrimary)
-              : (isDark ? IpoColors.darkCardBg.withValues(alpha: 0.5) : context.surfaceColor),
+              ? (isDark ? context.surfaceColor : context.textPrimary)
+              : (context.surfaceColor),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
-                ? (isDark ? IpoColors.accentCyan : context.textPrimary)
-                : (isDark ? IpoColors.darkCardBorder : context.borderColor),
+                ? (isDark ? ModuleColors.market : context.textPrimary)
+                : (context.borderColor),
             width: isSelected ? 1.2 : 1,
           ),
         ),
@@ -244,7 +244,7 @@ class IpoFilterToolbar extends ConsumerWidget {
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 color: isSelected
-                    ? (isDark ? IpoColors.accentCyan : context.cardColor)
+                    ? (isDark ? ModuleColors.market : context.cardColor)
                     : context.textSecondary,
               ),
             ),
@@ -317,10 +317,10 @@ class IpoFilterToolbar extends ConsumerWidget {
       height: 38,
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        color: isDark ? IpoColors.darkCardBg.withValues(alpha: 0.6) : context.surfaceColor,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isDark ? IpoColors.darkCardBorder : context.borderColor,
+          color: context.borderColor,
           width: 1,
         ),
       ),
@@ -333,7 +333,7 @@ class IpoFilterToolbar extends ConsumerWidget {
             fontWeight: FontWeight.w500,
             color: context.textPrimary,
           ),
-          dropdownColor: isDark ? IpoColors.darkCardBg : context.surfaceColor,
+          dropdownColor: context.surfaceColor,
           items: industries.map((ind) {
             return DropdownMenuItem<String>(
               value: ind,
@@ -357,10 +357,10 @@ class IpoFilterToolbar extends ConsumerWidget {
     return Container(
       height: 38,
       decoration: BoxDecoration(
-        color: isDark ? IpoColors.darkCardBg.withValues(alpha: 0.6) : context.surfaceColor,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isDark ? IpoColors.darkCardBorder : context.borderColor,
+          color: context.borderColor,
           width: 1,
         ),
       ),

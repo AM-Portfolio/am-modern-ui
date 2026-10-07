@@ -60,18 +60,7 @@ class _AllIndicesPageState extends ConsumerState<AllIndicesPage> {
         : provider.allIndicesData;
   }
 
-  double _displayPChange(
-    StockIndicesMarketData data,
-    String timeframe,
-    Map<String, double> basePrices,
-  ) {
-    if (timeframe != '1D') {
-      final base = basePrices[data.indexSymbol];
-      if (base != null && base > 0) {
-        return ((data.lastPrice - base) / base) * 100;
-      }
-      return 0.0;
-    }
+  double _displayPChange(StockIndicesMarketData data) {
     return data.pChange;
   }
 
@@ -114,7 +103,6 @@ class _AllIndicesPageState extends ConsumerState<AllIndicesPage> {
               timeframe: timeframe,
               indian: provider.allIndicesData,
               global: provider.globalIndicesData,
-              basePrices: provider.timeframeBasePrices,
               availableIndices: provider.availableIndices,
               selectedSymbol: _selectedSymbol ?? provider.selectedIndex,
               clockLabel: _istClock(),
@@ -138,11 +126,10 @@ class _AllIndicesPageState extends ConsumerState<AllIndicesPage> {
     MarketProvider provider,
     String timeframe,
   ) {
-    final basePrices = provider.timeframeBasePrices;
     final active = List<StockIndicesMarketData>.from(_active(provider))
       ..sort(
-        (a, b) => _displayPChange(b, timeframe, basePrices)
-            .compareTo(_displayPChange(a, timeframe, basePrices)),
+        (a, b) => _displayPChange(b)
+            .compareTo(_displayPChange(a)),
       );
 
     return ColoredBox(
@@ -220,7 +207,6 @@ class _AllIndicesPageState extends ConsumerState<AllIndicesPage> {
                           data: data,
                           isSelected: selected,
                           timeframe: timeframe,
-                          basePrice: basePrices[data.indexSymbol],
                           onTap: () {
                             setState(() => _selectedSymbol = data.indexSymbol);
                             if (!provider.isGlobalSymbol(data.indexSymbol)) {

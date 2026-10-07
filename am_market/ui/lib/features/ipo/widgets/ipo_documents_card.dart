@@ -15,10 +15,10 @@ class IpoDocumentsCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? IpoColors.darkCardBg.withValues(alpha: 0.7) : context.surfaceColor,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? IpoColors.darkCardBorder : context.borderColor,
+          color: context.borderColor,
           width: 1,
         ),
       ),
@@ -27,7 +27,7 @@ class IpoDocumentsCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.description_outlined, size: 18, color: IpoColors.accentCyan),
+              Icon(Icons.description_outlined, size: 18, color: ModuleColors.market),
               const SizedBox(width: 8),
               Text(
                 'Documents',
@@ -83,12 +83,12 @@ class IpoDocumentsCard extends StatelessWidget {
         height: 52,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: hasRhp ? IpoColors.stepCompleted : (isDark ? IpoColors.docRhpBg : context.surfaceColor),
+          color: hasRhp ? context.colors.statusSuccess : (context.surfaceColor),
           borderRadius: BorderRadius.circular(10),
           boxShadow: hasRhp
               ? [
                   BoxShadow(
-                    color: IpoColors.stepCompleted.withValues(alpha: 0.3),
+                    color: context.colors.statusSuccess.withValues(alpha: 0.3),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -100,7 +100,7 @@ class IpoDocumentsCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.2),
+                color: context.colors.textPrimary.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: const Icon(Icons.picture_as_pdf_rounded, size: 18, color: Colors.white),
@@ -144,10 +144,10 @@ class IpoDocumentsCard extends StatelessWidget {
         height: 48,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: isDark ? IpoColors.docRhpBg.withValues(alpha: 0.5) : context.surfaceColor,
+          color: isDark ? context.surfaceColor.withValues(alpha: 0.5) : context.surfaceColor,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isDark ? IpoColors.stepPending : context.borderColor,
+            color: isDark ? context.dividerColor : context.borderColor,
             width: 1,
           ),
         ),

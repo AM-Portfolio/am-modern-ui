@@ -17,33 +17,11 @@ extension IndicesListFilterLabel on IndicesListFilter {
   }
 }
 
-double rankedDisplayPChange(
-  StockIndicesMarketData data,
-  String timeframe,
-  Map<String, double> basePrices,
-) {
-  if (timeframe != '1D') {
-    final base = basePrices[data.indexSymbol];
-    if (base != null && base > 0) {
-      return ((data.lastPrice - base) / base) * 100;
-    }
-    return 0.0;
-  }
+double rankedDisplayPChange(StockIndicesMarketData data) {
   return data.pChange;
 }
 
-double rankedDisplayChange(
-  StockIndicesMarketData data,
-  String timeframe,
-  Map<String, double> basePrices,
-) {
-  if (timeframe != '1D') {
-    final base = basePrices[data.indexSymbol];
-    if (base != null && base > 0) {
-      return data.lastPrice - base;
-    }
-    return 0.0;
-  }
+double rankedDisplayChange(StockIndicesMarketData data) {
   return data.change;
 }
 
@@ -90,7 +68,6 @@ List<StockIndicesMarketData> rankedSortedIndices({
   required List<StockIndicesMarketData> global,
   required IndicesListFilter filter,
   required String timeframe,
-  required Map<String, double> basePrices,
 }) {
   List<StockIndicesMarketData> raw;
   switch (filter) {
@@ -105,8 +82,8 @@ List<StockIndicesMarketData> rankedSortedIndices({
       break;
   }
   raw.sort(
-    (a, b) => rankedDisplayPChange(b, timeframe, basePrices)
-        .compareTo(rankedDisplayPChange(a, timeframe, basePrices)),
+    (a, b) => rankedDisplayPChange(b)
+        .compareTo(rankedDisplayPChange(a)),
   );
   return raw;
 }

@@ -15,10 +15,10 @@ class IpoOverviewHeaderCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: isDark ? IpoColors.darkCardBg.withValues(alpha: 0.7) : context.surfaceColor,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? IpoColors.darkCardBorder : context.borderColor,
+          color: context.borderColor,
           width: 1,
         ),
       ),
@@ -101,7 +101,7 @@ class IpoOverviewHeaderCard extends StatelessWidget {
           ),
 
           const SizedBox(height: 22),
-          Divider(color: isDark ? IpoColors.darkCardBorder : context.dividerColor),
+          Divider(color: context.dividerColor),
           const SizedBox(height: 16),
 
           // 2. 8-Parameter Key Metrics Strip
@@ -189,20 +189,20 @@ class IpoOverviewHeaderCard extends StatelessWidget {
       width: 58,
       height: 58,
       decoration: BoxDecoration(
-        color: isDark ? IpoColors.darkInnerCardBg : context.surfaceColor,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isDark ? IpoColors.darkCardBorder : context.borderColor,
+          color: context.borderColor,
           width: 1.2,
         ),
       ),
       alignment: Alignment.center,
       child: Text(
         initials,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w800,
-          color: IpoColors.accentCyan,
+          color: ModuleColors.market,
         ),
       ),
     );
@@ -213,10 +213,10 @@ class IpoOverviewHeaderCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: isDark ? IpoColors.docRhpBg : context.surfaceColor,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
-          color: isDark ? IpoColors.darkCardBorder : context.borderColor,
+          color: context.borderColor,
           width: 0.8,
         ),
       ),
@@ -242,19 +242,19 @@ class IpoOverviewHeaderCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: IpoColors.statusOpen.withValues(alpha: isDark ? 0.18 : 0.12),
+            color: context.colors.statusSuccess.withValues(alpha: isDark ? 0.18 : 0.12),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: IpoColors.statusOpen.withValues(alpha: isDark ? 0.45 : 0.35),
+              color: context.colors.statusSuccess.withValues(alpha: isDark ? 0.45 : 0.35),
               width: 1,
             ),
           ),
           child: Text(
             status,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: IpoColors.statusOpen,
+              color: context.colors.statusSuccess,
               letterSpacing: 0.5,
             ),
           ),
@@ -271,10 +271,10 @@ class IpoOverviewHeaderCard extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           remainingDays,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w800,
-            color: IpoColors.stepCompleted,
+            color: context.colors.statusSuccess,
           ),
         ),
         if (ipo.biddingEndDate != null && ipo.biddingEndDate!.isNotEmpty) ...[

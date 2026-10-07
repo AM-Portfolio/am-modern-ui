@@ -25,10 +25,10 @@ class IpoTimelineStepper extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: isDark ? IpoColors.darkCardBg.withValues(alpha: 0.7) : context.surfaceColor,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? IpoColors.darkCardBorder : context.borderColor,
+          color: context.borderColor,
           width: 1,
         ),
       ),
@@ -37,7 +37,7 @@ class IpoTimelineStepper extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.calendar_month_outlined, size: 18, color: IpoColors.accentCyan),
+              Icon(Icons.calendar_month_outlined, size: 18, color: ModuleColors.market),
               const SizedBox(width: 8),
               Text(
                 'Important Dates',
@@ -84,8 +84,7 @@ class IpoTimelineStepper extends StatelessWidget {
       indicator = Container(
         width: 26,
         height: 26,
-        decoration: const BoxDecoration(
-          color: IpoColors.stepCompleted,
+        decoration: BoxDecoration(color: context.colors.statusSuccess,
           shape: BoxShape.circle,
         ),
         child: const Icon(Icons.check, size: 16, color: Colors.white),
@@ -95,16 +94,15 @@ class IpoTimelineStepper extends StatelessWidget {
         width: 26,
         height: 26,
         decoration: BoxDecoration(
-          color: IpoColors.stepActive.withValues(alpha: 0.25),
+          color: ModuleColors.market.withValues(alpha: 0.25),
           shape: BoxShape.circle,
-          border: Border.all(color: IpoColors.stepActive, width: 2),
+          border: Border.all(color: ModuleColors.market, width: 2),
         ),
         alignment: Alignment.center,
         child: Container(
           width: 10,
           height: 10,
-          decoration: const BoxDecoration(
-            color: IpoColors.stepActive,
+          decoration: BoxDecoration(color: ModuleColors.market,
             shape: BoxShape.circle,
           ),
         ),
@@ -117,7 +115,7 @@ class IpoTimelineStepper extends StatelessWidget {
           color: Colors.transparent,
           shape: BoxShape.circle,
           border: Border.all(
-            color: isDark ? IpoColors.stepPending : context.borderColor,
+            color: isDark ? context.dividerColor : context.borderColor,
             width: 2,
           ),
         ),
@@ -137,7 +135,7 @@ class IpoTimelineStepper extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: stage.isActive ? FontWeight.w700 : FontWeight.w500,
-              color: stage.isActive ? IpoColors.stepActive : context.textSecondary,
+              color: stage.isActive ? ModuleColors.market : context.textSecondary,
             ),
           ),
           const SizedBox(height: 3),
@@ -173,7 +171,7 @@ class IpoTimelineStepper extends StatelessWidget {
       width: 44,
       height: 2,
       margin: const EdgeInsets.only(top: 12),
-      color: isCompleted ? IpoColors.stepLineCompleted : (isDark ? IpoColors.stepLinePending : context.dividerColor),
+      color: isCompleted ? context.colors.statusSuccess : (isDark ? context.dividerColor : context.dividerColor),
     );
   }
 

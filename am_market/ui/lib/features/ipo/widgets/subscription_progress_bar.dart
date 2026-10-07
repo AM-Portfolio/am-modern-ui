@@ -20,8 +20,8 @@ class SubscriptionProgressBar extends StatelessWidget {
     final Color statusColor = !hasData
         ? context.textTertiary
         : isSubscribed
-            ? (isDark ? IpoColors.progressSubscribed : IpoColors.progressSubscribedLight)
-            : (isDark ? IpoColors.progressUnderSubscribed : IpoColors.progressUnderSubscribedLight);
+            ? context.colors.statusSuccess
+            : context.colors.statusWarning;
 
     final String displayValue = hasData ? '${value.toStringAsFixed(2)}x' : 'N/A';
 
@@ -70,7 +70,7 @@ class SubscriptionProgressBar extends StatelessWidget {
           height: 6,
           width: double.infinity,
           decoration: BoxDecoration(
-            color: isDark ? IpoColors.darkCardBorder : context.dividerColor,
+            color: context.dividerColor,
             borderRadius: BorderRadius.circular(3),
           ),
           child: FractionallySizedBox(
@@ -81,12 +81,12 @@ class SubscriptionProgressBar extends StatelessWidget {
                 gradient: LinearGradient(
                   colors: isSubscribed
                       ? [
-                          IpoColors.progressSubscribed.withValues(alpha: 0.8),
-                          IpoColors.stepCompleted,
+                          context.colors.statusSuccess.withValues(alpha: 0.8),
+                          context.colors.statusSuccess,
                         ]
                       : [
-                          IpoColors.progressUnderSubscribed.withValues(alpha: 0.8),
-                          IpoColors.statusClosingSoon,
+                          context.colors.statusWarning.withValues(alpha: 0.8),
+                          context.colors.statusWarning,
                         ],
                 ),
                 borderRadius: BorderRadius.circular(3),

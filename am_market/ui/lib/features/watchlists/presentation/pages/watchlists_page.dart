@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
-import 'package:am_news_ui/am_news_ui.dart';
 import '../../providers/watchlist_provider.dart';
 import '../../data/models/watchlist_model.dart';
 import '../widgets/watchlist_management_view.dart';
@@ -104,12 +102,6 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                               setState(() => _selectedWatchlistId = null),
                           onStockSelected: widget.onStockSelected,
                         ),
-                      ),
-                      HoldingsNewsSection(
-                        symbols: selectedWatchlist.items
-                            .map((e) => e.symbol)
-                            .toList(),
-                        surface: NewsUiSurface.watchList,
                       ),
                     ],
                   );
@@ -546,12 +538,6 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                         watchlist: selectedWatchlist,
                         onStockSelected: widget.onStockSelected,
                       ),
-                    ),
-                    HoldingsNewsSection(
-                      symbols: selectedWatchlist.items
-                          .map((e) => e.symbol)
-                          .toList(),
-                      surface: NewsUiSurface.watchList,
                     ),
                   ],
                 ),

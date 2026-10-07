@@ -15,10 +15,10 @@ class IpoEligibleInvestorsCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? IpoColors.darkCardBg.withValues(alpha: 0.7) : context.surfaceColor,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? IpoColors.darkCardBorder : context.borderColor,
+          color: context.borderColor,
           width: 1,
         ),
       ),
@@ -27,7 +27,7 @@ class IpoEligibleInvestorsCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.badge_outlined, size: 18, color: IpoColors.accentCyan),
+              Icon(Icons.badge_outlined, size: 18, color: ModuleColors.market),
               const SizedBox(width: 8),
               Text(
                 'Eligible Investors',
@@ -44,10 +44,10 @@ class IpoEligibleInvestorsCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: isDark ? IpoColors.docRhpBg.withValues(alpha: 0.4) : context.surfaceColor,
+              color: context.surfaceColor,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isDark ? IpoColors.stepPending : context.borderColor,
+                color: isDark ? context.dividerColor : context.borderColor,
                 width: 1,
               ),
             ),
@@ -66,16 +66,16 @@ class IpoEligibleInvestorsCard extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: IpoColors.accentCyan.withValues(alpha: 0.15),
+                              color: ModuleColors.market.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: IpoColors.accentCyan.withValues(alpha: 0.35)),
+                              border: Border.all(color: ModuleColors.market.withValues(alpha: 0.35)),
                             ),
                             child: Text(
                               inv.category,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
-                                color: IpoColors.accentCyan,
+                                color: ModuleColors.market,
                               ),
                             ),
                           ),
