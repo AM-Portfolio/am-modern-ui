@@ -96,9 +96,11 @@ final enrichedTradePortfoliosProvider =
 
   if (tradePortfolioList.portfolios.isEmpty) return [];
 
-  final realized = tradePortfolioList.portfolios
-      .map(TradePortfolioViewModel.fromEntity)
-      .toList();
+  // Safety net: collapse duplicate ids / same display name (Upstox×2).
+  final realized = _dedupeTradePortfolios(
+    tradePortfolioList.portfolios.map(TradePortfolioViewModel.fromEntity),
+  );
+  if (realized.isEmpty) return [];
 
   // Step 2: Live am-portfolio summaries — fail open, never block the landing.
   // Call the data source directly (with timeouts) instead of watching
@@ -117,7 +119,7 @@ final enrichedTradePortfoliosProvider =
   List<PortfolioSummaryResponseDto?> summaries;
   try {
     summaries = await Future.wait(
-      tradePortfolioList.portfolios.map((portfolio) async {
+      realized.map((portfolio) async {
         try {
           return await dataSource!
               .getPortfolioSummary(portfolio.id)
@@ -142,6 +144,35 @@ final enrichedTradePortfoliosProvider =
       _mergeViewModel(realized[i], summaries[i]),
   ];
 });
+
+// ============================================================================
+// Dedup (pure — keeps UI honest when trade API returns clones)
+// ============================================================================
+
+List<TradePortfolioViewModel> _dedupeTradePortfolios(
+  Iterable<TradePortfolioViewModel> input,
+) {
+  final byId = <String>{};
+  final ordered = <TradePortfolioViewModel>[];
+  for (final p in input) {
+    final id = p.id.trim().toLowerCase();
+    if (id.isNotEmpty && !byId.add(id)) {
+      continue;
+    }
+    ordered.add(p);
+  }
+
+  final byName = <String>{};
+  final out = <TradePortfolioViewModel>[];
+  for (final p in ordered) {
+    final nameKey = p.name.trim().toLowerCase();
+    if (nameKey.isNotEmpty && !byName.add(nameKey)) {
+      continue;
+    }
+    out.add(p);
+  }
+  return out;
+}
 
 // ============================================================================
 // Merge Logic (pure function — no side effects, easy to unit test)
