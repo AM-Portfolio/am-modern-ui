@@ -35,8 +35,11 @@ class _TradeCalendarAnalyticsMobilePageState extends ConsumerState<TradeCalendar
     final portfolioId = widget.portfolioId;
     final cubit = await ref.read(tradeCalendarCubitProvider(portfolioId).future);
 
-    // Start in yearly view
-    cubit.navigateToYearly( portfolioId: widget.portfolioId, year: _selectedYear);
+    // Start in yearly view using the most recent trade year
+    final year = await cubit.initializeToMostRecentYear(portfolioId: widget.portfolioId);
+    if (mounted) {
+      setState(() => _selectedYear = year);
+    }
   }
 
   @override
@@ -94,10 +97,13 @@ class _TradeCalendarAnalyticsMobilePageState extends ConsumerState<TradeCalendar
     }
 
     // Compact year window so current year is reachable after load scroll.
+    // Include _selectedYear when most-recent trade year is outside the window so
+    // the sticky year label and monthsData stay aligned.
     final nowYear = DateTime.now().year;
-    final startYear = nowYear - 2;
+    final endYear = _selectedYear > nowYear ? _selectedYear : nowYear;
+    final startYear = _selectedYear < nowYear - 2 ? _selectedYear : nowYear - 2;
     final yearsData = <int, Map<int, CalendarMonthData>>{};
-    for (var y = startYear; y <= nowYear; y++) {
+    for (var y = startYear; y <= endYear; y++) {
       yearsData[y] = YearCalendarConverter.convertToMonthsData(
         entity: entityData,
         portfolioId: widget.portfolioId,

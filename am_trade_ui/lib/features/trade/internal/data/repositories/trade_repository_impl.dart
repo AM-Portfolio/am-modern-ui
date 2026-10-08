@@ -657,6 +657,19 @@ class TradeRepositoryImpl implements TradeRepository {
     }
   }
 
+  @override
+  Future<int> getMostRecentTradeYear(String portfolioId) async {
+    AppLogger.methodEntry('getMostRecentTradeYear',
+        tag: 'TradeRepositoryImpl', params: {'portfolioId': portfolioId});
+    try {
+      return await _remoteDataSource.getMostRecentTradeYear(portfolioId);
+    } catch (e) {
+      AppLogger.error('Failed to fetch most recent trade year',
+          tag: 'TradeRepositoryImpl', error: e);
+      rethrow;
+    }
+  }
+
   /// Dispose method to clean up resources
   void dispose() {
     AppLogger.methodEntry('dispose', tag: 'TradeRepository');

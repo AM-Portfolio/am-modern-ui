@@ -75,7 +75,26 @@ class AdvancedHoldingRow {
 
   static final NumberFormat _qty = NumberFormat('#,##0.##');
 
-  String get displaySymbol => symbol.isEmpty ? '—' : symbol;
+  /// Indian ISIN / scheme id shape (e.g. INE669E01016, INF277KA1976).
+  static final RegExp _isinLike = RegExp(r'^[A-Z]{2}[A-Z0-9]{10}$');
+
+  bool get symbolLooksLikeIsin {
+    final s = symbol.trim().toUpperCase();
+    return s.length == 12 && _isinLike.hasMatch(s);
+  }
+
+  /// Prefer ticker; if API still stores an ISIN as symbol, show a short company label.
+  String get displaySymbol {
+    if (symbol.isEmpty) return '—';
+    if (symbolLooksLikeIsin) {
+      final name = companyName.trim();
+      if (name.isNotEmpty) {
+        if (name.length <= 18) return name;
+        return '${name.substring(0, 16).trimRight()}…';
+      }
+    }
+    return symbol;
+  }
 
   String get displayCompanyName =>
       companyName.isEmpty ? displaySymbol : companyName;
