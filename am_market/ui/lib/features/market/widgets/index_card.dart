@@ -1,6 +1,8 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_common/models/market_data.dart';
 import 'package:am_market_common/providers/market_provider.dart';
 import 'package:am_market_ui/features/market/widgets/market_colors.dart';
@@ -21,10 +23,12 @@ class IndexCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 768;
     final numberFormat = NumberFormat('#,##,###.##', 'en_IN');
+    final accent = ModuleColors.market;
 
     return Consumer<MarketProvider>(
       builder: (context, provider, child) {
         bool isLoading = false;
+        // Keep last known 1D change while non-1D base prices load — never force zeros.
         double displayChange = data.change;
         double displayPChange = data.pChange;
         String timeframeLabel = '';
@@ -33,179 +37,184 @@ class IndexCard extends StatelessWidget {
           timeframeLabel = ' (${provider.selectedIndicesTimeframe})';
           if (provider.isLoadingBasePrices) {
             isLoading = true;
-          } else {
-            final basePrice = provider.timeframeBasePrices[data.indexSymbol];
-            if (basePrice != null && basePrice > 0) {
-              displayChange = data.lastPrice - basePrice;
-              displayPChange = (displayChange / basePrice) * 100;
-            } else {
-              displayChange = 0;
-              displayPChange = 0;
-            }
           }
         }
 
         final isPositive = displayChange >= 0;
         final changeColor = isLoading
             ? MarketColors.textMuted(context)
-            : (isPositive ? MarketColors.positive(context) : MarketColors.negative(context));
+            : (isPositive
+                ? MarketColors.positive(context)
+                : MarketColors.negative(context));
 
-        final displayPChangeFormatted = displayPChange.toStringAsFixed(2);
+        final displayPChangeFormatted = displayPChange.abs().toStringAsFixed(2);
         final displayChangeFormatted = numberFormat.format(displayChange.abs());
-
-        final cardContent = Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Index Name — secondary text for readable contrast on white cards
-            Text(
-              data.indexSymbol.toUpperCase(),
-              style: TextStyle(
-                fontSize: isMobile ? 10 : 10,
-                color: MarketColors.textSecondary(context),
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.3,
-                height: 1.1,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-
-            SizedBox(height: isMobile ? 3 : 4),
-
-            // Index Value
-            Text(
-              isLoading ? '...' : numberFormat.format(data.lastPrice),
-              style: TextStyle(
-                fontSize: isMobile ? 15 : 15,
-                color: MarketColors.textPrimary(context),
-                fontWeight: FontWeight.bold,
-                height: 1.15,
-              ),
-            ),
-
-            SizedBox(height: isMobile ? 2 : 3),
-
-            // Change Amount & Percentage (stacked vertically)
-            if (isLoading)
-              Text(
-                'Loading...',
-                style: TextStyle(
-                  fontSize: isMobile ? 10 : 11,
-                  color: changeColor,
-                  fontWeight: FontWeight.bold,
-                ),
-              )
-            else
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Icon(
-                        isPositive ? Icons.arrow_upward : Icons.arrow_downward,
-                        size: isMobile ? 11.0 : 12.0,
-                        color: isPositive
-                            ? MarketColors.positive(context)
-                            : MarketColors.negative(context),
-                      ),
-                      const SizedBox(width: 3),
-                      Text(
-                        isPositive
-                            ? '+$displayChangeFormatted'
-                            : '-$displayChangeFormatted',
-                        style: TextStyle(
-                          fontSize: isMobile ? 10.0 : 11.0,
-                          color: isPositive
-                              ? MarketColors.positive(context)
-                              : MarketColors.negative(context),
-                          fontWeight: FontWeight.w600,
-                          height: 1.0,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: isMobile ? 2 : 3),
-                  Text(
-                    isPositive
-                        ? '+$displayPChangeFormatted%$timeframeLabel'
-                        : '$displayPChangeFormatted%$timeframeLabel',
-                    style: TextStyle(
-                      fontSize: isMobile ? 10 : 10.5,
-                      color: isPositive
-                          ? MarketColors.positive(context)
-                          : MarketColors.negative(context),
-                      fontWeight: FontWeight.w500,
-                      height: 1.0,
-                    ),
-                  ),
-                ],
-              ),
-          ],
-        );
+        final sparkline =
+            provider.indexSparklines[data.indexSymbol] ?? const <double>[];
 
         return MouseRegion(
           cursor: SystemMouseCursors.click,
           child: GestureDetector(
             onTap: onTap,
-            child: Stack(
-              children: [
-                // Animated Card Container
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeInOut,
-                  width: double.infinity,
-                  height: double.infinity,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isMobile ? 10 : 14,
-                    vertical: isMobile ? 8 : 12,
-                  ),
-                  alignment: Alignment.topLeft,
-                  decoration: BoxDecoration(
-                    color: MarketColors.cardSurface(context),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: isSelected
-                          ? MarketColors.borderSelected(context)
-                          : MarketColors.borderDefault(context),
-                      width: MarketColors.borderWidth(context),
-                    ),
-                    boxShadow:
-                        isSelected ? MarketColors.selectedGlow(context) : [],
-                  ),
-                  child: cardContent,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              width: double.infinity,
+              height: double.infinity,
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 8 : 10,
+                vertical: isMobile ? 6 : 8,
+              ),
+              decoration: BoxDecoration(
+                color: MarketColors.cardSurface(context),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: isSelected
+                      ? accent
+                      : MarketColors.borderDefault(context),
+                  width: isSelected
+                      ? 1.5
+                      : MarketColors.borderWidth(context),
                 ),
-
-                // Selected Indicator (Desktop only)
-                if (!isMobile)
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeInOut,
-                        width: isSelected ? 24.0 : 0.0,
-                        height: 2.0,
-                        decoration: BoxDecoration(
-                          color: MarketColors.borderSelected(context),
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(2),
-                            topRight: Radius.circular(2),
-                          ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: accent.withValues(alpha: 0.22),
+                          blurRadius: 10,
+                          spreadRadius: 0,
                         ),
-                      ),
+                      ]
+                    : null,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          data.indexSymbol.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: isMobile ? 9.5 : 10.5,
+                            color: MarketColors.textMuted(context),
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.3,
+                            height: 1.0,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          isLoading ? '...' : numberFormat.format(data.lastPrice),
+                          style: TextStyle(
+                            fontSize: isMobile ? 14 : 16,
+                            color: MarketColors.textPrimary(context),
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: -0.3,
+                            height: 1.1,
+                          ),
+                          maxLines: 1,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          isLoading
+                              ? 'Loading...'
+                              : '${isPositive ? '+' : '-'}$displayChangeFormatted (${isPositive ? '+' : '-'}$displayPChangeFormatted%$timeframeLabel)',
+                          style: TextStyle(
+                            fontSize: isMobile ? 9.5 : 10.5,
+                            color: changeColor,
+                            fontWeight: FontWeight.w600,
+                            height: 1.0,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
                   ),
-              ],
+                  const SizedBox(width: 4),
+                  SizedBox(
+                    width: isMobile ? 42 : 54,
+                    height: isMobile ? 26 : 32,
+                    child: sparkline.length >= 2
+                        ? CustomPaint(
+                            painter: _IndexSparklinePainter(
+                              data: sparkline,
+                              color: changeColor,
+                            ),
+                          )
+                        : (provider.isLoadingSparklines
+                            ? Center(
+                                child: SizedBox(
+                                  width: 12,
+                                  height: 12,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 1.5,
+                                    color: changeColor.withValues(alpha: 0.5),
+                                  ),
+                                ),
+                              )
+                            : const SizedBox.shrink()),
+                  ),
+                ],
+              ),
             ),
           ),
         );
       },
     );
   }
+}
+
+class _IndexSparklinePainter extends CustomPainter {
+  final List<double> data;
+  final Color color;
+
+  _IndexSparklinePainter({
+    required this.data,
+    required this.color,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (data.length < 2) return;
+
+    var maxVal = data.reduce(math.max);
+    var minVal = data.reduce(math.min);
+    if (maxVal == minVal) {
+      maxVal += 1;
+      minVal -= 1;
+    }
+
+    final stepX = size.width / (data.length - 1);
+    final rangeY = maxVal - minVal;
+
+    double getY(double val) =>
+        size.height * 0.12 + (size.height * 0.76) * (1 - ((val - minVal) / rangeY));
+
+    final path = Path()..moveTo(0, getY(data[0]));
+    for (var i = 0; i < data.length - 1; i++) {
+      final x1 = i * stepX;
+      final y1 = getY(data[i]);
+      final x2 = (i + 1) * stepX;
+      final y2 = getY(data[i + 1]);
+      final cpX = x1 + (x2 - x1) / 2;
+      path.cubicTo(cpX, y1, cpX, y2, x2, y2);
+    }
+
+    final linePaint = Paint()
+      ..color = color
+      ..strokeWidth = 1.7
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    canvas.drawPath(path, linePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _IndexSparklinePainter oldDelegate) =>
+      oldDelegate.data != data || oldDelegate.color != color;
 }

@@ -453,9 +453,18 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
     MarketCapAllocation? mcap;
     if (holdings == null) {
       try {
-        final portfolioState = context.watch<PortfolioCubit>().state;
-        if (portfolioState is PortfolioLoaded) {
-          holdings = portfolioState.holdings;
+        // Rebuild only when holdings identity changes — not every live price tick.
+        final identity = context.select<PortfolioCubit, String?>((cubit) {
+          final s = cubit.state;
+          if (s is! PortfolioLoaded) return null;
+          return '${s.portfolioId}|${s.holdings.length}|'
+              '${s.holdings.map((h) => h.id).join(',')}';
+        });
+        if (identity != null) {
+          final portfolioState = context.read<PortfolioCubit>().state;
+          if (portfolioState is PortfolioLoaded) {
+            holdings = portfolioState.holdings;
+          }
         }
       } catch (_) {
         // Tests / hosts without PortfolioCubit.

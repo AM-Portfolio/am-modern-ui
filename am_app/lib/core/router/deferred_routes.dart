@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:am_analysis_ui/services/real_analysis_service.dart'
     deferred as analysis_svc;
 import 'package:am_analysis_ui/widgets/analysis_dashboard.dart'
@@ -371,29 +373,68 @@ class _ProfileSubscriptionLoaderState extends State<_ProfileSubscriptionLoader> 
   String? _statusLabel;
   bool _isPaid = false;
   String? _referralLabel;
+  StreamSubscription<am_sub.SubscriptionState>? _cubitSub;
+  Timer? _countdownTick;
 
   @override
   void initState() {
     super.initState();
-    _load();
+    _load(forceSubscription: true);
+    if (GetIt.instance.isRegistered<am_sub.SubscriptionCubit>()) {
+      final cubit = GetIt.instance<am_sub.SubscriptionCubit>();
+      _cubitSub = cubit.stream.listen((_) {
+        if (!mounted) return;
+        _syncFromCubit(cubit);
+      });
+    }
   }
 
-  Future<void> _load() async {
-    await Future.wait([_loadSubscription(), _loadReferral()]);
+  @override
+  void dispose() {
+    _countdownTick?.cancel();
+    _cubitSub?.cancel();
+    super.dispose();
   }
 
-  Future<void> _loadSubscription() async {
+  void _syncFromCubit(am_sub.SubscriptionCubit cubit) {
+    setState(() {
+      _statusLabel = cubit.statusLabelWithCountdown();
+      _isPaid = cubit.isPaidSubscription;
+    });
+    _syncCountdownTicker(cubit);
+  }
+
+  void _syncCountdownTicker(am_sub.SubscriptionCubit cubit) {
+    _countdownTick?.cancel();
+    _countdownTick = null;
+    if (!cubit.hasSubscriptionCountdown) return;
+    _countdownTick = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      if (!GetIt.instance.isRegistered<am_sub.SubscriptionCubit>()) return;
+      final live = GetIt.instance<am_sub.SubscriptionCubit>();
+      setState(() {
+        _statusLabel = live.statusLabelWithCountdown();
+        _isPaid = live.isPaidSubscription;
+      });
+    });
+  }
+
+  Future<void> _load({bool forceSubscription = false}) async {
+    await Future.wait([
+      _loadSubscription(force: forceSubscription),
+      _loadReferral(),
+    ]);
+  }
+
+  Future<void> _loadSubscription({bool force = false}) async {
     try {
       if (!GetIt.instance.isRegistered<am_sub.SubscriptionCubit>()) {
         return;
       }
       final cubit = GetIt.instance<am_sub.SubscriptionCubit>();
-      await cubit.ensureSubscriptionStatus();
+      await cubit.ensureSubscriptionStatus(force: force);
       if (!mounted) return;
-      setState(() {
-        _statusLabel = cubit.statusLabel;
-        _isPaid = cubit.isPaidSubscription;
-      });
+      _syncFromCubit(cubit);
     } catch (_) {
       // Leave default Profile copy if subscription API fails.
     }

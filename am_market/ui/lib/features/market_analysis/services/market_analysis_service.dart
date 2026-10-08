@@ -8,9 +8,11 @@ import 'package:get_it/get_it.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_common/am_common.dart';
 
+import 'package:am_market_common/services/api_service.dart';
+
 class MarketAnalysisService {
-  // Matches backend AnalysisController
-  final String baseUrl = '${EnvDomains.market}/v1/analysis';
+  // Matches backend AnalysisController and routes correctly in localhost
+  String get baseUrl => '${ApiService.baseUrl}/v1/analysis';
 
   final _storage = GetIt.I<SecureStorageService>();
 

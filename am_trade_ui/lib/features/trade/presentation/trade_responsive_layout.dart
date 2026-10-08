@@ -76,7 +76,8 @@ class TradeResponsiveLayout extends ConsumerStatefulWidget {
       _tabSlugs[index.clamp(0, _tabSlugs.length - 1)];
 
   static MobileTradeViewType _mobileViewFromSlug(String slug) {
-    switch (slug) {
+    final normalized = _slugAliases[slug] ?? slug;
+    switch (normalized) {
       case 'holdings':
         return MobileTradeViewType.holdings;
       case 'calendar':
@@ -84,11 +85,19 @@ class TradeResponsiveLayout extends ConsumerStatefulWidget {
       case 'journal':
         return MobileTradeViewType.journal;
       case 'templates':
-        return MobileTradeViewType.templates;
+        // Templates live under Journal → Playbooks on mobile.
+        return MobileTradeViewType.journal;
+      case 'analysis':
+        return MobileTradeViewType.analysis;
       case 'portfolios':
       default:
         return MobileTradeViewType.portfolios;
     }
+  }
+
+  static String _journalTabFromSlug(String slug) {
+    if (slug == 'templates') return 'playbooks';
+    return 'entries';
   }
 
   @override
@@ -121,7 +130,9 @@ class TradeResponsiveLayoutState extends ConsumerState<TradeResponsiveLayout> {
     if (widget.initialTab != oldWidget.initialTab) {
       final next = TradeResponsiveLayout.tabIndexFromSlug(widget.initialTab);
       // Prefer mobile-only slug indices when present in URL.
-      if (widget.initialTab == 'templates') {
+      if (widget.initialTab == 'templates' ||
+          widget.initialTab == 'metrics' ||
+          widget.initialTab == 'report') {
         final mobile = TradeResponsiveLayout._mobileViewFromSlug(widget.initialTab);
         if (_currentTabIndex != mobile.index) {
           setState(() => _currentTabIndex = mobile.index);
@@ -185,6 +196,8 @@ class TradeResponsiveLayoutState extends ConsumerState<TradeResponsiveLayout> {
           return TradeMobileScreen(
             initialTabIndex: _currentTabIndex,
             initialView: TradeResponsiveLayout._mobileViewFromSlug(widget.initialTab),
+            initialJournalTab:
+                TradeResponsiveLayout._journalTabFromSlug(widget.initialTab),
             selectedPortfolioId: effectivePortfolioId,
             selectedPortfolioName: _currentPortfolioName ?? context.selectedPortfolioName,
             onTabChanged: (index) {
@@ -195,11 +208,10 @@ class TradeResponsiveLayoutState extends ConsumerState<TradeResponsiveLayout> {
                 _onTabChanged(
                   TradeResponsiveLayout.tabIndexFromSlug('journal'),
                 );
-              } else if (index == MobileTradeViewType.templates.index) {
-                widget.onTabChanged?.call('templates');
-                if (_currentTabIndex != index) {
-                  setState(() => _currentTabIndex = index);
-                }
+              } else if (index == MobileTradeViewType.analysis.index) {
+                _onTabChanged(
+                  TradeResponsiveLayout.tabIndexFromSlug('analysis'),
+                );
               } else {
                 _onTabChanged(index);
               }

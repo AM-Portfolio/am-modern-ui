@@ -16,7 +16,6 @@ class RankedIndicesListBody extends StatelessWidget {
     required this.timeframe,
     required this.indian,
     required this.global,
-    required this.basePrices,
     required this.availableIndices,
     required this.selectedSymbol,
     required this.onIndexSelected,
@@ -30,7 +29,6 @@ class RankedIndicesListBody extends StatelessWidget {
   final String timeframe;
   final List<StockIndicesMarketData> indian;
   final List<StockIndicesMarketData> global;
-  final Map<String, double> basePrices;
   final AvailableIndices? availableIndices;
   final String? selectedSymbol;
   final ValueChanged<StockIndicesMarketData> onIndexSelected;
@@ -45,14 +43,13 @@ class RankedIndicesListBody extends StatelessWidget {
       global: global,
       filter: filter,
       timeframe: timeframe,
-      basePrices: basePrices,
     );
 
     var advances = 0;
     var declines = 0;
     var maxAbs = 0.0;
     for (final d in sorted) {
-      final p = rankedDisplayPChange(d, timeframe, basePrices);
+      final p = rankedDisplayPChange(d);
       if (p > 0) advances++;
       if (p < 0) declines++;
       final a = p.abs();
@@ -125,10 +122,8 @@ class RankedIndicesListBody extends StatelessWidget {
                   separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final data = sorted[index];
-                    final pChange =
-                        rankedDisplayPChange(data, timeframe, basePrices);
-                    final change =
-                        rankedDisplayChange(data, timeframe, basePrices);
+                    final pChange = rankedDisplayPChange(data);
+                    final change = rankedDisplayChange(data);
                     final isGlobal = globalSet
                         .contains(data.indexSymbol.toUpperCase());
                     return RankedIndexRow(

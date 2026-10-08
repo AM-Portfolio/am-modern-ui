@@ -121,19 +121,11 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
         bottom: false,
         child: Column(
           children: [
-            // Global timeframe (1D / 1W / …) — same control as Dashboard
+            // Global timeframe only — tab name is already in the top pill strip.
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
               child: Row(
                 children: [
-                  Text(
-                    'Market Analysis',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: context.colors.textPrimary,
-                    ),
-                  ),
                   const Spacer(),
                   GlobalTimeFrameBar(primaryColor: ModuleColors.market),
                 ],
@@ -141,7 +133,7 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
             ),
             // 1. Header & Search
             Container(
-              margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
               padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: isDark

@@ -1,150 +1,298 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/features/ipo/models/ipo_models.dart';
 import 'package:am_market_ui/features/ipo/providers/ipo_providers.dart';
+import 'package:am_market_ui/features/ipo/widgets/ipo_filter_toolbar.dart';
+import 'package:am_market_ui/features/ipo/widgets/ipo_kpi_stats_bar.dart';
 import 'package:am_market_ui/features/ipo/widgets/ipo_summary_card.dart';
-import 'package:am_market_ui/core/styles/market_theme_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class IpoLandingScreen extends ConsumerStatefulWidget {
-  const IpoLandingScreen({super.key});
+class IpoLandingScreen extends ConsumerWidget {
+  const IpoLandingScreen({
+    super.key,
+    this.embedded = false,
+  });
+
+  /// When true (Market shell host), skip outer Scaffold/SafeArea.
+  final bool embedded;
 
   @override
-  ConsumerState<IpoLandingScreen> createState() => _IpoLandingScreenState();
-}
-
-class _IpoLandingScreenState extends ConsumerState<IpoLandingScreen> {
-  String _selectedStatus = 'open';
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final countsAsync = ref.watch(ipoCountsProvider);
-    final ipoListAsync = ref.watch(ipoListProvider(_selectedStatus));
+    final filteredIposAsync = ref.watch(filteredIposProvider);
 
-    return Scaffold(
-      backgroundColor: context.backgroundColor,
-      appBar: AppBar(
-        backgroundColor: context.backgroundColor,
-        elevation: 0,
-        leading: const AmBackButton(),
-        title: Text(
-          'IPO Center',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            color: context.textPrimary,
-          ),
-        ),
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-            child: _buildSegmentedControl(countsAsync),
-          ),
-          Expanded(
-            child: ipoListAsync.when(
-              data: (ipos) => _buildIpoList(ipos),
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, _) => Center(
-                child: Text('Failed to load IPOs', style: TextStyle(color: context.statusError)),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSegmentedControl(AsyncValue<AsraxIpoCountsDto> countsAsync) {
-    // Fallback counts
-    final counts = countsAsync.value ?? AsraxIpoCountsDto();
-    
-    return Row(
-      children: [
-        _buildToggleChip('Available', 'open', counts.open),
-        const SizedBox(width: AppSpacing.sm),
-        _buildToggleChip('Upcoming', 'upcoming', counts.upcoming),
-        const SizedBox(width: AppSpacing.sm),
-        _buildToggleChip('Closed', 'closed', counts.closed),
-      ],
-    );
-  }
-
-  Widget _buildToggleChip(String label, String status, int count) {
-    final isSelected = _selectedStatus == status;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedStatus = status;
-        });
+    final body = RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(ipoCountsProvider);
+        ref.invalidate(allIposProvider);
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-        decoration: BoxDecoration(
-          color: isSelected ? ModuleColors.market.withValues(alpha: 0.1) : context.surfaceColor,
-          borderRadius: BorderRadius.circular(AppRadii.lg),
-          border: Border.all(
-            color: isSelected ? ModuleColors.market : context.borderColor,
-            width: 1,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: isSelected ? ModuleColors.market : context.textSecondary,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        slivers: [
+          // 1. Header Section
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(20, embedded ? 8 : 16, 20, 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        if (!embedded && Navigator.of(context).canPop()) ...[
+                          const AmBackButton(),
+                          const SizedBox(width: 8),
+                        ],
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'IPOs',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w800,
+                                  color: context.textPrimary,
+                                  letterSpacing: -0.5,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Live & upcoming public issues',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: context.textSecondary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildCalendarButton(context),
+                ],
               ),
             ),
-            if (count > 0) ...[
-              const SizedBox(width: AppSpacing.xs),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: AppSpacing.xxs),
-                decoration: BoxDecoration(
-                  color: isSelected ? ModuleColors.market : context.borderColor,
-                  borderRadius: BorderRadius.circular(AppRadii.pill),
+          ),
+
+              // 2. KPI Summary Metrics Bar
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: countsAsync.when(
+                    data: (counts) => IpoKpiStatsBar(counts: counts),
+                    loading: () => const _KpiSkeleton(),
+                    error: (_, __) => IpoKpiStatsBar(counts: AsraxIpoCountsDto()),
+                  ),
                 ),
-                child: Text(
-                  count.toString(),
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: isSelected ? context.marketTheme.accentText : context.textPrimary,
+              ),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 18)),
+
+              // 3. Filter & Search Toolbar
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: countsAsync.when(
+                    data: (counts) => IpoFilterToolbar(counts: counts),
+                    loading: () => const SizedBox(height: 40),
+                    error: (_, __) => IpoFilterToolbar(counts: AsraxIpoCountsDto()),
+                  ),
+                ),
+              ),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 18)),
+
+              // 4. Responsive Card Grid
+              filteredIposAsync.when(
+                data: (ipos) {
+                  if (ipos.isEmpty) {
+                    return SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.search_off_rounded, size: 48, color: context.textTertiary),
+                            const SizedBox(height: 12),
+                            Text(
+                              'No IPOs match your criteria',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: context.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Try clearing filters or search query',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: context.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            TextButton.icon(
+                              onPressed: () {
+                                ref.read(ipoFilterStateProvider.notifier).reset();
+                              },
+                              icon: const Icon(Icons.refresh_rounded, size: 16),
+                              label: const Text('Reset Filters'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
+                  return SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                    sliver: SliverLayoutBuilder(
+                      builder: (context, constraints) {
+                        int crossAxisCount = 1;
+                        if (constraints.crossAxisExtent >= 1150) {
+                          crossAxisCount = 3;
+                        } else if (constraints.crossAxisExtent >= 720) {
+                          crossAxisCount = 2;
+                        }
+
+                        if (crossAxisCount == 1) {
+                          return SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) => Padding(
+                                padding: const EdgeInsets.only(bottom: 14),
+                                child: IpoSummaryCard(ipo: ipos[index]),
+                              ),
+                              childCount: ipos.length,
+                            ),
+                          );
+                        }
+
+                        return SliverGrid(
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: crossAxisCount,
+                            mainAxisSpacing: 16,
+                            crossAxisSpacing: 16,
+                            mainAxisExtent: 268,
+                          ),
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) => IpoSummaryCard(ipo: ipos[index]),
+                            childCount: ipos.length,
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+                loading: () => const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (err, _) => SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error_outline_rounded, size: 42, color: context.statusError),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Failed to load IPO data',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: context.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        FilledButton(
+                          onPressed: () {
+                            ref.invalidate(allIposProvider);
+                            ref.invalidate(ipoCountsProvider);
+                          },
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ],
-          ],
-        ),
-      ),
+          ),
+    );
+
+    if (embedded) {
+      return ColoredBox(
+        color: context.backgroundColor,
+        child: body,
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: context.backgroundColor,
+      body: SafeArea(child: body),
     );
   }
 
-  Widget _buildIpoList(List<AsraxIpoSummaryDto> ipos) {
-    if (ipos.isEmpty) {
-      return Center(
-        child: Text(
-          'No IPOs found',
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: context.textSecondary),
+  Widget _buildCalendarButton(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      height: 38,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: context.surfaceColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: context.borderColor,
+          width: 1,
         ),
-      );
-    }
-    return RefreshIndicator(
-      onRefresh: () async {
-        ref.invalidate(ipoCountsProvider);
-        ref.invalidate(ipoListProvider(_selectedStatus));
-      },
-      child: ListView.builder(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        itemCount: ipos.length,
-        itemBuilder: (context, index) {
-          final ipo = ipos[index];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.md),
-            child: IpoSummaryCard(ipo: ipo),
-          );
-        },
       ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.calendar_month_outlined, size: 16, color: context.textPrimary),
+          const SizedBox(width: 8),
+          Text(
+            'IPO Calendar',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: context.textPrimary,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Icon(Icons.chevron_right_rounded, size: 16, color: context.textTertiary),
+        ],
+      ),
+    );
+  }
+}
+
+class _KpiSkeleton extends StatelessWidget {
+  const _KpiSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      height: 80,
+      decoration: BoxDecoration(
+        color: context.surfaceColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: context.borderColor,
+        ),
+      ),
+      child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
     );
   }
 }

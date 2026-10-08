@@ -10,6 +10,6 @@
   "growthbook": {
     "enabled": true,
     "apiHost": "https://growthbook.asrax.in/gbapi",
-    "clientKey": ""
+    "clientKey": "sdk-8WmIFrhYLelAXr8"
   }
 }

@@ -71,7 +71,7 @@ class _PortfolioHoldingsWidgetState
                   }
                 },
                 child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                   itemCount: sortedHoldings.length +
                       (widget.showNewsSection ? 1 : 0),
                   itemBuilder: (context, index) {
@@ -190,47 +190,61 @@ class _PortfolioHoldingsWidgetState
             },
           ),
         ),
-        // Portfolio Display Controller at bottom
-        PortfolioDisplayController(
-          selectedChangeType: _changeType,
-          selectedDisplayFormat: _displayFormat,
-          selectedSortBy: _sortBy,
-          sortAscending: _sortAscending,
-          accentColor: ModuleColors.portfolio,
-          onChangeTypeChanged: (HoldingsChangeType type) {
-            setState(() {
-              _changeType = type;
-            });
-            CommonLogger.debug(
-              'Change type updated to: $type',
-              tag: 'PortfolioHoldingsWidget',
-            );
-          },
-          onDisplayFormatChanged: (HoldingsDisplayFormat format) {
-            setState(() {
-              _displayFormat = format;
-            });
-            CommonLogger.debug(
-              'Display format updated to: $format',
-              tag: 'PortfolioHoldingsWidget',
-            );
-          },
-          onSortByChanged: (HoldingsSortBy sortBy) {
-            setState(() {
-              _sortBy = sortBy;
-            });
-            CommonLogger.debug(
-              'Sort by updated to: $sortBy',
-              tag: 'PortfolioHoldingsWidget',
-            );
-          },
-          onSortOrderChanged: (ascending) {
-            setState(() {
-              _sortAscending = ascending;
-            });
-            CommonLogger.debug(
-              'Sort order updated to: ${ascending ? "ascending" : "descending"}',
-              tag: 'PortfolioHoldingsWidget',
+        // Portfolio Display Controller above floating global bottom nav.
+        ValueListenableBuilder<double>(
+          valueListenable: GlobalBottomNavVisibility.factor,
+          builder: (context, navFactor, _) {
+            final reserve = PlatformConstants.globalBottomNavReserve(context);
+            final t = navFactor.clamp(0.0, 1.0);
+            final bottomInset = 4.0 + (reserve * t);
+            return Padding(
+              padding: EdgeInsets.only(bottom: bottomInset),
+              child: Transform.translate(
+                offset: Offset(0, 12.0 * (1.0 - t)),
+                child: PortfolioDisplayController(
+                  selectedChangeType: _changeType,
+                  selectedDisplayFormat: _displayFormat,
+                  selectedSortBy: _sortBy,
+                  sortAscending: _sortAscending,
+                  accentColor: ModuleColors.portfolio,
+                  onChangeTypeChanged: (HoldingsChangeType type) {
+                    setState(() {
+                      _changeType = type;
+                    });
+                    CommonLogger.debug(
+                      'Change type updated to: $type',
+                      tag: 'PortfolioHoldingsWidget',
+                    );
+                  },
+                  onDisplayFormatChanged: (HoldingsDisplayFormat format) {
+                    setState(() {
+                      _displayFormat = format;
+                    });
+                    CommonLogger.debug(
+                      'Display format updated to: $format',
+                      tag: 'PortfolioHoldingsWidget',
+                    );
+                  },
+                  onSortByChanged: (HoldingsSortBy sortBy) {
+                    setState(() {
+                      _sortBy = sortBy;
+                    });
+                    CommonLogger.debug(
+                      'Sort by updated to: $sortBy',
+                      tag: 'PortfolioHoldingsWidget',
+                    );
+                  },
+                  onSortOrderChanged: (ascending) {
+                    setState(() {
+                      _sortAscending = ascending;
+                    });
+                    CommonLogger.debug(
+                      'Sort order updated to: ${ascending ? "ascending" : "descending"}',
+                      tag: 'PortfolioHoldingsWidget',
+                    );
+                  },
+                ),
+              ),
             );
           },
         ),

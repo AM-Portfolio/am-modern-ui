@@ -30,15 +30,50 @@ final featureFlagProvider =
   return ref.watch(featureFlagServiceProvider).isOn(key);
 });
 
+/// Matches GrowthBook default (`true`) and prod/preprod/dev ON.
+/// When GB is unavailable/unknown on native, keep Subscription visible.
 final subscriptionPageEnabledProvider = Provider<bool>((ref) {
-  return ref.watch(
-    featureFlagProvider(FeatureFlagKeys.subscriptionPageEnabled),
-  );
+  try {
+    ref.watch(featureFlagsReadyProvider);
+    return ref.watch(featureFlagServiceProvider).isOn(
+          FeatureFlagKeys.subscriptionPageEnabled,
+          defaultValue: true,
+        );
+  } catch (_) {
+    return true;
+  }
 });
 
+/// Matches GrowthBook default (`true`) and prod/preprod/dev ON.
+/// When GB is unavailable/unknown on native, keep IPO visible (same intent as web).
 final ipoPageEnabledProvider = Provider<bool>((ref) {
+  try {
+    ref.watch(featureFlagsReadyProvider);
+    return ref.watch(featureFlagServiceProvider).isOn(
+          FeatureFlagKeys.ipoPageEnabled,
+          defaultValue: true,
+        );
+  } catch (_) {
+    return true;
+  }
+});
+
+/// Trade mobile Metrics / Analysis pill. Defaults OFF when GB missing/unset.
+final tradeMetricsMobileEnabledProvider = Provider<bool>((ref) {
+  try {
+    ref.watch(featureFlagsReadyProvider);
+    return ref.watch(featureFlagServiceProvider).isOn(
+          FeatureFlagKeys.tradeMetricsMobileEnabled,
+          defaultValue: false,
+        );
+  } catch (_) {
+    return false;
+  }
+});
+
+final securityAlertBannerEnabledProvider = Provider<bool>((ref) {
   return ref.watch(
-    featureFlagProvider(FeatureFlagKeys.ipoPageEnabled),
+    featureFlagProvider(FeatureFlagKeys.securityAlertBannerEnabled),
   );
 });
 

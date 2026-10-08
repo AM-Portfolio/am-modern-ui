@@ -70,12 +70,14 @@ class PlatformConstants {
   /// Platform specific sizes
   static const double mobileAppBarHeight = 56.0;
   static const double desktopAppBarHeight = 64.0;
-  static const double mobileBottomNavHeight = 56.0;
+  static const double mobileBottomNavHeight = 58.0;
   
   /// Reserve space for the floating global bottom nav (bar + outer padding).
+  ///
+  /// Matches [GlobalBottomNavigation]: chrome 58 + bottom pad 12 + safe inset.
   static double globalBottomNavReserve(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     if (width >= UIConstants.mobileBreakpoint) return 0;
-    return 80.0 + MediaQuery.paddingOf(context).bottom;
+    return 70.0 + MediaQuery.paddingOf(context).bottom;
   }
 }

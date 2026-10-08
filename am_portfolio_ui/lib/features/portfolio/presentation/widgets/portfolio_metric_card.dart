@@ -90,8 +90,8 @@ class PortfolioMetricCard extends StatelessWidget {
           // ── Card body ──
           ClipRRect(
             borderRadius: BorderRadius.circular(18),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            child: _maybeBlur(
+              enabled: !compact,
               child: Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
@@ -262,6 +262,15 @@ class PortfolioMetricCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  /// Skip expensive blur on compact (mobile) cards.
+  Widget _maybeBlur({required bool enabled, required Widget child}) {
+    if (!enabled) return child;
+    return BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+      child: child,
     );
   }
 }

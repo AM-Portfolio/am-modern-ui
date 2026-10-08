@@ -23,6 +23,10 @@ void main() {
       service.isOn(FeatureFlagKeys.subscriptionPageEnabled),
       isFalse,
     );
+    expect(
+      service.isOn(FeatureFlagKeys.securityAlertBannerEnabled),
+      isFalse,
+    );
     service.dispose();
   });
 
