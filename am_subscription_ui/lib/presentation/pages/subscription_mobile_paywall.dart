@@ -6,6 +6,7 @@ import 'package:am_design_system/am_design_system.dart';
 import '../cubit/subscription_cubit.dart';
 import '../../domain/entities/plan.dart';
 import '../../domain/entities/subscription.dart';
+import '../../domain/plan_matching.dart';
 
 const Map<String, String> _stripePaymentLinks = {
   'am_pro': 'https://buy.stripe.com/test_am_pro',
@@ -28,10 +29,9 @@ class SubscriptionMobilePaywall extends StatefulWidget {
 
 class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
   bool _isAnnual = true;
+  bool _syncedIntervalFromSub = false;
   /// `pro` | `premium`
   String _selectedTier = 'pro';
-
-
 
   @override
   void initState() {
@@ -41,6 +41,17 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
         context.read<SubscriptionCubit>().loadPlansAndSubscription();
       }
     });
+  }
+
+  void _syncAnnualFromSubscription(String? billingInterval) {
+    if (_syncedIntervalFromSub || billingInterval == null) return;
+    final annual = billingInterval.toLowerCase().contains('year');
+    _syncedIntervalFromSub = true;
+    if (_isAnnual != annual) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _isAnnual = annual);
+      });
+    }
   }
 
   Plan? _findPlan(List<Plan> plans, String type, bool isAnnual) {
@@ -253,12 +264,16 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
           final selectedPlan =
               _selectedTier == 'premium' ? premiumPlan : proPlan;
 
+          if (current != null) {
+            _syncAnnualFromSubscription(current.billingInterval);
+          }
+
           final isBusy = state is SubscriptionActionInProgress;
           final isCurrent = current != null &&
               selectedPlan != null &&
-              current.planCode == selectedPlan.code;
+              isCurrentPlanType(current.planCode, _selectedTier);
           final hasPaid =
-              current != null && !current.planCode.contains('free');
+              current != null && !current.planCode.toLowerCase().contains('free');
 
           final benefits = <String>[
             ...(selectedPlan?.features ?? const <String>[]).take(5),
@@ -430,10 +445,10 @@ class _CurrentPlanBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final end = subscription.currentPeriodEnd;
+    final end = subscription.effectivePeriodEnd;
     final endLabel = end == null
         ? subscription.state
-        : 'Renews ${end.day}/${end.month}/${end.year}';
+        : 'Ends ${end.day}/${end.month}/${end.year}';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),

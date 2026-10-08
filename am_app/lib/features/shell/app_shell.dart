@@ -890,11 +890,10 @@ final userId =
                               userName: authState.user.displayName,
                               userEmail: authState.user.email,
                               userAvatarUrl: authState.user.photoUrl,
-                              userAvatar: common.UserAvatar(
-                                radius: 20,
+                              userAvatar: _buildSidebarAvatar(
                                 displayName: authState.user.displayName ??
                                     authState.user.email,
-                                remotePhotoUrl: authState.user.photoUrl,
+                                photoUrl: authState.user.photoUrl,
                               ),
                               moduleShareUrls: AppRoutes.navTitleToDefaultPath,
                                 onSearchTap: _showSearch,
@@ -1121,6 +1120,56 @@ final userId =
           );
         },
       ),
+    );
+  }
+
+  Widget _buildSidebarAvatar({
+    required String displayName,
+    String? photoUrl,
+  }) {
+    final isPaid = GetIt.I.isRegistered<am_sub.SubscriptionCubit>() &&
+        GetIt.I<am_sub.SubscriptionCubit>().isPaidSubscription;
+    final avatar = common.UserAvatar(
+      radius: 20,
+      displayName: displayName,
+      remotePhotoUrl: photoUrl,
+    );
+    if (!isPaid) return avatar;
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.center,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: const Color(0xFFFFD700).withValues(alpha: 0.9),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFFD700).withValues(alpha: 0.35),
+                blurRadius: 8,
+              ),
+            ],
+          ),
+          child: avatar,
+        ),
+        Positioned(
+          top: -4,
+          child: Icon(
+            Icons.workspace_premium_rounded,
+            size: 14,
+            color: const Color(0xFFFFB300),
+            shadows: [
+              Shadow(
+                color: const Color(0xFFFFD700).withValues(alpha: 0.8),
+                blurRadius: 6,
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

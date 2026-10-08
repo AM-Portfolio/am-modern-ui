@@ -7,6 +7,7 @@ import '../widgets/billing_toggle.dart';
 import '../widgets/pricing_card.dart';
 import '../cubit/subscription_cubit.dart';
 import '../../domain/entities/plan.dart';
+import '../../domain/plan_matching.dart';
 
 const Map<String, String> _stripePaymentLinks = {
   'am_pro': 'https://buy.stripe.com/test_am_pro',
@@ -29,6 +30,7 @@ class SubscriptionWebPricingScreen extends StatefulWidget {
 class _SubscriptionWebPricingScreenState
     extends State<SubscriptionWebPricingScreen> {
   bool _isAnnual = true;
+  bool _syncedIntervalFromSub = false;
   final ScrollController _scrollController = ScrollController();
   late PageController _pageController;
   int _currentPage = 0;
@@ -42,6 +44,17 @@ class _SubscriptionWebPricingScreenState
         context.read<SubscriptionCubit>().loadPlansAndSubscription();
       }
     });
+  }
+
+  void _syncAnnualFromSubscription(String? billingInterval) {
+    if (_syncedIntervalFromSub || billingInterval == null) return;
+    final annual = billingInterval.toLowerCase().contains('year');
+    _syncedIntervalFromSub = true;
+    if (_isAnnual != annual) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _isAnnual = annual);
+      });
+    }
   }
 
   @override
@@ -212,6 +225,7 @@ class _SubscriptionWebPricingScreenState
             );
           } else if (state is SubscriptionLoaded &&
               state.subscription != null) {
+            _syncAnnualFromSubscription(state.subscription!.billingInterval);
             _scrollToActivePlan(state.subscription!.planCode);
           }
         },
@@ -221,19 +235,22 @@ class _SubscriptionWebPricingScreenState
           }
 
           var plans = <Plan>[];
-          dynamic currentSubscription;
+          String? currentPlanCode;
           final isRefreshing =
               state is SubscriptionLoaded && state.refreshing;
 
           if (state is SubscriptionLoaded) {
             plans = state.plans;
-            currentSubscription = state.subscription;
+            currentPlanCode = state.subscription?.planCode;
+            if (state.subscription != null) {
+              _syncAnnualFromSubscription(state.subscription!.billingInterval);
+            }
           } else if (state is SubscriptionActionInProgress) {
             plans = state.plans;
-            currentSubscription = state.subscription;
+            currentPlanCode = state.subscription?.planCode;
           } else if (state is SubscriptionActionSuccess) {
             plans = state.plans;
-            currentSubscription = state.subscription;
+            currentPlanCode = state.subscription.planCode;
           } else if (state is SubscriptionError) {
             return Center(
               child: Column(
@@ -278,6 +295,11 @@ class _SubscriptionWebPricingScreenState
             return Color.lerp(brand, Colors.white, tint)!;
           }
 
+          final freeIsCurrent = isCurrentPlanType(currentPlanCode, 'free');
+          final proIsCurrent = isCurrentPlanType(currentPlanCode, 'pro');
+          final premiumIsCurrent =
+              isCurrentPlanType(currentPlanCode, 'premium');
+
           final cards = <Widget>[
             if (freePlan != null)
               PricingCard(
@@ -286,17 +308,13 @@ class _SubscriptionWebPricingScreenState
                 monthlyPrice: freePlan.amountInr,
                 annualPrice: freePlan.amountInr,
                 isAnnual: _isAnnual,
-                ctaText: currentSubscription?.planCode == freePlan.code
-                    ? 'Current Plan'
-                    : 'Get Started',
-                onCtaPressed: (isActionInProgress ||
-                        currentSubscription?.planCode == freePlan.code)
+                ctaText: freeIsCurrent ? 'Current Plan' : 'Get Started',
+                onCtaPressed: (isActionInProgress || freeIsCurrent)
                     ? null
                     : () => _handlePlanAction(context, state, freePlan),
                 primaryColor: tierColor(Colors.grey.shade400, 0.35),
                 features: freePlan.features,
-                isCurrentPlan:
-                    currentSubscription?.planCode == freePlan.code,
+                isCurrentPlan: freeIsCurrent,
               ),
             if (proPlan != null)
               PricingCard(
@@ -309,17 +327,16 @@ class _SubscriptionWebPricingScreenState
                     ? proPlan.amountInr
                     : proPlan.amountInr * 12,
                 isAnnual: _isAnnual,
-                ctaText: currentSubscription?.planCode == proPlan.code
+                ctaText: proIsCurrent
                     ? 'Current Plan'
                     : (isActionInProgress ? 'Processing...' : 'Upgrade to Pro'),
-                onCtaPressed: (isActionInProgress ||
-                        currentSubscription?.planCode == proPlan.code)
+                onCtaPressed: (isActionInProgress || proIsCurrent)
                     ? null
                     : () => _handlePlanAction(context, state, proPlan),
                 primaryColor: tierColor(const Color(0xFF1B64F2), 0.0),
                 isPopular: true,
                 features: proPlan.features,
-                isCurrentPlan: currentSubscription?.planCode == proPlan.code,
+                isCurrentPlan: proIsCurrent,
               ),
             if (premiumPlan != null)
               PricingCard(
@@ -332,17 +349,15 @@ class _SubscriptionWebPricingScreenState
                     ? premiumPlan.amountInr
                     : premiumPlan.amountInr * 12,
                 isAnnual: _isAnnual,
-                ctaText: currentSubscription?.planCode == premiumPlan.code
+                ctaText: premiumIsCurrent
                     ? 'Current Plan'
                     : (isActionInProgress ? 'Processing...' : 'Get Premium'),
-                onCtaPressed: (isActionInProgress ||
-                        currentSubscription?.planCode == premiumPlan.code)
+                onCtaPressed: (isActionInProgress || premiumIsCurrent)
                     ? null
                     : () => _handlePlanAction(context, state, premiumPlan),
                 primaryColor: tierColor(const Color(0xFFA824EE), 0.12),
                 features: premiumPlan.features,
-                isCurrentPlan:
-                    currentSubscription?.planCode == premiumPlan.code,
+                isCurrentPlan: premiumIsCurrent,
               ),
             PricingCard(
               title: 'Enterprise',

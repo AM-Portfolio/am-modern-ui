@@ -8,6 +8,7 @@ import '../../data/datasources/subscription_remote_datasource.dart';
 import '../../data/subscription_browser_cache.dart';
 import '../../domain/entities/plan.dart';
 import '../../domain/entities/subscription.dart';
+import '../../domain/plan_matching.dart';
 
 abstract class SubscriptionState extends Equatable {
   const SubscriptionState();
@@ -91,6 +92,9 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
   DateTime? _meCachedAt;
   bool _diskHydrated = false;
 
+  /// Latest `/subscriptions/me` payload (may be null if never loaded / failed).
+  Subscription? get cachedSubscription => _cachedSubscription;
+
   bool get _plansFresh =>
       _cachedPlans != null &&
       _plansCachedAt != null &&
@@ -109,6 +113,30 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
         : _planNameFromCode(sub.planCode);
     final state = _titleCase(sub.state);
     return state.isEmpty ? name : '$name · $state';
+  }
+
+  /// Profile subtitle with live countdown when a Pro end date is known.
+  /// Example: `"Pro · Active · 12d 04h 22m left"`.
+  String? statusLabelWithCountdown({DateTime? now}) {
+    final base = statusLabel;
+    if (base == null) return null;
+    final sub = _cachedSubscription;
+    if (sub == null || _isFreePlan(sub.planCode)) return base;
+    final remaining = remainingSubscriptionDuration(
+      sub.effectivePeriodEnd,
+      now: now,
+    );
+    if (remaining == null) return base;
+    final countdown = formatSubscriptionCountdown(remaining);
+    if (countdown == 'Expired') return '$base · Expired';
+    return '$base · $countdown left';
+  }
+
+  /// True when Profile should tick a live countdown (paid / grant plan with end).
+  bool get hasSubscriptionCountdown {
+    final sub = _cachedSubscription;
+    if (sub == null || _isFreePlan(sub.planCode)) return false;
+    return sub.effectivePeriodEnd != null;
   }
 
   bool get isPaidSubscription {
@@ -164,9 +192,10 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
   }
 
   /// Ensures `/me` is warm for Profile without requiring plans UI.
-  Future<void> ensureSubscriptionStatus() async {
+  /// Pass [force] to bypass the in-memory TTL (e.g. after returning from Pricing).
+  Future<void> ensureSubscriptionStatus({bool force = false}) async {
     await _hydrateFromBrowserIfNeeded();
-    if (_meFresh) return;
+    if (!force && _meFresh) return;
     try {
       final sub = await _dataSource.getCurrentSubscription();
       await _rememberMe(sub);
