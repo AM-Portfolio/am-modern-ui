@@ -37,13 +37,15 @@ class IpoLandingScreen extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Row(
-                    children: [
-                      if (!embedded && Navigator.of(context).canPop()) ...[
-                        const AmBackButton(),
-                            const SizedBox(width: 8),
-                          ],
-                          Column(
+                  Expanded(
+                    child: Row(
+                      children: [
+                        if (!embedded && Navigator.of(context).canPop()) ...[
+                          const AmBackButton(),
+                          const SizedBox(width: 8),
+                        ],
+                        Expanded(
+                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
@@ -54,6 +56,8 @@ class IpoLandingScreen extends ConsumerWidget {
                                   color: context.textPrimary,
                                   letterSpacing: -0.5,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                               const SizedBox(height: 2),
                               Text(
@@ -63,16 +67,21 @@ class IpoLandingScreen extends ConsumerWidget {
                                   fontWeight: FontWeight.w500,
                                   color: context.textSecondary,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                      _buildCalendarButton(context),
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  _buildCalendarButton(context),
+                ],
               ),
+            ),
+          ),
 
               // 2. KPI Summary Metrics Bar
               SliverToBoxAdapter(

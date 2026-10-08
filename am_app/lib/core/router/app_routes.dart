@@ -167,7 +167,7 @@ class AppRoutes {
     'Trade': tradeDiscovery,
     // Legacy session title — Paper is now a Market tab.
     'Paper': '/app/market/paper',
-    'Market': '/app/market/paper',
+    'Market': '/app/market/dashboard',
     'AI Chat': aiChat,
     'Lab': lab,
     'Analysis': analysis,

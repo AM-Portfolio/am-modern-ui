@@ -187,13 +187,16 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
         : null;
 
     if (widget.embedded) {
+      // Sit above the floating global bottom nav so the FAB does not overlap chrome.
+      final fabBottom =
+          PlatformConstants.globalBottomNavReserve(context) + AppSpacing.sm;
       return Stack(
         children: [
           content,
           if (fab != null)
             Positioned(
               right: AppSpacing.md,
-              bottom: AppSpacing.md,
+              bottom: fabBottom,
               child: fab,
             ),
         ],
