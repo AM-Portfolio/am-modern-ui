@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:ui' show FontFeature;
+
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -5,6 +8,9 @@ import 'package:get_it/get_it.dart';
 
 import '../../data/datasources/subscription_remote_datasource.dart';
 import '../../domain/entities/referral.dart';
+import '../../domain/entities/subscription.dart';
+import '../../domain/plan_matching.dart';
+import '../cubit/subscription_cubit.dart';
 
 /// Pro days credited to the referrer per successful invite.
 const int kReferralRewardDaysPerInvite = 14;
@@ -47,11 +53,32 @@ class _ReferralPageState extends State<ReferralPage> {
   String? _error;
   ReferralSummary? _summary;
   List<ReferralHistoryItem> _history = const [];
+  Subscription? _subscription;
+  Timer? _tick;
+  Duration? _remaining;
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _tick?.cancel();
+    super.dispose();
+  }
+
+  void _startTicker() {
+    _tick?.cancel();
+    _tick = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {
+        _remaining = remainingSubscriptionDuration(
+          _subscription?.effectivePeriodEnd,
+        );
+      });
+    });
   }
 
   Future<void> _load() async {
@@ -69,14 +96,29 @@ class _ReferralPageState extends State<ReferralPage> {
         return;
       }
       final ds = GetIt.instance<SubscriptionRemoteDataSource>();
-      final summary = await ds.getReferralSummary();
-      final history = await ds.getReferralHistory(limit: 30);
+      final summaryFuture = ds.getReferralSummary();
+      final historyFuture = ds.getReferralHistory(limit: 30);
+      Subscription? sub;
+      if (GetIt.instance.isRegistered<SubscriptionCubit>()) {
+        final cubit = GetIt.instance<SubscriptionCubit>();
+        await cubit.ensureSubscriptionStatus(force: true);
+        sub = cubit.cachedSubscription;
+      }
+      final summary = await summaryFuture;
+      final history = await historyFuture;
       if (!mounted) return;
       setState(() {
         _summary = summary;
         _history = history;
+        _subscription = sub;
+        _remaining = remainingSubscriptionDuration(sub?.effectivePeriodEnd);
         _loading = false;
       });
+      if (sub != null &&
+          planTierFromCode(sub.planCode) != PlanTier.free &&
+          sub.effectivePeriodEnd != null) {
+        _startTicker();
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -233,7 +275,13 @@ class _ReferralPageState extends State<ReferralPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _HeroCard(summary: s, progress: progress, isDark: isDark),
+                    _HeroCard(
+                      summary: s,
+                      progress: progress,
+                      isDark: isDark,
+                      subscription: _subscription,
+                      remaining: _remaining,
+                    ),
                     const SizedBox(height: AppSpacing.xl),
                     _InviteCodeCard(
                       summary: s,
@@ -263,11 +311,15 @@ class _HeroCard extends StatefulWidget {
     required this.summary,
     required this.progress,
     required this.isDark,
+    this.subscription,
+    this.remaining,
   });
 
   final ReferralSummary summary;
   final double progress;
   final bool isDark;
+  final Subscription? subscription;
+  final Duration? remaining;
 
   @override
   State<_HeroCard> createState() => _HeroCardState();
@@ -429,6 +481,16 @@ class _HeroCardState extends State<_HeroCard>
               ),
             ],
           ),
+          if (widget.subscription != null &&
+              planTierFromCode(widget.subscription!.planCode) !=
+                  PlanTier.free) ...[
+            const SizedBox(height: AppSpacing.md),
+            _SubscriptionTimerBanner(
+              subscription: widget.subscription!,
+              remaining: widget.remaining,
+              isDark: widget.isDark,
+            ),
+          ],
           const SizedBox(height: AppSpacing.lg),
           Row(
             children: [
@@ -480,6 +542,79 @@ class _HeroCardState extends State<_HeroCard>
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SubscriptionTimerBanner extends StatelessWidget {
+  const _SubscriptionTimerBanner({
+    required this.subscription,
+    required this.remaining,
+    required this.isDark,
+  });
+
+  final Subscription subscription;
+  final Duration? remaining;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final days = subscriptionDaysRemaining(remaining);
+    final countdown = formatSubscriptionCountdown(remaining);
+    final end = subscription.effectivePeriodEnd;
+    final endLabel = end == null
+        ? null
+        : '${end.day.toString().padLeft(2, '0')}/'
+            '${end.month.toString().padLeft(2, '0')}/${end.year}';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        borderRadius: AppRadii.button,
+        color: const Color(0xFFFFD700).withValues(alpha: isDark ? 0.12 : 0.18),
+        border: Border.all(
+          color: const Color(0xFFFFB300).withValues(alpha: 0.55),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.timer_outlined,
+            color: Color(0xFFFFB300),
+            size: 22,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${subscription.planName.isNotEmpty ? subscription.planName : 'Pro'} · '
+                  '${days > 0 ? '$days day${days == 1 ? '' : 's'} left' : countdown}',
+                  style: context.text.body().copyWith(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  remaining == null
+                      ? 'Subscription active — end date unavailable'
+                      : 'Timer $countdown'
+                          '${endLabel != null ? ' · ends $endLabel' : ''}',
+                  style: context.text.caption().copyWith(
+                    color: colors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

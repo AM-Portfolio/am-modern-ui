@@ -344,24 +344,71 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
+                  if (isPaidSubscription)
+                    BoxShadow(
+                      color: const Color(0xFFFFD700).withValues(alpha: 0.35),
+                      blurRadius: 28,
+                      spreadRadius: 2,
+                    ),
                 ],
               ),
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isDark ? context.cardColor : context.cardColor,
-                ),
-                child: UserAvatar(
-                  radius: 56,
-                  displayName: displayName ?? userId,
-                  remotePhotoUrl: photoUrl,
-                  showEditBadge: true,
-                ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isDark ? context.cardColor : context.cardColor,
+                      border: isPaidSubscription
+                          ? Border.all(
+                              color: const Color(0xFFFFD700).withValues(alpha: 0.85),
+                              width: 2.5,
+                            )
+                          : null,
+                    ),
+                    child: UserAvatar(
+                      radius: 56,
+                      displayName: displayName ?? userId,
+                      remotePhotoUrl: photoUrl,
+                      showEditBadge: true,
+                    ),
+                  ),
+                  if (isPaidSubscription)
+                    Positioned(
+                      top: -6,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFFE082), Color(0xFFFFB300)],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFFD700).withValues(alpha: 0.55),
+                              blurRadius: 12,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.workspace_premium_rounded,
+                          color: Color(0xFF5D4037),
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           ),
         ),
+        if (isPaidSubscription) ...[
+          const SizedBox(height: AppSpacing.sm),
+          _buildProLogoBadge(context),
+        ],
         const SizedBox(height: AppSpacing.sm),
         TextButton.icon(
           onPressed: () => showAvatarPickerSheet(
@@ -428,6 +475,48 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
           ),
         ),
       ],
+    );
+  }
+
+  /// Gold PRO chip shown under the avatar for paid / grant Pro users.
+  Widget _buildProLogoBadge(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFFE082), Color(0xFFFFB300), Color(0xFFFF8F00)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFFD700).withValues(alpha: 0.45),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.workspace_premium_rounded,
+            size: 16,
+            color: Color(0xFF5D4037),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            'PRO',
+            style: context.text.caption().copyWith(
+              color: const Color(0xFF5D4037),
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.4,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
