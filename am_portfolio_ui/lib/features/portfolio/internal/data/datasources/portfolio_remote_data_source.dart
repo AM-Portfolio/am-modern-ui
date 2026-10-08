@@ -1036,7 +1036,6 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
     String portfolioId, {
     bool deleteTrades = false,
   }) async {
-    // deleteTrades retained for call-site compatibility; portfolio hard-delete clears the book.
     CommonLogger.methodEntry(
       'deletePortfolio',
       tag: 'PortfolioRemoteDataSource',
@@ -1044,10 +1043,9 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
     );
 
     try {
-      // Broker books live in am-portfolio; delete must hit portfolio API (not trade).
       final baseUri = _buildUri(
-        _baseUrl,
-        '/v1/portfolios/$portfolioId',
+        _tradeBaseUrl,
+        '/v1/portfolios/$portfolioId?deleteTrades=$deleteTrades',
       );
 
       await _apiClient.delete<void>(

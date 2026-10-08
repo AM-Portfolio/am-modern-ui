@@ -15,7 +15,6 @@ import 'package:am_common/core/di/network_providers.dart';
 import 'package:am_library/am_library.dart';
 import '../internal/domain/usecases/get_trade_calendar.dart';
 import '../internal/domain/usecases/get_trade_calendar_by_date_range.dart';
-import '../internal/domain/usecases/get_most_recent_trade_year.dart';
 import '../internal/domain/usecases/get_trade_calendar_by_day.dart';
 import '../internal/domain/usecases/get_trade_calendar_by_month.dart';
 import '../internal/domain/usecases/get_trade_holdings.dart';
@@ -24,7 +23,6 @@ import '../internal/domain/usecases/get_trade_summary.dart';
 import '../presentation/models/trade_calendar_view_model.dart';
 import '../presentation/models/trade_holding_view_model.dart';
 import '../presentation/models/trade_portfolio_view_model.dart';
-import 'trade_portfolio_dedupe.dart';
 
 /// Provider for trade remote data source
 final _tradeRemoteDataSourceProvider =
@@ -129,13 +127,6 @@ final getTradeCalendarByDateRangeProvider =
   return GetTradeCalendarByDateRange(repository);
 });
 
-/// Provider for GetMostRecentTradeYear use case
-final getMostRecentTradeYearProvider =
-    FutureProvider<GetMostRecentTradeYear>((ref) async {
-  final repository = await ref.watch(tradeRepositoryProvider.future);
-  return GetMostRecentTradeYear(repository);
-});
-
 /// Invalidates trade data providers so the next watch triggers fresh API calls.
 void invalidateTradeData(WidgetRef ref) {
   ref.invalidate(tradeRepositoryProvider);
@@ -200,11 +191,9 @@ final tradeSummaryStreamProvider = StreamProvider.family<TradeSummary, String>((
 final tradePortfoliosStreamProvider =
     StreamProvider<List<TradePortfolioViewModel>>((ref) async* {
   final useCase = await ref.watch(_getTradePortfoliosProvider.future);
-  yield* useCase.watch().map(
-        (list) => dedupeTradePortfolios(
-          TradePortfolioViewModel.fromEntityList(list.portfolios),
-        ),
-      );
+  yield* useCase
+      .watch()
+      .map((list) => TradePortfolioViewModel.fromEntityList(list.portfolios));
 });
 
 /// Provider for watching trade calendar (stream) - returns view models

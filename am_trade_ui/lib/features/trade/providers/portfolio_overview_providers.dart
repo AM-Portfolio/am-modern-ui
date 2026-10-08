@@ -8,7 +8,6 @@ import '../internal/data/dtos/portfolio_summary_response_dto.dart';
 import '../internal/domain/entities/trade_portfolio.dart';
 import '../presentation/models/trade_portfolio_view_model.dart';
 import 'trade_internal_providers.dart';
-import 'trade_portfolio_dedupe.dart';
 
 // ============================================================================
 // Infrastructure (private — not for direct UI consumption)
@@ -97,12 +96,9 @@ final enrichedTradePortfoliosProvider =
 
   if (tradePortfolioList.portfolios.isEmpty) return [];
 
-  // Safety net: collapse duplicate ids / same display name (Upstox×2).
-  // Keep shared [dedupeTradePortfolios] semantics — do not ID-only skip names.
-  final realized = dedupeTradePortfolios(
-    tradePortfolioList.portfolios.map(TradePortfolioViewModel.fromEntity),
-  );
-  if (realized.isEmpty) return [];
+  final realized = tradePortfolioList.portfolios
+      .map(TradePortfolioViewModel.fromEntity)
+      .toList();
 
   // Step 2: Live am-portfolio summaries — fail open, never block the landing.
   // Call the data source directly (with timeouts) instead of watching
@@ -121,7 +117,7 @@ final enrichedTradePortfoliosProvider =
   List<PortfolioSummaryResponseDto?> summaries;
   try {
     summaries = await Future.wait(
-      realized.map((portfolio) async {
+      tradePortfolioList.portfolios.map((portfolio) async {
         try {
           return await dataSource!
               .getPortfolioSummary(portfolio.id)

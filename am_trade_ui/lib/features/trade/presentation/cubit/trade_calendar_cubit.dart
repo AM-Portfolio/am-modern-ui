@@ -9,7 +9,6 @@ import '../../internal/domain/usecases/get_trade_calendar.dart';
 import '../../internal/domain/usecases/get_trade_calendar_by_date_range.dart';
 import '../../internal/domain/usecases/get_trade_calendar_by_day.dart';
 import '../../internal/domain/usecases/get_trade_calendar_by_month.dart';
-import '../../internal/domain/usecases/get_most_recent_trade_year.dart';
 import '../converters/trade_calendar_converter.dart';
 import '../models/calendar_view_models.dart' as view_models;
 import '../models/trade_calendar_view_model.dart';
@@ -26,14 +25,12 @@ class TradeCalendarCubit extends Cubit<TradeCalendarState> {
     this._getTradeCalendarByMonth,
     this._getTradeCalendarByDay,
     this._getTradeCalendarByDateRange,
-    this._getMostRecentTradeYear,
   ) : super(TradeCalendarInitial());
 
   final GetTradeCalendar _getTradeCalendar;
   final GetTradeCalendarByMonth _getTradeCalendarByMonth;
   final GetTradeCalendarByDay _getTradeCalendarByDay;
   final GetTradeCalendarByDateRange _getTradeCalendarByDateRange;
-  final GetMostRecentTradeYear _getMostRecentTradeYear;
 
   // Services
   final CalendarNavigationService _navigationService = CalendarNavigationService();
@@ -436,14 +433,6 @@ class TradeCalendarCubit extends Cubit<TradeCalendarState> {
 
   /// Get current navigation state
   view_models.CalendarNavigationState get navigationState => _navigationState;
-
-  /// Initialize calendar to the user's most recent trade year
-  Future<int> initializeToMostRecentYear({required String portfolioId}) async {
-    final year = await _getMostRecentTradeYear(portfolioId);
-    _navigationState = _navigationState.changeYear(year);
-    await navigateToYearly(portfolioId: portfolioId, year: year);
-    return year;
-  }
 
   /// Navigate to yearly view
   Future<void> navigateToYearly({required String portfolioId, int? year}) async {

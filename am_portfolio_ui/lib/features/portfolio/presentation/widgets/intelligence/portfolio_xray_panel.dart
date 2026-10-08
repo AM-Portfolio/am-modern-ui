@@ -24,15 +24,6 @@ import 'xray_display_name.dart';
 
 export 'xray_display_name.dart' show xrayDisplayName;
 
-/// Sector tab helper: filter out `Unknown` only when other named sectors exist.
-/// If the sole slice is Unknown, keep it so X-Ray is not blank while Total Exposure > 0.
-List<XrayWeight> sectorWeightsForDisplay(List<XrayWeight> raw) {
-  final withoutUnknown =
-      raw.where((w) => w.name.toLowerCase() != 'unknown').toList();
-  if (withoutUnknown.isNotEmpty) return withoutUnknown;
-  return List<XrayWeight>.from(raw);
-}
-
 /// Normalize Class-tab / holdings `assetClass` for expand matching.
 String _normalizeAssetClassKey(String raw) {
   final key = raw.trim().toUpperCase();
@@ -239,11 +230,10 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
       3 => xray.assetClassWeights,
       _ => xray.sectorWeights,
     };
-
-    // Sector: drop Unknown only when real sectors exist. If everything is
-    // Unknown, keep it so Total Exposure is not shown as empty allocation.
+    
+    // Sector bug guard: filter out 'Unknown' sectors
     if (_tab == 0) {
-      raw = sectorWeightsForDisplay(raw);
+      raw = raw.where((w) => w.name.toLowerCase() != 'unknown').toList();
     }
 
     // Class uses real assetClassWeights from intelligence — no EQUITY 100% fake.

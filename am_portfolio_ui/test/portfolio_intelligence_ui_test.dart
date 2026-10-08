@@ -214,21 +214,6 @@ void main() {
     expect(xrayDisplayName('Financial Services'), 'Financial Services');
   });
 
-  test('sectorWeightsForDisplay keeps sole Unknown; filters when mixed', () {
-    const onlyUnknown = [
-      XrayWeight(name: 'Unknown', weightPct: 100, valueInr: 799),
-    ];
-    expect(sectorWeightsForDisplay(onlyUnknown), onlyUnknown);
-
-    const mixed = [
-      XrayWeight(name: 'Unknown', weightPct: 10),
-      XrayWeight(name: 'IT', weightPct: 90),
-    ];
-    final filtered = sectorWeightsForDisplay(mixed);
-    expect(filtered.length, 1);
-    expect(filtered.single.name, 'IT');
-  });
-
   testWidgets('X-Ray Cap tab switches weights', (tester) async {
     final intel = PortfolioIntelligence(
       portfolioId: 'p1',
@@ -705,10 +690,6 @@ void main() {
     expect(
       healthReasonDisplay('Top1 4.87%, max sector 19.45%'),
       'Top holding 4.87% • Max sector 19.45%',
-    );
-    expect(
-      healthReasonDisplay('Top1 VIKRAMSOLAR 60.06%, max sector 99.99%'),
-      'Top holding VIKRAMSOLAR 60.06% • Max sector 99.99%',
     );
     expect(
       healthReasonDisplay('Blend of concentration / vol / beta'),

@@ -7,8 +7,8 @@ services:
   
   am-app:
     build:
-      context: .
-      dockerfile: ./am_app/Dockerfile
+      context: ../../..
+      dockerfile: AM-Repos/ui/am_modern_ui/am_app/Dockerfile
     container_name: am-app-shell
     ports:
       - "9000:80"
