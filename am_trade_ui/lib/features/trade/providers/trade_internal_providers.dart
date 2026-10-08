@@ -24,6 +24,7 @@ import '../internal/domain/usecases/get_trade_summary.dart';
 import '../presentation/models/trade_calendar_view_model.dart';
 import '../presentation/models/trade_holding_view_model.dart';
 import '../presentation/models/trade_portfolio_view_model.dart';
+import 'trade_portfolio_dedupe.dart';
 
 /// Provider for trade remote data source
 final _tradeRemoteDataSourceProvider =
@@ -199,31 +200,11 @@ final tradeSummaryStreamProvider = StreamProvider.family<TradeSummary, String>((
 final tradePortfoliosStreamProvider =
     StreamProvider<List<TradePortfolioViewModel>>((ref) async* {
   final useCase = await ref.watch(_getTradePortfoliosProvider.future);
-  yield* useCase.watch().map((list) {
-    final byId = <String, TradePortfolioViewModel>{};
-    final ordered = <TradePortfolioViewModel>[];
-    for (final p in TradePortfolioViewModel.fromEntityList(list.portfolios)) {
-      final id = p.id.trim().toLowerCase();
-      if (id.isNotEmpty) {
-        if (byId.containsKey(id)) continue;
-        byId[id] = p;
-      }
-      ordered.add(p);
-    }
-    final byName = <String, TradePortfolioViewModel>{};
-    final out = <TradePortfolioViewModel>[];
-    for (final p in ordered) {
-      final nameKey = p.name.trim().toLowerCase();
-      if (nameKey.isEmpty) {
-        out.add(p);
-        continue;
-      }
-      if (byName.containsKey(nameKey)) continue;
-      byName[nameKey] = p;
-      out.add(p);
-    }
-    return out;
-  });
+  yield* useCase.watch().map(
+        (list) => dedupeTradePortfolios(
+          TradePortfolioViewModel.fromEntityList(list.portfolios),
+        ),
+      );
 });
 
 /// Provider for watching trade calendar (stream) - returns view models

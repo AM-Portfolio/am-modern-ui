@@ -99,10 +99,13 @@ class _TradeCalendarAnalyticsMobilePageState extends ConsumerState<TradeCalendar
     }
 
     // Build contiguous years so scroll can cross Dec → Jan and update sticky year.
+    // Include _selectedYear when most-recent trade year is older than now-14 so
+    // the sticky year label and monthsData stay aligned.
     final nowYear = DateTime.now().year;
-    final startYear = nowYear - 14;
+    final endYear = _selectedYear > nowYear ? _selectedYear : nowYear;
+    final startYear = _selectedYear < nowYear - 14 ? _selectedYear : nowYear - 14;
     final yearsData = <int, Map<int, CalendarMonthData>>{};
-    for (var y = startYear; y <= nowYear; y++) {
+    for (var y = startYear; y <= endYear; y++) {
       yearsData[y] = YearCalendarConverter.convertToMonthsData(
         entity: entityData,
         portfolioId: widget.portfolioId,

@@ -8,6 +8,7 @@ import '../internal/data/dtos/portfolio_summary_response_dto.dart';
 import '../internal/domain/entities/trade_portfolio.dart';
 import '../presentation/models/trade_portfolio_view_model.dart';
 import 'trade_internal_providers.dart';
+import 'trade_portfolio_dedupe.dart';
 
 // ============================================================================
 // Infrastructure (private — not for direct UI consumption)
@@ -97,7 +98,8 @@ final enrichedTradePortfoliosProvider =
   if (tradePortfolioList.portfolios.isEmpty) return [];
 
   // Safety net: collapse duplicate ids / same display name (Upstox×2).
-  final realized = _dedupeTradePortfolios(
+  // Keep shared [dedupeTradePortfolios] semantics — do not ID-only skip names.
+  final realized = dedupeTradePortfolios(
     tradePortfolioList.portfolios.map(TradePortfolioViewModel.fromEntity),
   );
   if (realized.isEmpty) return [];
@@ -144,35 +146,6 @@ final enrichedTradePortfoliosProvider =
       _mergeViewModel(realized[i], summaries[i]),
   ];
 });
-
-// ============================================================================
-// Dedup (pure — keeps UI honest when trade API returns clones)
-// ============================================================================
-
-List<TradePortfolioViewModel> _dedupeTradePortfolios(
-  Iterable<TradePortfolioViewModel> input,
-) {
-  final byId = <String>{};
-  final ordered = <TradePortfolioViewModel>[];
-  for (final p in input) {
-    final id = p.id.trim().toLowerCase();
-    if (id.isNotEmpty && !byId.add(id)) {
-      continue;
-    }
-    ordered.add(p);
-  }
-
-  final byName = <String>{};
-  final out = <TradePortfolioViewModel>[];
-  for (final p in ordered) {
-    final nameKey = p.name.trim().toLowerCase();
-    if (nameKey.isNotEmpty && !byName.add(nameKey)) {
-      continue;
-    }
-    out.add(p);
-  }
-  return out;
-}
 
 // ============================================================================
 // Merge Logic (pure function — no side effects, easy to unit test)

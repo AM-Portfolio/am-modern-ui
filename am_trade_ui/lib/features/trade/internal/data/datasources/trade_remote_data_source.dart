@@ -868,11 +868,14 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
       uri,
       queryParams: queryParams,
       parser: (data) {
-          final json = data as Map<String, dynamic>;
-          return json['year'] as int;
+        final json = data as Map<String, dynamic>;
+        final year = json['year'];
+        if (year is int) return year;
+        if (year is num) return year.toInt();
+        return int.parse(year.toString());
       },
     );
-    
+
     return response;
   }
 }
