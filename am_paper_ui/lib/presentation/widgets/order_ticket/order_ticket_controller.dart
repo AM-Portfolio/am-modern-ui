@@ -255,7 +255,9 @@ class OrderTicketController extends ChangeNotifier {
     try {
       var ltp = quote?.ltp ?? 0;
       if (ltp <= 0) {
-        ltp = await _client.fetchLiveLtp(sym, forceRefresh: false);
+        // A zero watchlist value can be a cache miss. Ask Market Data to recover
+        // a current quote before rejecting a paper order for lack of a price.
+        ltp = await _client.fetchLiveLtp(sym, forceRefresh: true);
         if (!context.mounted) return;
         if (ltp > 0) {
           quote = QuoteDetail(
