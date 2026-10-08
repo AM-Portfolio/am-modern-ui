@@ -678,7 +678,20 @@ class MarketProvider with ChangeNotifier {
               ? null
               : _selectedIndicesTimeframe);
       if (currentGeneration != _indicesRequestGeneration) return;
-      _allIndicesData = loadedIndices;
+      if (loadedIndices.isEmpty && indianSymbols.isNotEmpty) {
+        _allIndicesData = indianSymbols
+            .map((s) => StockIndicesMarketData(
+                  indexSymbol: s,
+                  metadata: IndexMetadata(
+                    last: 0.0,
+                    percChange: 0.0,
+                    change: 0.0,
+                  ),
+                ))
+            .toList();
+      } else {
+        _allIndicesData = loadedIndices;
+      }
 
       CommonLogger.info(
           "Successfully loaded ${_allIndicesData.length} Indian indices with timeframe $_selectedIndicesTimeframe",
