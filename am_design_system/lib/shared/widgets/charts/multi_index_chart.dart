@@ -180,18 +180,27 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
       _activeIndices.length >= 2 &&
       !widget.isBarChart;
 
+  bool _isCompact(BuildContext context) =>
+      MediaQuery.sizeOf(context).width < 700;
+
   /// Dynamic left gutter width so values like "2,255.50" or "2255" fit cleanly without truncating.
   double _leftAxisReserve(BuildContext context) {
-    final compact = MediaQuery.sizeOf(context).width < 700;
+    final compact = _isCompact(context);
     if (compact) {
-      if (_useMultiYAxis) return 46.0;
-      return _showAbsoluteValues ? 54.0 : 42.0;
+      if (_useMultiYAxis) return 38.0;
+      return _showAbsoluteValues ? 42.0 : 32.0;
     }
     if (!_useMultiYAxis) {
       return _showAbsoluteValues ? 58.0 : 48.0;
     }
     return 54.0;
   }
+
+  double _bottomAxisReserve(BuildContext context) =>
+      _isCompact(context) ? 22.0 : 30.0;
+
+  double _bottomAxisLabelFont(BuildContext context) =>
+      _isCompact(context) ? 8.0 : 10.0;
 
   Widget _leftAxisTitle(TitleMeta meta, Widget child) {
     return SideTitleWidget(
@@ -233,7 +242,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     required Map<String, double> cleanMax,
   }) {
     final theme = Theme.of(context);
-    final compact = MediaQuery.sizeOf(context).width < 700;
+    final compact = _isCompact(context);
 
     if (_useMultiYAxis && _activeIndices.isNotEmpty) {
       final String firstSymbol = _activeIndices.first;
@@ -259,7 +268,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
             textAlign: TextAlign.right,
             style: TextStyle(
               color: color,
-              fontSize: compact ? 8.5 : 9.5,
+              fontSize: compact ? 7.5 : 9.5,
               fontWeight: FontWeight.w600,
               height: 1.15,
             ),
@@ -287,7 +296,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
         textAlign: TextAlign.right,
         style: TextStyle(
           color: theme.textTheme.bodySmall?.color,
-          fontSize: compact ? 9 : 10,
+          fontSize: compact ? 8 : 10,
           fontWeight: FontWeight.w500,
           height: 1.1,
         ),
@@ -954,7 +963,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     }
 
     final theme = Theme.of(context);
-    final isCompact = MediaQuery.sizeOf(context).width < 700;
+    final isCompact = _isCompact(context);
 
     final chartColumn = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -969,31 +978,34 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
           ),
           const SizedBox(height: 4),
         ],
-        SizedBox(
-          height: kComparisonChartHeaderRowHeight,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(child: _buildLegend(context)),
-              if (widget.legendTrailing != null) ...[
+        if (isCompact)
+          _buildCompactToolbar(context)
+        else
+          SizedBox(
+            height: kComparisonChartHeaderRowHeight,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(child: _buildLegend(context)),
+                if (widget.legendTrailing != null) ...[
+                  const SizedBox(width: 8),
+                  widget.legendTrailing!,
+                ],
                 const SizedBox(width: 8),
-                widget.legendTrailing!,
+                _buildUnitToggle(context),
+                if (!widget.isBarChart) ...[
+                  const SizedBox(width: 8),
+                  _buildZoomControls(theme),
+                ],
+                if (widget.showExpandButton &&
+                    (widget.onOpenExpanded != null ||
+                        widget.expandedChartPath != null)) ...[
+                  _buildExpandButton(context),
+                ],
               ],
-              const SizedBox(width: 8),
-              _buildUnitToggle(context),
-              if (!widget.isBarChart) ...[
-                const SizedBox(width: 8),
-                _buildZoomControls(theme),
-              ],
-              if (widget.showExpandButton &&
-                  (widget.onOpenExpanded != null ||
-                      widget.expandedChartPath != null)) ...[
-                _buildExpandButton(context),
-              ],
-            ],
+            ),
           ),
-        ),
-        SizedBox(height: isCompact ? 8 : 12),
+        SizedBox(height: isCompact ? 6 : 12),
         Expanded(
           child: widget.isBarChart
               ? _buildBarChart(context, _chartData)
@@ -1028,7 +1040,41 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     );
   }
 
-  Widget _buildUnitToggle(BuildContext context) {
+  /// Compact phones: legend on its own scroll row; controls below (no discrete zoom).
+  Widget _buildCompactToolbar(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          height: 28,
+          child: _buildLegend(context, scrollable: true),
+        ),
+        const SizedBox(height: 4),
+        SizedBox(
+          height: 36,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _buildUnitToggle(context, compact: true),
+              if (widget.legendTrailing != null) ...[
+                const SizedBox(width: 6),
+                widget.legendTrailing!,
+              ],
+              if (widget.showExpandButton &&
+                  (widget.onOpenExpanded != null ||
+                      widget.expandedChartPath != null)) ...[
+                const SizedBox(width: 2),
+                _buildExpandButton(context, compact: true),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUnitToggle(BuildContext context, {bool compact = false}) {
     if (widget.preNormalizedPercent) {
       return const SizedBox.shrink();
     }
@@ -1046,6 +1092,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
           _buildToggleSegment(
             label: '%',
             isSelected: !_showAbsoluteValues,
+            compact: compact,
             onTap: () {
               setState(() {
                 _showAbsoluteValues = false;
@@ -1057,6 +1104,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
             label: '123',
             isSelected: _showAbsoluteValues,
             isEnabled: !widget.isBarChart,
+            compact: compact,
             onTap: () {
               setState(() {
                 _showAbsoluteValues = true;
@@ -1069,14 +1117,15 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     );
   }
 
-  Widget _buildExpandButton(BuildContext context) {
+  Widget _buildExpandButton(BuildContext context, {bool compact = false}) {
     final path = widget.expandedChartPath;
+    final min = compact ? 36.0 : 32.0;
     return IconButton(
       visualDensity: VisualDensity.compact,
       padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+      constraints: BoxConstraints(minWidth: min, minHeight: min),
       tooltip: kIsWeb ? 'Open chart (Ctrl+click for new tab)' : 'Open chart',
-      icon: const Icon(Icons.open_in_new, size: 20),
+      icon: Icon(Icons.open_in_new, size: compact ? 18 : 20),
       onPressed: () {
         if (path != null) {
           AppWebNavigation.navigate(
@@ -1140,6 +1189,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     required bool isSelected,
     required VoidCallback onTap,
     bool isEnabled = true,
+    bool compact = false,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final activeAccent = widget.accentColor ?? ModuleColors.market;
@@ -1163,7 +1213,10 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
           child: GestureDetector(
             onTap: onTap,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: EdgeInsets.symmetric(
+                horizontal: compact ? 6 : 10,
+                vertical: compact ? 4 : 6,
+              ),
               decoration: BoxDecoration(
                 color: bgColor,
                 borderRadius: BorderRadius.circular(6),
@@ -1172,7 +1225,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                 label,
                 style: TextStyle(
                   color: color,
-                  fontSize: 11,
+                  fontSize: compact ? 10 : 11,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -1183,81 +1236,93 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     );
   }
 
-  Widget _buildLegend(BuildContext context) {
+  Widget _buildLegend(BuildContext context, {bool scrollable = false}) {
     final theme = Theme.of(context);
-    final isCompact = MediaQuery.sizeOf(context).width < 700;
+    final isCompact = _isCompact(context);
+    final chips = _activeIndices.asMap().entries.map((entry) {
+      final index = entry.key;
+      final symbol = entry.value;
+      final color = widget.colorForSeriesIndex(index);
+      final isHidden = _hiddenIndices.contains(symbol);
+
+      return AmClickCapsule(
+        triggerOnHover: true,
+        popupContent: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: Icon(
+                isHidden ? Icons.visibility_off : Icons.visibility,
+                color: Colors.white,
+                size: 18,
+              ),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: () {
+                setState(() {
+                  if (isHidden) {
+                    _hiddenIndices.remove(symbol);
+                  } else {
+                    _hiddenIndices.add(symbol);
+                  }
+                });
+              },
+            ),
+            const SizedBox(width: 12),
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.white, size: 18),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: () {
+                if (widget.onRemoveIndex != null) {
+                  widget.onRemoveIndex!(symbol);
+                }
+              },
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: isCompact ? 12 : 16,
+              height: 3,
+              decoration: BoxDecoration(
+                color: isHidden ? Colors.grey : color,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              symbol,
+              style: TextStyle(
+                color: isHidden
+                    ? Colors.grey
+                    : theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
+                decoration: isHidden ? TextDecoration.lineThrough : null,
+                fontSize: isCompact ? 9.5 : 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }).toList();
+
+    if (scrollable) {
+      return ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: chips.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (_, i) => chips[i],
+      );
+    }
+
     return Wrap(
       spacing: isCompact ? 12 : 24,
       runSpacing: 8,
-      children: _activeIndices.asMap().entries.map((entry) {
-        final index = entry.key;
-        final symbol = entry.value;
-        final color = widget.colorForSeriesIndex(index);
-        final isHidden = _hiddenIndices.contains(symbol);
-
-        return AmClickCapsule(
-          triggerOnHover: true,
-          popupContent: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                icon: Icon(
-                  isHidden ? Icons.visibility_off : Icons.visibility,
-                  color: Colors.white,
-                  size: 18,
-                ),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                onPressed: () {
-                  setState(() {
-                    if (isHidden) {
-                      _hiddenIndices.remove(symbol);
-                    } else {
-                      _hiddenIndices.add(symbol);
-                    }
-                  });
-                },
-              ),
-              const SizedBox(width: 12),
-              IconButton(
-                icon: const Icon(Icons.close, color: Colors.white, size: 18),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                onPressed: () {
-                  if (widget.onRemoveIndex != null) {
-                    widget.onRemoveIndex!(symbol);
-                  }
-                },
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: isCompact ? 12 : 16,
-                height: 3,
-                decoration: BoxDecoration(
-                  color: isHidden ? Colors.grey : color,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                symbol,
-                style: TextStyle(
-                  color: isHidden
-                      ? Colors.grey
-                      : theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
-                  decoration: isHidden ? TextDecoration.lineThrough : null,
-                  fontSize: isCompact ? 11 : 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
+      children: chips,
     );
   }
 
@@ -1324,13 +1389,15 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                             bottomTitles: AxisTitles(
                               sideTitles: SideTitles(
                                 showTitles: true,
-                                reservedSize: 30,
+                                reservedSize: _bottomAxisReserve(context),
                                 getTitlesWidget: (value, meta) {
                                   final index = value.toInt();
                                   final originalIndex = startIndex + index;
+                                  final compact = _isCompact(context);
+                                  final tickDiv = compact ? 5 : 10;
                                   if (originalIndex >= 0 && originalIndex < chartData.length) {
                                     if (chartData.length > 20 &&
-                                        originalIndex % (chartData.length ~/ 10) != 0) {
+                                        originalIndex % (chartData.length ~/ tickDiv) != 0) {
                                       return const SizedBox.shrink();
                                     }
 
@@ -1341,7 +1408,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                                       final fmt = _getDateFormat(chartData);
 
                                       final interval = (chartData.length > 20)
-                                          ? (chartData.length ~/ 10)
+                                          ? (chartData.length ~/ tickDiv)
                                           : 1;
                                       final prevIndex =
                                           ((originalIndex - 1) ~/ interval) * interval;
@@ -1359,14 +1426,14 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
 
                                       return SideTitleWidget(
                                         meta: meta,
-                                        space: 8.0,
+                                        space: compact ? 4.0 : 8.0,
                                         child: Text(
                                           fmt.format(date),
                                           style: TextStyle(
                                             color: theme
                                                 .textTheme.bodySmall?.color
                                                 ?.withOpacity(0.6),
-                                            fontSize: 10,
+                                            fontSize: _bottomAxisLabelFont(context),
                                           ),
                                         ),
                                       );
@@ -1553,13 +1620,18 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                             bottomTitles: AxisTitles(
                               sideTitles: SideTitles(
                                 showTitles: true,
-                                reservedSize: 30,
-                                interval: (visibleData.length / 8).ceilToDouble(),
+                                reservedSize: _bottomAxisReserve(context),
+                                interval: (visibleData.length /
+                                        (_isCompact(context) ? 5 : 8))
+                                    .ceilToDouble(),
                                 getTitlesWidget: (value, meta) {
                                   final index = value.toInt();
                                   final originalIndex = startIndex + index;
+                                  final compact = _isCompact(context);
                                   if (originalIndex >= 0 && originalIndex < chartData.length) {
-                                    final interval = (visibleData.length / 8).ceil();
+                                    final interval = (visibleData.length /
+                                            (compact ? 5 : 8))
+                                        .ceil();
                                     if (index == visibleData.length - 1 &&
                                         interval > 1) {
                                       final lastIntervalTick =
@@ -1597,14 +1669,14 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
 
                                       return SideTitleWidget(
                                         meta: meta,
-                                        space: 8.0,
+                                        space: compact ? 4.0 : 8.0,
                                         child: Text(
                                           fmt.format(date),
                                           style: TextStyle(
                                             color: theme
                                                 .textTheme.bodySmall?.color
                                                 ?.withOpacity(0.6),
-                                            fontSize: 10,
+                                            fontSize: _bottomAxisLabelFont(context),
                                           ),
                                         ),
                                       );
@@ -1912,7 +1984,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     if (!showPills) return const SizedBox.shrink();
     if (chartData.isEmpty || _activeIndices.isEmpty) return const SizedBox.shrink();
 
-    const double bottomReserved = 30.0;
+    final double bottomReserved = _bottomAxisReserve(context);
     final double plotHeight = constraints.maxHeight - bottomReserved;
     final List<Map<String, dynamic>> pillData = [];
 
@@ -1957,7 +2029,8 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
 
     pillData.sort(
         (a, b) => (a['topOffset'] as double).compareTo(b['topOffset'] as double));
-    const double minPillGap = 24.0;
+    final compact = _isCompact(context);
+    final double minPillGap = compact ? 20.0 : 24.0;
     for (int i = 1; i < pillData.length; i++) {
       final double prev = pillData[i - 1]['topOffset'] as double;
       final double curr = pillData[i]['topOffset'] as double;
@@ -1976,23 +2049,26 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
           right: 0,
           top: top,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? 5 : 8,
+              vertical: compact ? 2 : 3,
+            ),
             decoration: BoxDecoration(
               color: color,
               borderRadius: BorderRadius.circular(4),
               boxShadow: [
                 BoxShadow(
                   color: color.withOpacity(0.55),
-                  blurRadius: 10,
+                  blurRadius: compact ? 6 : 10,
                   spreadRadius: 1,
                 ),
               ],
             ),
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
-                fontSize: 11,
+                fontSize: compact ? 9 : 11,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.3,
               ),

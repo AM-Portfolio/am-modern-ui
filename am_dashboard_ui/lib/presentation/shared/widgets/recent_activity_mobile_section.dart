@@ -82,6 +82,18 @@ class RecentActivityMobileSection extends StatelessWidget {
                 label: Text(entry.$2, style: context.text.caption()),
                 selected: statusFilter == entry.$1,
                 onSelected: (_) => onStatusFilterChanged?.call(entry.$1),
+                selectedColor: ModuleColors.dashboard.withValues(alpha: 0.25),
+                checkmarkColor: ModuleColors.dashboard,
+                labelStyle: context.text.caption().copyWith(
+                      color: statusFilter == entry.$1
+                          ? ModuleColors.dashboard
+                          : context.colors.textSecondary,
+                    ),
+                side: BorderSide(
+                  color: statusFilter == entry.$1
+                      ? ModuleColors.dashboard.withValues(alpha: 0.5)
+                      : context.colors.border,
+                ),
                 visualDensity: VisualDensity.compact,
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),

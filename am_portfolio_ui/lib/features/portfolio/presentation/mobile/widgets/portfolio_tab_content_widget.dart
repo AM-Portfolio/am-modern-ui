@@ -136,6 +136,14 @@ class _HoldingsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       BlocBuilder<PortfolioCubit, PortfolioState>(
+        buildWhen: (previous, current) {
+          if (previous.runtimeType != current.runtimeType) return true;
+          if (previous is PortfolioLoaded && current is PortfolioLoaded) {
+            return previous.portfolioId != current.portfolioId ||
+                previous.isRefreshing != current.isRefreshing;
+          }
+          return true;
+        },
         builder: (context, state) {
           if (state is PortfolioLoading) {
             return const Center(child: CircularProgressIndicator());

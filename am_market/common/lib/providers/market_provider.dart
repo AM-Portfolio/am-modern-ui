@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../models/market_data.dart';
@@ -12,11 +13,56 @@ import '../data/repositories/market_data_repository.dart';
 import 'package:am_common/core/services/price_service.dart';
 import 'package:am_common/core/models/price_update_model.dart';
 
+/// Market shell / module tabs that are not index symbols — never call
+/// [MarketProvider.refreshIndexData] / `fetchIndexData` for these.
+@visibleForTesting
+const Set<String> kMarketNavigationOnlySelections = {
+  'Streamer',
+  'Instrument Explorer',
+  'Security Explorer',
+  'Price Test',
+  'ETF Explorer',
+  'Admin Dashboard',
+  'Analysis Dashboard',
+  'Developer Dashboard',
+  'Market Analysis',
+  'Heatmap',
+  'Heatmap Explorer',
+  // User-mode tabs (must stay in sync with dashboard_page titles)
+  'Paper',
+  'Watch List',
+  'Watchlist',
+  'Equity Insider',
+  'Futures & Options',
+  'IPO Center',
+  'IPO',
+};
+
 class MarketProvider with ChangeNotifier {
-  final ApiService _apiService = ApiService();
+  ApiService? _apiServiceOrNull;
   final MarketDataRepository? _repository;
 
-  MarketProvider({MarketDataRepository? repository}) : _repository = repository;
+  /// Lazily created so unit tests that never hit the network avoid GetIt.
+  ApiService get _apiService => _apiServiceOrNull ??= ApiService();
+
+  /// Test-only override for sparkline history fetches.
+  @visibleForTesting
+  Future<Map<String, List<Map<String, dynamic>>>> Function(
+    List<String> symbols,
+    String range,
+  )? debugHistoryBatchFetcher;
+
+  MarketProvider({
+    MarketDataRepository? repository,
+    ApiService? apiService,
+  })  : _repository = repository,
+        _apiServiceOrNull = apiService;
+
+  /// True when [title] is a Market UI tab, not an index symbol.
+  static bool isNavigationOnlySelection(String? title) {
+    if (title == null || title.isEmpty) return false;
+    return kMarketNavigationOnlySelections.contains(title);
+  }
 
   AvailableIndices? _availableIndices;
   StockIndicesMarketData? _currentIndexData;
@@ -76,19 +122,7 @@ class MarketProvider with ChangeNotifier {
     if (_selectedIndex != null &&
         _selectedIndex != 'All Indices' &&
         _selectedIndex != 'Dashboard' &&
-        ![
-          'Streamer',
-          'Instrument Explorer',
-          'Security Explorer',
-          'Price Test',
-          'ETF Explorer',
-          'Admin Dashboard',
-          'Analysis Dashboard',
-          'Developer Dashboard',
-          'Market Analysis',
-          'Heatmap',
-          'Heatmap Explorer',
-        ].contains(_selectedIndex)) {
+        !isNavigationOnlySelection(_selectedIndex)) {
       symbols.add(_selectedIndex!);
     }
     if (_allIndicesData.isNotEmpty) {
@@ -312,10 +346,13 @@ class MarketProvider with ChangeNotifier {
 
   /// Loads mini close-price series for index sparkline cards.
   /// Skips symbols already cached for [range]. Safe to call repeatedly.
+  /// Concurrent calls while a fetch is in flight are ignored (no rebuild storm).
   Future<void> ensureIndexSparklines(
     List<String> symbols, {
     String range = '1W',
   }) async {
+    if (_isLoadingSparklines) return;
+
     final unique = symbols
         .map((s) => s.trim())
         .where((s) => s.isNotEmpty)
@@ -334,10 +371,14 @@ class MarketProvider with ChangeNotifier {
     if (missing.isEmpty) return;
 
     _isLoadingSparklines = true;
+    // Safe to notify: callers must not invoke this from build, and the
+    // in-flight guard above blocks re-entry (preserves web sparkline shimmer).
     notifyListeners();
 
     try {
-      final history = await _apiService.fetchHistoryBatch(missing, range);
+      final fetcher =
+          debugHistoryBatchFetcher ?? _apiService.fetchHistoryBatch;
+      final history = await fetcher(missing, range);
       history.forEach((sym, points) {
         final closes = extractSparklineCloses(points);
         if (closes.length >= 2) {
@@ -569,20 +610,7 @@ class MarketProvider with ChangeNotifier {
       CommonLogger.debug("Loading Dashboard data",
           tag: "MarketProvider.selectIndex");
       await loadAllIndicesData();
-    } else if ([
-      "Streamer",
-      "Instrument Explorer",
-      "Security Explorer",
-      "Price Test",
-      "ETF Explorer",
-      "Admin Dashboard",
-      "Analysis Dashboard",
-      "Developer Dashboard",
-      // User Mode navigation items (no data fetch required)
-      "Market Analysis",
-      "Heatmap",
-      "Heatmap Explorer",
-    ].contains(_selectedIndex)) {
+    } else if (isNavigationOnlySelection(_selectedIndex)) {
       CommonLogger.debug(
           "Selected view: $_selectedIndex (no data fetch required)",
           tag: "MarketProvider.selectIndex");
@@ -596,7 +624,8 @@ class MarketProvider with ChangeNotifier {
   Future<void> refreshIndexData() async {
     if (_selectedIndex == null ||
         _selectedIndex == "All Indices" ||
-        _selectedIndex == "Streamer") {
+        _selectedIndex == "Streamer" ||
+        isNavigationOnlySelection(_selectedIndex)) {
       CommonLogger.debug("Skip refresh for $_selectedIndex",
           tag: "MarketProvider.refreshIndexData");
       return;

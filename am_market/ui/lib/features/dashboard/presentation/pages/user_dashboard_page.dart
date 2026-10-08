@@ -8,6 +8,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_library/am_library.dart';
 import 'package:am_market_common/providers/market_provider.dart';
 import 'package:am_market_common/models/indices_region.dart';
+import 'package:am_market_common/models/market_data.dart';
 import 'package:am_market_common/models/top_mover_stock.dart';
 // REMOVED: import 'package:am_market_ui/shared/widgets/index_card.dart';
 import 'package:am_market_ui/features/market/widgets/market_header.dart';
@@ -53,6 +54,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
   bool isLoadingChart = false;
   String? chartError;
   bool isBarChart = false; // Chart type toggle
+  int _historyRequestId = 0;
 
   // REMOVED: final ScrollController _indicesScrollController = ScrollController();
   
@@ -85,6 +87,19 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
 
   /// [SIP Optimization] Indicates whether a background preloading network request is actively in-flight.
   bool _isPreloadingActive = false;
+
+  /// Ensures sparkline + SIP preload run once when indices arrive — never from [build].
+  bool _dashboardWarmupStarted = false;
+  MarketProvider? _marketProvider;
+
+  void _onMarketProviderChanged() {
+    final provider = _marketProvider;
+    if (provider == null || !mounted) return;
+    if (_dashboardWarmupStarted) return;
+    if (provider.allIndicesData.isEmpty) return;
+    _dashboardWarmupStarted = true;
+    _triggerBasePricesLoadingIfNeeded(provider);
+  }
 
   /// [SIP Optimization] Triggers the background preloading process after a 2-second idle delay.
   /// It targets only the top 6 pinned indices that are visible in the dashboard grid,
@@ -367,11 +382,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                     },
                     onIndexSelected: (data) {
                       if (!provider.isGlobalSymbol(data.indexSymbol)) {
-                        setState(() {
-                          selectedIndexForMovers = data.indexSymbol;
-                        });
-                        provider.selectIndex(data.indexSymbol);
-                        _loadTopMovers();
+                        _onDashboardIndexSelected(data);
                       }
                       Navigator.pop(context);
                     },
@@ -389,6 +400,8 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
   void dispose() {
     // REMOVED: _indicesScrollController.dispose();
     // [SIP Optimization] Cancel the background preloading timer to prevent memory leaks or state updates after widget disposal.
+    _marketProvider?.removeListener(_onMarketProviderChanged);
+    _marketProvider = null;
     _preloadTimer?.cancel();
     _drawerController.dispose();
     _popoverAnimationController.dispose();
@@ -418,14 +431,15 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
       }
     });
 
-    // Load initial data
+    // Load initial data — warmup sparklines once via provider listener (not build).
     Future.delayed(Duration.zero, () {
-      if (mounted) {
-        final provider = context.read<MarketProvider>();
-        provider.setIndicesTimeframe(_selectedTimeframe);
-        provider.selectIndex(selectedIndexForMovers);
-        _triggerBasePricesLoadingIfNeeded(provider);
-      }
+      if (!mounted) return;
+      final provider = context.read<MarketProvider>();
+      _marketProvider = provider;
+      provider.addListener(_onMarketProviderChanged);
+      provider.setIndicesTimeframe(_selectedTimeframe);
+      provider.selectIndex(selectedIndexForMovers);
+      _onMarketProviderChanged();
       _loadTopMovers();
       _loadHistoricalData();
     });
@@ -520,10 +534,33 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
     );
   }
 
+  /// Focus movers, heatmap, and comparison chart on the tapped index.
+  void _onDashboardIndexSelected(StockIndicesMarketData data) {
+    final symbol = data.indexSymbol;
+    final provider = _marketProvider ?? context.read<MarketProvider>();
+    setState(() {
+      selectedIndexForMovers = symbol;
+      final rest =
+          selectedIndicesForChart.where((s) => s != symbol).toList();
+      selectedIndicesForChart = [symbol, ...rest].take(5).toList();
+      if (selectedIndicesForChart.length == 1) {
+        final fallback =
+            symbol == 'NIFTY BANK' ? 'NIFTY 50' : 'NIFTY BANK';
+        selectedIndicesForChart = [symbol, fallback];
+      }
+    });
+    provider.selectIndex(symbol);
+    _loadTopMovers();
+    _loadHistoricalData();
+  }
+
   /// Load historical data for selected indices
   Future<void> _loadHistoricalData() async {
     if (!mounted) return;
-    
+    final requestId = ++_historyRequestId;
+    final series = List<String>.from(selectedIndicesForChart);
+    final tf = _selectedTimeframe;
+
     setState(() {
       isLoadingChart = true;
       chartError = null;
@@ -531,7 +568,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
 
     final sw = Stopwatch()..start();
     try {
-      final data = await _apiService.fetchHistoryBatch(selectedIndicesForChart, _selectedTimeframe);
+      final data = await _apiService.fetchHistoryBatch(series, tf);
       sw.stop();
       ProductTelemetry.instance.widgetTiming(
         widget: 'market_history_chart',
@@ -540,7 +577,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
         technicalArea: 'market',
       );
 
-      if (!mounted) return;
+      if (!mounted || requestId != _historyRequestId) return;
 
       final empty = data.isEmpty || data.values.every((v) => v.isEmpty);
       if (empty) {
@@ -560,7 +597,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
         technicalArea: 'market',
       );
       ProductTelemetry.instance.clientError(errorType: 'market_history_chart');
-      if (!mounted) return;
+      if (!mounted || requestId != _historyRequestId) return;
       setState(() {
         chartError = 'Failed to load chart data';
         isLoadingChart = false;
@@ -731,9 +768,6 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
       );
     }
 
-    // Trigger pre-fetching of base prices if needed
-    _triggerBasePricesLoadingIfNeeded(marketProvider);
-
     // Main content
     final isMobile = MediaQuery.sizeOf(context).width < 768;
     final marketColor = ModuleColors.market;
@@ -757,33 +791,15 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
               ),
             ),
             child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(
-                horizontal: isMobile ? 12 : 20,
-                vertical: 12,
+              padding: EdgeInsets.fromLTRB(
+                isMobile ? 12 : 20,
+                isMobile ? 4 : 12,
+                isMobile ? 12 : 20,
+                isMobile ? 8 : 12,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (isMobile)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        children: [
-                          Text(
-                            'Dashboard',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: context.colors.textPrimary,
-                            ),
-                          ),
-                          const Spacer(),
-                          GlobalTimeFrameBar(
-                            primaryColor: ModuleColors.market,
-                          ),
-                        ],
-                      ),
-                    ),
                   MarketHeader(
                     onAllIndicesPressed: () {
                       if (MediaQuery.of(context).size.width < 768) {
@@ -795,23 +811,40 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                     },
                   ),
 
+                  if (!isMobile) const SizedBox(height: 10),
+
+                  // Mobile: title + 1D on row A, full-width indices on row B.
                   if (isMobile) ...[
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Markets at a glance',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: MarketColors.textPrimary(context),
+                                ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        GlobalTimeFrameBar(
+                          primaryColor: ModuleColors.market,
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 8),
-                  ] else ...[
-                    const SizedBox(height: 10),
                   ],
 
-                  // Pinned Index Cards Grid
                   PinnedIndicesGrid(
                     indices: marketProvider.allIndicesData,
                     selectedIndexSymbol: selectedIndexForMovers,
-                    onIndexSelected: (data) {
-                      setState(() {
-                        selectedIndexForMovers = data.indexSymbol;
-                      });
-                      marketProvider.selectIndex(data.indexSymbol);
-                      _loadTopMovers();
-                    },
+                    onIndexSelected: _onDashboardIndexSelected,
                   ),
 
                     const SizedBox(height: 12),
@@ -868,8 +901,16 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                   leftFlex: 2,
                   rightFlex: 1,
                   left: Container(
-                    height: isMobile ? 320 : 360,
-                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+                    height: isMobile
+                        ? (MediaQuery.sizeOf(context).height * 0.38)
+                            .clamp(380.0, 440.0)
+                        : 360,
+                    padding: EdgeInsets.fromLTRB(
+                      isMobile ? 10 : 14,
+                      isMobile ? 8 : 10,
+                      isMobile ? 10 : 14,
+                      isMobile ? 8 : 10,
+                    ),
                     decoration: BoxDecoration(
                       color: MarketColors.cardSurface(context),
                       borderRadius: BorderRadius.circular(12),
@@ -884,7 +925,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                               'Indices Comparison',
                               style: TextStyle(
                                 color: MarketColors.textPrimary(context),
-                                fontSize: isMobile ? 12 : 14,
+                                fontSize: isMobile ? 11 : 14,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -1245,7 +1286,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: isMobile ? 6 : 8),
                         Expanded(
                           child: ComparisonChartView(
                             data: MultiSeriesChartData.fromLegacyMaps(historicalData),
@@ -1275,13 +1316,8 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                       ],
                     ),
                   ),
-                  right: Container(
+                  right: SizedBox(
                     height: isMobile ? 320 : 360,
-                    decoration: BoxDecoration(
-                      color: MarketColors.cardSurface(context),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: MarketColors.borderDefault(context)),
-                    ),
                     child: TopMoversWidgetV2(
                       gainers: topGainers,
                       losers: topLosers,
@@ -1370,11 +1406,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                 selectedIndexSymbol: selectedIndexForMovers,
                 onIndexSelected: (data) {
                   if (!marketProvider.isGlobalSymbol(data.indexSymbol)) {
-                    setState(() {
-                      selectedIndexForMovers = data.indexSymbol;
-                    });
-                    marketProvider.selectIndex(data.indexSymbol);
-                    _loadTopMovers();
+                    _onDashboardIndexSelected(data);
                   }
                   _closeDrawer();
                 },

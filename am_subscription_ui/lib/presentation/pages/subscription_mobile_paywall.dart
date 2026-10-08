@@ -292,7 +292,7 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
               if (isRefreshing) const LinearProgressIndicator(minHeight: 2),
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -417,15 +417,9 @@ class _SubscriptionMobilePaywallState extends State<SubscriptionMobilePaywall> {
                 ),
               ),
               _BottomCtaBar(
-                isDark: isDark,
                 colors: context.colors,
                 isBusy: isBusy,
                 isCurrent: isCurrent,
-                selectedPlan: selectedPlan,
-                isAnnual: _isAnnual,
-                formatInr: _formatInr,
-                displayMonthly: _displayMonthly,
-                displayTotal: _displayTotal,
                 onContinue: selectedPlan == null || isBusy || isCurrent
                     ? null
                     : () => _handlePlanAction(context, state, selectedPlan),
@@ -765,7 +759,7 @@ class _PlanOption extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 11,
@@ -794,84 +788,52 @@ class _PlanOption extends StatelessWidget {
 
 class _BottomCtaBar extends StatelessWidget {
   const _BottomCtaBar({
-    required this.isDark,
     required this.colors,
     required this.isBusy,
     required this.isCurrent,
-    required this.selectedPlan,
-    required this.isAnnual,
-    required this.formatInr,
-    required this.displayMonthly,
-    required this.displayTotal,
     required this.onContinue,
   });
 
-  final bool isDark;
   final AppColorsTheme colors;
   final bool isBusy;
   final bool isCurrent;
-  final Plan? selectedPlan;
-  final bool isAnnual;
-  final String Function(int) formatInr;
-  final int Function(Plan) displayMonthly;
-  final int Function(Plan) displayTotal;
   final VoidCallback? onContinue;
 
   @override
   Widget build(BuildContext context) {
-    final plan = selectedPlan;
-    final priceLine = plan == null
-        ? ''
-        : isAnnual
-            ? '₹${formatInr(displayTotal(plan))} billed yearly'
-            : '₹${formatInr(displayMonthly(plan))} per month';
+    // Reserve includes safe inset — do not nest SafeArea(bottom) or padding doubles.
+    final bottomReserve = PlatformConstants.globalBottomNavReserve(context);
 
     return Material(
       elevation: 12,
       color: colors.surface,
       child: SafeArea(
         top: false,
+        bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (plan != null && !isCurrent)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Text(
-                    priceLine,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: colors.textSecondary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+          padding: EdgeInsets.fromLTRB(20, 12, 20, 12 + bottomReserve),
+          child: SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: FilledButton(
+              onPressed: onContinue,
+              style: FilledButton.styleFrom(
+                backgroundColor: colors.premiumActionPrimary,
+                disabledBackgroundColor: colors.divider,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: AppRadii.chip,
                 ),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: FilledButton(
-                  onPressed: onContinue,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: colors.premiumActionPrimary,
-                    disabledBackgroundColor: colors.divider,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: AppRadii.chip,
-                    ),
-                    textStyle: context.text.button(compact: true),
-                  ),
-                  child: Text(
-                    isBusy
-                        ? 'Processing…'
-                        : isCurrent
-                            ? 'Current plan'
-                            : 'Continue',
-                  ),
-                ),
+                textStyle: context.text.button(compact: true),
               ),
-            ],
+              child: Text(
+                isBusy
+                    ? 'Processing…'
+                    : isCurrent
+                        ? 'Current plan'
+                        : 'Continue',
+              ),
+            ),
           ),
         ),
       ),
