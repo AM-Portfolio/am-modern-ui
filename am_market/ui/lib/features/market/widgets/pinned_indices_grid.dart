@@ -7,15 +7,6 @@ class PinnedIndicesGrid extends StatelessWidget {
   final String selectedIndexSymbol;
   final ValueChanged<StockIndicesMarketData> onIndexSelected;
 
-  static const List<String> defaultFallbackSymbols = [
-    'INDIA VIX',
-    'NIFTY 50',
-    'NIFTY NEXT 50',
-    'NIFTY 100',
-    'NIFTY 200',
-    'NIFTY 500',
-  ];
-
   const PinnedIndicesGrid({
     required this.indices,
     required this.selectedIndexSymbol,
@@ -26,24 +17,7 @@ class PinnedIndicesGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 768;
-    final maxCount = isMobile ? 4 : 6;
-
-    final List<StockIndicesMarketData> itemsToShow;
-    if (indices.isNotEmpty) {
-      itemsToShow = indices.take(maxCount).toList();
-    } else {
-      itemsToShow = defaultFallbackSymbols
-          .take(maxCount)
-          .map((sym) => StockIndicesMarketData(
-                indexSymbol: sym,
-                metadata: IndexMetadata(
-                  last: 0.0,
-                  percChange: 0.0,
-                  change: 0.0,
-                ),
-              ))
-          .toList();
-    }
+    final itemsToShow = indices.take(isMobile ? 4 : 6).toList();
 
     return GridView.builder(
       shrinkWrap: true,
