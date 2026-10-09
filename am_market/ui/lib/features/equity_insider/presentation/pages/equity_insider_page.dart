@@ -1,9 +1,7 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
-import 'package:am_market_ui/core/services/market_data_sdk_service.dart';
 import 'package:am_news_ui/am_news_ui.dart';
 
 import '../../providers/equity_insider_provider.dart';
@@ -35,16 +33,14 @@ class EquityInsiderPage extends ConsumerStatefulWidget {
 }
 
 class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
-  final TextEditingController _controller = TextEditingController();
-  final MarketDataSdkService _sdkService = MarketDataSdkService();
-
   void resetToLanding() {
     setState(() {
       _submittedSymbol = null;
-      _controller.clear();
       _symbolHistory.clear();
     });
+    ref.read(equityInsiderActiveSymbolProvider.notifier).state = null;
   }
+
   final List<String> _symbolHistory = [];
   String? _submittedSymbol;
 
@@ -53,9 +49,15 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
     super.initState();
     final initial = widget.initialSymbol?.trim().toUpperCase();
     if (initial != null && initial.isNotEmpty) {
-      _controller.text = initial;
       _submittedSymbol = initial;
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final pending = ref.read(equityInsiderActiveSymbolProvider);
+      if (pending != null && pending.isNotEmpty) {
+        navigateToSymbol(pending);
+      }
+    });
   }
 
   @override
@@ -68,8 +70,6 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
     }
   }
 
-
-
   void navigateToSymbol(String newSymbol) {
     final text = newSymbol.trim().toUpperCase();
     if (text.isEmpty) return;
@@ -78,34 +78,29 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
       _symbolHistory.add(_submittedSymbol!);
     }
 
-    _controller.text = text;
     setState(() => _submittedSymbol = text);
-  }
-
-  void _search() {
-    final text = _controller.text.trim().toUpperCase();
-    if (text.isEmpty) return;
-    navigateToSymbol(text);
+    ref.read(equityInsiderActiveSymbolProvider.notifier).state = text;
   }
 
   void _handleBack() {
     if (_symbolHistory.isNotEmpty) {
       final prevSymbol = _symbolHistory.removeLast();
-      _controller.text = prevSymbol;
       setState(() => _submittedSymbol = prevSymbol);
+      ref.read(equityInsiderActiveSymbolProvider.notifier).state = prevSymbol;
     } else {
       setState(() => _submittedSymbol = null);
+      ref.read(equityInsiderActiveSymbolProvider.notifier).state = null;
     }
   }
 
   @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    ref.listen<String?>(equityInsiderActiveSymbolProvider, (prev, next) {
+      if (next == null || next.isEmpty) return;
+      if (next == _submittedSymbol) return;
+      navigateToSymbol(next);
+    });
+
     final marketCyan = ModuleColors.market;
     final scaffoldBg = context.colors.scaffoldBackground;
 
@@ -124,6 +119,7 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
           ),
         ),
         child: SafeArea(
+          top: false,
           child: _submittedSymbol == null
               ? _buildEmptySearch()
               : _buildDataView(_submittedSymbol!),
@@ -134,20 +130,13 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
 
   Widget _buildEmptySearch() {
     return EquityInsiderEmptyView(
-      controller: _controller,
-      sdkService: _sdkService,
-      typewriterHints: const [],
       onSelectSymbol: navigateToSymbol,
-      onSearch: _search,
     );
   }
 
   Widget _buildDataView(String symbol) {
     return _FundamentalsBody(
       symbol: symbol,
-      controller: _controller,
-      sdkService: _sdkService,
-      onSearch: _search,
       onSelectSymbol: navigateToSymbol,
       onBack: _handleBack,
       showPeers: widget.showPeers,
@@ -158,18 +147,12 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
 class _FundamentalsBody extends ConsumerStatefulWidget {
   const _FundamentalsBody({
     required this.symbol,
-    required this.controller,
-    required this.sdkService,
-    required this.onSearch,
     required this.onSelectSymbol,
     required this.onBack,
     this.showPeers = true,
   });
 
   final String symbol;
-  final TextEditingController controller;
-  final MarketDataSdkService sdkService;
-  final VoidCallback onSearch;
   final ValueChanged<String> onSelectSymbol;
   final VoidCallback onBack;
   final bool showPeers;
@@ -179,7 +162,8 @@ class _FundamentalsBody extends ConsumerStatefulWidget {
 }
 
 class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
-  static const double _stickyHeroExtent = 120;
+  static const double _stickyHeroExtentDesktop = 120;
+  static const double _stickyHeroExtentMobile = 60;
   static const double _stickyNavExtent = 52;
 
   final ScrollController _scrollController = ScrollController();
@@ -187,7 +171,6 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
       List.generate(widget.showPeers ? 6 : 5, (_) => GlobalKey());
   int _activeIndex = 0;
   bool _isManualScrolling = false;
-  bool _isSearchOverlayOpen = false;
 
   int get _newsKeyIndex => _sectionKeys.length - 1;
 
@@ -221,8 +204,11 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
   void _onScroll() {
     if (_isManualScrolling) return;
 
+    final width = MediaQuery.sizeOf(context).width;
+    final heroExtent =
+        width < 800 ? _stickyHeroExtentMobile : _stickyHeroExtentDesktop;
     // Activate when a section top crosses under the pinned hero + nav.
-    const threshold = _stickyHeroExtent + _stickyNavExtent + 180;
+    final threshold = heroExtent + _stickyNavExtent + 180;
 
     for (int i = _sectionKeys.length - 1; i >= 0; i--) {
       final key = _sectionKeys[i];
@@ -276,28 +262,16 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
     );
   }
 
-  void _openSearchOverlay() {
-    setState(() {
-      _isSearchOverlayOpen = true;
-    });
-  }
-
-  void _closeSearchOverlay() {
-    setState(() {
-      _isSearchOverlayOpen = false;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 800;
-    final recent = ref.watch(recentlyViewedStocksProvider);
-
-    return Stack(
-      children: [
-        LayoutBuilder(
+    return LayoutBuilder(
           builder: (context, constraints) {
             final isMobile = constraints.maxWidth < 800;
+            final stickyHeroExtent =
+                isMobile ? _stickyHeroExtentMobile : _stickyHeroExtentDesktop;
+            final bottomPad = isMobile
+                ? PlatformConstants.globalBottomNavReserve(context) + 32
+                : 32.0;
 
             return CustomScrollView(
               controller: _scrollController,
@@ -306,20 +280,19 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                 SliverPersistentHeader(
                   pinned: true,
                   delegate: _StickySectionNavDelegate(
-                    extent: _stickyHeroExtent,
+                    extent: stickyHeroExtent,
                     backgroundColor: context.colors.scaffoldBackground,
                     child: Padding(
                       padding: EdgeInsets.fromLTRB(
                         isMobile ? 12 : 16,
+                        isMobile ? 4 : 16,
                         isMobile ? 12 : 16,
-                        isMobile ? 12 : 16,
-                        8,
+                        isMobile ? 4 : 8,
                       ),
                       child: KeyedSubtree(
                         key: _sectionKeys[0],
                         child: EquityInsiderHeroBar(
                           symbol: widget.symbol,
-                          onSearchTap: _openSearchOverlay,
                         ),
                       ),
                     ),
@@ -359,7 +332,7 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                       isMobile ? 12 : 16,
                       14,
                       isMobile ? 12 : 16,
-                      32,
+                      bottomPad,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -476,78 +449,6 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
               ],
             );
           },
-        ),
-
-        // Full Screen Search Overlay with Soft Backdrop Blur
-        if (_isSearchOverlayOpen)
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: _closeSearchOverlay,
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                child: Container(
-                  color: Colors.black.withValues(alpha: 0.55),
-                  alignment: Alignment.topCenter,
-                  padding: EdgeInsets.only(
-                    top: isMobile ? 40 : 80,
-                    left: 20,
-                    right: 20,
-                  ),
-                  child: GestureDetector(
-                    onTap: () {}, // Prevent backdrop tap from dismissing when tapping dialog
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 580),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              IconButton(
-                                onPressed: _closeSearchOverlay,
-                                icon: Icon(
-                                  Icons.close_rounded,
-                                  color: context.colors.textSecondary,
-                                  size: 24,
-                                ),
-                                tooltip: 'Close Search',
-                              ),
-                            ],
-                          ),
-                          SmartSearchAnchor(
-                            controller: widget.controller,
-                            recentSearches: recent,
-                            onRemoveRecent: (sym) {
-                              ref.read(recentlyViewedStocksProvider.notifier).removeView(sym);
-                            },
-                            onClearRecent: () {
-                              ref.read(recentlyViewedStocksProvider.notifier).clear();
-                            },
-                            accentColor: ModuleColors.market,
-                            searchHandler: (q) => widget.sdkService.securityApi.search(
-                              q,
-                              smartRecommendations: true,
-                              category: 'STOCKS',
-                              limit: 8,
-                            ),
-                            onSelected: (sym) {
-                              _closeSearchOverlay();
-                              widget.onSelectSymbol(sym);
-                            },
-                            onSubmit: () {
-                              _closeSearchOverlay();
-                              widget.onSearch();
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-      ],
     );
   }
 }
@@ -583,7 +484,7 @@ class _StickySectionNavDelegate extends SliverPersistentHeaderDelegate {
         height: extent,
         width: double.infinity,
         child: Align(
-          alignment: Alignment.center,
+          alignment: Alignment.topCenter,
           child: child,
         ),
       ),

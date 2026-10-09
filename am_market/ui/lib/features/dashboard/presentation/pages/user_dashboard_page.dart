@@ -795,7 +795,10 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                 isMobile ? 12 : 20,
                 isMobile ? 4 : 12,
                 isMobile ? 12 : 20,
-                isMobile ? 8 : 12,
+                isMobile
+                    ? PlatformConstants.globalBottomNavReserve(context) +
+                        AppSpacing.sm
+                    : 12,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1341,19 +1344,18 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                     timeframe: selectedTimeframe,
                   ),
                 ),
-                if (!isMobile) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: MarketColors.cardSurface(context),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: MarketColors.borderDefault(context)),
-                    ),
-                    child: HistoricalPerformanceSection(
-                      focusSymbol: selectedIndexForMovers,
-                    ),
+                // Shown on all widths — section has its own mobile drum-roll layout.
+                const SizedBox(height: 12),
+                Container(
+                  decoration: BoxDecoration(
+                    color: MarketColors.cardSurface(context),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: MarketColors.borderDefault(context)),
                   ),
-                ],
+                  child: HistoricalPerformanceSection(
+                    focusSymbol: selectedIndexForMovers,
+                  ),
+                ),
               ],
             ),
           ),

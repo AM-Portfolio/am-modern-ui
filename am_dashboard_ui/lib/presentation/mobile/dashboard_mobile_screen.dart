@@ -109,7 +109,9 @@ class _DashboardMobileScreenState
     required Color chipBorder,
     required bool showDemoBadge,
   }) {
-    if (_searchOpen) {
+    final scope = MobileSearchScope.maybeOf(context);
+    final shellHandlesSearch = scope?.liveSearch != null;
+    if (_searchOpen && !shellHandlesSearch) {
       return MobileInlineSearchField(
         items: MobileSearchScope.itemsOf(context),
         onClose: () {
@@ -134,6 +136,7 @@ class _DashboardMobileScreenState
             IconButton(
               tooltip: 'Search',
               onPressed: () {
+                if (MobileSearchScope.tryOpenGlobalSearch(context)) return;
                 MobileSearchScope.setOpen(context, true);
                 setState(() => _searchOpen = true);
               },

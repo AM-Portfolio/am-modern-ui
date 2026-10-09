@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_library/am_library.dart';
 
@@ -9,7 +11,6 @@ import '../utils/discover_view_state.dart';
 import '../basket_navigation.dart';
 import '../../domain/models/basket_opportunity.dart';
 import '../pages/my_baskets_view.dart';
-import 'etf_search_bar.dart';
 import 'discover/discover_baskets_table.dart';
 import 'discover/discover_copy.dart';
 import 'discover/discover_filter_bar.dart';
@@ -44,10 +45,10 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
   String? _query;
   String? _lastEmptyTelemetryQuery;
   String? _selectedThemeId;
+  String? _lastAppliedRouteQ;
   DiscoverViewState _discoverState = const DiscoverViewState();
   final ScrollController _discoverScroll = ScrollController();
   final GlobalKey _allBasketsKey = GlobalKey();
-  final GlobalKey<EtfSearchBarState> _searchKey = GlobalKey<EtfSearchBarState>();
 
   bool get _watchOpportunities {
     final nested = BasketNavigation.navigatorKey.currentState;
@@ -59,6 +60,15 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
     super.initState();
     BasketNavigation.registerMyBasketsListener(_showMyBasketsTab);
     BasketNavigation.viewMode.addListener(_onViewModeChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _applyRouteQuery();
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _applyRouteQuery();
   }
 
   @override
@@ -67,6 +77,30 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
     BasketNavigation.viewMode.removeListener(_onViewModeChanged);
     BasketNavigation.unregisterMyBasketsListener();
     super.dispose();
+  }
+
+  /// Global Search deep-link: `/baskets?q=GOLDBEES` filters Discover.
+  void _applyRouteQuery() {
+    final q = GoRouterState.of(context).uri.queryParameters['q']?.trim();
+    if (q == null || q.isEmpty) return;
+    // Apply once per route q so clearing the chip does not re-bind.
+    if (_lastAppliedRouteQ == q) return;
+    final catalog = ref.read(basketCatalogProvider).asData?.value;
+    String? themeId;
+    String applyQuery = q;
+    if (catalog != null) {
+      for (final t in catalog.themes) {
+        if (t.query.toUpperCase() == q.toUpperCase() ||
+            t.label.toLowerCase() == q.toLowerCase() ||
+            t.id.toLowerCase() == q.toLowerCase()) {
+          themeId = t.id;
+          applyQuery = t.query.isNotEmpty ? t.query : q;
+          break;
+        }
+      }
+    }
+    _lastAppliedRouteQ = q;
+    _updateQuery(query: applyQuery, themeId: themeId);
   }
 
   void _onViewModeChanged() {
@@ -86,7 +120,6 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
   }
 
   void _clearAll() {
-    _searchKey.currentState?.clear(notify: false);
     setState(() {
       _query = null;
       _selectedThemeId = null;
@@ -275,51 +308,6 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                 ),
               )
             else ...[
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final isMobileWidth =
-                      constraints.maxWidth < AmBreakpoints.mobile;
-                  final vPad =
-                      isMobileWidth ? AppSpacing.xs : AppSpacing.sm;
-                  return Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      AppSpacing.md,
-                      vPad,
-                      AppSpacing.md,
-                      vPad,
-                    ),
-                    child: EtfSearchBar(
-                      key: _searchKey,
-                      onEtfSelected: (selection) {
-                        if (selection.isin != null) {
-                          if (selection.isin!.contains(',')) {
-                            _updateQuery(query: selection.isin!, themeId: null);
-                          } else {
-                            BasketNavigation.openPreview(
-                              context,
-                              etfIsin: selection.isin!,
-                              userId: widget.userId,
-                              portfolioId: widget.portfolioId,
-                            );
-                          }
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Selected ETF has no ISIN'),
-                            ),
-                          );
-                        }
-                      },
-                      onCleared: () {
-                        _updateQuery(
-                          query: catalog.defaultQuery,
-                          themeId: null,
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
               DiscoverFilterBar(
                 themes: themes,
                 defaultQuery: catalog.defaultQuery,

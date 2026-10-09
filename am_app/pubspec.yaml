@@ -43,6 +43,8 @@ dependencies:
     path: ../am_market/ui
   am_market_common:
     path: ../am_market/common
+  am_market_sdk:
+    path: ../am_market/sdk
   am_diagnostic_ui:
     path: ../am_diagnostic_ui
   am_analysis_ui:

@@ -1,7 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
-import 'package:go_router/go_router.dart';
 
 class CommandItem {
   final String title;
@@ -22,9 +21,44 @@ class CommandItem {
 class AmCommandPalette extends StatefulWidget {
   final List<CommandItem> globalItems;
 
-  const AmCommandPalette({super.key, required this.globalItems});
+  /// Optional context banner (e.g. "Searching in Baskets").
+  final String? bannerTitle;
+  final String? bannerSubtitle;
 
-  static Future<void> show(BuildContext context, {required List<CommandItem> items}) {
+  /// When set, invoked on query changes for live / ranked results.
+  /// Call [emit] one or more times (progressive); category chip still filters.
+  final Future<void> Function(
+    String query,
+    void Function(List<CommandItem> items, {bool isLoading}) emit,
+  )? liveSearch;
+
+  /// Synchronous seed for empty query when [liveSearch] is null.
+  final List<CommandItem> Function()? emptySuggestions;
+
+  /// Keep search field + banner + chips pinned while results scroll (mobile sheet).
+  final bool stickyChrome;
+
+  const AmCommandPalette({
+    super.key,
+    required this.globalItems,
+    this.bannerTitle,
+    this.bannerSubtitle,
+    this.liveSearch,
+    this.emptySuggestions,
+    this.stickyChrome = false,
+  });
+
+  static Future<void> show(
+    BuildContext context, {
+    required List<CommandItem> items,
+    String? bannerTitle,
+    String? bannerSubtitle,
+    Future<void> Function(
+      String query,
+      void Function(List<CommandItem> items, {bool isLoading}) emit,
+    )? liveSearch,
+    List<CommandItem> Function()? emptySuggestions,
+  }) {
     return showGeneralDialog(
       context: context,
       barrierDismissible: true,
@@ -34,7 +68,14 @@ class AmCommandPalette extends StatefulWidget {
       pageBuilder: (context, animation, secondaryAnimation) {
         return FadeTransition(
           opacity: animation,
-          child: AmCommandPalette(globalItems: items),
+          child: AmCommandPalette(
+            globalItems: items,
+            bannerTitle: bannerTitle,
+            bannerSubtitle: bannerSubtitle,
+            liveSearch: liveSearch,
+            emptySuggestions: emptySuggestions,
+            stickyChrome: false,
+          ),
         );
       },
     );
@@ -45,6 +86,13 @@ class AmCommandPalette extends StatefulWidget {
   static Future<void> showMobileTop(
     BuildContext context, {
     required List<CommandItem> items,
+    String? bannerTitle,
+    String? bannerSubtitle,
+    Future<void> Function(
+      String query,
+      void Function(List<CommandItem> items, {bool isLoading}) emit,
+    )? liveSearch,
+    List<CommandItem> Function()? emptySuggestions,
   }) {
     return showModalBottomSheet<void>(
       context: context,
@@ -60,8 +108,15 @@ class AmCommandPalette extends StatefulWidget {
             bottom: MediaQuery.viewInsetsOf(ctx).bottom,
           ),
           child: SizedBox(
-            height: MediaQuery.sizeOf(ctx).height * 0.72,
-            child: AmCommandPalette(globalItems: items),
+            height: MediaQuery.sizeOf(ctx).height * 0.85,
+            child: AmCommandPalette(
+              globalItems: items,
+              bannerTitle: bannerTitle,
+              bannerSubtitle: bannerSubtitle,
+              liveSearch: liveSearch,
+              emptySuggestions: emptySuggestions,
+              stickyChrome: true,
+            ),
           ),
         );
       },
@@ -75,12 +130,16 @@ class AmCommandPalette extends StatefulWidget {
 class _AmCommandPaletteState extends State<AmCommandPalette> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  List<CommandItem> _sourceItems = [];
   List<CommandItem> _filteredItems = [];
+  bool _loading = false;
+  int _liveGen = 0;
 
   @override
   void initState() {
     super.initState();
-    _filteredItems = widget.globalItems;
+    _sourceItems = widget.emptySuggestions?.call() ?? widget.globalItems;
+    _filteredItems = _sourceItems;
     _focusNode.requestFocus();
   }
 
@@ -93,29 +152,54 @@ class _AmCommandPaletteState extends State<AmCommandPalette> {
 
   String _selectedCategory = 'All';
 
-  void _applyFilters() {
-    final query = _controller.text.toLowerCase();
-    
+  void _applyCategoryFilter() {
     setState(() {
-      _filteredItems = widget.globalItems.where((item) {
-        // 1. Category Filter
-        final matchesCategory = _selectedCategory == 'All' || item.category == _selectedCategory;
-        if (!matchesCategory) return false;
-
-        // 2. Text Filter
-        if (query.isEmpty) return true;
-        return item.title.toLowerCase().contains(query) ||
-               item.subtitle.toLowerCase().contains(query) ||
-               item.category.toLowerCase().contains(query);
+      _filteredItems = _sourceItems.where((item) {
+        return _selectedCategory == 'All' || item.category == _selectedCategory;
       }).toList();
     });
+  }
+
+  Future<void> _onQueryChanged(String raw) async {
+    final live = widget.liveSearch;
+    if (live == null) {
+      final query = raw.toLowerCase();
+      setState(() {
+        _sourceItems = widget.globalItems.where((item) {
+          if (query.isEmpty) return true;
+          return item.title.toLowerCase().contains(query) ||
+              item.subtitle.toLowerCase().contains(query) ||
+              item.category.toLowerCase().contains(query);
+        }).toList();
+      });
+      _applyCategoryFilter();
+      return;
+    }
+
+    final gen = ++_liveGen;
+    setState(() => _loading = true);
+    try {
+      await live(raw, (items, {bool isLoading = false}) {
+        if (!mounted || gen != _liveGen) return;
+        setState(() {
+          _sourceItems = items;
+          _loading = isLoading;
+        });
+        _applyCategoryFilter();
+      });
+      if (!mounted || gen != _liveGen) return;
+      setState(() => _loading = false);
+    } catch (_) {
+      if (!mounted || gen != _liveGen) return;
+      setState(() => _loading = false);
+    }
   }
 
   void _onCategorySelected(String category) {
     setState(() {
       _selectedCategory = category;
     });
-    _applyFilters();
+    _applyCategoryFilter();
   }
 
   Widget _buildHighlightedText(String text, String query, TextStyle style, Color highlightColor) {
@@ -180,6 +264,20 @@ class _AmCommandPaletteState extends State<AmCommandPalette> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (widget.stickyChrome)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8, bottom: 4),
+                      child: Center(
+                        child: Container(
+                          width: 36,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: context.colors.border.withValues(alpha: 0.7),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                    ),
                   // Search Input
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -191,7 +289,7 @@ class _AmCommandPaletteState extends State<AmCommandPalette> {
                           child: TextField(
                             controller: _controller,
                             focusNode: _focusNode,
-                            onChanged: (_) => _applyFilters(),
+                            onChanged: _onQueryChanged,
                             style: TextStyle(
                               fontSize: 18,
                               color: context.colors.textPrimary,
@@ -204,12 +302,18 @@ class _AmCommandPaletteState extends State<AmCommandPalette> {
                             ),
                           ),
                         ),
+                        if (_loading)
+                          const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
                         if (query.isNotEmpty)
                           IconButton(
                             icon: Icon(Icons.close, color: context.colors.textSecondary, size: 20),
                             onPressed: () {
                               _controller.clear();
-                              _applyFilters();
+                              _onQueryChanged('');
                             },
                           ),
                         TextButton(
@@ -223,13 +327,59 @@ class _AmCommandPaletteState extends State<AmCommandPalette> {
                       ],
                     ),
                   ),
+                  if (widget.bannerTitle != null &&
+                      widget.bannerTitle!.isNotEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: context.colors.actionPrimaryBg
+                              .withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: context.colors.actionPrimaryBg
+                                .withValues(alpha: 0.35),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.bannerTitle!,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: context.colors.textPrimary,
+                              ),
+                            ),
+                            if (widget.bannerSubtitle != null &&
+                                widget.bannerSubtitle!.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                widget.bannerSubtitle!,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: context.colors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                   // Category Filter Pills
                   Padding(
                     padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
-                        children: ['All', 'Market', 'Portfolio', 'Trade', 'News', 'Action'].map((category) {
+                        children: ['All', 'Baskets', 'Market', 'Portfolio', 'Trade', 'News', 'Action'].map((category) {
                           final isSelected = _selectedCategory == category;
                           return Padding(
                             padding: const EdgeInsets.only(right: 8),
@@ -266,7 +416,12 @@ class _AmCommandPaletteState extends State<AmCommandPalette> {
                   
                   // Results List
                   Flexible(
-                    child: _filteredItems.isEmpty
+                    child: _loading && _filteredItems.isEmpty
+                        ? const Padding(
+                            padding: EdgeInsets.all(32),
+                            child: Center(child: CircularProgressIndicator()),
+                          )
+                        : _filteredItems.isEmpty
                         ? Padding(
                             padding: const EdgeInsets.all(32.0),
                             child: Column(
@@ -275,7 +430,9 @@ class _AmCommandPaletteState extends State<AmCommandPalette> {
                                 Icon(Icons.search_off, size: 48, color: context.colors.textSecondary.withValues(alpha: 0.5)),
                                 const SizedBox(height: 16),
                                 Text(
-                                  'No results found for "$query"',
+                                  query.isEmpty
+                                      ? 'Start typing to search'
+                                      : 'No results found for "$query"',
                                   style: TextStyle(color: context.colors.textSecondary),
                                 ),
                               ],

@@ -7,6 +7,7 @@ import 'package:flutter_dropzone/flutter_dropzone.dart';
 import 'package:intl/intl.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_library/am_library.dart';
+import 'package:am_doc_intelligence_ui/features/document_processor/document_processor_layout.dart';
 import 'package:am_doc_intelligence_ui/features/document_processor/pending_batch_intake.dart';
 import 'package:am_doc_intelligence_ui/features/document_processor/pending_sync_file.dart';
 import 'package:am_doc_intelligence_ui/models/batch_sync_models.dart';
@@ -642,7 +643,31 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
               else if (_isServiceConnected == false)
                 _buildConnectionError()
               else ...[
-                if (isWide)
+                if (isWide) ...[
+                  // Results-first when batch/status active — wide layout used to
+                  // omit these widgets entirely (web desktop regression).
+                  if (docProcessorWideShowsStatusSlots(
+                    isWide: isWide,
+                    hasStatusOrProcessing:
+                        _status.isNotEmpty || _processing,
+                    hasBatch: _batchStatus != null,
+                  )) ...[
+                    if (_status.isNotEmpty || _processing) ...[
+                      _buildStatusLog(),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_batchStatus != null) ...[
+                      _buildBatchResultSection(
+                        contentWidth: contentWidth,
+                        isCompact: false,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_lastResult != null) ...[
+                      _buildResultSection(),
+                      const SizedBox(height: 16),
+                    ],
+                  ],
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -672,8 +697,8 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                         ),
                       ),
                     ],
-                  )
-                else if (compactHasBatch) ...[
+                  ),
+                ] else if (compactHasBatch) ...[
                   // Results-first, then restore upload + parser + capabilities.
                   if (_status.isNotEmpty || _processing) ...[
                     _buildStatusLog(),

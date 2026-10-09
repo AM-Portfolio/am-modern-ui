@@ -394,6 +394,9 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
       return GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {
+          // Prefer AppShell fullscreen overlay when wired.
+          if (MobileSearchScope.tryOpenGlobalSearch(context)) return;
+          // Fallback for hosts without shell overlay.
           MobileSearchScope.setOpen(context, true);
           setState(() => _mobileSearchOpen = true);
         },
@@ -592,22 +595,30 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
                         duration: const Duration(milliseconds: 250),
                         switchInCurve: Curves.easeOutCubic,
                         switchOutCurve: Curves.easeInCubic,
-                        child: _mobileSearchOpen && widget.enableMobileSearch
-                            ? MobileInlineSearchField(
-                                key: const ValueKey('module-search'),
-                                items: MobileSearchScope.itemsOf(context),
-                                onClose: () {
-                                  MobileSearchScope.setOpen(context, false);
-                                  setState(() => _mobileSearchOpen = false);
-                                },
-                              )
-                            : KeyedSubtree(
-                                key: const ValueKey('module-pills'),
-                                child: _buildMobilePillRowWithSearch(
-                                  context,
-                                  flatItems,
-                                ),
+                        child: () {
+                          final scope = MobileSearchScope.maybeOf(context);
+                          final shellHandlesSearch = scope?.liveSearch != null;
+                          // Shell hosts fullscreen overlay — keep pill strip.
+                          if (shellHandlesSearch ||
+                              !_mobileSearchOpen ||
+                              !widget.enableMobileSearch) {
+                            return KeyedSubtree(
+                              key: const ValueKey('module-pills'),
+                              child: _buildMobilePillRowWithSearch(
+                                context,
+                                flatItems,
                               ),
+                            );
+                          }
+                          return MobileInlineSearchField(
+                            key: const ValueKey('module-search'),
+                            items: MobileSearchScope.itemsOf(context),
+                            onClose: () {
+                              MobileSearchScope.setOpen(context, false);
+                              setState(() => _mobileSearchOpen = false);
+                            },
+                          );
+                        }(),
                       ),
                     if (widget.mobileStickyHeader != null && !_mobileSearchOpen)
                       widget.mobileStickyHeader!,

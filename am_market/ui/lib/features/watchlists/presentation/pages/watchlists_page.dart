@@ -19,8 +19,6 @@ class WatchlistsPage extends ConsumerStatefulWidget {
 
 class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
   String? _selectedWatchlistId;
-  String _watchlistSearchQuery = '';
-  final TextEditingController _watchlistSearchController = TextEditingController();
 
   @override
   void initState() {
@@ -28,17 +26,6 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(watchlistsProvider.notifier).refresh();
     });
-    _watchlistSearchController.addListener(() {
-      setState(() {
-        _watchlistSearchQuery = _watchlistSearchController.text.trim().toLowerCase();
-      });
-    });
-  }
-
-  @override
-  void dispose() {
-    _watchlistSearchController.dispose();
-    super.dispose();
   }
 
   @override
@@ -69,11 +56,7 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                 return const Center(child: Text('No watchlists available.'));
               }
 
-              // Filter watchlists by search
-              final filteredWatchlists = watchlists.where((w) {
-                if (_watchlistSearchQuery.isEmpty) return true;
-                return w.name.toLowerCase().contains(_watchlistSearchQuery);
-              }).toList();
+              final filteredWatchlists = watchlists;
 
               // For Desktop: select first if none selected
               if (!isMobile && (_selectedWatchlistId == null || !watchlists.any((w) => w.id == _selectedWatchlistId))) {
@@ -192,32 +175,6 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
               ),
             ),
           ],
-        ),
-        const SizedBox(height: 16),
-        // Search watchlists...
-        TextField(
-          controller: _watchlistSearchController,
-          style: TextStyle(color: colors.textPrimary, fontSize: 13),
-          decoration: InputDecoration(
-            hintText: 'Search watchlists...',
-            hintStyle: TextStyle(color: colors.textSecondary.withValues(alpha: 0.6), fontSize: 13),
-            prefixIcon: Icon(Icons.search, size: 18, color: colors.textSecondary),
-            filled: true,
-            fillColor: colors.surface.withValues(alpha: 0.6),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: colors.border.withValues(alpha: 0.5)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: colors.border.withValues(alpha: 0.5)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: ModuleColors.market, width: 1.2),
-            ),
-          ),
         ),
         const SizedBox(height: 14),
 
