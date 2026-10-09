@@ -138,10 +138,20 @@ class ConfigService {
 
   static Future<Map<String, dynamic>> _loadMergedConfig() async {
     // Native apps cannot fetch /config*.json from file:/// — skip that path.
+    // Google / GrowthBook come from dart-defines (AM_GOOGLE_CLIENT_ID, etc.).
     if (!kIsWeb && _httpOrigin() == null) {
+      if (_envFromDefine.isNotEmpty) {
+        _resolvedEnv = _normalizeEnvLabel(_envFromDefine);
+      }
       return <String, dynamic>{
         'domain': _nativeFallbackDomain(),
         'services': <String, dynamic>{},
+        if (_googleClientIdFromDefine.isNotEmpty)
+          'google': <String, dynamic>{
+            'webClientId': _googleClientIdFromDefine,
+            if (_googleIosClientIdFromDefine.isNotEmpty)
+              'iosClientId': _googleIosClientIdFromDefine,
+          },
       };
     }
 

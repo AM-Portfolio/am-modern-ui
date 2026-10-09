@@ -73,6 +73,9 @@ class GoogleSignInService {
 
   Future<GoogleSignInAccount?> signIn() async {
     try {
+      if (_serverClientId.isEmpty) {
+        throw AuthException(AuthConstants.googleSignInNotConfigured);
+      }
       CommonLogger.info('Google Sign-In (IO): starting native flow');
       final account = await _client.signIn();
       if (account == null) {
