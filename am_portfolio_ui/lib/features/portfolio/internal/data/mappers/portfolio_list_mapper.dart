@@ -21,8 +21,9 @@ class PortfolioListMapper {
           .map(
             (itemDto) {
               String name = itemDto.portfolioName;
-              final lower = name.toLowerCase();
-              if (lower.contains('grow')) {
+              final lower = name.toLowerCase().trim();
+              // Exact Grow aliases only — avoid renaming "Growth Fund" → Groww
+              if (lower == 'grow' || lower == 'groww') {
                 name = 'Groww';
               } else if (lower.contains('zerodha')) {
                 name = 'Zerodha';
