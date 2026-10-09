@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:am_design_system/core/navigation/app_web_navigation.dart';
 import 'package:am_design_system/core/theme/app_glassmorphism_v2.dart';
+import 'package:am_design_system/core/theme/app_colors.dart';
 import 'package:am_design_system/core/theme/app_colors_theme.dart';
 import 'package:am_design_system/core/theme/color_extensions.dart';
 import 'package:am_design_system/shared/widgets/navigation/sidebar_item.dart';
@@ -60,8 +61,9 @@ class GlobalSidebar extends StatelessWidget {
   Widget build(BuildContext context) {
     // Thin strip width
     const double width = 80.0; // Slightly wider for better spacing
-    final surface = Theme.of(context).extension<AppColorsTheme>()?.surface ??
-        (isDarkMode ? const Color(0xFF1a1a2e) : Colors.white);
+    final themeColors = Theme.of(context).extension<AppColorsTheme>();
+    final surface = themeColors?.surface ??
+        (isDarkMode ? AppColors.darkSurface : AppColors.lightSurface);
 
     return AppGlassmorphismV2.glassPrism(
       isDark: isDarkMode,
@@ -86,13 +88,11 @@ class GlobalSidebar extends StatelessWidget {
                 highlight: highlightSearch,
                 highlightColor: searchHighlightColor ??
                     _getIconColor(activeNavItem) ??
-                    const Color(0xFF6C5DD3),
-                iconColor: Theme.of(context)
-                        .extension<AppColorsTheme>()
-                        ?.textSecondary ??
+                    AppColors.primary,
+                iconColor: themeColors?.textSecondary ??
                     (isDarkMode
-                        ? const Color(0xB3FFFFFF)
-                        : const Color(0x8A000000)),
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondaryLight),
               ),
             ],
 
@@ -111,7 +111,8 @@ class GlobalSidebar extends StatelessWidget {
                         item: item,
                         isDark: isDarkMode,
                         isActive: activeNavItem == item.title,
-                        accentColor: _getIconColor(item.title) ?? const Color(0xFF6C5DD3),
+                        accentColor:
+                            _getIconColor(item.title) ?? AppColors.primary,
                         navPath: moduleShareUrls?[item.title],
                         onTap: () => onNavigate(item.title),
                         onLongPress: moduleShareUrls?[item.title] == null
@@ -204,7 +205,9 @@ class GlobalSidebar extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.transparent,
                 border: Border.all(
-                  color: isDarkMode ? Colors.white.withOpacity(0.1) : const Color(0xFF6C5DD3).withOpacity(0.2)
+                  color: isDarkMode
+                      ? Colors.white.withOpacity(0.1)
+                      : AppColors.primary.withOpacity(0.2)
                 ),
               ),
               child: Icon(

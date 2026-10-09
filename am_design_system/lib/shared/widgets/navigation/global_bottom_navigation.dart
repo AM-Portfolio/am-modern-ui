@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:am_design_system/core/navigation/app_web_navigation.dart';
 import 'package:am_design_system/core/theme/app_colors.dart';
+import 'package:am_design_system/core/theme/app_colors_theme.dart';
 import 'package:am_design_system/core/module/module_config.dart';
 import 'package:am_design_system/shared/widgets/navigation/sidebar_item.dart';
 import 'package:am_design_system/shared/widgets/navigation/navigation_chrome.dart';
@@ -142,9 +143,12 @@ class _GlobalBottomNavigationState extends State<GlobalBottomNavigation> {
                             Icons.search_rounded,
                             color: widget.highlightSearch
                                 ? accent
-                                : (widget.isDarkMode
-                                    ? Colors.white70
-                                    : Colors.black54),
+                                : (Theme.of(context)
+                                        .extension<AppColorsTheme>()
+                                        ?.textSecondary ??
+                                    (widget.isDarkMode
+                                        ? AppColors.textSecondaryDark
+                                        : AppColors.textSecondaryLight)),
                           ),
                         ),
                       ),

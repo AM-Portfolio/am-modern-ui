@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:am_design_system/core/module/module_color_provider.dart';
+import 'package:am_design_system/core/theme/app_colors_theme.dart';
 import 'package:flutter/material.dart';
 
 import 'am_command_palette.dart';
@@ -192,9 +193,13 @@ class _MobileGlobalSearchOverlayState extends State<MobileGlobalSearchOverlay>
         ? {'Suggested': filtered}
         : _grouped(filtered);
 
+    final themeColors = theme.extension<AppColorsTheme>();
+    final baseSurface = isDark
+        ? (themeColors?.scaffoldBackground ?? scheme.surface)
+        : (themeColors?.surface ?? scheme.surface);
     final surface = Color.alphaBlend(
       accent.withValues(alpha: isDark ? 0.10 : 0.05),
-      isDark ? const Color(0xFF0E0E12) : scheme.surface,
+      baseSurface,
     );
 
     return PopScope(

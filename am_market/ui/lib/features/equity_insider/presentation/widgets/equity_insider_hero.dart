@@ -426,53 +426,55 @@ Widget _buildWatchlistButton(
       final addedToWatchlistName =
           isAdded ? statuses.firstWhere((s) => s.containsSymbol).name : '';
 
-      if (isAdded) {
-        return SizedBox(
-          height: 28,
-          child: FilledButton.icon(
-            onPressed: () async {
-              final confirm = await ConfirmationDialog.show(
-                context: context,
-                title: 'Remove Stock',
-                subtitle: 'Watchlist Management',
-                message:
-                    'Are you sure you want to remove $symbol from $addedToWatchlistName?',
-                icon: Icons.bookmark_remove_rounded,
-                confirmText: 'Remove',
-                isDestructive: true,
-              );
-              if (confirm) {
-                final wid =
-                    statuses.firstWhere((s) => s.containsSymbol).watchlistId;
-                ref.read(watchlistsProvider.notifier).removeStock(wid, symbol);
-                ref.invalidate(watchlistCheckStatusProvider(symbol));
-              }
-            },
-            icon: const Icon(
-              Icons.bookmark_added_rounded,
-              size: 14,
-              color: Colors.white,
-            ),
-            label: Text(
-              compact ? 'Added' : 'Already Added',
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
+        if (isAdded) {
+          final onPrimary = context.colors.actionPrimaryFg;
+          return SizedBox(
+            height: 28,
+            child: FilledButton.icon(
+              onPressed: () async {
+                final confirm = await ConfirmationDialog.show(
+                  context: context,
+                  title: 'Remove Stock',
+                  subtitle: 'Watchlist Management',
+                  message:
+                      'Are you sure you want to remove $symbol from $addedToWatchlistName?',
+                  icon: Icons.bookmark_remove_rounded,
+                  confirmText: 'Remove',
+                  isDestructive: true,
+                );
+                if (confirm) {
+                  final wid =
+                      statuses.firstWhere((s) => s.containsSymbol).watchlistId;
+                  ref.read(watchlistsProvider.notifier).removeStock(wid, symbol);
+                  ref.invalidate(watchlistCheckStatusProvider(symbol));
+                }
+              },
+              icon: Icon(
+                Icons.bookmark_added_rounded,
+                size: 14,
+                color: onPrimary,
+              ),
+              label: Text(
+                compact ? 'Added' : 'Already Added',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: onPrimary,
+                ),
+              ),
+              style: FilledButton.styleFrom(
+                backgroundColor: ModuleColors.market,
+                foregroundColor: onPrimary,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                visualDensity: VisualDensity.compact,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                ),
               ),
             ),
-            style: FilledButton.styleFrom(
-              backgroundColor: ModuleColors.market,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-              visualDensity: VisualDensity.compact,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
-              ),
-            ),
-          ),
-        );
-      }
+          );
+        }
 
       return SizedBox(
         height: 28,
