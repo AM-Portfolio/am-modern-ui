@@ -519,7 +519,9 @@ class ApiService {
     } catch (e) {
       CommonLogger.error("Error fetching unified movers",
           tag: "ApiService.fetchMoversUnified", error: e);
-      return {'gainers': [], 'losers': []};
+      // An endpoint failure is different from a genuine empty market result.
+      // Let the caller render its existing error state instead of an empty list.
+      rethrow;
     }
   }
 
