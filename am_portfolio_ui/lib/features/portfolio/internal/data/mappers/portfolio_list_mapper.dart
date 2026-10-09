@@ -16,7 +16,7 @@ class PortfolioListMapper {
 
     try {
       // Map individual portfolio items
-      final portfolioItems = dto.portfolios
+      final mapped = dto.portfolios
           .where((itemDto) => itemDto.kind?.toUpperCase() != 'DELETED')
           .map(
             (itemDto) {
@@ -52,6 +52,22 @@ class PortfolioListMapper {
             },
           )
           .toList();
+
+      // Same broker book can arrive twice (GROW + GROWW Mongo rows). Baskets stay distinct.
+      final portfolioItems = <PortfolioItem>[];
+      final seenBrokerNames = <String>{};
+      for (final item in mapped) {
+        if (item.isBasket) {
+          portfolioItems.add(item);
+          continue;
+        }
+        final key = item.portfolioName.trim().toLowerCase();
+        if (seenBrokerNames.contains(key)) {
+          continue;
+        }
+        seenBrokerNames.add(key);
+        portfolioItems.add(item);
+      }
 
       // Create domain entity
       final portfolioList = PortfolioList(
