@@ -62,6 +62,10 @@ class AsraxIpoSummaryDto {
   final String? biddingEndDate;
   final String? totalSubscription;
   final List<AsraxInvestorCategoryDto>? eligibleInvestors;
+  final int? lotSize;
+  final int? minimumQuantity;
+  final double? cutOffPrice;
+  final double? minInvestment;
 
   AsraxIpoSummaryDto({
     required this.id,
@@ -78,6 +82,10 @@ class AsraxIpoSummaryDto {
     this.biddingEndDate,
     this.totalSubscription,
     this.eligibleInvestors,
+    this.lotSize,
+    this.minimumQuantity,
+    this.cutOffPrice,
+    this.minInvestment,
   });
 
   factory AsraxIpoSummaryDto.fromJson(Map<String, dynamic> json) {
@@ -98,22 +106,47 @@ class AsraxIpoSummaryDto {
       eligibleInvestors: (json['eligibleInvestors'] as List<dynamic>?)
           ?.map((e) => AsraxInvestorCategoryDto.fromJson(e as Map<String, dynamic>))
           .toList(),
+      lotSize: json['lotSize'] != null ? int.tryParse(json['lotSize'].toString()) : null,
+      minimumQuantity: json['minimumQuantity'] != null ? int.tryParse(json['minimumQuantity'].toString()) : null,
+      cutOffPrice: json['cutOffPrice'] != null ? double.tryParse(json['cutOffPrice'].toString()) : null,
+      minInvestment: (json['minInvestment'] ?? json['minimumInvestment'] ?? json['min_investment']) != null
+          ? double.tryParse((json['minInvestment'] ?? json['minimumInvestment'] ?? json['min_investment']).toString())
+          : null,
     );
+  }
+
+  /// Computed minimum investment amount in INR.
+  double? get calculatedMinInvestment {
+    if (minInvestment != null && minInvestment! > 0) return minInvestment;
+    final qty = (minimumQuantity ?? lotSize)?.toDouble();
+    final price = cutOffPrice ?? maximumPrice ?? minimumPrice;
+    if (qty != null && price != null && qty > 0 && price > 0) {
+      return qty * price;
+    }
+    return null;
   }
 }
 
 class AsraxIpoTimelineDto {
-  final String? biddingStartDate;
-  final String? biddingEndDate;
+  final String? preApplyStartDate;
+  final String? applicationStartDate;
+  final String? applicationEndDate;
+  final String? allotmentStartDate;
   final String? allotmentDate;
   final String? refundInitiationDate;
   final String? dematTransferDate;
   final String? listingDate;
   final String? mandateEndDate;
 
+  // Backward compatibility aliases
+  String? get biddingStartDate => applicationStartDate;
+  String? get biddingEndDate => applicationEndDate;
+
   AsraxIpoTimelineDto({
-    this.biddingStartDate,
-    this.biddingEndDate,
+    this.preApplyStartDate,
+    this.applicationStartDate,
+    this.applicationEndDate,
+    this.allotmentStartDate,
     this.allotmentDate,
     this.refundInitiationDate,
     this.dematTransferDate,
@@ -123,8 +156,10 @@ class AsraxIpoTimelineDto {
 
   factory AsraxIpoTimelineDto.fromJson(Map<String, dynamic> json) {
     return AsraxIpoTimelineDto(
-      biddingStartDate: json['biddingStartDate'] as String?,
-      biddingEndDate: json['biddingEndDate'] as String?,
+      preApplyStartDate: json['preApplyStartDate'] as String?,
+      applicationStartDate: (json['applicationStartDate'] ?? json['biddingStartDate']) as String?,
+      applicationEndDate: (json['applicationEndDate'] ?? json['biddingEndDate']) as String?,
+      allotmentStartDate: json['allotmentStartDate'] as String?,
       allotmentDate: json['allotmentDate'] as String?,
       refundInitiationDate: json['refundInitiationDate'] as String?,
       dematTransferDate: json['dematTransferDate'] as String?,
@@ -136,23 +171,34 @@ class AsraxIpoTimelineDto {
 
 class AsraxIpoRegistrarDto {
   final String? name;
+  final String? contactName;
   final String? phone;
   final String? email;
   final String? websiteUrl;
+  final String? registrarKey;
+
+  // Backward compatibility aliases
+  String? get contactPerson => contactName;
+  String? get contactNumber => phone;
+  String? get website => websiteUrl;
 
   AsraxIpoRegistrarDto({
     this.name,
+    this.contactName,
     this.phone,
     this.email,
     this.websiteUrl,
+    this.registrarKey,
   });
 
   factory AsraxIpoRegistrarDto.fromJson(Map<String, dynamic> json) {
     return AsraxIpoRegistrarDto(
       name: json['name'] as String?,
-      phone: json['phone'] as String?,
+      contactName: (json['contactName'] ?? json['contactPerson']) as String?,
+      phone: (json['contactNumber'] ?? json['phone']) as String?,
       email: json['email'] as String?,
-      websiteUrl: json['websiteUrl'] as String?,
+      websiteUrl: (json['website'] ?? json['websiteUrl']) as String?,
+      registrarKey: json['registrarKey'] as String?,
     );
   }
 }
@@ -185,6 +231,7 @@ class AsraxIpoDetailsDto {
   final AsraxIpoRegistrarDto? registrarInfo;
   final String? totalSubscription;
   final List<AsraxInvestorCategoryDto>? eligibleInvestors;
+  final double? minInvestment;
 
   AsraxIpoDetailsDto({
     required this.id,
@@ -214,6 +261,7 @@ class AsraxIpoDetailsDto {
     this.registrarInfo,
     this.totalSubscription,
     this.eligibleInvestors,
+    this.minInvestment,
   });
 
   factory AsraxIpoDetailsDto.fromJson(Map<String, dynamic> json) {
@@ -234,9 +282,9 @@ class AsraxIpoDetailsDto {
       dailyEndTime: json['dailyEndTime'] as String?,
       faceValue: (json['faceValue'] as num?)?.toDouble(),
       tickSize: (json['tickSize'] as num?)?.toDouble(),
-      lotSize: json['lotSize'] as int?,
-      minimumQuantity: json['minimumQuantity'] as int?,
-      cutOffPrice: (json['cutOffPrice'] as num?)?.toDouble(),
+      lotSize: json['lotSize'] != null ? int.tryParse(json['lotSize'].toString()) : null,
+      minimumQuantity: json['minimumQuantity'] != null ? int.tryParse(json['minimumQuantity'].toString()) : null,
+      cutOffPrice: json['cutOffPrice'] != null ? double.tryParse(json['cutOffPrice'].toString()) : null,
       listingPrice: (json['listingPrice'] as num?)?.toDouble(),
       listingExchange: json['listingExchange'] as String?,
       rhpUrl: json['rhpUrl'] as String?,
@@ -251,6 +299,20 @@ class AsraxIpoDetailsDto {
       eligibleInvestors: (json['eligibleInvestors'] as List<dynamic>?)
           ?.map((e) => AsraxInvestorCategoryDto.fromJson(e as Map<String, dynamic>))
           .toList(),
+      minInvestment: (json['minInvestment'] ?? json['minimumInvestment'] ?? json['min_investment']) != null
+          ? double.tryParse((json['minInvestment'] ?? json['minimumInvestment'] ?? json['min_investment']).toString())
+          : null,
     );
+  }
+
+  /// Computed minimum investment amount in INR.
+  double? get calculatedMinInvestment {
+    if (minInvestment != null && minInvestment! > 0) return minInvestment;
+    final qty = (minimumQuantity ?? lotSize)?.toDouble();
+    final price = cutOffPrice ?? maximumPrice ?? minimumPrice;
+    if (qty != null && price != null && qty > 0 && price > 0) {
+      return qty * price;
+    }
+    return null;
   }
 }

@@ -1,5 +1,6 @@
 import 'package:am_auth_ui/core/network/auth_interceptor.dart';
 import 'package:am_auth_ui/core/services/secure_storage_service.dart';
+import 'package:am_auth_ui/core/services/token_refresh_service.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -18,11 +19,17 @@ class _ThrowingStorage extends Fake implements SecureStorageService {
   }
 }
 
+class _FakeTokenRefreshService extends Fake implements TokenRefreshService {}
+
 void main() {
   group('AuthInterceptor', () {
     test('copies unmodifiable headers before writing Authorization', () async {
       final dio = Dio();
-      dio.interceptors.add(AuthInterceptor(_FakeStorage('tok-123')));
+      dio.interceptors.add(AuthInterceptor(
+        _FakeStorage('tok-123'),
+        dio: dio,
+        tokenRefreshService: _FakeTokenRefreshService(),
+      ));
       dio.interceptors.add(
         InterceptorsWrapper(
           onRequest: (options, handler) {
@@ -48,7 +55,11 @@ void main() {
 
     test('rejects instead of hanging when token lookup fails', () async {
       final dio = Dio();
-      dio.interceptors.add(AuthInterceptor(_ThrowingStorage()));
+      dio.interceptors.add(AuthInterceptor(
+        _ThrowingStorage(),
+        dio: dio,
+        tokenRefreshService: _FakeTokenRefreshService(),
+      ));
 
       await expectLater(
         dio.fetch(RequestOptions(path: '/v1/ai/chat')),

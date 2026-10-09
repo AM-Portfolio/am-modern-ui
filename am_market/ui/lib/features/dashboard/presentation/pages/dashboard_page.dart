@@ -125,8 +125,7 @@ class MarketContent extends ConsumerStatefulWidget {
 
 class _MarketContentState extends ConsumerState<MarketContent> {
   late SwipeNavigationController _swipeController;
-  final GlobalKey<UserDashboardPageState> _dashboardKey =
-      GlobalKey<UserDashboardPageState>();
+  late final Widget _dashboardPage = const UserDashboardPage();
   final GlobalKey<EquityInsiderPageState> _equityInsiderKey =
       GlobalKey<EquityInsiderPageState>();
 
@@ -190,7 +189,11 @@ class _MarketContentState extends ConsumerState<MarketContent> {
   void initState() {
     super.initState();
     _initializeSwipeController();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _bindPriceService());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _syncTabFromUrl(notify: false);
+      _bindPriceService();
+    });
   }
 
   Future<void> _bindPriceService() async {
@@ -207,12 +210,16 @@ class _MarketContentState extends ConsumerState<MarketContent> {
   void _initializeSwipeController() {
     // Avoid MediaQuery in initState (InheritedWidget not ready yet).
     // First build() recalculates includeAllIndices from width.
+    // Seed from URL slug so remount after context.go lands on the right tab
+    // (mobile keeps All Indices so itemsChanged alone never syncs).
+    final items = _buildNavigationItems(
+      context.read<MarketProvider>(),
+      context.read<view_mode.ViewModeProvider>(),
+      includeAllIndices: true,
+    );
     _swipeController = SwipeNavigationController(
-      items: _buildNavigationItems(
-        context.read<MarketProvider>(),
-        context.read<view_mode.ViewModeProvider>(),
-        includeAllIndices: true,
-      ),
+      items: items,
+      initialIndex: _indexForSlug(widget.initialTab, items),
     );
 
     _swipeController.addListener(() {
@@ -233,7 +240,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     super.didUpdateWidget(oldWidget);
     if (widget.initialTab != oldWidget.initialTab) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _syncTabFromUrl();
+        if (mounted) _syncTabFromUrl(notify: false);
       });
     }
   }
@@ -264,14 +271,14 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         isIpoEnabled: isIpoEnabled,
       );
       final itemsChanged = _hasItemsChanged(newItems);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          if (itemsChanged) {
+      if (itemsChanged) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
             _swipeController.updateItems(newItems);
+            _syncTabFromUrl(notify: false, isMobile: isMobile);
           }
-          _syncTabFromUrl(isMobile: isMobile);
-        }
-      });
+        });
+      }
 
       return UnifiedSidebarScaffold(
         module: ModuleType.market,
@@ -289,14 +296,14 @@ class _MarketContentState extends ConsumerState<MarketContent> {
           includeAllIndices: isMobile,
           isIpoEnabled: isIpoEnabled,
         ),
-        body: SwipeablePageView(
-          key: const PageStorageKey('market_page_info'),
-          // Always horizontal: mouse wheel / vertical drag scrolls content only.
-          // Left/right swipe (or sidebar/pills) changes market sections.
-          scrollDirection: Axis.horizontal,
-          controller: _swipeController,
-          showIndicator: false,
-        ),
+        body: _swipeController.items.isEmpty
+            ? const Center(child: CircularProgressIndicator())
+            : SwipeablePageView(
+                key: const PageStorageKey('market_page_info'),
+                scrollDirection: Axis.horizontal,
+                controller: _swipeController,
+                showIndicator: false,
+              ),
       );
     },
     );
@@ -416,10 +423,9 @@ class _MarketContentState extends ConsumerState<MarketContent> {
             isSelected: currentIndex == i,
             accentColor: accentColor,
             onTap: () {
+              // Listener calls _notifyTabChanged → onTabChanged(slug).
               _swipeController.navigateTo(i);
-              provider.selectIndex(
-                indexName,
-              );
+              provider.selectIndex(indexName);
             },
           ),
         );
@@ -525,7 +531,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
       }
       _swipeController.navigateTo(index);
       context.read<MarketProvider>().selectIndex(title);
-      widget.onTabChanged?.call(_slugForTitle(title));
+      // URL sync comes from the swipe controller listener (_notifyTabChanged).
     },
   );
 
@@ -618,7 +624,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
           title: 'IPO Center',
           subtitle: 'Upcoming & listed IPOs',
           icon: Icons.new_releases_rounded,
-          page: wrap(const IpoLandingScreen()),
+          page: wrap(const IpoLandingScreen(embedded: true)),
           accentColor: accentColor,
         ),
     ];
@@ -709,7 +715,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         title: 'Dashboard',
         subtitle: 'Overview',
         icon: Icons.home_rounded,
-        page: wrap(UserDashboardPage(key: _dashboardKey)),
+        page: wrap(_dashboardPage),
         accentColor: accentColor,
       ),
       NavigationItem(
@@ -738,7 +744,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
           title: 'IPO Center',
           subtitle: 'Upcoming & listed IPOs',
           icon: Icons.new_releases_rounded,
-          page: wrap(const IpoLandingScreen()),
+          page: wrap(const IpoLandingScreen(embedded: true)),
           accentColor: accentColor,
         ),
       NavigationItem(

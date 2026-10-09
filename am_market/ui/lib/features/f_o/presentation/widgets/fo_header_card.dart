@@ -1,5 +1,5 @@
-import 'package:am_design_system/am_design_system.dart';
 import 'package:am_common/am_common.dart';
+import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/core/styles/market_theme_extension.dart';
 import 'package:am_market_ui/features/f_o/providers/futures_provider.dart';
 import 'package:am_market_ui/features/f_o/providers/option_chain_provider.dart';
@@ -20,8 +20,7 @@ class FoHeaderCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
     final marketTheme = context.marketTheme;
-    
-    // Watch real market streaming status
+
     final openAsync = ref.watch(marketIsOpenProvider);
     final isMarketOpen = openAsync.maybeWhen(data: (v) => v, orElse: () => false);
     final statusObj = ref.watch(marketStatusProvider);
@@ -33,7 +32,6 @@ class FoHeaderCard extends ConsumerWidget {
             : 'Closed');
     final statusColor = isMarketOpen ? marketTheme.positive : marketTheme.negative;
 
-    // Watch option chain data to render dynamic symbol metrics
     final chainAsync = ref.watch(optionChainProvider);
     final chainData = chainAsync.maybeWhen(data: (d) => d, orElse: () => null);
 
@@ -52,17 +50,24 @@ class FoHeaderCard extends ConsumerWidget {
     final contractPChange = (activeContract?['pChange'] as num?)?.toDouble() ?? 0.0;
 
     final chainLtp = (chainData?['underlyingLtp'] as num?)?.toDouble() ?? 0.0;
-    final chainChange = (chainData?['underlyingChange'] ?? chainData?['change'] as num?)?.toDouble() ?? 0.0;
-    final chainPChange = (chainData?['underlyingPChange'] ?? chainData?['pChange'] as num?)?.toDouble() ?? 0.0;
+    final chainChange =
+        (chainData?['underlyingChange'] ?? chainData?['change'] as num?)
+                ?.toDouble() ??
+            0.0;
+    final chainPChange =
+        (chainData?['underlyingPChange'] ?? chainData?['pChange'] as num?)
+                ?.toDouble() ??
+            0.0;
 
     final ltp = chainLtp > 0 ? chainLtp : (contractLtp > 0 ? contractLtp : 0.0);
-    final change = chainChange != 0.0 ? chainChange : (contractChange != 0.0 ? contractChange : 0.0);
-    final pChange = chainPChange != 0.0 ? chainPChange : (contractPChange != 0.0 ? contractPChange : 0.0);
+    final change =
+        chainChange != 0.0 ? chainChange : (contractChange != 0.0 ? contractChange : 0.0);
+    final pChange =
+        chainPChange != 0.0 ? chainPChange : (contractPChange != 0.0 ? contractPChange : 0.0);
 
     final isPositive = change >= 0;
     final deltaColor = isPositive ? marketTheme.positive : marketTheme.negative;
 
-    // Calculate dynamic IV & PCR metrics from chain
     final strikes = (chainData?['strikes'] as List<dynamic>?) ?? [];
     double totalCallOi = 0;
     double totalPutOi = 0;
@@ -75,75 +80,111 @@ class FoHeaderCard extends ConsumerWidget {
         final put = s['put'] as Map<String, dynamic>?;
         if (call != null) {
           totalCallOi += (call['oi'] as num?)?.toDouble() ?? 0.0;
-          final iv = ((call['greeks'] as Map<String, dynamic>?)?['iv'] as num?)?.toDouble() ?? 0.0;
-          if (iv > 0) { totalIv += iv; ivCount++; }
+          final iv =
+              ((call['greeks'] as Map<String, dynamic>?)?['iv'] as num?)?.toDouble() ??
+                  0.0;
+          if (iv > 0) {
+            totalIv += iv;
+            ivCount++;
+          }
         }
         if (put != null) {
           totalPutOi += (put['oi'] as num?)?.toDouble() ?? 0.0;
-          final iv = ((put['greeks'] as Map<String, dynamic>?)?['iv'] as num?)?.toDouble() ?? 0.0;
-          if (iv > 0) { totalIv += iv; ivCount++; }
+          final iv =
+              ((put['greeks'] as Map<String, dynamic>?)?['iv'] as num?)?.toDouble() ??
+                  0.0;
+          if (iv > 0) {
+            totalIv += iv;
+            ivCount++;
+          }
         }
       }
     }
 
-    final pcr = totalCallOi > 0 ? (totalPutOi / totalCallOi).toStringAsFixed(2) : '0.54';
-    final avgIv = ivCount > 0 ? '${(totalIv / ivCount).toStringAsFixed(1)}%' : '493.4%';
-    final apiLotSize = (chainData?['lotSize'] as num?)?.toInt() ?? (activeContract?['lot_size'] as num?)?.toInt();
+    final pcr =
+        totalCallOi > 0 ? (totalPutOi / totalCallOi).toStringAsFixed(2) : '0.54';
+    final avgIv =
+        ivCount > 0 ? '${(totalIv / ivCount).toStringAsFixed(1)}%' : '493.4%';
+    final apiLotSize = (chainData?['lotSize'] as num?)?.toInt() ??
+        (activeContract?['lot_size'] as num?)?.toInt();
     final firstStrikeLot = strikes.isNotEmpty && strikes.first is Map<String, dynamic>
-        ? ((strikes.first['call']?['lotSize'] ?? strikes.first['put']?['lotSize']) as num?)?.toInt()
+        ? ((strikes.first['call']?['lotSize'] ?? strikes.first['put']?['lotSize'])
+                as num?)
+            ?.toInt()
         : null;
     final lotSizeStr = (apiLotSize != null && apiLotSize > 0)
         ? '$apiLotSize'
-        : ((firstStrikeLot != null && firstStrikeLot > 0) ? '$firstStrikeLot' : '65');
+        : ((firstStrikeLot != null && firstStrikeLot > 0)
+            ? '$firstStrikeLot'
+            : '65');
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      decoration: BoxDecoration(
-        color: colors.surface.withValues(alpha: 0.5),
-        border: Border.all(color: colors.border.withValues(alpha: 0.5)),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 800;
+        return Container(
+          padding: EdgeInsets.all(isMobile ? 12 : 16),
+          margin: EdgeInsets.fromLTRB(
+            isMobile ? 12 : 16,
+            0,
+            isMobile ? 12 : 16,
+            8,
+          ),
+          decoration: BoxDecoration(
+            color: colors.surface.withValues(alpha: 0.5),
+            border: Border.all(color: colors.border.withValues(alpha: 0.5)),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  if (onBack != null) ...[
-                    IconButton(
-                      icon: Icon(Icons.arrow_back_rounded, color: colors.textPrimary, size: 20),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: onBack,
+              if (isMobile) ...[
+                Row(
+                  children: [
+                    if (onBack != null) ...[
+                      IconButton(
+                        icon: Icon(
+                          Icons.arrow_back_rounded,
+                          color: colors.textPrimary,
+                          size: 20,
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 40,
+                          minHeight: 40,
+                        ),
+                        onPressed: onBack,
+                      ),
+                      const SizedBox(width: 4),
+                    ],
+                    Expanded(
+                      child: Text(
+                        symbol,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: colors.textPrimary,
+                        ),
+                      ),
                     ),
-                    const SizedBox(width: 10),
                   ],
-                  Text(
-                    symbol,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '₹${ltp.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                  Row(
+                ),
+                const SizedBox(height: 8),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Row(
                     children: [
+                      Text(
+                        '₹${ltp.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
                       Icon(
                         isPositive ? Icons.arrow_upward : Icons.arrow_downward,
                         size: 14,
@@ -158,44 +199,129 @@ class FoHeaderCard extends ConsumerWidget {
                       ),
                     ],
                   ),
+                ),
+              ] else
+                Row(
+                  children: [
+                    if (onBack != null) ...[
+                      IconButton(
+                        icon: Icon(
+                          Icons.arrow_back_rounded,
+                          color: colors.textPrimary,
+                          size: 20,
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onPressed: onBack,
+                      ),
+                      const SizedBox(width: 10),
+                    ],
+                    Expanded(
+                      child: Text(
+                        symbol,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              '₹${ltp.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isPositive
+                                      ? Icons.arrow_upward
+                                      : Icons.arrow_downward,
+                                  size: 14,
+                                  color: deltaColor,
+                                ),
+                                Text(
+                                  '${change.toStringAsFixed(2)} (${pChange.toStringAsFixed(2)}%)',
+                                  style: TextStyle(
+                                    color: deltaColor,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 16,
+                runSpacing: 12,
+                alignment: WrapAlignment.spaceBetween,
+                children: [
+                  _buildMetric('Lot Size', lotSizeStr, colors),
+                  _buildMetric('IV', avgIv, colors),
+                  _buildMetric('PCR (OI)', pcr, colors),
+                  _buildMetric(
+                    'Market Status',
+                    statusText,
+                    colors,
+                    valueColor: statusColor,
+                  ),
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildMetric('Lot Size', lotSizeStr, colors),
-              _buildMetric('IV', avgIv, colors),
-              _buildMetric('PCR (OI)', pcr, colors),
-              _buildMetric('Market Status', statusText, colors, valueColor: statusColor),
-            ],
+        );
+      },
+    );
+  }
+
+  Widget _buildMetric(
+    String label,
+    String value,
+    AppColorsTheme colors, {
+    Color? valueColor,
+  }) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 72, maxWidth: 140),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: colors.textSecondary, fontSize: 12),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: valueColor ?? colors.textPrimary,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
           ),
         ],
       ),
     );
   }
-
-  Widget _buildMetric(String label, String value, AppColorsTheme colors, {Color? valueColor}) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: TextStyle(color: colors.textSecondary, fontSize: 12),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            color: valueColor ?? colors.textPrimary,
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
-        ),
-      ],
-    );
-  }
 }
-
-

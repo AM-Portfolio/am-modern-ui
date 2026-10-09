@@ -10,6 +10,7 @@ import 'dart:ui';
 import 'privacy_policy_page.dart';
 import 'terms_of_service_page.dart';
 import '../widgets/avatar_picker_sheet.dart';
+import '../../utils/user_id_format.dart';
 
 /// Profile and Settings page for user account management
 class ProfileSettingsPage extends StatefulWidget {
@@ -323,111 +324,292 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
   }
 
   Widget _buildProfileHeader(BuildContext context, bool isDark) {
+    final name = displayName?.trim() ?? '';
+    final hasName = name.isNotEmpty;
+    final scaffoldBg = Theme.of(context).scaffoldBackgroundColor;
+    final glowAlpha = isDark ? 0.5 : 0.4;
+
+    void openPicker() => showAvatarPickerSheet(
+          context: context,
+          userId: userId,
+          displayName: displayName,
+          remotePhotoUrl: photoUrl,
+        );
+
     return Column(
       children: [
         Material(
           color: Colors.transparent,
           child: InkWell(
             customBorder: const CircleBorder(),
-            onTap: () => showAvatarPickerSheet(
-              context: context,
-              userId: userId,
-              displayName: displayName,
-              remotePhotoUrl: photoUrl,
-            ),
+            onTap: openPicker,
             child: Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: ModuleColors.portfolio.withValues(alpha: 0.4),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
+                    color: ModuleColors.portfolio.withValues(alpha: glowAlpha),
+                    blurRadius: 24,
+                    spreadRadius: 2,
+                    offset: const Offset(0, 8),
+                  ),
+                  if (isPaidSubscription)
+                    BoxShadow(
+                      color: const Color(0xFFFFD700).withValues(alpha: 0.35),
+                      blurRadius: 28,
+                      spreadRadius: 2,
+                    ),
+                ],
+              ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: context.cardColor,
+                      border: isPaidSubscription
+                          ? Border.all(
+                              color: const Color(0xFFFFD700)
+                                  .withValues(alpha: 0.85),
+                              width: 2.5,
+                            )
+                          : null,
+                    ),
+                    child: UserAvatar(
+                      radius: 56,
+                      displayName: hasName ? name : userId,
+                      remotePhotoUrl: photoUrl,
+                      showEditBadge: false,
+                    ),
+                  ),
+                  if (isPaidSubscription)
+                    Positioned(
+                      top: -6,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFFE082), Color(0xFFFFB300)],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFFD700)
+                                  .withValues(alpha: 0.55),
+                              blurRadius: 12,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.workspace_premium_rounded,
+                          color: Color(0xFF5D4037),
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                  Positioned(
+                    right: -2,
+                    bottom: -2,
+                    child: Semantics(
+                      button: true,
+                      label: 'Change avatar',
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          customBorder: const CircleBorder(),
+                          onTap: openPicker,
+                          child: SizedBox(
+                            width: 44,
+                            height: 44,
+                            child: Center(
+                              child: Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: ModuleColors.portfolio,
+                                  border: Border.all(
+                                    color: scaffoldBg,
+                                    width: 2,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: ModuleColors.portfolio
+                                          .withValues(alpha: glowAlpha),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.photo_camera_rounded,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isDark ? context.cardColor : context.cardColor,
+            ),
+          ),
+        ),
+        if (isPaidSubscription) ...[
+          const SizedBox(height: AppSpacing.sm),
+          _buildProLogoBadge(context),
+        ],
+        if (hasName) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: context.text.pageTitle().copyWith(
+                  color: context.textPrimary,
+                  letterSpacing: 0.5,
                 ),
-                child: UserAvatar(
-                  radius: 56,
-                  displayName: displayName ?? userId,
-                  remotePhotoUrl: photoUrl,
-                  showEditBadge: true,
-                ),
+          ),
+        ],
+        const SizedBox(height: AppSpacing.sm),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'User ID',
+              style: context.text.caption().copyWith(
+                    color: context.textSecondary,
+                  ),
+            ),
+            const SizedBox(width: 4),
+            Tooltip(
+              message: 'Your unique account identifier',
+              child: Icon(
+                Icons.info_outline_rounded,
+                size: 14,
+                color: context.textSecondary,
               ),
             ),
-          ),
+          ],
         ),
-        const SizedBox(height: AppSpacing.sm),
-        TextButton.icon(
-          onPressed: () => showAvatarPickerSheet(
-            context: context,
-            userId: userId,
-            displayName: displayName,
-            remotePhotoUrl: photoUrl,
-          ),
-          icon: Icon(
-            Icons.photo_camera_outlined,
-            size: 16,
-            color: ModuleColors.portfolio,
-          ),
-          label: Text(
-            'Change avatar',
-            style: context.text.body().copyWith(
-              color: ModuleColors.portfolio,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Text(
-          displayName != null && displayName!.isNotEmpty
-              ? displayName!
-              : userId,
-          style: context.text.pageTitle().copyWith(
-            color: context.textPrimary,
-            letterSpacing: 0.5,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm + AppSpacing.xs,
-            vertical: 6,
-          ),
-          decoration: BoxDecoration(
-            color: context.colors.surface.withValues(alpha: 0.05),
-            borderRadius: AppRadii.dialog,
-            border: Border.all(
-              color: context.colors.border.withValues(alpha: 0.1),
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'User ID',
-                style: context.text.caption().copyWith(
-                  color: context.textSecondary,
-                ),
+        const SizedBox(height: 6),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(minHeight: 48),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: context.colors.surface.withValues(alpha: 0.06),
+              borderRadius: AppRadii.dialog,
+              border: Border.all(
+                color: ModuleColors.portfolio.withValues(alpha: 0.35),
               ),
-              const SizedBox(width: AppSpacing.sm),
-              InkWell(
-                onTap: () => _copyUserId(context, userId),
-                child: Icon(
-                  Icons.copy_rounded,
-                  size: 14,
+              boxShadow: [
+                BoxShadow(
+                  color: ModuleColors.portfolio.withValues(alpha: 0.08),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.badge_outlined,
+                  size: 18,
                   color: ModuleColors.portfolio,
                 ),
-              ),
-            ],
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    truncateUserId(userId),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.body(compact: true).copyWith(
+                          color: context.textPrimary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Semantics(
+                  button: true,
+                  label: 'Copy User ID',
+                  child: Material(
+                    color: ModuleColors.portfolio.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () => _copyUserId(context, userId),
+                      child: SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: Icon(
+                          Icons.copy_rounded,
+                          size: 18,
+                          color: ModuleColors.portfolio,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],
+    );
+  }
+
+  /// Gold PRO chip shown under the avatar for paid / grant Pro users.
+  Widget _buildProLogoBadge(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFFE082), Color(0xFFFFB300), Color(0xFFFF8F00)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFFD700).withValues(alpha: 0.45),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.workspace_premium_rounded,
+            size: 16,
+            color: Color(0xFF5D4037),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            'PRO',
+            style: context.text.caption().copyWith(
+              color: const Color(0xFF5D4037),
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.4,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

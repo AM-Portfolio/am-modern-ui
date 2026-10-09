@@ -24,7 +24,7 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
   late String _activeSlug;
 
   static const _slugToTitle = {
-    'doc-processor': 'Doc Processor',
+    'doc-processor': 'Document Processor',
     'email-extractor': 'Email Extractor',
   };
 
@@ -54,34 +54,54 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final title = _slugToTitle[_activeSlug] ?? 'Doc Processor';
+    final title = _slugToTitle[_activeSlug] ?? 'Document Processor';
 
     return UnifiedSidebarScaffold(
+      // Desktop sidebar label only — mobile uses pills (no AppBar title).
       title: 'Doc Intelligence',
+      showAppBarOnMobile: false,
+      showMobileMenuButton: false,
+      autoHideMobileTabsOnScroll: false,
+      enableMobileSearch: true,
       icon: Icons.psychology_outlined,
-      accentColor: Theme.of(context).colorScheme.primary,
-      autoHideMobileTabsOnScroll: true,
+      accentColor: ModuleColors.analytics,
       items: [
         SecondarySidebarItem(
-          title: 'Doc Processor',
+          title: 'Document Processor',
           icon: Icons.description_outlined,
           onTap: () => _selectTab('doc-processor'),
           isSelected: _activeSlug == 'doc-processor',
+          accentColor: ModuleColors.analytics,
         ),
         SecondarySidebarItem(
           title: 'Email Extractor',
           icon: Icons.email_outlined,
           onTap: () => _selectTab('email-extractor'),
           isSelected: _activeSlug == 'email-extractor',
+          accentColor: ModuleColors.analytics,
         ),
       ],
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
         child: KeyedSubtree(
           key: ValueKey('${title}_${apiProvider.environment}'),
-          child: _activeSlug == 'doc-processor'
-              ? const DocumentProcessorView()
-              : const EmailExtractorView(),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isMobile =
+                  constraints.maxWidth < UIConstants.mobileBreakpoint;
+              final content = _activeSlug == 'doc-processor'
+                  ? const DocumentProcessorView()
+                  : const EmailExtractorView();
+              if (!isMobile) return content;
+              // Fixed reserve keeps content scrollable so scroll-up can re-reveal nav.
+              return Padding(
+                padding: EdgeInsets.only(
+                  bottom: PlatformConstants.globalBottomNavReserve(context),
+                ),
+                child: content,
+              );
+            },
+          ),
         ),
       ),
     );

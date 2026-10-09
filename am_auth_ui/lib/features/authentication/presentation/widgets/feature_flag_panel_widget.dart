@@ -112,6 +112,13 @@ class _FeatureFlagPanelWidgetState extends State<FeatureFlagPanelWidget> {
                                 .read<FeatureFlagCubit>()
                                 .updateBoolFlag('enableDebugLogging', value),
                           ),
+                          _buildSwitch(
+                            'Security Alert Banner',
+                            state.flags.enableSecurityAlertBanner,
+                            (value) => context
+                                .read<FeatureFlagCubit>()
+                                .updateBoolFlag('enableSecurityAlertBanner', value),
+                          ),
                         ]),
                         const Divider(color: Colors.white24),
                         Row(

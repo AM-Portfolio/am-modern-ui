@@ -45,46 +45,44 @@ class _TradeCalendarAnalyticsMobilePageState extends ConsumerState<TradeCalendar
     final cubitAsyncValue = ref.watch(tradeCalendarCubitProvider(portfolioId));
 
     return cubitAsyncValue.when(
-      data: (cubit) => Scaffold(
-        body: RefreshIndicator(
-            onRefresh: () async {
-              cubit.navigateToYearly(portfolioId: widget.portfolioId, year: _selectedYear);
-              await Future.delayed(const Duration(milliseconds: 500));
-            },
-            child: BlocBuilder<TradeCalendarCubit, TradeCalendarState>(
-              bloc: cubit,
-              builder: (context, state) => switch (state) {
-                TradeCalendarLoading() => const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [CircularProgressIndicator(), SizedBox(height: 16), Text('Loading calendar...')],
-                  ),
-                ),
-                TradeCalendarLoaded() => _buildCalendarView(context, cubit),
-                TradeCalendarError() => Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.error_outline, size: 64, color: Colors.red.withOpacity(0.5)),
-                      const SizedBox(height: 16),
-                      Text('Error: ${state.message}'),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () {
-                          cubit.navigateToYearly( portfolioId: widget.portfolioId, year: _selectedYear);
-                        },
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                ),
-                _ => const Center(child: CircularProgressIndicator()),
-              },
+      data: (cubit) => RefreshIndicator(
+        onRefresh: () async {
+          cubit.navigateToYearly(portfolioId: widget.portfolioId, year: _selectedYear);
+          await Future.delayed(const Duration(milliseconds: 500));
+        },
+        child: BlocBuilder<TradeCalendarCubit, TradeCalendarState>(
+          bloc: cubit,
+          builder: (context, state) => switch (state) {
+            TradeCalendarLoading() => const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [CircularProgressIndicator(), SizedBox(height: 16), Text('Loading calendar...')],
+              ),
             ),
-          ),
+            TradeCalendarLoaded() => _buildCalendarView(context, cubit),
+            TradeCalendarError() => Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 64, color: context.colors.statusError.withValues(alpha: 0.5)),
+                  const SizedBox(height: 16),
+                  Text('Error: ${state.message}'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      cubit.navigateToYearly( portfolioId: widget.portfolioId, year: _selectedYear);
+                    },
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+            _ => const Center(child: CircularProgressIndicator()),
+          },
+        ),
       ),
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (error, stack) => Scaffold(body: Center(child: Text('Error initializing calendar: $error'))),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(child: Text('Error initializing calendar: $error')),
     );
   }
 
@@ -95,9 +93,9 @@ class _TradeCalendarAnalyticsMobilePageState extends ConsumerState<TradeCalendar
       return const Center(child: Text('No data available'));
     }
 
-    // Build contiguous years so scroll can cross Dec → Jan and update sticky year.
+    // Compact year window so current year is reachable after load scroll.
     final nowYear = DateTime.now().year;
-    final startYear = nowYear - 14;
+    final startYear = nowYear - 2;
     final yearsData = <int, Map<int, CalendarMonthData>>{};
     for (var y = startYear; y <= nowYear; y++) {
       yearsData[y] = YearCalendarConverter.convertToMonthsData(
@@ -114,7 +112,9 @@ class _TradeCalendarAnalyticsMobilePageState extends ConsumerState<TradeCalendar
       children: [
         Expanded(
           child: YearCalendarWidget(
-            year: _selectedYear,
+            // Key forces remount so initState scrolls to current year after load.
+            key: ValueKey('trade-year-cal-$startYear-$nowYear'),
+            year: nowYear,
             monthsData: yearCalendarData,
             yearsData: yearsData,
             config: YearCalendarConfig(
@@ -151,7 +151,7 @@ class _TradeCalendarAnalyticsMobilePageState extends ConsumerState<TradeCalendar
                 width: 40,
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(color: Theme.of(context).dividerColor, borderRadius: BorderRadius.circular(2)),
               ),
             ),
             Text(
@@ -166,7 +166,9 @@ class _TradeCalendarAnalyticsMobilePageState extends ConsumerState<TradeCalendar
               'P&L',
               dayData.pnl >= 0 ? '+₹${dayData.pnl.toStringAsFixed(2)}' : '-₹${dayData.pnl.abs().toStringAsFixed(2)}',
               Icons.trending_up,
-              color: dayData.pnl >= 0 ? Colors.green : Colors.red,
+              color: dayData.pnl >= 0
+                  ? context.colors.marketPositiveIndicator
+                  : context.colors.marketNegativeIndicator,
             ),
           ],
         ),

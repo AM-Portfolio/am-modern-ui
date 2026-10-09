@@ -34,6 +34,9 @@ class FeatureFlagCubit extends Cubit<FeatureFlagState> {
       case 'enableSmsOtp':
         _featureFlags.enableSmsOtp = value;
         break;
+      case 'enableSecurityAlertBanner':
+        _featureFlags.enableSecurityAlertBanner = value;
+        break;
     }
     emit(FeatureFlagState(_featureFlags));
   }

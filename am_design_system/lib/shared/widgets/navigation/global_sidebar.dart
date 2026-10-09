@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:am_design_system/core/navigation/app_web_navigation.dart';
 import 'package:am_design_system/core/theme/app_glassmorphism_v2.dart';
+import 'package:am_design_system/core/theme/app_colors.dart';
 import 'package:am_design_system/core/theme/app_colors_theme.dart';
 import 'package:am_design_system/core/theme/color_extensions.dart';
 import 'package:am_design_system/shared/widgets/navigation/sidebar_item.dart';
@@ -24,6 +25,8 @@ class GlobalSidebar extends StatelessWidget {
     super.key,
     this.onLogout,
     this.onSearchTap,
+    this.highlightSearch = false,
+    this.searchHighlightColor,
     this.onThemeToggle,
     this.onProfileTap,
     this.userName,
@@ -39,6 +42,10 @@ class GlobalSidebar extends StatelessWidget {
   final List<SidebarItem> items;
   final VoidCallback? onLogout;
   final VoidCallback? onSearchTap;
+
+  /// Soft glow on the search icon (discovery pages only).
+  final bool highlightSearch;
+  final Color? searchHighlightColor;
   final VoidCallback? onThemeToggle;
   final VoidCallback? onProfileTap;
   final String? userName;
@@ -54,8 +61,9 @@ class GlobalSidebar extends StatelessWidget {
   Widget build(BuildContext context) {
     // Thin strip width
     const double width = 80.0; // Slightly wider for better spacing
-    final surface = Theme.of(context).extension<AppColorsTheme>()?.surface ??
-        (isDarkMode ? const Color(0xFF1a1a2e) : Colors.white);
+    final themeColors = Theme.of(context).extension<AppColorsTheme>();
+    final surface = themeColors?.surface ??
+        (isDarkMode ? AppColors.darkSurface : AppColors.lightSurface);
 
     return AppGlassmorphismV2.glassPrism(
       isDark: isDarkMode,
@@ -75,11 +83,16 @@ class GlobalSidebar extends StatelessWidget {
 
             if (onSearchTap != null) ...[
               const SizedBox(height: 12),
-              IconButton(
-                icon: const Icon(Icons.search, size: 22),
-                color: Theme.of(context).extension<AppColorsTheme>()?.textSecondary ?? (isDarkMode ? const Color(0xB3FFFFFF) : const Color(0x8A000000)),
-                tooltip: 'Search (Ctrl+K)',
-                onPressed: onSearchTap,
+              _SearchIconButton(
+                onPressed: onSearchTap!,
+                highlight: highlightSearch,
+                highlightColor: searchHighlightColor ??
+                    _getIconColor(activeNavItem) ??
+                    AppColors.primary,
+                iconColor: themeColors?.textSecondary ??
+                    (isDarkMode
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondaryLight),
               ),
             ],
 
@@ -98,7 +111,8 @@ class GlobalSidebar extends StatelessWidget {
                         item: item,
                         isDark: isDarkMode,
                         isActive: activeNavItem == item.title,
-                        accentColor: _getIconColor(item.title) ?? const Color(0xFF6C5DD3),
+                        accentColor:
+                            _getIconColor(item.title) ?? AppColors.primary,
                         navPath: moduleShareUrls?[item.title],
                         onTap: () => onNavigate(item.title),
                         onLongPress: moduleShareUrls?[item.title] == null
@@ -191,7 +205,9 @@ class GlobalSidebar extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.transparent,
                 border: Border.all(
-                  color: isDarkMode ? Colors.white.withOpacity(0.1) : const Color(0xFF6C5DD3).withOpacity(0.2)
+                  color: isDarkMode
+                      ? Colors.white.withOpacity(0.1)
+                      : AppColors.primary.withOpacity(0.2)
                 ),
               ),
               child: Icon(
@@ -460,4 +476,41 @@ class _GlobalSidebarItemState extends State<_GlobalSidebarItem> {
   }
 }
 
+class _SearchIconButton extends StatelessWidget {
+  const _SearchIconButton({
+    required this.onPressed,
+    required this.highlight,
+    required this.highlightColor,
+    required this.iconColor,
+  });
+
+  final VoidCallback onPressed;
+  final bool highlight;
+  final Color highlightColor;
+  final Color iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: highlight
+          ? BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: highlightColor.withValues(alpha: 0.32),
+                  blurRadius: 14,
+                  spreadRadius: 1,
+                ),
+              ],
+            )
+          : null,
+      child: IconButton(
+        icon: const Icon(Icons.search, size: 22),
+        color: highlight ? highlightColor : iconColor,
+        tooltip: 'Search (Ctrl+K)',
+        onPressed: onPressed,
+      ),
+    );
+  }
+}
 

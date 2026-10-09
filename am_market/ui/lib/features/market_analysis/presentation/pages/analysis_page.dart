@@ -40,6 +40,7 @@ class AnalysisPage extends ConsumerWidget {
           ),
         ),
         child: SafeArea(
+          top: false,
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
             padding: EdgeInsets.all(isMobile ? 16.0 : 32.0),

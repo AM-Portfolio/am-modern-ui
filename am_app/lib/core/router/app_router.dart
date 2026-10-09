@@ -21,10 +21,11 @@ export 'launch_location.dart' show resolveLaunchLocation;
 
 bool _subscriptionPageEnabled() {
   if (!GetIt.instance.isRegistered<common.FeatureFlagService>()) {
-    return false;
+    return true;
   }
   return GetIt.instance<common.FeatureFlagService>().isOn(
     common.FeatureFlagKeys.subscriptionPageEnabled,
+    defaultValue: true,
   );
 }
 

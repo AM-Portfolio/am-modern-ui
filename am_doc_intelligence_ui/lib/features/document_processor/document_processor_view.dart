@@ -7,6 +7,7 @@ import 'package:flutter_dropzone/flutter_dropzone.dart';
 import 'package:intl/intl.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_library/am_library.dart';
+import 'package:am_doc_intelligence_ui/features/document_processor/document_processor_layout.dart';
 import 'package:am_doc_intelligence_ui/features/document_processor/pending_batch_intake.dart';
 import 'package:am_doc_intelligence_ui/features/document_processor/pending_sync_file.dart';
 import 'package:am_doc_intelligence_ui/models/batch_sync_models.dart';
@@ -43,12 +44,15 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   bool _checkingHealth = true;
   bool _showRawJson = false;
   bool _samePortfolioForAll = true;
+  /// Mobile-only: Parser Configuration starts expanded (design image 3).
+  bool _parserConfigExpanded = true;
 
   final List<PendingSyncFile> _pendingFiles = [];
   BatchSyncStatus? _batchStatus;
   Timer? _pollTimer;
   final TextEditingController _sharedPortfolioController =
       TextEditingController();
+  final ScrollController _pageScroll = ScrollController();
 
   final currencyFormatter =
       NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
@@ -62,11 +66,36 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   @override
   void dispose() {
     _pollTimer?.cancel();
+    _pageScroll.dispose();
     _sharedPortfolioController.dispose();
     for (final file in _pendingFiles) {
       file.dispose();
     }
     super.dispose();
+  }
+
+  void _applyBatchStatus(BatchSyncStatus status, {String? statusMessage}) {
+    _batchStatus = status;
+    _parserConfigExpanded = false;
+    if (statusMessage != null) _status = statusMessage;
+  }
+
+  void _clearPendingFiles() {
+    for (final file in _pendingFiles) {
+      file.dispose();
+    }
+    _pendingFiles.clear();
+  }
+
+  void _scrollResultsToTop() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_pageScroll.hasClients) return;
+      _pageScroll.animateTo(
+        0,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+      );
+    });
   }
 
   Future<void> _checkHealthAndLoad() async {
@@ -312,10 +341,13 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       );
       if (!mounted) return;
       setState(() {
-        _batchStatus = submitted;
-        _status =
-            'Sync started (${submitted.total} file${submitted.total == 1 ? '' : 's'}). Detecting brokers...';
+        _applyBatchStatus(
+          submitted,
+          statusMessage:
+              'Sync started (${submitted.total} file${submitted.total == 1 ? '' : 's'}). Detecting brokers...',
+        );
       });
+      _scrollResultsToTop();
       _startPolling(submitted.batchId);
     } on SyncUnavailableException catch (e) {
       await _handleSyncUnavailable(e);
@@ -449,22 +481,27 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         lastOk = Map<String, dynamic>.from(r['response'] as Map);
       }
     }
+    final totalFiles = _pendingFiles.length;
     setState(() {
       _processing = false;
-      _batchStatus = BatchSyncStatus(
-        batchId: 'legacy-process',
-        total: _pendingFiles.length,
-        completed: completed,
-        failed: failed,
-        overallStatus: overall,
-        files: fileStatuses,
+      _applyBatchStatus(
+        BatchSyncStatus(
+          batchId: 'legacy-process',
+          total: totalFiles,
+          completed: completed,
+          failed: failed,
+          overallStatus: overall,
+          files: fileStatuses,
+        ),
+        statusMessage:
+            'Legacy parse $overall: $completed of $totalFiles completed'
+            '${failed > 0 ? ', $failed failed' : ''} '
+            '(used /process because Auto-detect /sync was unavailable)',
       );
       _lastResult = lastOk;
-      _status =
-          'Legacy parse $overall: $completed of ${_pendingFiles.length} completed'
-          '${failed > 0 ? ', $failed failed' : ''} '
-          '(used /process because Auto-detect /sync was unavailable)';
+      _clearPendingFiles();
     });
+    _scrollResultsToTop();
 
     ProductTelemetry.instance.featureAction(
       'doc_process',
@@ -490,25 +527,26 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     try {
       final status = await apiProvider.getBatchSyncStatus(batchId);
       if (!mounted) return;
-      setState(() {
-        _batchStatus = status;
-        final waiting = status.needsConfirm + status.needsInput;
-        if (waiting > 0 && status.isTerminal) {
-          _status =
-              'Review needed: $waiting file${waiting == 1 ? '' : 's'} · '
+      final waiting = status.needsConfirm + status.needsInput;
+      final statusMessage = waiting > 0 && status.isTerminal
+          ? 'Review needed: $waiting file${waiting == 1 ? '' : 's'} · '
               '${status.completed} completed'
-              '${status.failed > 0 ? ', ${status.failed} failed' : ''}';
-        } else {
-          _status =
-              'Sync ${status.overallStatus.toLowerCase()}: ${status.completed} of ${status.total} completed'
+              '${status.failed > 0 ? ', ${status.failed} failed' : ''}'
+          : 'Sync ${status.overallStatus.toLowerCase()}: ${status.completed} of ${status.total} completed'
               '${status.failed > 0 ? ', ${status.failed} failed' : ''}'
               '${waiting > 0 ? ', $waiting need review' : ''}';
+      setState(() {
+        _applyBatchStatus(status, statusMessage: statusMessage);
+        if (status.isTerminal) {
+          _processing = false;
+          // Clear intake queue so compact UI enters resultsIdle.
+          _clearPendingFiles();
         }
       });
       if (status.isTerminal) {
         _pollTimer?.cancel();
         _pollTimer = null;
-        setState(() => _processing = false);
+        _scrollResultsToTop();
         ProductTelemetry.instance.featureAction(
           'doc_process',
           tag: 'docs',
@@ -572,16 +610,22 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         final bool isCompact = contentWidth < 560;
         final bool stackConfigDropdowns = contentWidth < 620;
 
+        final hasBatch = _batchStatus != null;
+        final compactHasBatch = isCompact && hasBatch;
+        final hideOnlineFooter = compactHasBatch;
+
         return SingleChildScrollView(
+          controller: _pageScroll,
           padding: EdgeInsets.symmetric(
             horizontal: isCompact ? 12.0 : (isMedium ? 20.0 : 32.0),
-            vertical: isCompact ? 12.0 : 24.0,
+            vertical: isCompact ? 8.0 : 24.0,
           ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            // Compact: stretch so GlassCards fill width (no left-clustered black gutter).
+            crossAxisAlignment: isCompact
+                ? CrossAxisAlignment.stretch
+                : CrossAxisAlignment.start,
             children: [
-              _buildHeader(isCompact: isCompact),
-              SizedBox(height: isCompact ? 16 : 24),
               if (_checkingHealth)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 40),
@@ -599,7 +643,31 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
               else if (_isServiceConnected == false)
                 _buildConnectionError()
               else ...[
-                if (isWide)
+                if (isWide) ...[
+                  // Results-first when batch/status active — wide layout used to
+                  // omit these widgets entirely (web desktop regression).
+                  if (docProcessorWideShowsStatusSlots(
+                    isWide: isWide,
+                    hasStatusOrProcessing:
+                        _status.isNotEmpty || _processing,
+                    hasBatch: _batchStatus != null,
+                  )) ...[
+                    if (_status.isNotEmpty || _processing) ...[
+                      _buildStatusLog(),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_batchStatus != null) ...[
+                      _buildBatchResultSection(
+                        contentWidth: contentWidth,
+                        isCompact: false,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_lastResult != null) ...[
+                      _buildResultSection(),
+                      const SizedBox(height: 16),
+                    ],
+                  ],
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -608,13 +676,13 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            _buildConfigurationSection(
-                              stackDropdowns: stackConfigDropdowns,
-                              isCompact: isCompact,
-                            ),
-                            const SizedBox(height: 24),
                             _buildUploadSection(
                               contentWidth: contentWidth * 0.6,
+                              isCompact: isCompact,
+                            ),
+                            const SizedBox(height: 20),
+                            _buildConfigurationSection(
+                              stackDropdowns: stackConfigDropdowns,
                               isCompact: isCompact,
                             ),
                           ],
@@ -629,135 +697,91 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                         ),
                       ),
                     ],
-                  )
-                else
+                  ),
+                ] else if (compactHasBatch) ...[
+                  // Results-first, then restore upload + parser + capabilities.
+                  if (_status.isNotEmpty || _processing) ...[
+                    _buildStatusLog(),
+                    const SizedBox(height: 8),
+                  ],
+                  _buildBatchResultSection(
+                    contentWidth: contentWidth,
+                    isCompact: true,
+                  ),
+                  if (_lastResult != null) ...[
+                    const SizedBox(height: 8),
+                    _buildResultSection(),
+                  ],
+                  const SizedBox(height: 8),
+                  _buildUploadSection(
+                    contentWidth: contentWidth,
+                    isCompact: true,
+                  ),
+                  const SizedBox(height: 8),
+                  _buildConfigurationSection(
+                    stackDropdowns: false,
+                    isCompact: true,
+                  ),
+                  const SizedBox(height: 8),
+                  _buildDetailsPanel(
+                    isGrid: true,
+                    isCompact: true,
+                  ),
+                ] else ...[
+                  // Empty / medium: Upload → Parser → Capabilities
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _buildConfigurationSection(
-                        stackDropdowns: stackConfigDropdowns,
-                        isCompact: isCompact,
-                      ),
-                      SizedBox(height: isCompact ? 16 : 20),
                       _buildUploadSection(
                         contentWidth: contentWidth,
                         isCompact: isCompact,
                       ),
-                      SizedBox(height: isCompact ? 16 : 20),
+                      SizedBox(height: isCompact ? 8 : 18),
+                      _buildConfigurationSection(
+                        stackDropdowns:
+                            isCompact ? false : stackConfigDropdowns,
+                        isCompact: isCompact,
+                      ),
+                      SizedBox(height: isCompact ? 8 : 18),
                       _buildDetailsPanel(
-                        isGrid: isMedium,
+                        isGrid: isCompact || isMedium,
                         isCompact: isCompact,
                       ),
                     ],
                   ),
-                const SizedBox(height: 24),
-                if (_status.isNotEmpty || _processing) _buildStatusLog(),
-                if (_batchStatus != null) ...[
-                  const SizedBox(height: 28),
-                  _buildBatchResultSection(contentWidth: contentWidth),
+                  SizedBox(height: isCompact ? 8 : 20),
+                  if (_status.isNotEmpty || _processing) _buildStatusLog(),
+                  if (_batchStatus != null) ...[
+                    SizedBox(height: isCompact ? 8 : 24),
+                    _buildBatchResultSection(
+                      contentWidth: contentWidth,
+                      isCompact: isCompact,
+                    ),
+                  ],
+                  if (_lastResult != null) ...[
+                    SizedBox(height: isCompact ? 8 : 24),
+                    _buildResultSection(),
+                  ],
                 ],
-                if (_lastResult != null) ...[
-                  const SizedBox(height: 28),
-                  _buildResultSection(),
+                if (_isServiceConnected == true && !hideOnlineFooter) ...[
+                  SizedBox(height: isCompact ? 8 : 16),
+                  Text(
+                    'Doc processor online',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurfaceVariant
+                          .withValues(alpha: 0.7),
+                    ),
+                  ),
                 ],
               ],
             ],
           ),
         );
       },
-    );
-  }
-
-  Widget _buildHeader({required bool isCompact}) {
-    Color statusColor = _isServiceConnected == true
-        ? context.colors.statusSuccess
-        : (_isServiceConnected == false
-            ? context.colors.statusError
-            : Colors.grey);
-    String statusText = _isServiceConnected == true
-        ? 'Online'
-        : (_isServiceConnected == false ? 'Offline' : 'Checking...');
-
-    final headerContent = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Document Intelligence',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                letterSpacing: -0.5,
-                fontSize: isCompact ? 20 : 24,
-              ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Upload up to 5 broker statements at once. Each file can go to its own portfolio.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontSize: isCompact ? 12 : 13,
-              ),
-        ),
-      ],
-    );
-
-    final statusBadge = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: statusColor.withOpacity(0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: statusColor,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: statusColor.withOpacity(0.6),
-                  blurRadius: 6,
-                  spreadRadius: 2,
-                )
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            statusText.toUpperCase(),
-            style: TextStyle(
-              color: statusColor,
-              fontWeight: FontWeight.bold,
-              fontSize: 11,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (isCompact) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          headerContent,
-          const SizedBox(height: 10),
-          statusBadge,
-        ],
-      );
-    }
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(child: headerContent),
-        const SizedBox(width: 16),
-        statusBadge,
-      ],
     );
   }
 
@@ -799,25 +823,53 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   }
 
   Widget _buildDetailsPanel({required bool isGrid, required bool isCompact}) {
-    final cap1 = _buildCapabilityTile(
-      Icons.assignment_outlined,
-      'Equity Portfolios',
-      'Extract direct stock holdings from Zerodha, Angel One, and others.',
-    );
-    final cap2 = _buildCapabilityTile(
-      Icons.pie_chart_outline,
-      'Mutual Funds',
-      'Parse CAS statements, AMFI scheme holdings, and asset breakdowns.',
-    );
-    final cap3 = _buildCapabilityTile(
-      Icons.layers_outlined,
-      'Multi-portfolio sync',
-      'Upload several broker files in one batch and name a portfolio for each.',
-    );
+    final mfDesc = isCompact
+        ? 'CAS, AMFI statements and holdings.'
+        : 'CAS, AMFI statements';
+    final multiDesc = isCompact
+        ? 'Upload multiple files in one batch.'
+        : 'Upload multiple files';
+
+    final Widget cap1;
+    final Widget cap2;
+    final Widget cap3;
+    if (isCompact) {
+      cap1 = _buildCompactCapabilityTile(
+        Icons.assignment_outlined,
+        'Equity Portfolios',
+        'Zerodha, Angel One and more.',
+      );
+      cap2 = _buildCompactCapabilityTile(
+        Icons.pie_chart_outline,
+        'Mutual Funds',
+        mfDesc,
+      );
+      cap3 = _buildCompactCapabilityTile(
+        Icons.layers_outlined,
+        'Multi-portfolio sync',
+        multiDesc,
+      );
+    } else {
+      cap1 = _buildCapabilityTile(
+        Icons.assignment_outlined,
+        'Equity Portfolios',
+        'Zerodha, Angel One and more',
+      );
+      cap2 = _buildCapabilityTile(
+        Icons.pie_chart_outline,
+        'Mutual Funds',
+        mfDesc,
+      );
+      cap3 = _buildCapabilityTile(
+        Icons.layers_outlined,
+        'Multi-portfolio sync',
+        multiDesc,
+      );
+    }
 
     return GlassCard(
       child: Padding(
-        padding: EdgeInsets.all(isCompact ? 16.0 : 20.0),
+        padding: EdgeInsets.all(isCompact ? 12.0 : 20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -825,7 +877,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
               children: [
                 Icon(
                   Icons.auto_awesome_outlined,
-                  size: isCompact ? 18 : 20,
+                  size: isCompact ? 16 : 20,
                   color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(width: 8),
@@ -833,21 +885,21 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                   'Supported Capabilities',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: isCompact ? 14 : 15,
+                    fontSize: isCompact ? 13 : 15,
                     color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
               ],
             ),
-            SizedBox(height: isCompact ? 12 : 16),
+            SizedBox(height: isCompact ? 10 : 16),
             if (isGrid)
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(child: cap1),
-                  const SizedBox(width: 12),
+                  SizedBox(width: isCompact ? 8 : 12),
                   Expanded(child: cap2),
-                  const SizedBox(width: 12),
+                  SizedBox(width: isCompact ? 8 : 12),
                   Expanded(child: cap3),
                 ],
               )
@@ -863,6 +915,51 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Compact mobile mini-card: icon above title (design image 3).
+  Widget _buildCompactCapabilityTile(
+      IconData icon, String title, String desc) {
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: primary.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: primary.withOpacity(0.12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: primary, size: 16),
+          const SizedBox(height: 6),
+          Text(
+            title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 11,
+              height: 1.2,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            desc,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 9,
+              height: 1.25,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -927,7 +1024,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'DEFAULT BROKER (OPTIONAL)',
+          'Broker (Optional)',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
@@ -939,13 +1036,14 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         ),
         const SizedBox(height: 8),
         CustomDropdown<String>(
-          value: _selectedBrokerType ?? '__AUTO__',
+          // Closed field shows Select; __AUTO__/null still means auto-detect.
+          value: _selectedBrokerType,
           items: [
-            '__AUTO__'.toSimpleDropdownItem(text: 'Auto-detect'),
             ...apiProvider.brokerTypes
                 .map((e) => e.toSimpleDropdownItem(text: e)),
+            '__AUTO__'.toSimpleDropdownItem(text: 'Auto-detect (recommended)'),
           ],
-          hint: 'Auto-detect',
+          hint: 'Select',
           onChanged: (v) {
             setState(() {
               _selectedBrokerType = (v == null || v == '__AUTO__') ? null : v;
@@ -964,7 +1062,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'DEFAULT DOCUMENT TYPE (OPTIONAL)',
+          'Document Type (Optional)',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
@@ -979,78 +1077,121 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
             ? const ShimmerLoading(
                 child: SkeletonBox(height: 42, width: double.infinity))
             : CustomDropdown<String>(
-                value: _selectedDocType ?? '__AUTO__',
+                value: _selectedDocType,
                 items: [
-                  '__AUTO__'.toSimpleDropdownItem(text: 'Auto-detect'),
                   ..._getFilteredDocTypes().map((e) =>
                       e.toSimpleDropdownItem(text: _getDocTypeDisplayName(e))),
+                  '__AUTO__'.toSimpleDropdownItem(
+                      text: 'Auto-detect (recommended)'),
                 ],
-                hint: 'Auto-detect',
+                hint: 'Select',
                 onChanged: (v) => setState(() => _selectedDocType =
                     (v == null || v == '__AUTO__') ? null : v),
               ),
       ],
     );
 
+    final parserBody = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (stackDropdowns) ...[
+          brokerSelect,
+          const SizedBox(height: 12),
+          docTypeSelect,
+        ] else ...[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: brokerSelect),
+              SizedBox(width: isCompact ? 10 : 16),
+              Expanded(child: docTypeSelect),
+            ],
+          ),
+        ],
+        SizedBox(height: isCompact ? 8 : 12),
+        CheckboxListTile(
+          contentPadding: EdgeInsets.zero,
+          value: _samePortfolioForAll,
+          onChanged: _processing
+              ? null
+              : (v) => setState(() => _samePortfolioForAll = v ?? true),
+          title: Text(
+            isCompact
+                ? 'Use same portfolio name for all files'
+                : 'Use the same portfolio name for every file',
+            style: TextStyle(
+              fontSize: isCompact ? 12 : 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          controlAffinity: ListTileControlAffinity.leading,
+          dense: true,
+          visualDensity: isCompact
+              ? VisualDensity.compact
+              : VisualDensity.standard,
+        ),
+        if (_samePortfolioForAll) ...[
+          SizedBox(height: isCompact ? 4 : 6),
+          AppTextField(
+            controller: _sharedPortfolioController,
+            labelText: 'Portfolio name',
+            hintText: isCompact
+                ? 'Portfolio name'
+                : 'Optional — leave blank to use the broker name',
+          ),
+        ],
+      ],
+    );
+
+    final header = Row(
+      children: [
+        Icon(
+          Icons.settings_outlined,
+          color: Theme.of(context).colorScheme.primary,
+          size: isCompact ? 16 : 20,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            'Parser Configuration',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: isCompact ? 13 : 15,
+            ),
+          ),
+        ),
+        if (isCompact)
+          Icon(
+            _parserConfigExpanded
+                ? Icons.expand_less
+                : Icons.expand_more,
+            size: 22,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+      ],
+    );
+
     return GlassCard(
       child: Padding(
-        padding: EdgeInsets.all(isCompact ? 16.0 : 20.0),
+        padding: EdgeInsets.all(isCompact ? 12.0 : 20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.settings_outlined,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: isCompact ? 18 : 20,
+            if (isCompact)
+              InkWell(
+                onTap: () => setState(
+                    () => _parserConfigExpanded = !_parserConfigExpanded),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: header,
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  'Parser Configuration',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: isCompact ? 14 : 15,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: isCompact ? 14 : 18),
-            if (stackDropdowns) ...[
-              brokerSelect,
-              const SizedBox(height: 12),
-              docTypeSelect,
-            ] else ...[
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: brokerSelect),
-                  const SizedBox(width: 16),
-                  Expanded(child: docTypeSelect),
-                ],
-              ),
-            ],
-            const SizedBox(height: 12),
-            CheckboxListTile(
-              contentPadding: EdgeInsets.zero,
-              value: _samePortfolioForAll,
-              onChanged: _processing
-                  ? null
-                  : (v) => setState(() => _samePortfolioForAll = v ?? true),
-              title: const Text(
-                'Use the same portfolio name for every file',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-              ),
-              controlAffinity: ListTileControlAffinity.leading,
-              dense: true,
-            ),
-            if (_samePortfolioForAll) ...[
-              const SizedBox(height: 6),
-              AppTextField(
-                controller: _sharedPortfolioController,
-                labelText: 'Portfolio name',
-                hintText: 'Optional — leave blank to use the broker name',
-              ),
+              )
+            else
+              header,
+            if (!isCompact || _parserConfigExpanded) ...[
+              SizedBox(height: isCompact ? 10 : 18),
+              parserBody,
             ],
           ],
         ),
@@ -1084,185 +1225,237 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     } else if (batchFull) {
       headline = 'Batch ready · $_maxFiles of $_maxFiles files';
     } else {
-      headline =
-          'Drop broker files here · up to $_maxFiles XLSX / PDF / CSV';
+      headline = 'Upload broker files';
     }
 
-    final uploadVisual = Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(
-        vertical: isCompact ? 24 : 32,
-        horizontal: isCompact ? 16 : 24,
-      ),
-      decoration: BoxDecoration(
-        color: _dragHover
-            ? primary.withOpacity(0.10)
-            : (batchFull && isInteractable
-                ? primary.withOpacity(0.03)
-                : Colors.transparent),
-        border: Border.all(
-          color: primary.withOpacity(
-            _dragHover ? 0.75 : (isInteractable ? 0.32 : 0.12),
-          ),
-          style: BorderStyle.solid,
-          width: _dragHover ? 2 : 1.5,
+    final selectFilesButton = isCompact
+        ? FilledButton.icon(
+            onPressed:
+                isInteractable && !batchFull ? _pickAndUpload : null,
+            icon: const Icon(Icons.description_outlined, size: 18),
+            label: Text(
+              batchFull ? 'Batch full' : 'Select Files',
+              style: const TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+            style: FilledButton.styleFrom(
+              backgroundColor: primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              disabledBackgroundColor: primary.withOpacity(0.35),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+          )
+        : OutlinedButton.icon(
+            onPressed:
+                isInteractable && !batchFull ? _pickAndUpload : null,
+            icon: const Icon(Icons.folder_open, size: 18),
+            label: Text(
+              batchFull ? 'Batch full' : 'Select Files',
+              style: const TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+            style: OutlinedButton.styleFrom(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+            ),
+          );
+
+    final zoneDecoration = BoxDecoration(
+      color: _dragHover
+          ? primary.withOpacity(0.10)
+          : (batchFull && isInteractable
+              ? primary.withOpacity(0.03)
+              : Colors.transparent),
+      border: Border.all(
+        color: primary.withOpacity(
+          _dragHover ? 0.75 : (isInteractable ? 0.45 : 0.2),
         ),
-        borderRadius: BorderRadius.circular(16),
+        style: BorderStyle.solid,
+        width: _dragHover ? 2 : 1.5,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      borderRadius: BorderRadius.circular(isCompact ? 14 : 16),
+    );
+
+    final uploadHeadline = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _processing || _intakeBusy
+            ? SizedBox(
+                height: isCompact ? 32 : 44,
+                width: isCompact ? 32 : 44,
+                child: const CircularProgressIndicator(strokeWidth: 3),
+              )
+            : Icon(
+                _dragHover
+                    ? Icons.file_download_outlined
+                    : Icons.cloud_upload_outlined,
+                size: isCompact ? 30 : 44,
+                color: isInteractable ? primary : context.colors.textMuted,
+              ),
+        SizedBox(height: isCompact ? 8 : 10),
+        Text(
+          headline,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: isInteractable ? primary : context.colors.textMuted,
+            fontWeight: FontWeight.bold,
+            fontSize: isCompact ? 13 : 15,
+          ),
+        ),
+        SizedBox(height: isCompact ? 4 : 6),
+        Text(
+          batchFull
+              ? 'Remove a file to add another · Max 10 MB each'
+              : 'PDF • CSV • XLSX | Up to $_maxFiles files',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: isCompact ? 11 : 12,
+            color: Theme.of(context)
+                .colorScheme
+                .onSurfaceVariant
+                .withOpacity(0.8),
+          ),
+        ),
+      ],
+    );
+
+    // Dropzone/InkWell only cover the headline area so compact Select Files stays tappable.
+    final dropTarget = ClipRRect(
+      borderRadius: BorderRadius.circular(isCompact ? 14 : 16),
+      child: Stack(
+        alignment: Alignment.center,
         children: [
-          _processing || _intakeBusy
-              ? const SizedBox(
-                  height: 44,
-                  width: 44,
-                  child: CircularProgressIndicator(strokeWidth: 3),
-                )
-              : Icon(
-                  _dragHover
-                      ? Icons.file_download_outlined
-                      : Icons.cloud_upload_outlined,
-                  size: isCompact ? 40 : 48,
-                  color: isInteractable ? primary : Colors.grey,
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              isCompact ? 14 : 24,
+              isCompact ? 14 : 28,
+              isCompact ? 14 : 24,
+              isCompact ? 4 : 28,
+            ),
+            child: uploadHeadline,
+          ),
+          if (kIsWeb && isInteractable)
+            Positioned.fill(
+              child: DropzoneView(
+                operation: DragOperation.copy,
+                cursor: CursorType.pointer,
+                // Do not set mime here: many OS drops send an empty MIME and
+                // would be rejected before extension checks can run.
+                onCreated: (ctrl) => _dropzoneController = ctrl,
+                onHover: () {
+                  if (!_dragHover) setState(() => _dragHover = true);
+                },
+                onLeave: () {
+                  if (_dragHover) setState(() => _dragHover = false);
+                },
+                // Use onDropFiles only — onDropFile also fires and would double-add.
+                onDropFiles: _onDropFiles,
+                onDropInvalid: _onDropInvalid,
+              ),
+            ),
+          if (!kIsWeb && !isCompact)
+            Positioned.fill(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: isInteractable ? _pickAndUpload : null,
+                  borderRadius: BorderRadius.circular(16),
                 ),
-          const SizedBox(height: 12),
-          Text(
-            headline,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: isInteractable ? primary : Colors.grey,
-              fontWeight: FontWeight.bold,
-              fontSize: isCompact ? 14 : 15,
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            batchFull
-                ? 'Remove a file to add another · Max 10 MB each'
-                : 'Max 10 MB each · auto-detect brokers when /sync is available',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: isCompact ? 11 : 12,
-              color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.8),
-            ),
-          ),
         ],
       ),
+    );
+
+    final uploadZone = Container(
+      width: double.infinity,
+      decoration: zoneDecoration,
+      child: isCompact
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                dropTarget,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
+                  child: selectFilesButton,
+                ),
+              ],
+            )
+          : dropTarget,
     );
 
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Visual behind; DropzoneView must stay on top for HTML drag events.
-                uploadVisual,
-                if (kIsWeb && isInteractable)
-                  Positioned.fill(
-                    child: DropzoneView(
-                      operation: DragOperation.copy,
-                      cursor: CursorType.pointer,
-                      // Do not set mime here: many OS drops send an empty MIME and
-                      // would be rejected before extension checks can run.
-                      onCreated: (ctrl) => _dropzoneController = ctrl,
-                      onHover: () {
-                        if (!_dragHover) setState(() => _dragHover = true);
-                      },
-                      onLeave: () {
-                        if (_dragHover) setState(() => _dragHover = false);
-                      },
-                      // Use onDropFiles only — onDropFile also fires and would double-add.
-                      onDropFiles: _onDropFiles,
-                      onDropInvalid: _onDropInvalid,
-                    ),
-                  ),
-                if (!kIsWeb)
-                  Positioned.fill(
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: isInteractable ? _pickAndUpload : null,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(16, 12, 16, isCompact ? 12 : 16),
-            child: Wrap(
-              alignment: WrapAlignment.center,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 12,
-              runSpacing: 8,
-              children: [
-                if (kIsWeb)
-                  OutlinedButton.icon(
-                    onPressed: isInteractable ? _pickAndUpload : null,
-                    icon: const Icon(Icons.folder_open, size: 18),
-                    label: Text(
-                      batchFull ? 'Batch full — clear a file to add more' : 'Browse files',
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                  ),
-                TextButton.icon(
-                  onPressed: _downloadSample,
-                  icon: const Icon(Icons.download, size: 16),
-                  label: const Text(
-                    'Sample Portfolio CSV',
-                    style: TextStyle(fontSize: 12),
-                  ),
-                ),
-                if (showBrokerDownload)
+          uploadZone,
+          // Web/wide: Select Files + Sample stay below the zone (unchanged).
+          // Compact: Select Files is inside the zone; hide Sample/broker help.
+          if (!isCompact)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 12,
+                runSpacing: 8,
+                children: [
+                  selectFilesButton,
                   TextButton.icon(
-                    onPressed: () {
-                      _showDownloadStepsDialog(
-                        context,
-                        _selectedBrokerType!,
-                        _selectedDocType ?? 'STOCK_PORTFOLIO',
-                      );
-                    },
-                    style: TextButton.styleFrom(
-                      backgroundColor:
-                          Theme.of(context).brightness == Brightness.dark
-                              ? primary.withOpacity(0.3)
-                              : primary.withOpacity(0.12),
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                    onPressed: _downloadSample,
+                    icon: const Icon(Icons.download, size: 16),
+                    label: const Text(
+                      'Sample Portfolio CSV',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  ),
+                  if (showBrokerDownload)
+                    TextButton.icon(
+                      onPressed: () {
+                        _showDownloadStepsDialog(
+                          context,
+                          _selectedBrokerType!,
+                          _selectedDocType ?? 'STOCK_PORTFOLIO',
+                        );
+                      },
+                      style: TextButton.styleFrom(
+                        backgroundColor:
+                            Theme.of(context).brightness == Brightness.dark
+                                ? primary.withOpacity(0.3)
+                                : primary.withOpacity(0.12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
-                    ),
-                    icon: Icon(
-                      Icons.open_in_new,
-                      size: 15,
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? Colors.white.withOpacity(0.9)
-                          : primary,
-                    ),
-                    label: Text(
-                      "Download from ${_brokerDownloadLabel(_selectedBrokerType!)}",
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+                      icon: Icon(
+                        Icons.open_in_new,
+                        size: 15,
                         color: Theme.of(context).brightness == Brightness.dark
                             ? Colors.white.withOpacity(0.9)
                             : primary,
                       ),
+                      label: Text(
+                        "Download from ${_brokerDownloadLabel(_selectedBrokerType!)}",
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color:
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? context.colors.surface
+                                  : primary,
+                        ),
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ),
           if (_pendingFiles.isNotEmpty) ...[
             const Divider(height: 1),
             Padding(
@@ -1298,8 +1491,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
               child: Text(
-                'Set broker and document type for each file (or leave Auto-detect). '
-                'Required when Auto-detect is unavailable.',
+                'Set broker and document type for each file, or leave as Select.',
                 style: TextStyle(
                   fontSize: 12,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -1332,25 +1524,25 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     final file = _pendingFiles[index];
     final primary = Theme.of(context).colorScheme.primary;
     final brokerItems = [
-      '__AUTO__'.toSimpleDropdownItem(text: 'Auto-detect'),
       ...apiProvider.brokerTypes.map((e) => e.toSimpleDropdownItem(text: e)),
+      '__AUTO__'.toSimpleDropdownItem(text: 'Auto-detect (recommended)'),
     ];
     final docTypeValues = <String>{..._docTypes};
     if (file.documentType != null) {
       docTypeValues.add(file.documentType!);
     }
     final docItems = [
-      '__AUTO__'.toSimpleDropdownItem(text: 'Auto-detect'),
       ...docTypeValues
           .map((e) => e.toSimpleDropdownItem(text: _getDocTypeDisplayName(e))),
+      '__AUTO__'.toSimpleDropdownItem(text: 'Auto-detect (recommended)'),
     ];
 
     final bool stackDropdowns = contentWidth != null && contentWidth < 480;
 
     final brokerDropdown = CustomDropdown<String>(
-      value: file.brokerType ?? '__AUTO__',
+      value: file.brokerType,
       items: brokerItems,
-      hint: 'Broker',
+      hint: 'Select',
       onChanged: _processing
           ? null
           : (v) => _onPendingBrokerChanged(
@@ -1360,9 +1552,9 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     );
 
     final docTypeDropdown = CustomDropdown<String>(
-      value: file.documentType ?? '__AUTO__',
+      value: file.documentType,
       items: docItems,
-      hint: 'Doc type',
+      hint: 'Select',
       onChanged: _processing
           ? null
           : (v) => setState(() {
@@ -1559,7 +1751,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         password: password,
       );
       if (!mounted) return;
-      setState(() => _batchStatus = updated);
+      setState(() => _applyBatchStatus(updated));
       _startPolling(batch.batchId);
     } catch (e) {
       if (!mounted) return;
@@ -1690,7 +1882,10 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     );
   }
 
-  Widget _buildBatchResultSection({double? contentWidth}) {
+  Widget _buildBatchResultSection({
+    double? contentWidth,
+    bool isCompact = false,
+  }) {
     final batch = _batchStatus;
     if (batch == null) return const SizedBox.shrink();
 
@@ -1822,105 +2017,150 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     }
 
     final bool wrapStats = contentWidth != null && contentWidth < 640;
+    final filePadV = isCompact ? 8.0 : 10.0;
+
+    final statusChip = _buildCompactStatChip(
+      'Status',
+      batch.overallStatus,
+      Icons.flag_outlined,
+      statusColor(batch.overallStatus),
+      expand: isCompact,
+    );
+    final doneChip = _buildCompactStatChip(
+      'Done',
+      '${batch.completed}/${batch.total}',
+      Icons.done_all_outlined,
+      context.colors.statusSuccess,
+      expand: isCompact,
+    );
+    final confirmChip = _buildCompactStatChip(
+      'Confirm',
+      '${batch.needsConfirm}',
+      Icons.verified_outlined,
+      batch.needsConfirm > 0 ? context.colors.statusInfo : context.colors.textMuted,
+      expand: isCompact,
+    );
+    final needsChip = _buildCompactStatChip(
+      'Needs input',
+      '${batch.needsInput}',
+      Icons.help_outline,
+      batch.needsInput > 0 ? context.colors.statusWarning : context.colors.textMuted,
+      expand: isCompact,
+    );
+    final failedChip = _buildCompactStatChip(
+      'Failed',
+      '${batch.failed}',
+      Icons.error_outline,
+      batch.failed > 0 ? context.colors.statusError : context.colors.textMuted,
+      expand: isCompact,
+    );
+
+    final Widget statsBody;
+    if (isCompact) {
+      // Full-width 2-column grid — uses the right side instead of left-clustered Wrap.
+      statsBody = Column(
+        children: [
+          Row(
+            children: [
+              Expanded(child: statusChip),
+              const SizedBox(width: 8),
+              Expanded(child: doneChip),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(child: confirmChip),
+              const SizedBox(width: 8),
+              Expanded(child: needsChip),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(child: failedChip),
+              const SizedBox(width: 8),
+              const Expanded(child: SizedBox.shrink()),
+            ],
+          ),
+        ],
+      );
+    } else if (wrapStats) {
+      statsBody = Wrap(
+        spacing: 12,
+        runSpacing: 8,
+        alignment: WrapAlignment.spaceAround,
+        children: [statusChip, doneChip, confirmChip, needsChip, failedChip],
+      );
+    } else {
+      statsBody = Row(
+        children: [
+          _buildCompactStat(
+            'Status',
+            batch.overallStatus,
+            Icons.flag_outlined,
+            statusColor(batch.overallStatus),
+          ),
+          _buildCompactStat(
+            'Done',
+            '${batch.completed}/${batch.total}',
+            Icons.done_all_outlined,
+            context.colors.statusSuccess,
+          ),
+          _buildCompactStat(
+            'Confirm',
+            '${batch.needsConfirm}',
+            Icons.verified_outlined,
+            batch.needsConfirm > 0 ? context.colors.statusInfo : context.colors.textMuted,
+          ),
+          _buildCompactStat(
+            'Needs input',
+            '${batch.needsInput}',
+            Icons.help_outline,
+            batch.needsInput > 0 ? context.colors.statusWarning : context.colors.textMuted,
+          ),
+          _buildCompactStat(
+            'Failed',
+            '${batch.failed}',
+            Icons.error_outline,
+            batch.failed > 0 ? context.colors.statusError : context.colors.textMuted,
+          ),
+        ],
+      );
+    }
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
           children: [
             Icon(Icons.sync,
-                color: Theme.of(context).colorScheme.primary, size: 20),
-            const SizedBox(width: 10),
+                color: Theme.of(context).colorScheme.primary,
+                size: isCompact ? 18 : 20),
+            const SizedBox(width: 8),
             Text(
               'Batch results',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: isCompact ? 15 : null,
+                  ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: isCompact ? 8 : 12),
         GlassCard(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            child: wrapStats
-                ? Wrap(
-                    spacing: 12,
-                    runSpacing: 8,
-                    alignment: WrapAlignment.spaceAround,
-                    children: [
-                      _buildCompactStatChip(
-                        'Status',
-                        batch.overallStatus,
-                        Icons.flag_outlined,
-                        statusColor(batch.overallStatus),
-                      ),
-                      _buildCompactStatChip(
-                        'Done',
-                        '${batch.completed}/${batch.total}',
-                        Icons.done_all_outlined,
-                        context.colors.statusSuccess,
-                      ),
-                      _buildCompactStatChip(
-                        'Confirm',
-                        '${batch.needsConfirm}',
-                        Icons.verified_outlined,
-                        batch.needsConfirm > 0 ? Colors.blueGrey : Colors.grey,
-                      ),
-                      _buildCompactStatChip(
-                        'Needs input',
-                        '${batch.needsInput}',
-                        Icons.help_outline,
-                        batch.needsInput > 0 ? Colors.amber.shade700 : Colors.grey,
-                      ),
-                      _buildCompactStatChip(
-                        'Failed',
-                        '${batch.failed}',
-                        Icons.error_outline,
-                        batch.failed > 0 ? context.colors.statusError : Colors.grey,
-                      ),
-                    ],
-                  )
-                : Row(
-                    children: [
-                      _buildCompactStat(
-                        'Status',
-                        batch.overallStatus,
-                        Icons.flag_outlined,
-                        statusColor(batch.overallStatus),
-                      ),
-                      _buildCompactStat(
-                        'Done',
-                        '${batch.completed}/${batch.total}',
-                        Icons.done_all_outlined,
-                        context.colors.statusSuccess,
-                      ),
-                      _buildCompactStat(
-                        'Confirm',
-                        '${batch.needsConfirm}',
-                        Icons.verified_outlined,
-                        batch.needsConfirm > 0 ? Colors.blueGrey : Colors.grey,
-                      ),
-                      _buildCompactStat(
-                        'Needs input',
-                        '${batch.needsInput}',
-                        Icons.help_outline,
-                        batch.needsInput > 0 ? Colors.amber.shade700 : Colors.grey,
-                      ),
-                      _buildCompactStat(
-                        'Failed',
-                        '${batch.failed}',
-                        Icons.error_outline,
-                        batch.failed > 0 ? context.colors.statusError : Colors.grey,
-                      ),
-                    ],
-                  ),
+            padding: EdgeInsets.symmetric(
+              horizontal: isCompact ? 10 : 10,
+              vertical: isCompact ? 10 : 8,
+            ),
+            child: SizedBox(width: double.infinity, child: statsBody),
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: isCompact ? 8 : 12),
         GlassCard(
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               for (var i = 0; i < batch.files.length; i++) ...[
                 if (i > 0) const Divider(height: 1),
@@ -1929,8 +2169,8 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                   final color = statusColor(file.status);
                   final detail = friendlyDetail(file);
                   return Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
+                    padding: EdgeInsets.symmetric(
+                        horizontal: 12, vertical: filePadV),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -2039,16 +2279,19 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   }
 
   Widget _buildCompactStatChip(
-      String label, String value, IconData icon, Color color) {
-    return Container(
-      constraints: const BoxConstraints(minWidth: 100),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 16),
-          const SizedBox(width: 6),
-          Column(
+    String label,
+    String value,
+    IconData icon,
+    Color color, {
+    bool expand = false,
+  }) {
+    final row = Row(
+      mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+      children: [
+        Icon(icon, color: color, size: 16),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -2067,11 +2310,31 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                   fontWeight: FontWeight.bold,
                 ),
                 overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
             ],
           ),
-        ],
+        ),
+      ],
+    );
+
+    if (!expand) {
+      return Container(
+        constraints: const BoxConstraints(minWidth: 100),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: row,
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
       ),
+      child: row,
     );
   }
 
