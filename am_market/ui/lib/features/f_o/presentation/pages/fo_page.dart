@@ -16,14 +16,6 @@ class FoPage extends ConsumerStatefulWidget {
 }
 
 class _FoPageState extends ConsumerState<FoPage> {
-  final TextEditingController _searchController = TextEditingController();
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
   void _onSymbolSelected(String symbol) {
     ref.read(recentlyViewedFoSymbolsProvider.notifier).add(symbol);
     ref.read(foActiveSymbolProvider.notifier).state = symbol;
@@ -51,11 +43,9 @@ class _FoPageState extends ConsumerState<FoPage> {
           ),
         ),
         child: SafeArea(
+          top: false,
           child: activeSymbol == null
-              ? FoEmptyLandingView(
-                  controller: _searchController,
-                  onSelected: _onSymbolSelected,
-                )
+              ? FoEmptyLandingView(onSelected: _onSymbolSelected)
               : _buildDetailView(activeSymbol, colors),
         ),
       ),
@@ -72,7 +62,6 @@ class _FoPageState extends ConsumerState<FoPage> {
             symbol: symbol,
             onBack: () {
               ref.read(foActiveSymbolProvider.notifier).state = null;
-              _searchController.clear();
             },
           ),
           TabBar(
@@ -99,5 +88,3 @@ class _FoPageState extends ConsumerState<FoPage> {
     );
   }
 }
-
-

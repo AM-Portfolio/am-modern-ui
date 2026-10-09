@@ -18,6 +18,7 @@ class GlobalBottomNavigation extends StatefulWidget {
     super.key,
     this.onProfileTap,
     this.onSearchTap,
+    this.highlightSearch = false,
     this.userName,
     this.isDarkMode = false,
     this.visibleCount = 4,
@@ -30,6 +31,9 @@ class GlobalBottomNavigation extends StatefulWidget {
   final List<SidebarItem> items;
   final VoidCallback? onProfileTap;
   final VoidCallback? onSearchTap;
+
+  /// Soft glow on the search control (discovery pages only).
+  final bool highlightSearch;
   final String? userName;
   final bool isDarkMode;
   final Map<String, String>? moduleShareUrls;
@@ -103,67 +107,112 @@ class _GlobalBottomNavigationState extends State<GlobalBottomNavigation> {
           height: 58,
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final viewportWidth =
-                  constraints.maxWidth - (_horizontalPadding * 2);
+              final hasSearch = widget.onSearchTap != null;
+              final searchSlot = hasSearch ? 48.0 : 0.0;
+              final viewportWidth = constraints.maxWidth -
+                  (_horizontalPadding * 2) -
+                  searchSlot;
               final itemWidth = viewportWidth / visibleCount;
+              final accent = widget.accentColor ??
+                  _getIconColor(widget.activeNavItem) ??
+                  AppColors.primary;
 
-              return ListView.builder(
-                controller: _scrollController,
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: _horizontalPadding,
-                ),
-                itemCount: widget.items.length,
-                itemBuilder: (context, index) {
-                  final item = widget.items[index];
-                  final isActive = widget.activeNavItem == item.title;
-                  final accentColor =
-                      _getIconColor(item.title) ?? AppColors.primary;
-
-                  return KeyedSubtree(
-                    key: _keyFor(item.title),
-                    child: Listener(
-                      onPointerDown: (event) {
-                        final path = widget.moduleShareUrls?[item.title];
-                        if (path == null) return;
-                        if (event.buttons == kMiddleMouseButton) {
-                          AppWebNavigation.navigate(
-                            context: context,
-                            path: path,
-                            onSameTab: () => widget.onNavigate(item.title),
-                            pointerDown: event,
-                          );
-                        }
-                      },
-                      child: GestureDetector(
-                        onTap: () {
-                          final path = widget.moduleShareUrls?[item.title];
-                          if (path == null) {
-                            widget.onNavigate(item.title);
-                            return;
-                          }
-                          AppWebNavigation.navigate(
-                            context: context,
-                            path: path,
-                            onSameTab: () => widget.onNavigate(item.title),
-                          );
-                        },
-                        behavior: HitTestBehavior.opaque,
-                        child: SizedBox(
-                          width: itemWidth,
-                          child: _NavItem(
-                            icon: item.icon,
-                            label: item.title,
-                            isActive: isActive,
-                            accentColor: accentColor,
-                            isDarkMode: widget.isDarkMode,
+              return Row(
+                children: [
+                  if (hasSearch)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4),
+                      child: Container(
+                        decoration: widget.highlightSearch
+                            ? BoxDecoration(
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: accent.withValues(alpha: 0.32),
+                                    blurRadius: 12,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
+                              )
+                            : null,
+                        child: IconButton(
+                          tooltip: 'Search',
+                          onPressed: widget.onSearchTap,
+                          icon: Icon(
+                            Icons.search_rounded,
+                            color: widget.highlightSearch
+                                ? accent
+                                : (widget.isDarkMode
+                                    ? Colors.white70
+                                    : Colors.black54),
                           ),
                         ),
                       ),
                     ),
-                  );
-                },
+                  Expanded(
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: _horizontalPadding,
+                      ),
+                      itemCount: widget.items.length,
+                      itemBuilder: (context, index) {
+                        final item = widget.items[index];
+                        final isActive = widget.activeNavItem == item.title;
+                        final accentColor =
+                            _getIconColor(item.title) ?? AppColors.primary;
+
+                        return KeyedSubtree(
+                          key: _keyFor(item.title),
+                          child: Listener(
+                            onPointerDown: (event) {
+                              final path = widget.moduleShareUrls?[item.title];
+                              if (path == null) return;
+                              if (event.buttons == kMiddleMouseButton) {
+                                AppWebNavigation.navigate(
+                                  context: context,
+                                  path: path,
+                                  onSameTab: () =>
+                                      widget.onNavigate(item.title),
+                                  pointerDown: event,
+                                );
+                              }
+                            },
+                            child: GestureDetector(
+                              onTap: () {
+                                final path =
+                                    widget.moduleShareUrls?[item.title];
+                                if (path == null) {
+                                  widget.onNavigate(item.title);
+                                  return;
+                                }
+                                AppWebNavigation.navigate(
+                                  context: context,
+                                  path: path,
+                                  onSameTab: () =>
+                                      widget.onNavigate(item.title),
+                                );
+                              },
+                              behavior: HitTestBehavior.opaque,
+                              child: SizedBox(
+                                width: itemWidth,
+                                child: _NavItem(
+                                  icon: item.icon,
+                                  label: item.title,
+                                  isActive: isActive,
+                                  accentColor: accentColor,
+                                  isDarkMode: widget.isDarkMode,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               );
             },
           ),

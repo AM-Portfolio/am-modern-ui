@@ -4,6 +4,9 @@ import 'package:am_design_system/core/module/module_color_provider.dart';
 import 'package:flutter/material.dart';
 
 import 'am_command_palette.dart';
+import 'mobile_global_search_overlay.dart';
+
+export 'mobile_global_search_overlay.dart';
 
 /// Provides global command-search items to mobile module chrome without
 /// duplicating [AppShell] item lists.
@@ -12,6 +15,12 @@ class MobileSearchScope extends InheritedWidget {
     required this.getItems,
     required this.searchOpen,
     required super.child,
+    this.openGlobalSearch,
+    this.liveSearch,
+    this.hintText,
+    this.bannerTitle,
+    this.bannerSubtitle,
+    this.emptySuggestions,
     super.key,
   });
 
@@ -19,6 +28,15 @@ class MobileSearchScope extends InheritedWidget {
 
   /// Shared with AppShell so bottom nav can hide while search is open.
   final ValueNotifier<bool> searchOpen;
+
+  /// Opens fullscreen Global Search (sets [searchOpen] / shell overlay).
+  final VoidCallback? openGlobalSearch;
+
+  final LiveSearchFn? liveSearch;
+  final String? hintText;
+  final String? bannerTitle;
+  final String? bannerSubtitle;
+  final List<CommandItem> Function()? emptySuggestions;
 
   static MobileSearchScope? maybeOf(BuildContext context) {
     return context.dependOnInheritedWidgetOfExactType<MobileSearchScope>();
@@ -38,13 +56,29 @@ class MobileSearchScope extends InheritedWidget {
     }
   }
 
+  /// Opens Global Search when [openGlobalSearch] is wired; otherwise false.
+  static bool tryOpenGlobalSearch(BuildContext context) {
+    final scope = maybeOf(context);
+    final open = scope?.openGlobalSearch;
+    if (open == null) return false;
+    open();
+    return true;
+  }
+
   @override
   bool updateShouldNotify(MobileSearchScope oldWidget) =>
-      getItems != oldWidget.getItems || searchOpen != oldWidget.searchOpen;
+      getItems != oldWidget.getItems ||
+      searchOpen != oldWidget.searchOpen ||
+      openGlobalSearch != oldWidget.openGlobalSearch ||
+      liveSearch != oldWidget.liveSearch ||
+      hintText != oldWidget.hintText ||
+      bannerTitle != oldWidget.bannerTitle ||
+      bannerSubtitle != oldWidget.bannerSubtitle ||
+      emptySuggestions != oldWidget.emptySuggestions;
 }
 
 /// Compact mobile search field used when the Dashboard sticky row or module
-/// pill strip morphs into search mode.
+/// pill strip morphs into search mode (fallback when shell overlay is absent).
 class MobileInlineSearchField extends StatefulWidget {
   const MobileInlineSearchField({
     required this.items,
@@ -140,11 +174,15 @@ class _MobileInlineSearchFieldState extends State<MobileInlineSearchField>
   }
 
   Widget _highlight(String text, String query, TextStyle style, Color accent) {
-    if (query.isEmpty) return Text(text, style: style, maxLines: 1, overflow: TextOverflow.ellipsis);
+    if (query.isEmpty) {
+      return Text(text, style: style, maxLines: 1, overflow: TextOverflow.ellipsis);
+    }
     final lower = text.toLowerCase();
     final q = query.toLowerCase();
     final i = lower.indexOf(q);
-    if (i < 0) return Text(text, style: style, maxLines: 1, overflow: TextOverflow.ellipsis);
+    if (i < 0) {
+      return Text(text, style: style, maxLines: 1, overflow: TextOverflow.ellipsis);
+    }
     return Text.rich(
       TextSpan(
         style: style,
@@ -170,11 +208,8 @@ class _MobileInlineSearchFieldState extends State<MobileInlineSearchField>
     final accent = ModuleColorProvider.of(context);
     final query = _controller.text.trim();
     final showSuggested = query.isEmpty;
-    final groups = showSuggested
-        ? {'Suggested': _filtered}
-        : _grouped(_filtered);
+    final groups = showSuggested ? {'Suggested': _filtered} : _grouped(_filtered);
 
-    // Match module page cards / canvas — not a fixed navy chrome.
     final surfaceColor = Color.alphaBlend(
       accent.withValues(alpha: isDark ? 0.08 : 0.04),
       isDark
@@ -265,7 +300,7 @@ class _MobileInlineSearchFieldState extends State<MobileInlineSearchField>
                 parent: _reveal,
                 curve: Curves.easeOutCubic,
               ),
-              axisAlignment: -1,
+              alignment: Alignment.topCenter,
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
                 child: BackdropFilter(
@@ -277,8 +312,8 @@ class _MobileInlineSearchFieldState extends State<MobileInlineSearchField>
                         final available = media.size.height -
                             media.padding.top -
                             media.viewInsets.bottom -
-                            58 - // search field
-                            24; // outer gaps
+                            58 -
+                            24;
                         return available.clamp(120.0, media.size.height * 0.42);
                       }(),
                     ),
@@ -306,7 +341,8 @@ class _MobileInlineSearchFieldState extends State<MobileInlineSearchField>
                             children: [
                               for (final entry in groups.entries) ...[
                                 Padding(
-                                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+                                  padding:
+                                      const EdgeInsets.fromLTRB(12, 8, 12, 6),
                                   child: Text(
                                     entry.key,
                                     style: TextStyle(
@@ -332,7 +368,8 @@ class _MobileInlineSearchFieldState extends State<MobileInlineSearchField>
                                             width: 36,
                                             height: 36,
                                             decoration: BoxDecoration(
-                                              color: accent.withValues(alpha: 0.14),
+                                              color:
+                                                  accent.withValues(alpha: 0.14),
                                               borderRadius:
                                                   BorderRadius.circular(10),
                                             ),

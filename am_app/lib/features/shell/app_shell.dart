@@ -13,10 +13,16 @@ import 'package:am_common/am_common.dart' as common;
 import 'package:am_library/am_library.dart';
 import 'package:am_subscription_ui/am_subscription_ui.dart' as am_sub;
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../core/navigation/cross_module_section_sequence.dart';
 import '../../core/navigation/cross_section_swipe_host.dart';
 import '../../core/router/app_routes.dart';
 import '../../core/router/share_url_builder.dart';
+import '../search/search_context.dart';
+import '../search/search_context_registry.dart';
+import '../search/search_discovery_hint.dart';
+import '../search/unified_search_engine.dart';
 
 /// Dev mock portfolio IDs (trade mock JSON) must not be restored from session.
 bool _isDevMockPortfolioId(String portfolioId) =>
@@ -59,6 +65,7 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
   StreamSubscription<List<SecurityEventModel>>? _securityEventsSub;
   StreamSubscription<void>? _featureFlagServiceSub;
   SecurityEventModel? _securityAlert;
+  final UnifiedSearchEngine _searchEngine = UnifiedSearchEngine();
 
   bool get _isSecurityAlertBannerEnabled {
     if (FeatureFlags().enableSecurityAlertBanner) {
@@ -76,6 +83,7 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
   @override
   void initState() {
     super.initState();
+    common.GlobalSearchBridge.open = _showSearch;
     _bottomNavController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 280),
@@ -132,6 +140,10 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
     if (kIsWeb) {
       AuthProviders.securityAlertService.stop();
     }
+    if (identical(common.GlobalSearchBridge.open, _showSearch)) {
+      common.GlobalSearchBridge.open = null;
+    }
+    _searchEngine.dispose();
     _bottomNavController.dispose();
     super.dispose();
   }
@@ -527,70 +539,143 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
         .onTabSelected(tabTitle);
   }
 
-    List<common.CommandItem> _getMockSearchItems(BuildContext context) {
+  /// Static module actions / tools (live securities come from [UnifiedSearchEngine]).
+  List<common.CommandItem> _seedActionItems(BuildContext context) {
+    final portfolioId =
+        ShareUrlBuilder.portfolioIdFromLocation(_currentLocation) ?? 'all';
     return [
-      // Indices
-      common.CommandItem(title: 'NIFTY 50', subtitle: 'National Stock Exchange Index', category: 'Market', icon: Icons.show_chart, onSelected: () => context.go('/app/market/NIFTY50')),
-      common.CommandItem(title: 'NIFTY BANK', subtitle: 'Banking Sector Index', category: 'Market', icon: Icons.account_balance, onSelected: () => context.go('/app/market/BANKNIFTY')),
-      common.CommandItem(title: 'SENSEX', subtitle: 'BSE SENSEX Index', category: 'Market', icon: Icons.show_chart, onSelected: () => context.go('/app/market/SENSEX')),
-      common.CommandItem(title: 'NIFTY IT', subtitle: 'IT Sector Index', category: 'Market', icon: Icons.computer, onSelected: () => context.go('/app/market/NIFTYIT')),
-      
-      // Top Stocks
-      common.CommandItem(title: 'Reliance Industries', subtitle: 'RELIANCE - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/RELIANCE')),
-      common.CommandItem(title: 'HDFC Bank', subtitle: 'HDFCBANK - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/HDFCBANK')),
-      common.CommandItem(title: 'TCS', subtitle: 'TCS - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/TCS')),
-      common.CommandItem(title: 'ICICI Bank', subtitle: 'ICICIBANK - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/ICICIBANK')),
-      common.CommandItem(title: 'Infosys', subtitle: 'INFY - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/INFY')),
-      common.CommandItem(title: 'State Bank of India', subtitle: 'SBIN - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/SBIN')),
-      common.CommandItem(title: 'Bharti Airtel', subtitle: 'BHARTIARTL - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/BHARTIARTL')),
-      common.CommandItem(title: 'ITC', subtitle: 'ITC - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/ITC')),
-      common.CommandItem(title: 'Larsen & Toubro', subtitle: 'LT - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/LT')),
-      common.CommandItem(title: 'Bajaj Finance', subtitle: 'BAJFINANCE - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/BAJFINANCE')),
-      common.CommandItem(title: 'Hindustan Unilever', subtitle: 'HINDUNILVR - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/HINDUNILVR')),
-      common.CommandItem(title: 'Axis Bank', subtitle: 'AXISBANK - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/AXISBANK')),
-      common.CommandItem(title: 'Kotak Mahindra Bank', subtitle: 'KOTAKBANK - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/KOTAKBANK')),
-      common.CommandItem(title: 'Mahindra & Mahindra', subtitle: 'M&M - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/M&M')),
-      common.CommandItem(title: 'Tata Motors', subtitle: 'TATAMOTORS - Equity', category: 'Market', icon: Icons.directions_car, onSelected: () => context.go('/app/market/TATAMOTORS')),
-      common.CommandItem(title: 'Asian Paints', subtitle: 'ASIANPAINT - Equity', category: 'Market', icon: Icons.format_paint, onSelected: () => context.go('/app/market/ASIANPAINT')),
-      common.CommandItem(title: 'Maruti Suzuki', subtitle: 'MARUTI - Equity', category: 'Market', icon: Icons.directions_car, onSelected: () => context.go('/app/market/MARUTI')),
-      common.CommandItem(title: 'Sun Pharma', subtitle: 'SUNPHARMA - Equity', category: 'Market', icon: Icons.medical_services, onSelected: () => context.go('/app/market/SUNPHARMA')),
-      common.CommandItem(title: 'Tata Steel', subtitle: 'TATASTEEL - Equity', category: 'Market', icon: Icons.precision_manufacturing, onSelected: () => context.go('/app/market/TATASTEEL')),
-      common.CommandItem(title: 'Wipro', subtitle: 'WIPRO - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/WIPRO')),
-      common.CommandItem(title: 'Power Grid Corp', subtitle: 'POWERGRID - Equity', category: 'Market', icon: Icons.bolt, onSelected: () => context.go('/app/market/POWERGRID')),
-      common.CommandItem(title: 'NTPC', subtitle: 'NTPC - Equity', category: 'Market', icon: Icons.bolt, onSelected: () => context.go('/app/market/NTPC')),
-      common.CommandItem(title: 'Ultratech Cement', subtitle: 'ULTRACEMCO - Equity', category: 'Market', icon: Icons.construction, onSelected: () => context.go('/app/market/ULTRACEMCO')),
-      common.CommandItem(title: 'Titan Company', subtitle: 'TITAN - Equity', category: 'Market', icon: Icons.watch, onSelected: () => context.go('/app/market/TITAN')),
-      common.CommandItem(title: 'Nestle India', subtitle: 'NESTLEIND - Equity', category: 'Market', icon: Icons.fastfood, onSelected: () => context.go('/app/market/NESTLEIND')),
-      common.CommandItem(title: 'Bajaj Finserv', subtitle: 'BAJAJFINSV - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/BAJAJFINSV')),
-      common.CommandItem(title: 'Tech Mahindra', subtitle: 'TECHM - Equity', category: 'Market', icon: Icons.computer, onSelected: () => context.go('/app/market/TECHM')),
-      common.CommandItem(title: 'ONGC', subtitle: 'ONGC - Equity', category: 'Market', icon: Icons.oil_barrel, onSelected: () => context.go('/app/market/ONGC')),
-      common.CommandItem(title: 'Hindalco', subtitle: 'HINDALCO - Equity', category: 'Market', icon: Icons.precision_manufacturing, onSelected: () => context.go('/app/market/HINDALCO')),
-      common.CommandItem(title: 'HCL Tech', subtitle: 'HCLTECH - Equity', category: 'Market', icon: Icons.computer, onSelected: () => context.go('/app/market/HCLTECH')),
-      common.CommandItem(title: 'Coal India', subtitle: 'COALINDIA - Equity', category: 'Market', icon: Icons.terrain, onSelected: () => context.go('/app/market/COALINDIA')),
-      common.CommandItem(title: 'Adani Enterprises', subtitle: 'ADANIENT - Equity', category: 'Market', icon: Icons.business, onSelected: () => context.go('/app/market/ADANIENT')),
-      common.CommandItem(title: 'Adani Ports', subtitle: 'ADANIPORTS - Equity', category: 'Market', icon: Icons.directions_boat, onSelected: () => context.go('/app/market/ADANIPORTS')),
-      
-      // Global
-      common.CommandItem(title: 'AAPL', subtitle: 'Apple Inc. - Equity', category: 'Market', icon: Icons.show_chart, onSelected: () => context.go('/app/market/AAPL')),
-      common.CommandItem(title: 'TSLA', subtitle: 'Tesla Inc. - Equity', category: 'Market', icon: Icons.show_chart, onSelected: () => context.go('/app/market/TSLA')),
-      
-      // App Pages
-      common.CommandItem(title: 'Trade Journal', subtitle: 'Review your past performance', category: 'Trade', icon: Icons.book, onSelected: () => context.go('/app/trade/journal')),
-      common.CommandItem(title: 'Federal Reserve cuts rates', subtitle: 'Breaking News', category: 'News', icon: Icons.article, onSelected: () => context.go('/app/dashboard')),
-      common.CommandItem(title: 'My Tech Basket', subtitle: 'Custom Portfolio Basket', category: 'Portfolio', icon: Icons.pie_chart, onSelected: () => context.go('/app/portfolio/baskets')),
-      common.CommandItem(title: 'Place New Order', subtitle: 'Open the trading desk', category: 'Action', icon: Icons.add_shopping_cart, onSelected: () => context.go('/app/trade')),
+      common.CommandItem(
+        title: 'Trade Journal',
+        subtitle: 'Review your past performance',
+        category: 'Trade',
+        icon: Icons.book,
+        onSelected: () => context.go('/app/trade/journal'),
+      ),
+      common.CommandItem(
+        title: 'Equity Insider',
+        subtitle: 'Fundamental analysis',
+        category: 'Action',
+        icon: Icons.insights,
+        onSelected: () =>
+            context.go(AppRoutes.marketPath('equity-insider')),
+      ),
+      common.CommandItem(
+        title: 'Futures & Options',
+        subtitle: 'Option chain and derivatives',
+        category: 'Action',
+        icon: Icons.candlestick_chart,
+        onSelected: () =>
+            context.go(AppRoutes.marketPath('futures-options')),
+      ),
+      common.CommandItem(
+        title: 'Baskets',
+        subtitle: 'Discover ETFs and basket ideas',
+        category: 'Baskets',
+        icon: Icons.pie_chart,
+        onSelected: () =>
+            context.go(AppRoutes.portfolioPath(portfolioId, 'baskets')),
+      ),
+      common.CommandItem(
+        title: 'Place New Order',
+        subtitle: 'Open the trading desk',
+        category: 'Action',
+        icon: Icons.add_shopping_cart,
+        onSelected: () => context.go('/app/trade'),
+      ),
+      common.CommandItem(
+        title: 'News',
+        subtitle: 'Market headlines',
+        category: 'News',
+        icon: Icons.article,
+        onSelected: () => context.go(AppRoutes.dashboard),
+      ),
     ];
   }
 
+  SearchContext get _searchContext =>
+      SearchContextResolver.fromLocation(_currentLocation);
+
+  bool get _highlightSearchHint => SearchDiscoveryHint.shouldHighlight(
+        _searchContext,
+        searchOpen: _mobileSearchOpen.value,
+      );
+
+  Future<void> _liveSearchQuery(
+    String query,
+    void Function(List<common.CommandItem> items, {bool isLoading}) emit,
+  ) async {
+    ProviderContainer? container;
+    try {
+      container = ProviderScope.containerOf(context, listen: false);
+    } catch (_) {}
+
+    final done = Completer<void>();
+    _searchEngine.query(
+      rawQuery: query,
+      context: _searchContext,
+      navContext: context,
+      seedActions: _seedActionItems(context),
+      container: container,
+      onResult: (snap) {
+        emit(snap.items, isLoading: snap.isLoading);
+        if (!snap.isLoading && !done.isCompleted) {
+          done.complete();
+        }
+        if (snap.error != null && !done.isCompleted) {
+          done.complete();
+        }
+      },
+    );
+    await done.future;
+  }
+
+  List<common.CommandItem> _emptySearchSuggestions() {
+    final searchCtx = _searchContext;
+    final seed = _seedActionItems(context);
+    List<common.CommandItem> items = seed;
+    _searchEngine.query(
+      rawQuery: '',
+      context: searchCtx,
+      navContext: context,
+      seedActions: seed,
+      onResult: (snap) {
+        if (!snap.isLoading) items = snap.items;
+      },
+    );
+    return items;
+  }
+
+  void _openMobileFullscreenSearch() {
+    final searchCtx = _searchContext;
+    SearchDiscoveryHint.dismiss(searchCtx);
+    if (_mobileSearchOpen.value != true) {
+      _mobileSearchOpen.value = true;
+    }
+    if (mounted) setState(() {});
+  }
+
   void _showSearch() {
-    final items = _getMockSearchItems(context);
+    final searchCtx = _searchContext;
+    SearchDiscoveryHint.dismiss(searchCtx);
+    if (mounted) setState(() {});
+
     final isMobile =
         MediaQuery.sizeOf(context).width < UIConstants.mobileBreakpoint;
+
     if (isMobile) {
-      common.AmCommandPalette.showMobileTop(context, items: items);
-    } else {
-      common.AmCommandPalette.show(context, items: items);
+      _openMobileFullscreenSearch();
+      return;
     }
+
+    final copy = SearchContextRegistry.copyFor(searchCtx);
+    common.AmCommandPalette.show(
+      context,
+      items: _seedActionItems(context),
+      bannerTitle: copy.bannerTitle,
+      bannerSubtitle: copy.bannerSubtitle,
+      liveSearch: _liveSearchQuery,
+      emptySuggestions: _emptySearchSuggestions,
+    );
   }
 
   Color _moduleAccentFor(String title) {
@@ -610,6 +695,26 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
         return ModuleColors.analytics;
       default:
         return ModuleColors.dashboard;
+    }
+  }
+
+  ModuleType _moduleTypeFor(String title) {
+    switch (title.toLowerCase()) {
+      case 'dashboard':
+        return ModuleType.dashboard;
+      case 'portfolio':
+        return ModuleType.portfolio;
+      case 'trade':
+        return ModuleType.trade;
+      case 'market':
+        return ModuleType.market;
+      case 'analysis':
+      case 'doc intel':
+        return ModuleType.admin;
+      case 'ai chat':
+        return ModuleType.dashboard;
+      default:
+        return ModuleType.other;
     }
   }
 
@@ -856,8 +961,16 @@ final userId =
                   }
                 },
                 child: common.MobileSearchScope(
-                  getItems: () => _getMockSearchItems(context),
+                  getItems: () => _seedActionItems(context),
                   searchOpen: _mobileSearchOpen,
+                  openGlobalSearch: _showSearch,
+                  liveSearch: _liveSearchQuery,
+                  hintText: SearchContextRegistry.hintFor(_searchContext),
+                  bannerTitle:
+                      SearchContextRegistry.copyFor(_searchContext).bannerTitle,
+                  bannerSubtitle: SearchContextRegistry.copyFor(_searchContext)
+                      .bannerSubtitle,
+                  emptySuggestions: _emptySearchSuggestions,
                   child: common.OfflineShell(
                                     child: Shortcuts(
                     shortcuts: {
@@ -896,7 +1009,10 @@ final userId =
                                 photoUrl: authState.user.photoUrl,
                               ),
                               moduleShareUrls: AppRoutes.navTitleToDefaultPath,
-                                onSearchTap: _showSearch,
+                              onSearchTap: _showSearch,
+                              highlightSearch: _highlightSearchHint,
+                              searchHighlightColor:
+                                  _moduleAccentFor(_activeNavItem),
                               onThemeToggle: () {
                                 try {
                                   final cubit = context.read<ThemeCubit>();
@@ -1024,7 +1140,6 @@ final userId =
                                   userName: authState.user.displayName,
                                   visibleCount: 5,
                                   moduleShareUrls: AppRoutes.navTitleToDefaultPath,
-                                  onSearchTap: _showSearch,
                               onNavigate: (title) =>
                                   _onGlobalNavigate(title, userId),
                                   items: [
@@ -1064,6 +1179,45 @@ final userId =
                               ),
                             ),
                           ),
+                          ),
+                        ),
+                      if (!isDesktop && authState is Authenticated)
+                        Positioned.fill(
+                          child: ValueListenableBuilder<bool>(
+                            valueListenable: _mobileSearchOpen,
+                            builder: (context, searchOpen, _) {
+                              if (!searchOpen) {
+                                return const SizedBox.shrink();
+                              }
+                              final copy = SearchContextRegistry.copyFor(
+                                _searchContext,
+                              );
+                              final nav = _activeNavItem;
+                              final accent = _moduleAccentFor(nav);
+                              return ModuleColorProvider(
+                                module: _moduleTypeFor(nav),
+                                child: common.MobileGlobalSearchOverlay(
+                                  key: ValueKey(
+                                    'global-search-${_searchContext.name}-$nav',
+                                  ),
+                                  accent: accent,
+                                  hintText: SearchContextRegistry.hintFor(
+                                    _searchContext,
+                                  ),
+                                  bannerTitle: copy.bannerTitle,
+                                  bannerSubtitle: copy.bannerSubtitle,
+                                  liveSearch: _liveSearchQuery,
+                                  emptySuggestions: _emptySearchSuggestions,
+                                  seedItems: _seedActionItems(context),
+                                  onClose: () {
+                                    if (_mobileSearchOpen.value) {
+                                      _mobileSearchOpen.value = false;
+                                    }
+                                    if (mounted) setState(() {});
+                                  },
+                                ),
+                              );
+                            },
                           ),
                         ),
                       if (kIsWeb && _isSecurityAlertBannerEnabled && _securityAlert != null)

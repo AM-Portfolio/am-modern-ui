@@ -173,6 +173,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
               onHistory: _openHistory,
               onNewChat: () => ref.read(aiChatProvider.notifier).clearChat(),
               onSearch: () {
+                if (MobileSearchScope.tryOpenGlobalSearch(context)) return;
                 MobileSearchScope.setOpen(context, true);
                 setState(() => _searchOpen = true);
               },

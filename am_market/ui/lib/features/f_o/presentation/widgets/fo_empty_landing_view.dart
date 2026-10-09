@@ -1,17 +1,14 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/features/f_o/providers/fo_provider.dart';
-import 'package:am_market_ui/core/services/market_data_sdk_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class FoEmptyLandingView extends ConsumerWidget {
   const FoEmptyLandingView({
-    required this.controller,
     required this.onSelected,
     super.key,
   });
 
-  final TextEditingController controller;
   final ValueChanged<String> onSelected;
 
   @override
@@ -20,9 +17,7 @@ class FoEmptyLandingView extends ConsumerWidget {
     final accentColor = ModuleColors.market;
     final surfaceColor = colors.cardSurface;
     final borderColor = colors.border;
-    final sdkService = MarketDataSdkService();
 
-    final recent = ref.watch(recentlyViewedFoSymbolsProvider);
     final recommendationsAsync = ref.watch(dynamicFoRecommendationsProvider);
     final rawSymbols = recommendationsAsync.maybeWhen(
       data: (d) => d,
@@ -31,7 +26,6 @@ class FoEmptyLandingView extends ConsumerWidget {
     final recSymbols = rawSymbols.isNotEmpty
         ? rawSymbols.take(6).toList()
         : const ['NIFTY', 'BANKNIFTY', 'FINNIFTY', 'MIDCPNIFTY'];
-    final animatedHints = recSymbols.map((s) => 'Search "$s"...').toList();
 
     return Center(
       child: SingleChildScrollView(
@@ -75,35 +69,15 @@ class FoEmptyLandingView extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Search indices or stocks to view Option Chains, Futures, and live market data.',
+                'Use the search icon above, or pick a popular index below.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: colors.textSecondary,
                   fontSize: 14,
                 ),
               ),
-              const SizedBox(height: 28),
-              SmartSearchAnchor(
-                controller: controller,
-                animatedHints: animatedHints,
-                recentSearches: recent,
-                onRemoveRecent: (sym) {
-                  ref.read(recentlyViewedFoSymbolsProvider.notifier).remove(sym);
-                },
-                onClearRecent: () {
-                  ref.read(recentlyViewedFoSymbolsProvider.notifier).clear();
-                },
-                accentColor: accentColor,
-                searchHandler: (q) => sdkService.securityApi.search(
-                  q,
-                  smartRecommendations: true,
-                  category: 'ALL',
-                  limit: 8,
-                ),
-                onSelected: onSelected,
-              ),
               if (recSymbols.isNotEmpty) ...[
-                const SizedBox(height: 16),
+                const SizedBox(height: 28),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -121,10 +95,10 @@ class FoEmptyLandingView extends ConsumerWidget {
                           ),
                           backgroundColor: colors.cardSurface,
                           side: BorderSide(color: colors.border),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          onPressed: () {
-                            onSelected(s);
-                          },
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          onPressed: () => onSelected(s),
                         ),
                       )
                       .toList(),

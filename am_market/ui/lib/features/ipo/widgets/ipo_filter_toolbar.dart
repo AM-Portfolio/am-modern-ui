@@ -96,12 +96,6 @@ class IpoFilterToolbar extends ConsumerWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
-              // 4. Search Box
-              SizedBox(
-                width: 260,
-                child: _buildSearchBox(context, ref, filterState.searchQuery),
-              ),
             ],
           );
         }
@@ -166,10 +160,13 @@ class IpoFilterToolbar extends ConsumerWidget {
             Row(
               children: [
                 Expanded(
-                  child: _buildSearchBox(context, ref, filterState.searchQuery),
+                  child: _buildIndustryDropdown(
+                    context,
+                    ref,
+                    industries,
+                    filterState.selectedIndustry,
+                  ),
                 ),
-                const SizedBox(width: 8),
-                _buildIndustryDropdown(context, ref, industries, filterState.selectedIndustry),
               ],
             ),
             const SizedBox(height: 8),
@@ -351,46 +348,4 @@ class IpoFilterToolbar extends ConsumerWidget {
     );
   }
 
-  Widget _buildSearchBox(BuildContext context, WidgetRef ref, String query) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      height: 38,
-      decoration: BoxDecoration(
-        color: context.surfaceColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: context.borderColor,
-          width: 1,
-        ),
-      ),
-      child: TextField(
-        controller: TextEditingController(text: query)..selection = TextSelection.collapsed(offset: query.length),
-        onChanged: (val) {
-          ref.read(ipoFilterStateProvider.notifier).setSearchQuery(val);
-        },
-        style: TextStyle(
-          fontSize: 13,
-          color: context.textPrimary,
-        ),
-        decoration: InputDecoration(
-          isDense: true,
-          hintText: 'Search IPO by name or symbol...',
-          hintStyle: TextStyle(
-            fontSize: 12,
-            color: context.textTertiary,
-          ),
-          prefixIcon: Icon(Icons.search_rounded, size: 18, color: context.textTertiary),
-          suffixIcon: query.isNotEmpty
-              ? IconButton(
-                  icon: Icon(Icons.clear_rounded, size: 16, color: context.textTertiary),
-                  onPressed: () => ref.read(ipoFilterStateProvider.notifier).setSearchQuery(''),
-                )
-              : null,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-        ),
-      ),
-    );
-  }
 }

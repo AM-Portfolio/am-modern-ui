@@ -6,6 +6,20 @@ import 'package:am_market_ui/core/services/market_data_sdk_service.dart';
 import 'package:am_auth_ui/core/services/secure_storage_service.dart';
 import 'package:get_it/get_it.dart';
 
+/// Pending / active symbol selected via Global Search (or deep link).
+class EquityInsiderActiveSymbolNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  @override
+  set state(String? value) => super.state = value;
+}
+
+final equityInsiderActiveSymbolProvider =
+    NotifierProvider<EquityInsiderActiveSymbolNotifier, String?>(
+  EquityInsiderActiveSymbolNotifier.new,
+);
+
 /// In-session recently viewed stocks (max 5). 
 /// Reset when browser refreshes or new session begins.
 final recentlyViewedStocksProvider =

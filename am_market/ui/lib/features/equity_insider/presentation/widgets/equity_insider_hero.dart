@@ -11,12 +11,10 @@ import '../../../../features/watchlists/presentation/widgets/add_to_watchlist_po
 /// [EquityInsiderHeroDescription] when the bar is pinned separately.
 class EquityInsiderHero extends ConsumerWidget {
   final String symbol;
-  final VoidCallback? onSearchTap;
 
   const EquityInsiderHero({
     super.key,
     required this.symbol,
-    this.onSearchTap,
   });
 
   @override
@@ -24,22 +22,20 @@ class EquityInsiderHero extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        EquityInsiderHeroBar(symbol: symbol, onSearchTap: onSearchTap),
+        EquityInsiderHeroBar(symbol: symbol),
         EquityInsiderHeroDescription(symbol: symbol),
       ],
     );
   }
 }
 
-/// Sticky identity strip: logo, symbol, price, watchlist (no description).
+/// Sticky identity strip: logo, symbol, price (compact on mobile).
 class EquityInsiderHeroBar extends ConsumerWidget {
   final String symbol;
-  final VoidCallback? onSearchTap;
 
   const EquityInsiderHeroBar({
     super.key,
     required this.symbol,
-    this.onSearchTap,
   });
 
   @override
@@ -67,94 +63,191 @@ class EquityInsiderHeroBar extends ConsumerWidget {
             ? context.colors.statusWarning
             : context.marketTheme.chartBlue;
 
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            _buildLogo(context, data.companyName ?? data.symbol ?? symbol),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 800;
+            final logoSize = isMobile ? 36.0 : 44.0;
+
+            if (isMobile) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 8,
-                    runSpacing: 4,
+                  _buildLogo(
+                    context,
+                    data.companyName ?? data.symbol ?? symbol,
+                    size: logoSize,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                data.symbol ?? symbol,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: context.textPrimary,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            _buildBadge(
+                              context,
+                              activeExchange,
+                              customColor: exchangeBadgeColor,
+                            ),
+                          ],
+                        ),
+                        Text(
+                          data.companyName ?? symbol,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: context.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '₹${_formatCurrency(data.currentPrice)}',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: context.textPrimary,
+                            height: 1.1,
+                          ),
+                        ),
+                        Text(
+                          '$arrow ₹$absChange ($pctChange%)',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: deltaColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _buildLogo(
+                  context,
+                  data.companyName ?? data.symbol ?? symbol,
+                  size: logoSize,
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: [
+                          Text(
+                            data.symbol ?? symbol,
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              color: context.textPrimary,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          _buildBadge(
+                            context,
+                            activeExchange,
+                            customColor: exchangeBadgeColor,
+                          ),
+                          if (data.sector != null && data.sector!.isNotEmpty)
+                            _buildBadge(context, data.sector!, isNeutral: true),
+                          if (data.industry != null && data.industry!.isNotEmpty)
+                            _buildBadge(
+                              context,
+                              data.industry!,
+                              isNeutral: true,
+                            ),
+                          _buildExchangeToggle(context, ref),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        '${data.companyName ?? symbol} · ${activeExchange == 'BSE' ? 'Bombay Stock Exchange' : 'National Stock Exchange'} · Live',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: context.textSecondary,
+                          letterSpacing: 0.1,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        data.symbol ?? symbol,
+                        '₹${_formatCurrency(data.currentPrice)}',
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
                           color: context.textPrimary,
-                          letterSpacing: -0.5,
+                          letterSpacing: -0.8,
+                          height: 1.1,
                         ),
                       ),
-                      _buildBadge(
-                        context,
-                        activeExchange,
-                        customColor: exchangeBadgeColor,
+                      Text(
+                        '$arrow ₹$absChange ($pctChange%)',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: deltaColor,
+                          height: 1.2,
+                        ),
                       ),
-                      if (data.sector != null && data.sector!.isNotEmpty)
-                        _buildBadge(context, data.sector!, isNeutral: true),
-                      if (data.industry != null && data.industry!.isNotEmpty)
-                        _buildBadge(context, data.industry!, isNeutral: true),
-                      if (onSearchTap != null) _buildSearchCapsule(context),
-                      _buildExchangeToggle(context, ref),
+                      const SizedBox(height: 4),
+                      _buildWatchlistButton(context, ref, symbol),
                     ],
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    '${data.companyName ?? symbol} · ${activeExchange == 'BSE' ? 'Bombay Stock Exchange' : 'National Stock Exchange'} · Live',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: context.textSecondary,
-                      letterSpacing: 0.1,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerRight,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '₹${_formatCurrency(data.currentPrice)}',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: context.textPrimary,
-                      letterSpacing: -0.8,
-                      height: 1.1,
-                    ),
-                  ),
-                  Text(
-                    '$arrow ₹$absChange ($pctChange%)',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: deltaColor,
-                      height: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  _buildWatchlistButton(context, ref),
-                ],
-              ),
-            ),
-          ],
+                ),
+              ],
+            );
+          },
         );
       },
       loading: () => const SizedBox(
-        height: 80,
+        height: 56,
         child: Center(child: CircularProgressIndicator()),
       ),
       error: (e, st) => Text(
@@ -235,7 +328,7 @@ class EquityInsiderHeroBar extends ConsumerWidget {
     );
   }
 
-  Widget _buildLogo(BuildContext context, String name) {
+  Widget _buildLogo(BuildContext context, String name, {double size = 44}) {
     final initials = name.trim().isNotEmpty
         ? name
             .trim()
@@ -246,8 +339,8 @@ class EquityInsiderHeroBar extends ConsumerWidget {
         : 'EQ';
 
     return Container(
-      width: 44,
-      height: 44,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         color: ModuleColors.market.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(10),
@@ -260,144 +353,12 @@ class EquityInsiderHeroBar extends ConsumerWidget {
       child: Text(
         initials,
         style: TextStyle(
-          fontSize: 16,
+          fontSize: size >= 44 ? 16 : 13,
           fontWeight: FontWeight.w700,
           color: ModuleColors.market,
           letterSpacing: 0.5,
         ),
       ),
-    );
-  }
-
-  Widget _buildSearchCapsule(BuildContext context) {
-    return InkWell(
-      onTap: onSearchTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: context.cardColor,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: ModuleColors.market.withValues(alpha: 0.35),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.search_rounded,
-              size: 13,
-              color: ModuleColors.market,
-            ),
-            const SizedBox(width: 5),
-            Text(
-              'Search stock...',
-              style: TextStyle(
-                color: context.textTertiary,
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWatchlistButton(BuildContext context, WidgetRef ref) {
-    final statusAsync = ref.watch(watchlistCheckStatusProvider(symbol));
-
-    return statusAsync.when(
-      data: (statuses) {
-        final isAdded = statuses.any((s) => s.containsSymbol);
-        final addedToWatchlistName =
-            isAdded ? statuses.firstWhere((s) => s.containsSymbol).name : '';
-
-        if (isAdded) {
-          return SizedBox(
-            height: 28,
-            child: FilledButton.icon(
-              onPressed: () async {
-                final confirm = await ConfirmationDialog.show(
-                  context: context,
-                  title: 'Remove Stock',
-                  subtitle: 'Watchlist Management',
-                  message:
-                      'Are you sure you want to remove $symbol from $addedToWatchlistName?',
-                  icon: Icons.bookmark_remove_rounded,
-                  confirmText: 'Remove',
-                  isDestructive: true,
-                );
-                if (confirm) {
-                  final wid =
-                      statuses.firstWhere((s) => s.containsSymbol).watchlistId;
-                  ref.read(watchlistsProvider.notifier).removeStock(wid, symbol);
-                  ref.invalidate(watchlistCheckStatusProvider(symbol));
-                }
-              },
-              icon: const Icon(
-                Icons.bookmark_added_rounded,
-                size: 14,
-                color: Colors.white,
-              ),
-              label: const Text(
-                'Already Added',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-              style: FilledButton.styleFrom(
-                backgroundColor: ModuleColors.market,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-                visualDensity: VisualDensity.compact,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6),
-                ),
-              ),
-            ),
-          );
-        }
-
-        return SizedBox(
-          height: 28,
-          child: OutlinedButton.icon(
-            onPressed: () {
-              AddToWatchlistPopup.show(context, symbol);
-            },
-            icon: Icon(Icons.add, size: 14, color: ModuleColors.market),
-            label: Text(
-              'Add to Watchlist',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: ModuleColors.market,
-              ),
-            ),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-              visualDensity: VisualDensity.compact,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              side: BorderSide(
-                color: ModuleColors.market.withValues(alpha: 0.4),
-                width: 1,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
-              ),
-            ),
-          ),
-        );
-      },
-      loading: () => const SizedBox(
-        height: 28,
-        width: 100,
-        child: Center(child: CircularProgressIndicator()),
-      ),
-      error: (_, __) => const SizedBox.shrink(),
     );
   }
 
@@ -450,7 +411,109 @@ class EquityInsiderHeroBar extends ConsumerWidget {
   }
 }
 
-/// Company description — scrolls away under the pinned hero bar.
+/// Watchlist CTA shared by desktop sticky bar and mobile scroll block.
+Widget _buildWatchlistButton(
+  BuildContext context,
+  WidgetRef ref,
+  String symbol, {
+  bool compact = false,
+}) {
+  final statusAsync = ref.watch(watchlistCheckStatusProvider(symbol));
+
+  return statusAsync.when(
+    data: (statuses) {
+      final isAdded = statuses.any((s) => s.containsSymbol);
+      final addedToWatchlistName =
+          isAdded ? statuses.firstWhere((s) => s.containsSymbol).name : '';
+
+      if (isAdded) {
+        return SizedBox(
+          height: 28,
+          child: FilledButton.icon(
+            onPressed: () async {
+              final confirm = await ConfirmationDialog.show(
+                context: context,
+                title: 'Remove Stock',
+                subtitle: 'Watchlist Management',
+                message:
+                    'Are you sure you want to remove $symbol from $addedToWatchlistName?',
+                icon: Icons.bookmark_remove_rounded,
+                confirmText: 'Remove',
+                isDestructive: true,
+              );
+              if (confirm) {
+                final wid =
+                    statuses.firstWhere((s) => s.containsSymbol).watchlistId;
+                ref.read(watchlistsProvider.notifier).removeStock(wid, symbol);
+                ref.invalidate(watchlistCheckStatusProvider(symbol));
+              }
+            },
+            icon: const Icon(
+              Icons.bookmark_added_rounded,
+              size: 14,
+              color: Colors.white,
+            ),
+            label: Text(
+              compact ? 'Added' : 'Already Added',
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+            style: FilledButton.styleFrom(
+              backgroundColor: ModuleColors.market,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+              visualDensity: VisualDensity.compact,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+          ),
+        );
+      }
+
+      return SizedBox(
+        height: 28,
+        child: OutlinedButton.icon(
+          onPressed: () {
+            AddToWatchlistPopup.show(context, symbol);
+          },
+          icon: Icon(Icons.add, size: 14, color: ModuleColors.market),
+          label: Text(
+            compact ? 'Watchlist' : 'Add to Watchlist',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: ModuleColors.market,
+            ),
+          ),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+            visualDensity: VisualDensity.compact,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            side: BorderSide(
+              color: ModuleColors.market.withValues(alpha: 0.4),
+              width: 1,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6),
+            ),
+          ),
+        ),
+      );
+    },
+    loading: () => const SizedBox(
+      height: 28,
+      width: 100,
+      child: Center(child: CircularProgressIndicator()),
+    ),
+    error: (_, __) => const SizedBox.shrink(),
+  );
+}
+
+/// Company description + mobile exchange/watchlist actions (scrolls under pin).
 class EquityInsiderHeroDescription extends ConsumerWidget {
   final String symbol;
 
@@ -466,19 +529,156 @@ class EquityInsiderHeroDescription extends ConsumerWidget {
       EquityFundamentalQuery(symbol: symbol, exchange: activeExchange),
     ));
 
-    return asyncData.when(
-      data: (data) {
-        final description = data?.description;
-        if (description == null || description.isEmpty) {
-          return const SizedBox.shrink();
-        }
-        return Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: _ExpandableDescription(text: description),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 800;
+
+        return asyncData.when(
+          data: (data) {
+            final description = data?.description;
+            final hasDescription =
+                description != null && description.isNotEmpty;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (isMobile) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        if (data?.sector != null && data!.sector!.isNotEmpty)
+                          _MobileMetaBadge(text: data.sector!),
+                        if (data?.industry != null &&
+                            data!.industry!.isNotEmpty)
+                          _MobileMetaBadge(text: data.industry!),
+                        _MobileExchangeToggle(),
+                        _buildWatchlistButton(
+                          context,
+                          ref,
+                          symbol,
+                          compact: true,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                if (hasDescription)
+                  Padding(
+                    padding: EdgeInsets.only(top: isMobile ? 10 : 12),
+                    child: _ExpandableDescription(text: description),
+                  ),
+              ],
+            );
+          },
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
         );
       },
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+}
+
+class _MobileMetaBadge extends StatelessWidget {
+  const _MobileMetaBadge({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = context.marketTheme.textMuted;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: fg.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: fg.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: fg,
+        ),
+      ),
+    );
+  }
+}
+
+class _MobileExchangeToggle extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeExchange = ref.watch(selectedExchangeProvider);
+    final isBse = activeExchange == 'BSE';
+
+    return Container(
+      height: 26,
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isBse
+              ? context.colors.statusWarning.withValues(alpha: 0.5)
+              : context.marketTheme.chartBlue.withValues(alpha: 0.5),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _segment(
+            context,
+            ref,
+            label: 'NSE',
+            isSelected: !isBse,
+            activeColor: context.marketTheme.chartBlue,
+          ),
+          _segment(
+            context,
+            ref,
+            label: 'BSE',
+            isSelected: isBse,
+            activeColor: context.colors.statusWarning,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _segment(
+    BuildContext context,
+    WidgetRef ref, {
+    required String label,
+    required bool isSelected,
+    required Color activeColor,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        if (!isSelected) {
+          ref.read(selectedExchangeProvider.notifier).setExchange(label);
+        }
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+        decoration: BoxDecoration(
+          color: isSelected ? activeColor.withValues(alpha: 0.2) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected ? activeColor : context.textTertiary,
+          ),
+        ),
+      ),
     );
   }
 }

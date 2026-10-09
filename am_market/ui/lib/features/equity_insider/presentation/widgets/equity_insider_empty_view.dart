@@ -1,23 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
-import 'package:am_market_ui/core/services/market_data_sdk_service.dart';
 import '../../providers/equity_insider_provider.dart';
 
 class EquityInsiderEmptyView extends StatelessWidget {
-  final TextEditingController controller;
-  final MarketDataSdkService sdkService;
-  final List<String> typewriterHints;
   final ValueChanged<String> onSelectSymbol;
-  final VoidCallback onSearch;
 
   const EquityInsiderEmptyView({
     super.key,
-    required this.controller,
-    required this.sdkService,
-    required this.typewriterHints,
     required this.onSelectSymbol,
-    required this.onSearch,
   });
 
   @override
@@ -28,16 +19,22 @@ class EquityInsiderEmptyView extends StatelessWidget {
 
     return Consumer(
       builder: (context, ref, _) {
-        final recent = ref.watch(recentlyViewedStocksProvider);
-        final recommendationsAsync = ref.watch(dynamicStockRecommendationsProvider);
+        final recommendationsAsync =
+            ref.watch(dynamicStockRecommendationsProvider);
         final rawSymbols = recommendationsAsync.maybeWhen(
           data: (d) => d,
           orElse: () => const <String>[],
         );
         final recSymbols = rawSymbols.isNotEmpty
             ? rawSymbols.take(6).toList()
-            : const ['RELIANCE', 'TCS', 'HDFCBANK', 'ICICIBANK', 'INFY', 'BHARTIARTL'];
-        final animatedHints = recSymbols.map((s) => 'Search "$s"...').toList();
+            : const [
+                'RELIANCE',
+                'TCS',
+                'HDFCBANK',
+                'ICICIBANK',
+                'INFY',
+                'BHARTIARTL'
+              ];
 
         return Center(
           child: SingleChildScrollView(
@@ -81,38 +78,15 @@ class EquityInsiderEmptyView extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Enter a stock symbol for deep fundamental analysis, valuation & peers.',
+                    'Use the search icon above for deep fundamental analysis, valuation & peers.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: context.colors.textSecondary,
                       fontSize: 14,
                     ),
                   ),
-                  const SizedBox(height: 28),
-                  SmartSearchAnchor(
-                    controller: controller,
-                    animatedHints: animatedHints,
-                    recentSearches: recent,
-                    onRemoveRecent: (sym) {
-                      ref.read(recentlyViewedStocksProvider.notifier).removeView(sym);
-                    },
-                    onClearRecent: () {
-                      ref.read(recentlyViewedStocksProvider.notifier).clear();
-                    },
-                    accentColor: accentColor,
-                    searchHandler: (q) => sdkService.securityApi.search(
-                      q,
-                      smartRecommendations: true,
-                      category: 'STOCKS',
-                      limit: 8,
-                    ),
-                    onSelected: (symbol) {
-                      onSelectSymbol(symbol);
-                    },
-                    onSubmit: onSearch,
-                  ),
                   if (recSymbols.isNotEmpty) ...[
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 28),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -130,10 +104,10 @@ class EquityInsiderEmptyView extends StatelessWidget {
                               ),
                               backgroundColor: context.colors.cardSurface,
                               side: BorderSide(color: context.colors.border),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              onPressed: () {
-                                onSelectSymbol(s);
-                              },
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              onPressed: () => onSelectSymbol(s),
                             ),
                           )
                           .toList(),
