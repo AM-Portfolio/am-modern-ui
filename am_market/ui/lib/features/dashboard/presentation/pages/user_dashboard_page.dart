@@ -1615,7 +1615,6 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                         ),
                       ),
                     ),
-                  ),
 
                   const SizedBox(height: 12),
 
