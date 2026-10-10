@@ -137,65 +137,76 @@ final distinctIndustriesProvider = Provider<List<String>>((ref) {
   );
 });
 
-final filteredIposProvider = Provider<AsyncValue<List<AsraxIpoSummaryDto>>>((ref) {
+/// Pure filter predicate — kept testable outside Riverpod.
+bool ipoMatchesFilter(
+  AsraxIpoSummaryDto ipo,
+  IpoFilterState filter, {
+  DateTime? now,
+}) {
+  final clock = now ?? DateTime.now();
+  final todayStr =
+      '${clock.year.toString().padLeft(4, '0')}-${clock.month.toString().padLeft(2, '0')}-${clock.day.toString().padLeft(2, '0')}';
+
+  final status = (ipo.status ?? '').toLowerCase();
+  switch (filter.statusFilter) {
+    case IpoStatusFilter.all:
+      break;
+    case IpoStatusFilter.open:
+      if (status != 'open') return false;
+      break;
+    case IpoStatusFilter.closingToday:
+      // Must be open AND bidding end date is today (not all open IPOs).
+      final end = (ipo.biddingEndDate ?? '').length >= 10
+          ? ipo.biddingEndDate!.substring(0, 10)
+          : (ipo.biddingEndDate ?? '');
+      if (status != 'open' || end != todayStr) return false;
+      break;
+    case IpoStatusFilter.upcoming:
+      if (status != 'upcoming') return false;
+      break;
+    case IpoStatusFilter.closed:
+      if (status != 'closed' && status != 'listed') return false;
+      break;
+  }
+
+  final issueType = (ipo.issueType ?? '').toLowerCase();
+  final isSme = issueType.contains('sme');
+  final isMainboard = !isSme;
+
+  if (filter.filterMainboard && !filter.filterSme) {
+    if (!isMainboard) return false;
+  } else if (filter.filterSme && !filter.filterMainboard) {
+    if (!isSme) return false;
+  }
+
+  if (filter.selectedIndustry != null && filter.selectedIndustry != 'All') {
+    if (ipo.industry == null ||
+        ipo.industry!.trim() != filter.selectedIndustry) {
+      return false;
+    }
+  }
+
+  if (filter.searchQuery.trim().isNotEmpty) {
+    final query = filter.searchQuery.trim().toLowerCase();
+    final name = (ipo.companyName ?? '').toLowerCase();
+    final sym = (ipo.symbol ?? '').toLowerCase();
+    final ind = (ipo.industry ?? '').toLowerCase();
+    if (!name.contains(query) &&
+        !sym.contains(query) &&
+        !ind.contains(query)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+final filteredIposProvider =
+    Provider<AsyncValue<List<AsraxIpoSummaryDto>>>((ref) {
   final iposAsync = ref.watch(allIposProvider);
   final filter = ref.watch(ipoFilterStateProvider);
 
   return iposAsync.whenData((ipos) {
-    final now = DateTime.now();
-    final todayStr = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-
-    return ipos.where((ipo) {
-      // 1. Status filter
-      final status = (ipo.status ?? '').toLowerCase();
-      switch (filter.statusFilter) {
-        case IpoStatusFilter.all:
-          break;
-        case IpoStatusFilter.open:
-          if (status != 'open') return false;
-          break;
-        case IpoStatusFilter.closingToday:
-          final end = ipo.biddingEndDate ?? '';
-          if (end != todayStr && status != 'open') return false;
-          break;
-        case IpoStatusFilter.upcoming:
-          if (status != 'upcoming') return false;
-          break;
-        case IpoStatusFilter.closed:
-          if (status != 'closed' && status != 'listed') return false;
-          break;
-      }
-
-      // 2. Board filters (Mainboard vs SME)
-      final issueType = (ipo.issueType ?? '').toLowerCase();
-      final isSme = issueType.contains('sme');
-      final isMainboard = !isSme;
-
-      if (filter.filterMainboard && !filter.filterSme) {
-        if (!isMainboard) return false;
-      } else if (filter.filterSme && !filter.filterMainboard) {
-        if (!isSme) return false;
-      }
-
-      // 3. Industry filter
-      if (filter.selectedIndustry != null && filter.selectedIndustry != 'All') {
-        if (ipo.industry == null || ipo.industry!.trim() != filter.selectedIndustry) {
-          return false;
-        }
-      }
-
-      // 4. Search query
-      if (filter.searchQuery.trim().isNotEmpty) {
-        final query = filter.searchQuery.trim().toLowerCase();
-        final name = (ipo.companyName ?? '').toLowerCase();
-        final sym = (ipo.symbol ?? '').toLowerCase();
-        final ind = (ipo.industry ?? '').toLowerCase();
-        if (!name.contains(query) && !sym.contains(query) && !ind.contains(query)) {
-          return false;
-        }
-      }
-
-      return true;
-    }).toList();
+    return ipos.where((ipo) => ipoMatchesFilter(ipo, filter)).toList();
   });
 });

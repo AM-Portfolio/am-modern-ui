@@ -24,19 +24,25 @@ class OptionChainView extends ConsumerStatefulWidget {
 
 class _OptionChainViewState extends ConsumerState<OptionChainView> {
   late final ScrollController _scrollController;
+  late final ScrollController _horizontalScrollController;
   final List<OptionChainColumnGroup> _activeGroups = [];
   String? _lastAutoScrolledKey;
+  String? _lastHorizontalCenterKey;
   final GlobalKey _spotLineKey = GlobalKey();
+
+  static const double _rowItemHeight = 44.0;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
+    _horizontalScrollController = ScrollController();
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
+    _horizontalScrollController.dispose();
     super.dispose();
   }
 
@@ -116,13 +122,28 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
         final activeSymbol = ref.watch(foActiveSymbolProvider) ?? '';
         final currentKey = '${activeSymbol}_${activeExpiry}_${rawStrikes.length}';
 
+        double atmStrikePrice = 0.0;
+        if (rawStrikes.isNotEmpty) {
+          var nearestDiff = double.infinity;
+          for (final item in rawStrikes) {
+            final sp = ((item as Map<String, dynamic>)['strikePrice'] as num?)?.toDouble() ?? 0.0;
+            final diff = (sp - underlyingLtp).abs();
+            if (diff < nearestDiff) {
+              nearestDiff = diff;
+              atmStrikePrice = sp;
+            }
+          }
+        }
+
+        final isMobileLayout = MediaQuery.sizeOf(context).width < AmBreakpoints.mobile;
+
         // Auto-scroll to center on the Spot Price indicator upon load or key change
         if (_lastAutoScrolledKey != currentKey && spotIndex != -1) {
           _lastAutoScrolledKey = currentKey;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!_scrollController.hasClients) return;
             // Step 1: Instant mathematical jump to bring spotIndex into viewport
-            const double itemHeight = 39.0;
+            const double itemHeight = _rowItemHeight;
             final double spotY = (spotIndex * itemHeight) + 52.0;
             final double viewport = _scrollController.position.viewportDimension;
             if (viewport > 0) {
@@ -148,111 +169,13 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
 
         return Column(
           children: [
-            // Top Controls: Expiry Selector Dropdown + Multi-Column Toggles
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.15),
-              child: Row(
-                children: [
-                  // Expiry Selector Badge / Dropdown (Sensibull Style with DTE)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: colors.surface,
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: ModuleColors.market.withValues(alpha: 0.5)),
-                    ),
-                    child: expiriesList.isNotEmpty
-                        ? DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: expiriesList.contains(activeExpiry)
-                                  ? activeExpiry
-                                  : (expiriesList.isNotEmpty ? expiriesList.first : activeExpiry),
-                              icon: Padding(
-                                padding: const EdgeInsets.only(left: 6.0),
-                                child: Icon(Icons.calendar_today, size: 13, color: ModuleColors.market),
-                              ),
-                              isDense: true,
-                              dropdownColor: colors.surface,
-                              style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 12),
-                              onChanged: (newExpiry) {
-                                if (newExpiry != null) {
-                                  ref.read(foSelectedExpiryProvider.notifier).state = newExpiry;
-                                }
-                              },
-                              items: expiriesList.map((exp) {
-                                return DropdownMenuItem<String>(
-                                  value: exp,
-                                  child: Text(_formatExpiryWithDte(exp), style: TextStyle(color: colors.textPrimary, fontSize: 12)),
-                                );
-                              }).toList(),
-                            ),
-                          )
-                        : Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.calendar_today, size: 13, color: ModuleColors.market),
-                              const SizedBox(width: 6),
-                              Text(
-                                _formatExpiryWithDte(activeExpiry),
-                                style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 12),
-                              ),
-                            ],
-                          ),
-                  ),
-                  const SizedBox(width: 12),
-                  // CALLS Indicator
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: marketTheme.positive.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text('CALLS', style: TextStyle(color: marketTheme.positive, fontWeight: FontWeight.bold, fontSize: 11)),
-                  ),
-                  const SizedBox(width: 12),
-                  // Toggleable Column Chips
-                  Expanded(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: OptionChainColumnGroup.values.map((group) {
-                          final isSelected = _activeGroups.contains(group);
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 6.0),
-                            child: FilterChip(
-                              label: Text(group.label),
-                              selected: isSelected,
-                              onSelected: (_) => _toggleGroup(group),
-                              selectedColor: ModuleColors.market.withValues(alpha: 0.2),
-                              checkmarkColor: ModuleColors.market,
-                              labelStyle: TextStyle(
-                                color: isSelected ? ModuleColors.market : colors.textSecondary,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                fontSize: 11,
-                              ),
-                              side: BorderSide(
-                                color: isSelected ? ModuleColors.market : colors.border.withValues(alpha: 0.3),
-                              ),
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // PUTS Indicator
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: marketTheme.negative.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text('PUTS', style: TextStyle(color: marketTheme.negative, fontWeight: FontWeight.bold, fontSize: 11)),
-                  ),
-                ],
-              ),
+            _buildToolbar(
+              context,
+              colors,
+              marketTheme,
+              expiriesList: expiriesList,
+              activeExpiry: activeExpiry,
+              isMobileLayout: isMobileLayout,
             ),
             const Divider(height: 1),
 
@@ -264,66 +187,110 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
                   final columnCount = 5 + (_activeGroups.contains(OptionChainColumnGroup.bidAsk) ? 4 : 0)
                                         + (_activeGroups.contains(OptionChainColumnGroup.valuation) ? 6 : 0)
                                         + (_activeGroups.contains(OptionChainColumnGroup.greeks) ? 4 : 0);
-                  final minWidth = math.max(850.0, columnCount * 80.0);
+                  // Mobile needs slightly wider LTP/strike slots so values are not clipped.
+                  final colUnit = isMobileLayout ? 92.0 : 80.0;
+                  final minWidth = math.max(
+                    isMobileLayout ? 920.0 : 850.0,
+                    columnCount * colUnit,
+                  );
                   final contentWidth = math.max(minWidth, constraints.maxWidth);
+                  final needsHorizontalScroll = contentWidth > constraints.maxWidth;
 
-                  return SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: SizedBox(
-                      width: contentWidth,
-                      height: constraints.maxHeight,
-                      child: Column(
-                        children: [
-                          // Table Header
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                            child: Row(
-                              children: _buildHeaderColumns(context, marketTheme, colors),
-                            ),
-                          ),
-                          const Divider(height: 1),
-                          // Matrix Rows & Groww-style Spot Line Divider
-                          Expanded(
-                            child: ListView.builder(
-                              controller: _scrollController,
-                              itemCount: rawStrikes.length,
-                              itemBuilder: (context, index) {
-                                final strikeMap = rawStrikes[index] as Map<String, dynamic>;
-                                final strikePrice = (strikeMap['strikePrice'] as num?)?.toDouble() ?? 0.0;
-                                final callMap = (strikeMap['call'] as Map<String, dynamic>?) ?? {};
-                                final putMap = (strikeMap['put'] as Map<String, dynamic>?) ?? {};
+                  if (_activeGroups.isEmpty && _lastHorizontalCenterKey != currentKey) {
+                    _lastHorizontalCenterKey = currentKey;
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!_horizontalScrollController.hasClients) return;
+                      final viewport = _horizontalScrollController.position.viewportDimension;
+                      final maxScroll = _horizontalScrollController.position.maxScrollExtent;
+                      if (viewport <= 0 || maxScroll <= 0) return;
+                      final targetOffset = math.max(0.0, (contentWidth - viewport) / 2);
+                      _horizontalScrollController.jumpTo(math.min(targetOffset, maxScroll));
+                    });
+                  }
 
-                                return Column(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                                      child: Row(
-                                        children: _buildRowColumns(
-                                          context,
-                                          strikePrice,
-                                          underlyingLtp,
-                                          callMap,
-                                          putMap,
-                                          maxOi,
-                                          colors,
-                                          marketTheme,
-                                        ),
-                                      ),
+                  final rowPaddingH = isMobileLayout ? 10.0 : 16.0;
+                  final rowPaddingV = isMobileLayout ? 6.0 : 10.0;
+                  final headerPaddingV = isMobileLayout ? 6.0 : 10.0;
+                  final showSwipeHint = needsHorizontalScroll;
+                  final tableHeight = constraints.maxHeight - (showSwipeHint ? 30.0 : 0.0);
+
+                  return Column(
+                    children: [
+                      Expanded(
+                        child: Scrollbar(
+                          controller: _horizontalScrollController,
+                          thumbVisibility: needsHorizontalScroll,
+                          child: SingleChildScrollView(
+                            controller: _horizontalScrollController,
+                            scrollDirection: Axis.horizontal,
+                            child: SizedBox(
+                              width: contentWidth,
+                              height: tableHeight,
+                              child: Column(
+                                children: [
+                                  Container(
+                                    padding: EdgeInsets.symmetric(horizontal: rowPaddingH, vertical: headerPaddingV),
+                                    color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                                    child: Row(
+                                      children: _buildHeaderColumns(context, marketTheme, colors, isMobileLayout: isMobileLayout),
                                     ),
-                                    // Groww-Style Spot Price Capsule Line Divider
-                                    if (index == spotIndex)
-                                      _buildSpotPriceLine(context, underlyingLtp, colors, marketTheme, key: _spotLineKey)
-                                    else
-                                      const Divider(height: 1, indent: 16, endIndent: 16),
-                                  ],
-                                );
-                              },
+                                  ),
+                                  const Divider(height: 1),
+                                  Expanded(
+                                    child: ListView.builder(
+                                      controller: _scrollController,
+                                      itemCount: rawStrikes.length,
+                                      itemBuilder: (context, index) {
+                                        final strikeMap = rawStrikes[index] as Map<String, dynamic>;
+                                        final strikePrice = (strikeMap['strikePrice'] as num?)?.toDouble() ?? 0.0;
+                                        final callMap = (strikeMap['call'] as Map<String, dynamic>?) ?? {};
+                                        final putMap = (strikeMap['put'] as Map<String, dynamic>?) ?? {};
+                                        final isAtmStrike = (strikePrice - atmStrikePrice).abs() < 0.001;
+
+                                        return Column(
+                                          children: [
+                                            Container(
+                                              padding: EdgeInsets.symmetric(horizontal: rowPaddingH, vertical: rowPaddingV),
+                                              child: Row(
+                                                children: _buildRowColumns(
+                                                  context,
+                                                  strikePrice,
+                                                  underlyingLtp,
+                                                  callMap,
+                                                  putMap,
+                                                  maxOi,
+                                                  colors,
+                                                  marketTheme,
+                                                  isMobileLayout: isMobileLayout,
+                                                  isAtmStrike: isAtmStrike,
+                                                ),
+                                              ),
+                                            ),
+                                            if (index == spotIndex)
+                                              _buildSpotPriceLine(context, underlyingLtp, colors, marketTheme, key: _spotLineKey)
+                                            else
+                                              Divider(height: 1, indent: rowPaddingH, endIndent: rowPaddingH),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ],
+                        ),
                       ),
-                    ),
+                      if (showSwipeHint)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          child: Text(
+                            'Swipe left or right to see more data',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: colors.textSecondary, fontSize: 11),
+                          ),
+                        ),
+                    ],
                   );
                 },
               ),
@@ -331,6 +298,182 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildToolbar(
+    BuildContext context,
+    AppColorsTheme colors,
+    MarketThemeExtension marketTheme, {
+    required List<String> expiriesList,
+    required String activeExpiry,
+    required bool isMobileLayout,
+  }) {
+    final toolbarColor = Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.15);
+    final expiryControl = _buildExpiryControl(context, colors, expiriesList, activeExpiry, fullWidth: isMobileLayout);
+    const chipGroups = OptionChainColumnGroup.values;
+
+    String chipLabel(OptionChainColumnGroup group) {
+      if (!isMobileLayout) return group.label;
+      switch (group) {
+        case OptionChainColumnGroup.bidAsk:
+          return 'Bid/Ask';
+        case OptionChainColumnGroup.valuation:
+          return 'Valuation';
+        case OptionChainColumnGroup.greeks:
+          return 'Greeks';
+      }
+    }
+
+    Widget callsBadge() => Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: marketTheme.positive.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text('CALLS', style: TextStyle(color: marketTheme.positive, fontWeight: FontWeight.bold, fontSize: 11)),
+        );
+
+    Widget putsBadge() => Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: marketTheme.negative.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text('PUTS', style: TextStyle(color: marketTheme.negative, fontWeight: FontWeight.bold, fontSize: 11)),
+        );
+
+    Widget groupChips() => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: chipGroups.map((group) {
+            final isSelected = _activeGroups.contains(group);
+            return Padding(
+              padding: const EdgeInsets.only(right: 6.0),
+              child: FilterChip(
+                label: Text(chipLabel(group)),
+                selected: isSelected,
+                onSelected: (_) => _toggleGroup(group),
+                selectedColor: ModuleColors.market.withValues(alpha: 0.2),
+                checkmarkColor: ModuleColors.market,
+                labelStyle: TextStyle(
+                  color: isSelected ? ModuleColors.market : colors.textSecondary,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  fontSize: 11,
+                ),
+                side: BorderSide(
+                  color: isSelected ? ModuleColors.market : colors.border.withValues(alpha: 0.3),
+                ),
+                visualDensity: isMobileLayout ? VisualDensity.compact : VisualDensity.standard,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+              ),
+            );
+          }).toList(),
+        );
+
+    if (isMobileLayout) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        color: toolbarColor,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            expiryControl,
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                callsBadge(),
+                const SizedBox(width: 6),
+                Expanded(child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: groupChips())),
+                const SizedBox(width: 6),
+                putsBadge(),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      color: toolbarColor,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            expiryControl,
+            const SizedBox(width: 12),
+            callsBadge(),
+            const SizedBox(width: 12),
+            groupChips(),
+            const SizedBox(width: 12),
+            putsBadge(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExpiryControl(
+    BuildContext context,
+    AppColorsTheme colors,
+    List<String> expiriesList,
+    String activeExpiry, {
+    required bool fullWidth,
+  }) {
+    final dropdownValue = expiriesList.contains(activeExpiry)
+        ? activeExpiry
+        : (expiriesList.isNotEmpty ? expiriesList.first : activeExpiry);
+
+    final inner = expiriesList.isNotEmpty
+        ? DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: dropdownValue,
+              isExpanded: fullWidth,
+              icon: Padding(
+                padding: const EdgeInsets.only(left: 6.0),
+                child: Icon(Icons.calendar_today, size: 13, color: ModuleColors.market),
+              ),
+              isDense: true,
+              dropdownColor: colors.surface,
+              style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 12),
+              onChanged: (newExpiry) {
+                if (newExpiry != null) {
+                  ref.read(foSelectedExpiryProvider.notifier).state = newExpiry;
+                }
+              },
+              items: expiriesList.map((exp) {
+                return DropdownMenuItem<String>(
+                  value: exp,
+                  child: Text(_formatExpiryWithDte(exp), style: TextStyle(color: colors.textPrimary, fontSize: 12)),
+                );
+              }).toList(),
+            ),
+          )
+        : Row(
+            mainAxisSize: fullWidth ? MainAxisSize.max : MainAxisSize.min,
+            children: [
+              Icon(Icons.calendar_today, size: 13, color: ModuleColors.market),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  _formatExpiryWithDte(activeExpiry),
+                  style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 12),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          );
+
+    return Container(
+      width: fullWidth ? double.infinity : null,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: ModuleColors.market.withValues(alpha: 0.5)),
+      ),
+      child: inner,
     );
   }
 
@@ -391,10 +534,17 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
     );
   }
 
-  List<Widget> _buildHeaderColumns(BuildContext context, MarketThemeExtension marketTheme, AppColorsTheme colors) {
-    TextStyle callStyle = TextStyle(color: marketTheme.positive, fontWeight: FontWeight.bold, fontSize: 11);
-    TextStyle putStyle = TextStyle(color: marketTheme.negative, fontWeight: FontWeight.bold, fontSize: 11);
-    TextStyle strikeStyle = TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 12);
+  List<Widget> _buildHeaderColumns(
+    BuildContext context,
+    MarketThemeExtension marketTheme,
+    AppColorsTheme colors, {
+    required bool isMobileLayout,
+  }) {
+    final headerFont = isMobileLayout ? 11.0 : 11.0;
+    final strikeHeaderFont = isMobileLayout ? 12.0 : 12.0;
+    TextStyle callStyle = TextStyle(color: marketTheme.positive, fontWeight: FontWeight.bold, fontSize: headerFont);
+    TextStyle putStyle = TextStyle(color: marketTheme.negative, fontWeight: FontWeight.bold, fontSize: headerFont);
+    TextStyle strikeStyle = TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: strikeHeaderFont);
 
     final cols = <Widget>[];
 
@@ -423,14 +573,33 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
     }
 
     // Core Call LTP
-    cols.add(Expanded(flex: 3, child: Center(child: Text('LTP (CHG %)', style: callStyle))));
+    cols.add(Expanded(
+      flex: isMobileLayout ? 4 : 3,
+      child: Center(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(isMobileLayout ? 'LTP / CHG%' : 'LTP (CHG %)', style: callStyle),
+        ),
+      ),
+    ));
 
     // --- CENTER STRIKE ---
-    cols.add(Expanded(flex: 2, child: Center(child: Text('STRIKE', style: strikeStyle))));
+    cols.add(Expanded(
+      flex: isMobileLayout ? 3 : 2,
+      child: Center(child: Text('STRIKE', style: strikeStyle)),
+    ));
 
     // --- PUTS SIDE ---
     // Core Put LTP
-    cols.add(Expanded(flex: 3, child: Center(child: Text('LTP (CHG %)', style: putStyle))));
+    cols.add(Expanded(
+      flex: isMobileLayout ? 4 : 3,
+      child: Center(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(isMobileLayout ? 'LTP / CHG%' : 'LTP (CHG %)', style: putStyle),
+        ),
+      ),
+    ));
 
     // Optional Put Depth
     if (_activeGroups.contains(OptionChainColumnGroup.bidAsk)) {
@@ -466,8 +635,13 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
     Map<String, dynamic> putMap,
     double maxOi,
     AppColorsTheme colors,
-    MarketThemeExtension marketTheme,
-  ) {
+    MarketThemeExtension marketTheme, {
+    required bool isMobileLayout,
+    required bool isAtmStrike,
+  }) {
+    final cellFont = isMobileLayout ? 11.0 : 12.0;
+    final ltpFont = isMobileLayout ? 12.0 : 12.0;
+    final chgFont = isMobileLayout ? 11.0 : 10.0;
     // Call metrics
     final callLtp = (callMap['ltp'] as num?)?.toDouble() ?? 0.0;
     final callClose = (callMap['closePrice'] as num?)?.toDouble() ?? 0.0;
@@ -526,7 +700,7 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
                 ),
               ),
             ),
-            Text(callOi > 0 ? '${(callOi / 1000).toStringAsFixed(1)}k' : '-', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
+            Text(callOi > 0 ? '${(callOi / 1000).toStringAsFixed(1)}k' : '-', style: TextStyle(color: colors.textSecondary, fontSize: cellFont)),
           ],
         ),
       ),
@@ -534,41 +708,58 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
 
     // Call Greeks
     if (_activeGroups.contains(OptionChainColumnGroup.greeks)) {
-      cols.add(Expanded(flex: 2, child: Center(child: Text(callDelta != 0 ? callDelta.toStringAsFixed(2) : '-', style: TextStyle(color: colors.textPrimary, fontSize: 12)))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text(callTheta != 0 ? callTheta.toStringAsFixed(2) : '-', style: TextStyle(color: colors.textSecondary, fontSize: 12)))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text(callIv > 0 ? '${callIv.toStringAsFixed(1)}%' : '-', style: TextStyle(color: colors.textSecondary, fontSize: 12)))));
+      cols.add(Expanded(flex: 2, child: Center(child: Text(callDelta != 0 ? callDelta.toStringAsFixed(2) : '-', style: TextStyle(color: colors.textPrimary, fontSize: cellFont)))));
+      cols.add(Expanded(flex: 2, child: Center(child: Text(callTheta != 0 ? callTheta.toStringAsFixed(2) : '-', style: TextStyle(color: colors.textSecondary, fontSize: cellFont)))));
+      cols.add(Expanded(flex: 2, child: Center(child: Text(callIv > 0 ? '${callIv.toStringAsFixed(1)}%' : '-', style: TextStyle(color: colors.textSecondary, fontSize: cellFont)))));
     }
 
     // Call Valuation
     if (_activeGroups.contains(OptionChainColumnGroup.valuation)) {
-      cols.add(Expanded(flex: 2, child: Center(child: Text('₹${callIntVal.toStringAsFixed(1)}', style: TextStyle(color: colors.textSecondary, fontSize: 12)))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text('₹${callTimeVal.toStringAsFixed(1)}', style: TextStyle(color: colors.textSecondary, fontSize: 12)))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text('${callBreakevenPct.toStringAsFixed(1)}%', style: TextStyle(color: colors.textPrimary, fontSize: 12)))));
+      cols.add(Expanded(flex: 2, child: Center(child: Text('₹${callIntVal.toStringAsFixed(1)}', style: TextStyle(color: colors.textSecondary, fontSize: cellFont)))));
+      cols.add(Expanded(flex: 2, child: Center(child: Text('₹${callTimeVal.toStringAsFixed(1)}', style: TextStyle(color: colors.textSecondary, fontSize: cellFont)))));
+      cols.add(Expanded(flex: 2, child: Center(child: Text('${callBreakevenPct.toStringAsFixed(1)}%', style: TextStyle(color: colors.textPrimary, fontSize: cellFont)))));
     }
 
     // Call Depth
     if (_activeGroups.contains(OptionChainColumnGroup.bidAsk)) {
-      cols.add(Expanded(flex: 2, child: Center(child: Text(callBid > 0 ? '₹${callBid.toStringAsFixed(2)}' : '-', style: TextStyle(color: colors.textSecondary, fontSize: 12)))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text(callAsk > 0 ? '₹${callAsk.toStringAsFixed(2)}' : '-', style: TextStyle(color: colors.textSecondary, fontSize: 12)))));
+      cols.add(Expanded(flex: 2, child: Center(child: Text(callBid > 0 ? '₹${callBid.toStringAsFixed(2)}' : '-', style: TextStyle(color: colors.textSecondary, fontSize: cellFont)))));
+      cols.add(Expanded(flex: 2, child: Center(child: Text(callAsk > 0 ? '₹${callAsk.toStringAsFixed(2)}' : '-', style: TextStyle(color: colors.textSecondary, fontSize: cellFont)))));
     }
 
     // Call LTP & Chg %
     cols.add(
       Expanded(
-        flex: 3,
+        flex: isMobileLayout ? 4 : 3,
         child: Center(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('₹${callLtp.toStringAsFixed(2)}', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 12)),
-              if (callChgPct != 0) ...[
-                const SizedBox(width: 4),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 Text(
-                  '${callChgPct > 0 ? '+' : ''}${callChgPct.toStringAsFixed(1)}%',
-                  style: TextStyle(color: callChgPct >= 0 ? marketTheme.positive : marketTheme.negative, fontSize: 10, fontWeight: FontWeight.bold),
+                  '₹${callLtp.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: ltpFont,
+                  ),
                 ),
+                if (isMobileLayout || callChgPct != 0) ...[
+                  const SizedBox(width: 4),
+                  Text(
+                    '${callChgPct > 0 ? '+' : ''}${callChgPct.toStringAsFixed(1)}%',
+                    style: TextStyle(
+                      color: callChgPct > 0
+                          ? marketTheme.positive
+                          : (callChgPct < 0 ? marketTheme.negative : colors.textSecondary),
+                      fontSize: chgFont,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -577,18 +768,42 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
     // --- CENTER STRIKE ---
     cols.add(
       Expanded(
-        flex: 2,
+        flex: isMobileLayout ? 3 : 2,
         child: Center(
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: colors.surface,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: colors.border.withValues(alpha: 0.3)),
+            padding: EdgeInsets.symmetric(
+              horizontal: isMobileLayout ? 6 : 10,
+              vertical: 4,
             ),
-            child: Text(
-              strikePrice.toStringAsFixed(0),
-              style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 12),
+            decoration: BoxDecoration(
+              color: isAtmStrike
+                  ? ModuleColors.market.withValues(alpha: 0.12)
+                  : colors.surface,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: isAtmStrike ? ModuleColors.market : colors.border.withValues(alpha: 0.3),
+                width: isAtmStrike ? 1.5 : 1,
+              ),
+              boxShadow: isAtmStrike
+                  ? [
+                      BoxShadow(
+                        color: ModuleColors.market.withValues(alpha: 0.28),
+                        blurRadius: 8,
+                        spreadRadius: 0,
+                      ),
+                    ]
+                  : null,
+            ),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                strikePrice.toStringAsFixed(0),
+                style: TextStyle(
+                  color: isAtmStrike ? ModuleColors.market : colors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: ltpFont,
+                ),
+              ),
             ),
           ),
         ),
@@ -599,20 +814,37 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
     // Put LTP & Chg %
     cols.add(
       Expanded(
-        flex: 3,
+        flex: isMobileLayout ? 4 : 3,
         child: Center(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('₹${putLtp.toStringAsFixed(2)}', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 12)),
-              if (putChgPct != 0) ...[
-                const SizedBox(width: 4),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 Text(
-                  '${putChgPct > 0 ? '+' : ''}${putChgPct.toStringAsFixed(1)}%',
-                  style: TextStyle(color: putChgPct >= 0 ? marketTheme.positive : marketTheme.negative, fontSize: 10, fontWeight: FontWeight.bold),
+                  '₹${putLtp.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: ltpFont,
+                  ),
                 ),
+                if (isMobileLayout || putChgPct != 0) ...[
+                  const SizedBox(width: 4),
+                  Text(
+                    '${putChgPct > 0 ? '+' : ''}${putChgPct.toStringAsFixed(1)}%',
+                    style: TextStyle(
+                      color: putChgPct > 0
+                          ? marketTheme.positive
+                          : (putChgPct < 0 ? marketTheme.negative : colors.textSecondary),
+                      fontSize: chgFont,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -620,22 +852,22 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
 
     // Put Depth
     if (_activeGroups.contains(OptionChainColumnGroup.bidAsk)) {
-      cols.add(Expanded(flex: 2, child: Center(child: Text(putAsk > 0 ? '₹${putAsk.toStringAsFixed(2)}' : '-', style: TextStyle(color: colors.textSecondary, fontSize: 12)))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text(putBid > 0 ? '₹${putBid.toStringAsFixed(2)}' : '-', style: TextStyle(color: colors.textSecondary, fontSize: 12)))));
+      cols.add(Expanded(flex: 2, child: Center(child: Text(putAsk > 0 ? '₹${putAsk.toStringAsFixed(2)}' : '-', style: TextStyle(color: colors.textSecondary, fontSize: cellFont)))));
+      cols.add(Expanded(flex: 2, child: Center(child: Text(putBid > 0 ? '₹${putBid.toStringAsFixed(2)}' : '-', style: TextStyle(color: colors.textSecondary, fontSize: cellFont)))));
     }
 
     // Put Valuation
     if (_activeGroups.contains(OptionChainColumnGroup.valuation)) {
-      cols.add(Expanded(flex: 2, child: Center(child: Text('${putBreakevenPct.toStringAsFixed(1)}%', style: TextStyle(color: colors.textPrimary, fontSize: 12)))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text('₹${putTimeVal.toStringAsFixed(1)}', style: TextStyle(color: colors.textSecondary, fontSize: 12)))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text('₹${putIntVal.toStringAsFixed(1)}', style: TextStyle(color: colors.textSecondary, fontSize: 12)))));
+      cols.add(Expanded(flex: 2, child: Center(child: Text('${putBreakevenPct.toStringAsFixed(1)}%', style: TextStyle(color: colors.textPrimary, fontSize: cellFont)))));
+      cols.add(Expanded(flex: 2, child: Center(child: Text('₹${putTimeVal.toStringAsFixed(1)}', style: TextStyle(color: colors.textSecondary, fontSize: cellFont)))));
+      cols.add(Expanded(flex: 2, child: Center(child: Text('₹${putIntVal.toStringAsFixed(1)}', style: TextStyle(color: colors.textSecondary, fontSize: cellFont)))));
     }
 
     // Put Greeks
     if (_activeGroups.contains(OptionChainColumnGroup.greeks)) {
-      cols.add(Expanded(flex: 2, child: Center(child: Text(putIv > 0 ? '${putIv.toStringAsFixed(1)}%' : '-', style: TextStyle(color: colors.textSecondary, fontSize: 12)))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text(putTheta != 0 ? putTheta.toStringAsFixed(2) : '-', style: TextStyle(color: colors.textSecondary, fontSize: 12)))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text(putDelta != 0 ? putDelta.toStringAsFixed(2) : '-', style: TextStyle(color: colors.textPrimary, fontSize: 12)))));
+      cols.add(Expanded(flex: 2, child: Center(child: Text(putIv > 0 ? '${putIv.toStringAsFixed(1)}%' : '-', style: TextStyle(color: colors.textSecondary, fontSize: cellFont)))));
+      cols.add(Expanded(flex: 2, child: Center(child: Text(putTheta != 0 ? putTheta.toStringAsFixed(2) : '-', style: TextStyle(color: colors.textSecondary, fontSize: cellFont)))));
+      cols.add(Expanded(flex: 2, child: Center(child: Text(putDelta != 0 ? putDelta.toStringAsFixed(2) : '-', style: TextStyle(color: colors.textPrimary, fontSize: cellFont)))));
     }
 
     // Put OI
@@ -658,7 +890,7 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
                 ),
               ),
             ),
-            Text(putOi > 0 ? '${(putOi / 1000).toStringAsFixed(1)}k' : '-', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
+            Text(putOi > 0 ? '${(putOi / 1000).toStringAsFixed(1)}k' : '-', style: TextStyle(color: colors.textSecondary, fontSize: cellFont)),
           ],
         ),
       ),

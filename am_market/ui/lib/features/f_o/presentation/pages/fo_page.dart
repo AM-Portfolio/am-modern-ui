@@ -2,7 +2,6 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/features/f_o/presentation/pages/futures_view.dart';
 import 'package:am_market_ui/features/f_o/presentation/pages/margin_calculator_view.dart';
 import 'package:am_market_ui/features/f_o/presentation/pages/option_chain_view.dart';
-import 'package:am_market_ui/features/f_o/presentation/widgets/fo_empty_landing_view.dart';
 import 'package:am_market_ui/features/f_o/presentation/widgets/fo_header_card.dart';
 import 'package:am_market_ui/features/f_o/providers/fo_provider.dart';
 import 'package:flutter/material.dart';
@@ -16,9 +15,26 @@ class FoPage extends ConsumerStatefulWidget {
 }
 
 class _FoPageState extends ConsumerState<FoPage> {
+  static const _defaultSymbol = 'NIFTY';
+  bool _defaultScheduled = false;
+
   void _onSymbolSelected(String symbol) {
     ref.read(recentlyViewedFoSymbolsProvider.notifier).add(symbol);
     ref.read(foActiveSymbolProvider.notifier).state = symbol;
+  }
+
+  void _ensureDefaultSymbol() {
+    if (_defaultScheduled) return;
+    if (ref.read(foActiveSymbolProvider) != null) return;
+    _defaultScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _defaultScheduled = false;
+      if (!mounted) return;
+      if (ref.read(foActiveSymbolProvider) != null) return;
+      final recent = ref.read(recentlyViewedFoSymbolsProvider);
+      final symbol = recent.isNotEmpty ? recent.first : _defaultSymbol;
+      _onSymbolSelected(symbol);
+    });
   }
 
   @override
@@ -27,6 +43,10 @@ class _FoPageState extends ConsumerState<FoPage> {
     final colors = context.colors;
     final marketCyan = ModuleColors.market;
     final scaffoldBg = colors.scaffoldBackground;
+
+    if (activeSymbol == null) {
+      _ensureDefaultSymbol();
+    }
 
     return Scaffold(
       body: Container(
@@ -45,7 +65,7 @@ class _FoPageState extends ConsumerState<FoPage> {
         child: SafeArea(
           top: false,
           child: activeSymbol == null
-              ? FoEmptyLandingView(onSelected: _onSymbolSelected)
+              ? const Center(child: CircularProgressIndicator())
               : _buildDetailView(activeSymbol, colors),
         ),
       ),
@@ -53,34 +73,53 @@ class _FoPageState extends ConsumerState<FoPage> {
   }
 
   Widget _buildDetailView(String symbol, AppColorsTheme colors) {
+    final width = MediaQuery.sizeOf(context).width;
+    final isMobile = width < AmBreakpoints.mobile;
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+
     return DefaultTabController(
       length: 3,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          FoHeaderCard(
-            symbol: symbol,
-            onBack: () {
-              ref.read(foActiveSymbolProvider.notifier).state = null;
-            },
-          ),
+          FoHeaderCard(symbol: symbol),
           TabBar(
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
             indicatorColor: ModuleColors.market,
+            indicatorWeight: isMobile ? 2 : 2.5,
+            dividerHeight: isMobile ? 0.5 : 1,
             labelColor: colors.textPrimary,
             unselectedLabelColor: colors.textSecondary,
-            tabs: const [
-              Tab(text: 'Option Chain'),
-              Tab(text: 'Futures Contracts'),
-              Tab(text: 'Margin Calculator'),
+            labelPadding: EdgeInsets.symmetric(
+              horizontal: isMobile ? 10 : 16,
+            ),
+            labelStyle: TextStyle(
+              fontSize: isMobile ? 12.5 : 14,
+              fontWeight: FontWeight.w600,
+              height: 1.1,
+            ),
+            unselectedLabelStyle: TextStyle(
+              fontSize: isMobile ? 12.5 : 14,
+              fontWeight: FontWeight.w500,
+              height: 1.1,
+            ),
+            tabs: [
+              Tab(height: isMobile ? 36 : 46, text: 'Option Chain'),
+              Tab(height: isMobile ? 36 : 46, text: 'Futures Contracts'),
+              Tab(height: isMobile ? 36 : 46, text: 'Margin Calculator'),
             ],
           ),
-          const Expanded(
-            child: TabBarView(
-              children: [
-                OptionChainView(),
-                FuturesView(),
-                MarginCalculatorView(),
-              ],
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: isMobile ? bottomInset : 0),
+              child: const TabBarView(
+                children: [
+                  OptionChainView(),
+                  FuturesView(),
+                  MarginCalculatorView(),
+                ],
+              ),
             ),
           ),
         ],

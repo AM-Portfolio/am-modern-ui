@@ -10,13 +10,15 @@ class IpoRegistrarCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final width = MediaQuery.sizeOf(context).width;
+    final isCompact = width < AmBreakpoints.mobile;
+    final labelWidth = isCompact ? 96.0 : 110.0;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isCompact ? 14 : 20),
       decoration: BoxDecoration(
         color: context.surfaceColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(isCompact ? 12 : 16),
         border: Border.all(
           color: context.borderColor,
           width: 1,
@@ -27,70 +29,85 @@ class IpoRegistrarCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.people_alt_outlined, size: 18, color: ModuleColors.market),
+              Icon(
+                Icons.people_alt_outlined,
+                size: 18,
+                color: ModuleColors.market,
+              ),
               const SizedBox(width: 8),
               Text(
                 'Registrar Details',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: isCompact ? 15 : 16,
                   fontWeight: FontWeight.w700,
                   color: context.textPrimary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 18),
-
+          SizedBox(height: isCompact ? 12 : 18),
           _buildRow(
             context,
             label: 'Name',
             value: registrar?.name ?? 'N/A',
+            labelWidth: labelWidth,
           ),
-          const SizedBox(height: 12),
-
+          SizedBox(height: isCompact ? 10 : 12),
           _buildRow(
             context,
             label: 'Contact Person',
             value: registrar?.contactName ?? 'N/A',
+            labelWidth: labelWidth,
           ),
-          const SizedBox(height: 12),
-
+          SizedBox(height: isCompact ? 10 : 12),
           _buildClickableRow(
             context,
             label: 'Email',
             value: registrar?.email ?? 'N/A',
             icon: Icons.mail_outline_rounded,
-            onTap: registrar?.email != null ? () => _launch('mailto:${registrar!.email}') : null,
+            labelWidth: labelWidth,
+            onTap: registrar?.email != null
+                ? () => _launch('mailto:${registrar!.email}')
+                : null,
           ),
-          const SizedBox(height: 12),
-
+          SizedBox(height: isCompact ? 10 : 12),
           _buildClickableRow(
             context,
             label: 'Contact Number',
             value: registrar?.phone ?? 'N/A',
             icon: Icons.phone_outlined,
-            onTap: registrar?.phone != null ? () => _launch('tel:${registrar!.phone}') : null,
+            labelWidth: labelWidth,
+            onTap: registrar?.phone != null
+                ? () => _launch('tel:${registrar!.phone}')
+                : null,
           ),
-          const SizedBox(height: 12),
-
+          SizedBox(height: isCompact ? 10 : 12),
           _buildClickableRow(
             context,
             label: 'Website',
             value: registrar?.websiteUrl ?? 'N/A',
             icon: Icons.open_in_new_rounded,
-            onTap: registrar?.websiteUrl != null ? () => _launch(registrar!.websiteUrl!) : null,
+            labelWidth: labelWidth,
+            onTap: registrar?.websiteUrl != null
+                ? () => _launch(registrar!.websiteUrl!)
+                : null,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildRow(BuildContext context, {required String label, required String value}) {
+  Widget _buildRow(
+    BuildContext context, {
+    required String label,
+    required String value,
+    required double labelWidth,
+  }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 110,
+          width: labelWidth,
           child: Text(
             label,
             style: TextStyle(
@@ -119,6 +136,7 @@ class IpoRegistrarCard extends StatelessWidget {
     required String label,
     required String value,
     required IconData icon,
+    required double labelWidth,
     VoidCallback? onTap,
   }) {
     final isLink = onTap != null && value != 'N/A';
@@ -128,7 +146,7 @@ class IpoRegistrarCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 110,
+          width: labelWidth,
           child: Text(
             label,
             style: TextStyle(
@@ -140,13 +158,16 @@ class IpoRegistrarCard extends StatelessWidget {
         ),
         Expanded(
           child: InkWell(
-            onTap: onTap,
+            onTap: isLink ? onTap : null,
             borderRadius: BorderRadius.circular(4),
             child: Row(
-              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (isLink) ...[
-                  Icon(icon, size: 14, color: accentColor),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Icon(icon, size: 14, color: accentColor),
+                  ),
                   const SizedBox(width: 6),
                 ],
                 Flexible(
@@ -156,11 +177,12 @@ class IpoRegistrarCard extends StatelessWidget {
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: isLink ? accentColor : context.textPrimary,
-                      decoration: isLink ? TextDecoration.underline : TextDecoration.none,
+                      decoration:
+                          isLink ? TextDecoration.underline : TextDecoration.none,
                       decorationColor: accentColor,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: 3,
+                    softWrap: true,
                   ),
                 ),
               ],

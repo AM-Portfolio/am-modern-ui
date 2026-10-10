@@ -70,11 +70,12 @@ class MarketSidebar extends StatelessWidget {
         onTap: () => provider.selectIndex('Heatmap Explorer'),
       ),
        SecondarySidebarItem(
-        title: 'Market Analysis',
+        title: 'Heatmap',
         icon: Icons.analytics_rounded,
         accentColor: marketAccent,
-        isSelected: selectedIndex == 'Market Analysis',
-        onTap: () => provider.selectIndex('Market Analysis'),
+        isSelected: selectedIndex == 'Heatmap' ||
+            selectedIndex == 'Market Analysis',
+        onTap: () => provider.selectIndex('Heatmap'),
       ),
       SecondarySidebarItem(
         title: 'Analysis Dashboard',

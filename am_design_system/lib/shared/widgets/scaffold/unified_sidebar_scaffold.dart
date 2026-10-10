@@ -391,6 +391,10 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
     }
 
     Widget buildSearchPin() {
+      final scope = MobileSearchScope.maybeOf(context);
+      final highlight = scope?.highlightSearch ?? false;
+      final highlightColor = scope?.searchHighlightColor ?? accent;
+      final iconColor = highlight ? highlightColor : accent;
       return GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {
@@ -400,12 +404,25 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
           MobileSearchScope.setOpen(context, true);
           setState(() => _mobileSearchOpen = true);
         },
-        child: SizedBox(
+        child: Container(
           width: 44,
           height: segmentHeight,
+          alignment: Alignment.center,
+          decoration: highlight
+              ? BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: highlightColor.withValues(alpha: 0.32),
+                      blurRadius: 14,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                )
+              : null,
           child: Icon(
             Icons.search_rounded,
-            color: accent,
+            color: iconColor,
             size: 22,
           ),
         ),

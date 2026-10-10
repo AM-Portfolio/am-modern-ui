@@ -201,23 +201,22 @@ class EquityInsiderKpis extends ConsumerWidget {
               ),
             ];
 
+            final mobileMetrics = _mobileFixedMetrics(
+              yoyRevGrowth: yoyRevGrowth,
+              operatingMarginPercent: data.operatingMarginPercent,
+              peRatio: data.peRatio,
+              roe: data.roe,
+              roa: data.roa,
+              pbRatio: data.pbRatio,
+            );
+
             // Robust filtering: Only display metrics that have valid, populated numeric values (Zero Dashes)
             final validMetrics = candidates.where((m) => m.value != null && m.value!.isFinite).toList();
-
-            if (validMetrics.isEmpty) {
-              return Text(
-                'No populated valuation metrics for this security',
-                style: TextStyle(
-                  color: context.textSecondary,
-                  fontSize: 13,
-                ),
-              );
-            }
 
             return LayoutBuilder(
               builder: (context, constraints) {
                 final double totalWidth = constraints.maxWidth;
-                if (totalWidth < 420) {
+                if (totalWidth < AmBreakpoints.mobile) {
                   return GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
@@ -225,15 +224,15 @@ class EquityInsiderKpis extends ConsumerWidget {
                       crossAxisCount: 2,
                       crossAxisSpacing: 8,
                       mainAxisSpacing: 8,
-                      mainAxisExtent: 96,
+                      mainAxisExtent: 81,
                     ),
-                    itemCount: validMetrics.length,
+                    itemCount: mobileMetrics.length,
                     itemBuilder: (context, i) {
-                      final metric = validMetrics[i];
-                      return _buildKpi(
+                      final metric = mobileMetrics[i];
+                      return _buildMobileKpiCell(
                         context,
                         label: metric.label,
-                        value: metric.value!,
+                        value: metric.value,
                         subtitle: metric.subtitle,
                         isPositive: metric.isPositive,
                         isNegative: metric.isNegative,
@@ -242,10 +241,18 @@ class EquityInsiderKpis extends ConsumerWidget {
                   );
                 }
 
+                if (validMetrics.isEmpty) {
+                  return Text(
+                    'No populated valuation metrics for this security',
+                    style: TextStyle(
+                      color: context.textSecondary,
+                      fontSize: 13,
+                    ),
+                  );
+                }
+
                 int cols = 5;
-                if (totalWidth < 480) {
-                  cols = 2;
-                } else if (totalWidth < 700) {
+                if (totalWidth < 700) {
                   cols = 3;
                 } else if (totalWidth < 950) {
                   cols = 4;
@@ -286,6 +293,56 @@ class EquityInsiderKpis extends ConsumerWidget {
     );
   }
 
+  List<_KpiMetric> _mobileFixedMetrics({
+    required double? yoyRevGrowth,
+    required double? operatingMarginPercent,
+    required double? peRatio,
+    required double? roe,
+    required double? roa,
+    required double? pbRatio,
+  }) {
+    return [
+      _KpiMetric(
+        label: 'YoY Rev Growth %',
+        value: yoyRevGrowth,
+        subtitle: 'Growth',
+        isPositive: (yoyRevGrowth ?? 0) > 0,
+        isNegative: (yoyRevGrowth ?? 0) < 0,
+      ),
+      _KpiMetric(
+        label: 'OPM %',
+        value: operatingMarginPercent,
+        subtitle: 'Profitability',
+        isPositive: (operatingMarginPercent ?? 0) > 15,
+        isNegative: (operatingMarginPercent ?? 0) < 5,
+      ),
+      _KpiMetric(
+        label: 'P/E',
+        value: peRatio,
+        subtitle: 'Valuation',
+      ),
+      _KpiMetric(
+        label: 'ROE %',
+        value: roe,
+        subtitle: 'Profitability',
+        isPositive: (roe ?? 0) > 15,
+        isNegative: (roe ?? 0) < 0,
+      ),
+      _KpiMetric(
+        label: 'ROA %',
+        value: roa,
+        subtitle: 'Profitability',
+        isPositive: (roa ?? 0) > 1,
+        isNegative: (roa ?? 0) < 0,
+      ),
+      _KpiMetric(
+        label: 'P/B',
+        value: pbRatio,
+        subtitle: 'Valuation',
+      ),
+    ];
+  }
+
   Widget _buildSectionHeader(BuildContext context, String title, String exchange) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -319,6 +376,80 @@ class EquityInsiderKpis extends ConsumerWidget {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileKpiCell(
+    BuildContext context, {
+    required String label,
+    required double? value,
+    required String subtitle,
+    bool isPositive = false,
+    bool isNegative = false,
+  }) {
+    Color valColor = context.textPrimary;
+    if (value != null && value.isFinite) {
+      if (isPositive) valColor = context.marketTheme.positive;
+      if (isNegative) valColor = context.marketTheme.negative;
+    }
+
+    final valueText = value != null && value.isFinite ? value.toStringAsFixed(2) : '—';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      decoration: BoxDecoration(
+        border: Border.all(color: context.borderColor),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            label.toUpperCase(),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 10,
+              color: context.textTertiary,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Expanded(
+            child: Center(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  valueText,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: valColor,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11,
+              color: ModuleColors.market,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

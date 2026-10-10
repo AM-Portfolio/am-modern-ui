@@ -17,11 +17,14 @@ class IpoSubscriptionStatusCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasData = totalSubscription != null && totalSubscription!.isNotEmpty;
 
+    final width = MediaQuery.sizeOf(context).width;
+    final isCompact = width < AmBreakpoints.mobile;
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isCompact ? 14 : 20),
       decoration: BoxDecoration(
         color: context.surfaceColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(isCompact ? 12 : 16),
         border: Border.all(
           color: context.borderColor,
           width: 1,
@@ -37,14 +40,14 @@ class IpoSubscriptionStatusCard extends StatelessWidget {
               Text(
                 'Subscription Status',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: isCompact ? 15 : 16,
                   fontWeight: FontWeight.w700,
                   color: context.textPrimary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 18),
+          SizedBox(height: isCompact ? 12 : 18),
 
           Container(
             padding: const EdgeInsets.all(16),

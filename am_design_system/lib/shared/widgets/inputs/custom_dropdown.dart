@@ -123,6 +123,12 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
     final renderBox = context.findRenderObject()! as RenderBox;
     final size = renderBox.size;
     final theme = Theme.of(context);
+    final origin = renderBox.localToGlobal(Offset.zero);
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    // Pin menu to the right of the button when near the screen edge so
+    // long labels are not clipped off-screen.
+    final alignEnd = origin.dx + size.width > screenWidth * 0.62;
+    final maxMenuWidth = math.min(screenWidth - 24, 280.0);
 
     return OverlayEntry(
       builder: (context) => Stack(
@@ -133,30 +139,39 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
               behavior: HitTestBehavior.translucent,
             ),
           ),
-          Positioned(
-            width: widget.isExpanded ? size.width : null,
-            child: CompositedTransformFollower(
-              link: _layerLink,
-              showWhenUnlinked: false,
-              offset: Offset(0, size.height + 4),
-              child: Material(
-                elevation: widget.enableGlass ? 0 : 8,
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(widget.borderRadius),
+          CompositedTransformFollower(
+            link: _layerLink,
+            showWhenUnlinked: false,
+            targetAnchor:
+                alignEnd ? Alignment.bottomRight : Alignment.bottomLeft,
+            followerAnchor: alignEnd ? Alignment.topRight : Alignment.topLeft,
+            offset: Offset(0, 4),
+            child: Material(
+              elevation: widget.enableGlass ? 0 : 8,
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(widget.borderRadius),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: widget.menuMaxHeight,
+                  minWidth: widget.isExpanded
+                      ? size.width
+                      : math.max(size.width, 160.0),
+                  maxWidth: maxMenuWidth,
+                ),
                 child: Container(
-                  constraints: BoxConstraints(
-                    maxHeight: widget.menuMaxHeight,
-                    minWidth: widget.isExpanded ? size.width : math.max(size.width, 160.0),
-                  ),
                   decoration: widget.enableGlass
                       ? AppGlassmorphism.dropdownDecoration(context).copyWith(
-                          borderRadius: BorderRadius.circular(widget.borderRadius),
+                          borderRadius:
+                              BorderRadius.circular(widget.borderRadius),
                         )
                       : BoxDecoration(
-                          color: widget.backgroundColor ?? theme.colorScheme.surface,
-                          borderRadius: BorderRadius.circular(widget.borderRadius),
+                          color: widget.backgroundColor ??
+                              theme.colorScheme.surface,
+                          borderRadius:
+                              BorderRadius.circular(widget.borderRadius),
                           border: Border.all(
-                            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+                            color: theme.colorScheme.outlineVariant
+                                .withValues(alpha: 0.3),
                             width: 1,
                           ),
                           boxShadow: [
@@ -172,56 +187,57 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
                     borderRadius: BorderRadius.circular(widget.borderRadius),
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.all(8),
-                      child: IntrinsicWidth(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          mainAxisSize: MainAxisSize.min,
-                          children: widget.items.map((item) {
-                            final isSelected = item.value == widget.value;
-                            return InkWell(
-                              onTap: () {
-                                widget.onChanged?.call(item.value);
-                                _closeDropdown();
-                              },
-                              hoverColor: Colors.transparent,
-                              splashColor: Colors.transparent,
-                              highlightColor: Colors.transparent,
-                              child: Padding(
-                                padding: const EdgeInsets.only(bottom: 6),
-                                child: _HoverableDropdownItemChild(
-                                  isSelected: isSelected,
-                                  accentColor: widget.primaryColor ?? theme.primaryColor,
-                                  child: DefaultTextStyle(
-                                    style: DropdownStyles.createTextStyle(
-                                      context,
-                                      primaryColor: widget.primaryColor,
-                                      textColor: widget.textColor,
-                                      fontSize: widget.fontSize,
-                                      enabled: true,
-                                    ).copyWith(
-                                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                                    ),
-                                    child: Stack(
-                                      alignment: Alignment.centerLeft,
-                                      children: [
-                                        item.child,
-                                        if (isSelected)
-                                          Positioned(
-                                            right: 12,
-                                            child: Icon(
-                                              Icons.check_circle_rounded, 
-                                              size: 16, 
-                                              color: widget.primaryColor ?? theme.primaryColor,
-                                            ),
-                                          ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        mainAxisSize: MainAxisSize.min,
+                        children: widget.items.map((item) {
+                          final isSelected = item.value == widget.value;
+                          return InkWell(
+                            onTap: () {
+                              widget.onChanged?.call(item.value);
+                              _closeDropdown();
+                            },
+                            hoverColor: Colors.transparent,
+                            splashColor: Colors.transparent,
+                            highlightColor: Colors.transparent,
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 6),
+                              child: _HoverableDropdownItemChild(
+                                isSelected: isSelected,
+                                accentColor: widget.primaryColor ??
+                                    theme.primaryColor,
+                                child: DefaultTextStyle(
+                                  style: DropdownStyles.createTextStyle(
+                                    context,
+                                    primaryColor: widget.primaryColor,
+                                    textColor: widget.textColor,
+                                    fontSize: widget.fontSize,
+                                    enabled: true,
+                                  ).copyWith(
+                                    fontWeight: isSelected
+                                        ? FontWeight.w600
+                                        : FontWeight.w500,
+                                  ),
+                                  // Row keeps check mark from covering labels.
+                                  child: Row(
+                                    children: [
+                                      Expanded(child: item.child),
+                                      if (isSelected) ...[
+                                        const SizedBox(width: 8),
+                                        Icon(
+                                          Icons.check_circle_rounded,
+                                          size: 16,
+                                          color: widget.primaryColor ??
+                                              theme.primaryColor,
+                                        ),
                                       ],
-                                    ),
+                                    ],
                                   ),
                                 ),
                               ),
-                            );
-                          }).toList(),
-                        ),
+                            ),
+                          );
+                        }).toList(),
                       ),
                     ),
                   ),
@@ -272,10 +288,14 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
     }
 
     Widget dropdownBody = Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisSize: widget.isExpanded ? MainAxisSize.max : MainAxisSize.min,
+      mainAxisAlignment: widget.isExpanded
+          ? MainAxisAlignment.spaceBetween
+          : MainAxisAlignment.start,
       children: [
         if (displayWidget != null)
           widget.isExpanded ? Expanded(child: displayWidget) : displayWidget,
+        if (!widget.isExpanded) const SizedBox(width: 4),
         Icon(
           widget.icon ?? (_isOpen ? Icons.expand_less : Icons.expand_more),
           color: DropdownStyles.getIconColor(

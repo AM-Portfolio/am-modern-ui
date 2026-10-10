@@ -9,14 +9,15 @@ class IpoEligibleInvestorsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final list = eligibleInvestors ?? const [];
+    final width = MediaQuery.sizeOf(context).width;
+    final isCompact = width < AmBreakpoints.mobile;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isCompact ? 14 : 20),
       decoration: BoxDecoration(
         color: context.surfaceColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(isCompact ? 12 : 16),
         border: Border.all(
           color: context.borderColor,
           width: 1,
@@ -32,69 +33,46 @@ class IpoEligibleInvestorsCard extends StatelessWidget {
               Text(
                 'Eligible Investors',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: isCompact ? 15 : 16,
                   fontWeight: FontWeight.w700,
                   color: context.textPrimary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 18),
-
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: context.surfaceColor,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isDark ? context.dividerColor : context.borderColor,
-                width: 1,
-              ),
-            ),
-            child: list.isEmpty
-                ? Text(
-                    'All eligible retail and institutional investors',
-                    style: TextStyle(fontSize: 13, color: context.textSecondary),
-                  )
-                : Wrap(
-                    spacing: 12,
-                    runSpacing: 10,
-                    children: list.map((inv) {
-                      return Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: ModuleColors.market.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: ModuleColors.market.withValues(alpha: 0.35)),
-                            ),
-                            child: Text(
-                              inv.category,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: ModuleColors.market,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            inv.subscription != null && inv.subscription!.isNotEmpty
-                                ? '${inv.subscription}x'
-                                : '—',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: context.textSecondary,
-                            ),
-                          ),
-                        ],
-                      );
-                    }).toList(),
-                  ),
-          ),
+          SizedBox(height: isCompact ? 12 : 18),
+          list.isEmpty
+              ? Text(
+                  'All eligible retail and institutional investors',
+                  style: TextStyle(fontSize: 13, color: context.textSecondary),
+                )
+              : Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: list.map((inv) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: ModuleColors.market.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: ModuleColors.market.withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: Text(
+                        inv.category,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: ModuleColors.market,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
         ],
       ),
     );

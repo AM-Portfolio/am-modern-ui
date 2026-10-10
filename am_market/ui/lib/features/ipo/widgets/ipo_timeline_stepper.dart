@@ -18,15 +18,15 @@ class IpoTimelineStepper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     final stages = _buildStages();
+    final width = MediaQuery.sizeOf(context).width;
+    final isCompact = width < AmBreakpoints.mobile;
 
     return Container(
-      padding: const EdgeInsets.all(22),
+      padding: EdgeInsets.all(isCompact ? 14 : 22),
       decoration: BoxDecoration(
         color: context.surfaceColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(isCompact ? 12 : 16),
         border: Border.all(
           color: context.borderColor,
           width: 1,
@@ -37,41 +37,181 @@ class IpoTimelineStepper extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.calendar_month_outlined, size: 18, color: ModuleColors.market),
+              Icon(
+                Icons.calendar_month_outlined,
+                size: 18,
+                color: ModuleColors.market,
+              ),
               const SizedBox(width: 8),
               Text(
                 'Important Dates',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: isCompact ? 15 : 16,
                   fontWeight: FontWeight.w700,
                   color: context.textPrimary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 24),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: List.generate(stages.length, (index) {
-                  final stage = stages[index];
-                  final isLast = index == stages.length - 1;
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildStageNode(context, stage),
-                      if (!isLast) _buildConnectorLine(context, stage.isCompleted),
-                    ],
-                  );
-                }),
+          SizedBox(height: isCompact ? 16 : 24),
+          if (isCompact)
+            _buildVerticalTimeline(context, stages)
+          else
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: List.generate(stages.length, (index) {
+                    final stage = stages[index];
+                    final isLast = index == stages.length - 1;
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildStageNode(context, stage),
+                        if (!isLast)
+                          _buildConnectorLine(context, stage.isCompleted),
+                      ],
+                    );
+                  }),
+                ),
               ),
             ),
-          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildVerticalTimeline(
+    BuildContext context,
+    List<_TimelineStage> stages,
+  ) {
+    return Column(
+      children: List.generate(stages.length, (index) {
+        final stage = stages[index];
+        final isLast = index == stages.length - 1;
+        return IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 22,
+                child: Column(
+                  children: [
+                    _buildVerticalMarker(context, stage),
+                    if (!isLast)
+                      Expanded(
+                        child: Container(
+                          width: 2,
+                          color: stage.isCompleted || stage.isActive
+                              ? ModuleColors.market
+                              : context.dividerColor,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(bottom: isLast ? 0 : 14),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              stage.title,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: stage.isActive || stage.isCompleted
+                                    ? context.textPrimary
+                                    : context.textSecondary,
+                              ),
+                            ),
+                            if (stage.subtitle != null &&
+                                stage.subtitle!.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                stage.subtitle!,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: context.textTertiary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        stage.date,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight:
+                              stage.isActive ? FontWeight.w700 : FontWeight.w500,
+                          color: stage.isActive
+                              ? ModuleColors.market
+                              : context.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildVerticalMarker(BuildContext context, _TimelineStage stage) {
+    if (stage.isCompleted) {
+      return Container(
+        width: 18,
+        height: 18,
+        decoration: BoxDecoration(
+          color: ModuleColors.market,
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(Icons.check, size: 11, color: Colors.white),
+      );
+    }
+    if (stage.isActive) {
+      return Container(
+        width: 18,
+        height: 18,
+        decoration: BoxDecoration(
+          color: ModuleColors.market.withValues(alpha: 0.2),
+          shape: BoxShape.circle,
+          border: Border.all(color: ModuleColors.market, width: 2),
+        ),
+        alignment: Alignment.center,
+        child: Container(
+          width: 6,
+          height: 6,
+          decoration: BoxDecoration(
+            color: ModuleColors.market,
+            shape: BoxShape.circle,
+          ),
+        ),
+      );
+    }
+    return Container(
+      width: 18,
+      height: 18,
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        shape: BoxShape.circle,
+        border: Border.all(color: context.dividerColor, width: 1.5),
       ),
     );
   }
@@ -84,7 +224,8 @@ class IpoTimelineStepper extends StatelessWidget {
       indicator = Container(
         width: 26,
         height: 26,
-        decoration: BoxDecoration(color: context.colors.statusSuccess,
+        decoration: BoxDecoration(
+          color: context.colors.statusSuccess,
           shape: BoxShape.circle,
         ),
         child: const Icon(Icons.check, size: 16, color: Colors.white),
@@ -102,7 +243,8 @@ class IpoTimelineStepper extends StatelessWidget {
         child: Container(
           width: 10,
           height: 10,
-          decoration: BoxDecoration(color: ModuleColors.market,
+          decoration: BoxDecoration(
+            color: ModuleColors.market,
             shape: BoxShape.circle,
           ),
         ),
@@ -135,7 +277,8 @@ class IpoTimelineStepper extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: stage.isActive ? FontWeight.w700 : FontWeight.w500,
-              color: stage.isActive ? ModuleColors.market : context.textSecondary,
+              color:
+                  stage.isActive ? ModuleColors.market : context.textSecondary,
             ),
           ),
           const SizedBox(height: 3),
@@ -145,7 +288,9 @@ class IpoTimelineStepper extends StatelessWidget {
             style: TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.w700,
-              color: stage.isActive || stage.isCompleted ? context.textPrimary : context.textSecondary,
+              color: stage.isActive || stage.isCompleted
+                  ? context.textPrimary
+                  : context.textSecondary,
             ),
           ),
           if (stage.subtitle != null && stage.subtitle!.isNotEmpty) ...[
@@ -166,12 +311,13 @@ class IpoTimelineStepper extends StatelessWidget {
   }
 
   Widget _buildConnectorLine(BuildContext context, bool isCompleted) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: 44,
       height: 2,
       margin: const EdgeInsets.only(top: 12),
-      color: isCompleted ? context.colors.statusSuccess : (isDark ? context.dividerColor : context.dividerColor),
+      color: isCompleted
+          ? context.colors.statusSuccess
+          : context.dividerColor,
     );
   }
 
@@ -189,8 +335,18 @@ class IpoTimelineStepper extends StatelessWidget {
 
     return [
       _createStage('Pre-Apply Start', preApply, '(Optional)', now),
-      _createStage('Application Start', appStart, _formatTime(dailyStartTime, '10:00 AM'), now),
-      _createStage('Application End', appEnd, _formatTime(dailyEndTime, '5:00 PM'), now),
+      _createStage(
+        'Application Start',
+        appStart,
+        _formatTime(dailyStartTime, '10:00 AM'),
+        now,
+      ),
+      _createStage(
+        'Application End',
+        appEnd,
+        _formatTime(dailyEndTime, '5:00 PM'),
+        now,
+      ),
       _createStage('Allotment Start', allotStart, null, now),
       _createStage('Allotment Date', allotDate, null, now),
       _createStage('Refund Initiation', refund, null, now),
@@ -199,7 +355,12 @@ class IpoTimelineStepper extends StatelessWidget {
     ];
   }
 
-  _TimelineStage _createStage(String title, String? dateStr, String? subtitle, DateTime now) {
+  _TimelineStage _createStage(
+    String title,
+    String? dateStr,
+    String? subtitle,
+    DateTime now,
+  ) {
     if (dateStr == null || dateStr.isEmpty) {
       return _TimelineStage(
         title: title,
@@ -213,7 +374,9 @@ class IpoTimelineStepper extends StatelessWidget {
     try {
       final date = DateTime.parse(dateStr);
       final isCompleted = now.isAfter(date);
-      final isToday = now.year == date.year && now.month == date.month && now.day == date.day;
+      final isToday = now.year == date.year &&
+          now.month == date.month &&
+          now.day == date.day;
 
       return _TimelineStage(
         title: title,
@@ -234,7 +397,20 @@ class IpoTimelineStepper extends StatelessWidget {
   }
 
   String _formatDate(DateTime date) {
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return '${date.day.toString().padLeft(2, '0')} ${months[date.month - 1]} ${date.year}';
   }
 

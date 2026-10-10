@@ -31,6 +31,7 @@ class _MarketIndexDetailViewState extends State<MarketIndexDetailView> {
         index == 'ETF Explorer' ||
         index == 'Price Test' ||
         index == 'Market Analysis' ||
+        index == 'Heatmap' ||
         index == 'Admin Dashboard') {
       return 'NIFTY 50';
     }

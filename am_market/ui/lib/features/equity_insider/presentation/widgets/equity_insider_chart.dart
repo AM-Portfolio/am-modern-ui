@@ -60,65 +60,96 @@ class _EquityInsiderChartState extends ConsumerState<EquityInsiderChart> {
     final query = EquityChartQuery(symbol: widget.symbol, timeframe: tfCode, exchange: activeExchange);
     final chartDataAsync = ref.watch(equityStockChartDataProvider(query));
 
+    const timeFrames = [
+      TimeFrame.oneDay,
+      TimeFrame.oneMonth,
+      TimeFrame.sixMonths,
+      TimeFrame.oneYear,
+      TimeFrame.fiveYears,
+    ];
+
     return LayoutBuilder(
       builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < AmBreakpoints.mobile;
+        final chartHeight = isMobile ? 210.0 : 260.0;
+        final totalHeight = isMobile ? 280.0 : 330.0;
+        final title = isMobile ? 'Price Performance' : 'Price Performance & Chart';
+
         return SizedBox(
-          height: 310,
+          height: totalHeight,
           width: double.infinity,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Text(
-                        'Price Performance & Chart',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: context.textPrimary,
-                        ),
+                  Flexible(
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: context.textPrimary,
                       ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: (activeExchange == 'BSE' ? context.colors.statusWarning : context.marketTheme.chartBlue).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          activeExchange,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: activeExchange == 'BSE' ? context.colors.statusWarning : context.marketTheme.chartBlue,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: TimeFrameSelector(
-                      selectedTimeFrame: _selectedTimeFrame,
-                      primaryColor: ModuleColors.market,
-                      availableTimeFrames: const [
-                        TimeFrame.oneDay,
-                        TimeFrame.oneMonth,
-                        TimeFrame.sixMonths,
-                        TimeFrame.oneYear,
-                        TimeFrame.fiveYears,
-                      ],
-                      onTimeFrameChanged: (newTf) {
-                        setState(() {
-                          _selectedTimeFrame = newTf;
-                        });
-                      },
-                      compact: true,
                     ),
                   ),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: (activeExchange == 'BSE'
+                              ? context.colors.statusWarning
+                              : context.marketTheme.chartBlue)
+                          .withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      activeExchange,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: activeExchange == 'BSE'
+                            ? context.colors.statusWarning
+                            : context.marketTheme.chartBlue,
+                      ),
+                    ),
+                  ),
+                  if (isMobile) ...[
+                    const Spacer(),
+                    SizedBox(
+                      width: 72,
+                      child: CustomDropdown<TimeFrame>(
+                        value: timeFrames.contains(_selectedTimeFrame)
+                            ? _selectedTimeFrame
+                            : TimeFrame.oneYear,
+                        height: 36,
+                        isExpanded: true,
+                        fontSize: 12,
+                        iconSize: 16,
+                        borderRadius: 10,
+                        menuMaxHeight: 148,
+                        primaryColor: ModuleColors.market,
+                        contentPadding:
+                            const EdgeInsets.symmetric(horizontal: 8),
+                        items: timeFrames
+                            .map(
+                              (tf) => tf.toSimpleDropdownItem(
+                                text: tf.code,
+                                fontSize: 12,
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (tf) {
+                          if (tf != null) {
+                            setState(() => _selectedTimeFrame = tf);
+                          }
+                        },
+                      ),
+                    ),
+                  ],
                 ],
               ),
               const SizedBox(height: 8),
@@ -142,7 +173,7 @@ class _EquityInsiderChartState extends ConsumerState<EquityInsiderChart> {
                       config: MultiSeriesChartConfig(
                         timeFrameCode: tfCode,
                         embedMode: true,
-                        height: 270, // Increased to fill 310 space correctly
+                        height: chartHeight,
                         showExpandButton: false,
                         initialShowAbsoluteValues: true,
                       ),
@@ -170,13 +201,20 @@ class _EquityInsiderChartState extends ConsumerState<EquityInsiderChart> {
                           ),
                           const SizedBox(height: 6),
                           OutlinedButton(
-                            onPressed: () => ref.refresh(equityStockChartDataProvider(query)),
+                            onPressed: () =>
+                                ref.refresh(equityStockChartDataProvider(query)),
                             style: OutlinedButton.styleFrom(
                               side: BorderSide(color: context.borderColor),
                               foregroundColor: context.textPrimary,
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
                             ),
-                            child: const Text('Retry', style: TextStyle(fontSize: 11)),
+                            child: const Text(
+                              'Retry',
+                              style: TextStyle(fontSize: 11),
+                            ),
                           ),
                         ],
                       ),
@@ -184,6 +222,26 @@ class _EquityInsiderChartState extends ConsumerState<EquityInsiderChart> {
                   ),
                 ),
               ),
+              if (!isMobile) ...[
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: TimeFrameSelector(
+                      selectedTimeFrame: _selectedTimeFrame,
+                      primaryColor: ModuleColors.market,
+                      availableTimeFrames: timeFrames,
+                      onTimeFrameChanged: (newTf) {
+                        setState(() {
+                          _selectedTimeFrame = newTf;
+                        });
+                      },
+                      compact: true,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         );

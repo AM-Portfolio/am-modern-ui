@@ -400,7 +400,7 @@ class FinancialComparisonSection extends StatelessWidget {
         }
         list.add(_TakeawayMetric(
           icon: Icons.domain_rounded,
-          iconColor: Colors.indigoAccent,
+          iconColor: context.marketTheme.chartPurple,
           label: 'Total Assets',
           valueText: '₹ ${NumberFormat('#,##,##0', 'en_IN').format(currAssets.toInt())} Cr',
           deltaText: assetDelta != null ? '${assetDelta.abs().toStringAsFixed(1)}% YoY' : null,
@@ -417,7 +417,7 @@ class FinancialComparisonSection extends StatelessWidget {
         }
         list.add(_TakeawayMetric(
           icon: Icons.layers_rounded,
-          iconColor: Colors.cyanAccent,
+          iconColor: ModuleColors.market,
           label: 'Equity',
           valueText: '₹ ${NumberFormat('#,##,##0', 'en_IN').format(currEquity.toInt())} Cr',
           deltaText: equityDelta != null ? '${equityDelta.abs().toStringAsFixed(1)}% YoY' : null,

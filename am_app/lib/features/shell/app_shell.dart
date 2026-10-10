@@ -971,6 +971,10 @@ final userId =
                   bannerSubtitle: SearchContextRegistry.copyFor(_searchContext)
                       .bannerSubtitle,
                   emptySuggestions: _emptySearchSuggestions,
+                  highlightSearch: _highlightSearchHint,
+                  searchHighlightColor: _searchContext == SearchContext.baskets
+                      ? ModuleColors.portfolio
+                      : ModuleColors.market,
                   child: common.OfflineShell(
                                     child: Shortcuts(
                     shortcuts: {

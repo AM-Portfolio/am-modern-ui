@@ -51,6 +51,15 @@ class SearchContextRegistry {
             'Trade': 30,
           },
         );
+      case SearchContext.paper:
+        return const SearchContextCopy(
+          bannerTitle: 'Searching in Paper Trading',
+          bannerSubtitle: 'Stocks for watchlist and orders first.',
+          categoryBoost: {
+            'Market': 100,
+            'Action': 40,
+          },
+        );
       case SearchContext.market:
         return const SearchContextCopy(
           bannerTitle: 'Searching in Market',
@@ -92,6 +101,8 @@ class SearchContextRegistry {
         return 'Search a stock…';
       case SearchContext.fo:
         return 'Search indices & contracts…';
+      case SearchContext.paper:
+        return 'Search stocks for paper…';
       case SearchContext.portfolio:
         return 'Search portfolios & baskets…';
       case SearchContext.market:

@@ -131,7 +131,10 @@ class UnifiedSearchEngine {
     _timer = Timer(debounce, () async {
       final nav = SearchNavigationHandler(navContext, container: container);
       final secCategory =
-          context == SearchContext.equityInsider ? 'STOCKS' : 'ALL';
+          (context == SearchContext.equityInsider ||
+                  context == SearchContext.paper)
+              ? 'STOCKS'
+              : 'ALL';
 
       var securitiesItems = <CommandItem>[];
       var basketItems = <CommandItem>[];
@@ -322,16 +325,20 @@ class UnifiedSearchEngine {
       }
     }
 
-    if (context == SearchContext.equityInsider) {
+    if (context == SearchContext.equityInsider ||
+        context == SearchContext.paper) {
       for (final sym in const ['RELIANCE', 'TCS', 'HDFCBANK', 'INFY']) {
         out.add(
           CommandItem(
             title: sym,
-            subtitle: 'Popular stock',
-            icon: Icons.insights,
+            subtitle: context == SearchContext.paper
+                ? 'Paper watchlist'
+                : 'Popular stock',
+            icon: context == SearchContext.paper
+                ? Icons.science_outlined
+                : Icons.insights,
             category: 'Market',
-            onSelected: () =>
-                nav.openSecurity(sym, SearchContext.equityInsider),
+            onSelected: () => nav.openSecurity(sym, context),
           ),
         );
       }

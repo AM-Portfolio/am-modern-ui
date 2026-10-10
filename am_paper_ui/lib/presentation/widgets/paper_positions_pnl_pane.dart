@@ -168,7 +168,7 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
 
   Color _pnlColor(BuildContext context, double v) {
     final colors = context.colors;
-    if (v < 0) return colors.statusError;
+    if (v < 0) return colors.marketNegativeIndicator;
     if (v > 0) return colors.marketPositiveIndicator;
     return colors.textPrimary;
   }

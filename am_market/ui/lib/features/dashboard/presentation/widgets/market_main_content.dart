@@ -47,6 +47,7 @@ class _MarketMainContentState extends State<MarketMainContent> {
         index == 'ETF Explorer' ||
         index == 'Price Test' || 
         index == 'Market Analysis' ||
+        index == 'Heatmap' ||
         index == 'Equity Insider' ||
         index == 'Futures & Options' ||
         index == 'Admin Dashboard') { 
@@ -134,7 +135,9 @@ class _MarketMainContentState extends State<MarketMainContent> {
       case 'Security Explorer': return 3;
       case 'Price Test': return 4;
       case 'ETF Explorer': return 5;
-      case 'Heatmap Explorer': return 6;
+      case 'Heatmap Explorer':
+      case 'Heatmap':
+        return 6;
       case 'Market Analysis': return 7;
       case 'Admin Dashboard': return 8;
       case 'Equity Insider': return 9;

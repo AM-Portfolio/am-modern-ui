@@ -23,8 +23,8 @@ void main() {
         CrossModuleSectionSequence.marketSwipeTabs,
         [
           'all-indices',
-          'paper',
           'dashboard',
+          'paper',
           'market-analysis',
           'equity-insider',
           'futures-options',

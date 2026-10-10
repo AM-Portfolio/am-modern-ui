@@ -71,7 +71,9 @@ class _EquityInsiderShareholdingState extends ConsumerState<EquityInsiderShareho
                             child: Text(
                               p,
                               style: TextStyle(
-                                color: isSelected ? Colors.white : context.textSecondary,
+                                color: isSelected
+                                    ? context.colors.actionPrimaryFg
+                                    : context.textSecondary,
                                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                                 fontSize: 11,
                               ),
@@ -86,7 +88,7 @@ class _EquityInsiderShareholdingState extends ConsumerState<EquityInsiderShareho
                   padding: const EdgeInsets.only(top: 8, bottom: 16),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      final isMobile = constraints.maxWidth < 350;
+                      final isMobile = constraints.maxWidth < AmBreakpoints.mobile;
                       if (isMobile) {
                         return Column(
                           children: [
@@ -159,7 +161,7 @@ class _EquityInsiderShareholdingState extends ConsumerState<EquityInsiderShareho
     add('Promoters', 'promotersPercent', context.marketTheme.positive);
     add('FII / Foreign', 'fiiPercent', ModuleColors.market);
     add('Mutual Funds', 'mutualFundsPercent', context.marketTheme.chartPurple);
-    add('Retail / Public', 'retailAndOtherPercent', context.marketTheme.textMuted);
+    add('Retail & Public', 'retailAndOtherPercent', context.marketTheme.textMuted);
     add('DII / Others', 'diiPercent', context.marketTheme.textSecondary);
 
     list.sort((a, b) => b.value.compareTo(a.value));

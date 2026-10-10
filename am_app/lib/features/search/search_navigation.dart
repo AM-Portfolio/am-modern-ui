@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:am_market_ui/features/equity_insider/providers/equity_insider_provider.dart';
 import 'package:am_market_ui/features/f_o/providers/fo_provider.dart';
+import 'package:am_paper_ui/providers/paper_symbol_discovery_provider.dart';
 import 'package:am_portfolio_ui/features/basket/domain/models/etf_search_result.dart';
 
 import '../../core/router/app_routes.dart';
@@ -29,6 +30,10 @@ class SearchNavigationHandler {
       case SearchContext.fo:
         _setFoSymbol(sym);
         context.go(AppRoutes.marketPath('futures-options'));
+        return;
+      case SearchContext.paper:
+        _setPaperSymbol(sym);
+        context.go(AppRoutes.marketPath('paper'));
         return;
       case SearchContext.baskets:
       case SearchContext.market:
@@ -102,6 +107,16 @@ class SearchNavigationHandler {
       c.read(equityInsiderActiveSymbolProvider.notifier).state = symbol;
     } catch (_) {
       // Provider may be unavailable outside market scope.
+    }
+  }
+
+  void _setPaperSymbol(String symbol) {
+    final c = container;
+    if (c == null) return;
+    try {
+      c.read(paperSymbolDiscoveryProvider.notifier).state = symbol;
+    } catch (_) {
+      // Provider may be unavailable outside paper scope.
     }
   }
 }
