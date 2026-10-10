@@ -23,9 +23,9 @@ class RecentActivityResponse {
     final rawItems = json['items'];
     final items = rawItems is List
         ? rawItems
-            .whereType<Map>()
-            .map((e) => ActivityItem.fromJson(Map<String, dynamic>.from(e)))
-            .toList()
+              .whereType<Map>()
+              .map((e) => ActivityItem.fromJson(Map<String, dynamic>.from(e)))
+              .toList()
         : <ActivityItem>[];
 
     return RecentActivityResponse(

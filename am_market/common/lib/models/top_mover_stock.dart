@@ -21,10 +21,14 @@ class TopMoverStock {
   factory TopMoverStock.fromJson(Map<String, dynamic> json) {
     return TopMoverStock(
       symbol: json['symbol'] as String? ?? '',
-      companyName: json['companyName'] as String? ?? json['symbol'] as String? ?? '',
+      companyName:
+          json['companyName'] as String? ?? json['symbol'] as String? ?? '',
       lastPrice: double.tryParse(json['lastPrice']?.toString() ?? '') ?? 0.0,
       change: double.tryParse(json['change']?.toString() ?? '') ?? 0.0,
-      changePercent: double.tryParse(json['changePercent']?.toString() ?? json['pChange']?.toString() ?? '') ?? 0.0,
+      changePercent: double.tryParse(json['changePercent']?.toString() ??
+              json['pChange']?.toString() ??
+              '') ??
+          0.0,
       volume: int.tryParse(json['volume']?.toString() ?? '') ?? 0,
     );
   }

@@ -122,10 +122,10 @@ class _Legend extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                fontSize: compact ? 10 : null,
-                color: context.colors.textSecondary,
-              ),
+            fontWeight: FontWeight.w600,
+            fontSize: compact ? 10 : null,
+            color: context.colors.textSecondary,
+          ),
         ),
       ],
     );

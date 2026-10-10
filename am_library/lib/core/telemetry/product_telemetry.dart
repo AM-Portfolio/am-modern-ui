@@ -138,10 +138,7 @@ class ProductTelemetry with WidgetsBindingObserver {
         'section_transition',
         section: section,
         screen: clean,
-        extra: {
-          'from_section': fromSection,
-          'to_section': section,
-        },
+        extra: {'from_section': fromSection, 'to_section': section},
       );
     }
 
@@ -224,9 +221,7 @@ class ProductTelemetry with WidgetsBindingObserver {
       section: 'boot',
       screen: summary['path']?.toString() ?? '/',
       durationMs: total,
-      props: {
-        if (total != null) 'totalMs': total,
-      },
+      props: {if (total != null) 'totalMs': total},
     );
   }
 
@@ -254,7 +249,10 @@ class ProductTelemetry with WidgetsBindingObserver {
         if (planCode != null) 'plan_code': planCode,
         if (billingInterval != null) 'billing_interval': billingInterval,
         if (metadata != null)
-          ...metadata.map((k, v) => MapEntry(k, v is String || v is num || v is bool ? v : '$v')),
+          ...metadata.map(
+            (k, v) =>
+                MapEntry(k, v is String || v is num || v is bool ? v : '$v'),
+          ),
       },
     );
   }
@@ -281,10 +279,7 @@ class ProductTelemetry with WidgetsBindingObserver {
     );
   }
 
-  void feedbackSubmit({
-    required num score,
-    String? category,
-  }) {
+  void feedbackSubmit({required num score, String? category}) {
     _enqueue(
       'feedback_submit',
       section: _currentSection,
@@ -320,8 +315,10 @@ class ProductTelemetry with WidgetsBindingObserver {
 
   void _closeScreenTiming({bool exit = false}) {
     if (_currentScreen == null || _screenEnteredAt == null) return;
-    final ms =
-        DateTime.now().toUtc().difference(_screenEnteredAt!).inMilliseconds;
+    final ms = DateTime.now()
+        .toUtc()
+        .difference(_screenEnteredAt!)
+        .inMilliseconds;
     _screenEnteredAt = null;
     if (ms < 0) return;
     _enqueue(
@@ -408,9 +405,7 @@ class ProductTelemetry with WidgetsBindingObserver {
           )
           .timeout(const Duration(seconds: 5));
       if (resp.statusCode >= 300) {
-        debugPrint(
-          '[ProductTelemetry] flush ${resp.statusCode}: ${resp.body}',
-        );
+        debugPrint('[ProductTelemetry] flush ${resp.statusCode}: ${resp.body}');
       }
     } catch (e) {
       debugPrint('[ProductTelemetry] flush error: $e');

@@ -20,7 +20,8 @@ class WatchlistManagementView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final symbolsKey = watchlist.items.map((e) => e.symbol.toUpperCase()).join(',');
+    final symbolsKey =
+        watchlist.items.map((e) => e.symbol.toUpperCase()).join(',');
     final quotesAsync = ref.watch(watchlistQuotesProvider(symbolsKey));
     final quotesMap = quotesAsync.value ?? {};
 
@@ -77,7 +78,8 @@ class WatchlistManagementView extends ConsumerWidget {
               children: [
                 Text(
                   watchlist.name,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -94,7 +96,9 @@ class WatchlistManagementView extends ConsumerWidget {
                   context,
                   currentName: watchlist.name,
                   onSaved: (newName) {
-                    ref.read(watchlistsProvider.notifier).updateWatchlist(watchlist.id, newName);
+                    ref
+                        .read(watchlistsProvider.notifier)
+                        .updateWatchlist(watchlist.id, newName);
                   },
                 );
               },
@@ -111,20 +115,26 @@ class WatchlistManagementView extends ConsumerWidget {
                   context: context,
                   title: 'Delete Watchlist',
                   subtitle: 'This action cannot be undone',
-                  message: 'Are you sure you want to delete "${watchlist.name}"? All stocks inside will be removed from this list.',
+                  message:
+                      'Are you sure you want to delete "${watchlist.name}"? All stocks inside will be removed from this list.',
                   icon: Icons.warning_amber_rounded,
                   confirmText: 'Delete',
                   isDestructive: true,
                 );
                 if (confirm) {
-                  ref.read(watchlistsProvider.notifier).deleteWatchlist(watchlist.id);
+                  ref
+                      .read(watchlistsProvider.notifier)
+                      .deleteWatchlist(watchlist.id);
                 }
               },
-              icon: Icon(Icons.delete_outline, size: 16, color: colors.statusError),
-              label: Text('Delete', style: TextStyle(color: colors.statusError)),
+              icon: Icon(Icons.delete_outline,
+                  size: 16, color: colors.statusError),
+              label:
+                  Text('Delete', style: TextStyle(color: colors.statusError)),
               style: OutlinedButton.styleFrom(
                 foregroundColor: colors.statusError,
-                side: BorderSide(color: colors.statusError.withValues(alpha: 0.5)),
+                side: BorderSide(
+                    color: colors.statusError.withValues(alpha: 0.5)),
               ),
             ),
           ],
@@ -133,7 +143,8 @@ class WatchlistManagementView extends ConsumerWidget {
     );
   }
 
-  Widget _buildTable(BuildContext context, WidgetRef ref, Map<String, WatchlistStockQuote> quotesMap) {
+  Widget _buildTable(BuildContext context, WidgetRef ref,
+      Map<String, WatchlistStockQuote> quotesMap) {
     final colors = context.colors;
 
     if (watchlist.items.isEmpty) {
@@ -142,7 +153,10 @@ class WatchlistManagementView extends ConsumerWidget {
 
     return SingleChildScrollView(
       child: DataTable(
-        headingTextStyle: TextStyle(color: colors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600),
+        headingTextStyle: TextStyle(
+            color: colors.textSecondary,
+            fontSize: 12,
+            fontWeight: FontWeight.w600),
         dataTextStyle: TextStyle(color: colors.textPrimary, fontSize: 14),
         columns: const [
           DataColumn(label: Text('#')),
@@ -158,7 +172,9 @@ class WatchlistManagementView extends ConsumerWidget {
           final item = entry.value;
 
           final quote = quotesMap[item.symbol.toUpperCase()];
-          final companyName = (quote != null && quote.companyName.isNotEmpty) ? quote.companyName : item.symbol;
+          final companyName = (quote != null && quote.companyName.isNotEmpty)
+              ? quote.companyName
+              : item.symbol;
           final ltp = quote?.lastPrice ?? 0.0;
           final dayChg = quote?.change ?? 0.0;
           final pctChg = quote?.changePercent ?? 0.0;
@@ -166,7 +182,9 @@ class WatchlistManagementView extends ConsumerWidget {
           final isPos = dayChg >= 0;
           final changeColor = dayChg == 0.0
               ? colors.textSecondary
-              : (isPos ? context.marketTheme.positive : context.marketTheme.negative);
+              : (isPos
+                  ? context.marketTheme.positive
+                  : context.marketTheme.negative);
           final sign = isPos && dayChg > 0 ? '+' : '';
 
           return DataRow(
@@ -200,13 +218,15 @@ class WatchlistManagementView extends ConsumerWidget {
               DataCell(
                 Text(
                   '$sign${dayChg.toStringAsFixed(2)}',
-                  style: TextStyle(color: changeColor, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                      color: changeColor, fontWeight: FontWeight.w600),
                 ),
               ),
               DataCell(
                 Text(
                   '$sign${pctChg.toStringAsFixed(2)}%',
-                  style: TextStyle(color: changeColor, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                      color: changeColor, fontWeight: FontWeight.w600),
                 ),
               ),
               DataCell(
@@ -217,24 +237,29 @@ class WatchlistManagementView extends ConsumerWidget {
                       icon: const Icon(Icons.drive_file_move_outline, size: 18),
                       tooltip: 'Move to different watchlist',
                       onPressed: () {
-                        AddToWatchlistPopup.show(context, item.symbol, sourceWatchlistId: watchlist.id);
+                        AddToWatchlistPopup.show(context, item.symbol,
+                            sourceWatchlistId: watchlist.id);
                       },
                     ),
                     IconButton(
-                      icon: Icon(Icons.delete_outline, size: 18, color: colors.statusError),
+                      icon: Icon(Icons.delete_outline,
+                          size: 18, color: colors.statusError),
                       tooltip: 'Remove from watchlist',
                       onPressed: () async {
                         final confirm = await ConfirmationDialog.show(
                           context: context,
                           title: 'Remove Stock',
                           subtitle: 'Remove from ${watchlist.name}',
-                          message: 'Are you sure you want to remove ${item.symbol} from this watchlist?',
+                          message:
+                              'Are you sure you want to remove ${item.symbol} from this watchlist?',
                           icon: Icons.delete_outline,
                           confirmText: 'Remove',
                           isDestructive: true,
                         );
                         if (confirm) {
-                          ref.read(watchlistsProvider.notifier).removeStock(watchlist.id, item.symbol);
+                          ref
+                              .read(watchlistsProvider.notifier)
+                              .removeStock(watchlist.id, item.symbol);
                         }
                       },
                     ),

@@ -50,7 +50,7 @@ class TopMoversWidgetV2 extends StatelessWidget {
     // renders with the market UI's exact green/red palette.
     final positiveColor = MarketColors.positive(context);
     final negativeColor = MarketColors.negative(context);
-    final headerAccent  = ModuleColors.market;
+    final headerAccent = ModuleColors.market;
 
     return AmTopMoversPanel(
       gainers: gainers.map(_toAmItem).toList(),

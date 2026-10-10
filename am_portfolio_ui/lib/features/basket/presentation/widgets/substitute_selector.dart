@@ -177,7 +177,8 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
 
   String _recommendationBanner() {
     if (widget.sectorialBasket) {
-      final sectorLabel = widget.dominantSector ?? widget.missingSector ?? 'same sector';
+      final sectorLabel =
+          widget.dominantSector ?? widget.missingSector ?? 'same sector';
       return 'Recommendation: Select $sectorLabel stocks to fill the gap.';
     }
     final indexLabel = widget.etfName ?? 'index';
@@ -188,7 +189,10 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
     if (!widget.sectorialBasket) return true;
     final missing = widget.missingSector?.trim().toLowerCase();
     final candidate = candidateSector?.trim().toLowerCase();
-    if (missing == null || missing.isEmpty || candidate == null || candidate.isEmpty) {
+    if (missing == null ||
+        missing.isEmpty ||
+        candidate == null ||
+        candidate.isEmpty) {
       return true;
     }
     return missing == candidate ||
@@ -202,7 +206,9 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
   }
 
   List<Alternative> get _visibleAlternatives {
-    var list = widget.alternatives.where((a) => a.effectiveRemainingQty > 0).toList();
+    var list = widget.alternatives
+        .where((a) => a.effectiveRemainingQty > 0)
+        .toList();
     if (widget.sectorialBasket) {
       list = list
           .where((a) => a.isSameSector || _sectorMatches(a.sector))
@@ -234,12 +240,16 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
     return buf.toString();
   }
 
-  List<StockSearchResult> _filterSearchResults(List<StockSearchResult> results) {
+  List<StockSearchResult> _filterSearchResults(
+    List<StockSearchResult> results,
+  ) {
     if (widget.sectorialBasket) {
       return results.where((r) => _sectorMatches(r.sector)).toList();
     }
     if (widget.etfConstituentIsins.isNotEmpty) {
-      final constituents = results.where((r) => _isConstituent(r.isin)).toList();
+      final constituents = results
+          .where((r) => _isConstituent(r.isin))
+          .toList();
       if (constituents.isNotEmpty) return constituents;
     }
     return results;
@@ -249,22 +259,23 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
     if (_selectedIsins.isEmpty) return;
 
     final List<SubstituteSelectionEntry> selections = [];
-    
+
     // Add alternatives first, in the order they were selected
     for (final alt in _selectedAlternatives) {
-      selections.add(SubstituteSelectionEntry(
-        symbol: alt.symbol,
-        isin: alt.isin,
-        // null means consume up to available gap limit automatically on backend
-      ));
+      selections.add(
+        SubstituteSelectionEntry(
+          symbol: alt.symbol,
+          isin: alt.isin,
+          // null means consume up to available gap limit automatically on backend
+        ),
+      );
     }
 
     // Add searched stocks
     for (final stock in _selectedSearchedStocks.values) {
-      selections.add(SubstituteSelectionEntry(
-        symbol: stock.symbol,
-        isin: stock.isin ?? '',
-      ));
+      selections.add(
+        SubstituteSelectionEntry(symbol: stock.symbol, isin: stock.isin ?? ''),
+      );
     }
 
     widget.onMultiSelected(selections);
@@ -273,7 +284,9 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
   @override
   Widget build(BuildContext context) {
     final currentCoverage = _calculateCoverageWeight();
-    final progress = widget.neededWeight > 0 ? (currentCoverage / widget.neededWeight).clamp(0.0, 1.0) : 1.0;
+    final progress = widget.neededWeight > 0
+        ? (currentCoverage / widget.neededWeight).clamp(0.0, 1.0)
+        : 1.0;
     final isFullyCovered = currentCoverage >= widget.neededWeight;
 
     return Container(
@@ -307,14 +320,14 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isFullyCovered 
+              color: isFullyCovered
                   ? context.statusSuccess.withValues(alpha: 0.1)
                   : ModuleColors.portfolio.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: isFullyCovered 
+                color: isFullyCovered
                     ? context.statusSuccess.withValues(alpha: 0.3)
-                    : ModuleColors.portfolio.withValues(alpha: 0.3)
+                    : ModuleColors.portfolio.withValues(alpha: 0.3),
               ),
             ),
             child: Column(
@@ -328,10 +341,14 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     Text(
-                      isFullyCovered ? 'Gap Filled ✓' : '${currentCoverage.toStringAsFixed(2)}% Selected',
+                      isFullyCovered
+                          ? 'Gap Filled ✓'
+                          : '${currentCoverage.toStringAsFixed(2)}% Selected',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: isFullyCovered ? context.statusSuccess : context.textPrimary,
+                        color: isFullyCovered
+                            ? context.statusSuccess
+                            : context.textPrimary,
                       ),
                     ),
                   ],
@@ -344,7 +361,9 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
                     minHeight: 8,
                     backgroundColor: context.borderColor,
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      isFullyCovered ? context.statusSuccess : ModuleColors.portfolio,
+                      isFullyCovered
+                          ? context.statusSuccess
+                          : ModuleColors.portfolio,
                     ),
                   ),
                 ),
@@ -357,7 +376,7 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           TextField(
             controller: _searchController,
             decoration: InputDecoration(
@@ -372,13 +391,11 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
             onChanged: _onSearchChanged,
           ),
           const SizedBox(height: 16),
-          
-          Expanded(
-            child: _buildResultList(),
-          ),
-          
+
+          Expanded(child: _buildResultList()),
+
           const SizedBox(height: 16),
-          
+
           // Apply Button
           SizedBox(
             width: double.infinity,
@@ -388,7 +405,9 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
               style: FilledButton.styleFrom(
                 backgroundColor: ModuleColors.portfolio,
                 foregroundColor: context.colors.actionPrimaryFg,
-                disabledBackgroundColor: ModuleColors.portfolio.withValues(alpha: 0.3),
+                disabledBackgroundColor: ModuleColors.portfolio.withValues(
+                  alpha: 0.3,
+                ),
               ),
               child: Text('Apply Selection (${_selectedIsins.length})'),
             ),
@@ -404,7 +423,9 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
     }
 
     if (_error != null) {
-      return Center(child: Text(_error!, style: TextStyle(color: context.statusError)));
+      return Center(
+        child: Text(_error!, style: TextStyle(color: context.statusError)),
+      );
     }
 
     if (_results.isEmpty && _searchController.text.isEmpty) {
@@ -414,11 +435,14 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
           children: [
             Padding(
               padding: const EdgeInsets.only(bottom: 8, left: 4),
-              child: Text('Recommended Substitutes',
-                  style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: context.textSecondary)),
+              child: Text(
+                'Recommended Substitutes',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: context.textSecondary,
+                ),
+              ),
             ),
             Expanded(
               child: ListView.builder(
@@ -440,14 +464,18 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
                           : null,
                       activeColor: ModuleColors.portfolio,
                     ),
-                    title: Text(alt.symbol,
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    title: Text(
+                      alt.symbol,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(alt.sector != null
-                            ? '${alt.sector} • ₹${alt.lastPrice?.toStringAsFixed(2) ?? "—"}'
-                            : '₹${alt.lastPrice?.toStringAsFixed(2) ?? "—"}'),
+                        Text(
+                          alt.sector != null
+                              ? '${alt.sector} • ₹${alt.lastPrice?.toStringAsFixed(2) ?? "—"}'
+                              : '₹${alt.lastPrice?.toStringAsFixed(2) ?? "—"}',
+                        ),
                         Text(
                           _remainingLabel(alt),
                           style: TextStyle(
@@ -465,48 +493,63 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
                           Container(
                             margin: const EdgeInsets.only(right: 4),
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
-                              color: ModuleColors.portfolio
-                                  .withValues(alpha: 0.12),
+                              color: ModuleColors.portfolio.withValues(
+                                alpha: 0.12,
+                              ),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               'Index ETF',
                               style: TextStyle(
-                                  fontSize: 9,
-                                  color: ModuleColors.portfolio),
+                                fontSize: 9,
+                                color: ModuleColors.portfolio,
+                              ),
                             ),
                           ),
                         if (alt.isSameSector)
                           Container(
                             margin: const EdgeInsets.only(right: 4),
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
-                              color:
-                                  context.statusSuccess.withValues(alpha: 0.12),
+                              color: context.statusSuccess.withValues(
+                                alpha: 0.12,
+                              ),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               'Same sector',
                               style: TextStyle(
-                                  fontSize: 9, color: context.statusSuccess),
+                                fontSize: 9,
+                                color: context.statusSuccess,
+                              ),
                             ),
                           ),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
-                            color:
-                                context.statusSuccess.withValues(alpha: 0.15),
+                            color: context.statusSuccess.withValues(
+                              alpha: 0.15,
+                            ),
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: Text('Recommended',
-                              style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: context.statusSuccess)),
+                          child: Text(
+                            'Recommended',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: context.statusSuccess,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -521,11 +564,13 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
         );
       }
       return Center(
-          child: Text(
-              widget.sectorialBasket
-                  ? 'No same-sector holdings with remaining units. Try search.'
-                  : 'Type to search for a stock...',
-              style: TextStyle(color: context.textTertiary)));
+        child: Text(
+          widget.sectorialBasket
+              ? 'No same-sector holdings with remaining units. Try search.'
+              : 'Type to search for a stock...',
+          style: TextStyle(color: context.textTertiary),
+        ),
+      );
     }
 
     if (_results.isEmpty && _searchController.text.isNotEmpty) {
@@ -538,17 +583,27 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
         final stock = _results[index];
         final isConstituent = _isConstituent(stock.isin);
         final sectorOk = _sectorMatches(stock.sector);
-        final isMatch = _detectedMarketCap != null && 
-            stock.marketCapCategory?.toLowerCase() == _detectedMarketCap?.toLowerCase();
-        final unknownCap = _detectedMarketCap == null || stock.marketCapCategory == null;
+        final isMatch =
+            _detectedMarketCap != null &&
+            stock.marketCapCategory?.toLowerCase() ==
+                _detectedMarketCap?.toLowerCase();
+        final unknownCap =
+            _detectedMarketCap == null || stock.marketCapCategory == null;
         final isSelected = _selectedIsins.contains(stock.isin);
-        
+
         return ListTile(
           leading: Checkbox(
             value: isSelected,
             onChanged: (bool? value) {
               if (value == true) {
-                _attemptSelectSearchedStock(context, stock, isMatch, unknownCap, sectorOk, isConstituent);
+                _attemptSelectSearchedStock(
+                  context,
+                  stock,
+                  isMatch,
+                  unknownCap,
+                  sectorOk,
+                  isConstituent,
+                );
               } else {
                 _toggleSearchedStockSelection(stock);
               }
@@ -564,19 +619,38 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
               Text(
                 stock.marketCapCategory ?? '—',
                 style: TextStyle(
-                  color: unknownCap ? context.statusNeutral : (isMatch ? context.statusSuccess : context.statusWarning),
+                  color: unknownCap
+                      ? context.statusNeutral
+                      : (isMatch
+                            ? context.statusSuccess
+                            : context.statusWarning),
                   fontWeight: FontWeight.bold,
                 ),
               ),
               if (!unknownCap && !isMatch)
-                Text('Mismatch', style: TextStyle(fontSize: 10, color: context.statusWarning)),
-              if (!widget.sectorialBasket && widget.etfConstituentIsins.isNotEmpty && !isConstituent)
-                Text('Not in index', style: TextStyle(fontSize: 10, color: context.statusWarning)),
+                Text(
+                  'Mismatch',
+                  style: TextStyle(fontSize: 10, color: context.statusWarning),
+                ),
+              if (!widget.sectorialBasket &&
+                  widget.etfConstituentIsins.isNotEmpty &&
+                  !isConstituent)
+                Text(
+                  'Not in index',
+                  style: TextStyle(fontSize: 10, color: context.statusWarning),
+                ),
             ],
           ),
           onTap: () {
             if (!isSelected) {
-              _attemptSelectSearchedStock(context, stock, isMatch, unknownCap, sectorOk, isConstituent);
+              _attemptSelectSearchedStock(
+                context,
+                stock,
+                isMatch,
+                unknownCap,
+                sectorOk,
+                isConstituent,
+              );
             } else {
               _toggleSearchedStockSelection(stock);
             }
@@ -623,7 +697,10 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
           '${stock.symbol} is not in the same sector as ${widget.originalSymbol}. Sectorial baskets require same-sector substitutes.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK'),
+          ),
         ],
       ),
     );
@@ -639,7 +716,10 @@ class _SubstituteSelectorState extends ConsumerState<SubstituteSelector> {
           '${stock.symbol} is not part of ${widget.etfName ?? 'this index'}. You can still select it, but it may not match the basket profile.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
             onPressed: () {
               Navigator.pop(ctx);

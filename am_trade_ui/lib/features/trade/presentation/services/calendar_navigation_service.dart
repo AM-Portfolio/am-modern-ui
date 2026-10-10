@@ -4,13 +4,15 @@ import 'package:flutter/material.dart';
 /// Service for managing calendar view navigation and state transitions
 class CalendarNavigationService {
   /// Navigate to yearly view
-  CalendarNavigationState navigateToYearly({required CalendarNavigationState currentState, int? year}) {
+  CalendarNavigationState navigateToYearly(
+      {required CalendarNavigationState currentState, int? year}) {
     final targetYear = year ?? currentState.year;
     return currentState.changeYear(targetYear);
   }
 
   /// Navigate to monthly view from yearly
-  CalendarNavigationState navigateToMonthly({required CalendarNavigationState currentState, required int month}) {
+  CalendarNavigationState navigateToMonthly(
+      {required CalendarNavigationState currentState, required int month}) {
     if (month < 1 || month > 12) {
       throw ArgumentError('Month must be between 1 and 12');
     }
@@ -18,21 +20,26 @@ class CalendarNavigationService {
   }
 
   /// Navigate to daily view from monthly
-  CalendarNavigationState navigateToDaily({required CalendarNavigationState currentState, required int day}) {
+  CalendarNavigationState navigateToDaily(
+      {required CalendarNavigationState currentState, required int day}) {
     if (currentState.month == null) {
-      throw StateError('Cannot navigate to daily view without selecting a month first');
+      throw StateError(
+          'Cannot navigate to daily view without selecting a month first');
     }
 
-    final daysInMonth = DateUtils.getDaysInMonth(currentState.year, currentState.month!);
+    final daysInMonth =
+        DateUtils.getDaysInMonth(currentState.year, currentState.month!);
     if (day < 1 || day > daysInMonth) {
-      throw ArgumentError('Day must be between 1 and $daysInMonth for the selected month');
+      throw ArgumentError(
+          'Day must be between 1 and $daysInMonth for the selected month');
     }
 
     return currentState.toDaily(day);
   }
 
   /// Navigate back one level
-  CalendarNavigationState navigateBack({required CalendarNavigationState currentState}) {
+  CalendarNavigationState navigateBack(
+      {required CalendarNavigationState currentState}) {
     switch (currentState.viewType) {
       case CalendarViewType.daily:
         // Go back to monthly view
@@ -65,7 +72,9 @@ class CalendarNavigationService {
         year: breadcrumb.year,
         month: breadcrumb.month,
         day: breadcrumb.day,
-        breadcrumbs: currentState.breadcrumbs.takeWhile((b) => b != breadcrumb).toList()..add(breadcrumb),
+        breadcrumbs:
+            currentState.breadcrumbs.takeWhile((b) => b != breadcrumb).toList()
+              ..add(breadcrumb),
       );
     } else if (breadcrumb.month != null) {
       // Monthly view
@@ -73,7 +82,9 @@ class CalendarNavigationService {
         viewType: CalendarViewType.monthly,
         year: breadcrumb.year,
         month: breadcrumb.month,
-        breadcrumbs: currentState.breadcrumbs.takeWhile((b) => b != breadcrumb).toList()..add(breadcrumb),
+        breadcrumbs:
+            currentState.breadcrumbs.takeWhile((b) => b != breadcrumb).toList()
+              ..add(breadcrumb),
       );
     } else {
       // Yearly view
@@ -86,18 +97,22 @@ class CalendarNavigationService {
   }
 
   /// Change to previous year
-  CalendarNavigationState navigateToPreviousYear({required CalendarNavigationState currentState}) =>
+  CalendarNavigationState navigateToPreviousYear(
+          {required CalendarNavigationState currentState}) =>
       currentState.changeYear(currentState.year - 1);
 
   /// Change to next year
-  CalendarNavigationState navigateToNextYear({required CalendarNavigationState currentState}) =>
+  CalendarNavigationState navigateToNextYear(
+          {required CalendarNavigationState currentState}) =>
       currentState.changeYear(currentState.year + 1);
 
   /// Get date range for current view
   DateRange getDateRangeForView(CalendarNavigationState state) {
     switch (state.viewType) {
       case CalendarViewType.yearly:
-        return DateRange(startDate: DateTime(state.year), endDate: DateTime(state.year, 12, 31));
+        return DateRange(
+            startDate: DateTime(state.year),
+            endDate: DateTime(state.year, 12, 31));
 
       case CalendarViewType.monthly:
         if (state.month == null) {
@@ -118,7 +133,8 @@ class CalendarNavigationService {
   }
 
   /// Check if navigation is at top level
-  bool isAtTopLevel(CalendarNavigationState state) => state.viewType == CalendarViewType.yearly;
+  bool isAtTopLevel(CalendarNavigationState state) =>
+      state.viewType == CalendarViewType.yearly;
 
   /// Check if can navigate back
   bool canNavigateBack(CalendarNavigationState state) => !isAtTopLevel(state);
@@ -167,8 +183,10 @@ class DateRange {
   Duration get duration => endDate.difference(startDate);
 
   bool contains(DateTime date) =>
-      date.isAfter(startDate.subtract(const Duration(days: 1))) && date.isBefore(endDate.add(const Duration(days: 1)));
+      date.isAfter(startDate.subtract(const Duration(days: 1))) &&
+      date.isBefore(endDate.add(const Duration(days: 1)));
 
   @override
-  String toString() => 'DateRange(${startDate.toString().split(' ')[0]} - ${endDate.toString().split(' ')[0]})';
+  String toString() =>
+      'DateRange(${startDate.toString().split(' ')[0]} - ${endDate.toString().split(' ')[0]})';
 }

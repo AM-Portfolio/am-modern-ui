@@ -10,7 +10,14 @@ import 'paper_order_mobile_card.dart';
 
 enum _OrdersFilter { all, pending, executed, failed }
 
-const _typeOptions = <String>['ALL', 'MARKET', 'LIMIT', 'SUPER', 'TRAIL', 'STOP'];
+const _typeOptions = <String>[
+  'ALL',
+  'MARKET',
+  'LIMIT',
+  'SUPER',
+  'TRAIL',
+  'STOP',
+];
 
 class _OrderRow {
   const _OrderRow({
@@ -79,9 +86,9 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
     final colors = context.colors;
     final totalPages = (totalItems / _pageSize).ceil().clamp(1, 0x7fffffff);
     final page = _page.clamp(0, totalPages - 1);
-    final labelStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: colors.textSecondary,
-        );
+    final labelStyle = Theme.of(
+      context,
+    ).textTheme.labelSmall?.copyWith(color: colors.textSecondary);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 8, 8),
       child: Row(
@@ -119,9 +126,7 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
           ),
           IconButton(
             icon: const Icon(Icons.chevron_left, size: 20),
-            onPressed: page > 0
-                ? () => setState(() => _page = page - 1)
-                : null,
+            onPressed: page > 0 ? () => setState(() => _page = page - 1) : null,
           ),
           IconButton(
             icon: const Icon(Icons.chevron_right, size: 20),
@@ -136,15 +141,15 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
 
   List<_OrderRow> _todayRows(PaperOmsState state) {
     final timeFmt = DateFormat('HH:mm:ss');
-    final today = state.orders.where((o) {
-      if (!o.isCreatedToday) return false;
-      return o.isFilled || o.isWorking || o.isRejected || o.isCancelled;
-    }).toList()
-      ..sort((a, b) {
-        final ac = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-        final bc = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-        return bc.compareTo(ac);
-      });
+    final today =
+        state.orders.where((o) {
+          if (!o.isCreatedToday) return false;
+          return o.isFilled || o.isWorking || o.isRejected || o.isCancelled;
+        }).toList()..sort((a, b) {
+          final ac = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final bc = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          return bc.compareTo(ac);
+        });
 
     return [
       for (final o in today)
@@ -185,9 +190,7 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
 
   Color _sideColor(BuildContext context, String side) {
     final colors = context.colors;
-    return side == 'SELL'
-        ? colors.statusError
-        : colors.marketPositiveIndicator;
+    return side == 'SELL' ? colors.statusError : colors.marketPositiveIndicator;
   }
 
   Color _statusColor(BuildContext context, String displayStatus) {
@@ -216,10 +219,9 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
       ),
       child: Text(
         side,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: c,
-              fontWeight: FontWeight.w700,
-            ),
+        style: Theme.of(
+          context,
+        ).textTheme.labelSmall?.copyWith(color: c, fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -244,9 +246,9 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
           Text(
             displayStatus,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: c,
-                  fontWeight: FontWeight.w600,
-                ),
+              color: c,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
@@ -260,10 +262,9 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
           child: Text(
             symbol,
             overflow: TextOverflow.ellipsis,
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.copyWith(fontWeight: FontWeight.w600),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
         const SizedBox(width: 6),
@@ -276,9 +277,9 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
           child: Text(
             'NSE',
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: context.colors.textSecondary,
-                  fontSize: 10,
-                ),
+              color: context.colors.textSecondary,
+              fontSize: 10,
+            ),
           ),
         ),
         const SizedBox(width: 4),
@@ -291,16 +292,21 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
           child: Text(
             'CNC',
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: context.colors.textSecondary,
-                  fontSize: 10,
-                ),
+              color: context.colors.textSecondary,
+              fontSize: 10,
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _statChip(BuildContext context, String label, int n, {Color? valueColor}) {
+  Widget _statChip(
+    BuildContext context,
+    String label,
+    int n, {
+    Color? valueColor,
+  }) {
     final colors = context.colors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -313,16 +319,16 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
           children: [
             TextSpan(
               text: '$label: ',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: colors.textSecondary,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelSmall?.copyWith(color: colors.textSecondary),
             ),
             TextSpan(
               text: '$n',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: valueColor ?? colors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
+                color: valueColor ?? colors.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ],
         ),
@@ -357,25 +363,27 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
               Container(
                 width: 6,
                 height: 6,
-                decoration: BoxDecoration(color: countColor, shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                  color: countColor,
+                  shape: BoxShape.circle,
+                ),
               ),
               const SizedBox(width: 6),
             ],
             Text(
               label,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                    color: selected ? accent : colors.textSecondary,
-                  ),
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                color: selected ? accent : colors.textSecondary,
+              ),
             ),
             const SizedBox(width: 6),
             Text(
               '$count',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: countColor ??
-                        (selected ? accent : colors.textSecondary),
-                  ),
+                fontWeight: FontWeight.w700,
+                color: countColor ?? (selected ? accent : colors.textSecondary),
+              ),
             ),
           ],
         ),
@@ -388,7 +396,9 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
     final busy = state.submitting;
     if (o.isWorking) {
       return TextButton(
-        onPressed: busy ? null : () => context.read<PaperOmsCubit>().cancel(o.orderId),
+        onPressed: busy
+            ? null
+            : () => context.read<PaperOmsCubit>().cancel(o.orderId),
         style: TextButton.styleFrom(
           foregroundColor: context.colors.statusError,
           padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -423,7 +433,9 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
             child: const Text('Details'),
           ),
           TextButton(
-            onPressed: widget.onReorder == null ? null : () => widget.onReorder!(o),
+            onPressed: widget.onReorder == null
+                ? null
+                : () => widget.onReorder!(o),
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 6),
               minimumSize: Size.zero,
@@ -457,7 +469,11 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
     );
   }
 
-  Widget _buildTable(BuildContext context, PaperOmsState state, List<_OrderRow> items) {
+  Widget _buildTable(
+    BuildContext context,
+    PaperOmsState state,
+    List<_OrderRow> items,
+  ) {
     final fmt = NumberFormat('#,##0.00');
     return PaginatedSortableTable<_OrderRow>(
       items: items,
@@ -580,8 +596,14 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
           hintText: 'Search symbol',
           isDense: true,
           prefixIcon: Icon(Icons.search, size: 18, color: colors.textSecondary),
-          prefixIconConstraints: const BoxConstraints(minWidth: 36, minHeight: 34),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          prefixIconConstraints: const BoxConstraints(
+            minWidth: 36,
+            minHeight: 34,
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 8,
+            vertical: 8,
+          ),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(6),
@@ -606,7 +628,9 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
         final all = _todayRows(state);
         final pending = all.where((r) => r.order.isWorking).length;
         final filled = all.where((r) => r.order.isFilled).length;
-        final failed = all.where((r) => r.order.isRejected || r.order.isCancelled).length;
+        final failed = all
+            .where((r) => r.order.isRejected || r.order.isCancelled)
+            .length;
         final filtered = _applyFilters(all);
         final pageItems = _pageSlice(filtered);
 
@@ -625,9 +649,8 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
                       children: [
                         Text(
                           "Today's orders",
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w700),
                         ),
                         IconButton(
                           tooltip: 'Refresh',
@@ -640,8 +663,8 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
                     Text(
                       'Executed, pending, and failed for today',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: colors.textSecondary,
-                          ),
+                        color: colors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -682,7 +705,13 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
                   runSpacing: 8,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    ..._filterChips(context, all.length, pending, filled, failed),
+                    ..._filterChips(
+                      context,
+                      all.length,
+                      pending,
+                      filled,
+                      failed,
+                    ),
                     _searchField(context),
                     _typeDropdown(context),
                   ],
@@ -695,10 +724,7 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
                       pending,
                       filled,
                       failed,
-                    )) ...[
-                      chip,
-                      const SizedBox(width: 8),
-                    ],
+                    )) ...[chip, const SizedBox(width: 8)],
                     const Spacer(),
                     _searchField(context),
                     const SizedBox(width: 8),
@@ -712,9 +738,9 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
             filtered.isEmpty && all.isNotEmpty
                 ? 'No orders match filters.'
                 : 'No orders today.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: colors.textSecondary,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
           ),
         );
 

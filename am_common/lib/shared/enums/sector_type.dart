@@ -2,67 +2,67 @@
 enum SectorType {
   /// All sectors
   all,
-  
+
   /// Technology sector
   technology,
-  
+
   /// Healthcare sector
   healthcare,
-  
+
   /// Financial Services
   finance,
-  
+
   /// Energy sector
   energy,
-  
+
   /// Consumer sector
   consumer,
-  
+
   /// Industrials
   industrials,
-  
+
   /// Utilities
   utilities,
-  
+
   /// Information Technology
   it,
-  
+
   /// Consumer Goods (FMCG)
   fmcg,
-  
+
   /// Telecommunications
   telecom,
-  
+
   /// Real Estate
   realEstate,
-  
+
   /// Materials
   materials,
-  
+
   /// Consumer Services
   consumerServices,
-  
+
   /// Automobiles
   automobiles,
-  
+
   /// Pharmaceuticals
   pharma,
-  
+
   /// Infrastructure
   infrastructure,
-  
+
   /// Banking
   banking,
-  
+
   /// Manufacturing
   manufacturing,
-  
+
   /// Agriculture
   agriculture,
-  
+
   /// Metals & Mining
   metals,
-  
+
   /// Other sectors
   other,
 
@@ -71,9 +71,8 @@ enum SectorType {
 
   // ── Static list getters (used by selector widgets) ───────────────────────
 
-  static List<SectorType> get allSectors => SectorType.values
-      .where((s) => s != SectorType.noGroup)
-      .toList();
+  static List<SectorType> get allSectors =>
+      SectorType.values.where((s) => s != SectorType.noGroup).toList();
 
   static List<SectorType> get portfolioSectors => const [
         SectorType.all,

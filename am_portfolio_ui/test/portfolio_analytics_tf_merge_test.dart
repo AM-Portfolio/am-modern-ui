@@ -60,12 +60,11 @@ void main() {
         ],
         industryWeights: const [],
       );
-      const hist = SectorAllocation(
-        sectorWeights: [],
-        industryWeights: [],
+      const hist = SectorAllocation(sectorWeights: [], industryWeights: []);
+      final merged = PortfolioAnalyticsCubit.preferNonEmptyAllocation(
+        hist,
+        live,
       );
-      final merged =
-          PortfolioAnalyticsCubit.preferNonEmptyAllocation(hist, live);
       expect(merged, same(live));
     });
 
@@ -92,8 +91,10 @@ void main() {
         ],
         industryWeights: const [],
       );
-      final merged =
-          PortfolioAnalyticsCubit.preferNonEmptyAllocation(hist, live);
+      final merged = PortfolioAnalyticsCubit.preferNonEmptyAllocation(
+        hist,
+        live,
+      );
       expect(merged, same(hist));
     });
   });

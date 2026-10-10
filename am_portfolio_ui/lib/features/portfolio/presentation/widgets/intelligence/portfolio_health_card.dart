@@ -137,11 +137,15 @@ class _PortfolioHealthCardState extends ConsumerState<PortfolioHealthCard> {
     if (_refetchScheduledAfterCold) return;
     if (intel == null) return;
     final cold = (intel.confidence ?? 1) < 0.9;
-    final factors = selectOverviewHealthFactors(intel.health?.components ?? const []);
+    final factors = selectOverviewHealthFactors(
+      intel.health?.components ?? const [],
+    );
     final hasVol = factors.any((c) => c.id.toLowerCase() == 'volatility');
-    final volInsufficient = factors.any((c) =>
-        c.id.toLowerCase() == 'volatility' &&
-        (c.reason ?? '').toLowerCase().contains('insufficient'));
+    final volInsufficient = factors.any(
+      (c) =>
+          c.id.toLowerCase() == 'volatility' &&
+          (c.reason ?? '').toLowerCase().contains('insufficient'),
+    );
     // Refetch only when still cold / placeholder vol — hist may be warm now.
     if (!cold && hasVol && !volInsufficient) return;
     _refetchScheduledAfterCold = true;
@@ -272,8 +276,7 @@ class _HealthBody extends StatelessWidget {
             fillHeight || (maxH.isFinite && maxH < double.infinity);
         // Desktop / wide tablet: summary | factors. Phone & narrow tablet: stack.
         // 720 keeps iPad portrait (~768) side-by-side once chrome leaves ~700+.
-        final sideBySide =
-            !compact && maxW >= (kHealthSummaryCol + 16 + 240);
+        final sideBySide = !compact && maxW >= (kHealthSummaryCol + 16 + 240);
         final summary = _SummaryColumn(
           score: score,
           band: band,
@@ -415,21 +418,21 @@ class _StatCell extends StatelessWidget {
         Text(
           value,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: valueColor,
-                height: 1.05,
-                fontSize: 22,
-              ),
+            fontWeight: FontWeight.w800,
+            color: valueColor,
+            height: 1.05,
+            fontSize: 22,
+          ),
         ),
         const SizedBox(height: 2),
         Text(
           label,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: Theme.of(context).hintColor,
-                fontWeight: FontWeight.w600,
-                fontSize: 10,
-              ),
+            color: Theme.of(context).hintColor,
+            fontWeight: FontWeight.w600,
+            fontSize: 10,
+          ),
         ),
       ],
     );
@@ -460,10 +463,7 @@ class _FactorList extends StatelessWidget {
     final children = <Widget>[
       for (var i = 0; i < factors.length; i++) ...[
         if (i > 0) SizedBox(height: gap),
-        _FactorRow(
-          component: factors[i],
-          compact: useDense,
-        ),
+        _FactorRow(component: factors[i], compact: useDense),
       ],
     ];
     if (!scrollable) {
@@ -486,10 +486,7 @@ class _FactorList extends StatelessWidget {
 }
 
 class _FactorRow extends StatelessWidget {
-  const _FactorRow({
-    required this.component,
-    this.compact = false,
-  });
+  const _FactorRow({required this.component, this.compact = false});
 
   final HealthComponent component;
   final bool compact;
@@ -498,8 +495,10 @@ class _FactorRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent = _factorAccent(component.id);
     final status = healthStatusLabel(component.score);
-    final statusColor =
-        _bandColor(context, healthBandForScore(component.score));
+    final statusColor = _bandColor(
+      context,
+      healthBandForScore(component.score),
+    );
     final reason = healthReasonDisplay(component.reason);
     final progress = (component.score.clamp(0, 100)) / 100;
     final padV = compact ? 3.0 : 5.0;
@@ -533,9 +532,9 @@ class _FactorRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        fontSize: compact ? 12 : 13,
-                      ),
+                    fontWeight: FontWeight.w700,
+                    fontSize: compact ? 12 : 13,
+                  ),
                 ),
                 if (reason.isNotEmpty) ...[
                   const SizedBox(height: 2),
@@ -544,10 +543,10 @@ class _FactorRow extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Theme.of(context).hintColor,
-                          fontSize: 10,
-                          height: 1.2,
-                        ),
+                      color: Theme.of(context).hintColor,
+                      fontSize: 10,
+                      height: 1.2,
+                    ),
                   ),
                 ],
                 SizedBox(height: compact ? 4 : 6),
@@ -571,9 +570,9 @@ class _FactorRow extends StatelessWidget {
                         component.score.toStringAsFixed(0),
                         textAlign: TextAlign.end,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 12,
-                            ),
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -645,24 +644,26 @@ class _HealthGauge extends StatelessWidget {
               Text(
                 score.toStringAsFixed(0),
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: Theme.of(context).colorScheme.onSurface,
-                      height: 1,
-                      fontSize: size >= 140 ? 34 : 28,
-                    ),
+                  fontWeight: FontWeight.w800,
+                  color: Theme.of(context).colorScheme.onSurface,
+                  height: 1,
+                  fontSize: size >= 140 ? 34 : 28,
+                ),
               ),
               Text(
                 '/ 100',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Theme.of(context).hintColor,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 11,
-                    ),
+                  color: Theme.of(context).hintColor,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 11,
+                ),
               ),
               const SizedBox(height: 6),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 3,
+                ),
                 decoration: BoxDecoration(
                   color: bandColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),

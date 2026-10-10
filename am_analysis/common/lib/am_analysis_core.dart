@@ -1,5 +1,5 @@
 /// Headless core for analysis features
-/// 
+///
 /// This package provides state management (Cubits) without UI dependencies.
 /// Consumers can use these Cubits to build custom UIs or use the default
 /// widgets from am_analysis_ui.

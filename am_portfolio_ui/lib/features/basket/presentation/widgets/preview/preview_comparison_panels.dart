@@ -11,10 +11,7 @@ import 'preview_layout.dart';
 class PreviewComparisonPanels extends StatelessWidget {
   final BasketOpportunity opportunity;
 
-  const PreviewComparisonPanels({
-    super.key,
-    required this.opportunity,
-  });
+  const PreviewComparisonPanels({super.key, required this.opportunity});
 
   /// ETF weight order keeps left/right rows horizontally scannable.
   static List<BasketItem> orderedItems(List<BasketItem> composition) {
@@ -26,27 +23,21 @@ class PreviewComparisonPanels extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = orderedItems(opportunity.composition);
-    final sideBySide = BasketResponsive.isDesktop(context) ||
+    final sideBySide =
+        BasketResponsive.isDesktop(context) ||
         (BasketResponsive.isTablet(context) &&
             MediaQuery.sizeOf(context).width >= 900);
 
-    final pagePad = BasketResponsive.previewPagePadding(context).copyWith(
-      top: 0,
-      bottom: PreviewLayout.sectionGap,
-    );
+    final pagePad = BasketResponsive.previewPagePadding(
+      context,
+    ).copyWith(top: 0, bottom: PreviewLayout.sectionGap);
 
     // Always size to full content — parent page scrolls, not the tables.
     return Padding(
       padding: pagePad,
       child: sideBySide
-          ? _AlignedSideBySideGrid(
-              items: items,
-              etfIsin: opportunity.etfIsin,
-            )
-          : _MobileCombinedList(
-              items: items,
-              etfIsin: opportunity.etfIsin,
-            ),
+          ? _AlignedSideBySideGrid(items: items, etfIsin: opportunity.etfIsin)
+          : _MobileCombinedList(items: items, etfIsin: opportunity.etfIsin),
     );
   }
 }
@@ -55,10 +46,7 @@ class _AlignedSideBySideGrid extends StatelessWidget {
   final List<BasketItem> items;
   final String etfIsin;
 
-  const _AlignedSideBySideGrid({
-    required this.items,
-    required this.etfIsin,
-  });
+  const _AlignedSideBySideGrid({required this.items, required this.etfIsin});
 
   @override
   Widget build(BuildContext context) {
@@ -115,10 +103,7 @@ class _MobileCombinedList extends StatelessWidget {
   final List<BasketItem> items;
   final String etfIsin;
 
-  const _MobileCombinedList({
-    required this.items,
-    required this.etfIsin,
-  });
+  const _MobileCombinedList({required this.items, required this.etfIsin});
 
   @override
   Widget build(BuildContext context) {
@@ -152,15 +137,15 @@ class _MobileCombinedList extends StatelessWidget {
                     Text(
                       'Constituents vs Your Holdings',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Text(
                       '$etfIsin · ${items.length} stocks',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: context.colors.textSecondary,
-                            fontSize: 11,
-                          ),
+                        color: context.colors.textSecondary,
+                        fontSize: 11,
+                      ),
                     ),
                   ],
                 ),
@@ -179,8 +164,8 @@ class _MobileCombinedList extends StatelessWidget {
           child: Text(
             'Target weights total 100%',
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: context.colors.textTertiary,
-                ),
+              color: context.colors.textTertiary,
+            ),
             textAlign: TextAlign.center,
           ),
         ),
@@ -196,18 +181,23 @@ class _MobileCombinedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fmt =
-        NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final fmt = NumberFormat.currency(
+      locale: 'en_IN',
+      symbol: '₹',
+      decimalDigits: 0,
+    );
 
     final w = item.etfWeight.clamp(0.0, 100.0);
     final isMissing = item.status == ItemStatus.missing;
     final qty = isMissing ? null : item.heldQuantity;
     final price = item.lastPrice;
-    final value =
-        (qty != null && price != null && qty > 0) ? qty * price : null;
+    final value = (qty != null && price != null && qty > 0)
+        ? qty * price
+        : null;
     final themeLabel = BasketItemStatusTheme.labelFor(item.status);
     final themeColor = BasketItemStatusTheme.colorFor(context, item.status);
-    final holdingLabel = item.status == ItemStatus.substitute &&
+    final holdingLabel =
+        item.status == ItemStatus.substitute &&
             (item.userHoldingSymbol?.isNotEmpty ?? false)
         ? 'via ${item.userHoldingSymbol}'
         : null;
@@ -232,9 +222,9 @@ class _MobileCombinedCard extends StatelessWidget {
               children: [
                 Text(
                   item.stockSymbol,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -245,12 +235,12 @@ class _MobileCombinedCard extends StatelessWidget {
                     isMissing
                         ? 'Value ₹0'
                         : (value != null
-                            ? 'Value ${fmt.format(value)}'
-                            : 'Value —'),
+                              ? 'Value ${fmt.format(value)}'
+                              : 'Value —'),
                   ].join(' · '),
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: context.colors.textSecondary,
-                      ),
+                    color: context.colors.textSecondary,
+                  ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -338,16 +328,16 @@ class _PanelHeader extends StatelessWidget {
                   Text(
                     title,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          height: 1.1,
-                        ),
+                      fontWeight: FontWeight.bold,
+                      height: 1.1,
+                    ),
                   ),
                   Text(
                     subtitle,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: context.colors.textSecondary,
-                          fontSize: 11,
-                        ),
+                      color: context.colors.textSecondary,
+                      fontSize: 11,
+                    ),
                   ),
                 ],
               ),
@@ -365,10 +355,10 @@ class _IndexColumnHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: context.colors.textSecondary,
-          fontWeight: FontWeight.w600,
-          fontSize: 11,
-        );
+      color: context.colors.textSecondary,
+      fontWeight: FontWeight.w600,
+      fontSize: 11,
+    );
     return SizedBox(
       height: PreviewLayout.columnHeaderHeight,
       child: Padding(
@@ -395,10 +385,10 @@ class _HoldingsColumnHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: context.colors.textSecondary,
-          fontWeight: FontWeight.w600,
-          fontSize: 11,
-        );
+      color: context.colors.textSecondary,
+      fontWeight: FontWeight.w600,
+      fontSize: 11,
+    );
     return SizedBox(
       height: PreviewLayout.columnHeaderHeight,
       child: Padding(
@@ -481,8 +471,8 @@ class _IndexDataRow extends StatelessWidget {
                   child: Text(
                     item.stockSymbol,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                      fontWeight: FontWeight.w600,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -498,8 +488,8 @@ class _IndexDataRow extends StatelessWidget {
                 Text(
                   '${w.toStringAsFixed(1)}%',
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 3),
                 ClipRRect(
@@ -507,8 +497,9 @@ class _IndexDataRow extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: (w / 100.0).clamp(0.0, 1.0),
                     minHeight: 3,
-                    backgroundColor:
-                        context.colors.border.withValues(alpha: 0.4),
+                    backgroundColor: context.colors.border.withValues(
+                      alpha: 0.4,
+                    ),
                     color: ModuleColors.portfolio,
                   ),
                 ),
@@ -536,15 +527,15 @@ class _IndexFooter extends StatelessWidget {
         children: [
           Text(
             'Total',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
           ),
           Text(
             '100.0%',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -556,24 +547,28 @@ class _HoldingsDataRow extends StatelessWidget {
   final BasketItem item;
   final bool striped;
 
-  const _HoldingsDataRow({
-    required this.item,
-    required this.striped,
-  });
+  const _HoldingsDataRow({required this.item, required this.striped});
 
   @override
   Widget build(BuildContext context) {
-    final fmt =
-        NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
-    final priceFmt =
-        NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final fmt = NumberFormat.currency(
+      locale: 'en_IN',
+      symbol: '₹',
+      decimalDigits: 0,
+    );
+    final priceFmt = NumberFormat.currency(
+      locale: 'en_IN',
+      symbol: '₹',
+      decimalDigits: 0,
+    );
 
     final isMissing = item.status == ItemStatus.missing;
     final qty = isMissing ? null : item.heldQuantity;
     final avg = item.heldAveragePrice;
     final price = item.lastPrice;
-    final value =
-        (qty != null && price != null && qty > 0) ? qty * price : null;
+    final value = (qty != null && price != null && qty > 0)
+        ? qty * price
+        : null;
     final themeLabel = BasketItemStatusTheme.labelFor(item.status);
     final themeColor = BasketItemStatusTheme.colorFor(context, item.status);
 
@@ -595,17 +590,17 @@ class _HoldingsDataRow extends StatelessWidget {
               children: [
                 Text(
                   isMissing ? '0' : (qty?.toStringAsFixed(0) ?? '—'),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 if (avg != null && !isMissing)
                   Text(
                     'avg ${priceFmt.format(avg)}',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: context.colors.textTertiary,
-                          fontSize: 10,
-                        ),
+                      color: context.colors.textTertiary,
+                      fontSize: 10,
+                    ),
                   ),
               ],
             ),
@@ -623,16 +618,16 @@ class _HoldingsDataRow extends StatelessWidget {
                         ? '₹0'
                         : (value != null ? fmt.format(value) : '—'),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   if (price != null && !isMissing)
                     Text(
                       '@ ${priceFmt.format(price)}',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: context.colors.textTertiary,
-                            fontSize: 10,
-                          ),
+                        color: context.colors.textTertiary,
+                        fontSize: 10,
+                      ),
                     ),
                 ],
               ),

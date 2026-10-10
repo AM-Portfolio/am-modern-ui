@@ -61,7 +61,8 @@ void main() {
     gate.reset();
   });
 
-  test('MarketStreamingGate skips duplicate refresh within cache window', () async {
+  test('MarketStreamingGate skips duplicate refresh within cache window',
+      () async {
     var fetchCount = 0;
     final gate = MarketStreamingGate(
       fetchStatus: ({String exchange = 'NSE'}) async {

@@ -23,10 +23,12 @@ class SubscriptionProgressBar extends StatelessWidget {
             ? context.colors.statusSuccess
             : context.colors.statusWarning;
 
-    final String displayValue = hasData ? '${value.toStringAsFixed(2)}x' : 'N/A';
+    final String displayValue =
+        hasData ? '${value.toStringAsFixed(2)}x' : 'N/A';
 
     // Progress bar fill fraction between 0.0 and 1.0 (capped at 1.0 for visual bar)
-    final double fillFraction = hasData ? (value.clamp(0.0, 5.0) / 5.0).clamp(0.05, 1.0) : 0.0;
+    final double fillFraction =
+        hasData ? (value.clamp(0.0, 5.0) / 5.0).clamp(0.05, 1.0) : 0.0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,14 +41,15 @@ class SubscriptionProgressBar extends StatelessWidget {
                 Text(
                   'Subscription',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: context.textSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
+                        color: context.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
                 ),
                 const SizedBox(width: 4),
                 Tooltip(
-                  message: 'Total subscription multiplier across all investor categories',
+                  message:
+                      'Total subscription multiplier across all investor categories',
                   child: Icon(
                     Icons.info_outline_rounded,
                     size: 13,

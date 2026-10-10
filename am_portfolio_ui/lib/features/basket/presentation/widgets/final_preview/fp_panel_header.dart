@@ -46,13 +46,14 @@ class FpPanelHeader extends StatelessWidget {
       children: [
         Text(
           title,
-          style: (compact
-                  ? theme.textTheme.titleSmall
-                  : theme.textTheme.titleMedium)
-              ?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: context.colors.textPrimary,
-          ),
+          style:
+              (compact
+                      ? theme.textTheme.titleSmall
+                      : theme.textTheme.titleMedium)
+                  ?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: context.colors.textPrimary,
+                  ),
         ),
         const SizedBox(height: 2),
         Row(

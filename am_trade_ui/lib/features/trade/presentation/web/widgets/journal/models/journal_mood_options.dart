@@ -35,7 +35,8 @@ class JournalMoodOptions {
         },
       };
 
-  static Map<String, Map<String, dynamic>> getSentiments(BuildContext context) =>
+  static Map<String, Map<String, dynamic>> getSentiments(
+          BuildContext context) =>
       {
         'very_bearish': {
           'icon': Icons.trending_down,

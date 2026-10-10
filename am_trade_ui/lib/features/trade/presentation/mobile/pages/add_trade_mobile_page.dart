@@ -44,14 +44,20 @@ class _AddTradeMobilePageState extends State<AddTradeMobilePage> {
     // CRITICAL: Set userId since it's not included in the form
     final tradeToSave = tradeDetails.copyWith();
 
-    AppLogger.debug('📋 Trade Details (without explicit userId, handled by token): ${tradeToSave.toString()}', tag: 'AddTradeMobilePage');
-    
+    AppLogger.debug(
+        '📋 Trade Details (without explicit userId, handled by token): ${tradeToSave.toString()}',
+        tag: 'AddTradeMobilePage');
+
     if (widget.existingTrade != null) {
-      AppLogger.info('🚀 Calling TradeControllerCubit.updateExistingTrade()', tag: 'AddTradeMobilePage');
-      final tradeToUpdate = tradeToSave.copyWith(tradeId: widget.existingTrade!.tradeId);
-      context.read<TradeControllerCubit>().updateExistingTrade(tradeId: tradeToUpdate.tradeId, tradeDetails: tradeToUpdate);
+      AppLogger.info('🚀 Calling TradeControllerCubit.updateExistingTrade()',
+          tag: 'AddTradeMobilePage');
+      final tradeToUpdate =
+          tradeToSave.copyWith(tradeId: widget.existingTrade!.tradeId);
+      context.read<TradeControllerCubit>().updateExistingTrade(
+          tradeId: tradeToUpdate.tradeId, tradeDetails: tradeToUpdate);
     } else {
-      AppLogger.info('🚀 Calling TradeControllerCubit.addNewTrade()', tag: 'AddTradeMobilePage');
+      AppLogger.info('🚀 Calling TradeControllerCubit.addNewTrade()',
+          tag: 'AddTradeMobilePage');
       context.read<TradeControllerCubit>().addNewTrade(tradeToSave);
     }
   }
@@ -80,15 +86,19 @@ class _AddTradeMobilePageState extends State<AddTradeMobilePage> {
         listener: (context, state) {
           state.maybeWhen(
             error: (message, error) {
-              AppLogger.error('❌ Trade save error: $message', tag: 'AddTradeMobilePage');
+              AppLogger.error('❌ Trade save error: $message',
+                  tag: 'AddTradeMobilePage');
               setState(() => _isLoading = false);
 
               ScaffoldMessenger.of(
                 context,
-              ).showSnackBar(SnackBar(content: Text('Error: $message'), backgroundColor: theme.colorScheme.error));
+              ).showSnackBar(SnackBar(
+                  content: Text('Error: $message'),
+                  backgroundColor: theme.colorScheme.error));
             },
             updateSuccess: (trade) {
-              AppLogger.info('✅ Trade updated successfully!', tag: 'AddTradeMobilePage');
+              AppLogger.info('✅ Trade updated successfully!',
+                  tag: 'AddTradeMobilePage');
               setState(() => _isLoading = false);
 
               ScaffoldMessenger.of(context).showSnackBar(
@@ -112,7 +122,8 @@ class _AddTradeMobilePageState extends State<AddTradeMobilePage> {
               }
             },
             addSuccess: (trade) {
-              AppLogger.info('✅ Trade saved successfully!', tag: 'AddTradeMobilePage');
+              AppLogger.info('✅ Trade saved successfully!',
+                  tag: 'AddTradeMobilePage');
               setState(() => _isLoading = false);
 
               ScaffoldMessenger.of(context).showSnackBar(
@@ -145,7 +156,8 @@ class _AddTradeMobilePageState extends State<AddTradeMobilePage> {
               onCancel: _handleCancel,
               isLoading: _isLoading,
               initialData: widget.existingTrade ??
-                  TradeDetails.empty().copyWith(portfolioId: widget.portfolioId),
+                  TradeDetails.empty()
+                      .copyWith(portfolioId: widget.portfolioId),
             ),
             if (_isLoading)
               Container(
@@ -157,11 +169,13 @@ class _AddTradeMobilePageState extends State<AddTradeMobilePage> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          CircularProgressIndicator(color: theme.colorScheme.primary),
+                          CircularProgressIndicator(
+                              color: theme.colorScheme.primary),
                           const SizedBox(height: 16),
                           Text(
                             'Saving trade...',
-                            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w500),
+                            style: theme.textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w500),
                           ),
                         ],
                       ),
@@ -175,4 +189,3 @@ class _AddTradeMobilePageState extends State<AddTradeMobilePage> {
     );
   }
 }
-

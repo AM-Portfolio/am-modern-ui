@@ -18,7 +18,8 @@ abstract class PageableDto with _$PageableDto {
     @Default(false) bool unpaged,
   }) = _PageableDto;
 
-  factory PageableDto.fromJson(Map<String, dynamic> json) => _$PageableDtoFromJson(json);
+  factory PageableDto.fromJson(Map<String, dynamic> json) =>
+      _$PageableDtoFromJson(json);
 }
 
 @freezed
@@ -36,5 +37,6 @@ abstract class TradeHoldingsDto with _$TradeHoldingsDto {
     @Default(false) bool empty,
   }) = _TradeHoldingsDto;
 
-  factory TradeHoldingsDto.fromJson(Map<String, dynamic> json) => _$TradeHoldingsDtoFromJson(json);
+  factory TradeHoldingsDto.fromJson(Map<String, dynamic> json) =>
+      _$TradeHoldingsDtoFromJson(json);
 }

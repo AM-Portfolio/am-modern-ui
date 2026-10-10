@@ -272,7 +272,8 @@ class JournalTemplateCatalog {
       name: 'Breakout Trade',
       icon: 'breakout',
       category: JournalTemplateCategory.tradeSetup,
-      description: 'Level break with volume confirmation and clear invalidation.',
+      description:
+          'Level break with volume confirmation and clear invalidation.',
       tags: const ['Breakout', 'Equity', 'Swing', 'Support/Resistance'],
       planningSummary: 'Breakout plan — level, volume, invalidation',
       focusLine: 'Only take the breakout if volume and structure confirm.',
@@ -411,7 +412,8 @@ class JournalTemplateCatalog {
       description: 'OR breakout or fade with time and spread rules.',
       tags: const ['Intraday', 'Breakout', 'OR'],
       planningSummary: 'Opening range — OR high/low, breakout or fade plan',
-      focusLine: 'Mark OR high/low first. Decide breakout vs fade before entry.',
+      focusLine:
+          'Mark OR high/low first. Decide breakout vs fade before entry.',
       estimatedMinutes: 4,
       badgeLabel: 'TRADE SETUP',
       previewSections: const [
@@ -531,7 +533,8 @@ class JournalTemplateCatalog {
       name: 'Weekly Review',
       icon: 'review',
       category: JournalTemplateCategory.review,
-      description: 'End-of-week process review — wins, mistakes, and next focus.',
+      description:
+          'End-of-week process review — wins, mistakes, and next focus.',
       tags: const ['Discipline', 'Analysis', 'Lesson'],
       planningSummary: 'Weekly review — process over P&L',
       focusLine: 'Judge the week by process quality, not just P&L.',

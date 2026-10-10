@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_common/providers/market_provider.dart';
 
-
 // Import actual screens/widgets
 // Import actual screens/widgets
 import 'package:am_market_ui/features/market_analysis/presentation/widgets/indices_performance_view_v2.dart';
@@ -19,7 +18,6 @@ import 'package:am_market_ui/features/market_analysis/presentation/widgets/heatm
 import 'package:am_market_ui/features/market_analysis/presentation/widgets/heatmap_explorer_view.dart';
 import 'package:am_market_ui/features/equity_insider/presentation/pages/equity_insider_page.dart';
 // MarketAnalyticsPage replaced by AnalysisPage
-
 
 /// Market main content area - RESTORED FULL VERSION
 class MarketMainContent extends StatefulWidget {
@@ -45,11 +43,11 @@ class _MarketMainContentState extends State<MarketMainContent> {
         index == 'Instrument Explorer' ||
         index == 'Security Explorer' ||
         index == 'ETF Explorer' ||
-        index == 'Price Test' || 
+        index == 'Price Test' ||
         index == 'Market Analysis' ||
         index == 'Equity Insider' ||
         index == 'Futures & Options' ||
-        index == 'Admin Dashboard') { 
+        index == 'Admin Dashboard') {
       return 'NIFTY 50';
     }
     return index;
@@ -61,8 +59,9 @@ class _MarketMainContentState extends State<MarketMainContent> {
     final provider = widget.provider;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final selectedIndex = provider.selectedIndex ?? 'All Indices';
-    
-    CommonLogger.debug('Building with selectedIndex: $selectedIndex', tag: 'MarketMainContent');
+
+    CommonLogger.debug('Building with selectedIndex: $selectedIndex',
+        tag: 'MarketMainContent');
 
     return Container(
       decoration: AppGlassmorphismV2.techBackground(isDark: isDark),
@@ -105,7 +104,6 @@ class _MarketMainContentState extends State<MarketMainContent> {
 
                 // Index 10: Specific Index View (Table/Heatmap/Analytics)
                 _buildIndexDetailView(provider),
-
               ],
             ),
           ),
@@ -117,10 +115,11 @@ class _MarketMainContentState extends State<MarketMainContent> {
               right: 20,
               child: _buildViewModeToggle(),
             ),
-            
+
           // Global Loading Overlay
           if (provider.isLoading && selectedIndex == 'All Indices')
-            const Center(child: CircularProgressIndicator(color: Color(0xFF06b6d4))),
+            const Center(
+                child: CircularProgressIndicator(color: Color(0xFF06b6d4))),
         ],
       ),
     );
@@ -128,17 +127,28 @@ class _MarketMainContentState extends State<MarketMainContent> {
 
   int _determineIndex(String selectedIndex) {
     switch (selectedIndex) {
-      case 'All Indices': return 0;
-      case 'Streamer': return 1;
-      case 'Instrument Explorer': return 2;
-      case 'Security Explorer': return 3;
-      case 'Price Test': return 4;
-      case 'ETF Explorer': return 5;
-      case 'Heatmap Explorer': return 6;
-      case 'Market Analysis': return 7;
-      case 'Admin Dashboard': return 8;
-      case 'Equity Insider': return 9;
-      default: return 10; // Specific Index Detail
+      case 'All Indices':
+        return 0;
+      case 'Streamer':
+        return 1;
+      case 'Instrument Explorer':
+        return 2;
+      case 'Security Explorer':
+        return 3;
+      case 'Price Test':
+        return 4;
+      case 'ETF Explorer':
+        return 5;
+      case 'Heatmap Explorer':
+        return 6;
+      case 'Market Analysis':
+        return 7;
+      case 'Admin Dashboard':
+        return 8;
+      case 'Equity Insider':
+        return 9;
+      default:
+        return 10; // Specific Index Detail
     }
   }
 
@@ -146,18 +156,23 @@ class _MarketMainContentState extends State<MarketMainContent> {
     if (provider.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-    
+
     if (provider.error != null) {
       return Center(
-        child: Text('Error: ${provider.error}', style: const TextStyle(color: Colors.redAccent)),
+        child: Text('Error: ${provider.error}',
+            style: const TextStyle(color: Colors.redAccent)),
       );
     }
 
     switch (_viewMode) {
-      case 0: return const ConstituentsTable();
-      case 1: return const HeatmapView();
-      case 2: return const AnalysisPage();
-      default: return const ConstituentsTable();
+      case 0:
+        return const ConstituentsTable();
+      case 1:
+        return const HeatmapView();
+      case 2:
+        return const AnalysisPage();
+      default:
+        return const ConstituentsTable();
     }
   }
 
@@ -187,18 +202,26 @@ class _MarketMainContentState extends State<MarketMainContent> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF06b6d4).withOpacity(0.2) : Colors.transparent,
+          color: isSelected
+              ? const Color(0xFF06b6d4).withOpacity(0.2)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 16, color: isSelected ? const Color(0xFF06b6d4) : Colors.white60),
+            Icon(icon,
+                size: 16,
+                color: isSelected ? const Color(0xFF06b6d4) : Colors.white60),
             const SizedBox(width: 4),
-            Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.white60, fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+            Text(label,
+                style: TextStyle(
+                    color: isSelected ? Colors.white : Colors.white60,
+                    fontSize: 12,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal)),
           ],
         ),
       ),
     );
   }
 }
-

@@ -63,8 +63,7 @@ class HeatmapSelectorCore extends ChangeNotifier {
     SectorType? sector,
     MarketCapType? marketCap,
     HeatmapLayoutType? layout,
-  })?
-  onFiltersChanged;
+  })? onFiltersChanged;
 
   // Getters for current state
   TimeFrame get selectedTimeFrame => _selectedTimeFrame;
@@ -269,12 +268,12 @@ class HeatmapSelectorCore extends ChangeNotifier {
 
   // Export current state
   Map<String, dynamic> exportState() => {
-    'timeFrame': _selectedTimeFrame,
-    'metric': _selectedMetric,
-    'sector': _selectedSector,
-    'marketCap': _selectedMarketCap,
-    'layout': _selectedLayout,
-  };
+        'timeFrame': _selectedTimeFrame,
+        'metric': _selectedMetric,
+        'sector': _selectedSector,
+        'marketCap': _selectedMarketCap,
+        'layout': _selectedLayout,
+      };
 
   @override
   void dispose() {

@@ -49,12 +49,13 @@ class CustomizeConstituentRowMobile extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = context.colors;
     final isMissing = item.status == ItemStatus.missing && !isExcluded;
-    final displaySymbol = item.status == ItemStatus.substitute &&
-            item.userHoldingSymbol != null
+    final displaySymbol =
+        item.status == ItemStatus.substitute && item.userHoldingSymbol != null
         ? item.userHoldingSymbol!
         : item.stockSymbol;
-    final initial =
-        displaySymbol.isNotEmpty ? displaySymbol[0].toUpperCase() : '?';
+    final initial = displaySymbol.isNotEmpty
+        ? displaySymbol[0].toUpperCase()
+        : '?';
 
     final etfW = item.etfWeight.clamp(0.0, 100.0);
     final heldQty = item.heldQuantity;
@@ -76,7 +77,8 @@ class CustomizeConstituentRowMobile extends StatelessWidget {
       isExcluded: isExcluded,
     );
 
-    final showAdjust = hasCalculated &&
+    final showAdjust =
+        hasCalculated &&
         onTargetQtyChanged != null &&
         !isExcluded &&
         !isMissing &&
@@ -101,8 +103,9 @@ class CustomizeConstituentRowMobile extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 14,
-                  backgroundColor:
-                      ModuleColors.portfolio.withValues(alpha: 0.15),
+                  backgroundColor: ModuleColors.portfolio.withValues(
+                    alpha: 0.15,
+                  ),
                   child: Text(
                     initial,
                     style: theme.textTheme.labelMedium?.copyWith(
@@ -144,8 +147,7 @@ class CustomizeConstituentRowMobile extends StatelessWidget {
                         child: LinearProgressIndicator(
                           value: fillRatio,
                           minHeight: 4,
-                          backgroundColor:
-                              colors.border.withValues(alpha: 0.4),
+                          backgroundColor: colors.border.withValues(alpha: 0.4),
                           color: barColor,
                         ),
                       ),
@@ -178,8 +180,11 @@ class CustomizeConstituentRowMobile extends StatelessWidget {
                 else
                   PopupMenuButton<String>(
                     padding: EdgeInsets.zero,
-                    icon: Icon(Icons.more_horiz,
-                        size: 18, color: colors.textSecondary),
+                    icon: Icon(
+                      Icons.more_horiz,
+                      size: 18,
+                      color: colors.textSecondary,
+                    ),
                     onSelected: (val) {
                       if (val == 'remove') onRemove();
                       if (val == 'substitute') onSubstitute();
@@ -208,17 +213,16 @@ class CustomizeConstituentRowMobile extends StatelessWidget {
                   ),
                   const Spacer(),
                   TextButton(
-                    onPressed:
-                        (item.lastPrice == null || item.lastPrice! <= 0)
-                            ? null
-                            : () => showCustomizeQtySheet(
-                                  context: context,
-                                  item: item,
-                                  allocatedUnits: allocatedUnits.toInt(),
-                                  gapVsEtf: gapVsEtf,
-                                  onDelta: onTargetQtyChanged!,
-                                  onSetQty: onDirectTargetQtySet,
-                                ),
+                    onPressed: (item.lastPrice == null || item.lastPrice! <= 0)
+                        ? null
+                        : () => showCustomizeQtySheet(
+                            context: context,
+                            item: item,
+                            allocatedUnits: allocatedUnits.toInt(),
+                            gapVsEtf: gapVsEtf,
+                            onDelta: onTargetQtyChanged!,
+                            onSetQty: onDirectTargetQtySet,
+                          ),
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       minimumSize: Size.zero,

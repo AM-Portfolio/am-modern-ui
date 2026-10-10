@@ -76,7 +76,8 @@ Widget _defaultPortfolioAddTradeBuilder(
 ) {
   return Consumer(
     builder: (context, ref, _) {
-      final cubitAsync = ref.watch(trade_providers.tradeControllerCubitProvider);
+      final cubitAsync =
+          ref.watch(trade_providers.tradeControllerCubitProvider);
       return cubitAsync.when(
         data: (cubit) {
           final theme = Theme.of(context);
@@ -154,7 +155,9 @@ Widget buildPortfolioRoute({
   PortfolioAddTradeBuilder? addTradeBuilder,
   PortfolioHoldingsPageBuilder? holdingsPageBuilder,
   VoidCallback? onOpenDocIntel,
-  Widget Function(String portfolioId, String? portfolioName, VoidCallback onCancel)? uploadPortfolioBuilder,
+  Widget Function(
+          String portfolioId, String? portfolioName, VoidCallback onCancel)?
+      uploadPortfolioBuilder,
 }) {
   final tradeBuilder = addTradeBuilder ?? _defaultPortfolioAddTradeBuilder;
   final holdingsBuilder =
@@ -323,7 +326,8 @@ Widget buildProfileRoute({
     skeleton: const GenericModuleSkeleton(),
     loadingMessage: 'Loading Profile…',
     builder: () => _ProfileSubscriptionLoader(
-      builder: (statusLabel, isPaid, referralLabel) => user_ui.ProfileSettingsPage(
+      builder: (statusLabel, isPaid, referralLabel) =>
+          user_ui.ProfileSettingsPage(
         userId: userId,
         email: email,
         displayName: displayName,
@@ -369,7 +373,8 @@ class _ProfileSubscriptionLoader extends StatefulWidget {
       _ProfileSubscriptionLoaderState();
 }
 
-class _ProfileSubscriptionLoaderState extends State<_ProfileSubscriptionLoader> {
+class _ProfileSubscriptionLoaderState
+    extends State<_ProfileSubscriptionLoader> {
   String? _statusLabel;
   bool _isPaid = false;
   String? _referralLabel;
@@ -445,8 +450,9 @@ class _ProfileSubscriptionLoaderState extends State<_ProfileSubscriptionLoader> 
       if (!GetIt.instance.isRegistered<am_sub.SubscriptionRemoteDataSource>()) {
         return;
       }
-      final summary = await GetIt.instance<am_sub.SubscriptionRemoteDataSource>()
-          .getReferralSummary();
+      final summary =
+          await GetIt.instance<am_sub.SubscriptionRemoteDataSource>()
+              .getReferralSummary();
       if (!mounted) return;
       setState(() {
         _referralLabel =

@@ -40,81 +40,82 @@ class InstrumentFilterGroup extends FilterGroup {
 
   @override
   Widget buildContent(BuildContext context) => Column(
-    children: [
-      // All three dropdowns in one compact row
-      Row(
         children: [
-          Expanded(
-            child: MultiSelectDropdown<MarketSegments>(
-              label: 'Market Segments',
-              selectedValues: selectedSegments,
-              allValues: MarketSegments.values,
-              formatter: _formatMarketSegment,
-              onChanged: (values) {
-                selectedSegments = values;
-                onChanged();
-              },
-            ),
+          // All three dropdowns in one compact row
+          Row(
+            children: [
+              Expanded(
+                child: MultiSelectDropdown<MarketSegments>(
+                  label: 'Market Segments',
+                  selectedValues: selectedSegments,
+                  allValues: MarketSegments.values,
+                  formatter: _formatMarketSegment,
+                  onChanged: (values) {
+                    selectedSegments = values;
+                    onChanged();
+                  },
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: MultiSelectDropdown<IndexTypes>(
+                  label: 'Index Types',
+                  selectedValues: selectedIndexTypes,
+                  allValues: IndexTypes.values,
+                  formatter: _formatIndexType,
+                  onChanged: (values) {
+                    selectedIndexTypes = values;
+                    onChanged();
+                  },
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: MultiSelectDropdown<DerivativeTypes>(
+                  label: 'Derivative Types',
+                  selectedValues: selectedDerivativeTypes,
+                  allValues: DerivativeTypes.values,
+                  formatter: _formatDerivativeType,
+                  onChanged: (values) {
+                    selectedDerivativeTypes = values;
+                    onChanged();
+                  },
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: MultiSelectDropdown<IndexTypes>(
-              label: 'Index Types',
-              selectedValues: selectedIndexTypes,
-              allValues: IndexTypes.values,
-              formatter: _formatIndexType,
-              onChanged: (values) {
-                selectedIndexTypes = values;
-                onChanged();
-              },
-            ),
-          ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: MultiSelectDropdown<DerivativeTypes>(
-              label: 'Derivative Types',
-              selectedValues: selectedDerivativeTypes,
-              allValues: DerivativeTypes.values,
-              formatter: _formatDerivativeType,
-              onChanged: (values) {
-                selectedDerivativeTypes = values;
-                onChanged();
-              },
+          const SizedBox(height: 4),
+          SizedBox(
+            height: 40,
+            child: TextField(
+              controller: symbolsController,
+              style: const TextStyle(fontSize: 11),
+              decoration: InputDecoration(
+                labelText: 'Symbols (comma-separated)',
+                labelStyle: const TextStyle(fontSize: 10),
+                hintText: 'NIFTY, BANKNIFTY, RELIANCE',
+                hintStyle: const TextStyle(fontSize: 9),
+                border: const OutlineInputBorder(),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                suffixIcon: symbolsController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 14),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onPressed: () {
+                          symbolsController.clear();
+                          onChanged();
+                        },
+                      )
+                    : null,
+                isDense: true,
+              ),
+              onChanged: (_) => onChanged(),
             ),
           ),
         ],
-      ),
-      const SizedBox(height: 4),
-      SizedBox(
-        height: 40,
-        child: TextField(
-          controller: symbolsController,
-          style: const TextStyle(fontSize: 11),
-          decoration: InputDecoration(
-            labelText: 'Symbols (comma-separated)',
-            labelStyle: const TextStyle(fontSize: 10),
-            hintText: 'NIFTY, BANKNIFTY, RELIANCE',
-            hintStyle: const TextStyle(fontSize: 9),
-            border: const OutlineInputBorder(),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            suffixIcon: symbolsController.text.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.clear, size: 14),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    onPressed: () {
-                      symbolsController.clear();
-                      onChanged();
-                    },
-                  )
-                : null,
-            isDense: true,
-          ),
-          onChanged: (_) => onChanged(),
-        ),
-      ),
-    ],
-  );
+      );
 
   String _formatMarketSegment(MarketSegments segment) {
     switch (segment) {
@@ -158,13 +159,17 @@ class InstrumentFilterGroup extends FilterGroup {
   }
 
   InstrumentFilterCriteria toFilterCriteria() => InstrumentFilterCriteria(
-    marketSegments: selectedSegments,
-    indexTypes: selectedIndexTypes,
-    derivativeTypes: selectedDerivativeTypes,
-    baseSymbols: symbolsController.text.isEmpty
-        ? []
-        : symbolsController.text.split(',').map((s) => s.trim().toUpperCase()).where((s) => s.isNotEmpty).toList(),
-  );
+        marketSegments: selectedSegments,
+        indexTypes: selectedIndexTypes,
+        derivativeTypes: selectedDerivativeTypes,
+        baseSymbols: symbolsController.text.isEmpty
+            ? []
+            : symbolsController.text
+                .split(',')
+                .map((s) => s.trim().toUpperCase())
+                .where((s) => s.isNotEmpty)
+                .toList(),
+      );
 
   void dispose() {
     symbolsController.dispose();

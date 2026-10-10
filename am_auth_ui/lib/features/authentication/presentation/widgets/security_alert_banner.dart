@@ -26,7 +26,8 @@ class SecurityAlertBanner extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.warning_amber_rounded, color: context.colors.statusWarning),
+            Icon(Icons.warning_amber_rounded,
+                color: context.colors.statusWarning),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

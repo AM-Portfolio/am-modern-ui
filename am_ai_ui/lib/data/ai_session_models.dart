@@ -67,10 +67,10 @@ class AiSessionMessage {
       role: (json['role'] ?? '').toString(),
       content: (json['content'] as String?) ?? '',
       widgetId: (json['widget_id'] ?? json['widgetId']) as String?,
-      widgetParams: _asStringKeyedMap(json['widget_params'] ?? json['widgetParams']),
-      toolsUsed: tools is List
-          ? tools.map((e) => e.toString()).toList()
-          : const [],
+      widgetParams:
+          _asStringKeyedMap(json['widget_params'] ?? json['widgetParams']),
+      toolsUsed:
+          tools is List ? tools.map((e) => e.toString()).toList() : const [],
       traceId: (json['trace_id'] ?? json['traceId']) as String?,
       createdAt: _parseDate(json['created_at'] ?? json['createdAt']),
     );

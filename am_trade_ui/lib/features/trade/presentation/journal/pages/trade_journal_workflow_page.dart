@@ -24,6 +24,7 @@ class TradeJournalWorkflowPage extends ConsumerStatefulWidget {
   final JournalCubit journalCubit;
   final JournalEntry? initialEntry;
   final String? portfolioId;
+
   /// When true, render without Scaffold/AppBar for classic Entries pane.
   final bool embedded;
   final ValueChanged<String>? onEmbeddedDone;
@@ -238,7 +239,8 @@ class _TradeJournalWorkflowPageState
                   type: StepperType.horizontal,
                   currentStep: _currentStep,
                   onStepTapped: (s) => setState(() => _currentStep = s),
-                  controlsBuilder: (context, details) => const SizedBox.shrink(),
+                  controlsBuilder: (context, details) =>
+                      const SizedBox.shrink(),
                   steps: [
                     Step(
                       title: const Text('Pre-Trade'),

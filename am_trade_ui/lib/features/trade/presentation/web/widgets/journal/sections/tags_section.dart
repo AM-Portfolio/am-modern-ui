@@ -4,7 +4,11 @@ import '../widgets/tags_selector.dart';
 
 /// Section for displaying and managing journal entry tags
 class TagsSection extends StatelessWidget {
-  const TagsSection({required this.selectedTags, required this.onTagToggled, required this.isEditMode, super.key});
+  const TagsSection(
+      {required this.selectedTags,
+      required this.onTagToggled,
+      required this.isEditMode,
+      super.key});
 
   final Set<String> selectedTags;
   final Function(String) onTagToggled;
@@ -44,7 +48,8 @@ class TagsSection extends StatelessWidget {
           const SizedBox(height: 10),
           IgnorePointer(
             ignoring: !isEditMode,
-            child: TagsSelector(selectedTags: selectedTags, onTagToggled: onTagToggled),
+            child: TagsSelector(
+                selectedTags: selectedTags, onTagToggled: onTagToggled),
           ),
         ],
       ),

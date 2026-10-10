@@ -13,11 +13,7 @@ import '../widgets/paper_positions_pnl_pane.dart';
 import '../widgets/paper_wallet_pane.dart';
 import '../widgets/paper_watchlist_pane.dart';
 
-enum _TicketPlacement {
-  floatTopRight,
-  floatBottomNearWatchlist,
-  free,
-}
+enum _TicketPlacement { floatTopRight, floatBottomNearWatchlist, free }
 
 enum _MidTab { wallet, overview, orders, positions }
 
@@ -143,18 +139,17 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
 
   Offset _snapTopRight(Size size) {
     if (size.width <= 0 || size.height <= 0) return const Offset(12, 12);
-    return Offset(
-      (size.width - _ticketWidth - 12).clamp(0, size.width),
-      12,
-    );
+    return Offset((size.width - _ticketWidth - 12).clamp(0, size.width), 12);
   }
 
   Offset _snapBottomNearWatchlist(Size size) {
     if (size.width <= 0 || size.height <= 0) return const Offset(12, 12);
     const ticketApproxHeight = 520.0;
     final left = 12.0;
-    final top =
-        (size.height - ticketApproxHeight - 12).clamp(12.0, size.height);
+    final top = (size.height - ticketApproxHeight - 12).clamp(
+      12.0,
+      size.height,
+    );
     return Offset(left.clamp(0, _watchlistWidth), top);
   }
 
@@ -163,10 +158,7 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
     const minVisible = 48.0;
     final maxX = (size.width - minVisible).clamp(0.0, size.width);
     final maxY = (size.height - minVisible).clamp(0.0, size.height);
-    return Offset(
-      raw.dx.clamp(0.0, maxX),
-      raw.dy.clamp(0.0, maxY),
-    );
+    return Offset(raw.dx.clamp(0.0, maxX), raw.dy.clamp(0.0, maxY));
   }
 
   void _onHeaderDragUpdate(DragUpdateDetails details) {
@@ -208,10 +200,7 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
         border: Border.all(color: context.colors.divider),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: child,
-      ),
+      child: ClipRRect(borderRadius: BorderRadius.circular(8), child: child),
     );
   }
 
@@ -273,8 +262,8 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
                 'Select a symbol from the watchlist',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: context.colors.textSecondary,
-                    ),
+                  color: context.colors.textSecondary,
+                ),
               ),
             ),
           );
@@ -294,8 +283,9 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
       listener: (context, state) {
         final toast = state.toast;
         if (toast == null) return;
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(toast)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(toast)));
       },
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -335,16 +325,18 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
                           setState(() {
                             _deskSize = deskSize;
                             if (!_orderOpen) return;
-                            if (_placement ==
-                                _TicketPlacement.floatTopRight) {
+                            if (_placement == _TicketPlacement.floatTopRight) {
                               _ticketOffset = _snapTopRight(deskSize);
                             } else if (_placement ==
                                 _TicketPlacement.floatBottomNearWatchlist) {
-                              _ticketOffset =
-                                  _snapBottomNearWatchlist(deskSize);
+                              _ticketOffset = _snapBottomNearWatchlist(
+                                deskSize,
+                              );
                             } else if (_placement == _TicketPlacement.free) {
-                              _ticketOffset =
-                                  _clampOffset(_ticketOffset, deskSize);
+                              _ticketOffset = _clampOffset(
+                                _ticketOffset,
+                                deskSize,
+                              );
                             }
                           });
                         });
@@ -363,7 +355,8 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
                                     selectedSymbol: _symbol,
                                     onSelectSymbol: _selectSymbol,
                                     onBuySell: _buySell,
-                                    onOpenFundamentals: _openFundamentalAnalysis,
+                                    onOpenFundamentals:
+                                        _openFundamentalAnalysis,
                                   ),
                                 ),
                               ),
@@ -373,12 +366,12 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
                                   behavior: HitTestBehavior.opaque,
                                   onHorizontalDragUpdate: (details) {
                                     setState(() {
-                                      _watchlistWidth = (_watchlistWidth +
-                                              details.delta.dx)
-                                          .clamp(
-                                        _watchlistMinWidth,
-                                        _watchlistMaxWidth,
-                                      );
+                                      _watchlistWidth =
+                                          (_watchlistWidth + details.delta.dx)
+                                              .clamp(
+                                                _watchlistMinWidth,
+                                                _watchlistMaxWidth,
+                                              );
                                     });
                                   },
                                   child: SizedBox(
@@ -389,8 +382,9 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
                                         height: 48,
                                         decoration: BoxDecoration(
                                           color: context.colors.divider,
-                                          borderRadius:
-                                              BorderRadius.circular(1),
+                                          borderRadius: BorderRadius.circular(
+                                            1,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -398,9 +392,7 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
                                 ),
                               ),
                               const SizedBox(width: 6),
-                              Expanded(
-                                child: _framed(_midPane(context)),
-                              ),
+                              Expanded(child: _framed(_midPane(context))),
                             ],
                           ),
                           if (_orderOpen && _hasSymbol)
@@ -408,8 +400,10 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
                               left: _ticketOffset.dx,
                               top: _ticketOffset.dy,
                               width: _ticketWidth,
-                              height: (deskSize.height * 0.92)
-                                  .clamp(320.0, deskSize.height),
+                              height: (deskSize.height * 0.92).clamp(
+                                320.0,
+                                deskSize.height,
+                              ),
                               child: Material(
                                 elevation: 12,
                                 borderRadius: BorderRadius.circular(10),
@@ -530,9 +524,9 @@ class _MidTabChip extends StatelessWidget {
         child: Text(
           label,
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: selected ? accent : colors.textSecondary,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-              ),
+            color: selected ? accent : colors.textSecondary,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+          ),
         ),
       ),
     );

@@ -13,7 +13,8 @@ final ipoCountsProvider = FutureProvider<AsraxIpoCountsDto>((ref) async {
   return await client.getIpoCounts();
 });
 
-final ipoListProvider = FutureProvider.family<List<AsraxIpoSummaryDto>, String>((ref, status) async {
+final ipoListProvider = FutureProvider.family<List<AsraxIpoSummaryDto>, String>(
+    (ref, status) async {
   final client = ref.watch(ipoApiClientProvider);
   return await client.getIpos(status);
 });
@@ -35,7 +36,8 @@ final allIposProvider = FutureProvider<List<AsraxIpoSummaryDto>>((ref) async {
   return dedup.values.toList();
 });
 
-final ipoDetailsProvider = FutureProvider.family<AsraxIpoDetailsDto, String>((ref, id) async {
+final ipoDetailsProvider =
+    FutureProvider.family<AsraxIpoDetailsDto, String>((ref, id) async {
   final client = ref.watch(ipoApiClientProvider);
   return await client.getIpoDetails(id);
 });
@@ -75,7 +77,8 @@ class IpoFilterState {
       statusFilter: statusFilter ?? this.statusFilter,
       filterMainboard: filterMainboard ?? this.filterMainboard,
       filterSme: filterSme ?? this.filterSme,
-      selectedIndustry: clearIndustry ? null : (selectedIndustry ?? this.selectedIndustry),
+      selectedIndustry:
+          clearIndustry ? null : (selectedIndustry ?? this.selectedIndustry),
       searchQuery: searchQuery ?? this.searchQuery,
     );
   }
@@ -137,13 +140,15 @@ final distinctIndustriesProvider = Provider<List<String>>((ref) {
   );
 });
 
-final filteredIposProvider = Provider<AsyncValue<List<AsraxIpoSummaryDto>>>((ref) {
+final filteredIposProvider =
+    Provider<AsyncValue<List<AsraxIpoSummaryDto>>>((ref) {
   final iposAsync = ref.watch(allIposProvider);
   final filter = ref.watch(ipoFilterStateProvider);
 
   return iposAsync.whenData((ipos) {
     final now = DateTime.now();
-    final todayStr = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final todayStr =
+        '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
     return ipos.where((ipo) {
       // 1. Status filter
@@ -179,7 +184,8 @@ final filteredIposProvider = Provider<AsyncValue<List<AsraxIpoSummaryDto>>>((ref
 
       // 3. Industry filter
       if (filter.selectedIndustry != null && filter.selectedIndustry != 'All') {
-        if (ipo.industry == null || ipo.industry!.trim() != filter.selectedIndustry) {
+        if (ipo.industry == null ||
+            ipo.industry!.trim() != filter.selectedIndustry) {
           return false;
         }
       }
@@ -190,7 +196,9 @@ final filteredIposProvider = Provider<AsyncValue<List<AsraxIpoSummaryDto>>>((ref
         final name = (ipo.companyName ?? '').toLowerCase();
         final sym = (ipo.symbol ?? '').toLowerCase();
         final ind = (ipo.industry ?? '').toLowerCase();
-        if (!name.contains(query) && !sym.contains(query) && !ind.contains(query)) {
+        if (!name.contains(query) &&
+            !sym.contains(query) &&
+            !ind.contains(query)) {
           return false;
         }
       }

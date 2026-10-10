@@ -23,7 +23,9 @@ class PortfolioHoldingsWebPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activePortfolioId = context.selectedPortfolioId ?? portfolioId;
-    final holdingsAsync = ref.watch(portfolioHoldingsProvider(activePortfolioId));
+    final holdingsAsync = ref.watch(
+      portfolioHoldingsProvider(activePortfolioId),
+    );
 
     return holdingsAsync.when(
       loading: () => AdvancedHoldingsTemplate(
@@ -40,11 +42,10 @@ class PortfolioHoldingsWebPage extends ConsumerWidget {
             ref.invalidate(portfolioHoldingsProvider(activePortfolioId)),
       ),
       data: (portfolioHoldings) {
-        final rows =
-            mapPortfolioHoldingsToAdvancedRows(portfolioHoldings.holdings);
-        final symbols = [
-          for (final h in portfolioHoldings.holdings) h.symbol,
-        ];
+        final rows = mapPortfolioHoldingsToAdvancedRows(
+          portfolioHoldings.holdings,
+        );
+        final symbols = [for (final h in portfolioHoldings.holdings) h.symbol];
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -55,8 +56,9 @@ class PortfolioHoldingsWebPage extends ConsumerWidget {
                 accentColor: ModuleColors.portfolio,
                 priceFreshnessLabel: portfolioHoldings.priceLabel,
                 viewOnly: true,
-                onRefresh: () => ref
-                    .invalidate(portfolioHoldingsProvider(activePortfolioId)),
+                onRefresh: () => ref.invalidate(
+                  portfolioHoldingsProvider(activePortfolioId),
+                ),
               ),
             ),
             HoldingsNewsSection(

@@ -58,9 +58,8 @@ class PostTradeReviewStep extends StatelessWidget {
 
     onUpdate(
       entry.copyWith(
-        journalStatus: markCompleted == true
-            ? 'COMPLETED'
-            : entry.journalStatus,
+        journalStatus:
+            markCompleted == true ? 'COMPLETED' : entry.journalStatus,
         postTradeReview: review.copyWith(
           actualPnl: pnl ?? review.actualPnl,
           actualRMultiple: r ?? review.actualRMultiple,

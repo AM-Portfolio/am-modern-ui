@@ -5,7 +5,7 @@ import 'dart:async';
 /// Stream of accumulated telemetry events for the UI
 final telemetryHistoryProvider = StreamProvider<List<TelemetryEvent>>((ref) {
   final telemetry = ServiceRegistry.telemetry;
-  
+
   // Return a stream that accumulates events for the UI
   return telemetry.events.transform(
     StreamTransformer.fromHandlers(
@@ -20,42 +20,50 @@ final telemetryHistoryProvider = StreamProvider<List<TelemetryEvent>>((ref) {
 /// Refined Diagnostic Provider using standard Riverpod syntax to avoid version conflicts
 final sdkHealthMetricsProvider = Provider<Map<String, HealthMetric>>((ref) {
   final history = ref.watch(telemetryHistoryProvider).value ?? [];
-  
+
   final metrics = <String, HealthMetric>{};
-  
+
   for (var event in history) {
-    final metric = metrics.putIfAbsent(event.category, () => HealthMetric(category: event.category));
+    final metric = metrics.putIfAbsent(
+      event.category,
+      () => HealthMetric(category: event.category),
+    );
     metric.addEvent(event);
   }
-  
+
   return metrics;
 });
 
 /// Simplified Telemetry History Provider using a StateProvider approach for easier accumulation
-final telemetryLogProvider = NotifierProvider<TelemetryLogNotifier, List<TelemetryEvent>>(TelemetryLogNotifier.new);
+final telemetryLogProvider =
+    NotifierProvider<TelemetryLogNotifier, List<TelemetryEvent>>(
+      TelemetryLogNotifier.new,
+    );
 
 class TelemetryLogNotifier extends Notifier<List<TelemetryEvent>> {
   StreamSubscription<TelemetryEvent>? _subscription;
-  
+
   @override
   List<TelemetryEvent> build() {
     final telemetry = ServiceRegistry.telemetry;
     _subscription = telemetry.events.listen((event) {
       state = [event, ...state].take(100).toList();
     });
-    
+
     ref.onDispose(() => _subscription?.cancel());
     return [];
   }
 }
 
 /// Provider for Mock Data Toggle
-final mockDataEnabledProvider = NotifierProvider<MockDataEnabledNotifier, bool>(MockDataEnabledNotifier.new);
+final mockDataEnabledProvider = NotifierProvider<MockDataEnabledNotifier, bool>(
+  MockDataEnabledNotifier.new,
+);
 
 class MockDataEnabledNotifier extends Notifier<bool> {
   @override
   bool build() => false;
-  
+
   void set(bool value) => state = value;
 }
 
@@ -75,14 +83,14 @@ class HealthMetric {
     } else if (event.type == TelemetryType.apiResponse) {
       successes++;
     }
-    
+
     if (event.duration != null) {
       latencies.add(event.duration!);
     }
   }
 
   double get successRate => requests == 0 ? 100 : (successes / requests) * 100;
-  
+
   Duration get avgLatency {
     if (latencies.isEmpty) return Duration.zero;
     final total = latencies.fold(Duration.zero, (prev, next) => prev + next);

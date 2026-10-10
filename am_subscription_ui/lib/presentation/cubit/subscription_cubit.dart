@@ -49,10 +49,7 @@ class SubscriptionActionInProgress extends SubscriptionState {
   final List<Plan> plans;
   final Subscription? subscription;
 
-  const SubscriptionActionInProgress({
-    required this.plans,
-    this.subscription,
-  });
+  const SubscriptionActionInProgress({required this.plans, this.subscription});
 
   @override
   List<Object?> get props => [plans, subscription];
@@ -74,11 +71,9 @@ class SubscriptionActionSuccess extends SubscriptionState {
 }
 
 class SubscriptionCubit extends Cubit<SubscriptionState> {
-  SubscriptionCubit(
-    this._dataSource, {
-    SubscriptionBrowserCache? browserCache,
-  })  : _browserCache = browserCache,
-        super(SubscriptionInitial());
+  SubscriptionCubit(this._dataSource, {SubscriptionBrowserCache? browserCache})
+    : _browserCache = browserCache,
+      super(SubscriptionInitial());
 
   final SubscriptionRemoteDataSource _dataSource;
   final SubscriptionBrowserCache? _browserCache;
@@ -101,8 +96,7 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
       DateTime.now().difference(_plansCachedAt!) < _plansTtl;
 
   bool get _meFresh =>
-      _meCachedAt != null &&
-      DateTime.now().difference(_meCachedAt!) < _meTtl;
+      _meCachedAt != null && DateTime.now().difference(_meCachedAt!) < _meTtl;
 
   /// Status label for Profile (e.g. "Pro · Active"). Null if unknown.
   String? get statusLabel {
@@ -159,20 +153,24 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
     await _hydrateFromBrowserIfNeeded();
 
     if (!force && _plansFresh && _meFresh && _cachedPlans != null) {
-      emit(SubscriptionLoaded(
-        plans: _cachedPlans!,
-        subscription: _cachedSubscription,
-      ));
+      emit(
+        SubscriptionLoaded(
+          plans: _cachedPlans!,
+          subscription: _cachedSubscription,
+        ),
+      );
       unawaited(_refreshInBackground());
       return;
     }
 
     if (_cachedPlans != null) {
-      emit(SubscriptionLoaded(
-        plans: _cachedPlans!,
-        subscription: _cachedSubscription,
-        refreshing: true,
-      ));
+      emit(
+        SubscriptionLoaded(
+          plans: _cachedPlans!,
+          subscription: _cachedSubscription,
+          refreshing: true,
+        ),
+      );
     } else {
       emit(SubscriptionLoading());
     }
@@ -181,10 +179,12 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
       await _fetchAndEmit();
     } catch (e) {
       if (_cachedPlans != null) {
-        emit(SubscriptionLoaded(
-          plans: _cachedPlans!,
-          subscription: _cachedSubscription,
-        ));
+        emit(
+          SubscriptionLoaded(
+            plans: _cachedPlans!,
+            subscription: _cachedSubscription,
+          ),
+        );
       } else {
         emit(SubscriptionError(e.toString()));
       }
@@ -200,10 +200,7 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
       final sub = await _dataSource.getCurrentSubscription();
       await _rememberMe(sub);
       if (_cachedPlans != null && state is! SubscriptionLoading) {
-        emit(SubscriptionLoaded(
-          plans: _cachedPlans!,
-          subscription: sub,
-        ));
+        emit(SubscriptionLoaded(plans: _cachedPlans!, subscription: sub));
       }
     } catch (_) {
       _meCachedAt = DateTime.now();
@@ -223,20 +220,19 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
       if (plans != null && plans.isNotEmpty) {
         _cachedPlans = plans;
         // Disk hit is slightly stale so we still SWR, but skip full-screen load.
-        _plansCachedAt =
-            DateTime.now().subtract(const Duration(seconds: 1));
+        _plansCachedAt = DateTime.now().subtract(const Duration(seconds: 1));
       }
     }
 
     if (_cachedSubscription == null) {
-      final userId = UserContext.instance.cachedUserId ??
+      final userId =
+          UserContext.instance.cachedUserId ??
           await UserContext.instance.userId;
       if (userId != null && userId.isNotEmpty) {
         final me = await _browserCache!.readMe(userId);
         if (me != null) {
           _cachedSubscription = me;
-          _meCachedAt =
-              DateTime.now().subtract(const Duration(seconds: 1));
+          _meCachedAt = DateTime.now().subtract(const Duration(seconds: 1));
         }
       }
     }
@@ -277,8 +273,8 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
   Future<void> _rememberMe(Subscription? sub) async {
     _cachedSubscription = sub;
     _meCachedAt = DateTime.now();
-    final userId = UserContext.instance.cachedUserId ??
-        await UserContext.instance.userId;
+    final userId =
+        UserContext.instance.cachedUserId ?? await UserContext.instance.userId;
     if (userId != null && userId.isNotEmpty) {
       await _browserCache?.writeMe(userId, sub);
     }
@@ -288,29 +284,37 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
     final currentState = state;
     if (currentState is! SubscriptionLoaded) return;
 
-    emit(SubscriptionActionInProgress(
-      plans: currentState.plans,
-      subscription: currentState.subscription,
-    ));
+    emit(
+      SubscriptionActionInProgress(
+        plans: currentState.plans,
+        subscription: currentState.subscription,
+      ),
+    );
 
     try {
-      final sub =
-          await _dataSource.createSubscription(planCode, billingInterval);
+      final sub = await _dataSource.createSubscription(
+        planCode,
+        billingInterval,
+      );
       await invalidateCache();
       await _rememberPlans(currentState.plans);
       await _rememberMe(sub);
-      emit(SubscriptionActionSuccess(
-        plans: currentState.plans,
-        subscription: sub,
-        message: 'Successfully subscribed to ${sub.planName}!',
-      ));
+      emit(
+        SubscriptionActionSuccess(
+          plans: currentState.plans,
+          subscription: sub,
+          message: 'Successfully subscribed to ${sub.planName}!',
+        ),
+      );
       emit(SubscriptionLoaded(plans: currentState.plans, subscription: sub));
     } catch (e) {
       emit(SubscriptionError(e.toString()));
-      emit(SubscriptionLoaded(
-        plans: currentState.plans,
-        subscription: currentState.subscription,
-      ));
+      emit(
+        SubscriptionLoaded(
+          plans: currentState.plans,
+          subscription: currentState.subscription,
+        ),
+      );
     }
   }
 
@@ -322,10 +326,12 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
     final currentState = state;
     if (currentState is! SubscriptionLoaded) return;
 
-    emit(SubscriptionActionInProgress(
-      plans: currentState.plans,
-      subscription: currentState.subscription,
-    ));
+    emit(
+      SubscriptionActionInProgress(
+        plans: currentState.plans,
+        subscription: currentState.subscription,
+      ),
+    );
 
     try {
       final sub = await _dataSource.upgradeSubscription(
@@ -336,18 +342,22 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
       await invalidateCache();
       await _rememberPlans(currentState.plans);
       await _rememberMe(sub);
-      emit(SubscriptionActionSuccess(
-        plans: currentState.plans,
-        subscription: sub,
-        message: 'Successfully upgraded to ${sub.planName}!',
-      ));
+      emit(
+        SubscriptionActionSuccess(
+          plans: currentState.plans,
+          subscription: sub,
+          message: 'Successfully upgraded to ${sub.planName}!',
+        ),
+      );
       emit(SubscriptionLoaded(plans: currentState.plans, subscription: sub));
     } catch (e) {
       emit(SubscriptionError(e.toString()));
-      emit(SubscriptionLoaded(
-        plans: currentState.plans,
-        subscription: currentState.subscription,
-      ));
+      emit(
+        SubscriptionLoaded(
+          plans: currentState.plans,
+          subscription: currentState.subscription,
+        ),
+      );
     }
   }
 

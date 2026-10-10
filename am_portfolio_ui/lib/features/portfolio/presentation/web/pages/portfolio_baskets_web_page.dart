@@ -10,10 +10,7 @@ import '../../../../basket/presentation/flow/basket_flow_controller.dart';
 
 /// Web-specific baskets page
 class PortfolioBasketsWebPage extends ConsumerWidget {
-  const PortfolioBasketsWebPage({
-    super.key,
-    this.portfolioId,
-  });
+  const PortfolioBasketsWebPage({super.key, this.portfolioId});
 
   final String? portfolioId;
 
@@ -26,7 +23,9 @@ class PortfolioBasketsWebPage extends ConsumerWidget {
     final authState = context.watch<AuthCubit>().state;
     final userId = authState is Authenticated ? authState.user.id : '';
     if (userId.isEmpty) {
-      return const Center(child: Text('Please sign in to view basket opportunities'));
+      return const Center(
+        child: Text('Please sign in to view basket opportunities'),
+      );
     }
 
     final flow = ref.watch(basketFlowControllerProvider);
@@ -34,9 +33,11 @@ class PortfolioBasketsWebPage extends ConsumerWidget {
     final symbols = opportunity == null
         ? const <String>[]
         : opportunity.composition
-            .map((item) => (item.userHoldingSymbol ?? item.stockSymbol).trim())
-            .where((s) => s.isNotEmpty)
-            .toList();
+              .map(
+                (item) => (item.userHoldingSymbol ?? item.stockSymbol).trim(),
+              )
+              .where((s) => s.isNotEmpty)
+              .toList();
 
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.md),

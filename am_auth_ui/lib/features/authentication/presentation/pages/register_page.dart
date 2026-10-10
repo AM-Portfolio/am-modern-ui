@@ -134,8 +134,7 @@ class RegisterPageForm extends StatelessWidget {
                                   content:
                                       const Text('UUID copied to clipboard!'),
                                   duration: const Duration(seconds: 2),
-                                  backgroundColor:
-                                      context.colors.statusSuccess,
+                                  backgroundColor: context.colors.statusSuccess,
                                 ),
                               );
                             },
@@ -146,8 +145,8 @@ class RegisterPageForm extends StatelessWidget {
                     const SizedBox(height: 16),
                     Text(
                       'Open Developer Controls on the login screen to activate your account.',
-                      style: TextStyle(
-                          fontSize: 12, color: context.textTertiary),
+                      style:
+                          TextStyle(fontSize: 12, color: context.textTertiary),
                     ),
                   ],
                 ),

@@ -40,7 +40,6 @@ class IpoEligibleInvestorsCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 18),
-
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
@@ -54,7 +53,8 @@ class IpoEligibleInvestorsCard extends StatelessWidget {
             child: list.isEmpty
                 ? Text(
                     'All eligible retail and institutional investors',
-                    style: TextStyle(fontSize: 13, color: context.textSecondary),
+                    style:
+                        TextStyle(fontSize: 13, color: context.textSecondary),
                   )
                 : Wrap(
                     spacing: 12,
@@ -64,11 +64,15 @@ class IpoEligibleInvestorsCard extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: ModuleColors.market.withValues(alpha: 0.15),
+                              color:
+                                  ModuleColors.market.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: ModuleColors.market.withValues(alpha: 0.35)),
+                              border: Border.all(
+                                  color: ModuleColors.market
+                                      .withValues(alpha: 0.35)),
                             ),
                             child: Text(
                               inv.category,
@@ -81,7 +85,8 @@ class IpoEligibleInvestorsCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            inv.subscription != null && inv.subscription!.isNotEmpty
+                            inv.subscription != null &&
+                                    inv.subscription!.isNotEmpty
                                 ? '${inv.subscription}x'
                                 : '—',
                             style: TextStyle(

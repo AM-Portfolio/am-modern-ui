@@ -1,16 +1,9 @@
-
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'notification_entity.freezed.dart';
 part 'notification_entity.g.dart';
 
-enum NotificationType {
-  info,
-  success,
-  warning,
-  error,
-  opportunity
-}
+enum NotificationType { info, success, warning, error, opportunity }
 
 @freezed
 abstract class NotificationEntity with _$NotificationEntity {
@@ -25,6 +18,6 @@ abstract class NotificationEntity with _$NotificationEntity {
     Map<String, dynamic>? payload,
   }) = _NotificationEntity;
 
-  factory NotificationEntity.fromJson(Map<String, dynamic> json) => 
+  factory NotificationEntity.fromJson(Map<String, dynamic> json) =>
       _$NotificationEntityFromJson(json);
 }

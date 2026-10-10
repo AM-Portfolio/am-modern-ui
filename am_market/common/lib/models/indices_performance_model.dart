@@ -9,7 +9,8 @@ class IndicesHistoricalPerformanceResponse {
     required this.monthlyPerformance,
   });
 
-  factory IndicesHistoricalPerformanceResponse.fromJson(Map<String, dynamic> json) {
+  factory IndicesHistoricalPerformanceResponse.fromJson(
+      Map<String, dynamic> json) {
     return IndicesHistoricalPerformanceResponse(
       startYear: json['startYear'] ?? 0,
       endYear: json['endYear'] ?? 0,

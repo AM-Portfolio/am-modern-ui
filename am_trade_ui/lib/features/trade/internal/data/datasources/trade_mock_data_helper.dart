@@ -13,14 +13,17 @@ class TradeMockDataHelper {
   /// Get mock trade portfolios from JSON file
   static Future<TradePortfolioListDto> getMockTradePortfolios() async {
     try {
-      AppLogger.info('Loading mock trade portfolios from assets', tag: 'TradeMockDataHelper');
+      AppLogger.info('Loading mock trade portfolios from assets',
+          tag: 'TradeMockDataHelper');
 
-      final jsonString = await rootBundle.loadString('packages/am_trade_ui/assets/mock_data/trade/trade_portfolios.json');
+      final jsonString = await rootBundle.loadString(
+          'packages/am_trade_ui/assets/mock_data/trade/trade_portfolios.json');
       final jsonData = json.decode(jsonString) as Map<String, dynamic>;
 
       return TradePortfolioListDto.fromJson(jsonData);
     } catch (e) {
-      AppLogger.error('Failed to load mock trade portfolios', tag: 'TradeMockDataHelper', error: e);
+      AppLogger.error('Failed to load mock trade portfolios',
+          tag: 'TradeMockDataHelper', error: e);
       rethrow;
     }
   }
@@ -28,14 +31,17 @@ class TradeMockDataHelper {
   /// Get mock trade holdings from JSON file
   static Future<TradeHoldingsDto> getMockTradeHoldings() async {
     try {
-      AppLogger.info('Loading mock trade holdings from assets', tag: 'TradeMockDataHelper');
+      AppLogger.info('Loading mock trade holdings from assets',
+          tag: 'TradeMockDataHelper');
 
-      final jsonString = await rootBundle.loadString('packages/am_trade_ui/assets/mock_data/trade/holdings/trade_holdings.json');
+      final jsonString = await rootBundle.loadString(
+          'packages/am_trade_ui/assets/mock_data/trade/holdings/trade_holdings.json');
       final jsonData = json.decode(jsonString) as Map<String, dynamic>;
 
       return TradeHoldingsDto.fromJson(jsonData);
     } catch (e) {
-      AppLogger.error('Failed to load mock trade holdings', tag: 'TradeMockDataHelper', error: e);
+      AppLogger.error('Failed to load mock trade holdings',
+          tag: 'TradeMockDataHelper', error: e);
       rethrow;
     }
   }
@@ -43,14 +49,17 @@ class TradeMockDataHelper {
   /// Get mock trade portfolio summary from JSON file
   static Future<TradePortfolioSummaryDto> getMockTradeSummary() async {
     try {
-      AppLogger.info('Loading mock trade portfolio summary from assets', tag: 'TradeMockDataHelper');
+      AppLogger.info('Loading mock trade portfolio summary from assets',
+          tag: 'TradeMockDataHelper');
 
-      final jsonString = await rootBundle.loadString('packages/am_trade_ui/assets/mock_data/trade/trade_summary.json');
+      final jsonString = await rootBundle.loadString(
+          'packages/am_trade_ui/assets/mock_data/trade/trade_summary.json');
       final jsonData = json.decode(jsonString) as Map<String, dynamic>;
 
       return TradePortfolioSummaryDto.fromJson(jsonData);
     } catch (e) {
-      AppLogger.error('Failed to load mock trade portfolio summary', tag: 'TradeMockDataHelper', error: e);
+      AppLogger.error('Failed to load mock trade portfolio summary',
+          tag: 'TradeMockDataHelper', error: e);
       rethrow;
     }
   }
@@ -58,14 +67,17 @@ class TradeMockDataHelper {
   /// Get mock trade calendar from JSON file
   static Future<TradeCalendarDto> getMockTradeCalendar() async {
     try {
-      AppLogger.info('Loading mock trade calendar from assets', tag: 'TradeMockDataHelper');
+      AppLogger.info('Loading mock trade calendar from assets',
+          tag: 'TradeMockDataHelper');
 
-      final jsonString = await rootBundle.loadString('packages/am_trade_ui/assets/mock_data/trade/calendar/trade_calendar.json');
+      final jsonString = await rootBundle.loadString(
+          'packages/am_trade_ui/assets/mock_data/trade/calendar/trade_calendar.json');
       final jsonData = json.decode(jsonString) as Map<String, dynamic>;
 
       return TradeCalendarDto.fromJson(jsonData);
     } catch (e) {
-      AppLogger.error('Failed to load mock trade calendar', tag: 'TradeMockDataHelper', error: e);
+      AppLogger.error('Failed to load mock trade calendar',
+          tag: 'TradeMockDataHelper', error: e);
       rethrow;
     }
   }
@@ -73,7 +85,8 @@ class TradeMockDataHelper {
   /// Get mock trade calendar by day from JSON file
   static Future<TradeCalendarDto> getMockTradeCalendarByDay() async {
     try {
-      AppLogger.info('Loading mock trade calendar by day from assets', tag: 'TradeMockDataHelper');
+      AppLogger.info('Loading mock trade calendar by day from assets',
+          tag: 'TradeMockDataHelper');
 
       final jsonString = await rootBundle.loadString(
         'packages/am_trade_ui/assets/mock_data/trade/calendar/calendar-by-day-response.json',
@@ -82,7 +95,8 @@ class TradeMockDataHelper {
 
       return TradeCalendarDto.fromJson(jsonData);
     } catch (e) {
-      AppLogger.error('Failed to load mock trade calendar by day', tag: 'TradeMockDataHelper', error: e);
+      AppLogger.error('Failed to load mock trade calendar by day',
+          tag: 'TradeMockDataHelper', error: e);
       rethrow;
     }
   }
@@ -90,7 +104,8 @@ class TradeMockDataHelper {
   /// Get mock trade calendar by date range from JSON file
   static Future<TradeCalendarDto> getMockTradeCalendarByDateRange() async {
     try {
-      AppLogger.info('Loading mock trade calendar by date range from assets', tag: 'TradeMockDataHelper');
+      AppLogger.info('Loading mock trade calendar by date range from assets',
+          tag: 'TradeMockDataHelper');
 
       final jsonString = await rootBundle.loadString(
         'packages/am_trade_ui/assets/mock_data/trade/calendar/calendar-by-date-range-response.json',
@@ -99,9 +114,9 @@ class TradeMockDataHelper {
 
       return TradeCalendarDto.fromJson(jsonData);
     } catch (e) {
-      AppLogger.error('Failed to load mock trade calendar by date range', tag: 'TradeMockDataHelper', error: e);
+      AppLogger.error('Failed to load mock trade calendar by date range',
+          tag: 'TradeMockDataHelper', error: e);
       rethrow;
     }
   }
 }
-

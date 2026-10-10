@@ -39,19 +39,22 @@ class StreamConnectResponse {
   MarketDataUpdate? data;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is StreamConnectResponse &&
-    other.status == status &&
-    other.message == message &&
-    other.data == data;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is StreamConnectResponse &&
+          other.status == status &&
+          other.message == message &&
+          other.data == data;
 
   @override
   int get hashCode =>
-    (status == null ? 0 : status!.hashCode) +
-    (message == null ? 0 : message!.hashCode) +
-    (data == null ? 0 : data!.hashCode);
+      (status == null ? 0 : status!.hashCode) +
+      (message == null ? 0 : message!.hashCode) +
+      (data == null ? 0 : data!.hashCode);
 
   @override
-  String toString() => 'StreamConnectResponse[status=$status, message=$message, data=$data]';
+  String toString() =>
+      'StreamConnectResponse[status=$status, message=$message, data=$data]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -84,8 +87,10 @@ class StreamConnectResponse {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "StreamConnectResponse[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "StreamConnectResponse[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "StreamConnectResponse[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "StreamConnectResponse[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -99,7 +104,10 @@ class StreamConnectResponse {
     return null;
   }
 
-  static List<StreamConnectResponse> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<StreamConnectResponse> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <StreamConnectResponse>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -115,7 +123,7 @@ class StreamConnectResponse {
   static Map<String, StreamConnectResponse> mapFromJson(dynamic json) {
     final map = <String, StreamConnectResponse>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); 
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
         final value = StreamConnectResponse.fromJson(entry.value);
         if (value != null) {
@@ -127,19 +135,23 @@ class StreamConnectResponse {
   }
 
   // maps a json object with a list of StreamConnectResponse-objects as value to a dart map
-  static Map<String, List<StreamConnectResponse>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<StreamConnectResponse>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<StreamConnectResponse>>{};
     if (json is Map && json.isNotEmpty) {
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = StreamConnectResponse.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = StreamConnectResponse.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

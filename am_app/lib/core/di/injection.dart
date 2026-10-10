@@ -85,8 +85,7 @@ Future<void> configureCoreDependencies() async {
       },
       canFlush: () async {
         try {
-          final token =
-              await getIt<SecureStorageService>().getAccessToken();
+          final token = await getIt<SecureStorageService>().getAccessToken();
           return token != null && token.isNotEmpty;
         } catch (_) {
           return false;

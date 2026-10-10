@@ -170,31 +170,33 @@ class _SortableTableState<T> extends State<SortableTable<T>> {
 
   /// Build a single table row
   Widget _buildTableRow(T item, ThemeData theme) => Material(
-    color: Colors.transparent,
-    child: InkWell(
-      onTap: widget.onItemTap != null ? () => widget.onItemTap!(item) : null,
-      hoverColor: widget.rowHoverColor ?? theme.hoverColor,
-      child: SizedBox(
-        height: widget.rowHeight,
-        child: Row(
-          children: [
-            for (final column in widget.columns)
-              Expanded(
-                flex: column.flex,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: DefaultTextStyle(
-                    style: widget.rowTextStyle ?? theme.textTheme.bodyMedium!,
-                    overflow: TextOverflow.ellipsis,
-                    child: column.builder(item),
+        color: Colors.transparent,
+        child: InkWell(
+          onTap:
+              widget.onItemTap != null ? () => widget.onItemTap!(item) : null,
+          hoverColor: widget.rowHoverColor ?? theme.hoverColor,
+          child: SizedBox(
+            height: widget.rowHeight,
+            child: Row(
+              children: [
+                for (final column in widget.columns)
+                  Expanded(
+                    flex: column.flex,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: DefaultTextStyle(
+                        style:
+                            widget.rowTextStyle ?? theme.textTheme.bodyMedium!,
+                        overflow: TextOverflow.ellipsis,
+                        child: column.builder(item),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-          ],
+              ],
+            ),
+          ),
         ),
-      ),
-    ),
-  );
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -226,24 +228,22 @@ class _SortableTableState<T> extends State<SortableTable<T>> {
                             mainAxisSize: MainAxisSize.min,
                             mainAxisAlignment:
                                 widget.columns[i].textAlign == TextAlign.end
-                                ? MainAxisAlignment.end
-                                : (widget.columns[i].textAlign ==
-                                          TextAlign.center
-                                      ? MainAxisAlignment.center
-                                      : MainAxisAlignment.start),
+                                    ? MainAxisAlignment.end
+                                    : (widget.columns[i].textAlign ==
+                                            TextAlign.center
+                                        ? MainAxisAlignment.center
+                                        : MainAxisAlignment.start),
                             children: [
                               Flexible(
                                 child: Text(
                                   widget.columns[i].title,
-                                  style:
-                                      widget.headerTextStyle ??
+                                  style: widget.headerTextStyle ??
                                       theme.textTheme.bodySmall?.copyWith(
                                         color: theme.colorScheme.onSurface
                                             .withOpacity(0.6),
                                         fontWeight: FontWeight.w500,
                                       ),
-                                  textAlign:
-                                      widget.columns[i].textAlign ??
+                                  textAlign: widget.columns[i].textAlign ??
                                       TextAlign.start,
                                   overflow: TextOverflow.ellipsis,
                                 ),

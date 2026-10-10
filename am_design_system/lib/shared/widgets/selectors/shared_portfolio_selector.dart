@@ -52,7 +52,8 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = isDark ?? Theme.of(context).brightness == Brightness.dark;
+    final isDarkMode =
+        isDark ?? Theme.of(context).brightness == Brightness.dark;
     final colors = context.colors;
     final effectiveAccent = accentColor ?? ModuleColors.portfolio;
 
@@ -87,8 +88,8 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
           ),
         );
 
-    List<PopupMenuEntry<String>> buildItems(BuildContext context) => portfolios
-        .map((portfolio) {
+    List<PopupMenuEntry<String>> buildItems(BuildContext context) =>
+        portfolios.map((portfolio) {
           final pId = idExtractor(portfolio);
           final isSelected = pId == currentPortfolioId;
           return PopupMenuItem<String>(
@@ -108,8 +109,7 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                     },
             ),
           );
-        })
-        .toList();
+        }).toList();
 
     if (isCompact) {
       if (portfolios.isEmpty) return const SizedBox.shrink();
@@ -241,7 +241,8 @@ class _HoverablePortfolioMenuRow extends StatefulWidget {
       _HoverablePortfolioMenuRowState();
 }
 
-class _HoverablePortfolioMenuRowState extends State<_HoverablePortfolioMenuRow> {
+class _HoverablePortfolioMenuRowState
+    extends State<_HoverablePortfolioMenuRow> {
   bool _hovered = false;
 
   @override

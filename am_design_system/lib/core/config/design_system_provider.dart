@@ -12,7 +12,8 @@ class DesignSystemProvider extends InheritedWidget {
   });
 
   static DesignSystemConfig of(BuildContext context) {
-    final provider = context.dependOnInheritedWidgetOfExactType<DesignSystemProvider>();
+    final provider =
+        context.dependOnInheritedWidgetOfExactType<DesignSystemProvider>();
     if (provider == null) {
       // Fallback to default if not provided (safety net)
       return DefaultDesignSystem();

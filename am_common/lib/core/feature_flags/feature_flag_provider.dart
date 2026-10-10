@@ -24,8 +24,7 @@ final featureFlagsReadyProvider = StreamProvider<bool>((ref) async* {
   yield* service.changes.map((_) => service.isReady);
 });
 
-final featureFlagProvider =
-    Provider.family<bool, String>((ref, key) {
+final featureFlagProvider = Provider.family<bool, String>((ref, key) {
   ref.watch(featureFlagsReadyProvider);
   return ref.watch(featureFlagServiceProvider).isOn(key);
 });

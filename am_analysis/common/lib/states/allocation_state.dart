@@ -4,7 +4,7 @@ import '../models/models.dart';
 /// Base class for all allocation states
 abstract class AllocationState extends Equatable {
   const AllocationState();
-  
+
   @override
   List<Object?> get props => [];
 }
@@ -23,9 +23,9 @@ class AllocationLoading extends AllocationState {
 class AllocationLoaded extends AllocationState {
   final List<AllocationItem> allocations;
   final GroupBy groupBy;
-  
+
   const AllocationLoaded(this.allocations, this.groupBy);
-  
+
   @override
   List<Object?> get props => [allocations, groupBy];
 }
@@ -34,9 +34,9 @@ class AllocationLoaded extends AllocationState {
 class AllocationError extends AllocationState {
   final String message;
   final StackTrace? stackTrace;
-  
+
   const AllocationError(this.message, [this.stackTrace]);
-  
+
   @override
   List<Object?> get props => [message, stackTrace];
 }

@@ -45,16 +45,18 @@ class BdPageHeader extends StatelessWidget {
           Expanded(
             child: Text(
               'Basket Dashboard',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
           ),
           TextButton.icon(
             onPressed: onShare,
-            icon: Icon(Icons.share_outlined,
-                size: 18, color: ModuleColors.portfolio),
+            icon: Icon(
+              Icons.share_outlined,
+              size: 18,
+              color: ModuleColors.portfolio,
+            ),
             label: Text('Share'),
             style: TextButton.styleFrom(
               foregroundColor: ModuleColors.portfolio,
@@ -62,8 +64,11 @@ class BdPageHeader extends StatelessWidget {
           ),
           TextButton.icon(
             onPressed: onDownload,
-            icon: Icon(Icons.download_outlined,
-                size: 18, color: ModuleColors.portfolio),
+            icon: Icon(
+              Icons.download_outlined,
+              size: 18,
+              color: ModuleColors.portfolio,
+            ),
             label: Text('Download'),
             style: TextButton.styleFrom(
               foregroundColor: ModuleColors.portfolio,

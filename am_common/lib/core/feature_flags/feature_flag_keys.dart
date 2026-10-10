@@ -1,6 +1,7 @@
 class FeatureFlagKeys {
   static const subscriptionPageEnabled = 'subscription-page-enabled';
   static const ipoPageEnabled = 'ipo-page-enabled';
+
   /// Trade mobile Metrics pill (TradeAnalysisPage). Default OFF when unset.
   static const tradeMetricsMobileEnabled = 'trade-metrics-mobile-enabled';
   static const offlineReadsV1 = 'offline_reads_v1';

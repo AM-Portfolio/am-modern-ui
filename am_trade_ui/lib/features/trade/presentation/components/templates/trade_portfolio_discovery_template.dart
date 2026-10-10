@@ -18,10 +18,13 @@ Color _getCardHoverBorder(BuildContext context) =>
     Theme.of(context).brightness == Brightness.dark
         ? ModuleColors.trade
         : Theme.of(context).colorScheme.primary;
-Color _getBadgeBg(BuildContext context) => Theme.of(context).brightness ==
-        Brightness.dark
-    ? context.surfaceColor
-    : Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5);
+Color _getBadgeBg(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark
+        ? context.surfaceColor
+        : Theme.of(context)
+            .colorScheme
+            .surfaceContainerHighest
+            .withValues(alpha: 0.5);
 Color _getBadgeBorder(BuildContext context) =>
     Theme.of(context).brightness == Brightness.dark
         ? context.borderColor
@@ -165,7 +168,8 @@ class _TradePortfolioDiscoveryTemplateState
                   .bodyMedium
                   ?.copyWith(color: context.colors.textSecondary),
             ),
-            if (widget.onCreatePaperWallet != null && !widget.hasPaperWallet) ...[
+            if (widget.onCreatePaperWallet != null &&
+                !widget.hasPaperWallet) ...[
               const SizedBox(height: 24),
               FilledButton.icon(
                 onPressed: widget.onCreatePaperWallet,
@@ -208,12 +212,13 @@ class _TradePortfolioDiscoveryTemplateState
         widget.portfolios.fold<int>(0, (sum, p) => sum + p.totalTrades);
     final totalNetProfitLoss = widget.portfolios
         .fold<double>(0.0, (sum, p) => sum + (p.netProfitLoss ?? 0.0));
-    final totalUnrealizedPnL = widget.portfolios
-        .fold<double>(0.0, (sum, p) => sum + p.totalGainLoss);
+    final totalUnrealizedPnL =
+        widget.portfolios.fold<double>(0.0, (sum, p) => sum + p.totalGainLoss);
     final avgWinRate = widget.portfolios.isNotEmpty
         ? (widget.portfolios
-                .fold<double>(0.0, (sum, p) => sum + (p.winRate ?? 0.0)) /
-            widget.portfolios.length) * 100
+                    .fold<double>(0.0, (sum, p) => sum + (p.winRate ?? 0.0)) /
+                widget.portfolios.length) *
+            100
         : 0.0;
 
     return LayoutBuilder(
@@ -267,7 +272,8 @@ class _TradePortfolioDiscoveryTemplateState
                     ],
                   ),
                   const Spacer(),
-                  if (widget.onCreatePaperWallet != null && !widget.hasPaperWallet)
+                  if (widget.onCreatePaperWallet != null &&
+                      !widget.hasPaperWallet)
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: OutlinedButton.icon(
@@ -290,7 +296,8 @@ class _TradePortfolioDiscoveryTemplateState
                         label: Text('New Portfolio'),
                         style: FilledButton.styleFrom(
                           backgroundColor: ModuleColors.trade,
-                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                          foregroundColor:
+                              Theme.of(context).colorScheme.onPrimary,
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 10),
                           shape: RoundedRectangleBorder(
@@ -511,8 +518,8 @@ class _TradePortfolioDiscoveryTemplateState
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                              color: ModuleColors.trade, width: 1.5),
+                          borderSide:
+                              BorderSide(color: ModuleColors.trade, width: 1.5),
                         ),
                       ),
                       onChanged: (value) => setState(() {
@@ -695,7 +702,8 @@ class _TradePortfolioDiscoveryTemplateState
         final isMobile = constraints.maxWidth < 600;
 
         Widget listView = ListView.builder(
-          padding: EdgeInsets.fromLTRB(isMobile ? 16 : 20, 0, isMobile ? 16 : 20, isMobile ? 24 : 20),
+          padding: EdgeInsets.fromLTRB(
+              isMobile ? 16 : 20, 0, isMobile ? 16 : 20, isMobile ? 24 : 20),
           itemCount: paginatedPortfolios.length,
           itemBuilder: (context, index) {
             final portfolio = paginatedPortfolios[index];
@@ -845,9 +853,8 @@ class _TradePortfolioDiscoveryTemplateState
               color: isCurrent ? ModuleColors.trade : _getBadgeBg(context),
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
-                color: isCurrent
-                    ? ModuleColors.trade
-                    : _getBadgeBorder(context),
+                color:
+                    isCurrent ? ModuleColors.trade : _getBadgeBorder(context),
               ),
             ),
             alignment: Alignment.center,
@@ -1038,10 +1045,7 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
                                   context.statusSuccess,
                                   context.statusSuccess.withValues(alpha: 0.85)
                                 ]
-                              : [
-                                  ModuleColors.trade,
-                                  ModuleColors.trade
-                                ],
+                              : [ModuleColors.trade, ModuleColors.trade],
                         ),
                         borderRadius: BorderRadius.circular(8),
                       ),

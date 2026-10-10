@@ -55,7 +55,11 @@ class OrderTicketController extends ChangeNotifier {
     super.dispose();
   }
 
-  void init({required bool compact, required String side, required String symbol}) {
+  void init({
+    required bool compact,
+    required String side,
+    required String symbol,
+  }) {
     _lastSyncedSymbol = symbol.trim().toUpperCase();
     this.side = side.toUpperCase() == 'SELL' ? 'SELL' : 'BUY';
     displayName = symbol;
@@ -80,7 +84,12 @@ class OrderTicketController extends ChangeNotifier {
     } catch (_) {}
     if (!context.mounted || _disposed) return;
     try {
-      final remote = context.read<PaperOmsCubit>().state.orderTypeFavorite.trim().toUpperCase();
+      final remote = context
+          .read<PaperOmsCubit>()
+          .state
+          .orderTypeFavorite
+          .trim()
+          .toUpperCase();
       if (remote.isNotEmpty) fav = remote;
     } catch (_) {}
     if (_disposed) return;
@@ -285,7 +294,8 @@ class OrderTicketController extends ChangeNotifier {
         return;
       }
 
-      final needsLimit = orderType == 'LIMIT' ||
+      final needsLimit =
+          orderType == 'LIMIT' ||
           (orderType == 'SUPER' && useLimit && entryType == 'LIMIT');
       String? targetPrice;
       String? stopLoss;
@@ -307,19 +317,21 @@ class OrderTicketController extends ChangeNotifier {
       }
 
       final order = await context.read<PaperOmsCubit>().placeOrder(
-            symbol: sym,
-            side: side,
-            orderType: orderType,
-            quantity: qty.text.trim(),
-            limitPrice: needsLimit ? limit.text.trim() : null,
-            targetPrice: targetPrice,
-            stopLoss: stopLoss,
-            trailJump: orderType == 'TRAIL' ? trail.text.trim() : null,
-            entryType: orderType == 'SUPER' ? (useLimit ? 'LIMIT' : 'MARKET') : null,
-            triggerPrice: showTrigger && trigger.text.trim().isNotEmpty
-                ? trigger.text.trim()
-                : null,
-          );
+        symbol: sym,
+        side: side,
+        orderType: orderType,
+        quantity: qty.text.trim(),
+        limitPrice: needsLimit ? limit.text.trim() : null,
+        targetPrice: targetPrice,
+        stopLoss: stopLoss,
+        trailJump: orderType == 'TRAIL' ? trail.text.trim() : null,
+        entryType: orderType == 'SUPER'
+            ? (useLimit ? 'LIMIT' : 'MARKET')
+            : null,
+        triggerPrice: showTrigger && trigger.text.trim().isNotEmpty
+            ? trigger.text.trim()
+            : null,
+      );
       if (order != null && !order.isRejected) {
         onOrderPlaced?.call();
       }

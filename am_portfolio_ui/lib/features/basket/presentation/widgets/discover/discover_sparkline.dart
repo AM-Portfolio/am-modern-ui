@@ -36,10 +36,7 @@ class DiscoverSparkline extends StatelessWidget {
 }
 
 class DiscoverSparklinePainter extends CustomPainter {
-  DiscoverSparklinePainter({
-    required this.data,
-    required this.color,
-  });
+  DiscoverSparklinePainter({required this.data, required this.color});
 
   final List<double> data;
   final Color color;

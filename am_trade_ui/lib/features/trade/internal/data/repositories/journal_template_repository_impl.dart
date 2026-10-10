@@ -38,9 +38,8 @@ class JournalTemplateRepositoryImpl implements JournalTemplateRepository {
         name: name,
         category: category.value,
         description: description,
-        fields: fields
-            ?.map((f) => TemplateFieldRequestDto.fromJson(f))
-            .toList(),
+        fields:
+            fields?.map((f) => TemplateFieldRequestDto.fromJson(f)).toList(),
         isSystemTemplate: isSystemTemplate,
         isRecommended: isRecommended,
         tags: tags,
@@ -88,7 +87,8 @@ class JournalTemplateRepositoryImpl implements JournalTemplateRepository {
         category: category?.value,
         search: search,
       );
-      final templates = dtos.map(JournalTemplateMapper.fromResponseDto).toList();
+      final templates =
+          dtos.map(JournalTemplateMapper.fromResponseDto).toList();
 
       AppLogger.info(
         'Templates fetched successfully: ${templates.length} templates',
@@ -115,7 +115,7 @@ class JournalTemplateRepositoryImpl implements JournalTemplateRepository {
   @override
   Future<JournalTemplate> getTemplate({
     required String templateId,
-    }) async {
+  }) async {
     AppLogger.methodEntry(
       'getTemplate',
       tag: 'JournalTemplateRepository',
@@ -171,9 +171,8 @@ class JournalTemplateRepositoryImpl implements JournalTemplateRepository {
         name: name,
         category: category.value,
         description: description,
-        fields: fields
-            ?.map((f) => TemplateFieldRequestDto.fromJson(f))
-            .toList(),
+        fields:
+            fields?.map((f) => TemplateFieldRequestDto.fromJson(f)).toList(),
         isSystemTemplate: isSystemTemplate,
         isRecommended: isRecommended,
         tags: tags,
@@ -208,7 +207,7 @@ class JournalTemplateRepositoryImpl implements JournalTemplateRepository {
   @override
   Future<void> deleteTemplate({
     required String templateId,
-    }) async {
+  }) async {
     AppLogger.methodEntry(
       'deleteTemplate',
       tag: 'JournalTemplateRepository',
@@ -248,7 +247,8 @@ class JournalTemplateRepositoryImpl implements JournalTemplateRepository {
 
     try {
       final dtos = await _remoteDataSource.getFavoriteTemplates();
-      final templates = dtos.map(JournalTemplateMapper.fromResponseDto).toList();
+      final templates =
+          dtos.map(JournalTemplateMapper.fromResponseDto).toList();
 
       AppLogger.info(
         'Favorite templates fetched successfully: ${templates.length} templates',
@@ -282,7 +282,8 @@ class JournalTemplateRepositoryImpl implements JournalTemplateRepository {
 
     try {
       final dtos = await _remoteDataSource.getRecommendedTemplates();
-      final templates = dtos.map(JournalTemplateMapper.fromResponseDto).toList();
+      final templates =
+          dtos.map(JournalTemplateMapper.fromResponseDto).toList();
 
       AppLogger.info(
         'Recommended templates fetched successfully: ${templates.length} templates',
@@ -316,7 +317,8 @@ class JournalTemplateRepositoryImpl implements JournalTemplateRepository {
 
     try {
       final dtos = await _remoteDataSource.getMyTemplates();
-      final templates = dtos.map(JournalTemplateMapper.fromResponseDto).toList();
+      final templates =
+          dtos.map(JournalTemplateMapper.fromResponseDto).toList();
 
       AppLogger.info(
         'My templates fetched successfully: ${templates.length} templates',
@@ -343,7 +345,7 @@ class JournalTemplateRepositoryImpl implements JournalTemplateRepository {
   @override
   Future<JournalTemplate> toggleFavorite({
     required String templateId,
-    }) async {
+  }) async {
     AppLogger.methodEntry(
       'toggleFavorite',
       tag: 'JournalTemplateRepository',
@@ -422,4 +424,3 @@ class JournalTemplateRepositoryImpl implements JournalTemplateRepository {
     }
   }
 }
-

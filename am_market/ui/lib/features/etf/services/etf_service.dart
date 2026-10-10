@@ -28,13 +28,13 @@ class EtfService {
         'query': query,
         'limit': limit.toString(),
       });
-      
+
       final headers = await _getHeaders();
       final response = await http.get(uri, headers: headers);
 
       if (response.statusCode == 200) {
         final dynamic decoded = json.decode(response.body);
-        
+
         // Handle both List and Map responses
         if (decoded is List) {
           return decoded.map((e) => Etf.fromJson(e)).toList();
@@ -45,16 +45,19 @@ class EtfService {
             return (data as List).map((e) => Etf.fromJson(e)).toList();
           }
         }
-        CommonLogger.warning("Unexpected response structure: $decoded", tag: "EtfService.searchEtfs");
+        CommonLogger.warning("Unexpected response structure: $decoded",
+            tag: "EtfService.searchEtfs");
 
         return [];
       } else {
-        CommonLogger.error("Failed search: ${response.statusCode}", tag: "EtfService.searchEtfs");
+        CommonLogger.error("Failed search: ${response.statusCode}",
+            tag: "EtfService.searchEtfs");
 
         return [];
       }
     } catch (e) {
-      CommonLogger.error("Error searching ETFs", tag: "EtfService.searchEtfs", error: e);
+      CommonLogger.error("Error searching ETFs",
+          tag: "EtfService.searchEtfs", error: e);
 
       return [];
     }
@@ -63,19 +66,22 @@ class EtfService {
   Future<EtfHoldings?> getEtfHoldings(String symbol) async {
     try {
       final headers = await _getHeaders();
-      final response = await http.get(Uri.parse('$baseUrl/holdings/$symbol'), headers: headers);
+      final response = await http.get(Uri.parse('$baseUrl/holdings/$symbol'),
+          headers: headers);
 
       if (response.statusCode == 200) {
         return EtfHoldings.fromJson(json.decode(response.body));
       } else if (response.statusCode == 404) {
-        return null; 
+        return null;
       } else {
-        CommonLogger.error("Failed to get holdings: ${response.statusCode}", tag: "EtfService.getEtfHoldings");
+        CommonLogger.error("Failed to get holdings: ${response.statusCode}",
+            tag: "EtfService.getEtfHoldings");
 
         return null;
       }
     } catch (e) {
-      CommonLogger.error("Error getting holdings", tag: "EtfService.getEtfHoldings", error: e);
+      CommonLogger.error("Error getting holdings",
+          tag: "EtfService.getEtfHoldings", error: e);
 
       return null;
     }
@@ -83,13 +89,15 @@ class EtfService {
 
   Future<bool> triggerFetchHoldings(String symbol) async {
     try {
-       final headers = await _getHeaders();
-       final response = await http.post(Uri.parse('$baseUrl/fetch-holdings/$symbol'), headers: headers);
-       return response.statusCode == 200;
+      final headers = await _getHeaders();
+      final response = await http
+          .post(Uri.parse('$baseUrl/fetch-holdings/$symbol'), headers: headers);
+      return response.statusCode == 200;
     } catch (e) {
-       CommonLogger.error("Error triggering fetch", tag: "EtfService.triggerFetchHoldings", error: e);
+      CommonLogger.error("Error triggering fetch",
+          tag: "EtfService.triggerFetchHoldings", error: e);
 
-       return false;
+      return false;
     }
   }
 }

@@ -19,19 +19,23 @@ class TimingBucket {
   final String label;
   final int trades;
   final double pnl;
+
   /// Display Avg P&L for the currently selected [TimingAvgBasis].
   final double avgPnl;
   final double? avgPnlPerTrade;
   final double? avgPnlPerActiveDay;
   final int activeTradingDays;
   final double? winRatePercent;
+
   /// Trades with non-null PnL (Win% / Avg PnL denominator).
   final int eligibleTrades;
   final double? avgHoldMinutes;
+
   /// Avg win ÷ |avg loss|; null when undefined (not stop-based R).
   final double? riskReward;
 
-  bool get isLowSample => eligibleTrades > 0 && eligibleTrades < minTradesForRank;
+  bool get isLowSample =>
+      eligibleTrades > 0 && eligibleTrades < minTradesForRank;
 
   double displayAvg(TimingAvgBasis basis) {
     switch (basis) {
@@ -121,12 +125,12 @@ List<TimingBucket> buildTimingBuckets({
     final count = trades[key] ?? 0;
     if (!includeZeroTradeBuckets && count <= 0) continue;
     final pnl = profit[key] ?? 0;
-    final eligibleCount = eligible[key] ?? (winRate.containsKey(key) ? count : 0);
+    final eligibleCount =
+        eligible[key] ?? (winRate.containsKey(key) ? count : 0);
     final days = activeTradingDays[key] ?? 0;
-    final perTrade = avgPnl[key] ??
-        (eligibleCount > 0 ? pnl / eligibleCount : null);
-    final perDay = avgPnlPerActiveDay[key] ??
-        (days > 0 ? pnl / days : null);
+    final perTrade =
+        avgPnl[key] ?? (eligibleCount > 0 ? pnl / eligibleCount : null);
+    final perDay = avgPnlPerActiveDay[key] ?? (days > 0 ? pnl / days : null);
     final display = avgBasis == TimingAvgBasis.perActiveDay
         ? (perDay ?? 0.0)
         : (perTrade ?? 0.0);
@@ -227,9 +231,7 @@ TimingRankSplit splitBestWorst(List<TimingBucket> buckets, {int take = 5}) {
 
   final n = byAvgPnl.length;
   final maxTake = take.clamp(1, n);
-  final bestCount = n <= take * 2
-      ? (n / 2).ceil().clamp(1, maxTake)
-      : maxTake;
+  final bestCount = n <= take * 2 ? (n / 2).ceil().clamp(1, maxTake) : maxTake;
 
   final best = byAvgPnl.take(bestCount).toList();
   final bestKeys = best.map((b) => b.key).toSet();

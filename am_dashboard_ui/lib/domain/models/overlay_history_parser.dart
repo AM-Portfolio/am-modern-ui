@@ -13,8 +13,9 @@ PortfolioOverlayHistory parsePortfolioOverlayHistory(
   final aggregateKeys = isIntraday
       ? const ['totalWealth', 'totalUserWealth', 'close']
       : const ['totalUserWealth', 'totalWealth', 'close'];
-  final entryValueKeys =
-      isIntraday ? const ['value', 'close'] : const ['close', 'value'];
+  final entryValueKeys = isIntraday
+      ? const ['value', 'close']
+      : const ['close', 'value'];
 
   final orderedIds = <String>[];
   final rawNames = <String, String>{};
@@ -88,6 +89,9 @@ PortfolioOverlayHistory parsePortfolioOverlayHistory(
     aggregate: aggregate,
     portfolios: labeledRefs,
     byPortfolioId: byPortfolioId,
+    historyStatus: parsePortfolioHistoryStatus(data),
+    phase: parsePortfolioHistoryPhase(data),
+    startedAt: parsePortfolioHistoryStartedAt(data),
   );
 }
 
@@ -99,10 +103,32 @@ List<Map<String, dynamic>> _asObjectList(dynamic data) {
     ];
   }
   if (data is Map) {
-    final inner = data['data'] ?? data['content'] ?? data['snapshots'];
+    final map = Map<String, dynamic>.from(data);
+    // New envelope: { points: [...], historyStatus, phase, ... }
+    final points = map['points'];
+    if (points is List) return _asObjectList(points);
+    final inner = map['data'] ?? map['content'] ?? map['snapshots'];
     if (inner is List) return _asObjectList(inner);
   }
   return const [];
+}
+
+/// Extracts build status from history envelope when present.
+String? parsePortfolioHistoryStatus(dynamic data) {
+  if (data is! Map) return null;
+  final status = data['historyStatus'] ?? data['history_status'];
+  return status?.toString();
+}
+
+String? parsePortfolioHistoryStartedAt(dynamic data) {
+  if (data is! Map) return null;
+  final v = data['startedAt'] ?? data['started_at'];
+  return v?.toString();
+}
+
+String? parsePortfolioHistoryPhase(dynamic data) {
+  if (data is! Map) return null;
+  return data['phase']?.toString();
 }
 
 String? _stringOf(Map<String, dynamic> json, List<String> keys) {

@@ -257,7 +257,8 @@ class OfflineSyncEngine {
             lastError: result.errorMessage,
           ),
         );
-        telemetry.outboxFailed(working.type, result.errorMessage ?? 'retryable');
+        telemetry.outboxFailed(
+            working.type, result.errorMessage ?? 'retryable');
         reachability.reportNetworkFailure();
       case FlushStatus.permanentFailure:
         await outbox.update(
@@ -267,7 +268,8 @@ class OfflineSyncEngine {
             lastError: result.errorMessage,
           ),
         );
-        telemetry.outboxFailed(working.type, result.errorMessage ?? 'permanent');
+        telemetry.outboxFailed(
+            working.type, result.errorMessage ?? 'permanent');
       case FlushStatus.conflict:
         await outbox.update(
           userId: userId,

@@ -23,7 +23,8 @@ class AMFilterPillsBar<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final selectedBg = activeColor ?? const Color(0xFFD4AF37); // Market Gold default
+    final selectedBg =
+        activeColor ?? const Color(0xFFD4AF37); // Market Gold default
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -31,7 +32,8 @@ class AMFilterPillsBar<T> extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: options.map((option) {
           final isSelected = option == selectedOption;
-          final label = labelBuilder != null ? labelBuilder!(option) : option.toString();
+          final label =
+              labelBuilder != null ? labelBuilder!(option) : option.toString();
 
           return Padding(
             padding: const EdgeInsets.only(right: 8.0),
@@ -40,12 +42,15 @@ class AMFilterPillsBar<T> extends StatelessWidget {
               onTap: () => onSelected(option),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
                   color: isSelected ? selectedBg : colors.surface,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: isSelected ? selectedBg : colors.border.withValues(alpha: 0.5),
+                    color: isSelected
+                        ? selectedBg
+                        : colors.border.withValues(alpha: 0.5),
                     width: 1,
                   ),
                 ),
@@ -53,14 +58,16 @@ class AMFilterPillsBar<T> extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (isSelected && showCheckmark) ...[
-                      const Icon(Icons.check_rounded, size: 14, color: Colors.black),
+                      const Icon(Icons.check_rounded,
+                          size: 14, color: Colors.black),
                       const SizedBox(width: 6),
                     ],
                     Text(
                       label,
                       style: TextStyle(
                         color: isSelected ? Colors.black : colors.textSecondary,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.w500,
                         fontSize: 12,
                       ),
                     ),

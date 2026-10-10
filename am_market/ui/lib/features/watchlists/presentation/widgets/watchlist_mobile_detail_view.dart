@@ -20,10 +20,12 @@ class WatchlistMobileDetailView extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<WatchlistMobileDetailView> createState() => _WatchlistMobileDetailViewState();
+  ConsumerState<WatchlistMobileDetailView> createState() =>
+      _WatchlistMobileDetailViewState();
 }
 
-class _WatchlistMobileDetailViewState extends ConsumerState<WatchlistMobileDetailView> {
+class _WatchlistMobileDetailViewState
+    extends ConsumerState<WatchlistMobileDetailView> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
@@ -48,7 +50,8 @@ class _WatchlistMobileDetailViewState extends ConsumerState<WatchlistMobileDetai
     final colors = context.colors;
     final watchlist = widget.watchlist;
 
-    final symbolsKey = watchlist.items.map((e) => e.symbol.toUpperCase()).join(',');
+    final symbolsKey =
+        watchlist.items.map((e) => e.symbol.toUpperCase()).join(',');
     final quotesAsync = ref.watch(watchlistQuotesProvider(symbolsKey));
     final quotesMap = quotesAsync.value ?? {};
 
@@ -57,7 +60,8 @@ class _WatchlistMobileDetailViewState extends ConsumerState<WatchlistMobileDetai
       if (_searchQuery.isEmpty) return true;
       final quote = quotesMap[item.symbol.toUpperCase()];
       final name = quote?.companyName.toLowerCase() ?? '';
-      return item.symbol.toLowerCase().contains(_searchQuery) || name.contains(_searchQuery);
+      return item.symbol.toLowerCase().contains(_searchQuery) ||
+          name.contains(_searchQuery);
     }).toList();
 
     // Calculate totals and gainers/losers
@@ -85,11 +89,14 @@ class _WatchlistMobileDetailViewState extends ConsumerState<WatchlistMobileDetai
     }
 
     final prevTotal = totalValue - totalDayChange;
-    final totalPnlPercent = prevTotal > 0 ? (totalDayChange / prevTotal) * 100 : 0.0;
+    final totalPnlPercent =
+        prevTotal > 0 ? (totalDayChange / prevTotal) * 100 : 0.0;
     final isPosPnl = totalDayChange >= 0;
     final pnlColor = totalDayChange == 0.0
         ? colors.textSecondary
-        : (isPosPnl ? colors.marketPositiveIndicator : colors.marketNegativeIndicator);
+        : (isPosPnl
+            ? colors.marketPositiveIndicator
+            : colors.marketNegativeIndicator);
     final pnlSign = isPosPnl && totalDayChange > 0 ? '+' : '';
 
     return Column(
@@ -107,7 +114,8 @@ class _WatchlistMobileDetailViewState extends ConsumerState<WatchlistMobileDetai
             Expanded(
               child: Text(
                 watchlist.name,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -121,26 +129,32 @@ class _WatchlistMobileDetailViewState extends ConsumerState<WatchlistMobileDetai
                     context,
                     currentName: watchlist.name,
                     onSaved: (newName) {
-                      ref.read(watchlistsProvider.notifier).updateWatchlist(watchlist.id, newName);
+                      ref
+                          .read(watchlistsProvider.notifier)
+                          .updateWatchlist(watchlist.id, newName);
                     },
                   );
                 },
               ),
               PopupMenuButton<String>(
-                icon: Icon(Icons.more_vert, size: 20, color: colors.textSecondary),
+                icon: Icon(Icons.more_vert,
+                    size: 20, color: colors.textSecondary),
                 onSelected: (val) async {
                   if (val == 'delete') {
                     final confirm = await ConfirmationDialog.show(
                       context: context,
                       title: 'Delete Watchlist',
                       subtitle: 'This action cannot be undone',
-                      message: 'Are you sure you want to delete "${watchlist.name}"?',
+                      message:
+                          'Are you sure you want to delete "${watchlist.name}"?',
                       icon: Icons.warning_amber_rounded,
                       confirmText: 'Delete',
                       isDestructive: true,
                     );
                     if (confirm) {
-                      ref.read(watchlistsProvider.notifier).deleteWatchlist(watchlist.id);
+                      ref
+                          .read(watchlistsProvider.notifier)
+                          .deleteWatchlist(watchlist.id);
                       widget.onBack();
                     }
                   }
@@ -150,9 +164,11 @@ class _WatchlistMobileDetailViewState extends ConsumerState<WatchlistMobileDetai
                     value: 'delete',
                     child: Row(
                       children: [
-                        Icon(Icons.delete_outline, color: colors.statusError, size: 18),
+                        Icon(Icons.delete_outline,
+                            color: colors.statusError, size: 18),
                         const SizedBox(width: 10),
-                        Text('Delete Watchlist', style: TextStyle(color: colors.statusError)),
+                        Text('Delete Watchlist',
+                            style: TextStyle(color: colors.statusError)),
                       ],
                     ),
                   ),
@@ -177,14 +193,16 @@ class _WatchlistMobileDetailViewState extends ConsumerState<WatchlistMobileDetai
                       Flexible(
                         child: Text(
                           watchlist.name,
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       if (watchlist.isDefault) ...[
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
                             color: ModuleColors.market.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(6),
@@ -219,18 +237,24 @@ class _WatchlistMobileDetailViewState extends ConsumerState<WatchlistMobileDetai
           style: TextStyle(color: colors.textPrimary, fontSize: 13),
           decoration: InputDecoration(
             hintText: 'Search stocks in this watchlist...',
-            hintStyle: TextStyle(color: colors.textSecondary.withValues(alpha: 0.6), fontSize: 13),
-            prefixIcon: Icon(Icons.search, size: 18, color: colors.textSecondary),
+            hintStyle: TextStyle(
+                color: colors.textSecondary.withValues(alpha: 0.6),
+                fontSize: 13),
+            prefixIcon:
+                Icon(Icons.search, size: 18, color: colors.textSecondary),
             filled: true,
             fillColor: colors.surface.withValues(alpha: 0.6),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: colors.border.withValues(alpha: 0.5)),
+              borderSide:
+                  BorderSide(color: colors.border.withValues(alpha: 0.5)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: colors.border.withValues(alpha: 0.5)),
+              borderSide:
+                  BorderSide(color: colors.border.withValues(alpha: 0.5)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -256,7 +280,8 @@ class _WatchlistMobileDetailViewState extends ConsumerState<WatchlistMobileDetai
                   children: [
                     Text(
                       "Today's P&L",
-                      style: TextStyle(color: colors.textSecondary, fontSize: 12),
+                      style:
+                          TextStyle(color: colors.textSecondary, fontSize: 12),
                     ),
                     const SizedBox(height: 6),
                     Text(
@@ -277,7 +302,8 @@ class _WatchlistMobileDetailViewState extends ConsumerState<WatchlistMobileDetai
                   children: [
                     Text(
                       'Total Value',
-                      style: TextStyle(color: colors.textSecondary, fontSize: 12),
+                      style:
+                          TextStyle(color: colors.textSecondary, fontSize: 12),
                     ),
                     const SizedBox(height: 6),
                     Text(
@@ -304,19 +330,38 @@ class _WatchlistMobileDetailViewState extends ConsumerState<WatchlistMobileDetai
             children: [
               const Expanded(
                 flex: 4,
-                child: Text('Symbol', style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600)),
+                child: Text('Symbol',
+                    style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600)),
               ),
               const Expanded(
                 flex: 3,
-                child: Text('LTP (₹)', textAlign: TextAlign.right, style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600)),
+                child: Text('LTP (₹)',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600)),
               ),
               const Expanded(
                 flex: 3,
-                child: Text('Day Chg', textAlign: TextAlign.right, style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600)),
+                child: Text('Day Chg',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600)),
               ),
               const Expanded(
                 flex: 3,
-                child: Text('% Chg', textAlign: TextAlign.right, style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600)),
+                child: Text('% Chg',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600)),
               ),
               const SizedBox(width: 32), // Space for 3-dots
             ],
@@ -345,9 +390,10 @@ class _WatchlistMobileDetailViewState extends ConsumerState<WatchlistMobileDetai
                   itemBuilder: (context, index) {
                     final item = filteredItems[index];
                     final quote = quotesMap[item.symbol.toUpperCase()];
-                    final companyName = (quote != null && quote.companyName.isNotEmpty)
-                        ? quote.companyName
-                        : item.symbol;
+                    final companyName =
+                        (quote != null && quote.companyName.isNotEmpty)
+                            ? quote.companyName
+                            : item.symbol;
                     final ltp = quote?.lastPrice ?? 0.0;
                     final dayChg = quote?.change ?? 0.0;
                     final pctChg = quote?.changePercent ?? 0.0;
@@ -355,13 +401,16 @@ class _WatchlistMobileDetailViewState extends ConsumerState<WatchlistMobileDetai
                     final isPos = dayChg >= 0;
                     final changeColor = dayChg == 0.0
                         ? colors.textSecondary
-                        : (isPos ? colors.marketPositiveIndicator : colors.marketNegativeIndicator);
+                        : (isPos
+                            ? colors.marketPositiveIndicator
+                            : colors.marketNegativeIndicator);
                     final sign = isPos && dayChg > 0 ? '+' : '';
 
                     return InkWell(
                       onTap: () => widget.onStockSelected?.call(item.symbol),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 10, horizontal: 4),
                         child: Row(
                           children: [
                             // Symbol & Company
@@ -435,22 +484,30 @@ class _WatchlistMobileDetailViewState extends ConsumerState<WatchlistMobileDetai
                               width: 32,
                               child: PopupMenuButton<String>(
                                 padding: EdgeInsets.zero,
-                                icon: Icon(Icons.more_vert, size: 18, color: colors.textSecondary),
+                                icon: Icon(Icons.more_vert,
+                                    size: 18, color: colors.textSecondary),
                                 onSelected: (action) async {
                                   if (action == 'move') {
-                                    AddToWatchlistPopup.show(context, item.symbol, sourceWatchlistId: watchlist.id);
+                                    AddToWatchlistPopup.show(
+                                        context, item.symbol,
+                                        sourceWatchlistId: watchlist.id);
                                   } else if (action == 'delete') {
-                                    final confirm = await ConfirmationDialog.show(
+                                    final confirm =
+                                        await ConfirmationDialog.show(
                                       context: context,
                                       title: 'Remove Stock',
                                       subtitle: 'Remove from ${watchlist.name}',
-                                      message: 'Are you sure you want to remove ${item.symbol} from this watchlist?',
+                                      message:
+                                          'Are you sure you want to remove ${item.symbol} from this watchlist?',
                                       icon: Icons.delete_outline,
                                       confirmText: 'Remove',
                                       isDestructive: true,
                                     );
                                     if (confirm) {
-                                      ref.read(watchlistsProvider.notifier).removeStock(watchlist.id, item.symbol);
+                                      ref
+                                          .read(watchlistsProvider.notifier)
+                                          .removeStock(
+                                              watchlist.id, item.symbol);
                                     }
                                   }
                                 },
@@ -459,7 +516,8 @@ class _WatchlistMobileDetailViewState extends ConsumerState<WatchlistMobileDetai
                                     value: 'move',
                                     child: Row(
                                       children: [
-                                        Icon(Icons.drive_file_move_outlined, size: 18),
+                                        Icon(Icons.drive_file_move_outlined,
+                                            size: 18),
                                         SizedBox(width: 8),
                                         Text('Move Stock'),
                                       ],
@@ -469,9 +527,13 @@ class _WatchlistMobileDetailViewState extends ConsumerState<WatchlistMobileDetai
                                     value: 'delete',
                                     child: Row(
                                       children: [
-                                        Icon(Icons.delete_outline, color: colors.statusError, size: 18),
+                                        Icon(Icons.delete_outline,
+                                            color: colors.statusError,
+                                            size: 18),
                                         const SizedBox(width: 8),
-                                        Text('Remove', style: TextStyle(color: colors.statusError)),
+                                        Text('Remove',
+                                            style: TextStyle(
+                                                color: colors.statusError)),
                                       ],
                                     ),
                                   ),

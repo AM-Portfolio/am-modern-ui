@@ -59,7 +59,7 @@ class _BarSparklinePainter extends CustomPainter {
     // We try to fit as many bars as possible from right to left,
     // or just draw them left to right if they fit.
     final totalRequiredWidth = data.length * (barWidth + spacing) - spacing;
-    
+
     // Start drawing from the left, or align right if they overflow?
     // Let's just draw left to right.
     double currentX = 0;
@@ -71,15 +71,17 @@ class _BarSparklinePainter extends CustomPainter {
       final paint = Paint()
         ..color = val >= 0 ? positiveColor : negativeColor
         ..style = PaintingStyle.fill;
-        
+
       final rect = val >= 0
-          ? Rect.fromLTRB(currentX, centerY - barHeight, currentX + barWidth, centerY)
-          : Rect.fromLTRB(currentX, centerY, currentX + barWidth, centerY + barHeight);
+          ? Rect.fromLTRB(
+              currentX, centerY - barHeight, currentX + barWidth, centerY)
+          : Rect.fromLTRB(
+              currentX, centerY, currentX + barWidth, centerY + barHeight);
 
       // Add a slight corner radius if it's tall enough
       final rRect = RRect.fromRectAndRadius(rect, const Radius.circular(1.0));
       canvas.drawRRect(rRect, paint);
-      
+
       currentX += barWidth + spacing;
     }
   }
@@ -87,7 +89,7 @@ class _BarSparklinePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _BarSparklinePainter oldDelegate) {
     return oldDelegate.data != data ||
-           oldDelegate.positiveColor != positiveColor ||
-           oldDelegate.negativeColor != negativeColor;
+        oldDelegate.positiveColor != positiveColor ||
+        oldDelegate.negativeColor != negativeColor;
   }
 }

@@ -56,7 +56,8 @@ class EquityInsiderSectionNavBar extends StatelessWidget {
                 child: Text(
                   sections[index],
                   style: TextStyle(
-                    color: isActive ? activeColor : context.colors.textSecondary,
+                    color:
+                        isActive ? activeColor : context.colors.textSecondary,
                     fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                     fontSize: 15,
                     letterSpacing: 0.3,

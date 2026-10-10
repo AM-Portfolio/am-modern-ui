@@ -9,7 +9,8 @@ class CreateWatchlistDialog extends StatefulWidget {
     required this.onCreated,
   });
 
-  static Future<void> show(BuildContext context, {required ValueChanged<String> onCreated}) {
+  static Future<void> show(BuildContext context,
+      {required ValueChanged<String> onCreated}) {
     return showDialog(
       context: context,
       builder: (context) => CreateWatchlistDialog(onCreated: onCreated),
@@ -61,7 +62,8 @@ class _CreateWatchlistDialogState extends State<CreateWatchlistDialog> {
           children: [
             Row(
               children: [
-                Icon(Icons.playlist_add_rounded, color: ModuleColors.market, size: 24),
+                Icon(Icons.playlist_add_rounded,
+                    color: ModuleColors.market, size: 24),
                 const SizedBox(width: 12),
                 const Text(
                   'Create Watchlist',
@@ -81,10 +83,12 @@ class _CreateWatchlistDialogState extends State<CreateWatchlistDialog> {
               style: TextStyle(color: colors.textPrimary),
               decoration: InputDecoration(
                 hintText: 'e.g. Bluechip Stocks, Energy',
-                hintStyle: TextStyle(color: colors.textSecondary.withValues(alpha: 0.6)),
+                hintStyle: TextStyle(
+                    color: colors.textSecondary.withValues(alpha: 0.6)),
                 filled: true,
                 fillColor: colors.scaffoldBackground,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                   borderSide: BorderSide(color: colors.border),
@@ -95,7 +99,8 @@ class _CreateWatchlistDialogState extends State<CreateWatchlistDialog> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: ModuleColors.market, width: 1.5),
+                  borderSide:
+                      BorderSide(color: ModuleColors.market, width: 1.5),
                 ),
               ),
               onSubmitted: (_) => _handleCreate(),
@@ -106,7 +111,8 @@ class _CreateWatchlistDialogState extends State<CreateWatchlistDialog> {
               children: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: Text('Cancel', style: TextStyle(color: colors.textSecondary)),
+                  child: Text('Cancel',
+                      style: TextStyle(color: colors.textSecondary)),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
@@ -114,9 +120,11 @@ class _CreateWatchlistDialogState extends State<CreateWatchlistDialog> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: ModuleColors.market,
                     foregroundColor: colors.actionPrimaryFg,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
                   ),
-                  child: const Text('Create', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text('Create',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ],
             ),

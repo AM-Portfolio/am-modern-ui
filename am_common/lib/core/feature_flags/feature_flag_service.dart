@@ -42,9 +42,8 @@ class FeatureFlagService {
       return;
     }
 
-    final host = _config.apiHost.endsWith('/')
-        ? _config.apiHost
-        : '${_config.apiHost}/';
+    final host =
+        _config.apiHost.endsWith('/') ? _config.apiHost : '${_config.apiHost}/';
     final initFuture = GBSDKBuilderApp(
       apiKey: _config.clientKey,
       hostURL: host,

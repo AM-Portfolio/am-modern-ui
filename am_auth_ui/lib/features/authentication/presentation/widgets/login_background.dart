@@ -113,15 +113,15 @@ class LoginBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Stack(
-    children: [
-      // Background
-      CustomPaint(
-        painter: LoginBackgroundPainter(),
-        size: Size.infinite,
-        child: Container(),
-      ),
-      // Content
-      child,
-    ],
-  );
+        children: [
+          // Background
+          CustomPaint(
+            painter: LoginBackgroundPainter(),
+            size: Size.infinite,
+            child: Container(),
+          ),
+          // Content
+          child,
+        ],
+      );
 }

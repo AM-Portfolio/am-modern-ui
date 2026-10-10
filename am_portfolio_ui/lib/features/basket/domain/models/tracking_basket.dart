@@ -38,10 +38,12 @@ class TrackingBasket {
     final current = (json['totalValue'] as num?)?.toDouble();
     final pnlFromApi = (json['totalPnL'] as num?)?.toDouble();
     final pnlPctFromApi = (json['pnlPercent'] as num?)?.toDouble();
-    final derivedPnl = (pnlFromApi == null && invested != null && current != null)
+    final derivedPnl =
+        (pnlFromApi == null && invested != null && current != null)
         ? current - invested
         : pnlFromApi;
-    final derivedPnlPct = (pnlPctFromApi == null &&
+    final derivedPnlPct =
+        (pnlPctFromApi == null &&
             invested != null &&
             invested > 0 &&
             derivedPnl != null)
@@ -54,7 +56,8 @@ class TrackingBasket {
       etfName: json['etfName']?.toString() ?? json['name']?.toString(),
       status: BasketStatus.fromString(json['status']?.toString()),
       totalLines: (json['assetCount'] as num?)?.toInt() ?? 0,
-      activeLines: ((json['assetCount'] as num?)?.toInt() ?? 0) -
+      activeLines:
+          ((json['assetCount'] as num?)?.toInt() ?? 0) -
           ((json['gapMissingCount'] as num?)?.toInt() ?? 0),
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'].toString())
@@ -71,7 +74,8 @@ class TrackingBasket {
   /// Prefer replica / coverage from API; fall back to line fill ratio.
   double get displayCoveragePercent {
     if (replicaScore != null && replicaScore! > 0) return replicaScore!;
-    if (coveragePercent != null && coveragePercent! > 0) return coveragePercent!;
+    if (coveragePercent != null && coveragePercent! > 0)
+      return coveragePercent!;
     return fillPercent;
   }
 

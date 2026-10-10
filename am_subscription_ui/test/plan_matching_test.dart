@@ -94,16 +94,24 @@ void main() {
       expect(sub.effectivePeriodEnd, sub.referralProExpiresAt);
 
       final now = DateTime.utc(2026, 10, 8, 12);
-      final rem = remainingSubscriptionDuration(sub.effectivePeriodEnd, now: now);
+      final rem = remainingSubscriptionDuration(
+        sub.effectivePeriodEnd,
+        now: now,
+      );
       expect(rem, isNotNull);
-      expect(formatSubscriptionCountdown(rem), isNot(equals('End date unavailable')));
+      expect(
+        formatSubscriptionCountdown(rem),
+        isNot(equals('End date unavailable')),
+      );
     });
   });
 
   group('subscription countdown', () {
     test('formats remaining duration', () {
       expect(
-        formatSubscriptionCountdown(const Duration(days: 12, hours: 4, minutes: 22)),
+        formatSubscriptionCountdown(
+          const Duration(days: 12, hours: 4, minutes: 22),
+        ),
         '12d 04h 22m',
       );
       expect(formatSubscriptionCountdown(Duration.zero), 'Expired');

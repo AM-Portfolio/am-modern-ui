@@ -30,8 +30,10 @@ class TradeHoldingsAdvancedTemplate extends StatefulWidget {
   final VoidCallback? onRefresh;
   final int itemsPerPage;
   final Color? accentColor;
+
   /// Collection-level Live / As-of label from portfolio holdings (Phase F).
   final String? priceFreshnessLabel;
+
   /// Portfolio Holdings embed: view-only (no expand / edit).
   final bool embedded;
 
@@ -65,7 +67,8 @@ class _TradeHoldingsAdvancedTemplateState
   void initState() {
     super.initState();
     _sortedHoldings = List.from(widget.holdings);
-    _refreshController = AnimationController(duration: const Duration(milliseconds: 1500), vsync: this);
+    _refreshController = AnimationController(
+        duration: const Duration(milliseconds: 1500), vsync: this);
     _hScroll = ScrollController();
   }
 
@@ -101,25 +104,28 @@ class _TradeHoldingsAdvancedTemplateState
   bool _isExpanded(String tradeId) =>
       !widget.embedded && _expandedItems.contains(tradeId);
 
-  int get _totalPages => (_filteredHoldings.length / widget.itemsPerPage).ceil();
+  int get _totalPages =>
+      (_filteredHoldings.length / widget.itemsPerPage).ceil();
 
-  List<TradeHoldingViewModel> get _filteredHoldings => _sortedHoldings.where((holding) {
-    if (_filterStatus == 'profit' && !holding.isProfit) return false;
-    if (_filterStatus == 'loss' && holding.isProfit) return false;
-    
-    if (_searchQuery.isNotEmpty) {
-      final query = _searchQuery.toLowerCase();
-      if (!holding.displaySymbol.toLowerCase().contains(query) &&
-          !holding.displayCompanyName.toLowerCase().contains(query)) {
-        return false;
-      }
-    }
-    return true;
-  }).toList();
+  List<TradeHoldingViewModel> get _filteredHoldings =>
+      _sortedHoldings.where((holding) {
+        if (_filterStatus == 'profit' && !holding.isProfit) return false;
+        if (_filterStatus == 'loss' && holding.isProfit) return false;
+
+        if (_searchQuery.isNotEmpty) {
+          final query = _searchQuery.toLowerCase();
+          if (!holding.displaySymbol.toLowerCase().contains(query) &&
+              !holding.displayCompanyName.toLowerCase().contains(query)) {
+            return false;
+          }
+        }
+        return true;
+      }).toList();
 
   List<TradeHoldingViewModel> get _paginatedHoldings {
     final startIndex = _currentPage * widget.itemsPerPage;
-    final endIndex = (startIndex + widget.itemsPerPage).clamp(0, _filteredHoldings.length);
+    final endIndex =
+        (startIndex + widget.itemsPerPage).clamp(0, _filteredHoldings.length);
     return _filteredHoldings.sublist(startIndex, endIndex);
   }
 
@@ -156,7 +162,8 @@ class _TradeHoldingsAdvancedTemplateState
             result = (a.profitLoss ?? 0).compareTo(b.profitLoss ?? 0);
             break;
           case 8: // P&L %
-            result = (a.profitLossPercentage ?? 0).compareTo(b.profitLossPercentage ?? 0);
+            result = (a.profitLossPercentage ?? 0)
+                .compareTo(b.profitLossPercentage ?? 0);
             break;
           case 9: // R:R Ratio
             result = (a.riskRewardRatio ?? 0).compareTo(b.riskRewardRatio ?? 0);
@@ -195,151 +202,174 @@ class _TradeHoldingsAdvancedTemplateState
         _buildControlsHeader(),
         const SizedBox(height: 8),
         // Main content (rows + pagination + optional footer scroll together)
-        Expanded(child: _viewMode == 'table' ? _buildAdvancedTableView() : _buildAdvancedCardView()),
+        Expanded(
+            child: _viewMode == 'table'
+                ? _buildAdvancedTableView()
+                : _buildAdvancedCardView()),
       ],
     );
   }
 
   Widget _buildErrorState() => Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          Icons.error_outline,
-          size: 48,
-          color: context.statusError,
-        ).animate().shake(hz: 2, offset: const Offset(4, 0)).fadeIn(duration: 300.ms),
-        const SizedBox(height: 16),
-        Text(
-          widget.errorMessage!,
-          style: TextStyle(color: context.statusError, fontSize: 14),
-          textAlign: TextAlign.center,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 48,
+              color: context.statusError,
+            )
+                .animate()
+                .shake(hz: 2, offset: const Offset(4, 0))
+                .fadeIn(duration: 300.ms),
+            const SizedBox(height: 16),
+            Text(
+              widget.errorMessage!,
+              style: TextStyle(color: context.statusError, fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+            if (widget.onRefresh != null) ...[
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () {
+                  _refreshController.forward(from: 0);
+                  widget.onRefresh?.call();
+                },
+                icon: RotationTransition(
+                    turns: _refreshController,
+                    child: const Icon(Icons.refresh)),
+                label: const Text('Retry'),
+              ),
+            ],
+          ],
         ),
-        if (widget.onRefresh != null) ...[
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: () {
-              _refreshController.forward(from: 0);
-              widget.onRefresh?.call();
-            },
-            icon: RotationTransition(turns: _refreshController, child: const Icon(Icons.refresh)),
-            label: const Text('Retry'),
-          ),
-        ],
-      ],
-    ),
-  );
+      );
 
   Widget _buildEmptyState() => Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          Icons.inbox_outlined,
-          size: 64,
-          color: Colors.grey.shade300,
-        ).animate().fadeIn(duration: 600.ms).scale(begin: const Offset(0.8, 0.8)),
-        const SizedBox(height: 16),
-        Text(
-          'No holdings found',
-          style: TextStyle(color: Colors.grey.shade500, fontSize: 16, fontWeight: FontWeight.w500),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.inbox_outlined,
+              size: 64,
+              color: Colors.grey.shade300,
+            )
+                .animate()
+                .fadeIn(duration: 600.ms)
+                .scale(begin: const Offset(0.8, 0.8)),
+            const SizedBox(height: 16),
+            Text(
+              'No holdings found',
+              style: TextStyle(
+                  color: Colors.grey.shade500,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 8),
+            Text('Your holdings will appear here',
+                style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
+          ],
         ),
-        const SizedBox(height: 8),
-        Text('Your holdings will appear here', style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
-      ],
-    ),
-  );
+      );
 
   Widget _buildControlsHeader() => Container(
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surface,
-      border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-    ),
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-    child: Row(
-      children: [
-        // Filter Pills with View Mode Toggle integrated
-        Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Wrap(
-              spacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                _buildFilterPill('all', 'All', _accent),
-                _buildFilterPill('profit', 'Profit', context.marketPositive),
-                _buildFilterPill('loss', 'Loss', context.marketNegative),
-                const SizedBox(width: 4),
-                Container(
-                  decoration: BoxDecoration(
-                    color: _isDarkChrome
-                        ? Colors.white.withValues(alpha: 0.06)
-                        : _accent.withValues(alpha: 0.06),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: _accent.withValues(alpha: 0.2),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            // Filter Pills with View Mode Toggle integrated
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Wrap(
+                  spacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    _buildFilterPill('all', 'All', _accent),
+                    _buildFilterPill(
+                        'profit', 'Profit', context.marketPositive),
+                    _buildFilterPill('loss', 'Loss', context.marketNegative),
+                    const SizedBox(width: 4),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: _isDarkChrome
+                            ? Colors.white.withValues(alpha: 0.06)
+                            : _accent.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: _accent.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildViewModeButton(
+                              'table', Icons.table_chart, 'Table'),
+                          _buildViewModeButton('card', Icons.dashboard, 'Card'),
+                        ],
+                      ),
                     ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildViewModeButton('table', Icons.table_chart, 'Table'),
-                      _buildViewModeButton('card', Icons.dashboard, 'Card'),
-                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Flexible(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 240, minWidth: 96),
+                child: SizedBox(
+                  height: 36,
+                  child: TextField(
+                    onChanged: (value) => setState(() {
+                      _searchQuery = value;
+                      _currentPage = 0; // Reset pagination on search
+                    }),
+                    decoration: InputDecoration(
+                      hintText: 'Search symbol or company...',
+                      hintStyle: TextStyle(
+                          fontSize: 13, color: Colors.grey.withOpacity(0.6)),
+                      prefixIcon: Icon(Icons.search,
+                          size: 16, color: Colors.grey.withOpacity(0.6)),
+                      contentPadding: const EdgeInsets.symmetric(
+                          vertical: 0, horizontal: 16),
+                      filled: true,
+                      fillColor: Colors.grey.withOpacity(0.08),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                            color: Colors.grey.withOpacity(0.2), width: 1),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                            color: Colors.grey.withOpacity(0.2), width: 1),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: _accent, width: 1.5),
+                      ),
+                    ),
+                    style: const TextStyle(fontSize: 13),
                   ),
                 ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Flexible(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 240, minWidth: 96),
-            child: SizedBox(
-              height: 36,
-              child: TextField(
-            onChanged: (value) => setState(() {
-              _searchQuery = value;
-              _currentPage = 0; // Reset pagination on search
-            }),
-            decoration: InputDecoration(
-              hintText: 'Search symbol or company...',
-              hintStyle: TextStyle(fontSize: 13, color: Colors.grey.withOpacity(0.6)),
-              prefixIcon: Icon(Icons.search, size: 16, color: Colors.grey.withOpacity(0.6)),
-              contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-              filled: true,
-              fillColor: Colors.grey.withOpacity(0.08),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey.withOpacity(0.2), width: 1),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey.withOpacity(0.2), width: 1),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: _accent, width: 1.5),
               ),
             ),
-            style: const TextStyle(fontSize: 13),
-          ),
+            const SizedBox(width: 8),
+            IconButton(
+              onPressed: () {
+                _refreshController.forward(from: 0);
+                widget.onRefresh?.call();
+              },
+              icon: RotationTransition(
+                  turns: _refreshController, child: const Icon(Icons.refresh)),
+              tooltip: 'Refresh',
             ),
-          ),
+          ],
         ),
-        const SizedBox(width: 8),
-        IconButton(
-          onPressed: () {
-            _refreshController.forward(from: 0);
-            widget.onRefresh?.call();
-          },
-          icon: RotationTransition(turns: _refreshController, child: const Icon(Icons.refresh)),
-          tooltip: 'Refresh',
-        ),
-      ],
-    ),
-  );
+      );
 
   /// Prefer surface luminance — trade chrome can look dark while ThemeData
   /// brightness is still light, which previously painted white filter chips.
@@ -504,27 +534,28 @@ class _TradeHoldingsAdvancedTemplateState
   }
 
   Widget _buildCustomTableHeader() => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-    child: Row(
-      children: [
-        _buildHeaderCell('Symbol', 2, 0),
-        _buildHeaderCell('Company', 2, 1),
-        _buildHeaderCell('Status', 1, 2),
-        _buildHeaderCell('Quantity', 1, 3, isNumeric: true),
-        _buildHeaderCell('Entry Price', 2, 4, isNumeric: true),
-        _buildHeaderCell('Current Price', 2, 5, isNumeric: true),
-        _buildHeaderCell('Current Value', 2, 6, isNumeric: true),
-        _buildHeaderCell('P&L', 2, 7, isNumeric: true),
-        _buildHeaderCell('P&L %', 1, 8, isNumeric: true),
-        _buildHeaderCell('R:R Ratio', 1, 9, isNumeric: true),
-      ],
-    ),
-  );
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            _buildHeaderCell('Symbol', 2, 0),
+            _buildHeaderCell('Company', 2, 1),
+            _buildHeaderCell('Status', 1, 2),
+            _buildHeaderCell('Quantity', 1, 3, isNumeric: true),
+            _buildHeaderCell('Entry Price', 2, 4, isNumeric: true),
+            _buildHeaderCell('Current Price', 2, 5, isNumeric: true),
+            _buildHeaderCell('Current Value', 2, 6, isNumeric: true),
+            _buildHeaderCell('P&L', 2, 7, isNumeric: true),
+            _buildHeaderCell('P&L %', 1, 8, isNumeric: true),
+            _buildHeaderCell('R:R Ratio', 1, 9, isNumeric: true),
+          ],
+        ),
+      );
 
-  Widget _buildHeaderCell(String label, int flex, int columnIndex, {bool isNumeric = false}) {
+  Widget _buildHeaderCell(String label, int flex, int columnIndex,
+      {bool isNumeric = false}) {
     final isSorted = _sortColumnIndex == columnIndex;
     final theme = Theme.of(context);
-    
+
     return Expanded(
       flex: flex,
       child: Padding(
@@ -532,7 +563,8 @@ class _TradeHoldingsAdvancedTemplateState
         child: InkWell(
           onTap: () => _sort(columnIndex, isSorted ? !_sortAscending : true),
           child: Row(
-            mainAxisAlignment: isNumeric ? MainAxisAlignment.end : MainAxisAlignment.start,
+            mainAxisAlignment:
+                isNumeric ? MainAxisAlignment.end : MainAxisAlignment.start,
             children: [
               Flexible(
                 child: Text(
@@ -540,7 +572,10 @@ class _TradeHoldingsAdvancedTemplateState
                   maxLines: 2,
                   softWrap: true,
                   textAlign: isNumeric ? TextAlign.right : TextAlign.left,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.colorScheme.onSurface.withOpacity(0.8)),
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                      color: theme.colorScheme.onSurface.withOpacity(0.8)),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -558,29 +593,40 @@ class _TradeHoldingsAdvancedTemplateState
 
   Widget _buildCustomTableRow(TradeHoldingViewModel holding, int index) {
     final isPositive = holding.isProfit;
-    final pnlColor = isPositive ? context.marketPositive : context.marketNegative;
+    final pnlColor =
+        isPositive ? context.marketPositive : context.marketNegative;
     final isExpanded = _isExpanded(holding.tradeId);
     final theme = Theme.of(context);
 
     return Column(
       children: [
         InkWell(
-          onTap: widget.embedded ? null : () => _toggleExpanded(holding.tradeId),
+          onTap: widget.embedded
+              ? (widget.onSymbolTap != null
+                  ? () => widget.onSymbolTap!(holding.displaySymbol)
+                  : null)
+              : () => _toggleExpanded(holding.tradeId),
           onLongPress: widget.embedded || widget.onHoldingSelected == null
               ? null
               : () => widget.onHoldingSelected!(holding),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: index.isEven ? theme.colorScheme.surface : theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-              border: Border(bottom: BorderSide(color: theme.dividerColor.withOpacity(0.5))),
+              color: index.isEven
+                  ? theme.colorScheme.surface
+                  : theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+              border: Border(
+                  bottom:
+                      BorderSide(color: theme.dividerColor.withOpacity(0.5))),
             ),
             child: Row(
               children: [
                 _tableCell(
                   flex: 2,
                   child: InkWell(
-                    onTap: widget.onSymbolTap != null ? () => widget.onSymbolTap!(holding.displaySymbol) : null,
+                    onTap: widget.onSymbolTap != null
+                        ? () => widget.onSymbolTap!(holding.displaySymbol)
+                        : null,
                     child: _buildSymbolCell(holding),
                   ),
                 ),
@@ -679,7 +725,9 @@ class _TradeHoldingsAdvancedTemplateState
               color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
               child: _buildExpandedDetails(holding, pnlColor),
             ),
-            crossFadeState: isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            crossFadeState: isExpanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
             duration: const Duration(milliseconds: 300),
           ),
       ],
@@ -687,134 +735,153 @@ class _TradeHoldingsAdvancedTemplateState
   }
 
   Widget _buildSymbolCell(TradeHoldingViewModel holding) => Row(
-    children: [
-      Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Theme.of(context).primaryColor.withOpacity(0.8), Theme.of(context).primaryColor.withOpacity(0.4)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Center(
-          child: Text(
-            holding.displaySymbol.length >= 2 ? holding.displaySymbol.substring(0, 2).toUpperCase() : '•',
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
-          ),
-        ),
-      ),
-      const SizedBox(width: 8),
-      Flexible(
-        child: Text(
-          holding.displaySymbol,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-      ),
-    ],
-  );
-
-  Widget _buildStatusBadge(String status) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-    decoration: BoxDecoration(
-      color: _getStatusColor(status).withOpacity(0.1),
-      borderRadius: BorderRadius.circular(4),
-      border: Border.all(color: _getStatusColor(status).withOpacity(0.3)),
-    ),
-    child: Text(
-      status,
-      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _getStatusColor(status)),
-    ),
-  );
-
-  Widget _buildPnLCell(String value, bool isPositive) => Row(
-    mainAxisAlignment: MainAxisAlignment.end,
-    children: [
-      Icon(
-        isPositive ? Icons.trending_up : Icons.trending_down,
-        size: 14,
-        color: isPositive ? context.marketPositive : context.marketNegative,
-      ),
-      const SizedBox(width: 6),
-      Flexible(
-        child: Text(
-          value,
-          textAlign: TextAlign.right,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 13,
-            color: isPositive ? context.marketPositive : context.marketNegative,
-          ),
-          overflow: TextOverflow.ellipsis,
-          maxLines: 1,
-        ),
-      ),
-    ],
-  );
-
-  Widget _buildPnLPercentageCell(String value, bool isPositive) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-    decoration: BoxDecoration(
-      color: (isPositive ? context.marketPositive : context.marketNegative).withOpacity(0.1),
-      borderRadius: BorderRadius.circular(3),
-    ),
-    child: Text(
-      value,
-      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: isPositive ? context.marketPositive : context.marketNegative),
-    ),
-  );
-
-  Widget _buildAdvancedCardView() => LayoutBuilder(
-    builder: (context, constraints) {
-      const spacing = 16.0;
-      const maxCardWidth = 360.0;
-      final usable = constraints.maxWidth - 24;
-      var crossAxisCount = (usable / (maxCardWidth + spacing)).floor();
-      if (crossAxisCount < 1) crossAxisCount = 1;
-      final cardWidth =
-          (usable - spacing * (crossAxisCount - 1)) / crossAxisCount;
-
-      return ListView(
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
         children: [
-          Wrap(
-            spacing: spacing,
-            runSpacing: spacing,
-            children: [
-              for (var i = 0; i < _paginatedHoldings.length; i++)
-                SizedBox(
-                  width: cardWidth,
-                  child: _buildAdvancedHoldingCard(_paginatedHoldings[i], i),
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          _buildFooter(),
-          if (widget.listFooter != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: widget.listFooter!,
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Theme.of(context).primaryColor.withOpacity(0.8),
+                  Theme.of(context).primaryColor.withOpacity(0.4)
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(6),
             ),
+            child: Center(
+              child: Text(
+                holding.displaySymbol.length >= 2
+                    ? holding.displaySymbol.substring(0, 2).toUpperCase()
+                    : '•',
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              holding.displaySymbol,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
         ],
       );
-    },
-  ).animate().fadeIn(duration: 300.ms);
+
+  Widget _buildStatusBadge(String status) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: _getStatusColor(status).withOpacity(0.1),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: _getStatusColor(status).withOpacity(0.3)),
+        ),
+        child: Text(
+          status,
+          style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: _getStatusColor(status)),
+        ),
+      );
+
+  Widget _buildPnLCell(String value, bool isPositive) => Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Icon(
+            isPositive ? Icons.trending_up : Icons.trending_down,
+            size: 14,
+            color: isPositive ? context.marketPositive : context.marketNegative,
+          ),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: isPositive
+                    ? context.marketPositive
+                    : context.marketNegative,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+        ],
+      );
+
+  Widget _buildPnLPercentageCell(String value, bool isPositive) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: (isPositive ? context.marketPositive : context.marketNegative)
+              .withOpacity(0.1),
+          borderRadius: BorderRadius.circular(3),
+        ),
+        child: Text(
+          value,
+          style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 11,
+              color:
+                  isPositive ? context.marketPositive : context.marketNegative),
+        ),
+      );
+
+  Widget _buildAdvancedCardView() => LayoutBuilder(
+        builder: (context, constraints) {
+          const spacing = 16.0;
+          const maxCardWidth = 360.0;
+          final usable = constraints.maxWidth - 24;
+          var crossAxisCount = (usable / (maxCardWidth + spacing)).floor();
+          if (crossAxisCount < 1) crossAxisCount = 1;
+          final cardWidth =
+              (usable - spacing * (crossAxisCount - 1)) / crossAxisCount;
+
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
+            children: [
+              Wrap(
+                spacing: spacing,
+                runSpacing: spacing,
+                children: [
+                  for (var i = 0; i < _paginatedHoldings.length; i++)
+                    SizedBox(
+                      width: cardWidth,
+                      child:
+                          _buildAdvancedHoldingCard(_paginatedHoldings[i], i),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              _buildFooter(),
+              if (widget.listFooter != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: widget.listFooter!,
+                ),
+            ],
+          );
+        },
+      ).animate().fadeIn(duration: 300.ms);
 
   Widget _buildAdvancedHoldingCard(TradeHoldingViewModel holding, int index) {
     final isPositive = holding.isProfit;
-    final pnlColor = isPositive ? context.marketPositive : context.marketNegative;
+    final pnlColor =
+        isPositive ? context.marketPositive : context.marketNegative;
     final isExpanded = _isExpanded(holding.tradeId);
     final theme = context.colors;
     final titleColor = context.textPrimary;
     final muted = context.textSecondary;
     final cardSurface = theme.cardSurface;
-    final cardBorder = isExpanded
-        ? pnlColor.withValues(alpha: 0.45)
-        : theme.border;
+    final cardBorder =
+        isExpanded ? pnlColor.withValues(alpha: 0.45) : theme.border;
     final avatarLetter = holding.displaySymbol.isNotEmpty
         ? holding.displaySymbol.substring(0, 1).toUpperCase()
         : '?';
@@ -823,7 +890,11 @@ class _TradeHoldingsAdvancedTemplateState
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: widget.embedded ? null : () => _toggleExpanded(holding.tradeId),
+        onTap: widget.embedded
+            ? (widget.onSymbolTap != null
+                ? () => widget.onSymbolTap!(holding.displaySymbol)
+                : null)
+            : () => _toggleExpanded(holding.tradeId),
         borderRadius: AppRadii.card,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 220),
@@ -1155,7 +1226,9 @@ class _TradeHoldingsAdvancedTemplateState
                 _buildDetailChip(
                   holding.displayStatus,
                   Icons.flag,
-                  holding.displayStatus == 'ACTIVE' ? context.marketPositive : context.statusNeutral,
+                  holding.displayStatus == 'ACTIVE'
+                      ? context.marketPositive
+                      : context.statusNeutral,
                 ),
               ],
             ),
@@ -1246,25 +1319,27 @@ class _TradeHoldingsAdvancedTemplateState
     );
   }
 
-  Widget _buildDetailChip(String label, IconData icon, Color color) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-    decoration: BoxDecoration(
-      color: color.withOpacity(0.1),
-      borderRadius: BorderRadius.circular(6),
-      border: Border.all(color: color.withOpacity(0.3)),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 11, color: color),
-        const SizedBox(width: 3),
-        Text(
-          label,
-          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color),
+  Widget _buildDetailChip(String label, IconData icon, Color color) =>
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: color.withOpacity(0.3)),
         ),
-      ],
-    ),
-  );
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 11, color: color),
+            const SizedBox(width: 3),
+            Text(
+              label,
+              style: TextStyle(
+                  fontSize: 10, fontWeight: FontWeight.w600, color: color),
+            ),
+          ],
+        ),
+      );
 
   Widget _buildFooter() {
     final isDark = _isDarkChrome;
@@ -1297,66 +1372,74 @@ class _TradeHoldingsAdvancedTemplateState
   }
 
   Widget _buildAdvancedPaginationControls() => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      IconButton(
-        icon: const Icon(Icons.chevron_left),
-        onPressed: _currentPage > 0 ? () => _goToPage(_currentPage - 1) : null,
-        tooltip: 'Previous page',
-        splashRadius: 20,
-      ),
-      const SizedBox(width: 4),
-      ...List.generate(_totalPages.clamp(0, 5), (index) {
-        int pageNumber;
-        if (_totalPages <= 5) {
-          pageNumber = index;
-        } else if (_currentPage < 3) {
-          pageNumber = index;
-        } else if (_currentPage > _totalPages - 4) {
-          pageNumber = _totalPages - 5 + index;
-        } else {
-          pageNumber = _currentPage - 2 + index;
-        }
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_left),
+            onPressed:
+                _currentPage > 0 ? () => _goToPage(_currentPage - 1) : null,
+            tooltip: 'Previous page',
+            splashRadius: 20,
+          ),
+          const SizedBox(width: 4),
+          ...List.generate(_totalPages.clamp(0, 5), (index) {
+            int pageNumber;
+            if (_totalPages <= 5) {
+              pageNumber = index;
+            } else if (_currentPage < 3) {
+              pageNumber = index;
+            } else if (_currentPage > _totalPages - 4) {
+              pageNumber = _totalPages - 5 + index;
+            } else {
+              pageNumber = _currentPage - 2 + index;
+            }
 
-        if (pageNumber < 0 || pageNumber >= _totalPages) return const SizedBox.shrink();
+            if (pageNumber < 0 || pageNumber >= _totalPages)
+              return const SizedBox.shrink();
 
-        final isCurrentPage = pageNumber == _currentPage;
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 3.0),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            decoration: BoxDecoration(
-              color: isCurrentPage ? _accent : Colors.transparent,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: isCurrentPage ? _accent : Colors.grey.shade300),
-            ),
-            child: InkWell(
-              onTap: () => _goToPage(pageNumber),
-              borderRadius: BorderRadius.circular(6),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                child: Text(
-                  '${pageNumber + 1}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isCurrentPage ? Colors.white : Colors.grey.shade700,
-                    fontWeight: isCurrentPage ? FontWeight.bold : FontWeight.normal,
+            final isCurrentPage = pageNumber == _currentPage;
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 3.0),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                decoration: BoxDecoration(
+                  color: isCurrentPage ? _accent : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                      color: isCurrentPage ? _accent : Colors.grey.shade300),
+                ),
+                child: InkWell(
+                  onTap: () => _goToPage(pageNumber),
+                  borderRadius: BorderRadius.circular(6),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    child: Text(
+                      '${pageNumber + 1}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color:
+                            isCurrentPage ? Colors.white : Colors.grey.shade700,
+                        fontWeight:
+                            isCurrentPage ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
+            );
+          }),
+          const SizedBox(width: 4),
+          IconButton(
+            icon: const Icon(Icons.chevron_right),
+            onPressed: _currentPage < _totalPages - 1
+                ? () => _goToPage(_currentPage + 1)
+                : null,
+            tooltip: 'Next page',
+            splashRadius: 20,
           ),
-        );
-      }),
-      const SizedBox(width: 4),
-      IconButton(
-        icon: const Icon(Icons.chevron_right),
-        onPressed: _currentPage < _totalPages - 1 ? () => _goToPage(_currentPage + 1) : null,
-        tooltip: 'Next page',
-        splashRadius: 20,
-      ),
-    ],
-  );
+        ],
+      );
 
   Color _getStatusColor(String status) {
     switch (status.toUpperCase()) {

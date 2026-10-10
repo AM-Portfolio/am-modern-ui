@@ -20,5 +20,5 @@ class UserCurrencyNotifier extends Notifier<CurrencyConfig> {
 
 final userCurrencyProvider =
     NotifierProvider<UserCurrencyNotifier, CurrencyConfig>(
-      UserCurrencyNotifier.new,
-    );
+  UserCurrencyNotifier.new,
+);

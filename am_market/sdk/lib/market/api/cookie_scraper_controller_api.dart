@@ -6,9 +6,9 @@
 
 part of openapi.api;
 
-
 class CookieScraperControllerApi {
-  CookieScraperControllerApi([ApiClient? apiClient]) : apiClient = apiClient ?? defaultApiClient;
+  CookieScraperControllerApi([ApiClient? apiClient])
+      : apiClient = apiClient ?? defaultApiClient;
 
   final ApiClient apiClient;
 
@@ -22,7 +22,6 @@ class CookieScraperControllerApi {
     final formParams = <String, String>{};
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -43,12 +42,13 @@ class CookieScraperControllerApi {
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
       final responseBody = await _decodeBodyBytes(response);
-      return (await apiClient.deserializeAsync(responseBody, 'List<WebsiteCookies>') as List)
-        .cast<WebsiteCookies>()
-        .toList(growable: false);
-
+      return (await apiClient.deserializeAsync(
+              responseBody, 'List<WebsiteCookies>') as List)
+          .cast<WebsiteCookies>()
+          .toList(growable: false);
     }
     return null;
   }

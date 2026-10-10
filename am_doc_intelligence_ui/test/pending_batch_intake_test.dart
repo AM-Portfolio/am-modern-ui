@@ -104,8 +104,10 @@ void main() {
     final result = IntakeResult(
       addedCount: 2,
       rejected: const [
-        IntakeReject(filename: 'x.txt', reason: IntakeRejectReason.unsupportedType),
-        IntakeReject(filename: 'y.txt', reason: IntakeRejectReason.unsupportedType),
+        IntakeReject(
+            filename: 'x.txt', reason: IntakeRejectReason.unsupportedType),
+        IntakeReject(
+            filename: 'y.txt', reason: IntakeRejectReason.unsupportedType),
       ],
       replacedFilenames: const ['old.xlsx'],
     );

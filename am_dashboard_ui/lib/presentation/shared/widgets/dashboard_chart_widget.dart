@@ -16,6 +16,7 @@ class DashboardChartWidget extends ConsumerWidget {
   });
 
   final String userId;
+
   /// Module brand for primary series (e.g. [ModuleColors.portfolio] on overview).
   final Color? accentColor;
 
@@ -27,7 +28,8 @@ class DashboardChartWidget extends ConsumerWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final height = constraints.maxHeight.isFinite && constraints.maxHeight > 0
+        final height =
+            constraints.maxHeight.isFinite && constraints.maxHeight > 0
             ? constraints.maxHeight
             : 420.0;
         return SizedBox(
@@ -66,7 +68,8 @@ class _AddSeriesButton extends StatelessWidget {
     final remainingIndices = OverlayChartIds.addableIndices
         .where((id) => !selected.contains(id))
         .toList();
-    final canAdd = !state.atCap &&
+    final canAdd =
+        !state.atCap &&
         (remainingOverall ||
             remainingPortfolios.isNotEmpty ||
             remainingIndices.isNotEmpty);
@@ -90,12 +93,7 @@ class _AddSeriesButton extends StatelessWidget {
           items.add(const PopupMenuDivider());
         }
         for (final id in remainingIndices) {
-          items.add(
-            PopupMenuItem(
-              value: id,
-              child: Text(id),
-            ),
-          );
+          items.add(PopupMenuItem(value: id, child: Text(id)));
         }
         return items;
       },
@@ -109,9 +107,7 @@ class _AddSeriesButton extends StatelessWidget {
           ),
         ),
         backgroundColor: colors.cardSurface.withValues(alpha: 0.55),
-        side: BorderSide(
-          color: ModuleColors.dashboard.withValues(alpha: 0.35),
-        ),
+        side: BorderSide(color: ModuleColors.dashboard.withValues(alpha: 0.35)),
       ),
     );
   }
@@ -136,7 +132,9 @@ class _ChartBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
     if (state.isBootstrapping) {
-      return _ChartBootstrapSkeleton(accent: accentColor ?? ModuleColors.dashboard);
+      return _ChartBootstrapSkeleton(
+        accent: accentColor ?? ModuleColors.dashboard,
+      );
     }
 
     final selectedLabels = overlaySelectedLabels(state);
@@ -160,7 +158,9 @@ class _ChartBody extends ConsumerWidget {
         embedMode: true,
         timeFrameCode: tfCode,
         showEndValuePills: false,
-        showExpandButton: false,
+        showExpandButton: true,
+        expandedChartPath:
+            '/app/chart/workspace?symbol=${Uri.encodeComponent('NIFTY 50')}&tf=${Uri.encodeComponent(tfCode)}',
         preNormalizedPercent: true,
         accentColor: accentColor,
         legendTrailing: legendTrailing,
@@ -194,59 +194,59 @@ class _ChartBootstrapSkeleton extends StatelessWidget {
       label: 'Loading chart',
       liveRegion: true,
       child: LayoutBuilder(
-      builder: (context, constraints) {
-        final hasBound =
-            constraints.hasBoundedHeight && constraints.maxHeight.isFinite;
-        final plotH = hasBound
-            ? (constraints.maxHeight - 40).clamp(96.0, 480.0)
-            : 180.0;
+        builder: (context, constraints) {
+          final hasBound =
+              constraints.hasBoundedHeight && constraints.maxHeight.isFinite;
+          final plotH = hasBound
+              ? (constraints.maxHeight - 40).clamp(96.0, 480.0)
+              : 180.0;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 72,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: base,
-                    borderRadius: BorderRadius.circular(6),
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 72,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: base,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  width: 56,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: base,
-                    borderRadius: BorderRadius.circular(6),
+                  const SizedBox(width: 8),
+                  Container(
+                    width: 56,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: base,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
                   ),
-                ),
-                const Spacer(),
-                Container(
-                  width: 120,
-                  height: 22,
-                  decoration: BoxDecoration(
-                    color: base,
-                    borderRadius: BorderRadius.circular(8),
+                  const Spacer(),
+                  Container(
+                    width: 120,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      color: base,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: plotH,
-              width: double.infinity,
-              child: CustomPaint(
-                painter: _SkeletonChartPainter(base: base, line: line),
+                ],
               ),
-            ),
-          ],
-        );
-      },
-    ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: plotH,
+                width: double.infinity,
+                child: CustomPaint(
+                  painter: _SkeletonChartPainter(base: base, line: line),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }

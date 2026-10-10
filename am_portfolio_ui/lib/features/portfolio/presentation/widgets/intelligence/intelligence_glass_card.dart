@@ -26,8 +26,10 @@ class IntelligenceGlassCard extends StatelessWidget {
   final Widget? footer;
   final EdgeInsetsGeometry padding;
   final double? minHeight;
+
   /// Soft floor only — never forces a fixed card height alone.
   final bool scrollable;
+
   /// When true (peer stretch rows), expand to parent height and pin [footer].
   final bool fillHeight;
 
@@ -42,20 +44,16 @@ class IntelligenceGlassCard extends StatelessWidget {
             color: ModuleColors.portfolio.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            icon,
-            color: ModuleColors.portfolio,
-            size: 18,
-          ),
+          child: Icon(icon, color: ModuleColors.portfolio, size: 18),
         ),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
             title,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
           ),
         ),
         ?trailing,
@@ -75,24 +73,20 @@ class IntelligenceGlassCard extends StatelessWidget {
         const SizedBox(height: 12),
         if (fillHeight)
           Expanded(
-            child: scrollable
-                ? SingleChildScrollView(child: child)
-                : bodyChild,
+            child: scrollable ? SingleChildScrollView(child: child) : bodyChild,
           )
         else
           bodyChild,
-        if (footer != null) ...[
-          const SizedBox(height: 8),
-          footer!,
-        ],
+        if (footer != null) ...[const SizedBox(height: 8), footer!],
       ],
     );
 
     // Web: skip BackdropFilter — multiple live blurs tank Overview scroll.
     final surface = Container(
       width: fillHeight ? double.infinity : null,
-      constraints:
-          minHeight != null ? BoxConstraints(minHeight: minHeight!) : null,
+      constraints: minHeight != null
+          ? BoxConstraints(minHeight: minHeight!)
+          : null,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -101,16 +95,18 @@ class IntelligenceGlassCard extends StatelessWidget {
               ? [
                   context.colors.cardSurface.withValues(alpha: 0.95),
                   Color.lerp(
-                        context.colors.cardSurface,
-                        ModuleColors.portfolio,
-                        ModuleColors.isBrandSynced ? 0.12 : 0.04,
-                      )!
-                      .withValues(alpha: 0.85),
+                    context.colors.cardSurface,
+                    ModuleColors.portfolio,
+                    ModuleColors.isBrandSynced ? 0.12 : 0.04,
+                  )!.withValues(alpha: 0.85),
                 ]
               : [
-                  context.colors.cardSurface
-                      .withValues(alpha: kIsWeb ? 0.92 : 0.45),
-                  IntelligenceColors.mist.withValues(alpha: kIsWeb ? 0.85 : 0.25),
+                  context.colors.cardSurface.withValues(
+                    alpha: kIsWeb ? 0.92 : 0.45,
+                  ),
+                  IntelligenceColors.mist.withValues(
+                    alpha: kIsWeb ? 0.85 : 0.25,
+                  ),
                 ],
         ),
         border: Border.all(
@@ -194,10 +190,7 @@ class IntelligenceTextLink extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
         ),
       ),
     );
@@ -215,8 +208,9 @@ InputDecoration intelligenceFieldDecoration(
     // Compact row: avoid floating label (needs ~56px) — use hint instead.
     labelText: compact ? null : label,
     hintText: compact ? (hint ?? label) : hint,
-    floatingLabelBehavior:
-        compact ? FloatingLabelBehavior.never : FloatingLabelBehavior.auto,
+    floatingLabelBehavior: compact
+        ? FloatingLabelBehavior.never
+        : FloatingLabelBehavior.auto,
     isDense: true,
     filled: true,
     fillColor: context.glassOverlay(isDark ? 0.04 : 0.03),
@@ -232,9 +226,7 @@ InputDecoration intelligenceFieldDecoration(
     ),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(compact ? 8 : 10),
-      borderSide: BorderSide(
-        color: context.glassOverlay(isDark ? 0.1 : 0.08),
-      ),
+      borderSide: BorderSide(color: context.glassOverlay(isDark ? 0.1 : 0.08)),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(compact ? 8 : 10),
@@ -255,9 +247,9 @@ class IntelligenceEmptyHint extends StatelessWidget {
       child: Text(
         message,
         textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).hintColor,
-            ),
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(color: Theme.of(context).hintColor),
       ),
     );
   }
@@ -301,8 +293,8 @@ class IntelligenceRetryRow extends StatelessWidget {
         Text(
           message,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.error,
-              ),
+            color: Theme.of(context).colorScheme.error,
+          ),
         ),
         const SizedBox(height: 8),
         IntelligenceTextLink(label: 'Retry →', onPressed: onRetry),
@@ -332,25 +324,25 @@ void showIntelligenceSheet({
       Navigator.of(routeContext).pop();
     }
 
-    final colors = Theme.of(routeContext).extension<AppColorsTheme>() ?? AppColorsTheme.dark;
+    final colors =
+        Theme.of(routeContext).extension<AppColorsTheme>() ??
+        AppColorsTheme.dark;
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark 
+        color: isDark
             ? colors.surface.withValues(alpha: 0.25)
             : colors.surface.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: colors.border.withValues(alpha: 0.4),
-        ),
+        border: Border.all(color: colors.border.withValues(alpha: 0.4)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 30,
             spreadRadius: -5,
             offset: const Offset(0, 10),
-          )
-        ]
+          ),
+        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
@@ -370,7 +362,8 @@ void showIntelligenceSheet({
                         children: [
                           Text(
                             title,
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: colors.textPrimary,
                                 ),
@@ -379,11 +372,11 @@ void showIntelligenceSheet({
                             const SizedBox(height: 6),
                             Text(
                               subtitle,
-                              style:
-                                  Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                        color: colors.textTertiary,
-                                        fontWeight: FontWeight.w500,
-                                      ),
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: colors.textTertiary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                             ),
                           ],
                         ],
@@ -392,7 +385,11 @@ void showIntelligenceSheet({
                     IconButton(
                       tooltip: 'Close',
                       onPressed: close,
-                      icon: Icon(Icons.close_rounded, size: 24, color: colors.textSecondary),
+                      icon: Icon(
+                        Icons.close_rounded,
+                        size: 24,
+                        color: colors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -419,8 +416,13 @@ void showIntelligenceSheet({
                     style: OutlinedButton.styleFrom(
                       foregroundColor: colors.textPrimary,
                       side: BorderSide(color: colors.border),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
                     ),
                     child: const Text('Close'),
                   ),
@@ -465,14 +467,14 @@ void showIntelligenceSheet({
       return SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: 580,
-              maxHeight: maxH,
-            ),
+            constraints: BoxConstraints(maxWidth: 580, maxHeight: maxH),
             child: Material(
               type: MaterialType.transparency,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 24,
+                ),
                 child: chrome(routeContext: routeContext, expandBody: true),
               ),
             ),

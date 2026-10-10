@@ -45,8 +45,9 @@ const _kMaxWarmRetries = 2;
   if (assumed) {
     return (betaLabel: 'β —', estLabel: 'Need ≥20d vs NIFTY');
   }
-  final betaLabel =
-      betaUsed == null ? 'β —' : 'β ${betaUsed.toStringAsFixed(2)}';
+  final betaLabel = betaUsed == null
+      ? 'β —'
+      : 'β ${betaUsed.toStringAsFixed(2)}';
   final estLabel = (historyDays != null && historyDays > 0)
       ? 'Est. · ${historyDays}d'
       : 'Est. · hist';
@@ -74,6 +75,7 @@ class PortfolioStressCard extends ConsumerStatefulWidget {
   final String portfolioId;
   final bool initiallyExpanded;
   final double? minHeight;
+
   /// Peer stretch on Overview bottom band — scroll scenarios, pin custom.
   final bool fillHeight;
 
@@ -97,6 +99,7 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
   bool? _betaAssumed;
   int? _historyDays;
   String? _benchmark;
+
   /// Warm-path retries after intel confidence/history is actually measured.
   int _warmRetries = 0;
   int _loadGeneration = 0;
@@ -145,7 +148,9 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
     super.dispose();
   }
 
-  Future<List<market.SecurityDocument>> _searchStressSectors(String query) async {
+  Future<List<market.SecurityDocument>> _searchStressSectors(
+    String query,
+  ) async {
     final remote = await ref.read(portfolioRemoteDataSourceProvider.future);
     return searchStressSectors(
       remote: remote,
@@ -162,7 +167,8 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
       if (_customFailed) return '$base — failed';
       return base;
     }
-    final shock = row.appliedShockPct ?? double.tryParse(_shockCtrl.text.trim());
+    final shock =
+        row.appliedShockPct ?? double.tryParse(_shockCtrl.text.trim());
     final shockPart = shock == null
         ? null
         : 'shock ${shock >= 0 ? '+' : ''}${shock.toStringAsFixed(shock == shock.roundToDouble() ? 0 : 1)}%';
@@ -206,8 +212,7 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
       _error = null;
     });
     try {
-      final remote =
-          await ref.read(portfolioRemoteDataSourceProvider.future);
+      final remote = await ref.read(portfolioRemoteDataSourceProvider.future);
       final result = await remote.getPortfolioStress(
         widget.portfolioId,
         presets: kStressPresets.keys.toList(),
@@ -215,9 +220,7 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
       if (!mounted || gen != _loadGeneration) return;
       final next = <String, StressScenario>{};
       final failed = <String>{};
-      final byId = {
-        for (final s in result.scenarios) s.id: s,
-      };
+      final byId = {for (final s in result.scenarios) s.id: s};
       for (final key in kStressPresets.keys) {
         final s = byId[key];
         if (s != null) {
@@ -268,7 +271,8 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
     final intel = ref.read(portfolioIntelligenceProvider(widget.portfolioId));
     if (intel.isLoading) return;
     final data = intel.asData?.value;
-    final warm = data != null &&
+    final warm =
+        data != null &&
         (((data.confidence ?? 0) >= 0.9) ||
             (_historyDays != null && _historyDays! >= 20));
     if (!warm) return;
@@ -300,14 +304,10 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
       _customFailed = false;
     });
     try {
-      final remote =
-          await ref.read(portfolioRemoteDataSourceProvider.future);
+      final remote = await ref.read(portfolioRemoteDataSourceProvider.future);
       final result = await remote.getPortfolioStress(
         widget.portfolioId,
-        custom: {
-          'sector': sector,
-          'shockPct': shock,
-        },
+        custom: {'sector': sector, 'shockPct': shock},
       );
       if (!mounted) return;
       setState(() {
@@ -403,16 +403,13 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
             Text(
               _bandLabel()!,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Theme.of(context).hintColor,
-                    fontWeight: FontWeight.w600,
-                  ),
+                color: Theme.of(context).hintColor,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: 6),
           ],
-          if (fill)
-            Expanded(child: scenarios)
-          else
-            scenarios,
+          if (fill) Expanded(child: scenarios) else scenarios,
           if (_error != null) ...[
             const SizedBox(height: 6),
             Text(
@@ -439,8 +436,9 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
   Widget? _headerChips(BuildContext context) {
     if (_betaAssumed == null && _betaUsed == null) return null;
     final assumed = _betaAssumed == true;
-    final intelLoading =
-        ref.watch(portfolioIntelligenceProvider(widget.portfolioId)).isLoading;
+    final intelLoading = ref
+        .watch(portfolioIntelligenceProvider(widget.portfolioId))
+        .isLoading;
     final warming = assumed && intelLoading;
     final chips = stressBetaChipLabels(
       assumed: assumed,
@@ -482,7 +480,9 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
     }
     final b = _betaUsed;
     final days = _historyDays;
-    final daysPart = (days != null && days > 0) ? '$days trading days' : 'available history';
+    final daysPart = (days != null && days > 0)
+        ? '$days trading days'
+        : 'available history';
     final betaStr = b == null ? '—' : b.toStringAsFixed(2);
     return 'β = Cov(r_p, r_m) / Var(r_m) on daily returns\n'
         'This book: β $betaStr vs $bench ($daysPart)\n'
@@ -518,9 +518,9 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
         child: Text(
           label,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: ModuleColors.portfolio,
-              ),
+            fontWeight: FontWeight.w700,
+            color: ModuleColors.portfolio,
+          ),
         ),
       ),
     );
@@ -551,9 +551,9 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Text(
           'No estimates yet',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).hintColor,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: Theme.of(context).hintColor),
         ),
       );
     }
@@ -653,9 +653,9 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
                   label,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
             ],
@@ -666,8 +666,8 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
               Text(
                 'Impact',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Theme.of(context).hintColor,
-                    ),
+                  color: Theme.of(context).hintColor,
+                ),
               ),
               const Spacer(),
               Text(
@@ -688,15 +688,15 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
               Text(
                 'Est. P&L',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Theme.of(context).hintColor,
-                    ),
+                  color: Theme.of(context).hintColor,
+                ),
               ),
               const Spacer(),
               Text(
                 abs == null ? '—' : currency.format(abs),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -705,10 +705,7 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
     );
   }
 
-  Widget _customPanel(
-    BuildContext context, {
-    required bool narrow,
-  }) {
+  Widget _customPanel(BuildContext context, {required bool narrow}) {
     final sectorField = SizedBox(
       height: _kCustomControlHeight,
       child: SmartSearchAnchor(
@@ -781,18 +778,14 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.tune_rounded,
-                size: 14,
-                color: ModuleColors.portfolio,
-              ),
+              Icon(Icons.tune_rounded, size: 14, color: ModuleColors.portfolio),
               const SizedBox(width: 6),
               Text(
                 'Custom scenario',
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: ModuleColors.portfolio,
-                    ),
+                  fontWeight: FontWeight.w700,
+                  color: ModuleColors.portfolio,
+                ),
               ),
             ],
           ),
@@ -826,8 +819,8 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
                 return Text(
                   text,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context).hintColor,
-                      ),
+                    color: Theme.of(context).hintColor,
+                  ),
                 );
               },
             ),
@@ -839,15 +832,18 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
 
   Widget _tableHeader(BuildContext context) {
     final style = Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: Theme.of(context).hintColor,
-          fontWeight: FontWeight.w600,
-        );
+      color: Theme.of(context).hintColor,
+      fontWeight: FontWeight.w600,
+    );
     return Padding(
       padding: const EdgeInsets.only(bottom: 2),
       child: Row(
         children: [
           const SizedBox(width: 32),
-          Expanded(flex: _kScenarioFlex, child: Text('Scenario', style: style)),
+          Expanded(
+            flex: _kScenarioFlex,
+            child: Text('Scenario', style: style),
+          ),
           Expanded(
             flex: _kImpactFlex,
             child: Text('Impact', style: style, textAlign: TextAlign.right),
@@ -892,8 +888,8 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 Expanded(
@@ -918,8 +914,8 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],

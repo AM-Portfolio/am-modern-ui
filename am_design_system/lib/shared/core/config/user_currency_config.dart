@@ -21,6 +21,7 @@ class UserCurrencyNotifier extends Notifier<CurrencyConfig> {
   }
 }
 
-final userCurrencyProvider = NotifierProvider<UserCurrencyNotifier, CurrencyConfig>(() {
+final userCurrencyProvider =
+    NotifierProvider<UserCurrencyNotifier, CurrencyConfig>(() {
   return UserCurrencyNotifier();
 });

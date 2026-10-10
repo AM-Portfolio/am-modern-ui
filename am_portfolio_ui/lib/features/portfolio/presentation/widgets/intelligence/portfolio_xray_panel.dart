@@ -132,6 +132,7 @@ class PortfolioXrayPanel extends ConsumerStatefulWidget {
   final double? minHeight;
   final bool fillHeight;
   final EdgeInsetsGeometry padding;
+
   /// When true (All Portfolios), Class write CTAs are hidden.
   final bool readOnly;
 
@@ -151,6 +152,7 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
   int? _hoveredIndex;
   int? _previousHoveredIndex;
   double _donutSide = 148;
+
   /// Phone only: Chart ↔ List inside the card (web stays side-by-side).
   bool _mobileShowList = false;
   Timer? _hoverCommitTimer;
@@ -230,7 +232,7 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
       3 => xray.assetClassWeights,
       _ => xray.sectorWeights,
     };
-    
+
     // Sector bug guard: filter out 'Unknown' sectors
     if (_tab == 0) {
       raw = raw.where((w) => w.name.toLowerCase() != 'unknown').toList();
@@ -436,8 +438,7 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
   Widget build(BuildContext context) {
     final async = ref.watch(portfolioIntelligenceProvider(widget.portfolioId));
     final wide = MediaQuery.sizeOf(context).width >= 600;
-    final donutCap =
-        widget.fillHeight ? _donutSizeFill : _donutSizePhone;
+    final donutCap = widget.fillHeight ? _donutSizeFill : _donutSizePhone;
 
     List<PortfolioHolding>? holdings = widget.holdingsOverride;
     MarketCapAllocation? mcap;
@@ -471,7 +472,8 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
 
     return async.when(
       loading: () => IntelligenceCardSkeleton(
-        height: widget.minHeight ??
+        height:
+            widget.minHeight ??
             widget.height ??
             (widget.fillHeight ? 320 : 260),
       ),
@@ -483,8 +485,8 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
         padding: widget.padding,
         child: IntelligenceRetryRow(
           message: 'Could not load X-Ray',
-          onRetry: () => ref
-              .invalidate(portfolioIntelligenceProvider(widget.portfolioId)),
+          onRetry: () =>
+              ref.invalidate(portfolioIntelligenceProvider(widget.portfolioId)),
         ),
       ),
       data: (intel) {
@@ -497,11 +499,7 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
         final useFill = widget.fillHeight;
         final sideBySide = wide || useFill;
         final listVisible = sideBySide || _mobileShowList;
-        final tabs = _Tabs(
-          tab: _tab,
-          onTab: _onTab,
-          compact: true,
-        );
+        final tabs = _Tabs(tab: _tab, onTab: _onTab, compact: true);
         final active = _activeIndex(weights);
 
         final body = _XrayBody(
@@ -627,6 +625,7 @@ class _XrayBody extends StatelessWidget {
   final Widget tabs;
   final bool fillHeight;
   final bool sideBySide;
+
   /// When [sideBySide] is false, show list instead of donut.
   final bool mobileShowList;
 
@@ -743,9 +742,7 @@ class _XrayBody extends StatelessWidget {
         final list = fillHeight
             ? ClipRect(child: weightList(paneWidth: paneW))
             : ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: sideBySide ? 220 : 360,
-                ),
+                constraints: BoxConstraints(maxHeight: sideBySide ? 220 : 360),
                 child: ClipRect(child: weightList(paneWidth: paneW)),
               );
         return IntelligenceInsetPanel(child: list);
@@ -755,8 +752,9 @@ class _XrayBody extends StatelessWidget {
     final Widget main;
     if (sideBySide) {
       main = Row(
-        crossAxisAlignment:
-            fillHeight ? CrossAxisAlignment.stretch : CrossAxisAlignment.start,
+        crossAxisAlignment: fillHeight
+            ? CrossAxisAlignment.stretch
+            : CrossAxisAlignment.start,
         children: [
           donut,
           const SizedBox(width: 12),
@@ -771,12 +769,7 @@ class _XrayBody extends StatelessWidget {
       main = fillHeight
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (mobileShowList)
-                  pane
-                else
-                  Expanded(child: pane),
-              ],
+              children: [if (mobileShowList) pane else Expanded(child: pane)],
             )
           : pane;
     }
@@ -785,10 +778,7 @@ class _XrayBody extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: fillHeight ? MainAxisSize.max : MainAxisSize.min,
       children: [
-        if (showTabsInBody) ...[
-          tabs,
-          const SizedBox(height: 10),
-        ],
+        if (showTabsInBody) ...[tabs, const SizedBox(height: 10)],
         if (fillHeight) Expanded(child: main) else main,
       ],
     );
@@ -806,10 +796,10 @@ class _XrayBody extends StatelessWidget {
           Text(
             '${w.weightPct.toStringAsFixed(1)}%',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                  fontSize: 20,
-                ),
+              fontWeight: FontWeight.bold,
+              color: color,
+              fontSize: 20,
+            ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -818,9 +808,9 @@ class _XrayBody extends StatelessWidget {
               maxLines: 1,
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w600),
             ),
           ),
           if (w.valueInr != null)
@@ -833,9 +823,9 @@ class _XrayBody extends StatelessWidget {
               child: Text(
                 formatIntelligenceCompactInr(w.valueInr),
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: color,
-                    ),
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
               ),
             ),
         ],
@@ -848,9 +838,9 @@ class _XrayBody extends StatelessWidget {
         Text(
           'Total Exposure',
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: Theme.of(context).hintColor,
-                fontWeight: FontWeight.w600,
-              ),
+            color: Theme.of(context).hintColor,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         if (totalValue != null && totalValue! > 0)
           Tooltip(
@@ -862,17 +852,17 @@ class _XrayBody extends StatelessWidget {
             child: Text(
               formatIntelligenceCompactInr(totalValue),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: ModuleColors.portfolio,
-                  ),
+                fontWeight: FontWeight.bold,
+                color: ModuleColors.portfolio,
+              ),
             ),
           ),
         Text(
           '100%',
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: Theme.of(context).hintColor,
-                fontWeight: FontWeight.w700,
-              ),
+            color: Theme.of(context).hintColor,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ],
     );
@@ -926,11 +916,7 @@ class _XrayBody extends StatelessWidget {
 }
 
 class _Tabs extends StatelessWidget {
-  const _Tabs({
-    required this.tab,
-    required this.onTab,
-    this.compact = false,
-  });
+  const _Tabs({required this.tab, required this.onTab, this.compact = false});
 
   final int tab;
   final ValueChanged<int> onTab;
@@ -973,10 +959,7 @@ class _Tabs extends StatelessWidget {
 
 /// Phone Chart ↔ List toggle; mirrors [_Tabs] chip chrome.
 class _MobilePaneSwap extends StatelessWidget {
-  const _MobilePaneSwap({
-    required this.showList,
-    required this.onShowList,
-  });
+  const _MobilePaneSwap({required this.showList, required this.onShowList});
 
   final bool showList;
   final ValueChanged<bool> onShowList;
@@ -1044,16 +1027,8 @@ class _MobilePaneSwap extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          chip(
-            list: false,
-            icon: Icons.donut_large_rounded,
-            label: 'Chart',
-          ),
-          chip(
-            list: true,
-            icon: Icons.view_list_rounded,
-            label: 'List',
-          ),
+          chip(list: false, icon: Icons.donut_large_rounded, label: 'Chart'),
+          chip(list: true, icon: Icons.view_list_rounded, label: 'List'),
         ],
       ),
     );
@@ -1127,7 +1102,12 @@ class _WeightBar extends StatelessWidget {
             : Colors.transparent,
         borderRadius: BorderRadius.circular(10),
         child: Padding(
-          padding: EdgeInsets.fromLTRB(4, expanded ? 8 : 5, 2, expanded ? 8 : 5),
+          padding: EdgeInsets.fromLTRB(
+            4,
+            expanded ? 8 : 5,
+            2,
+            expanded ? 8 : 5,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1156,11 +1136,11 @@ class _WeightBar extends StatelessWidget {
                             label,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style:
-                                Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13,
-                                    ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -1227,8 +1207,8 @@ class _WeightBar extends StatelessWidget {
                   Text(
                     emptyMessage,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Theme.of(context).hintColor,
-                        ),
+                      color: Theme.of(context).hintColor,
+                    ),
                   )
                 else ...[
                   _HoldingsTable(
@@ -1313,10 +1293,7 @@ class _HoldingsTable extends StatelessWidget {
         children: rows,
       );
     }
-    return ListView(
-      padding: EdgeInsets.zero,
-      children: rows,
-    );
+    return ListView(padding: EdgeInsets.zero, children: rows);
   }
 
   Widget _row(
@@ -1327,7 +1304,8 @@ class _HoldingsTable extends StatelessWidget {
     required String pf,
     required bool header,
   }) {
-    final colors = Theme.of(context).extension<AppColorsTheme>() ?? AppColorsTheme.dark;
+    final colors =
+        Theme.of(context).extension<AppColorsTheme>() ?? AppColorsTheme.dark;
 
     final style = header
         ? TextStyle(
@@ -1343,11 +1321,7 @@ class _HoldingsTable extends StatelessWidget {
           );
     final valueStyle = header
         ? style
-        : TextStyle(
-            fontSize: 12,
-            color: color,
-            fontWeight: FontWeight.w600,
-          );
+        : TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w600);
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: header ? 0 : 4),
@@ -1413,17 +1387,19 @@ class _CompactGlowingDonutPainter extends CustomPainter {
       double targetGlow(int? h) => h == null ? 0.22 : (i == h ? 0.55 : 0.06);
       double targetProg(int? h) => h == null ? 0.0 : (i == h ? 1.0 : 0.0);
 
-      final colorAlpha = targetAlpha(previousHoveredIndex) +
+      final colorAlpha =
+          targetAlpha(previousHoveredIndex) +
           (targetAlpha(hoveredIndex) - targetAlpha(previousHoveredIndex)) *
               hoverProgress;
-      final glowAlpha = targetGlow(previousHoveredIndex) +
+      final glowAlpha =
+          targetGlow(previousHoveredIndex) +
           (targetGlow(hoveredIndex) - targetGlow(previousHoveredIndex)) *
               hoverProgress;
-      final hoverProg = targetProg(previousHoveredIndex) +
+      final hoverProg =
+          targetProg(previousHoveredIndex) +
           (targetProg(hoveredIndex) - targetProg(previousHoveredIndex)) *
               hoverProgress;
-      final idlePulse =
-          (i == 0 && hoveredIndex == null) ? pulse * 0.35 : 0.0;
+      final idlePulse = (i == 0 && hoveredIndex == null) ? pulse * 0.35 : 0.0;
 
       final radius = baseRadius + 5 * hoverProg + idlePulse;
       final stroke = 18.0 + 2.5 * hoverProg;
@@ -1443,10 +1419,7 @@ class _CompactGlowingDonutPainter extends CustomPainter {
             ..strokeCap = StrokeCap.butt
             ..color = color.withValues(alpha: glowAlpha * colorAlpha)
             ..strokeWidth = stroke + 4 + 4 * hoverProg
-            ..maskFilter = MaskFilter.blur(
-              BlurStyle.normal,
-              4 + 6 * hoverProg,
-            ),
+            ..maskFilter = MaskFilter.blur(BlurStyle.normal, 4 + 6 * hoverProg),
         );
         canvas.drawArc(
           rect,

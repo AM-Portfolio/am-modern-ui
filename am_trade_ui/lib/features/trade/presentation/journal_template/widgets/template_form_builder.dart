@@ -8,12 +8,12 @@ import '../../../journal_template_providers.dart';
 class TemplateFormBuilder extends ConsumerStatefulWidget {
   const TemplateFormBuilder({
     required this.template,
-        required this.onSubmit,
+    required this.onSubmit,
     super.key,
   });
 
   final JournalTemplate template;
-    final Function(Map<String, dynamic>) onSubmit;
+  final Function(Map<String, dynamic>) onSubmit;
 
   @override
   ConsumerState<TemplateFormBuilder> createState() =>
@@ -30,7 +30,8 @@ class _TemplateFormBuilderState extends ConsumerState<TemplateFormBuilder> {
     super.initState();
     // Initialize controllers for text fields
     for (final field in widget.template.fields) {
-      if (field.fieldType.value == 'TEXT' || field.fieldType.value == 'TEXTAREA') {
+      if (field.fieldType.value == 'TEXT' ||
+          field.fieldType.value == 'TEXTAREA') {
         _controllers[field.fieldId] = TextEditingController(
           text: field.defaultValue ?? '',
         );
@@ -67,7 +68,10 @@ class _TemplateFormBuilderState extends ConsumerState<TemplateFormBuilder> {
                   end: Alignment.bottomRight,
                   colors: [
                     Theme.of(context).colorScheme.surface.withOpacity(0.9),
-                    Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.8),
+                    Theme.of(context)
+                        .colorScheme
+                        .surfaceContainerHighest
+                        .withOpacity(0.8),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(24),
@@ -130,7 +134,10 @@ class _TemplateFormBuilderState extends ConsumerState<TemplateFormBuilder> {
                 Text(
                   'Fill in the template fields',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.6),
                       ),
                 ),
               ],
@@ -147,7 +154,7 @@ class _TemplateFormBuilderState extends ConsumerState<TemplateFormBuilder> {
 
   Widget _buildField(BuildContext context, field) {
     final fieldType = field.fieldType.value;
-    
+
     switch (fieldType) {
       case 'TEXT':
         return _buildTextField(context, field, maxLines: 1);
@@ -186,7 +193,8 @@ class _TemplateFormBuilderState extends ConsumerState<TemplateFormBuilder> {
           Text(
             field.helpText!,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
           ),
         ],
@@ -200,7 +208,10 @@ class _TemplateFormBuilderState extends ConsumerState<TemplateFormBuilder> {
               borderRadius: BorderRadius.circular(12),
             ),
             filled: true,
-            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+            fillColor: Theme.of(context)
+                .colorScheme
+                .surfaceContainerHighest
+                .withOpacity(0.3),
           ),
           validator: (value) {
             if (field.required && (value == null || value.isEmpty)) {
@@ -220,7 +231,8 @@ class _TemplateFormBuilderState extends ConsumerState<TemplateFormBuilder> {
     return CheckboxListTile(
       title: Text(field.fieldLabel),
       subtitle: field.helpText != null ? Text(field.helpText!) : null,
-      value: _fieldValues[field.fieldId] as bool? ?? (field.defaultValue == 'true'),
+      value: _fieldValues[field.fieldId] as bool? ??
+          (field.defaultValue == 'true'),
       onChanged: (value) {
         setState(() {
           _fieldValues[field.fieldId] = value ?? false;
@@ -253,7 +265,8 @@ class _TemplateFormBuilderState extends ConsumerState<TemplateFormBuilder> {
           Text(
             field.helpText!,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
           ),
         ],
@@ -266,13 +279,18 @@ class _TemplateFormBuilderState extends ConsumerState<TemplateFormBuilder> {
               borderRadius: BorderRadius.circular(12),
             ),
             filled: true,
-            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+            fillColor: Theme.of(context)
+                .colorScheme
+                .surfaceContainerHighest
+                .withOpacity(0.3),
           ),
           validator: (value) {
             if (field.required && (value == null || value.isEmpty)) {
               return 'This field is required';
             }
-            if (value != null && value.isNotEmpty && double.tryParse(value) == null) {
+            if (value != null &&
+                value.isNotEmpty &&
+                double.tryParse(value) == null) {
               return 'Please enter a valid number';
             }
             return null;
@@ -289,7 +307,10 @@ class _TemplateFormBuilderState extends ConsumerState<TemplateFormBuilder> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        color: Theme.of(context)
+            .colorScheme
+            .surfaceContainerHighest
+            .withOpacity(0.3),
         border: Border(
           top: BorderSide(
             color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
@@ -320,17 +341,17 @@ class _TemplateFormBuilderState extends ConsumerState<TemplateFormBuilder> {
       for (final entry in _controllers.entries) {
         _fieldValues[entry.key] = entry.value.text;
       }
-      
+
       // Use the template
       final cubit = await ref.read(journalTemplateCubitProvider.future);
       cubit.useTemplate(
         templateId: widget.template.id,
         fieldValues: _fieldValues,
       );
-      
+
       widget.onSubmit(_fieldValues);
       Navigator.of(context).pop();
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Journal entry created from template!'),

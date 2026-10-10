@@ -6,9 +6,9 @@
 
 part of openapi.api;
 
-
 class MarketAnalyticsApi {
-  MarketAnalyticsApi([ApiClient? apiClient]) : apiClient = apiClient ?? defaultApiClient;
+  MarketAnalyticsApi([ApiClient? apiClient])
+      : apiClient = apiClient ?? defaultApiClient;
 
   final ApiClient apiClient;
 
@@ -23,9 +23,13 @@ class MarketAnalyticsApi {
   /// * [String] symbol (required):
   ///
   /// * [String] range:
-  Future<Response> getHistoricalChartsWithHttpInfo(String symbol, { String? range, bool? isIndexSymbol, }) async {
+  Future<Response> getHistoricalChartsWithHttpInfo(
+    String symbol, {
+    String? range,
+    bool? isIndexSymbol,
+  }) async {
     final path = r'/v1/analysis/historical-charts/{symbol}'
-      .replaceAll('{symbol}', symbol);
+        .replaceAll('{symbol}', symbol);
     Object? postBody;
 
     final queryParams = <QueryParam>[];
@@ -42,7 +46,6 @@ class MarketAnalyticsApi {
     }
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -66,17 +69,28 @@ class MarketAnalyticsApi {
   /// * [String] range:
   ///
   /// * [bool] isIndexSymbol:
-  Future<HistoricalDataResponseV1?> getHistoricalCharts(String symbol, { String? range, bool? isIndexSymbol, }) async {
-    final response = await getHistoricalChartsWithHttpInfo(symbol,  range: range, isIndexSymbol: isIndexSymbol, );
+  Future<HistoricalDataResponseV1?> getHistoricalCharts(
+    String symbol, {
+    String? range,
+    bool? isIndexSymbol,
+  }) async {
+    final response = await getHistoricalChartsWithHttpInfo(
+      symbol,
+      range: range,
+      isIndexSymbol: isIndexSymbol,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'HistoricalDataResponseV1',) as HistoricalDataResponseV1;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'HistoricalDataResponseV1',
+      ) as HistoricalDataResponseV1;
     }
     return null;
   }
@@ -98,7 +112,13 @@ class MarketAnalyticsApi {
   /// * [String] timeFrame:
   ///
   /// * [bool] expandIndices:
-  Future<Response> getMoversWithHttpInfo({ String? type, int? limit, String? indexSymbol, String? timeFrame, bool? expandIndices, }) async {
+  Future<Response> getMoversWithHttpInfo({
+    String? type,
+    int? limit,
+    String? indexSymbol,
+    String? timeFrame,
+    bool? expandIndices,
+  }) async {
     final path = r'/v1/analysis/movers';
     Object? postBody;
 
@@ -124,7 +144,6 @@ class MarketAnalyticsApi {
 
     const contentTypes = <String>[];
 
-
     return apiClient.invokeAPI(
       path,
       'GET',
@@ -151,20 +170,33 @@ class MarketAnalyticsApi {
   /// * [String] timeFrame:
   ///
   /// * [bool] expandIndices:
-  Future<List<Map<String, Object>>?> getMovers({ String? type, int? limit, String? indexSymbol, String? timeFrame, bool? expandIndices, }) async {
-    final response = await getMoversWithHttpInfo( type: type, limit: limit, indexSymbol: indexSymbol, timeFrame: timeFrame, expandIndices: expandIndices, );
+  Future<List<Map<String, Object>>?> getMovers({
+    String? type,
+    int? limit,
+    String? indexSymbol,
+    String? timeFrame,
+    bool? expandIndices,
+  }) async {
+    final response = await getMoversWithHttpInfo(
+      type: type,
+      limit: limit,
+      indexSymbol: indexSymbol,
+      timeFrame: timeFrame,
+      expandIndices: expandIndices,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
       final responseBody = await _decodeBodyBytes(response);
-      return (await apiClient.deserializeAsync(responseBody, 'List<Map<String, Object>>') as List)
-        .cast<Map<String, Object>>()
-        .toList(growable: false);
-
+      return (await apiClient.deserializeAsync(
+              responseBody, 'List<Map<String, Object>>') as List)
+          .cast<Map<String, Object>>()
+          .toList(growable: false);
     }
     return null;
   }
@@ -182,7 +214,11 @@ class MarketAnalyticsApi {
   /// * [String] timeFrame:
   ///
   /// * [bool] expandIndices:
-  Future<Response> getSectorPerformanceWithHttpInfo({ String? indexSymbol, String? timeFrame, bool? expandIndices, }) async {
+  Future<Response> getSectorPerformanceWithHttpInfo({
+    String? indexSymbol,
+    String? timeFrame,
+    bool? expandIndices,
+  }) async {
     final path = r'/v1/analysis/sectors';
     Object? postBody;
 
@@ -201,7 +237,6 @@ class MarketAnalyticsApi {
     }
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -225,20 +260,29 @@ class MarketAnalyticsApi {
   /// * [String] timeFrame:
   ///
   /// * [bool] expandIndices:
-  Future<List<Map<String, Object>>?> getSectorPerformance({ String? indexSymbol, String? timeFrame, bool? expandIndices, }) async {
-    final response = await getSectorPerformanceWithHttpInfo( indexSymbol: indexSymbol, timeFrame: timeFrame, expandIndices: expandIndices, );
+  Future<List<Map<String, Object>>?> getSectorPerformance({
+    String? indexSymbol,
+    String? timeFrame,
+    bool? expandIndices,
+  }) async {
+    final response = await getSectorPerformanceWithHttpInfo(
+      indexSymbol: indexSymbol,
+      timeFrame: timeFrame,
+      expandIndices: expandIndices,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
       final responseBody = await _decodeBodyBytes(response);
-      return (await apiClient.deserializeAsync(responseBody, 'List<Map<String, Object>>') as List)
-        .cast<Map<String, Object>>()
-        .toList(growable: false);
-
+      return (await apiClient.deserializeAsync(
+              responseBody, 'List<Map<String, Object>>') as List)
+          .cast<Map<String, Object>>()
+          .toList(growable: false);
     }
     return null;
   }

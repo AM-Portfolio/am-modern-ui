@@ -25,6 +25,7 @@ class AppRoutes {
   static const referral = '/app/referral';
   static const deleteAccount = '/delete-account';
   static const chartCompare = '/app/chart/compare';
+  static const chartWorkspace = '/app/chart/workspace';
   static const appLock = '/app-lock';
   static const scanWebLogin = '/app/scan-web-login';
   static const scanWebLoginConfirm = '/app/scan-web-login/confirm';
@@ -38,6 +39,40 @@ class AppRoutes {
 
   static bool isPublicLegalRoute(String location) =>
       publicLegalRoutes.contains(normalizePath(location));
+
+  /// Guest-browsable Market paths (excludes Paper desk).
+  static bool isPublicMarketRoute(String location) {
+    final path = normalizePath(location);
+    if (path == market) return true;
+    if (!path.startsWith('$market/')) return false;
+    final rest = path.substring(market.length + 1);
+    final slug = rest.split('/').first;
+    return slug.isNotEmpty && slug != 'paper';
+  }
+
+  /// Any route guests may open without a session.
+  static bool isPublicBrowseRoute(String location) =>
+      isPublicLegalRoute(location) || isPublicMarketRoute(location);
+
+  /// Guest landing when opening `/`.
+  static String get publicMarketLanding => marketPath('all-indices');
+
+  /// Bounce gated Paper/Chart deep links to Market with an auth prompt query.
+  static String marketAuthPromptPath({
+    required String auth,
+    String? symbol,
+    String? tf,
+  }) {
+    final params = <String, String>{
+      'auth': auth,
+      if (symbol != null && symbol.isNotEmpty) 'symbol': symbol,
+      if (tf != null && tf.isNotEmpty) 'tf': tf,
+    };
+    return Uri(
+      path: marketPath('all-indices'),
+      queryParameters: params,
+    ).toString();
+  }
 
   /// Profile deep-link that pulses the Subscription row in Account.
   static String profileHighlightSubscription() =>
@@ -121,7 +156,8 @@ class AppRoutes {
         title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-');
   }
 
-  static String marketTitleForSlug(String slug, {List<String> dynamicTitles = const []}) {
+  static String marketTitleForSlug(String slug,
+      {List<String> dynamicTitles = const []}) {
     for (final entry in marketStaticSlugs.entries) {
       if (entry.value == slug) return entry.key;
     }
@@ -183,8 +219,15 @@ class AppRoutes {
     required String tf,
     required List<String> series,
   }) {
-    final seriesParam = Uri.encodeComponent(series.join(','));
-    return '$chartCompare?context=$context&tf=$tf&series=$seriesParam';
+    final symbol = series.isNotEmpty ? series.first : 'NIFTY 50';
+    return chartWorkspacePath(symbol: symbol, tf: tf);
+  }
+
+  static String chartWorkspacePath({
+    required String symbol,
+    String tf = '1D',
+  }) {
+    return '$chartWorkspace?symbol=${Uri.encodeComponent(symbol)}&tf=${Uri.encodeComponent(tf)}';
   }
 
   static String activeNavTitleForLocation(String location) {

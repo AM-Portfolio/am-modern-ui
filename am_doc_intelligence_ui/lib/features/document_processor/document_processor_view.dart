@@ -44,6 +44,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   bool _checkingHealth = true;
   bool _showRawJson = false;
   bool _samePortfolioForAll = true;
+
   /// Mobile-only: Parser Configuration starts expanded (design image 3).
   bool _parserConfigExpanded = true;
 
@@ -232,8 +233,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     final staged = <StagedFileBytes>[];
     for (final file in result.files) {
       if (file.bytes == null) {
-        setState(
-            () => _status = 'Could not read file bytes for ${file.name}');
+        setState(() => _status = 'Could not read file bytes for ${file.name}');
         continue;
       }
       staged.add(StagedFileBytes(bytes: file.bytes!, filename: file.name));
@@ -335,9 +335,8 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                     : f.portfolioController.text.trim())
                 .toList(),
         // Belt-and-suspenders: batch-level portfolio when shared mode is on.
-        portfolioId: _samePortfolioForAll && sharedName.isNotEmpty
-            ? sharedName
-            : null,
+        portfolioId:
+            _samePortfolioForAll && sharedName.isNotEmpty ? sharedName : null,
       );
       if (!mounted) return;
       setState(() {
@@ -648,8 +647,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                   // omit these widgets entirely (web desktop regression).
                   if (docProcessorWideShowsStatusSlots(
                     isWide: isWide,
-                    hasStatusOrProcessing:
-                        _status.isNotEmpty || _processing,
+                    hasStatusOrProcessing: _status.isNotEmpty || _processing,
                     hasBatch: _batchStatus != null,
                   )) ...[
                     if (_status.isNotEmpty || _processing) ...[
@@ -920,8 +918,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   }
 
   /// Compact mobile mini-card: icon above title (design image 3).
-  Widget _buildCompactCapabilityTile(
-      IconData icon, String title, String desc) {
+  Widget _buildCompactCapabilityTile(IconData icon, String title, String desc) {
     final theme = Theme.of(context);
     final primary = theme.colorScheme.primary;
 
@@ -1031,7 +1028,8 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
             fontSize: 11,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.5,
-            color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.8),
+            color:
+                Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.8),
           ),
         ),
         const SizedBox(height: 8),
@@ -1069,7 +1067,8 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
             fontSize: 11,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.5,
-            color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.8),
+            color:
+                Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.8),
           ),
         ),
         const SizedBox(height: 8),
@@ -1081,8 +1080,8 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                 items: [
                   ..._getFilteredDocTypes().map((e) =>
                       e.toSimpleDropdownItem(text: _getDocTypeDisplayName(e))),
-                  '__AUTO__'.toSimpleDropdownItem(
-                      text: 'Auto-detect (recommended)'),
+                  '__AUTO__'
+                      .toSimpleDropdownItem(text: 'Auto-detect (recommended)'),
                 ],
                 hint: 'Select',
                 onChanged: (v) => setState(() => _selectedDocType =
@@ -1126,9 +1125,8 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
           ),
           controlAffinity: ListTileControlAffinity.leading,
           dense: true,
-          visualDensity: isCompact
-              ? VisualDensity.compact
-              : VisualDensity.standard,
+          visualDensity:
+              isCompact ? VisualDensity.compact : VisualDensity.standard,
         ),
         if (_samePortfolioForAll) ...[
           SizedBox(height: isCompact ? 4 : 6),
@@ -1162,9 +1160,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         ),
         if (isCompact)
           Icon(
-            _parserConfigExpanded
-                ? Icons.expand_less
-                : Icons.expand_more,
+            _parserConfigExpanded ? Icons.expand_less : Icons.expand_more,
             size: 22,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
@@ -1230,36 +1226,30 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
 
     final selectFilesButton = isCompact
         ? FilledButton.icon(
-            onPressed:
-                isInteractable && !batchFull ? _pickAndUpload : null,
+            onPressed: isInteractable && !batchFull ? _pickAndUpload : null,
             icon: const Icon(Icons.description_outlined, size: 18),
             label: Text(
               batchFull ? 'Batch full' : 'Select Files',
-              style: const TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.w600),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
             ),
             style: FilledButton.styleFrom(
               backgroundColor: primary,
               foregroundColor: Theme.of(context).colorScheme.onPrimary,
               disabledBackgroundColor: primary.withOpacity(0.35),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10)),
             ),
           )
         : OutlinedButton.icon(
-            onPressed:
-                isInteractable && !batchFull ? _pickAndUpload : null,
+            onPressed: isInteractable && !batchFull ? _pickAndUpload : null,
             icon: const Icon(Icons.folder_open, size: 18),
             label: Text(
               batchFull ? 'Batch full' : 'Select Files',
-              style: const TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.w600),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
             ),
             style: OutlinedButton.styleFrom(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8)),
             ),
@@ -1315,10 +1305,8 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: isCompact ? 11 : 12,
-            color: Theme.of(context)
-                .colorScheme
-                .onSurfaceVariant
-                .withOpacity(0.8),
+            color:
+                Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.8),
           ),
         ),
       ],
@@ -1446,10 +1434,9 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color:
-                              Theme.of(context).brightness == Brightness.dark
-                                  ? context.colors.surface
-                                  : primary,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? context.colors.surface
+                              : primary,
                         ),
                       ),
                     ),
@@ -1500,7 +1487,8 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
             ),
             ...List.generate(
               _pendingFiles.length,
-              (index) => _buildPendingFileCard(index, contentWidth: contentWidth),
+              (index) =>
+                  _buildPendingFileCard(index, contentWidth: contentWidth),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
@@ -1558,8 +1546,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       onChanged: _processing
           ? null
           : (v) => setState(() {
-                file.documentType =
-                    (v == null || v == '__AUTO__') ? null : v;
+                file.documentType = (v == null || v == '__AUTO__') ? null : v;
               }),
     );
 
@@ -1833,8 +1820,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                       border: OutlineInputBorder(),
                     ),
                     items: apiProvider.brokerTypes
-                        .map((b) =>
-                            DropdownMenuItem(value: b, child: Text(b)))
+                        .map((b) => DropdownMenuItem(value: b, child: Text(b)))
                         .toList(),
                     onChanged: (v) => setLocal(() => broker = v),
                   ),
@@ -1996,9 +1982,8 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
           children: [
             if (file.needsPassword)
               FilledButton.tonal(
-                onPressed: _processing
-                    ? null
-                    : () => _promptPasswordAndResolve(file),
+                onPressed:
+                    _processing ? null : () => _promptPasswordAndResolve(file),
                 child: const Text('Enter password',
                     style: TextStyle(fontSize: 12)),
               ),
@@ -2037,14 +2022,18 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       'Confirm',
       '${batch.needsConfirm}',
       Icons.verified_outlined,
-      batch.needsConfirm > 0 ? context.colors.statusInfo : context.colors.textMuted,
+      batch.needsConfirm > 0
+          ? context.colors.statusInfo
+          : context.colors.textMuted,
       expand: isCompact,
     );
     final needsChip = _buildCompactStatChip(
       'Needs input',
       '${batch.needsInput}',
       Icons.help_outline,
-      batch.needsInput > 0 ? context.colors.statusWarning : context.colors.textMuted,
+      batch.needsInput > 0
+          ? context.colors.statusWarning
+          : context.colors.textMuted,
       expand: isCompact,
     );
     final failedChip = _buildCompactStatChip(
@@ -2111,19 +2100,25 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
             'Confirm',
             '${batch.needsConfirm}',
             Icons.verified_outlined,
-            batch.needsConfirm > 0 ? context.colors.statusInfo : context.colors.textMuted,
+            batch.needsConfirm > 0
+                ? context.colors.statusInfo
+                : context.colors.textMuted,
           ),
           _buildCompactStat(
             'Needs input',
             '${batch.needsInput}',
             Icons.help_outline,
-            batch.needsInput > 0 ? context.colors.statusWarning : context.colors.textMuted,
+            batch.needsInput > 0
+                ? context.colors.statusWarning
+                : context.colors.textMuted,
           ),
           _buildCompactStat(
             'Failed',
             '${batch.failed}',
             Icons.error_outline,
-            batch.failed > 0 ? context.colors.statusError : context.colors.textMuted,
+            batch.failed > 0
+                ? context.colors.statusError
+                : context.colors.textMuted,
           ),
         ],
       );
@@ -2192,12 +2187,10 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                                 const SizedBox(height: 2),
                                 Text(
                                   detail,
-                                  style:
-                                      TextStyle(color: color, fontSize: 12),
+                                  style: TextStyle(color: color, fontSize: 12),
                                 ),
                               ],
-                              if (file.isNeedsConfirm ||
-                                  file.isNeedsInput) ...[
+                              if (file.isNeedsConfirm || file.isNeedsInput) ...[
                                 const SizedBox(height: 8),
                                 actionRow(file),
                               ],
@@ -2260,8 +2253,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                   Text(label,
                       style: TextStyle(
                           fontSize: 10,
-                          color:
-                              Theme.of(context).colorScheme.onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w600)),
                   Text(
                     value,

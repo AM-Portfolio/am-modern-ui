@@ -26,13 +26,18 @@ class BdAllocationSheet extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (_) => BdAllocationSheet(lines: lines, totalCurrentValue: totalCurrentValue),
+      builder: (_) =>
+          BdAllocationSheet(lines: lines, totalCurrentValue: totalCurrentValue),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final fmt = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final fmt = NumberFormat.currency(
+      locale: 'en_IN',
+      symbol: '₹',
+      decimalDigits: 0,
+    );
     final sorted = BdDashboardMath.sortedByWeight(lines, totalCurrentValue);
     final colors = [
       ModuleColors.portfolio,
@@ -67,7 +72,10 @@ class BdAllocationSheet extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
-              Text('Allocation Breakdown', style: Theme.of(context).textTheme.titleLarge),
+              Text(
+                'Allocation Breakdown',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
               const SizedBox(height: AppSpacing.lg),
               Expanded(
                 child: ListView.builder(
@@ -75,19 +83,41 @@ class BdAllocationSheet extends StatelessWidget {
                   itemCount: sorted.length,
                   itemBuilder: (context, index) {
                     final line = sorted[index];
-                    final weight = BdDashboardMath.basketWeightPercent(line, totalCurrentValue);
+                    final weight = BdDashboardMath.basketWeightPercent(
+                      line,
+                      totalCurrentValue,
+                    );
                     final value = BdDashboardMath.lineCurrentValue(line);
                     final color = colors[index % colors.length];
                     return Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                       child: Row(
                         children: [
-                          Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+                          Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: color,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
                           const SizedBox(width: 8),
-                          Expanded(child: Text(line.symbol, style: const TextStyle(fontWeight: FontWeight.bold))),
+                          Expanded(
+                            child: Text(
+                              line.symbol,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
                           Text('${weight.toStringAsFixed(1)}%'),
                           const SizedBox(width: 12),
-                          Text(fmt.format(value), style: TextStyle(color: context.colors.textSecondary)),
+                          Text(
+                            fmt.format(value),
+                            style: TextStyle(
+                              color: context.colors.textSecondary,
+                            ),
+                          ),
                         ],
                       ),
                     );

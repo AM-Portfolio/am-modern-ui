@@ -133,7 +133,8 @@ Future<void> showCustomizeQtySheet({
           final t = navFactor.clamp(0.0, 1.0);
           return Padding(
             padding: EdgeInsets.only(
-              bottom: MediaQuery.viewInsetsOf(ctx).bottom + (navReserveFull * t),
+              bottom:
+                  MediaQuery.viewInsetsOf(ctx).bottom + (navReserveFull * t),
             ),
             child: _CustomizeQtySheetBody(
               item: item,
@@ -210,7 +211,8 @@ class _CustomizeQtySheetBodyState extends State<_CustomizeQtySheetBody> {
   @override
   Widget build(BuildContext context) {
     final price = widget.item.lastPrice ?? 0;
-    final symbol = widget.item.status == ItemStatus.substitute &&
+    final symbol =
+        widget.item.status == ItemStatus.substitute &&
             widget.item.userHoldingSymbol != null
         ? widget.item.userHoldingSymbol!
         : widget.item.stockSymbol;
@@ -230,13 +232,16 @@ class _CustomizeQtySheetBodyState extends State<_CustomizeQtySheetBody> {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            Text('Adjust quantity', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'Adjust quantity',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 4),
             Text(
               symbol,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: context.textSecondary,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: context.textSecondary),
             ),
             const SizedBox(height: 16),
             CustomizeQtyStepper(

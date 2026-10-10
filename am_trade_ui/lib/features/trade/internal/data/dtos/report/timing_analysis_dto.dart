@@ -31,7 +31,8 @@ class TimingAnalysisDto {
     this.worstTradingMonth,
   });
 
-  factory TimingAnalysisDto.fromJson(Map<String, dynamic> json) => _$TimingAnalysisDtoFromJson(json);
+  factory TimingAnalysisDto.fromJson(Map<String, dynamic> json) =>
+      _$TimingAnalysisDtoFromJson(json);
   Map<String, dynamic> toJson() => _$TimingAnalysisDtoToJson(this);
 }
 
@@ -63,26 +64,35 @@ class HourlyPerformanceDto {
 
   factory HourlyPerformanceDto.fromJson(Map<String, dynamic> json) {
     final patchedJson = Map<String, dynamic>.from(json);
-    final numericFields = ['totalProfitLoss', 'tradeCount', 'winCount', 'lossCount', 'winRate', 'averageWinAmount', 'averageLossAmount', 'averageHoldingTime'];
-    
+    final numericFields = [
+      'totalProfitLoss',
+      'tradeCount',
+      'winCount',
+      'lossCount',
+      'winRate',
+      'averageWinAmount',
+      'averageLossAmount',
+      'averageHoldingTime'
+    ];
+
     // Patch Infinity
     for (final key in patchedJson.keys) {
       final value = patchedJson[key];
       if (value is String) {
         if (value == 'Infinity' || value == '+Infinity') {
-            patchedJson[key] = double.infinity;
+          patchedJson[key] = double.infinity;
         } else if (value == '-Infinity') {
-            patchedJson[key] = double.negativeInfinity;
+          patchedJson[key] = double.negativeInfinity;
         } else if (value == 'NaN') {
-            patchedJson[key] = double.nan;
+          patchedJson[key] = double.nan;
         }
       }
     }
     // Patch Nulls
     for (var field in numericFields) {
-        if (patchedJson[field] == null) {
-            patchedJson[field] = 0;
-        }
+      if (patchedJson[field] == null) {
+        patchedJson[field] = 0;
+      }
     }
     return _$HourlyPerformanceDtoFromJson(patchedJson);
   }
@@ -119,26 +129,36 @@ class DayOfWeekPerformanceDto {
 
   factory DayOfWeekPerformanceDto.fromJson(Map<String, dynamic> json) {
     final patchedJson = Map<String, dynamic>.from(json);
-    final numericFields = ['dayOrder', 'tradeCount', 'winCount', 'lossCount', 'winRate', 'totalProfitLoss', 'averageWinAmount', 'averageLossAmount', 'averageHoldingTime'];
+    final numericFields = [
+      'dayOrder',
+      'tradeCount',
+      'winCount',
+      'lossCount',
+      'winRate',
+      'totalProfitLoss',
+      'averageWinAmount',
+      'averageLossAmount',
+      'averageHoldingTime'
+    ];
 
     // Patch Infinity
     for (final key in patchedJson.keys) {
       final value = patchedJson[key];
       if (value is String) {
         if (value == 'Infinity' || value == '+Infinity') {
-            patchedJson[key] = double.infinity;
+          patchedJson[key] = double.infinity;
         } else if (value == '-Infinity') {
-            patchedJson[key] = double.negativeInfinity;
+          patchedJson[key] = double.negativeInfinity;
         } else if (value == 'NaN') {
-            patchedJson[key] = double.nan;
+          patchedJson[key] = double.nan;
         }
       }
     }
-     // Patch Nulls
+    // Patch Nulls
     for (var field in numericFields) {
-        if (patchedJson[field] == null) {
-            patchedJson[field] = 0;
-        }
+      if (patchedJson[field] == null) {
+        patchedJson[field] = 0;
+      }
     }
     return _$DayOfWeekPerformanceDtoFromJson(patchedJson);
   }
@@ -175,26 +195,36 @@ class MonthlyPerformanceDto {
 
   factory MonthlyPerformanceDto.fromJson(Map<String, dynamic> json) {
     final patchedJson = Map<String, dynamic>.from(json);
-    final numericFields = ['monthOrder', 'tradeCount', 'winCount', 'lossCount', 'winRate', 'totalProfitLoss', 'averageWinAmount', 'averageLossAmount', 'averageHoldingTime'];
+    final numericFields = [
+      'monthOrder',
+      'tradeCount',
+      'winCount',
+      'lossCount',
+      'winRate',
+      'totalProfitLoss',
+      'averageWinAmount',
+      'averageLossAmount',
+      'averageHoldingTime'
+    ];
 
     // Patch Infinity
     for (final key in patchedJson.keys) {
       final value = patchedJson[key];
       if (value is String) {
         if (value == 'Infinity' || value == '+Infinity') {
-            patchedJson[key] = double.infinity;
+          patchedJson[key] = double.infinity;
         } else if (value == '-Infinity') {
-            patchedJson[key] = double.negativeInfinity;
+          patchedJson[key] = double.negativeInfinity;
         } else if (value == 'NaN') {
-            patchedJson[key] = double.nan;
+          patchedJson[key] = double.nan;
         }
       }
     }
-     // Patch Nulls
+    // Patch Nulls
     for (var field in numericFields) {
-        if (patchedJson[field] == null) {
-            patchedJson[field] = 0;
-        }
+      if (patchedJson[field] == null) {
+        patchedJson[field] = 0;
+      }
     }
     return _$MonthlyPerformanceDtoFromJson(patchedJson);
   }
@@ -229,26 +259,36 @@ class YearlyPerformanceDto {
 
   factory YearlyPerformanceDto.fromJson(Map<String, dynamic> json) {
     final patchedJson = Map<String, dynamic>.from(json);
-    final numericFields = ['year', 'tradeCount', 'winCount', 'lossCount', 'winRate', 'totalProfitLoss', 'averageWinAmount', 'averageLossAmount', 'averageHoldingTime'];
+    final numericFields = [
+      'year',
+      'tradeCount',
+      'winCount',
+      'lossCount',
+      'winRate',
+      'totalProfitLoss',
+      'averageWinAmount',
+      'averageLossAmount',
+      'averageHoldingTime'
+    ];
 
     // Patch Infinity
     for (final key in patchedJson.keys) {
       final value = patchedJson[key];
       if (value is String) {
         if (value == 'Infinity' || value == '+Infinity') {
-            patchedJson[key] = double.infinity;
+          patchedJson[key] = double.infinity;
         } else if (value == '-Infinity') {
-            patchedJson[key] = double.negativeInfinity;
+          patchedJson[key] = double.negativeInfinity;
         } else if (value == 'NaN') {
-            patchedJson[key] = double.nan;
+          patchedJson[key] = double.nan;
         }
       }
     }
     // Patch Nulls
     for (var field in numericFields) {
-        if (patchedJson[field] == null) {
-            patchedJson[field] = 0;
-        }
+      if (patchedJson[field] == null) {
+        patchedJson[field] = 0;
+      }
     }
     return _$YearlyPerformanceDtoFromJson(patchedJson);
   }
@@ -277,26 +317,32 @@ class WeeklyPerformanceDto {
 
   factory WeeklyPerformanceDto.fromJson(Map<String, dynamic> json) {
     final patchedJson = Map<String, dynamic>.from(json);
-    final numericFields = ['tradeCount', 'winCount', 'lossCount', 'winRate', 'totalProfitLoss'];
+    final numericFields = [
+      'tradeCount',
+      'winCount',
+      'lossCount',
+      'winRate',
+      'totalProfitLoss'
+    ];
 
     // Patch Infinity
     for (final key in patchedJson.keys) {
       final value = patchedJson[key];
       if (value is String) {
         if (value == 'Infinity' || value == '+Infinity') {
-            patchedJson[key] = double.infinity;
+          patchedJson[key] = double.infinity;
         } else if (value == '-Infinity') {
-            patchedJson[key] = double.negativeInfinity;
+          patchedJson[key] = double.negativeInfinity;
         } else if (value == 'NaN') {
-            patchedJson[key] = double.nan;
+          patchedJson[key] = double.nan;
         }
       }
     }
     // Patch Nulls
     for (var field in numericFields) {
-        if (patchedJson[field] == null) {
-            patchedJson[field] = 0;
-        }
+      if (patchedJson[field] == null) {
+        patchedJson[field] = 0;
+      }
     }
     return _$WeeklyPerformanceDtoFromJson(patchedJson);
   }

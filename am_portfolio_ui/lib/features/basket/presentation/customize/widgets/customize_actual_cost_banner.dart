@@ -47,8 +47,9 @@ class CustomizeActualCostBanner extends StatelessWidget {
                   ? Icons.warning_amber_rounded
                   : Icons.check_circle_outline,
               size: 16,
-              color:
-                  isOverBudget ? context.statusWarning : context.statusSuccess,
+              color: isOverBudget
+                  ? context.statusWarning
+                  : context.statusSuccess,
             ),
           ),
           const SizedBox(width: 8),

@@ -51,72 +51,72 @@ class UserDropdownMenu extends StatelessWidget {
   }
 
   List<PopupMenuEntry<String>> _buildMenuItems(BuildContext context) => [
-    // User info header
-    PopupMenuItem<String>(
-      enabled: false,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            userName,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+        // User info header
+        PopupMenuItem<String>(
+          enabled: false,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                userName,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              if (userEmail != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  userEmail!,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                ),
+              ],
+              const SizedBox(height: 8),
+              const Divider(height: 1),
+            ],
           ),
-          if (userEmail != null) ...[
-            const SizedBox(height: 2),
-            Text(
-              userEmail!,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
-            ),
-          ],
-          const SizedBox(height: 8),
-          const Divider(height: 1),
-        ],
-      ),
-    ),
+        ),
 
-    // Profile option
-    PopupMenuItem<String>(
-      value: 'profile',
-      child: Row(
-        children: [
-          Icon(Icons.person_outline, size: 18, color: Colors.grey[700]),
-          const SizedBox(width: 12),
-          const Text('Profile'),
-        ],
-      ),
-    ),
+        // Profile option
+        PopupMenuItem<String>(
+          value: 'profile',
+          child: Row(
+            children: [
+              Icon(Icons.person_outline, size: 18, color: Colors.grey[700]),
+              const SizedBox(width: 12),
+              const Text('Profile'),
+            ],
+          ),
+        ),
 
-    // Settings option
-    PopupMenuItem<String>(
-      value: 'settings',
-      child: Row(
-        children: [
-          Icon(Icons.settings_outlined, size: 18, color: Colors.grey[700]),
-          const SizedBox(width: 12),
-          const Text('Settings'),
-        ],
-      ),
-    ),
+        // Settings option
+        PopupMenuItem<String>(
+          value: 'settings',
+          child: Row(
+            children: [
+              Icon(Icons.settings_outlined, size: 18, color: Colors.grey[700]),
+              const SizedBox(width: 12),
+              const Text('Settings'),
+            ],
+          ),
+        ),
 
-    // Divider
-    const PopupMenuDivider(),
+        // Divider
+        const PopupMenuDivider(),
 
-    // Logout option
-    PopupMenuItem<String>(
-      value: 'logout',
-      child: Row(
-        children: [
-          Icon(Icons.logout, size: 18, color: Colors.red[600]),
-          const SizedBox(width: 12),
-          Text('Logout', style: TextStyle(color: Colors.red[600])),
-        ],
-      ),
-    ),
-  ];
+        // Logout option
+        PopupMenuItem<String>(
+          value: 'logout',
+          child: Row(
+            children: [
+              Icon(Icons.logout, size: 18, color: Colors.red[600]),
+              const SizedBox(width: 12),
+              Text('Logout', style: TextStyle(color: Colors.red[600])),
+            ],
+          ),
+        ),
+      ];
 
   void _handleMenuSelection(String value) {
     switch (value) {
@@ -136,50 +136,50 @@ class UserDropdownMenu extends StatelessWidget {
   }
 
   Widget _buildDefaultTrigger(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    decoration: BoxDecoration(
-      color: Colors.grey[100],
-      borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: Colors.grey[300]!),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        CircleAvatar(
-          radius: 16,
-          backgroundColor: Theme.of(context).primaryColor,
-          child: Text(
-            userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey[300]!),
         ),
-        const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              userName,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
-            ),
-            if (userEmail != null)
-              Text(
-                userEmail!,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: Theme.of(context).primaryColor,
+              child: Text(
+                userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  userName,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+                ),
+                if (userEmail != null)
+                  Text(
+                    userEmail!,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                  ),
+              ],
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.keyboard_arrow_down, size: 18, color: Colors.grey[600]),
           ],
         ),
-        const SizedBox(width: 8),
-        Icon(Icons.keyboard_arrow_down, size: 18, color: Colors.grey[600]),
-      ],
-    ),
-  );
+      );
 }

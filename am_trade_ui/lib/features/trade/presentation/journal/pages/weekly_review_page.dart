@@ -38,10 +38,8 @@ class _WeeklyReviewPageState extends State<WeeklyReviewPage> {
   }
 
   Future<void> _saveWeeklyReview(List<JournalEntry> completed) async {
-    final checked = _checklist.entries
-        .where((e) => e.value)
-        .map((e) => e.key)
-        .toList();
+    final checked =
+        _checklist.entries.where((e) => e.value).map((e) => e.key).toList();
     await widget.journalCubit.saveEntryFull(
       title:
           'Weekly review — ${DateFormat('dd MMM yyyy').format(DateTime.now())}',
@@ -49,7 +47,8 @@ class _WeeklyReviewPageState extends State<WeeklyReviewPage> {
       entryDate: DateTime.now(),
       entryType: 'WEEKLY_REVIEW',
       journalStatus: 'COMPLETED',
-      relatedTradeIds: completed.map((e) => e.tradeId).whereType<String>().toList(),
+      relatedTradeIds:
+          completed.map((e) => e.tradeId).whereType<String>().toList(),
       postTradeReview: PostTradeReview(
         lessonLearned: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
         completedChecklistItems: checked,

@@ -96,33 +96,36 @@ class HistoricalData {
   DateTime? retrievalTime;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is HistoricalData &&
-    other.tradingSymbol == tradingSymbol &&
-    other.isin == isin &&
-    other.fromDate == fromDate &&
-    other.toDate == toDate &&
-    other.interval == interval &&
-    _deepEquality.equals(other.dataPoints, dataPoints) &&
-    other.dataPointCount == dataPointCount &&
-    other.exchange == exchange &&
-    other.currency == currency &&
-    other.retrievalTime == retrievalTime;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is HistoricalData &&
+          other.tradingSymbol == tradingSymbol &&
+          other.isin == isin &&
+          other.fromDate == fromDate &&
+          other.toDate == toDate &&
+          other.interval == interval &&
+          _deepEquality.equals(other.dataPoints, dataPoints) &&
+          other.dataPointCount == dataPointCount &&
+          other.exchange == exchange &&
+          other.currency == currency &&
+          other.retrievalTime == retrievalTime;
 
   @override
   int get hashCode =>
-    (tradingSymbol == null ? 0 : tradingSymbol!.hashCode) +
-    (isin == null ? 0 : isin!.hashCode) +
-    (fromDate == null ? 0 : fromDate!.hashCode) +
-    (toDate == null ? 0 : toDate!.hashCode) +
-    (interval == null ? 0 : interval!.hashCode) +
-    (dataPoints.hashCode) +
-    (dataPointCount == null ? 0 : dataPointCount!.hashCode) +
-    (exchange == null ? 0 : exchange!.hashCode) +
-    (currency == null ? 0 : currency!.hashCode) +
-    (retrievalTime == null ? 0 : retrievalTime!.hashCode);
+      (tradingSymbol == null ? 0 : tradingSymbol!.hashCode) +
+      (isin == null ? 0 : isin!.hashCode) +
+      (fromDate == null ? 0 : fromDate!.hashCode) +
+      (toDate == null ? 0 : toDate!.hashCode) +
+      (interval == null ? 0 : interval!.hashCode) +
+      (dataPoints.hashCode) +
+      (dataPointCount == null ? 0 : dataPointCount!.hashCode) +
+      (exchange == null ? 0 : exchange!.hashCode) +
+      (currency == null ? 0 : currency!.hashCode) +
+      (retrievalTime == null ? 0 : retrievalTime!.hashCode);
 
   @override
-  String toString() => 'HistoricalData[tradingSymbol=$tradingSymbol, isin=$isin, fromDate=$fromDate, toDate=$toDate, interval=$interval, dataPoints=$dataPoints, dataPointCount=$dataPointCount, exchange=$exchange, currency=$currency, retrievalTime=$retrievalTime]';
+  String toString() =>
+      'HistoricalData[tradingSymbol=$tradingSymbol, isin=$isin, fromDate=$fromDate, toDate=$toDate, interval=$interval, dataPoints=$dataPoints, dataPointCount=$dataPointCount, exchange=$exchange, currency=$currency, retrievalTime=$retrievalTime]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -151,7 +154,7 @@ class HistoricalData {
     } else {
       json[r'interval'] = null;
     }
-      json[r'dataPoints'] = this.dataPoints;
+    json[r'dataPoints'] = this.dataPoints;
     if (this.dataPointCount != null) {
       json[r'dataPointCount'] = this.dataPointCount;
     } else {
@@ -186,8 +189,10 @@ class HistoricalData {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "HistoricalData[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "HistoricalData[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "HistoricalData[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "HistoricalData[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -208,7 +213,10 @@ class HistoricalData {
     return null;
   }
 
-  static List<HistoricalData> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<HistoricalData> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <HistoricalData>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -224,7 +232,7 @@ class HistoricalData {
   static Map<String, HistoricalData> mapFromJson(dynamic json) {
     final map = <String, HistoricalData>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); 
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
         final value = HistoricalData.fromJson(entry.value);
         if (value != null) {
@@ -236,19 +244,23 @@ class HistoricalData {
   }
 
   // maps a json object with a list of HistoricalData-objects as value to a dart map
-  static Map<String, List<HistoricalData>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<HistoricalData>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<HistoricalData>>{};
     if (json is Map && json.isNotEmpty) {
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = HistoricalData.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = HistoricalData.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

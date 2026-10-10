@@ -9,7 +9,10 @@ class BdDashboardMath {
     return line.quantity * price;
   }
 
-  static double basketWeightPercent(BasketLineDetail line, double totalCurrentValue) {
+  static double basketWeightPercent(
+    BasketLineDetail line,
+    double totalCurrentValue,
+  ) {
     if (totalCurrentValue <= 0) return 0;
     return lineCurrentValue(line) / totalCurrentValue * 100;
   }
@@ -29,7 +32,8 @@ class BdDashboardMath {
     if (basket.replicaScore != null && basket.replicaScore! > 0) {
       return basket.replicaScore!;
     }
-    if (basket.coverageAfterCreation != null && basket.coverageAfterCreation! > 0) {
+    if (basket.coverageAfterCreation != null &&
+        basket.coverageAfterCreation! > 0) {
       return basket.coverageAfterCreation!;
     }
     return basket.coveragePercent ?? 0;
@@ -41,7 +45,11 @@ class BdDashboardMath {
   static bool basketHasMarketPrices(BasketDetail basket) =>
       basket.lines.any(hasMarketPrice);
 
-  static String formatPnlAmount(double pnl, NumberFormat fmt, {required bool hasMarket}) {
+  static String formatPnlAmount(
+    double pnl,
+    NumberFormat fmt, {
+    required bool hasMarket,
+  }) {
     if (!hasMarket) return '—';
     final sign = pnl >= 0 ? '+' : '';
     return '$sign${fmt.format(pnl)}';
@@ -58,8 +66,12 @@ class BdDashboardMath {
     double totalCurrentValue,
   ) {
     final copy = List<BasketLineDetail>.from(lines);
-    copy.sort((a, b) => basketWeightPercent(b, totalCurrentValue)
-        .compareTo(basketWeightPercent(a, totalCurrentValue)));
+    copy.sort(
+      (a, b) => basketWeightPercent(
+        b,
+        totalCurrentValue,
+      ).compareTo(basketWeightPercent(a, totalCurrentValue)),
+    );
     return copy;
   }
 
@@ -73,14 +85,14 @@ class BdDashboardMath {
       case BdHoldingsFilter.held:
         return lines.where((l) => l.status.toUpperCase() == 'HELD').toList();
       case BdHoldingsFilter.substitute:
-        return lines.where((l) => l.status.toUpperCase() == 'SUBSTITUTE').toList();
+        return lines
+            .where((l) => l.status.toUpperCase() == 'SUBSTITUTE')
+            .toList();
       case BdHoldingsFilter.missing:
         return lines.where((l) => l.status.toUpperCase() == 'MISSING').toList();
       case BdHoldingsFilter.active:
         return lines
-            .where((l) =>
-                l.quantity > 0 &&
-                l.status.toUpperCase() != 'MISSING')
+            .where((l) => l.quantity > 0 && l.status.toUpperCase() != 'MISSING')
             .toList();
     }
   }

@@ -57,7 +57,8 @@ class _EquityInsiderChartState extends ConsumerState<EquityInsiderChart> {
   Widget build(BuildContext context) {
     final activeExchange = ref.watch(selectedExchangeProvider);
     final tfCode = _timeFrameToCode(_selectedTimeFrame);
-    final query = EquityChartQuery(symbol: widget.symbol, timeframe: tfCode, exchange: activeExchange);
+    final query = EquityChartQuery(
+        symbol: widget.symbol, timeframe: tfCode, exchange: activeExchange);
     final chartDataAsync = ref.watch(equityStockChartDataProvider(query));
 
     return LayoutBuilder(
@@ -83,9 +84,13 @@ class _EquityInsiderChartState extends ConsumerState<EquityInsiderChart> {
                       ),
                       const SizedBox(width: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 2),
                         decoration: BoxDecoration(
-                          color: (activeExchange == 'BSE' ? context.colors.statusWarning : context.marketTheme.chartBlue).withValues(alpha: 0.15),
+                          color: (activeExchange == 'BSE'
+                                  ? context.colors.statusWarning
+                                  : context.marketTheme.chartBlue)
+                              .withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -93,7 +98,9 @@ class _EquityInsiderChartState extends ConsumerState<EquityInsiderChart> {
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
-                            color: activeExchange == 'BSE' ? context.colors.statusWarning : context.marketTheme.chartBlue,
+                            color: activeExchange == 'BSE'
+                                ? context.colors.statusWarning
+                                : context.marketTheme.chartBlue,
                           ),
                         ),
                       ),
@@ -170,13 +177,16 @@ class _EquityInsiderChartState extends ConsumerState<EquityInsiderChart> {
                           ),
                           const SizedBox(height: 6),
                           OutlinedButton(
-                            onPressed: () => ref.refresh(equityStockChartDataProvider(query)),
+                            onPressed: () => ref
+                                .refresh(equityStockChartDataProvider(query)),
                             style: OutlinedButton.styleFrom(
                               side: BorderSide(color: context.borderColor),
                               foregroundColor: context.textPrimary,
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
                             ),
-                            child: const Text('Retry', style: TextStyle(fontSize: 11)),
+                            child: const Text('Retry',
+                                style: TextStyle(fontSize: 11)),
                           ),
                         ],
                       ),

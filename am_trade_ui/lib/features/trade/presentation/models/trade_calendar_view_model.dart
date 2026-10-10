@@ -24,12 +24,16 @@ class TradeCalendarViewModel {
     );
 
     // Get the portfolio ID from the first available portfolio
-    final portfolioId = entity.portfolioTrades.keys.isNotEmpty ? entity.portfolioTrades.keys.first : '';
+    final portfolioId = entity.portfolioTrades.keys.isNotEmpty
+        ? entity.portfolioTrades.keys.first
+        : '';
 
-    AppLogger.info('[ViewModel] Selected portfolioId: $portfolioId', tag: 'TradeCalendarViewModel');
+    AppLogger.info('[ViewModel] Selected portfolioId: $portfolioId',
+        tag: 'TradeCalendarViewModel');
 
     // Convert entity to calendar data using the converter
-    final calendarData = TradeCalendarConverter.convertEntityToCalendarData(entity: entity);
+    final calendarData =
+        TradeCalendarConverter.convertEntityToCalendarData(entity: entity);
 
     // Organize trade details by date
     final tradeDetailsMap = <String, List<TradeDetails>>{};
@@ -56,7 +60,9 @@ class TradeCalendarViewModel {
         tag: 'TradeCalendarViewModel',
       );
       for (final entry in tradeDetailsMap.entries) {
-        AppLogger.debug('[ViewModel] Date ${entry.key}: ${entry.value.length} trades', tag: 'TradeCalendarViewModel');
+        AppLogger.debug(
+            '[ViewModel] Date ${entry.key}: ${entry.value.length} trades',
+            tag: 'TradeCalendarViewModel');
       }
     }
 
@@ -87,12 +93,14 @@ class TradeCalendarViewModel {
   final DateTime? lastUpdated;
 
   /// Get all available dates from calendar data
-  List<DateTime> get availableDates => calendarData.keys.map(DateTime.parse).toList()..sort();
+  List<DateTime> get availableDates =>
+      calendarData.keys.map(DateTime.parse).toList()..sort();
 
   /// Get all events (deprecated, use calendarData instead)
   @deprecated
-  List<Map<String, dynamic>> get events =>
-      calendarData.entries.map((entry) => {'date': entry.key, 'cards': entry.value}).toList();
+  List<Map<String, dynamic>> get events => calendarData.entries
+      .map((entry) => {'date': entry.key, 'cards': entry.value})
+      .toList();
 
   /// Get date range from available data
   DateSelection? get dateRange {
@@ -163,13 +171,13 @@ class TradeCalendarViewModel {
     DateSelection? dateFilter,
     DateTime? selectedDate,
     DateTime? lastUpdated,
-  }) => TradeCalendarViewModel(
-    portfolioId: portfolioId ?? this.portfolioId,
-    calendarData: calendarData ?? this.calendarData,
-    tradeDetailsData: tradeDetailsData ?? this.tradeDetailsData,
-    dateFilter: dateFilter ?? this.dateFilter,
-    selectedDate: selectedDate ?? this.selectedDate,
-    lastUpdated: lastUpdated ?? this.lastUpdated,
-  );
+  }) =>
+      TradeCalendarViewModel(
+        portfolioId: portfolioId ?? this.portfolioId,
+        calendarData: calendarData ?? this.calendarData,
+        tradeDetailsData: tradeDetailsData ?? this.tradeDetailsData,
+        dateFilter: dateFilter ?? this.dateFilter,
+        selectedDate: selectedDate ?? this.selectedDate,
+        lastUpdated: lastUpdated ?? this.lastUpdated,
+      );
 }
-

@@ -17,23 +17,40 @@ class HeatmapSkeletonLoader extends StatelessWidget {
                 width: 120,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerHighest
+                      .withOpacity(0.3),
                   borderRadius: BorderRadius.circular(8),
                 ),
-              ).animate(onPlay: (controller) => controller.repeat()).shimmer(duration: 1200.ms, color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5)),
+              ).animate(onPlay: (controller) => controller.repeat()).shimmer(
+                  duration: 1200.ms,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerHighest
+                      .withOpacity(0.5)),
               const SizedBox(width: 16),
               Container(
                 width: 100,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerHighest
+                      .withOpacity(0.3),
                   borderRadius: BorderRadius.circular(8),
                 ),
-              ).animate(onPlay: (controller) => controller.repeat()).shimmer(duration: 1200.ms, delay: 200.ms, color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5)),
+              ).animate(onPlay: (controller) => controller.repeat()).shimmer(
+                  duration: 1200.ms,
+                  delay: 200.ms,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerHighest
+                      .withOpacity(0.5)),
             ],
           ),
         ),
-        
+
         // Heatmap Grid Skeleton
         Expanded(
           child: Padding(
@@ -47,14 +64,21 @@ class HeatmapSkeletonLoader extends StatelessWidget {
                   children: List.generate(12, (index) {
                     final width = (constraints.maxWidth / 4) - 6;
                     final height = index % 3 == 0 ? 160.0 : 80.0;
-                    
+
                     return Container(
                       width: width,
                       height: height,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.1),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest
+                            .withOpacity(0.1),
                         borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
+                        border: Border.all(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .outline
+                                .withOpacity(0.1)),
                       ),
                       padding: const EdgeInsets.all(8),
                       child: Column(
@@ -64,7 +88,10 @@ class HeatmapSkeletonLoader extends StatelessWidget {
                             width: 40,
                             height: 12,
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest
+                                  .withOpacity(0.3),
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
@@ -73,14 +100,24 @@ class HeatmapSkeletonLoader extends StatelessWidget {
                             width: 60,
                             height: 16,
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest
+                                  .withOpacity(0.3),
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
                         ],
                       ),
-                    ).animate(onPlay: (controller) => controller.repeat())
-                     .shimmer(duration: 1200.ms, delay: (100 * index).ms, color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5));
+                    )
+                        .animate(onPlay: (controller) => controller.repeat())
+                        .shimmer(
+                            duration: 1200.ms,
+                            delay: (100 * index).ms,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest
+                                .withOpacity(0.5));
                   }),
                 );
               },

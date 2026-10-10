@@ -90,14 +90,16 @@ void main() {
 
       final entity = dto.toEntity();
       expect(entity.avgHoldMinutesBySession['SESSION_0915_1100'], 15.0);
-      expect(entity.riskRewardBySession.containsKey('SESSION_1100_1300'), isFalse);
+      expect(
+          entity.riskRewardBySession.containsKey('SESSION_1100_1300'), isFalse);
       expect(entity.bestSessionKey, 'SESSION_0915_1100');
       expect(entity.bestSessionAvgPnl, 42.5);
       expect(entity.tradingStyleHint!.style, 'SCALPER');
       expect(entity.avgHoldMinutesByDay['MONDAY'], 12.5);
       expect(entity.riskRewardByMonth['JANUARY'], 0.8);
       expect(entity.activeTradingDaysByMonth['AUGUST'], 9);
-      expect(entity.avgPnlPerActiveDayByMonth['AUGUST'], closeTo(9232.22, 0.01));
+      expect(
+          entity.avgPnlPerActiveDayByMonth['AUGUST'], closeTo(9232.22, 0.01));
       expect(entity.activeTradingDaysCount, 31);
     });
 
@@ -108,7 +110,8 @@ void main() {
         'bestSessionAvgPnl': '99.5',
       });
       expect(dto.avgHoldMinutesBySession!['SESSION_0915_1100'], 18.25);
-      expect(dto.riskRewardBySession!['SESSION_0915_1100'], closeTo(1.3333, 0.0001));
+      expect(dto.riskRewardBySession!['SESSION_0915_1100'],
+          closeTo(1.3333, 0.0001));
       expect(dto.bestSessionAvgPnl, 99.5);
     });
   });
@@ -299,7 +302,8 @@ void main() {
         0.6,
       );
       expect(entity.distributionMetrics.bestSessionKey, 'SESSION_1500_1530');
-      expect(entity.distributionMetrics.tradingStyleHint!.confidencePercent, 59);
+      expect(
+          entity.distributionMetrics.tradingStyleHint!.confidencePercent, 59);
     });
   });
 

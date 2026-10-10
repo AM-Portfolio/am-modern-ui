@@ -14,7 +14,7 @@ import 'features/trade/presentation/mobile/pages/add_trade_mobile_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize ConfigService
   await ConfigService.initialize();
 
@@ -23,7 +23,7 @@ void main() async {
     analysisBaseUrl: ConfigService.config.api.analysis!.baseUrl,
     wsUrl: EnvDomains.wsStream,
   );
-  
+
   runApp(
     ProviderScope(
       child: Consumer(
@@ -32,15 +32,17 @@ void main() async {
 
           return cubitAsync.when(
             data: (tradeCubit) {
-              final authCubit = AuthProviders.createAuthCubit()..checkAuthStatus();
+              final authCubit = AuthProviders.createAuthCubit()
+                ..checkAuthStatus();
               final themeCubit = ThemeCubit(ThemeRepository());
-              
+
               return MultiBlocProvider(
                 providers: [
                   BlocProvider<AuthCubit>.value(value: authCubit),
                   BlocProvider<ThemeCubit>.value(value: themeCubit),
                   BlocProvider<TradeControllerCubit>.value(value: tradeCubit),
-                  BlocProvider<FeatureFlagCubit>(create: (context) => FeatureFlagCubit()),
+                  BlocProvider<FeatureFlagCubit>(
+                      create: (context) => FeatureFlagCubit()),
                 ],
                 child: BlocBuilder<ThemeCubit, ThemeState>(
                   builder: (context, themeState) {
@@ -63,25 +65,33 @@ void main() async {
                       ),
                       onGenerateRoute: (settings) {
                         if (settings.name == '/trade/add') {
-                          final args = settings.arguments as Map<String, dynamic>?;
+                          final args =
+                              settings.arguments as Map<String, dynamic>?;
                           return MaterialPageRoute(
                             builder: (context) => MultiBlocProvider(
                               providers: [
-                                BlocProvider<TradeControllerCubit>.value(value: tradeCubit),
+                                BlocProvider<TradeControllerCubit>.value(
+                                    value: tradeCubit),
                                 BlocProvider<AuthCubit>.value(value: authCubit),
-                                BlocProvider<ThemeCubit>.value(value: themeCubit),
+                                BlocProvider<ThemeCubit>.value(
+                                    value: themeCubit),
                               ],
                               child: LayoutBuilder(
                                 builder: (context, constraints) {
                                   if (constraints.maxWidth < 1100) {
                                     return AddTradeMobilePage(
-                                      portfolioId: (args?['portfolioId'] as String?) ?? '',
-                                      portfolioName: args?['portfolioName'] as String?,
+                                      portfolioId:
+                                          (args?['portfolioId'] as String?) ??
+                                              '',
+                                      portfolioName:
+                                          args?['portfolioName'] as String?,
                                     );
                                   }
                                   return AddTradeWebPage(
-                                    portfolioId: (args?['portfolioId'] as String?) ?? '',
-                                    portfolioName: args?['portfolioName'] as String?,
+                                    portfolioId:
+                                        (args?['portfolioId'] as String?) ?? '',
+                                    portfolioName:
+                                        args?['portfolioName'] as String?,
                                   );
                                 },
                               ),
@@ -95,8 +105,11 @@ void main() async {
                 ),
               );
             },
-            loading: () => const MaterialApp(home: Scaffold(body: Center(child: CircularProgressIndicator()))),
-            error: (e, s) => MaterialApp(home: Scaffold(body: Center(child: Text('Error: $e')))),
+            loading: () => const MaterialApp(
+                home:
+                    Scaffold(body: Center(child: CircularProgressIndicator()))),
+            error: (e, s) => MaterialApp(
+                home: Scaffold(body: Center(child: Text('Error: $e')))),
           );
         },
       ),

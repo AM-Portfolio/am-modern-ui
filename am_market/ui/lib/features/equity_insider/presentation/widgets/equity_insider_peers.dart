@@ -37,9 +37,12 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
     });
   }
 
-  double _getSortValue(CompetitorPeer peer, String column, List<PeerColumnDef> activeCols) {
-    if (column == 'currentPrice') return peer.currentPrice ?? double.negativeInfinity;
-    if (column == 'dayChangePercent') return peer.dayChangePercent ?? double.negativeInfinity;
+  double _getSortValue(
+      CompetitorPeer peer, String column, List<PeerColumnDef> activeCols) {
+    if (column == 'currentPrice')
+      return peer.currentPrice ?? double.negativeInfinity;
+    if (column == 'dayChangePercent')
+      return peer.dayChangePercent ?? double.negativeInfinity;
 
     for (final col in activeCols) {
       if (col.key == column) {
@@ -49,7 +52,8 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
     return double.negativeInfinity;
   }
 
-  List<CompetitorPeer> _getSortedPeers(List<CompetitorPeer> peers, List<PeerColumnDef> activeCols) {
+  List<CompetitorPeer> _getSortedPeers(
+      List<CompetitorPeer> peers, List<PeerColumnDef> activeCols) {
     final list = List<CompetitorPeer>.from(peers);
     list.sort((a, b) {
       final aVal = _getSortValue(a, _activeSortColumn, activeCols);
@@ -85,7 +89,8 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
 
             final activeCols = PeerColumnsHelper.resolveActiveColumns(peers);
             final sortedPeers = _getSortedPeers(peers, activeCols);
-            final double maxRoe = peers.fold(0.0, (m, p) => max(m, p.roe ?? 0.0));
+            final double maxRoe =
+                peers.fold(0.0, (m, p) => max(m, p.roe ?? 0.0));
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -109,8 +114,10 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
                   items: sortedPeers,
                   breakpoint: 768.0,
                   spacing: 10.0,
-                  tableBuilder: (context, items) => _buildDesktopTable(context, items, maxRoe, activeCols),
-                  cardBuilder: (context, peer, index) => _buildMobilePeerCard(context, peer, maxRoe, activeCols),
+                  tableBuilder: (context, items) =>
+                      _buildDesktopTable(context, items, maxRoe, activeCols),
+                  cardBuilder: (context, peer, index) =>
+                      _buildMobilePeerCard(context, peer, maxRoe, activeCols),
                 ),
               ],
             );
@@ -148,7 +155,8 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
               children: [
                 _buildTableHeader(context, activeCols),
                 const SizedBox(height: 4),
-                ...sortedPeers.map((peer) => _buildTableRow(context, peer, maxRoe, activeCols)),
+                ...sortedPeers.map((peer) =>
+                    _buildTableRow(context, peer, maxRoe, activeCols)),
               ],
             ),
           ),
@@ -165,8 +173,10 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
   ) {
     final isCurrent = peer.symbol == widget.symbol;
     final targetSymbol = (peer.symbol ?? '').trim();
-    final displayName = targetSymbol.isNotEmpty ? targetSymbol : (peer.companyName ?? '—');
-    final isClickable = targetSymbol.isNotEmpty && targetSymbol != widget.symbol;
+    final displayName =
+        targetSymbol.isNotEmpty ? targetSymbol : (peer.companyName ?? '—');
+    final isClickable =
+        targetSymbol.isNotEmpty && targetSymbol != widget.symbol;
 
     String dayChangeStr = '—';
     Color dayChangeColor = context.textSecondary;
@@ -202,14 +212,18 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
       initialCols.addAll(activeCols.take(4));
     }
 
-    final additionalCols = activeCols.where((c) => !initialCols.contains(c)).toList();
-    final isSortInAdditional = additionalCols.any((c) => c.key == _activeSortColumn);
+    final additionalCols =
+        activeCols.where((c) => !initialCols.contains(c)).toList();
+    final isSortInAdditional =
+        additionalCols.any((c) => c.key == _activeSortColumn);
 
     return AmEntityMobileCard(
       isSelected: isCurrent,
       accentColor: ModuleColors.market,
-      onHeaderTap: isClickable ? () => widget.onPeerSelected?.call(targetSymbol) : null,
-      onTap: isClickable ? () => widget.onPeerSelected?.call(targetSymbol) : null,
+      onHeaderTap:
+          isClickable ? () => widget.onPeerSelected?.call(targetSymbol) : null,
+      onTap:
+          isClickable ? () => widget.onPeerSelected?.call(targetSymbol) : null,
       leading: AmLetterAvatar(
         text: displayName,
         color: isCurrent ? context.marketTheme.positive : null,
@@ -221,7 +235,9 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
           fontSize: 13,
           color: isClickable
               ? ModuleColors.market
-              : (isCurrent ? context.marketTheme.positive : context.textPrimary),
+              : (isCurrent
+                  ? context.marketTheme.positive
+                  : context.textPrimary),
         ),
         overflow: TextOverflow.ellipsis,
       ),
@@ -293,7 +309,8 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
     );
   }
 
-  Widget _buildTableHeader(BuildContext context, List<PeerColumnDef> activeCols) {
+  Widget _buildTableHeader(
+      BuildContext context, List<PeerColumnDef> activeCols) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
       decoration: BoxDecoration(
@@ -320,15 +337,18 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
           ),
           Expanded(
             flex: 12,
-            child: _buildColumnHeader('PRICE', 'currentPrice', Alignment.centerRight),
+            child: _buildColumnHeader(
+                'PRICE', 'currentPrice', Alignment.centerRight),
           ),
           Expanded(
             flex: 10,
-            child: _buildColumnHeader('DAY CHG', 'dayChangePercent', Alignment.centerRight),
+            child: _buildColumnHeader(
+                'DAY CHG', 'dayChangePercent', Alignment.centerRight),
           ),
           ...activeCols.map((col) => Expanded(
                 flex: 9,
-                child: _buildColumnHeader(col.label.toUpperCase(), col.key, Alignment.centerRight),
+                child: _buildColumnHeader(
+                    col.label.toUpperCase(), col.key, Alignment.centerRight),
               )),
         ],
       ),
@@ -365,10 +385,14 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
               const SizedBox(width: 4),
               Icon(
                 isSorted
-                    ? (_sortDescending ? Icons.arrow_downward : Icons.arrow_upward)
+                    ? (_sortDescending
+                        ? Icons.arrow_downward
+                        : Icons.arrow_upward)
                     : Icons.unfold_more,
                 size: 11,
-                color: isSorted ? ModuleColors.market : context.textTertiary.withValues(alpha: 0.4),
+                color: isSorted
+                    ? ModuleColors.market
+                    : context.textTertiary.withValues(alpha: 0.4),
               ),
             ],
           ),
@@ -377,9 +401,12 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
     );
   }
 
-  Widget _buildTableRow(BuildContext context, CompetitorPeer p, double maxRoe, List<PeerColumnDef> activeCols) {
+  Widget _buildTableRow(BuildContext context, CompetitorPeer p, double maxRoe,
+      List<PeerColumnDef> activeCols) {
     final isCurrent = p.symbol == widget.symbol;
-    final rowBg = isCurrent ? context.marketTheme.positive.withValues(alpha: 0.05) : Colors.transparent;
+    final rowBg = isCurrent
+        ? context.marketTheme.positive.withValues(alpha: 0.05)
+        : Colors.transparent;
     final targetSymbol = (p.symbol ?? '').trim();
 
     String dayChangeStr = '—';
@@ -387,7 +414,9 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
     if (p.dayChangePercent != null) {
       final sign = p.dayChangePercent! >= 0 ? '+' : '';
       dayChangeStr = '$sign${p.dayChangePercent!.toStringAsFixed(2)}%';
-      dayChangeColor = p.dayChangePercent! >= 0 ? context.marketTheme.positive : context.marketTheme.negative;
+      dayChangeColor = p.dayChangePercent! >= 0
+          ? context.marketTheme.positive
+          : context.marketTheme.negative;
     }
 
     return Container(
@@ -415,13 +444,18 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
                 children: [
                   Flexible(
                     child: Text(
-                      targetSymbol.isNotEmpty ? targetSymbol : (p.companyName ?? '—'),
+                      targetSymbol.isNotEmpty
+                          ? targetSymbol
+                          : (p.companyName ?? '—'),
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
-                        color: targetSymbol.isNotEmpty && targetSymbol != widget.symbol
+                        color: targetSymbol.isNotEmpty &&
+                                targetSymbol != widget.symbol
                             ? ModuleColors.market
-                            : (isCurrent ? context.marketTheme.positive : context.textPrimary),
+                            : (isCurrent
+                                ? context.marketTheme.positive
+                                : context.textPrimary),
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -429,9 +463,11 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
                   if (isCurrent) ...[
                     const SizedBox(width: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 5, vertical: 1.5),
                       decoration: BoxDecoration(
-                        color: context.marketTheme.positive.withValues(alpha: 0.15),
+                        color: context.marketTheme.positive
+                            .withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(3),
                       ),
                       child: Text(
@@ -462,10 +498,16 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  p.currentPrice != null ? '₹${NumberFormat('#,##,##0.00', 'en_IN').format(p.currentPrice)}' : '—',
+                  p.currentPrice != null
+                      ? '₹${NumberFormat('#,##,##0.00', 'en_IN').format(p.currentPrice)}'
+                      : '—',
                   style: TextStyle(
-                    color: _activeSortColumn == 'currentPrice' ? ModuleColors.market : context.textPrimary,
-                    fontWeight: _activeSortColumn == 'currentPrice' ? FontWeight.w700 : FontWeight.w600,
+                    color: _activeSortColumn == 'currentPrice'
+                        ? ModuleColors.market
+                        : context.textPrimary,
+                    fontWeight: _activeSortColumn == 'currentPrice'
+                        ? FontWeight.w700
+                        : FontWeight.w600,
                     fontSize: 13,
                   ),
                 ),
@@ -489,7 +531,9 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
                   dayChangeStr,
                   style: TextStyle(
                     color: dayChangeColor,
-                    fontWeight: _activeSortColumn == 'dayChangePercent' ? FontWeight.w700 : FontWeight.w600,
+                    fontWeight: _activeSortColumn == 'dayChangePercent'
+                        ? FontWeight.w700
+                        : FontWeight.w600,
                     fontSize: 13,
                   ),
                 ),
@@ -505,7 +549,8 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
                 child: Align(
                   alignment: Alignment.centerRight,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: isColActive
                           ? ModuleColors.market.withValues(alpha: 0.12)
@@ -565,7 +610,10 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(
-            color: (activeExchange == 'BSE' ? context.colors.statusWarning : context.marketTheme.chartBlue).withValues(alpha: 0.15),
+            color: (activeExchange == 'BSE'
+                    ? context.colors.statusWarning
+                    : context.marketTheme.chartBlue)
+                .withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Text(
@@ -573,7 +621,9 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w600,
-              color: activeExchange == 'BSE' ? context.colors.statusWarning : context.marketTheme.chartBlue,
+              color: activeExchange == 'BSE'
+                  ? context.colors.statusWarning
+                  : context.marketTheme.chartBlue,
             ),
           ),
         ),

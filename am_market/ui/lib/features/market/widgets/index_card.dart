@@ -69,12 +69,9 @@ class IndexCard extends StatelessWidget {
                 color: MarketColors.cardSurface(context),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: isSelected
-                      ? accent
-                      : MarketColors.borderDefault(context),
-                  width: isSelected
-                      ? 1.5
-                      : MarketColors.borderWidth(context),
+                  color:
+                      isSelected ? accent : MarketColors.borderDefault(context),
+                  width: isSelected ? 1.5 : MarketColors.borderWidth(context),
                 ),
                 boxShadow: isSelected
                     ? [
@@ -108,7 +105,9 @@ class IndexCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          isLoading ? '...' : numberFormat.format(data.lastPrice),
+                          isLoading
+                              ? '...'
+                              : numberFormat.format(data.lastPrice),
                           style: TextStyle(
                             fontSize: isMobile ? 14 : 16,
                             color: MarketColors.textPrimary(context),
@@ -193,7 +192,8 @@ class _IndexSparklinePainter extends CustomPainter {
     final rangeY = maxVal - minVal;
 
     double getY(double val) =>
-        size.height * 0.12 + (size.height * 0.76) * (1 - ((val - minVal) / rangeY));
+        size.height * 0.12 +
+        (size.height * 0.76) * (1 - ((val - minVal) / rangeY));
 
     final path = Path()..moveTo(0, getY(data[0]));
     for (var i = 0; i < data.length - 1; i++) {

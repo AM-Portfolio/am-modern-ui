@@ -188,10 +188,11 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
     final gen = ++_runGeneration;
     final modeAtStart = _mode;
     try {
-      final remote =
-          await ref.read(portfolioRemoteDataSourceProvider.future);
-      final result =
-          await remote.getPortfolioWhatIf(widget.portfolioId, _body());
+      final remote = await ref.read(portfolioRemoteDataSourceProvider.future);
+      final result = await remote.getPortfolioWhatIf(
+        widget.portfolioId,
+        _body(),
+      );
       if (!mounted || gen != _runGeneration || modeAtStart != _mode) return;
       setState(() {
         _result = result;
@@ -295,8 +296,9 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
             accentColor: ModuleColors.portfolio,
             onSelected: _pickSymbol,
             searchHandler: (q) async {
-              final remote =
-                  await ref.read(portfolioRemoteDataSourceProvider.future);
+              final remote = await ref.read(
+                portfolioRemoteDataSourceProvider.future,
+              );
               return searchWhatIfSymbols(
                 remote: remote,
                 portfolioId: widget.portfolioId,
@@ -309,8 +311,9 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
           if (_mode == _WhatIfMode.add)
             TextField(
               controller: _amountCtrl,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: intelligenceFieldDecoration(
                 context,
                 label: 'Amount (INR)',
@@ -320,8 +323,9 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
           else
             TextField(
               controller: _weightCtrl,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: intelligenceFieldDecoration(
                 context,
                 label: 'Target weight %',
@@ -338,8 +342,9 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
             resultBadge: null,
             onSelected: (label) => setState(() => _fromSectorCtrl.text = label),
             searchHandler: (q) async {
-              final remote =
-                  await ref.read(portfolioRemoteDataSourceProvider.future);
+              final remote = await ref.read(
+                portfolioRemoteDataSourceProvider.future,
+              );
               return searchWhatIfSectors(
                 remote: remote,
                 portfolioId: widget.portfolioId,
@@ -357,8 +362,9 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
             resultBadge: null,
             onSelected: (label) => setState(() => _toSectorCtrl.text = label),
             searchHandler: (q) async {
-              final remote =
-                  await ref.read(portfolioRemoteDataSourceProvider.future);
+              final remote = await ref.read(
+                portfolioRemoteDataSourceProvider.future,
+              );
               return searchWhatIfSectors(
                 remote: remote,
                 portfolioId: widget.portfolioId,
@@ -369,8 +375,7 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
           const SizedBox(height: 8),
           TextField(
             controller: _movePctCtrl,
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: intelligenceFieldDecoration(
               context,
               label: 'Move weight %',
@@ -408,9 +413,9 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
           Text(
             'Simulation only — not saved',
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Theme.of(context).hintColor,
-                  fontStyle: FontStyle.italic,
-                ),
+              color: Theme.of(context).hintColor,
+              fontStyle: FontStyle.italic,
+            ),
           ),
           const SizedBox(height: 6),
           _BeforeAfter(result: _result!),
@@ -422,16 +427,16 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
               children: [
                 Text(
                   'After Simulation',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Run simulation to see portfolio impact',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).hintColor,
-                      ),
+                    color: Theme.of(context).hintColor,
+                  ),
                 ),
               ],
             ),
@@ -440,7 +445,6 @@ class _PortfolioWhatIfCardState extends ConsumerState<PortfolioWhatIfCard> {
     );
   }
 }
-
 
 class _BeforeAfter extends StatelessWidget {
   const _BeforeAfter({required this.result});
@@ -468,9 +472,9 @@ class _BeforeAfter extends StatelessWidget {
         children: [
           Text(
             'After Simulation (vs Current)',
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 10),
           _DeltaRow(
@@ -482,12 +486,7 @@ class _BeforeAfter extends StatelessWidget {
           ...sectorKeys.map((k) {
             final b = result.before?.sectorWeights[k];
             final a = result.after?.sectorWeights[k];
-            return _DeltaRow(
-              label: k,
-              before: b,
-              after: a,
-              suffix: '%',
-            );
+            return _DeltaRow(label: k, before: b, after: a, suffix: '%');
           }),
         ],
       ),
@@ -512,8 +511,7 @@ class _DeltaRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final delta =
-        (before != null && after != null) ? after! - before! : null;
+    final delta = (before != null && after != null) ? after! - before! : null;
     Color? arrowColor;
     IconData? icon;
     if (delta != null && delta.abs() > 0.05) {
@@ -521,8 +519,7 @@ class _DeltaRow extends StatelessWidget {
       // Sector / allocation weight moves stay neutral; score uses P&L semantics.
       if (higherIsBetter) {
         final good = up;
-        arrowColor =
-            good ? context.marketPositive : context.marketNegative;
+        arrowColor = good ? context.marketPositive : context.marketNegative;
       } else {
         arrowColor = context.textSecondary;
       }
@@ -534,15 +531,10 @@ class _DeltaRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            child: Text(label, style: Theme.of(context).textTheme.bodySmall),
           ),
           Text(
-            before == null
-                ? '—'
-                : '${before!.toStringAsFixed(1)}$suffix',
+            before == null ? '—' : '${before!.toStringAsFixed(1)}$suffix',
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const Padding(
@@ -551,9 +543,9 @@ class _DeltaRow extends StatelessWidget {
           ),
           Text(
             after == null ? '—' : '${after!.toStringAsFixed(1)}$suffix',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
           ),
           if (icon != null) ...[
             const SizedBox(width: 4),

@@ -118,18 +118,15 @@ class PortfolioAnalysisWidget extends StatelessWidget {
                               ),
                             ),
                           ]
-                        : List.generate(
-                            allocations.length,
-                            (index) {
-                              final allocation = allocations[index];
-                              final color = colors[index % colors.length];
-                              return _buildAllocationItem(
-                                allocation.sector,
-                                allocation.percentage,
-                                color,
-                              );
-                            },
-                          ),
+                        : List.generate(allocations.length, (index) {
+                            final allocation = allocations[index];
+                            final color = colors[index % colors.length];
+                            return _buildAllocationItem(
+                              allocation.sector,
+                              allocation.percentage,
+                              color,
+                            );
+                          }),
                   ),
                 ),
               ],
@@ -166,35 +163,37 @@ class PortfolioAnalysisWidget extends StatelessWidget {
   Widget _buildPerformanceMetrics(
     BuildContext context,
     PortfolioSummary summary,
-  ) =>
-      Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+  ) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Performance Metrics',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 16),
+          Row(
             children: [
-              Text(
-                'Performance Metrics',
-                style: Theme.of(context).textTheme.titleMedium,
+              Expanded(
+                child: _buildMetricCard(context, 'Sharpe Ratio', '1.42'),
               ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(child: _buildMetricCard(context, 'Sharpe Ratio', '1.42')),
-                  const SizedBox(width: 8),
-                  Expanded(child: _buildMetricCard(context, 'Beta', '0.95')),
-                  const SizedBox(width: 8),
-                  Expanded(child: _buildMetricCard(context, 'Alpha', '2.1%')),
-                  const SizedBox(width: 8),
-                  Expanded(child: _buildMetricCard(context, 'Volatility', '12.3%')),
-                ],
-              ),
+              const SizedBox(width: 8),
+              Expanded(child: _buildMetricCard(context, 'Beta', '0.95')),
+              const SizedBox(width: 8),
+              Expanded(child: _buildMetricCard(context, 'Alpha', '2.1%')),
+              const SizedBox(width: 8),
+              Expanded(child: _buildMetricCard(context, 'Volatility', '12.3%')),
             ],
           ),
-        ),
-      );
+        ],
+      ),
+    ),
+  );
 
-  Widget _buildMetricCard(BuildContext context, String title, String value) => Container(
+  Widget _buildMetricCard(BuildContext context, String title, String value) =>
+      Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: context.surfaceColor,
@@ -244,87 +243,100 @@ class PortfolioAnalysisWidget extends StatelessWidget {
                 ),
               )
             else
-              ...allPerformers.map(
-                (performer) {
-                  final isPositive = performer.gainLossPercentage >= 0;
-                  final gainText =
-                      '${isPositive ? "+" : ""}${performer.gainLossPercentage.toStringAsFixed(2)}%';
-                  return ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: isPositive
-                          ? context.marketPositive.withValues(alpha: 0.15)
-                          : context.marketNegative.withValues(alpha: 0.15),
-                      child: Text(
-                        performer.symbol,
-                        style: TextStyle(
-                          color: isPositive
-                              ? context.marketPositive
-                              : context.marketNegative,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    title: Text(performer.symbol),
-                    subtitle: Text(performer.companyName),
-                    trailing: Text(
-                      gainText,
+              ...allPerformers.map((performer) {
+                final isPositive = performer.gainLossPercentage >= 0;
+                final gainText =
+                    '${isPositive ? "+" : ""}${performer.gainLossPercentage.toStringAsFixed(2)}%';
+                return ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: isPositive
+                        ? context.marketPositive.withValues(alpha: 0.15)
+                        : context.marketNegative.withValues(alpha: 0.15),
+                    child: Text(
+                      performer.symbol,
                       style: TextStyle(
-                        color: isPositive ? context.marketPositive : context.marketNegative,
+                        color: isPositive
+                            ? context.marketPositive
+                            : context.marketNegative,
+                        fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                  );
-                },
-              ),
+                  ),
+                  title: Text(performer.symbol),
+                  subtitle: Text(performer.companyName),
+                  trailing: Text(
+                    gainText,
+                    style: TextStyle(
+                      color: isPositive
+                          ? context.marketPositive
+                          : context.marketNegative,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                );
+              }),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildRiskAnalysis(BuildContext context, PortfolioSummary summary) =>
-      Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Risk Analysis',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 16),
-              _buildRiskIndicator(context, 'Overall Risk', 0.65, context.statusWarning),
-              const SizedBox(height: 8),
-              _buildRiskIndicator(context, 'Market Risk', 0.45, context.statusInfo),
-              const SizedBox(height: 8),
-              _buildRiskIndicator(context, 'Concentration Risk', 0.8, context.statusError),
-            ],
-          ),
-        ),
-      );
-
-  Widget _buildRiskIndicator(BuildContext context, String title, double value, Color color) => Column(
+  Widget _buildRiskAnalysis(
+    BuildContext context,
+    PortfolioSummary summary,
+  ) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(title, style: const TextStyle(fontSize: 14)),
-              Text(
-                '${(value * 100).toInt()}%',
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-              ),
-            ],
+          Text('Risk Analysis', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 16),
+          _buildRiskIndicator(
+            context,
+            'Overall Risk',
+            0.65,
+            context.statusWarning,
           ),
-          const SizedBox(height: 4),
-          LinearProgressIndicator(
-            value: value,
-            backgroundColor: context.borderColor,
-            valueColor: AlwaysStoppedAnimation<Color>(color),
+          const SizedBox(height: 8),
+          _buildRiskIndicator(context, 'Market Risk', 0.45, context.statusInfo),
+          const SizedBox(height: 8),
+          _buildRiskIndicator(
+            context,
+            'Concentration Risk',
+            0.8,
+            context.statusError,
           ),
         ],
-      );
+      ),
+    ),
+  );
+
+  Widget _buildRiskIndicator(
+    BuildContext context,
+    String title,
+    double value,
+    Color color,
+  ) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(title, style: const TextStyle(fontSize: 14)),
+          Text(
+            '${(value * 100).toInt()}%',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+        ],
+      ),
+      const SizedBox(height: 4),
+      LinearProgressIndicator(
+        value: value,
+        backgroundColor: context.borderColor,
+        valueColor: AlwaysStoppedAnimation<Color>(color),
+      ),
+    ],
+  );
 }

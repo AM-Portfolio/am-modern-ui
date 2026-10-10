@@ -1,9 +1,11 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:am_ai_ui/data/ai_intent_response.dart';
 
 void main() {
   group('AiIntentResponse.fromJson', () {
-    test('all fields present maps to correct values including widgetParams data', () {
+    test(
+        'all fields present maps to correct values including widgetParams data',
+        () {
       final json = {
         'message': 'Here is your portfolio summary.',
         'widgetId': 'PORTFOLIO_SUMMARY',
@@ -74,7 +76,8 @@ void main() {
       expect(response.widgetId, 'TEXT_RESPONSE');
     });
 
-    test('toolsUsed list with multiple entries maps all entries as strings', () {
+    test('toolsUsed list with multiple entries maps all entries as strings',
+        () {
       final json = {
         'message': 'Multi-tool reply',
         'widgetId': 'PORTFOLIO_SUMMARY',
@@ -115,7 +118,8 @@ void main() {
     });
 
     test('widgetParams contains reason and traceId', () {
-      final response = AiIntentResponse.error('Network failure', traceId: 'tr-err');
+      final response =
+          AiIntentResponse.error('Network failure', traceId: 'tr-err');
 
       expect(response.widgetParams['reason'], 'Network failure');
       expect(response.widgetParams['traceId'], 'tr-err');

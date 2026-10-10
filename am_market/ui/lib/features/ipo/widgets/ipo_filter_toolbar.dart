@@ -34,7 +34,8 @@ class IpoFilterToolbar extends ConsumerWidget {
                         label: 'All',
                         count: counts.total,
                         filter: IpoStatusFilter.all,
-                        isSelected: filterState.statusFilter == IpoStatusFilter.all,
+                        isSelected:
+                            filterState.statusFilter == IpoStatusFilter.all,
                       ),
                       const SizedBox(width: 8),
                       _buildFilterChip(
@@ -43,7 +44,8 @@ class IpoFilterToolbar extends ConsumerWidget {
                         label: 'Open',
                         count: counts.open,
                         filter: IpoStatusFilter.open,
-                        isSelected: filterState.statusFilter == IpoStatusFilter.open,
+                        isSelected:
+                            filterState.statusFilter == IpoStatusFilter.open,
                       ),
                       const SizedBox(width: 8),
                       _buildFilterChip(
@@ -52,7 +54,8 @@ class IpoFilterToolbar extends ConsumerWidget {
                         label: 'Closing Today',
                         count: counts.closingToday,
                         filter: IpoStatusFilter.closingToday,
-                        isSelected: filterState.statusFilter == IpoStatusFilter.closingToday,
+                        isSelected: filterState.statusFilter ==
+                            IpoStatusFilter.closingToday,
                       ),
                       const SizedBox(width: 8),
                       _buildFilterChip(
@@ -61,7 +64,8 @@ class IpoFilterToolbar extends ConsumerWidget {
                         label: 'Upcoming',
                         count: counts.upcoming,
                         filter: IpoStatusFilter.upcoming,
-                        isSelected: filterState.statusFilter == IpoStatusFilter.upcoming,
+                        isSelected: filterState.statusFilter ==
+                            IpoStatusFilter.upcoming,
                       ),
                       const SizedBox(width: 8),
                       _buildFilterChip(
@@ -70,7 +74,8 @@ class IpoFilterToolbar extends ConsumerWidget {
                         label: 'Closed',
                         count: counts.closed,
                         filter: IpoStatusFilter.closed,
-                        isSelected: filterState.statusFilter == IpoStatusFilter.closed,
+                        isSelected:
+                            filterState.statusFilter == IpoStatusFilter.closed,
                       ),
                       const SizedBox(width: 14),
                       _buildVerticalDivider(context),
@@ -80,18 +85,23 @@ class IpoFilterToolbar extends ConsumerWidget {
                         context,
                         label: 'Mainboard',
                         value: filterState.filterMainboard,
-                        onChanged: (val) => ref.read(ipoFilterStateProvider.notifier).toggleMainboard(val),
+                        onChanged: (val) => ref
+                            .read(ipoFilterStateProvider.notifier)
+                            .toggleMainboard(val),
                       ),
                       const SizedBox(width: 12),
                       _buildCheckbox(
                         context,
                         label: 'SME',
                         value: filterState.filterSme,
-                        onChanged: (val) => ref.read(ipoFilterStateProvider.notifier).toggleSme(val),
+                        onChanged: (val) => ref
+                            .read(ipoFilterStateProvider.notifier)
+                            .toggleSme(val),
                       ),
                       const SizedBox(width: 14),
                       // 3. Industry Dropdown
-                      _buildIndustryDropdown(context, ref, industries, filterState.selectedIndustry),
+                      _buildIndustryDropdown(context, ref, industries,
+                          filterState.selectedIndustry),
                     ],
                   ),
                 ),
@@ -124,7 +134,8 @@ class IpoFilterToolbar extends ConsumerWidget {
                     label: 'Open',
                     count: counts.open,
                     filter: IpoStatusFilter.open,
-                    isSelected: filterState.statusFilter == IpoStatusFilter.open,
+                    isSelected:
+                        filterState.statusFilter == IpoStatusFilter.open,
                   ),
                   const SizedBox(width: 8),
                   _buildFilterChip(
@@ -133,7 +144,8 @@ class IpoFilterToolbar extends ConsumerWidget {
                     label: 'Closing Today',
                     count: counts.closingToday,
                     filter: IpoStatusFilter.closingToday,
-                    isSelected: filterState.statusFilter == IpoStatusFilter.closingToday,
+                    isSelected: filterState.statusFilter ==
+                        IpoStatusFilter.closingToday,
                   ),
                   const SizedBox(width: 8),
                   _buildFilterChip(
@@ -142,7 +154,8 @@ class IpoFilterToolbar extends ConsumerWidget {
                     label: 'Upcoming',
                     count: counts.upcoming,
                     filter: IpoStatusFilter.upcoming,
-                    isSelected: filterState.statusFilter == IpoStatusFilter.upcoming,
+                    isSelected:
+                        filterState.statusFilter == IpoStatusFilter.upcoming,
                   ),
                   const SizedBox(width: 8),
                   _buildFilterChip(
@@ -151,7 +164,8 @@ class IpoFilterToolbar extends ConsumerWidget {
                     label: 'Closed',
                     count: counts.closed,
                     filter: IpoStatusFilter.closed,
-                    isSelected: filterState.statusFilter == IpoStatusFilter.closed,
+                    isSelected:
+                        filterState.statusFilter == IpoStatusFilter.closed,
                   ),
                 ],
               ),
@@ -176,14 +190,17 @@ class IpoFilterToolbar extends ConsumerWidget {
                   context,
                   label: 'Mainboard',
                   value: filterState.filterMainboard,
-                  onChanged: (val) => ref.read(ipoFilterStateProvider.notifier).toggleMainboard(val),
+                  onChanged: (val) => ref
+                      .read(ipoFilterStateProvider.notifier)
+                      .toggleMainboard(val),
                 ),
                 const SizedBox(width: 12),
                 _buildCheckbox(
                   context,
                   label: 'SME',
                   value: filterState.filterSme,
-                  onChanged: (val) => ref.read(ipoFilterStateProvider.notifier).toggleSme(val),
+                  onChanged: (val) =>
+                      ref.read(ipoFilterStateProvider.notifier).toggleSme(val),
                 ),
               ],
             ),
@@ -282,7 +299,8 @@ class IpoFilterToolbar extends ConsumerWidget {
                 value: value,
                 onChanged: onChanged,
                 activeColor: ModuleColors.market,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4)),
                 side: BorderSide(color: context.textTertiary, width: 1.2),
               ),
             ),
@@ -290,10 +308,10 @@ class IpoFilterToolbar extends ConsumerWidget {
             Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: context.textPrimary,
-                fontWeight: FontWeight.w500,
-                fontSize: 13,
-              ),
+                    color: context.textPrimary,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 13,
+                  ),
             ),
           ],
         ),
@@ -308,7 +326,8 @@ class IpoFilterToolbar extends ConsumerWidget {
     String? selected,
   ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final currentVal = (selected != null && industries.contains(selected)) ? selected : 'All';
+    final currentVal =
+        (selected != null && industries.contains(selected)) ? selected : 'All';
 
     return Container(
       height: 38,
@@ -324,7 +343,8 @@ class IpoFilterToolbar extends ConsumerWidget {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: currentVal,
-          icon: Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: context.textSecondary),
+          icon: Icon(Icons.keyboard_arrow_down_rounded,
+              size: 18, color: context.textSecondary),
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
@@ -341,11 +361,12 @@ class IpoFilterToolbar extends ConsumerWidget {
             );
           }).toList(),
           onChanged: (val) {
-            ref.read(ipoFilterStateProvider.notifier).setIndustry(val == 'All' ? null : val);
+            ref
+                .read(ipoFilterStateProvider.notifier)
+                .setIndustry(val == 'All' ? null : val);
           },
         ),
       ),
     );
   }
-
 }

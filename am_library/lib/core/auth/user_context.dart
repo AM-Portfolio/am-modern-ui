@@ -23,8 +23,7 @@ import '../utils/logger.dart';
 /// All results are **in-memory cached** after the first read so subsequent
 /// calls within the same request lifecycle are synchronous-fast.
 class UserContext {
-  UserContext._({required SecureStorageService storage})
-      : _storage = storage;
+  UserContext._({required SecureStorageService storage}) : _storage = storage;
 
   // ── Singleton ──────────────────────────────────────────────────────────────
 
@@ -59,7 +58,10 @@ class UserContext {
     }
     final token = await _storage.getAccessToken();
     if (token == null || token.isEmpty) {
-      AppLogger.warning('UserContext: access token missing', tag: 'UserContext');
+      AppLogger.warning(
+        'UserContext: access token missing',
+        tag: 'UserContext',
+      );
       throw const UnauthenticatedException();
     }
     _cachedToken = token;
@@ -151,8 +153,9 @@ class UserContext {
 /// Thrown when a [UserContext] operation requires an authenticated session
 /// but no valid token is present in storage.
 class UnauthenticatedException implements Exception {
-  const UnauthenticatedException(
-      [this.message = 'Authentication required. Please log in.']);
+  const UnauthenticatedException([
+    this.message = 'Authentication required. Please log in.',
+  ]);
   final String message;
 
   @override

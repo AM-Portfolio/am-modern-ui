@@ -33,8 +33,7 @@ class DashboardMobileScreen extends ConsumerStatefulWidget {
       _DashboardMobileScreenState();
 }
 
-class _DashboardMobileScreenState
-    extends ConsumerState<DashboardMobileScreen> {
+class _DashboardMobileScreenState extends ConsumerState<DashboardMobileScreen> {
   late final PageController _pageController;
   bool _searchOpen = false;
 
@@ -72,8 +71,8 @@ class _DashboardMobileScreenState
               Text(
                 label,
                 style: context.text.caption().copyWith(
-                      color: context.colors.textSecondary,
-                    ),
+                  color: context.colors.textSecondary,
+                ),
               ),
               const SizedBox(height: 8),
             ],
@@ -91,7 +90,10 @@ class _DashboardMobileScreenState
       }
     }
 
-    ref.listen(dashboardStreamProvider(widget.userId), (_, next) => markIfReady(next));
+    ref.listen(
+      dashboardStreamProvider(widget.userId),
+      (_, next) => markIfReady(next),
+    );
     ref.listen(
       moversStreamProvider(widget.userId, timeFrame: tfCode),
       (_, next) => markIfReady(next),
@@ -100,7 +102,10 @@ class _DashboardMobileScreenState
       recentActivityProvider(widget.userId, page: 0, size: 10),
       (_, next) => markIfReady(next),
     );
-    ref.listen(portfolioOverviewsProvider(widget.userId), (_, next) => markIfReady(next));
+    ref.listen(
+      portfolioOverviewsProvider(widget.userId),
+      (_, next) => markIfReady(next),
+    );
   }
 
   Widget _buildStickyHeader({
@@ -159,8 +164,10 @@ class _DashboardMobileScreenState
                       onPressed: () => DashboardCustomizeSheet.show(context),
                       icon: Icon(Icons.tune, color: onSurface, size: 22),
                       padding: EdgeInsets.zero,
-                      constraints:
-                          const BoxConstraints(minWidth: 36, minHeight: 36),
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
                     ),
                     const SizedBox(width: 4),
                   ],
@@ -175,8 +182,10 @@ class _DashboardMobileScreenState
                           size: 22,
                         ),
                         padding: EdgeInsets.zero,
-                        constraints:
-                            const BoxConstraints(minWidth: 36, minHeight: 36),
+                        constraints: const BoxConstraints(
+                          minWidth: 36,
+                          minHeight: 36,
+                        ),
                       )
                     else
                       _DocIntelAddPortfolioButton(
@@ -191,11 +200,16 @@ class _DashboardMobileScreenState
                     IconButton(
                       tooltip: 'Paper trading',
                       onPressed: widget.onOpenPaper,
-                      icon: Icon(Icons.science_outlined,
-                          color: onSurface, size: 22),
+                      icon: Icon(
+                        Icons.science_outlined,
+                        color: onSurface,
+                        size: 22,
+                      ),
                       padding: EdgeInsets.zero,
-                      constraints:
-                          const BoxConstraints(minWidth: 36, minHeight: 36),
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
                     ),
                     const SizedBox(width: 8),
                   ],

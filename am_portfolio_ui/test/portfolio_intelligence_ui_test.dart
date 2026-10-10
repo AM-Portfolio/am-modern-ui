@@ -77,8 +77,9 @@ void main() {
     expect(intelligenceDonutColor(8), IntelligenceDonut.palette.first);
   });
 
-  testWidgets('Movers compact shows counts and See Top 10 when data exists',
-      (tester) async {
+  testWidgets('Movers compact shows counts and See Top 10 when data exists', (
+    tester,
+  ) async {
     final movers = Movers(
       topGainers: [
         for (var i = 0; i < 4; i++)
@@ -142,9 +143,7 @@ void main() {
           XrayWeight(name: 'Financial Services', weightPct: 31.4),
           XrayWeight(name: 'IT', weightPct: 18.2),
         ],
-        industryWeights: const [
-          XrayWeight(name: 'Banks', weightPct: 20.0),
-        ],
+        industryWeights: const [XrayWeight(name: 'Banks', weightPct: 20.0)],
         marketCapWeights: const [
           XrayWeight(name: 'Large Cap', weightPct: 60.0),
         ],
@@ -154,9 +153,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          portfolioIntelligenceProvider('p1').overrideWith(
-            (ref) async => intel,
-          ),
+          portfolioIntelligenceProvider(
+            'p1',
+          ).overrideWith((ref) async => intel),
         ],
         child: const MaterialApp(
           home: Scaffold(
@@ -227,9 +226,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          portfolioIntelligenceProvider('p1').overrideWith(
-            (ref) async => intel,
-          ),
+          portfolioIntelligenceProvider(
+            'p1',
+          ).overrideWith((ref) async => intel),
         ],
         child: const MaterialApp(
           home: Scaffold(
@@ -267,9 +266,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          portfolioIntelligenceProvider('p1').overrideWith(
-            (ref) async => intel,
-          ),
+          portfolioIntelligenceProvider(
+            'p1',
+          ).overrideWith((ref) async => intel),
         ],
         child: const MaterialApp(
           home: Scaffold(
@@ -301,8 +300,9 @@ void main() {
     expect(find.textContaining('37.3%₹'), findsNothing);
   });
 
-  testWidgets('X-Ray phone swaps Chart/List in-box; web has no swap',
-      (tester) async {
+  testWidgets('X-Ray phone swaps Chart/List in-box; web has no swap', (
+    tester,
+  ) async {
     final intel = PortfolioIntelligence(
       portfolioId: 'p1',
       xray: const PortfolioXray(
@@ -325,9 +325,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          portfolioIntelligenceProvider('p1').overrideWith(
-            (ref) async => intel,
-          ),
+          portfolioIntelligenceProvider(
+            'p1',
+          ).overrideWith((ref) async => intel),
         ],
         child: MaterialApp(
           home: Scaffold(
@@ -370,9 +370,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          portfolioIntelligenceProvider('p1').overrideWith(
-            (ref) async => intel,
-          ),
+          portfolioIntelligenceProvider(
+            'p1',
+          ).overrideWith((ref) async => intel),
         ],
         child: MaterialApp(
           home: Scaffold(
@@ -427,9 +427,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          portfolioIntelligenceProvider('p1').overrideWith(
-            (ref) async => intel,
-          ),
+          portfolioIntelligenceProvider(
+            'p1',
+          ).overrideWith((ref) async => intel),
         ],
         child: MaterialApp(
           home: Scaffold(
@@ -527,8 +527,9 @@ void main() {
     expect(find.text('CCC'), findsOneWidget);
   });
 
-  testWidgets('Risk empty findings shows primary-axis severity pills',
-      (tester) async {
+  testWidgets('Risk empty findings shows primary-axis severity pills', (
+    tester,
+  ) async {
     final intel = PortfolioIntelligence(
       portfolioId: 'p1',
       risk: PortfolioRisk(
@@ -547,9 +548,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          portfolioIntelligenceProvider('p1').overrideWith(
-            (ref) async => intel,
-          ),
+          portfolioIntelligenceProvider(
+            'p1',
+          ).overrideWith((ref) async => intel),
         ],
         child: const MaterialApp(
           home: Scaffold(
@@ -581,14 +582,8 @@ void main() {
     expect(find.text('Score'), findsNothing);
     expect(find.text('View Risk Analysis →'), findsNothing);
     expect(find.textContaining('Key Insight'), findsNothing);
-    expect(
-      find.text('How your portfolio risk is distributed'),
-      findsNothing,
-    );
-    expect(
-      find.textContaining('Tap a factor to learn'),
-      findsNothing,
-    );
+    expect(find.text('How your portfolio risk is distributed'), findsNothing);
+    expect(find.textContaining('Tap a factor to learn'), findsNothing);
 
     await tester.tap(find.text('Liquidity risk').first);
     await tester.pump();
@@ -631,9 +626,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          portfolioIntelligenceProvider('p1').overrideWith(
-            (ref) async => intel,
-          ),
+          portfolioIntelligenceProvider(
+            'p1',
+          ).overrideWith((ref) async => intel),
         ],
         child: const MaterialApp(
           home: Scaffold(
@@ -701,8 +696,9 @@ void main() {
     );
   });
 
-  testWidgets('Health overview shows six factors inline without popup',
-      (tester) async {
+  testWidgets('Health overview shows six factors inline without popup', (
+    tester,
+  ) async {
     final intel = PortfolioIntelligence(
       portfolioId: 'p1',
       health: PortfolioHealth(
@@ -753,9 +749,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          portfolioIntelligenceProvider('p1').overrideWith(
-            (ref) async => intel,
-          ),
+          portfolioIntelligenceProvider(
+            'p1',
+          ).overrideWith((ref) async => intel),
         ],
         child: const MaterialApp(
           home: Scaffold(
@@ -820,9 +816,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          portfolioIntelligenceProvider('p1').overrideWith(
-            (ref) async => intel,
-          ),
+          portfolioIntelligenceProvider(
+            'p1',
+          ).overrideWith((ref) async => intel),
         ],
         child: const MaterialApp(
           home: Scaffold(
@@ -841,8 +837,9 @@ void main() {
     expect(find.text('View Details →'), findsNothing);
   });
 
-  testWidgets('What-If shows compact After Simulation placeholder before run',
-      (tester) async {
+  testWidgets('What-If shows compact After Simulation placeholder before run', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -853,9 +850,7 @@ void main() {
             ),
           ),
           portfolioIntelligenceProvider('p1').overrideWith(
-            (ref) async => const PortfolioIntelligence(
-              portfolioId: 'p1',
-            ),
+            (ref) async => const PortfolioIntelligence(portfolioId: 'p1'),
           ),
         ],
         child: const MaterialApp(
@@ -873,10 +868,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('After Simulation'), findsOneWidget);
-    expect(
-      find.text('Run simulation to see portfolio impact'),
-      findsOneWidget,
-    );
+    expect(find.text('Run simulation to see portfolio impact'), findsOneWidget);
     expect(find.text('Simulate'), findsOneWidget);
   });
 
@@ -891,9 +883,7 @@ void main() {
             ),
           ),
           portfolioIntelligenceProvider('p1').overrideWith(
-            (ref) async => const PortfolioIntelligence(
-              portfolioId: 'p1',
-            ),
+            (ref) async => const PortfolioIntelligence(portfolioId: 'p1'),
           ),
         ],
         child: const MaterialApp(
@@ -932,15 +922,18 @@ void main() {
           portfolioHoldingsProvider('p1').overrideWith(
             (ref) async => PortfolioHoldings(
               holdings: [
-                _holding(symbol: 'RELIANCE', sector: 'Energy', weight: 10, value: 100000),
+                _holding(
+                  symbol: 'RELIANCE',
+                  sector: 'Energy',
+                  weight: 10,
+                  value: 100000,
+                ),
               ],
               lastUpdated: DateTime(2026, 1, 1),
             ),
           ),
           portfolioIntelligenceProvider('p1').overrideWith(
-            (ref) async => const PortfolioIntelligence(
-              portfolioId: 'p1',
-            ),
+            (ref) async => const PortfolioIntelligence(portfolioId: 'p1'),
           ),
         ],
         child: const MaterialApp(
@@ -966,65 +959,60 @@ void main() {
     await tester.enterText(fields.at(1), '150');
     await tester.tap(find.text('Simulate'));
     await tester.pump();
-    expect(
-      find.textContaining('must be'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('must be'), findsOneWidget);
     FocusManager.instance.primaryFocus?.unfocus();
     await tester.pump(const Duration(milliseconds: 300));
   });
 
-  testWidgets('X-Ray Cap expand shows Cap breakdown unavailable without topStocks',
-      (tester) async {
-    final intel = PortfolioIntelligence(
-      portfolioId: 'p1',
-      xray: const PortfolioXray(
-        sectorWeights: [],
-        industryWeights: [],
-        marketCapWeights: [
-          XrayWeight(name: 'Large Cap', weightPct: 70, valueInr: 700000),
-        ],
-      ),
-    );
+  testWidgets(
+    'X-Ray Cap expand shows Cap breakdown unavailable without topStocks',
+    (tester) async {
+      final intel = PortfolioIntelligence(
+        portfolioId: 'p1',
+        xray: const PortfolioXray(
+          sectorWeights: [],
+          industryWeights: [],
+          marketCapWeights: [
+            XrayWeight(name: 'Large Cap', weightPct: 70, valueInr: 700000),
+          ],
+        ),
+      );
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          portfolioIntelligenceProvider('p1').overrideWith(
-            (ref) async => intel,
-          ),
-        ],
-        child: MaterialApp(
-          home: Scaffold(
-            body: SizedBox(
-              width: 900,
-              height: 640,
-              child: PortfolioXrayPanel(
-                portfolioId: 'p1',
-                minHeight: 480,
-                holdingsOverride: [
-                  _holding(
-                    symbol: 'AAA',
-                    sector: 'IT',
-                    weight: 10,
-                  ),
-                ],
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            portfolioIntelligenceProvider(
+              'p1',
+            ).overrideWith((ref) async => intel),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 900,
+                height: 640,
+                child: PortfolioXrayPanel(
+                  portfolioId: 'p1',
+                  minHeight: 480,
+                  holdingsOverride: [
+                    _holding(symbol: 'AAA', sector: 'IT', weight: 10),
+                  ],
+                ),
               ),
             ),
           ),
         ),
-      ),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
-    await tester.tap(find.text('Cap'));
-    await tester.pump();
-    await tester.tap(find.byIcon(Icons.keyboard_arrow_down).first);
-    await tester.pump();
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.tap(find.text('Cap'));
+      await tester.pump();
+      await tester.tap(find.byIcon(Icons.keyboard_arrow_down).first);
+      await tester.pump();
 
-    expect(find.text('Cap breakdown unavailable'), findsOneWidget);
-    expect(find.text('No holdings for this group'), findsNothing);
-  });
+      expect(find.text('Cap breakdown unavailable'), findsOneWidget);
+      expect(find.text('No holdings for this group'), findsNothing);
+    },
+  );
 
   test('stressBetaChipLabels assumed hides 1.00 on the β chip', () {
     final chips = stressBetaChipLabels(
@@ -1079,9 +1067,7 @@ void main() {
         betaAssumed: false,
         historyDays: 30,
         benchmark: 'NIFTY50',
-        scenarios: [
-          StressScenario(id: 'NIFTY_DOWN_10', pctImpact: -5),
-        ],
+        scenarios: [StressScenario(id: 'NIFTY_DOWN_10', pctImpact: -5)],
       ),
     );
     await tester.pumpWidget(
@@ -1089,10 +1075,8 @@ void main() {
         overrides: [
           portfolioRemoteDataSourceProvider.overrideWith((ref) async => remote),
           portfolioIntelligenceProvider('p1').overrideWith(
-            (ref) async => const PortfolioIntelligence(
-              portfolioId: 'p1',
-              confidence: 0.9,
-            ),
+            (ref) async =>
+                const PortfolioIntelligence(portfolioId: 'p1', confidence: 0.9),
           ),
         ],
         child: const MaterialApp(
@@ -1119,9 +1103,7 @@ void main() {
         overrides: [
           portfolioHoldingsProvider('p1').overrideWith(
             (ref) async => PortfolioHoldings(
-              holdings: [
-                _holding(symbol: 'IT', sector: 'IT', weight: 10),
-              ],
+              holdings: [_holding(symbol: 'IT', sector: 'IT', weight: 10)],
               lastUpdated: DateTime(2026, 1, 1),
             ),
           ),
@@ -1190,7 +1172,9 @@ void main() {
     expect(isUsableIntelligenceSectorLabel('  '), isFalse);
   });
 
-  testWidgets('Intelligence sheet Close pops dialog, keeps home', (tester) async {
+  testWidgets('Intelligence sheet Close pops dialog, keeps home', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Builder(

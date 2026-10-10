@@ -51,12 +51,14 @@ class SectorHeatmapConverter {
     String topSectorChange,
     String worstSector,
     String worstSectorChange,
-  }) resolveSectorSummary({
+  })
+  resolveSectorSummary({
     Heatmap? heatmap,
     SectorAllocation? sectorAllocation,
     List<HeatmapTileData>? tiles,
   }) {
-    final source = tiles ??
+    final source =
+        tiles ??
         convertToHeatmapData(
           heatmap: heatmap,
           sectorAllocation: sectorAllocation,
@@ -66,9 +68,7 @@ class SectorHeatmapConverter {
 
     final ranked = source
         .where(
-          (tile) =>
-              !isExcludedFromRanking(tile.name) &&
-              tile.weightage > 0,
+          (tile) => !isExcludedFromRanking(tile.name) && tile.weightage > 0,
         )
         .toList();
 
@@ -81,8 +81,9 @@ class SectorHeatmapConverter {
       );
     }
 
-    final nonFlat =
-        ranked.where((tile) => tile.performance.abs() >= 0.01).toList();
+    final nonFlat = ranked
+        .where((tile) => tile.performance.abs() >= 0.01)
+        .toList();
     if (nonFlat.isEmpty) {
       return (
         topSector: '--',
@@ -216,13 +217,15 @@ class SectorHeatmapConverter {
       if (group.length == 1) return group.first;
       final stocks = group.expand((s) => s.stocks).toList();
       final totalValue = group.fold(0.0, (sum, s) => sum + s.totalValue);
-      final totalReturn =
-          group.fold(0.0, (sum, s) => sum + s.totalReturnAmount);
+      final totalReturn = group.fold(
+        0.0,
+        (sum, s) => sum + s.totalReturnAmount,
+      );
       final weightage = group.fold(0.0, (sum, s) => sum + s.weightage);
-      final avgChange = group.fold(0.0, (sum, s) => sum + s.changePercent) /
-          group.length;
-      final avgPerf = group.fold(0.0, (sum, s) => sum + s.performance) /
-          group.length;
+      final avgChange =
+          group.fold(0.0, (sum, s) => sum + s.changePercent) / group.length;
+      final avgPerf =
+          group.fold(0.0, (sum, s) => sum + s.performance) / group.length;
       final first = group.first;
       return Sector(
         sectorName: first.sectorName,
@@ -289,16 +292,15 @@ class SectorHeatmapConverter {
         )
         .length;
 
-    final invalidSectorCount =
-        resolved.where((sector) => isInvalidSectorName(sector.sectorName)).length;
-    if (resolved.isNotEmpty &&
-        invalidSectorCount / resolved.length >= 0.8) {
+    final invalidSectorCount = resolved
+        .where((sector) => isInvalidSectorName(sector.sectorName))
+        .length;
+    if (resolved.isNotEmpty && invalidSectorCount / resolved.length >= 0.8) {
       return true;
     }
 
     final resolvedTotal = _calculateTotalValue(resolved);
-    final heatmapTiles =
-        _createHierarchicalTiles(resolved, resolvedTotal);
+    final heatmapTiles = _createHierarchicalTiles(resolved, resolvedTotal);
     if (heatmapTiles.length == 1 &&
         heatmapTiles.first.name.toLowerCase() == 'other') {
       return true;
@@ -307,8 +309,7 @@ class SectorHeatmapConverter {
     // Complete enough: do not replace with allocation just because allocation
     // lists one extra named sector (e.g. ETFs) or similar label gaps.
     final hasWeightCoverage = valueCoverage >= 0.5;
-    final heatmapCompleteEnough =
-        namedHeatmapCount >= 3 && hasWeightCoverage;
+    final heatmapCompleteEnough = namedHeatmapCount >= 3 && hasWeightCoverage;
     if (heatmapCompleteEnough || namedHeatmapCount >= namedAllocationCount) {
       return false;
     }
@@ -346,7 +347,10 @@ class SectorHeatmapConverter {
       );
     }
 
-    final totalValue = weights.fold(0.0, (sum, weight) => sum + weight.marketCap);
+    final totalValue = weights.fold(
+      0.0,
+      (sum, weight) => sum + weight.marketCap,
+    );
     final tiles = weights.map((weight) {
       final matchingSector = _findHeatmapSectorForWeight(heatmap, weight);
       final stockTiles = matchingSector != null
@@ -373,8 +377,7 @@ class SectorHeatmapConverter {
           'stockCount': weight.topStocks.length,
         },
       );
-    }).toList()
-      ..sort((a, b) => b.weightage.compareTo(a.weightage));
+    }).toList()..sort((a, b) => b.weightage.compareTo(a.weightage));
 
     final syntheticHeatmap = Heatmap(sectors: heatmap?.sectors ?? const []);
 
@@ -389,7 +392,10 @@ class SectorHeatmapConverter {
     );
   }
 
-  static Sector? _findMatchingHeatmapSector(Heatmap? heatmap, String sectorName) {
+  static Sector? _findMatchingHeatmapSector(
+    Heatmap? heatmap,
+    String sectorName,
+  ) {
     if (heatmap == null) return null;
 
     for (final sector in heatmap.sectors) {
@@ -453,13 +459,16 @@ class SectorHeatmapConverter {
       }
     }
     if (matched.isNotEmpty) {
-      final totalValue = matched.fold(0.0, (sum, s) => sum + _calculateStockValue(s));
+      final totalValue = matched.fold(
+        0.0,
+        (sum, s) => sum + _calculateStockValue(s),
+      );
       if (totalValue > 0) {
         return matched.fold(
-              0.0,
-              (sum, s) =>
-                  sum + s.changePercent * (_calculateStockValue(s) / totalValue),
-            );
+          0.0,
+          (sum, s) =>
+              sum + s.changePercent * (_calculateStockValue(s) / totalValue),
+        );
       }
       return matched.fold(0.0, (sum, s) => sum + s.changePercent) /
           matched.length;
@@ -468,7 +477,8 @@ class SectorHeatmapConverter {
     // Overlap sector without name match: use that sector's aggregate.
     final byOverlap = _findHeatmapSectorForWeight(heatmap, weight);
     if (byOverlap != null) {
-      if (byOverlap.changePercent.abs() > 0.0001) return byOverlap.changePercent;
+      if (byOverlap.changePercent.abs() > 0.0001)
+        return byOverlap.changePercent;
       if (byOverlap.performance.abs() > 0.0001) return byOverlap.performance;
     }
 
@@ -536,7 +546,8 @@ class SectorHeatmapConverter {
     if (heatmap != null) {
       for (final sector in heatmap.sectors) {
         for (final stock in sector.stocks) {
-          changeBySymbol[stock.symbol.trim().toUpperCase()] = stock.changePercent;
+          changeBySymbol[stock.symbol.trim().toUpperCase()] =
+              stock.changePercent;
         }
       }
     }
@@ -605,15 +616,21 @@ class SectorHeatmapConverter {
 
     if (otherTiles.isNotEmpty) {
       tiles.removeWhere((t) => isInvalidSectorName(t.name));
-      final combinedWeight = otherTiles.fold(0.0, (sum, t) => sum + t.weightage);
-      final combinedValue = otherTiles.fold(0.0, (sum, t) => sum + (t.value ?? 0));
+      final combinedWeight = otherTiles.fold(
+        0.0,
+        (sum, t) => sum + t.weightage,
+      );
+      final combinedValue = otherTiles.fold(
+        0.0,
+        (sum, t) => sum + (t.value ?? 0),
+      );
       final weightSum = otherTiles.fold(0.0, (sum, t) => sum + t.weightage);
       final avgPerformance = weightSum > 0
           ? otherTiles.fold(
-                0.0,
-                (sum, t) => sum + t.performance * t.weightage,
-              ) /
-              weightSum
+                  0.0,
+                  (sum, t) => sum + t.performance * t.weightage,
+                ) /
+                weightSum
           : 0.0;
 
       final List<HeatmapTileData> combinedChildren = [];
@@ -629,16 +646,18 @@ class SectorHeatmapConverter {
         }
       }
 
-      tiles.add(HeatmapTileData(
-        id: 'sector_unknown',
-        name: unknownTileName,
-        displayName: unknownTileName,
-        weightage: combinedWeight,
-        performance: avgPerformance,
-        value: combinedValue,
-        children: combinedChildren.isNotEmpty ? combinedChildren : null,
-        metadata: {'type': 'sector', 'sectorName': unknownTileName},
-      ));
+      tiles.add(
+        HeatmapTileData(
+          id: 'sector_unknown',
+          name: unknownTileName,
+          displayName: unknownTileName,
+          weightage: combinedWeight,
+          performance: avgPerformance,
+          value: combinedValue,
+          children: combinedChildren.isNotEmpty ? combinedChildren : null,
+          metadata: {'type': 'sector', 'sectorName': unknownTileName},
+        ),
+      );
     }
 
     // Sort sectors by weightage descending (largest sectors first)
@@ -672,7 +691,7 @@ class SectorHeatmapConverter {
     final combinedValue = small.fold(0.0, (sum, t) => sum + (t.value ?? 0));
     final avgPerformance = combinedWeight > 0
         ? small.fold(0.0, (sum, t) => sum + t.performance * t.weightage) /
-            combinedWeight
+              combinedWeight
         : 0.0;
 
     final children = small
@@ -857,7 +876,9 @@ class SectorHeatmapConverter {
                 'name': tile.name,
                 'displayName': tile.displayName,
                 'weightage': double.parse(tile.weightage.toStringAsFixed(2)),
-                'performance': double.parse(tile.performance.toStringAsFixed(2)),
+                'performance': double.parse(
+                  tile.performance.toStringAsFixed(2),
+                ),
                 'value': tile.value != null
                     ? double.parse(tile.value!.toStringAsFixed(2))
                     : null,
@@ -884,7 +905,9 @@ class SectorHeatmapConverter {
                     'performance': double.parse(
                       child.performance.toStringAsFixed(2),
                     ),
-                    'weightage': double.parse(child.weightage.toStringAsFixed(2)),
+                    'weightage': double.parse(
+                      child.weightage.toStringAsFixed(2),
+                    ),
                     'value': child.value != null
                         ? double.parse(child.value!.toStringAsFixed(2))
                         : null,
@@ -902,11 +925,18 @@ class SectorHeatmapConverter {
           );
         }
 
-        final totalWeightage = tiles.fold(0.0, (sum, tile) => sum + tile.weightage);
+        final totalWeightage = tiles.fold(
+          0.0,
+          (sum, tile) => sum + tile.weightage,
+        );
         final avgPerformance = tiles.isNotEmpty
-            ? tiles.fold(0.0, (sum, tile) => sum + tile.performance) / tiles.length
+            ? tiles.fold(0.0, (sum, tile) => sum + tile.performance) /
+                  tiles.length
             : 0.0;
-        final totalChildren = tiles.fold(0, (sum, tile) => sum + (tile.children?.length ?? 0));
+        final totalChildren = tiles.fold(
+          0,
+          (sum, tile) => sum + (tile.children?.length ?? 0),
+        );
 
         final statistics = {
           'totalWeightage': double.parse(totalWeightage.toStringAsFixed(2)),
@@ -1035,7 +1065,8 @@ class SectorHeatmapConverter {
           : sector.performance;
     }
 
-    final avg = sector.stocks.fold(0.0, (sum, stock) => sum + stock.changePercent) /
+    final avg =
+        sector.stocks.fold(0.0, (sum, stock) => sum + stock.changePercent) /
         sector.stocks.length;
     final allFlat = sector.stocks.every((s) => s.changePercent.abs() < 0.0001);
     if (allFlat) {

@@ -6,7 +6,7 @@ enum ChartTimeFrame {
   dailyLinear('Daily'),
   weeklyLinear('Weekly'),
   monthlyLinear('Monthly'),
-  
+
   // Seasonal / Aggregated
   hourSeason('Hourly (Seasonality)'),
   daySeason('Day of Week (Seasonality)'),
@@ -39,7 +39,8 @@ enum ChartMetric {
   final bool isPercent;
   final bool isCurrency;
 
-  const ChartMetric(this.label, {this.isPercent = false, this.isCurrency = false});
+  const ChartMetric(this.label,
+      {this.isPercent = false, this.isCurrency = false});
 
   double getValue(ReportPerformanceMetrics metrics, {int? tradeCount}) {
     switch (this) {
@@ -50,7 +51,7 @@ enum ChartMetric {
       case ChartMetric.avgWin:
         return metrics.avgWin?.toDouble() ?? 0;
       case ChartMetric.avgLoss:
-        return metrics.avgLoss?.toDouble() ?? 0; 
+        return metrics.avgLoss?.toDouble() ?? 0;
       case ChartMetric.holdTime:
         return metrics.avgHoldTime?.toDouble() ?? 0;
       case ChartMetric.profitFactor:
@@ -66,5 +67,6 @@ class ChartDataPoint {
   final double yValue;
   final int xIndex;
 
-  ChartDataPoint({required this.xLabel, required this.yValue, required this.xIndex});
+  ChartDataPoint(
+      {required this.xLabel, required this.yValue, required this.xIndex});
 }

@@ -278,13 +278,13 @@ class _WebQrLoginSectionState extends State<WebQrLoginSection> {
     }
     if (state == DeviceLinkPollState.approved && user != null) {
       await context.read<AuthCubit>().completeWebSession(
-        userId: user.sub,
-        email: user.email ?? user.preferredUsername ?? user.sub,
-        displayName: user.preferredUsername,
-        accessToken: tokens?.accessToken,
-        refreshToken: tokens?.refreshToken,
-        expiresInSeconds: tokens?.expiresIn,
-      );
+            userId: user.sub,
+            email: user.email ?? user.preferredUsername ?? user.sub,
+            displayName: user.preferredUsername,
+            accessToken: tokens?.accessToken,
+            refreshToken: tokens?.refreshToken,
+            expiresInSeconds: tokens?.expiresIn,
+          );
       return;
     }
     setState(() => _state = state);
@@ -387,7 +387,8 @@ class _WebQrLoginSectionState extends State<WebQrLoginSection> {
                   textAlign: TextAlign.center,
                   style: TextStyle(color: context.colors.statusError),
                 ),
-                TextButton(onPressed: _beginSession, child: const Text('Retry')),
+                TextButton(
+                    onPressed: _beginSession, child: const Text('Retry')),
               ],
             ],
           ),

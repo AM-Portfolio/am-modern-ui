@@ -11,13 +11,20 @@ void main() {
 
     test('true when API isDummy flag is set (kind stays BROKER)', () {
       expect(
-        isDemoPortfolioEntry(kind: 'BROKER', name: 'Shared Seed', isDummy: true),
+        isDemoPortfolioEntry(
+          kind: 'BROKER',
+          name: 'Shared Seed',
+          isDummy: true,
+        ),
         isTrue,
       );
     });
 
     test('true when name contains demo', () {
-      expect(isDemoPortfolioEntry(kind: 'LIVE', name: 'Demo Portfolio'), isTrue);
+      expect(
+        isDemoPortfolioEntry(kind: 'LIVE', name: 'Demo Portfolio'),
+        isTrue,
+      );
       expect(isDemoPortfolioEntry(name: 'my demo bag'), isTrue);
     });
 

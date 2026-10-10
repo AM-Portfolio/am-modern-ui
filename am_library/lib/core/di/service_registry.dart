@@ -50,9 +50,7 @@ class ServiceRegistry {
 
     // 4. WebSocket (STOMP)
     if (!I.isRegistered<AmStompClient>()) {
-      I.registerLazySingleton<AmStompClient>(
-        () => AmStompClient(url: wsUrl),
-      );
+      I.registerLazySingleton<AmStompClient>(() => AmStompClient(url: wsUrl));
     }
 
     // 5. Product telemetry sink (fire-and-forget; gated by analyticsEnabled)
@@ -65,13 +63,19 @@ class ServiceRegistry {
       );
     }
 
-    AppLogger.info('✅ ServiceRegistry: Core infrastructure initialized.', tag: 'Registry');
+    AppLogger.info(
+      '✅ ServiceRegistry: Core infrastructure initialized.',
+      tag: 'Registry',
+    );
   }
 
   /// Reset all services to their initial state.
   /// Useful for logout or clearing corrupted states.
   static Future<void> reset() async {
-    AppLogger.warning('🔄 ServiceRegistry: Initiating global reset...', tag: 'Registry');
+    AppLogger.warning(
+      '🔄 ServiceRegistry: Initiating global reset...',
+      tag: 'Registry',
+    );
 
     // 1. Clear session data + in-memory user context cache
     if (I.isRegistered<SecureStorageService>()) {
@@ -94,6 +98,7 @@ class ServiceRegistry {
   static AmStompClient get stomp => I<AmStompClient>();
   static SecureStorageService get storage => I<SecureStorageService>();
   static TelemetryService get telemetry => I<TelemetryService>();
+
   /// Current user identity & auth header — use instead of raw storage reads.
   static UserContext get user => UserContext.instance;
 }

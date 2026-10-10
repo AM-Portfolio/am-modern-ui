@@ -31,7 +31,8 @@ class PriceService {
   DateTime? _lastTopicResubscribe;
   bool _streamingAllowed = true;
 
-  static const Duration _gatewayConnectDebounceDelay = Duration(milliseconds: 500);
+  static const Duration _gatewayConnectDebounceDelay =
+      Duration(milliseconds: 500);
   static const Duration _topicResubscribeCooldown = Duration(seconds: 3);
 
   final Map<String, QuoteChange> _priceCache = {};
@@ -258,7 +259,8 @@ class PriceService {
   }) {
     final client = _stompClient;
     if (client == null) {
-      AppLogger.warning('PriceService: Cannot send market subscribe — no AmStompClient.');
+      AppLogger.warning(
+          'PriceService: Cannot send market subscribe — no AmStompClient.');
       return;
     }
 
@@ -300,12 +302,14 @@ class PriceService {
   void _stompSubscribe(List<String> symbols, {bool forceResubscribe = false}) {
     final client = _stompClient;
     if (client == null) {
-      AppLogger.warning('PriceService: Cannot STOMP subscribe — no AmStompClient.');
+      AppLogger.warning(
+          'PriceService: Cannot STOMP subscribe — no AmStompClient.');
       return;
     }
 
     for (final symbol in symbols) {
-      client.subscribe(stockTopicDestination(symbol), forceResubscribe: forceResubscribe);
+      client.subscribe(stockTopicDestination(symbol),
+          forceResubscribe: forceResubscribe);
     }
   }
 

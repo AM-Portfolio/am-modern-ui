@@ -21,8 +21,8 @@ class WatchlistController extends ChangeNotifier {
     required this.onSelectSymbol,
     PaperMarketClient? client,
     WatchlistApiClient? watchlistApi,
-  })  : _client = client ?? PaperMarketClient(),
-        _watchlistApi = watchlistApi ?? WatchlistApiClient();
+  }) : _client = client ?? PaperMarketClient(),
+       _watchlistApi = watchlistApi ?? WatchlistApiClient();
 
   final ValueChanged<String> onSelectSymbol;
   final PaperMarketClient _client;
@@ -68,9 +68,9 @@ class WatchlistController extends ChangeNotifier {
   }
 
   WatchlistSource get selectedSource => sources.firstWhere(
-        (s) => s.id == selectedSourceId,
-        orElse: () => sources.first,
-      );
+    (s) => s.id == selectedSourceId,
+    orElse: () => sources.first,
+  );
 
   PaperMarketClient get client => _client;
 
@@ -175,9 +175,7 @@ class WatchlistController extends ChangeNotifier {
         return;
       }
       final bySymbol = {for (final r in chunk) r.symbol: r};
-      allRows = [
-        for (final r in allRows) mergeQuoteRow(r, bySymbol[r.symbol]),
-      ];
+      allRows = [for (final r in allRows) mergeQuoteRow(r, bySymbol[r.symbol])];
       refreshing = false;
       _notify();
     }
@@ -208,9 +206,7 @@ class WatchlistController extends ChangeNotifier {
     final enriched = await _client.enrichQuotes(List.of(page));
     if (_disposed || gen != _quoteGen) return;
     final bySymbol = {for (final r in enriched) r.symbol: r};
-    allRows = [
-      for (final r in allRows) mergeQuoteRow(r, bySymbol[r.symbol]),
-    ];
+    allRows = [for (final r in allRows) mergeQuoteRow(r, bySymbol[r.symbol])];
     _notify();
   }
 
@@ -226,8 +222,7 @@ class WatchlistController extends ChangeNotifier {
     pageIndex = clamped;
     expandedDepthSymbol = null;
     depthQuote = null;
-    refreshing =
-        pageRows.every((r) => r.ltp <= 0) && pageRows.isNotEmpty;
+    refreshing = pageRows.every((r) => r.ltp <= 0) && pageRows.isNotEmpty;
     quotesUnavailable = false;
     _notify();
     await refreshVisibleQuotes();

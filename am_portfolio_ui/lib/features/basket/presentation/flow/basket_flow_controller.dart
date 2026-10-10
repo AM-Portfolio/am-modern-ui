@@ -45,10 +45,11 @@ class BasketFlowState {
     final amount = investmentAmount?.toStringAsFixed(2) ?? '';
     final name = basketName ?? '';
     final excluded = (excludedSymbols.toList()..sort()).join(',');
-    final overrides = (manualQtyOverrides.entries.toList()
-          ..sort((a, b) => a.key.compareTo(b.key)))
-        .map((e) => '${e.key}:${e.value}')
-        .join(',');
+    final overrides =
+        (manualQtyOverrides.entries.toList()
+              ..sort((a, b) => a.key.compareTo(b.key)))
+            .map((e) => '${e.key}:${e.value}')
+            .join(',');
     final calc = hasCalculated ? '1' : '0';
     final score = currentOpportunity?.replicaScore.toStringAsFixed(2) ?? '';
     return '$etf|$amount|$name|$excluded|$overrides|$calc|$score';
@@ -72,8 +73,9 @@ class BasketFlowState {
     return BasketFlowState(
       originalOpportunity: originalOpportunity ?? this.originalOpportunity,
       currentOpportunity: currentOpportunity ?? this.currentOpportunity,
-      excludedSymbols:
-          clearExcluded ? const {} : (excludedSymbols ?? this.excludedSymbols),
+      excludedSymbols: clearExcluded
+          ? const {}
+          : (excludedSymbols ?? this.excludedSymbols),
       manualQtyOverrides: clearManualQtyOverrides
           ? const {}
           : (manualQtyOverrides ?? this.manualQtyOverrides),
@@ -177,5 +179,5 @@ class BasketFlowController extends Notifier<BasketFlowState> {
 
 final basketFlowControllerProvider =
     NotifierProvider<BasketFlowController, BasketFlowState>(
-  BasketFlowController.new,
-);
+      BasketFlowController.new,
+    );

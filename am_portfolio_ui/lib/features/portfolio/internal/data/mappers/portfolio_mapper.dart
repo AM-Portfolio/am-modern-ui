@@ -10,12 +10,10 @@ import '../dtos/portfolio_list_dto.dart';
 /// following the same pattern as AuthMapper for consistency
 class PortfolioMapper {
   /// Create API request body for fetching portfolio holdings
-  static Map<String, dynamic> portfolioHoldingsRequestToJson() => {
-    };
+  static Map<String, dynamic> portfolioHoldingsRequestToJson() => {};
 
   /// Create API request body for fetching portfolio summary
-  static Map<String, dynamic> portfolioSummaryRequestToJson() => {
-    };
+  static Map<String, dynamic> portfolioSummaryRequestToJson() => {};
 
   /// Parse portfolio holdings from API response JSON
   static PortfolioHoldingsDto portfolioHoldingsFromJson(

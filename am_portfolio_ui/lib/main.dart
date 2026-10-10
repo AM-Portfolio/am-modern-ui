@@ -29,10 +29,7 @@ void main() async {
   final analysisUrl = common.ConfigService.config.api.analysis?.baseUrl ?? '';
   final wsUrl = common.ConfigService.config.api.marketData?.wsUrl ?? '';
 
-  common.ServiceRegistry.initialize(
-    analysisBaseUrl: analysisUrl,
-    wsUrl: wsUrl,
-  );
+  common.ServiceRegistry.initialize(analysisBaseUrl: analysisUrl, wsUrl: wsUrl);
 
   if (!GetIt.instance.isRegistered<common.SecureStorageService>()) {
     GetIt.instance.registerLazySingleton<common.SecureStorageService>(
@@ -85,10 +82,7 @@ class AmPortfolioStandaloneApp extends ConsumerWidget {
           final router = GoRouter(
             initialLocation: '/portfolio/overview',
             routes: [
-              GoRoute(
-                path: '/',
-                redirect: (_, __) => '/portfolio/overview',
-              ),
+              GoRoute(path: '/', redirect: (_, __) => '/portfolio/overview'),
               GoRoute(
                 path: '/login',
                 builder: (context, state) => AuthWrapper(

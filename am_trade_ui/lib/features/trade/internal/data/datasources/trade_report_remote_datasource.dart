@@ -17,10 +17,10 @@ class TradeReportRemoteDataSource {
     if (cleanBase.endsWith('/')) {
       cleanBase = cleanBase.substring(0, cleanBase.length - 1);
     }
-    
+
     var cleanResource = resource;
     if (cleanResource.startsWith('/')) {
-      cleanResource = cleanResource.substring(1); 
+      cleanResource = cleanResource.substring(1);
     }
     // Ensure cleanResource starts with / to append to cleanBase
     cleanResource = '/$cleanResource';
@@ -29,11 +29,13 @@ class TradeReportRemoteDataSource {
   }
 
   /// Get comprehensive trade performance summary
-  Future<TradePerformanceSummaryDto> getSummary(MetricsFilterRequestDto filter) async {
+  Future<TradePerformanceSummaryDto> getSummary(
+      MetricsFilterRequestDto filter) async {
     final queryParams = {
-      if (filter.portfolioIds != null && filter.portfolioIds!.isNotEmpty) 'portfolioId': filter.portfolioIds!.first,
-      'startDate': filter.dateRange.startDate.toIso8601String().split('T')[0], 
-      'endDate': filter.dateRange.endDate.toIso8601String().split('T')[0], 
+      if (filter.portfolioIds != null && filter.portfolioIds!.isNotEmpty)
+        'portfolioId': filter.portfolioIds!.first,
+      'startDate': filter.dateRange.startDate.toIso8601String().split('T')[0],
+      'endDate': filter.dateRange.endDate.toIso8601String().split('T')[0],
     };
 
     final fullUri = _buildUri(_tradeConfig.baseUrl, 'v1/performance/summary');
@@ -46,10 +48,12 @@ class TradeReportRemoteDataSource {
   }
 
   /// Get daily performance breakdown
-  Future<List<DailyPerformanceDto>> getDaily(MetricsFilterRequestDto filter) async {
+  Future<List<DailyPerformanceDto>> getDaily(
+      MetricsFilterRequestDto filter) async {
     final queryParams = {
-      if (filter.portfolioIds != null && filter.portfolioIds!.isNotEmpty) 'portfolioId': filter.portfolioIds!.first,
-      'limit': '1000', 
+      if (filter.portfolioIds != null && filter.portfolioIds!.isNotEmpty)
+        'portfolioId': filter.portfolioIds!.first,
+      'limit': '1000',
     };
 
     final fullUri = _buildUri(_tradeConfig.baseUrl, 'v1/performance/daily');
@@ -58,14 +62,16 @@ class TradeReportRemoteDataSource {
       fullUri,
       queryParams: queryParams,
       // API returns a List, parser handles dynamic data
-      parser: (data) => (data as List).map((e) => DailyPerformanceDto.fromJson(e)).toList(),
+      parser: (data) =>
+          (data as List).map((e) => DailyPerformanceDto.fromJson(e)).toList(),
     );
   }
 
   /// Get timing analysis
   Future<TimingAnalysisDto> getTiming(MetricsFilterRequestDto filter) async {
     final queryParams = {
-      if (filter.portfolioIds != null && filter.portfolioIds!.isNotEmpty) 'portfolioId': filter.portfolioIds!.first,
+      if (filter.portfolioIds != null && filter.portfolioIds!.isNotEmpty)
+        'portfolioId': filter.portfolioIds!.first,
     };
 
     final fullUri = _buildUri(_tradeConfig.baseUrl, 'v1/performance/timing');

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:am_design_system/core/utils/conditional_mouse_region.dart';
 
-
 class SidebarNavItem<T> extends StatefulWidget {
   const SidebarNavItem({
     required this.icon,
@@ -53,7 +52,9 @@ class _SidebarNavItemState<T> extends State<SidebarNavItem<T>> {
               widget.icon,
               size: 24,
               color: widget.isEnabled
-                  ? (isSelected ? activeColor : Colors.white.withValues(alpha: _isHovered ? 0.9 : 0.6))
+                  ? (isSelected
+                      ? activeColor
+                      : Colors.white.withValues(alpha: _isHovered ? 0.9 : 0.6))
                   : Colors.white.withValues(alpha: 0.2),
             ),
           ),
@@ -76,7 +77,10 @@ class _SidebarNavItemState<T> extends State<SidebarNavItem<T>> {
                   widget.icon,
                   size: 20,
                   color: widget.isEnabled
-                      ? (isSelected ? activeColor : Colors.white.withValues(alpha: _isHovered ? 0.9 : 0.6))
+                      ? (isSelected
+                          ? activeColor
+                          : Colors.white
+                              .withValues(alpha: _isHovered ? 0.9 : 0.6))
                       : Colors.white.withValues(alpha: 0.2),
                 ),
                 const SizedBox(height: 4),
@@ -84,7 +88,10 @@ class _SidebarNavItemState<T> extends State<SidebarNavItem<T>> {
                   widget.title.split(' ').first,
                   style: TextStyle(
                     color: widget.isEnabled
-                        ? (isSelected ? Colors.white : Colors.white.withValues(alpha: _isHovered ? 0.9 : 0.6))
+                        ? (isSelected
+                            ? Colors.white
+                            : Colors.white
+                                .withValues(alpha: _isHovered ? 0.9 : 0.6))
                         : Colors.white.withValues(alpha: 0.2),
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                     fontSize: 10,
@@ -111,7 +118,9 @@ class _SidebarNavItemState<T> extends State<SidebarNavItem<T>> {
               widget.icon,
               size: 20,
               color: widget.isEnabled
-                  ? (isSelected ? activeColor : Colors.white.withValues(alpha: _isHovered ? 0.9 : 0.6))
+                  ? (isSelected
+                      ? activeColor
+                      : Colors.white.withValues(alpha: _isHovered ? 0.9 : 0.6))
                   : Colors.white.withValues(alpha: 0.2),
             ),
             const SizedBox(width: 12),
@@ -124,9 +133,13 @@ class _SidebarNavItemState<T> extends State<SidebarNavItem<T>> {
                     widget.title,
                     style: TextStyle(
                       color: widget.isEnabled
-                          ? (isSelected ? Colors.white : Colors.white.withValues(alpha: _isHovered ? 0.9 : 0.7))
+                          ? (isSelected
+                              ? Colors.white
+                              : Colors.white
+                                  .withValues(alpha: _isHovered ? 0.9 : 0.7))
                           : Colors.white.withValues(alpha: 0.2),
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.w500,
                       fontSize: 14,
                     ),
                   ),
@@ -135,7 +148,8 @@ class _SidebarNavItemState<T> extends State<SidebarNavItem<T>> {
                     Text(
                       widget.subtitle,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: isSelected ? 0.7 : (_isHovered ? 0.5 : 0.4)),
+                        color: Colors.white.withValues(
+                            alpha: isSelected ? 0.7 : (_isHovered ? 0.5 : 0.4)),
                         fontSize: 11,
                       ),
                       maxLines: 1,
@@ -169,14 +183,16 @@ class _SidebarNavItemState<T> extends State<SidebarNavItem<T>> {
                 ),
               ),
             if (!widget.isEnabled)
-              Icon(Icons.lock_outline, size: 14, color: Colors.white.withValues(alpha: 0.3)),
+              Icon(Icons.lock_outline,
+                  size: 14, color: Colors.white.withValues(alpha: 0.3)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInteractiveWrapper({required bool isSelected, required Widget child}) {
+  Widget _buildInteractiveWrapper(
+      {required bool isSelected, required Widget child}) {
     final activeColor = widget.accentColor;
 
     return Container(
@@ -193,12 +209,16 @@ class _SidebarNavItemState<T> extends State<SidebarNavItem<T>> {
             decoration: BoxDecoration(
               color: isSelected
                   ? activeColor.withValues(alpha: 0.15)
-                  : (_isHovered ? Colors.white.withValues(alpha: 0.05) : Colors.transparent),
+                  : (_isHovered
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.transparent),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isSelected
                     ? activeColor.withValues(alpha: 0.5)
-                    : (_isHovered ? Colors.white.withValues(alpha: 0.1) : Colors.transparent),
+                    : (_isHovered
+                        ? Colors.white.withValues(alpha: 0.1)
+                        : Colors.transparent),
                 width: 1.5,
               ),
               boxShadow: isSelected
@@ -226,4 +246,3 @@ class _SidebarNavItemState<T> extends State<SidebarNavItem<T>> {
     );
   }
 }
-

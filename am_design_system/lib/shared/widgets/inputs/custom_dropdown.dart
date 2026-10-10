@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'dropdown_styles.dart';
 import '../../../core/theme/app_glassmorphism.dart';
 
-
 /// A customizable dropdown widget that provides consistent styling and behavior
 /// across the application. Supports icons, hints, and custom styling.
 class CustomDropdown<T> extends StatefulWidget {
@@ -146,17 +145,23 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
                 child: Container(
                   constraints: BoxConstraints(
                     maxHeight: widget.menuMaxHeight,
-                    minWidth: widget.isExpanded ? size.width : math.max(size.width, 160.0),
+                    minWidth: widget.isExpanded
+                        ? size.width
+                        : math.max(size.width, 160.0),
                   ),
                   decoration: widget.enableGlass
                       ? AppGlassmorphism.dropdownDecoration(context).copyWith(
-                          borderRadius: BorderRadius.circular(widget.borderRadius),
+                          borderRadius:
+                              BorderRadius.circular(widget.borderRadius),
                         )
                       : BoxDecoration(
-                          color: widget.backgroundColor ?? theme.colorScheme.surface,
-                          borderRadius: BorderRadius.circular(widget.borderRadius),
+                          color: widget.backgroundColor ??
+                              theme.colorScheme.surface,
+                          borderRadius:
+                              BorderRadius.circular(widget.borderRadius),
                           border: Border.all(
-                            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+                            color: theme.colorScheme.outlineVariant
+                                .withValues(alpha: 0.3),
                             width: 1,
                           ),
                           boxShadow: [
@@ -190,7 +195,8 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
                                 padding: const EdgeInsets.only(bottom: 6),
                                 child: _HoverableDropdownItemChild(
                                   isSelected: isSelected,
-                                  accentColor: widget.primaryColor ?? theme.primaryColor,
+                                  accentColor:
+                                      widget.primaryColor ?? theme.primaryColor,
                                   child: DefaultTextStyle(
                                     style: DropdownStyles.createTextStyle(
                                       context,
@@ -199,7 +205,9 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
                                       fontSize: widget.fontSize,
                                       enabled: true,
                                     ).copyWith(
-                                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.w500,
                                     ),
                                     child: Stack(
                                       alignment: Alignment.centerLeft,
@@ -209,9 +217,10 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
                                           Positioned(
                                             right: 12,
                                             child: Icon(
-                                              Icons.check_circle_rounded, 
-                                              size: 16, 
-                                              color: widget.primaryColor ?? theme.primaryColor,
+                                              Icons.check_circle_rounded,
+                                              size: 16,
+                                              color: widget.primaryColor ??
+                                                  theme.primaryColor,
                                             ),
                                           ),
                                       ],
@@ -250,9 +259,9 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
     Widget? displayWidget;
     if (widget.value != null) {
       final selectedItem = widget.items.cast<DropdownMenuItem<T>?>().firstWhere(
-        (item) => item?.value == widget.value,
-        orElse: () => null,
-      );
+            (item) => item?.value == widget.value,
+            orElse: () => null,
+          );
       if (selectedItem != null) {
         displayWidget = selectedItem.child;
       }
@@ -315,7 +324,9 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
     return CompositedTransformTarget(
       link: _layerLink,
       child: MouseRegion(
-        cursor: widget.enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+        cursor: widget.enabled
+            ? SystemMouseCursors.click
+            : SystemMouseCursors.basic,
         child: GestureDetector(
           onTap: _toggleDropdown,
           behavior: HitTestBehavior.opaque,
@@ -336,37 +347,39 @@ extension DropdownItemHelper<T> on T {
     double iconSize = 16,
     double fontSize = 14,
     bool expandText = true,
-  }) => DropdownMenuItem<T>(
-    value: this,
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (icon != null) ...[
-          Icon(icon, size: iconSize, color: iconColor),
-          const SizedBox(width: 8),
-        ],
-        if (expandText)
-          Flexible(
-            child: Text(
-              text,
-              style: TextStyle(fontSize: fontSize),
-              overflow: TextOverflow.ellipsis,
-            ),
-          )
-        else
-          Text(text, style: TextStyle(fontSize: fontSize)),
-      ],
-    ),
-  );
+  }) =>
+      DropdownMenuItem<T>(
+        value: this,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: iconSize, color: iconColor),
+              const SizedBox(width: 8),
+            ],
+            if (expandText)
+              Flexible(
+                child: Text(
+                  text,
+                  style: TextStyle(fontSize: fontSize),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              )
+            else
+              Text(text, style: TextStyle(fontSize: fontSize)),
+          ],
+        ),
+      );
 
   /// Creates a simple dropdown item with just text
   DropdownMenuItem<T> toSimpleDropdownItem({
     required String text,
     double fontSize = 14,
-  }) => DropdownMenuItem<T>(
-    value: this,
-    child: Text(text, style: TextStyle(fontSize: fontSize)),
-  );
+  }) =>
+      DropdownMenuItem<T>(
+        value: this,
+        child: Text(text, style: TextStyle(fontSize: fontSize)),
+      );
 }
 
 class _HoverableDropdownItemChild extends StatefulWidget {
@@ -385,7 +398,8 @@ class _HoverableDropdownItemChild extends StatefulWidget {
       _HoverableDropdownItemChildState();
 }
 
-class _HoverableDropdownItemChildState extends State<_HoverableDropdownItemChild> {
+class _HoverableDropdownItemChildState
+    extends State<_HoverableDropdownItemChild> {
   bool _isHovered = false;
 
   @override

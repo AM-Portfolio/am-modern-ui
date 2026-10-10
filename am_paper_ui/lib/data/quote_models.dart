@@ -1,10 +1,6 @@
 /// Bid/ask level for market depth.
 class DepthLevel {
-  const DepthLevel({
-    required this.price,
-    required this.quantity,
-    this.orders,
-  });
+  const DepthLevel({required this.price, required this.quantity, this.orders});
 
   final double price;
   final int quantity;
@@ -49,16 +45,10 @@ class QuoteDetail {
   bool get isNegative => change < 0;
   bool get hasDepth => buyDepth.isNotEmpty || sellDepth.isNotEmpty;
 
-  int get totalBuyQty =>
-      buyDepth.fold<int>(0, (sum, e) => sum + e.quantity);
-  int get totalSellQty =>
-      sellDepth.fold<int>(0, (sum, e) => sum + e.quantity);
-  int get totalBuyOrders => buyDepth.fold<int>(
-        0,
-        (sum, e) => sum + (e.orders ?? 0),
-      );
-  int get totalSellOrders => sellDepth.fold<int>(
-        0,
-        (sum, e) => sum + (e.orders ?? 0),
-      );
+  int get totalBuyQty => buyDepth.fold<int>(0, (sum, e) => sum + e.quantity);
+  int get totalSellQty => sellDepth.fold<int>(0, (sum, e) => sum + e.quantity);
+  int get totalBuyOrders =>
+      buyDepth.fold<int>(0, (sum, e) => sum + (e.orders ?? 0));
+  int get totalSellOrders =>
+      sellDepth.fold<int>(0, (sum, e) => sum + (e.orders ?? 0));
 }

@@ -50,19 +50,19 @@ class BdIdentityCard extends StatelessWidget {
                     Flexible(
                       child: Text(
                         '${basket.name} • $stockCount',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                     ),
                     const SizedBox(width: 8),
                     if (isActive)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
-                          color:
-                              context.statusSuccess.withValues(alpha: 0.15),
+                          color: context.statusSuccess.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -80,18 +80,15 @@ class BdIdentityCard extends StatelessWidget {
                 Text(
                   '${basket.etfName}${basket.etfIsin.isNotEmpty ? ' (${basket.etfIsin})' : ''} • Created $createdLabel',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: context.colors.textSecondary,
-                      ),
+                    color: context.colors.textSecondary,
+                  ),
                 ),
               ],
             ),
           ),
           if (onMore != null)
             IconButton(
-              icon: Icon(
-                Icons.more_horiz,
-                color: context.colors.textSecondary,
-              ),
+              icon: Icon(Icons.more_horiz, color: context.colors.textSecondary),
               visualDensity: VisualDensity.compact,
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
@@ -104,8 +101,18 @@ class BdIdentityCard extends StatelessWidget {
 
   String _formatDate(DateTime dt) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
   }

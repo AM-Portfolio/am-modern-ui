@@ -14,8 +14,8 @@ class CloudinaryRemoteDataSource {
   CloudinaryRemoteDataSource({
     required http.Client client,
     required ApiConfig apiConfig,
-  }) : _client = client,
-       _apiConfig = apiConfig;
+  })  : _client = client,
+        _apiConfig = apiConfig;
   final http.Client _client;
   final ApiConfig _apiConfig;
 

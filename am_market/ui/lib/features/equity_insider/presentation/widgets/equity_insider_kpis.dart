@@ -48,24 +48,30 @@ class EquityInsiderKpis extends ConsumerWidget {
               );
             }
 
-            final isBank = data.casa != null || data.nim != null || data.netNpa != null;
+            final isBank =
+                data.casa != null || data.nim != null || data.netNpa != null;
 
             double? yoyRevGrowth;
             double? yoyProfitGrowth;
 
-            if (data.incomeStatement != null && data.incomeStatement!.length >= 2) {
+            if (data.incomeStatement != null &&
+                data.incomeStatement!.length >= 2) {
               try {
                 final curr = data.incomeStatement![0];
                 final prev = data.incomeStatement![1];
 
-                final currRev = (curr['revenue'] as num?)?.toDouble() ?? (curr['totalRevenue'] as num?)?.toDouble();
-                final prevRev = (prev['revenue'] as num?)?.toDouble() ?? (prev['totalRevenue'] as num?)?.toDouble();
+                final currRev = (curr['revenue'] as num?)?.toDouble() ??
+                    (curr['totalRevenue'] as num?)?.toDouble();
+                final prevRev = (prev['revenue'] as num?)?.toDouble() ??
+                    (prev['totalRevenue'] as num?)?.toDouble();
                 if (currRev != null && prevRev != null && prevRev != 0) {
                   yoyRevGrowth = ((currRev - prevRev) / prevRev.abs()) * 100;
                 }
 
-                final currNet = (curr['netIncome'] as num?)?.toDouble() ?? (curr['netProfit'] as num?)?.toDouble();
-                final prevNet = (prev['netIncome'] as num?)?.toDouble() ?? (prev['netProfit'] as num?)?.toDouble();
+                final currNet = (curr['netIncome'] as num?)?.toDouble() ??
+                    (curr['netProfit'] as num?)?.toDouble();
+                final prevNet = (prev['netIncome'] as num?)?.toDouble() ??
+                    (prev['netProfit'] as num?)?.toDouble();
                 if (currNet != null && prevNet != null && prevNet != 0) {
                   yoyProfitGrowth = ((currNet - prevNet) / prevNet.abs()) * 100;
                 }
@@ -202,7 +208,9 @@ class EquityInsiderKpis extends ConsumerWidget {
             ];
 
             // Robust filtering: Only display metrics that have valid, populated numeric values (Zero Dashes)
-            final validMetrics = candidates.where((m) => m.value != null && m.value!.isFinite).toList();
+            final validMetrics = candidates
+                .where((m) => m.value != null && m.value!.isFinite)
+                .toList();
 
             if (validMetrics.isEmpty) {
               return Text(
@@ -216,62 +224,41 @@ class EquityInsiderKpis extends ConsumerWidget {
 
             return LayoutBuilder(
               builder: (context, constraints) {
-                final double totalWidth = constraints.maxWidth;
+                final totalWidth = constraints.maxWidth;
+                // Left-aligned grid so incomplete last rows stay flush with the title.
+                final int cols;
                 if (totalWidth < 420) {
-                  return GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
-                      mainAxisExtent: 96,
-                    ),
-                    itemCount: validMetrics.length,
-                    itemBuilder: (context, i) {
-                      final metric = validMetrics[i];
-                      return _buildKpi(
-                        context,
-                        label: metric.label,
-                        value: metric.value!,
-                        subtitle: metric.subtitle,
-                        isPositive: metric.isPositive,
-                        isNegative: metric.isNegative,
-                      );
-                    },
-                  );
-                }
-
-                int cols = 5;
-                if (totalWidth < 480) {
                   cols = 2;
                 } else if (totalWidth < 700) {
                   cols = 3;
                 } else if (totalWidth < 950) {
                   cols = 4;
+                } else {
+                  cols = 5;
                 }
 
-                const double spacing = 8.0;
-                final double itemWidth = (totalWidth - (spacing * (cols - 1))) / cols;
-
-                return Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: spacing,
-                  runSpacing: spacing,
-                  children: validMetrics.take(15).map((metric) {
-                    return SizedBox(
-                      width: itemWidth.clamp(100.0, 200.0),
-                      height: 90,
-                      child: _buildKpi(
-                        context,
-                        label: metric.label,
-                        value: metric.value!,
-                        subtitle: metric.subtitle,
-                        isPositive: metric.isPositive,
-                        isNegative: metric.isNegative,
-                      ),
+                final metrics = validMetrics.take(15).toList();
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: cols,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                    mainAxisExtent: totalWidth < 420 ? 96 : 90,
+                  ),
+                  itemCount: metrics.length,
+                  itemBuilder: (context, i) {
+                    final metric = metrics[i];
+                    return _buildKpi(
+                      context,
+                      label: metric.label,
+                      value: metric.value!,
+                      subtitle: metric.subtitle,
+                      isPositive: metric.isPositive,
+                      isNegative: metric.isNegative,
                     );
-                  }).toList(),
+                  },
                 );
               },
             );
@@ -286,7 +273,8 @@ class EquityInsiderKpis extends ConsumerWidget {
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title, String exchange) {
+  Widget _buildSectionHeader(
+      BuildContext context, String title, String exchange) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -306,7 +294,10 @@ class EquityInsiderKpis extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: (exchange == 'BSE' ? context.colors.statusWarning : context.marketTheme.chartBlue).withValues(alpha: 0.15),
+                  color: (exchange == 'BSE'
+                          ? context.colors.statusWarning
+                          : context.marketTheme.chartBlue)
+                      .withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
@@ -314,7 +305,9 @@ class EquityInsiderKpis extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
-                    color: exchange == 'BSE' ? context.colors.statusWarning : context.marketTheme.chartBlue,
+                    color: exchange == 'BSE'
+                        ? context.colors.statusWarning
+                        : context.marketTheme.chartBlue,
                   ),
                 ),
               ),

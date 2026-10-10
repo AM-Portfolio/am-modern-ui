@@ -22,8 +22,8 @@ class IpoDetailsHeader extends StatelessWidget {
               Text(
                 details.companyName ?? 'Unknown Company',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: context.textPrimary,
-                ),
+                      color: context.textPrimary,
+                    ),
               ),
               const SizedBox(height: AppSpacing.xs),
               Row(
@@ -65,9 +65,9 @@ class IpoDetailsHeader extends StatelessWidget {
       child: Text(
         initials,
         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-          color: context.textPrimary,
-          fontWeight: FontWeight.bold,
-        ),
+              color: context.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
       ),
     );
   }
@@ -86,7 +86,7 @@ class IpoDetailsHeader extends StatelessWidget {
         break;
       case 'closed':
       case 'listed':
-        badgeColor = context.statusWarning; 
+        badgeColor = context.statusWarning;
         break;
       default:
         badgeColor = context.borderColor;
@@ -94,7 +94,8 @@ class IpoDetailsHeader extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
       decoration: BoxDecoration(
         color: badgeColor,
         borderRadius: BorderRadius.circular(AppRadii.sm),
@@ -102,16 +103,17 @@ class IpoDetailsHeader extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: textColor,
-          fontWeight: FontWeight.w600,
-        ),
+              color: textColor,
+              fontWeight: FontWeight.w600,
+            ),
       ),
     );
   }
-  
+
   Widget _buildIssueTypeBadge(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
       decoration: BoxDecoration(
         color: context.surfaceColor,
         border: Border.all(color: context.borderColor),
@@ -120,8 +122,8 @@ class IpoDetailsHeader extends StatelessWidget {
       child: Text(
         details.issueType?.toUpperCase() ?? '',
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: context.textSecondary,
-        ),
+              color: context.textSecondary,
+            ),
       ),
     );
   }

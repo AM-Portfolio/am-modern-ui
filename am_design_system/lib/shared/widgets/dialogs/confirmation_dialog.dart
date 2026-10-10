@@ -51,11 +51,13 @@ class ConfirmationDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).extension<AppColorsTheme>() ?? AppColorsTheme.dark;
+    final colors =
+        Theme.of(context).extension<AppColorsTheme>() ?? AppColorsTheme.dark;
     final screenWidth = MediaQuery.of(context).size.width;
     final dialogWidth = screenWidth < 600 ? screenWidth * 0.9 : 500.0;
-    
-    final iconColor = isDestructive ? colors.statusError : colors.actionPrimaryBg;
+
+    final iconColor =
+        isDestructive ? colors.statusError : colors.actionPrimaryBg;
 
     return Center(
       child: SingleChildScrollView(
@@ -109,7 +111,8 @@ class ConfirmationDialog extends StatelessWidget {
                         onPressed: () => Navigator.of(context).pop(false),
                         style: TextButton.styleFrom(
                           foregroundColor: colors.textSecondary,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
                         ),
                         child: Text(cancelText),
                       ),
@@ -117,10 +120,13 @@ class ConfirmationDialog extends StatelessWidget {
                       ElevatedButton(
                         onPressed: () => Navigator.of(context).pop(true),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: isDestructive ? colors.statusError : colors.actionPrimaryBg,
+                          backgroundColor: isDestructive
+                              ? colors.statusError
+                              : colors.actionPrimaryBg,
                           foregroundColor: Colors.white,
                           elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),

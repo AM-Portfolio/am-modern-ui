@@ -90,8 +90,7 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
           if (!_hasCredential) {
             message = 'This verification link is incomplete.';
           } else if (state is Authenticated) {
-            message =
-                'Your Asrax email is verified. Opening your portfolio…';
+            message = 'Your Asrax email is verified. Opening your portfolio…';
           } else if (state is AuthError) {
             message = state.message;
           } else {

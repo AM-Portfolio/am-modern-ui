@@ -13,6 +13,7 @@ class PaperWatchlistMobile extends StatefulWidget {
     required this.onSelectSymbol,
     required this.onBuySell,
     this.onOpenFundamentals,
+    this.showSearch = true,
   });
 
   final WatchlistController controller;
@@ -20,6 +21,7 @@ class PaperWatchlistMobile extends StatefulWidget {
   final ValueChanged<String> onSelectSymbol;
   final WatchlistSideCallback onBuySell;
   final ValueChanged<String>? onOpenFundamentals;
+  final bool showSearch;
 
   @override
   State<PaperWatchlistMobile> createState() => _PaperWatchlistMobileState();
@@ -44,27 +46,30 @@ class _PaperWatchlistMobileState extends State<PaperWatchlistMobile> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-            child: SmartSearchAnchor(
-              controller: _searchController,
-              compact: true,
-              hintText: 'Search stocks',
-              category: 'STOCKS',
-              accentColor: ModuleColors.market,
-              searchHandler: (q) => controller.client.search(q),
-              onSelected: (sym) {
-                _searchController.clear();
-                controller.addSymbol(sym);
-              },
-              onSubmit: () {
-                final q = _searchController.text;
-                _searchController.clear();
-                controller.addSymbol(q);
-              },
+          if (widget.showSearch) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+              child: SmartSearchAnchor(
+                controller: _searchController,
+                compact: true,
+                hintText: 'Search stocks',
+                category: 'STOCKS',
+                accentColor: ModuleColors.market,
+                searchHandler: (q) => controller.client.search(q),
+                onSelected: (sym) {
+                  _searchController.clear();
+                  controller.addSymbol(sym);
+                },
+                onSubmit: () {
+                  final q = _searchController.text;
+                  _searchController.clear();
+                  controller.addSymbol(q);
+                },
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
+            const SizedBox(height: 8),
+          ] else
+            const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: WatchlistSourceDropdown(
@@ -92,9 +97,9 @@ class _PaperWatchlistMobileState extends State<PaperWatchlistMobile> {
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Text(
                 'Quotes unavailable — pull down to refresh',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colors.textSecondary,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: colors.textSecondary),
               ),
             ),
           ],

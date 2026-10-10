@@ -130,7 +130,8 @@ class _MobileInlineSearchFieldState extends State<MobileInlineSearchField>
     const prefer = ['Action', 'Trade', 'Portfolio', 'Market'];
     final out = <CommandItem>[];
     for (final cat in prefer) {
-      out.addAll(all.where((i) => i.category == cat).take(cat == 'Market' ? 4 : 2));
+      out.addAll(
+          all.where((i) => i.category == cat).take(cat == 'Market' ? 4 : 2));
       if (out.length >= 8) break;
     }
     if (out.isEmpty) return all.take(8).toList();
@@ -175,13 +176,15 @@ class _MobileInlineSearchFieldState extends State<MobileInlineSearchField>
 
   Widget _highlight(String text, String query, TextStyle style, Color accent) {
     if (query.isEmpty) {
-      return Text(text, style: style, maxLines: 1, overflow: TextOverflow.ellipsis);
+      return Text(text,
+          style: style, maxLines: 1, overflow: TextOverflow.ellipsis);
     }
     final lower = text.toLowerCase();
     final q = query.toLowerCase();
     final i = lower.indexOf(q);
     if (i < 0) {
-      return Text(text, style: style, maxLines: 1, overflow: TextOverflow.ellipsis);
+      return Text(text,
+          style: style, maxLines: 1, overflow: TextOverflow.ellipsis);
     }
     return Text.rich(
       TextSpan(
@@ -208,7 +211,8 @@ class _MobileInlineSearchFieldState extends State<MobileInlineSearchField>
     final accent = ModuleColorProvider.of(context);
     final query = _controller.text.trim();
     final showSuggested = query.isEmpty;
-    final groups = showSuggested ? {'Suggested': _filtered} : _grouped(_filtered);
+    final groups =
+        showSuggested ? {'Suggested': _filtered} : _grouped(_filtered);
 
     final surfaceColor = Color.alphaBlend(
       accent.withValues(alpha: isDark ? 0.08 : 0.04),
@@ -329,7 +333,8 @@ class _MobileInlineSearchFieldState extends State<MobileInlineSearchField>
                               child: Text(
                                 'No matches',
                                 style: TextStyle(
-                                  color: scheme.onSurface.withValues(alpha: 0.5),
+                                  color:
+                                      scheme.onSurface.withValues(alpha: 0.5),
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -368,8 +373,8 @@ class _MobileInlineSearchFieldState extends State<MobileInlineSearchField>
                                             width: 36,
                                             height: 36,
                                             decoration: BoxDecoration(
-                                              color:
-                                                  accent.withValues(alpha: 0.14),
+                                              color: accent.withValues(
+                                                  alpha: 0.14),
                                               borderRadius:
                                                   BorderRadius.circular(10),
                                             ),

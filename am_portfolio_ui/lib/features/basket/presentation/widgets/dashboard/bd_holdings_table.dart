@@ -21,20 +21,26 @@ class BdHoldingsTable extends StatelessWidget {
     if (lines.isEmpty) {
       return Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Center(child: Text('No holdings to display', style: TextStyle(color: context.colors.textSecondary))),
+        child: Center(
+          child: Text(
+            'No holdings to display',
+            style: TextStyle(color: context.colors.textSecondary),
+          ),
+        ),
       );
     }
 
     final sorted = BdDashboardMath.sortedByWeight(lines, totalCurrentValue);
 
-    Widget headerCell(String text, {TextAlign align = TextAlign.left}) => Padding(
+    Widget headerCell(String text, {TextAlign align = TextAlign.left}) =>
+        Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Text(
             text,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: context.colors.textSecondary,
-                  fontWeight: FontWeight.bold,
-                ),
+              color: context.colors.textSecondary,
+              fontWeight: FontWeight.bold,
+            ),
             textAlign: align,
           ),
         );
@@ -42,7 +48,10 @@ class BdHoldingsTable extends StatelessWidget {
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.sm,
+          ),
           color: context.backgroundColor,
           child: Row(
             children: [
@@ -56,11 +65,11 @@ class BdHoldingsTable extends StatelessWidget {
           ),
         ),
         ...sorted.map((line) {
-          final weight = BdDashboardMath.basketWeightPercent(line, totalCurrentValue);
-          return BdHoldingRow(
-            line: line,
-            weightPercent: weight,
+          final weight = BdDashboardMath.basketWeightPercent(
+            line,
+            totalCurrentValue,
           );
+          return BdHoldingRow(line: line, weightPercent: weight);
         }),
       ],
     );
@@ -79,7 +88,11 @@ class BdHoldingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fmt = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final fmt = NumberFormat.currency(
+      locale: 'en_IN',
+      symbol: '₹',
+      decimalDigits: 0,
+    );
     final hasMarket = BdDashboardMath.hasMarketPrice(line);
     final pnlPct = BdDashboardMath.pnlPercent(line);
     final pnlColor = !hasMarket

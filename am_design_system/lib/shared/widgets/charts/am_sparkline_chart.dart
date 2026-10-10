@@ -56,15 +56,15 @@ class _SparklinePainter extends CustomPainter {
     final double range = maxVal - minVal;
 
     final double xStep = size.width / (data.length - 1);
-    
+
     final path = Path();
     for (int i = 0; i < data.length; i++) {
       final x = i * xStep;
       // If range is 0, draw in the middle
-      final y = range == 0 
-          ? size.height / 2 
+      final y = range == 0
+          ? size.height / 2
           : size.height - ((data[i] - minVal) / range) * size.height;
-          
+
       if (i == 0) {
         path.moveTo(x, y);
       } else {
@@ -77,8 +77,8 @@ class _SparklinePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _SparklinePainter oldDelegate) {
-    return oldDelegate.data != data || 
-           oldDelegate.color != color || 
-           oldDelegate.lineWidth != lineWidth;
+    return oldDelegate.data != data ||
+        oldDelegate.color != color ||
+        oldDelegate.lineWidth != lineWidth;
   }
 }

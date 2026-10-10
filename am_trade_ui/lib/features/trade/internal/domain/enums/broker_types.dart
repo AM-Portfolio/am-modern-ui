@@ -2,7 +2,19 @@ import 'package:json_annotation/json_annotation.dart';
 
 /// Broker types
 @JsonEnum(fieldRename: FieldRename.screamingSnake)
-enum BrokerTypes { zerodha, dhan, mstock, grow, kotak, angelOne, upstox, icici, hdfc, manual, other }
+enum BrokerTypes {
+  zerodha,
+  dhan,
+  mstock,
+  grow,
+  kotak,
+  angelOne,
+  upstox,
+  icici,
+  hdfc,
+  manual,
+  other
+}
 
 /// Extension for BrokerTypes enum
 extension BrokerTypesExtension on BrokerTypes {

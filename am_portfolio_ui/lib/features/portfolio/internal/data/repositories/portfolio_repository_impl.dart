@@ -46,7 +46,6 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
   PortfolioHoldings? _cachedHoldings;
   PortfolioSummary? _cachedSummary;
   PortfolioList? _cachedPortfolioList;
-  
 
   @override
   Future<PortfolioHoldings> getPortfolioHoldings() async {
@@ -68,7 +67,6 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
         _holdingsController.add(cached);
         // Update in-memory cache
         _cachedHoldings = cached;
-        
       }
     } catch (e) {
       CommonLogger.warning(
@@ -84,13 +82,11 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       final holdingsDto = await _remoteDataSource.getPortfolioHoldings();
 
       // Map DTO to domain entity using holdings mapper
-      final holdings = PortfolioHoldingsMapper.fromApiModel(
-        holdingsDto,
-      );
+      final holdings = PortfolioHoldingsMapper.fromApiModel(holdingsDto);
 
       // 3. Update Stream & Caches
       _cachedHoldings = holdings;
-      
+
       _holdingsController.add(holdings);
 
       // 4. Persist to Local Cache
@@ -142,7 +138,6 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       if (cached != null) {
         _summaryController.add(cached);
         _cachedSummary = cached;
-        
       }
     } catch (e) {
       CommonLogger.warning(
@@ -161,7 +156,7 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
 
       // 3. Update Stream & Caches
       _cachedSummary = summary;
-      
+
       _summaryController.add(summary);
 
       // 4. Persist to Local Cache
@@ -204,9 +199,7 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
   }
 
   @override
-  Future<PortfolioHoldings> getPortfolioHoldingsById(
-    String portfolioId,
-  ) async {
+  Future<PortfolioHoldings> getPortfolioHoldingsById(String portfolioId) async {
     CommonLogger.methodEntry(
       'getPortfolioHoldingsById',
       tag: 'PortfolioRepository',
@@ -220,13 +213,10 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       );
 
       // Map DTO to domain entity using holdings mapper
-      final holdings = PortfolioHoldingsMapper.fromApiModel(
-        holdingsDto,
-      );
+      final holdings = PortfolioHoldingsMapper.fromApiModel(holdingsDto);
 
       // Cache the result
       _cachedHoldings = holdings;
-      
 
       // Emit to stream for real-time updates
       _holdingsController.add(holdings);
@@ -266,7 +256,9 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
   }
 
   @override
-  Future<PortfolioHoldings?> getCachedPortfolioHoldingsById(String portfolioId) async {
+  Future<PortfolioHoldings?> getCachedPortfolioHoldingsById(
+    String portfolioId,
+  ) async {
     try {
       final cached = await _localDataSource.getLastHoldings(portfolioId);
       if (cached != null) {
@@ -335,7 +327,6 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
 
       // Cache the result
       _cachedSummary = summary;
-      
 
       // Emit to stream for real-time updates
       _summaryController.add(summary);
@@ -375,7 +366,9 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
   }
 
   @override
-  Future<PortfolioSummary?> getCachedPortfolioSummaryById(String portfolioId) async {
+  Future<PortfolioSummary?> getCachedPortfolioSummaryById(
+    String portfolioId,
+  ) async {
     try {
       final cached = await _localDataSource.getLastSummary(portfolioId);
       if (cached != null) {
@@ -422,9 +415,7 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
   }
 
   @override
-  Future<PortfolioHolding?> getHoldingDetails(
-    String symbol,
-  ) async {
+  Future<PortfolioHolding?> getHoldingDetails(String symbol) async {
     CommonLogger.methodEntry(
       'getHoldingDetails',
       tag: 'PortfolioRepository',
@@ -521,9 +512,7 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
   }
 
   @override
-  Future<List<TopPerformer>> getTopPerformers({
-    int limit = 5,
-  }) async {
+  Future<List<TopPerformer>> getTopPerformers({int limit = 5}) async {
     CommonLogger.methodEntry(
       'getTopPerformers',
       tag: 'PortfolioRepository',
@@ -565,9 +554,7 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
   }
 
   @override
-  Future<List<TopPerformer>> getWorstPerformers({
-    int limit = 5,
-  }) async {
+  Future<List<TopPerformer>> getWorstPerformers({int limit = 5}) async {
     CommonLogger.methodEntry(
       'getWorstPerformers',
       tag: 'PortfolioRepository',
@@ -621,7 +608,6 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       final cached = await _localDataSource.getLastPortfolioList();
       if (cached != null) {
         _cachedPortfolioList = cached;
-        
       }
     } catch (e) {
       CommonLogger.warning(
@@ -636,13 +622,10 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
       final portfolioListDto = await _remoteDataSource.getPortfoliosList();
 
       // Map DTO to domain entity using portfolio list mapper
-      final portfolioList = PortfolioListMapper.fromApiModel(
-        portfolioListDto,
-      );
+      final portfolioList = PortfolioListMapper.fromApiModel(portfolioListDto);
 
       // 3. Cache the result
       _cachedPortfolioList = portfolioList;
-      
 
       // 4. Persist to Local Cache
       await _localDataSource.cachePortfolioList(portfolioList);
@@ -778,9 +761,7 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
                 );
 
                 if (json.containsKey('holdings')) {
-                  final holdings = PortfolioHoldingsMapper.fromApiModel(
-                    json,
-                  );
+                  final holdings = PortfolioHoldingsMapper.fromApiModel(json);
                   _cachedHoldings = holdings;
                   _holdingsController.add(holdings);
                 }
@@ -824,7 +805,6 @@ class PortfolioRepositoryImpl implements PortfolioRepository {
     _cachedHoldings = null;
     _cachedSummary = null;
     _cachedPortfolioList = null;
-    
 
     CommonLogger.info(
       'PortfolioRepository disposed',

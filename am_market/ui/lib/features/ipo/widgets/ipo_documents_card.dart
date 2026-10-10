@@ -27,7 +27,8 @@ class IpoDocumentsCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.description_outlined, size: 18, color: ModuleColors.market),
+              Icon(Icons.description_outlined,
+                  size: 18, color: ModuleColors.market),
               const SizedBox(width: 8),
               Text(
                 'Documents',
@@ -53,7 +54,8 @@ class IpoDocumentsCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.info_outline_rounded, size: 15, color: context.textTertiary),
+              Icon(Icons.info_outline_rounded,
+                  size: 15, color: context.textTertiary),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
@@ -103,7 +105,8 @@ class IpoDocumentsCard extends StatelessWidget {
                 color: context.colors.textPrimary.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: const Icon(Icons.picture_as_pdf_rounded, size: 18, color: Colors.white),
+              child: const Icon(Icons.picture_as_pdf_rounded,
+                  size: 18, color: Colors.white),
             ),
             const SizedBox(width: 12),
             const Expanded(
@@ -118,7 +121,8 @@ class IpoDocumentsCard extends StatelessWidget {
               ),
             ),
             if (hasRhp)
-              const Icon(Icons.open_in_new_rounded, size: 18, color: Colors.white)
+              const Icon(Icons.open_in_new_rounded,
+                  size: 18, color: Colors.white)
             else
               Text(
                 'Not available',
@@ -144,7 +148,9 @@ class IpoDocumentsCard extends StatelessWidget {
         height: 48,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: isDark ? context.surfaceColor.withValues(alpha: 0.5) : context.surfaceColor,
+          color: isDark
+              ? context.surfaceColor.withValues(alpha: 0.5)
+              : context.surfaceColor,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: isDark ? context.dividerColor : context.borderColor,
@@ -170,7 +176,8 @@ class IpoDocumentsCard extends StatelessWidget {
               ),
             ),
             if (hasDrhp)
-              Icon(Icons.open_in_new_rounded, size: 16, color: context.textPrimary)
+              Icon(Icons.open_in_new_rounded,
+                  size: 16, color: context.textPrimary)
             else
               Text(
                 'Not available',

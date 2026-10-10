@@ -444,8 +444,10 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
         other.marketNegativeIndicator,
         t,
       )!,
-      marketPositiveBg: Color.lerp(marketPositiveBg, other.marketPositiveBg, t)!,
-      marketNegativeBg: Color.lerp(marketNegativeBg, other.marketNegativeBg, t)!,
+      marketPositiveBg:
+          Color.lerp(marketPositiveBg, other.marketPositiveBg, t)!,
+      marketNegativeBg:
+          Color.lerp(marketNegativeBg, other.marketNegativeBg, t)!,
       marketCardSurface:
           Color.lerp(marketCardSurface, other.marketCardSurface, t)!,
       marketBorderDefault:
@@ -463,7 +465,8 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
       promotionalHighlight:
           Color.lerp(promotionalHighlight, other.promotionalHighlight, t)!,
       aiUsageUsed: Color.lerp(aiUsageUsed, other.aiUsageUsed, t)!,
-      aiUsageRemaining: Color.lerp(aiUsageRemaining, other.aiUsageRemaining, t)!,
+      aiUsageRemaining:
+          Color.lerp(aiUsageRemaining, other.aiUsageRemaining, t)!,
       aiUsageTrack: Color.lerp(aiUsageTrack, other.aiUsageTrack, t)!,
       scaffoldBackground:
           Color.lerp(scaffoldBackground, other.scaffoldBackground, t)!,

@@ -93,7 +93,8 @@ class _GlassCardWidgetState extends State<GlassCardWidget>
     final baseFill = colors.cardSurface.withValues(alpha: isDark ? 0.22 : 0.30);
     final gradStart = colors.surface.withValues(alpha: isDark ? 0.16 : 0.22);
     final gradCenter = colors.surface.withValues(alpha: isDark ? 0.08 : 0.12);
-    final gradEnd = colors.scaffoldBackground.withValues(alpha: isDark ? 0.04 : 0.08);
+    final gradEnd =
+        colors.scaffoldBackground.withValues(alpha: isDark ? 0.04 : 0.08);
 
     return FadeTransition(
       opacity: _opacity,

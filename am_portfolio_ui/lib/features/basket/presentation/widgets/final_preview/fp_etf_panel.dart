@@ -8,10 +8,7 @@ import 'fp_stock_row.dart';
 class FpEtfPanel extends StatelessWidget {
   final BasketOpportunity originalOpportunity;
 
-  const FpEtfPanel({
-    super.key,
-    required this.originalOpportunity,
-  });
+  const FpEtfPanel({super.key, required this.originalOpportunity});
 
   @override
   Widget build(BuildContext context) {
@@ -38,17 +35,30 @@ class FpEtfPanel extends StatelessWidget {
           Divider(color: context.colors.border, height: 1),
           if (!compact) ...[
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.md,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
                     flex: 0,
-                    child: Text('Stock', style: theme.textTheme.labelSmall?.copyWith(color: context.colors.textSecondary)),
+                    child: Text(
+                      'Stock',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: context.colors.textSecondary,
+                      ),
+                    ),
                   ),
                   Expanded(
                     flex: 0,
-                    child: Text('Weightage (%)', style: theme.textTheme.labelSmall?.copyWith(color: context.colors.textSecondary)),
+                    child: Text(
+                      'Weightage (%)',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: context.colors.textSecondary,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -61,21 +71,24 @@ class FpEtfPanel extends StatelessWidget {
             physics: const NeverScrollableScrollPhysics(),
             itemCount: composition.length,
             itemBuilder: (context, index) {
-                final item = composition[index];
-                return FpStockRow(
-                  symbol: item.stockSymbol,
-                  sector: item.sector,
-                  weightage: item.etfWeight,
-                  showValue: false,
-                  showStatus: false,
-                  isEven: index % 2 == 0,
-                );
-              },
-            ),
+              final item = composition[index];
+              return FpStockRow(
+                symbol: item.stockSymbol,
+                sector: item.sector,
+                weightage: item.etfWeight,
+                showValue: false,
+                showStatus: false,
+                isEven: index % 2 == 0,
+              );
+            },
+          ),
           // Footer
           Divider(color: context.colors.border, height: 1),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.lg),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.lg,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [

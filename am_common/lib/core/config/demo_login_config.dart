@@ -42,6 +42,5 @@ class DemoLoginConfig {
   }
 
   /// Feature-flag panel is dev-only; not shown for local prod testing.
-  static bool get isDeveloperPanelVisible =>
-      ConfigService.resolvedEnv == 'dev';
+  static bool get isDeveloperPanelVisible => ConfigService.resolvedEnv == 'dev';
 }

@@ -66,22 +66,26 @@ class BasketRepositoryImpl implements BasketRepository {
 
   @override
   Future<BasketOpportunity> calculateQuantities(
-      Map<String, dynamic> request) async {
+    Map<String, dynamic> request,
+  ) async {
     final response = await remoteDataSource.calculateQuantities(request);
     return BasketOpportunity.fromJson(response as Map<String, dynamic>);
   }
 
   @override
   Future<BasketOpportunity> calculateQuantitiesFinalPreview(
-      Map<String, dynamic> request) async {
-    final response =
-        await remoteDataSource.calculateQuantitiesFinalPreview(request);
+    Map<String, dynamic> request,
+  ) async {
+    final response = await remoteDataSource.calculateQuantitiesFinalPreview(
+      request,
+    );
     return BasketOpportunity.fromJson(response as Map<String, dynamic>);
   }
 
   @override
   Future<BasketOpportunity> applySubstitutes(
-      Map<String, dynamic> request) async {
+    Map<String, dynamic> request,
+  ) async {
     final response = await remoteDataSource.applySubstitutes(request);
     return BasketOpportunity.fromJson(response as Map<String, dynamic>);
   }
@@ -137,10 +141,7 @@ class BasketRepositoryImpl implements BasketRepository {
   }
 
   @override
-  Future<void> deleteDraft({
-    required String draftId,
-    required String userId,
-  }) {
+  Future<void> deleteDraft({required String draftId, required String userId}) {
     return remoteDataSource.deleteDraft(draftId: draftId, userId: userId);
   }
 }

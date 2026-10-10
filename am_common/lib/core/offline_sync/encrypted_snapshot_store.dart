@@ -71,8 +71,7 @@ class EncryptedSnapshotStore {
     final cipher = _box!.get(_scopedKey(userId, domainId, recordKey));
     if (cipher == null) return null;
     try {
-      final decoded =
-          jsonDecode(_decrypt(cipher)) as Map<String, dynamic>;
+      final decoded = jsonDecode(_decrypt(cipher)) as Map<String, dynamic>;
       return (
         payload: decoded['payload'] as Map<String, dynamic>,
         fetchedAt: DateTime.parse(decoded['fetchedAt'] as String),

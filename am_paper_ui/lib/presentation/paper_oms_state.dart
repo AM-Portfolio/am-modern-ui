@@ -49,13 +49,13 @@ class PaperOmsState extends Equatable {
 
   @override
   List<Object?> get props => [
-        wallet,
-        orders,
-        positions,
-        orderTypeFavorite,
-        loading,
-        submitting,
-        error,
-        toast,
-      ];
+    wallet,
+    orders,
+    positions,
+    orderTypeFavorite,
+    loading,
+    submitting,
+    error,
+    toast,
+  ];
 }

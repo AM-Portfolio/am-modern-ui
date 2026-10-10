@@ -69,31 +69,34 @@ class StreamConnectRequest {
   String? provider;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is StreamConnectRequest &&
-    _deepEquality.equals(other.instrumentKeys, instrumentKeys) &&
-    other.mode == mode &&
-    other.expandIndices == expandIndices &&
-    other.timeFrame == timeFrame &&
-    other.isIndexSymbol == isIndexSymbol &&
-    other.stream == stream &&
-    other.provider == provider;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is StreamConnectRequest &&
+          _deepEquality.equals(other.instrumentKeys, instrumentKeys) &&
+          other.mode == mode &&
+          other.expandIndices == expandIndices &&
+          other.timeFrame == timeFrame &&
+          other.isIndexSymbol == isIndexSymbol &&
+          other.stream == stream &&
+          other.provider == provider;
 
   @override
   int get hashCode =>
-    (instrumentKeys.hashCode) +
-    (mode == null ? 0 : mode!.hashCode) +
-    (expandIndices == null ? 0 : expandIndices!.hashCode) +
-    (timeFrame == null ? 0 : timeFrame!.hashCode) +
-    (isIndexSymbol == null ? 0 : isIndexSymbol!.hashCode) +
-    (stream == null ? 0 : stream!.hashCode) +
-    (provider == null ? 0 : provider!.hashCode);
+      (instrumentKeys.hashCode) +
+      (mode == null ? 0 : mode!.hashCode) +
+      (expandIndices == null ? 0 : expandIndices!.hashCode) +
+      (timeFrame == null ? 0 : timeFrame!.hashCode) +
+      (isIndexSymbol == null ? 0 : isIndexSymbol!.hashCode) +
+      (stream == null ? 0 : stream!.hashCode) +
+      (provider == null ? 0 : provider!.hashCode);
 
   @override
-  String toString() => 'StreamConnectRequest[instrumentKeys=$instrumentKeys, mode=$mode, expandIndices=$expandIndices, timeFrame=$timeFrame, isIndexSymbol=$isIndexSymbol, stream=$stream, provider=$provider]';
+  String toString() =>
+      'StreamConnectRequest[instrumentKeys=$instrumentKeys, mode=$mode, expandIndices=$expandIndices, timeFrame=$timeFrame, isIndexSymbol=$isIndexSymbol, stream=$stream, provider=$provider]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
-      json[r'instrumentKeys'] = this.instrumentKeys;
+    json[r'instrumentKeys'] = this.instrumentKeys;
     if (this.mode != null) {
       json[r'mode'] = this.mode;
     } else {
@@ -138,15 +141,19 @@ class StreamConnectRequest {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "StreamConnectRequest[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "StreamConnectRequest[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "StreamConnectRequest[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "StreamConnectRequest[$key]" has a null value in JSON.');
         });
         return true;
       }());
 
       return StreamConnectRequest(
         instrumentKeys: json[r'instrumentKeys'] is Iterable
-            ? (json[r'instrumentKeys'] as Iterable).cast<String>().toList(growable: false)
+            ? (json[r'instrumentKeys'] as Iterable)
+                .cast<String>()
+                .toList(growable: false)
             : const [],
         mode: mapValueOfType<String>(json, r'mode'),
         expandIndices: mapValueOfType<bool>(json, r'expandIndices'),
@@ -159,7 +166,10 @@ class StreamConnectRequest {
     return null;
   }
 
-  static List<StreamConnectRequest> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<StreamConnectRequest> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <StreamConnectRequest>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -175,7 +185,7 @@ class StreamConnectRequest {
   static Map<String, StreamConnectRequest> mapFromJson(dynamic json) {
     final map = <String, StreamConnectRequest>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); 
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
         final value = StreamConnectRequest.fromJson(entry.value);
         if (value != null) {
@@ -187,19 +197,23 @@ class StreamConnectRequest {
   }
 
   // maps a json object with a list of StreamConnectRequest-objects as value to a dart map
-  static Map<String, List<StreamConnectRequest>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<StreamConnectRequest>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<StreamConnectRequest>>{};
     if (json is Map && json.isNotEmpty) {
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = StreamConnectRequest.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = StreamConnectRequest.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

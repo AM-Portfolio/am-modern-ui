@@ -365,9 +365,8 @@ class MarketProvider with ChangeNotifier {
     }
     _sparklineRange = range;
 
-    final missing = unique
-        .where((s) => (_indexSparklines[s]?.length ?? 0) < 2)
-        .toList();
+    final missing =
+        unique.where((s) => (_indexSparklines[s]?.length ?? 0) < 2).toList();
     if (missing.isEmpty) return;
 
     _isLoadingSparklines = true;
@@ -376,8 +375,7 @@ class MarketProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final fetcher =
-          debugHistoryBatchFetcher ?? _apiService.fetchHistoryBatch;
+      final fetcher = debugHistoryBatchFetcher ?? _apiService.fetchHistoryBatch;
       final history = await fetcher(missing, range);
       history.forEach((sym, points) {
         final closes = extractSparklineCloses(points);
@@ -398,11 +396,14 @@ class MarketProvider with ChangeNotifier {
   }
 
   /// Maps history data-points to a sparkline close series (testable helper).
-  static List<double> extractSparklineCloses(List<Map<String, dynamic>> points) {
+  static List<double> extractSparklineCloses(
+      List<Map<String, dynamic>> points) {
     final closes = <double>[];
     for (final point in points) {
-      final raw =
-          point['close'] ?? point['price'] ?? point['lastPrice'] ?? point['value'];
+      final raw = point['close'] ??
+          point['price'] ??
+          point['lastPrice'] ??
+          point['value'];
       if (raw is num && raw > 0) {
         closes.add(raw.toDouble());
       }
@@ -900,9 +901,11 @@ class MarketProvider with ChangeNotifier {
 
   /// Loads heatmap for [symbol]. Always returns the fetched map for the caller
   /// (dashboard must not rely on shared [heatmapValues], which Analysis can race).
-  Future<Map<String, double>> loadHeatmap(String symbol, String timeframe) async {
+  Future<Map<String, double>> loadHeatmap(
+      String symbol, String timeframe) async {
     final loadId = ++_heatmapLoadId;
-    CommonLogger.info("Loading heatmap for $symbol ($timeframe)", tag: "MarketProvider.loadHeatmap");
+    CommonLogger.info("Loading heatmap for $symbol ($timeframe)",
+        tag: "MarketProvider.loadHeatmap");
     try {
       var values = await _apiService.fetchHeatmap(symbol, timeframe: timeframe);
       // Stale/bad INDICES 1D Redis cache often returns almost all 0.0 — recompute once.
@@ -924,7 +927,8 @@ class MarketProvider with ChangeNotifier {
       }
       return values;
     } catch (e) {
-      CommonLogger.error("Error loading heatmap", tag: "MarketProvider.loadHeatmap", error: e);
+      CommonLogger.error("Error loading heatmap",
+          tag: "MarketProvider.loadHeatmap", error: e);
       if (loadId == _heatmapLoadId) {
         _heatmapValues = {};
         notifyListeners();

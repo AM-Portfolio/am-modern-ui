@@ -27,11 +27,7 @@ class SectorialAllocationWidget extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.donut_small,
-                color: ModuleColors.portfolio,
-                size: 24,
-              ),
+              Icon(Icons.donut_small, color: ModuleColors.portfolio, size: 24),
               const SizedBox(width: 8),
               Text(
                 'Sector Allocation',

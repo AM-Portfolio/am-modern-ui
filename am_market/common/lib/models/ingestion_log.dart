@@ -39,7 +39,10 @@ class IngestionLog {
       totalSymbols: json['totalSymbols'] as int,
       successCount: json['successCount'] as int,
       failureCount: json['failureCount'] as int,
-      failedSymbols: (json['failedSymbols'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
+      failedSymbols: (json['failedSymbols'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
       durationMs: (json['durationMs'] as num).toDouble(),
       payloadSize: (json['payloadSize'] as num?)?.toInt() ?? 0,
       message: json['message'] as String?,

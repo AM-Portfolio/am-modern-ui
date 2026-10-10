@@ -8,7 +8,8 @@ class GetTradeCalendarByDateRange {
   final TradeRepository _repository;
 
   /// Execute the use case to get trade calendar for a specific portfolio by date range
-  Future<TradeCalendar> call(String portfolioId, {
+  Future<TradeCalendar> call(
+    String portfolioId, {
     required DateTime startDate,
     required DateTime endDate,
   }) async {
@@ -19,19 +20,23 @@ class GetTradeCalendarByDateRange {
     );
 
     if (portfolioId.isEmpty) {
-      AppLogger.error('Validation failed - empty userId or portfolioId', tag: 'GetTradeCalendarByDateRange');
+      AppLogger.error('Validation failed - empty userId or portfolioId',
+          tag: 'GetTradeCalendarByDateRange');
       throw ArgumentError('Portfolio ID cannot be empty');
     }
 
     if (startDate.isAfter(endDate)) {
-      AppLogger.error('Validation failed - startDate is after endDate', tag: 'GetTradeCalendarByDateRange');
+      AppLogger.error('Validation failed - startDate is after endDate',
+          tag: 'GetTradeCalendarByDateRange');
       throw ArgumentError('Start date must be before or equal to end date');
     }
 
     try {
-      AppLogger.info('Executing get trade calendar by date range use case', tag: 'GetTradeCalendarByDateRange');
+      AppLogger.info('Executing get trade calendar by date range use case',
+          tag: 'GetTradeCalendarByDateRange');
 
-      final result = await _repository.getTradeCalendarByDateRange(portfolioId,
+      final result = await _repository.getTradeCalendarByDateRange(
+        portfolioId,
         startDate: startDate,
         endDate: endDate,
       );
@@ -40,7 +45,8 @@ class GetTradeCalendarByDateRange {
         'Trade calendar by date range use case completed successfully',
         tag: 'GetTradeCalendarByDateRange',
       );
-      AppLogger.methodExit('GetTradeCalendarByDateRange.call', tag: 'GetTradeCalendarByDateRange', result: 'success');
+      AppLogger.methodExit('GetTradeCalendarByDateRange.call',
+          tag: 'GetTradeCalendarByDateRange', result: 'success');
 
       return result;
     } catch (e) {
@@ -50,9 +56,9 @@ class GetTradeCalendarByDateRange {
         error: e,
         stackTrace: StackTrace.current,
       );
-      AppLogger.methodExit('GetTradeCalendarByDateRange.call', tag: 'GetTradeCalendarByDateRange', result: 'error');
+      AppLogger.methodExit('GetTradeCalendarByDateRange.call',
+          tag: 'GetTradeCalendarByDateRange', result: 'error');
       rethrow;
     }
   }
 }
-

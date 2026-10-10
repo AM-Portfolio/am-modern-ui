@@ -22,32 +22,35 @@ class InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 6),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          flex: 2,
-          child: Text(
-            label,
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey[600]),
-          ),
-        ),
-        Expanded(
-          flex: 3,
-          child: Text(
-            value,
-            maxLines: maxLines,
-            overflow: maxLines != null ? TextOverflow.ellipsis : null,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
-              color: valueColor ?? Theme.of(context).colorScheme.onSurface,
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 2,
+              child: Text(
+                label,
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[600]),
+              ),
             ),
-            textAlign: TextAlign.right,
-          ),
+            Expanded(
+              flex: 3,
+              child: Text(
+                value,
+                maxLines: maxLines,
+                overflow: maxLines != null ? TextOverflow.ellipsis : null,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+                  color: valueColor ?? Theme.of(context).colorScheme.onSurface,
+                ),
+                textAlign: TextAlign.right,
+              ),
+            ),
+          ],
         ),
-      ],
-    ),
-  );
+      );
 }

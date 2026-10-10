@@ -879,7 +879,13 @@ Map<String, double> parseHeatmapPayload(dynamic decoded) {
   final root = Map<String, dynamic>.from(decoded);
 
   Map<String, dynamic> candidate = root;
-  for (final key in const ['data', 'heatmap', 'values', 'constituents', 'items']) {
+  for (final key in const [
+    'data',
+    'heatmap',
+    'values',
+    'constituents',
+    'items'
+  ]) {
     final nested = root[key];
     if (nested is Map && nested.isNotEmpty) {
       candidate = Map<String, dynamic>.from(nested);

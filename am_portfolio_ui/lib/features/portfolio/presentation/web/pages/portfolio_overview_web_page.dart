@@ -41,18 +41,13 @@ class PortfolioOverviewWebPage extends ConsumerWidget {
 }
 
 class _PortfolioOverviewView extends StatelessWidget {
-  const _PortfolioOverviewView({
-    this.portfolioId,
-    this.portfolioName,
-  });
+  const _PortfolioOverviewView({this.portfolioId, this.portfolioName});
 
   final String? portfolioId;
   final String? portfolioName;
 
   @override
   Widget build(BuildContext context) {
-    return PortfolioOverviewWidget(
-      portfolioId: portfolioId,
-    );
+    return PortfolioOverviewWidget(portfolioId: portfolioId);
   }
 }

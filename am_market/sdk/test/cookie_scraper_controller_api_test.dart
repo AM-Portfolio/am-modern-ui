@@ -11,7 +11,6 @@
 import 'package:am_market_client/api.dart';
 import 'package:test/test.dart';
 
-
 /// tests for CookieScraperControllerApi
 void main() {
   // final instance = CookieScraperControllerApi();
@@ -21,6 +20,5 @@ void main() {
     test('test scrapeCookies', () async {
       // TODO
     });
-
   });
 }

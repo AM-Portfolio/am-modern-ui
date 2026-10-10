@@ -20,14 +20,14 @@ class DiscoverMatchRing extends StatelessWidget {
     final color = clamped >= 70
         ? context.statusSuccess
         : clamped >= 40
-            ? context.statusWarning
-            : context.statusError;
+        ? context.statusWarning
+        : context.statusError;
     final stroke = size >= 40 ? 4.0 : 3.0;
     final labelStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
-          fontWeight: FontWeight.w800,
-          color: color,
-          fontSize: size >= 40 ? 11 : 9,
-        );
+      fontWeight: FontWeight.w800,
+      color: color,
+      fontSize: size >= 40 ? 11 : 9,
+    );
 
     // Tight square + Positioned.fill keeps the ring circular (avoids oval stretch
     // when parent flex gives non-square max constraints on web).
@@ -51,10 +51,7 @@ class DiscoverMatchRing extends StatelessWidget {
                 ),
               ),
               if (showPercentText)
-                Text(
-                  '${clamped.toStringAsFixed(0)}%',
-                  style: labelStyle,
-                ),
+                Text('${clamped.toStringAsFixed(0)}%', style: labelStyle),
             ],
           );
         },

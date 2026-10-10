@@ -55,13 +55,11 @@ class OrderTicketHeaderBlock extends StatelessWidget {
             title,
             maxLines: compact ? 1 : 2,
             overflow: TextOverflow.ellipsis,
-            style: (compact
-                    ? Theme.of(context).textTheme.titleMedium
-                    : Theme.of(context).textTheme.titleLarge)
-                ?.copyWith(
-              fontWeight: FontWeight.w800,
-              height: 1.15,
-            ),
+            style:
+                (compact
+                        ? Theme.of(context).textTheme.titleMedium
+                        : Theme.of(context).textTheme.titleLarge)
+                    ?.copyWith(fontWeight: FontWeight.w800, height: 1.15),
           ),
         ),
         if (!compact && onToggleFloat != null)
@@ -118,9 +116,9 @@ class OrderTicketHeaderBlock extends StatelessWidget {
               Text(
                 fmt.format(ltp),
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      fontSize: compact ? 18 : 22,
-                    ),
+                  fontWeight: FontWeight.w800,
+                  fontSize: compact ? 18 : 22,
+                ),
               ),
               Icon(
                 change < 0 ? Icons.arrow_drop_down : Icons.arrow_drop_up,
@@ -130,10 +128,10 @@ class OrderTicketHeaderBlock extends StatelessWidget {
               Text(
                 '${change >= 0 ? '+' : ''}${fmt.format(change)} (${changePct.toStringAsFixed(2)}%)',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: priceColor,
-                      fontWeight: FontWeight.w600,
-                      fontSize: compact ? 12 : null,
-                    ),
+                  color: priceColor,
+                  fontWeight: FontWeight.w600,
+                  fontSize: compact ? 12 : null,
+                ),
               ),
               if (!compact)
                 Row(
@@ -151,8 +149,8 @@ class OrderTicketHeaderBlock extends StatelessWidget {
                     Text(
                       'Live',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: colors.textTertiary,
-                          ),
+                        color: colors.textTertiary,
+                      ),
                     ),
                   ],
                 ),
@@ -161,9 +159,9 @@ class OrderTicketHeaderBlock extends StatelessWidget {
         else
           Text(
             'Search a stock in the watchlist to load prices',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: colors.textSecondary,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: colors.textSecondary),
           ),
         SizedBox(height: compact ? 8 : 12),
         Row(
@@ -210,22 +208,25 @@ class OrderTicketBalanceBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.account_balance_wallet_outlined,
-              size: compact ? 14 : 16, color: colors.textSecondary),
+          Icon(
+            Icons.account_balance_wallet_outlined,
+            size: compact ? 14 : 16,
+            color: colors.textSecondary,
+          ),
           const SizedBox(width: 8),
           Text(
             'Paper cash',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: colors.textSecondary,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: colors.textSecondary),
           ),
           const Spacer(),
           Text(
             '₹$available',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  fontSize: compact ? 13 : null,
-                ),
+              fontWeight: FontWeight.w700,
+              fontSize: compact ? 13 : null,
+            ),
           ),
         ],
       ),
@@ -345,11 +346,11 @@ class OrderTicketSeg extends StatelessWidget {
           child: Text(
             label,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: selected
-                      ? context.colors.actionPrimaryFg
-                      : context.colors.textSecondary,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: selected
+                  ? context.colors.actionPrimaryFg
+                  : context.colors.textSecondary,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ),
@@ -398,19 +399,19 @@ class OrderTicketProductTile extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: selected ? accent : colors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  color: selected ? accent : colors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const SizedBox(height: 2),
               Text(
                 subtitle,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: selected
-                          ? accent.withValues(alpha: 0.85)
-                          : colors.textTertiary,
-                    ),
+                  color: selected
+                      ? accent.withValues(alpha: 0.85)
+                      : colors.textTertiary,
+                ),
               ),
             ],
           ),
@@ -498,10 +499,10 @@ class OrderTicketTypeTab extends StatelessWidget {
                   label,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: selected ? accent : colors.textSecondary,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11,
-                      ),
+                    color: selected ? accent : colors.textSecondary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11,
+                  ),
                 )
               : Column(
                   children: [
@@ -516,9 +517,7 @@ class OrderTicketTypeTab extends StatelessWidget {
                       child: Text(
                         badge,
                         style: TextStyle(
-                          color: selected
-                              ? colors.actionPrimaryFg
-                              : accent,
+                          color: selected ? colors.actionPrimaryFg : accent,
                           fontWeight: FontWeight.w800,
                           fontSize: 12,
                         ),
@@ -527,12 +526,10 @@ class OrderTicketTypeTab extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       label,
-                      style:
-                          Theme.of(context).textTheme.labelMedium?.copyWith(
-                                color:
-                                    selected ? accent : colors.textSecondary,
-                                fontWeight: FontWeight.w700,
-                              ),
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: selected ? accent : colors.textSecondary,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ],
                 ),
@@ -566,9 +563,9 @@ class OrderTicketFieldRow extends StatelessWidget {
               child: Text(
                 label,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      fontSize: compact ? 13 : null,
-                    ),
+                  fontWeight: FontWeight.w600,
+                  fontSize: compact ? 13 : null,
+                ),
               ),
             ),
             if (trailing != null) trailing!,
@@ -618,9 +615,9 @@ class OrderTicketCheckFieldRow extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
         Opacity(
@@ -678,9 +675,9 @@ class OrderTicketPriceStepper extends StatelessWidget {
               textAlign: TextAlign.center,
               keyboardType: keyboardType,
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    fontSize: compact ? 13 : null,
-                  ),
+                fontWeight: FontWeight.w700,
+                fontSize: compact ? 13 : null,
+              ),
               decoration: const InputDecoration(
                 border: InputBorder.none,
                 isDense: true,
@@ -741,9 +738,9 @@ class OrderTicketLegChip extends StatelessWidget {
           ),
           Text(
             label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: colors.textSecondary,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: colors.textSecondary),
           ),
         ],
       ),

@@ -2,15 +2,13 @@ class BasketCatalog {
   final String defaultQuery;
   final List<BasketTheme> themes;
 
-  const BasketCatalog({
-    required this.defaultQuery,
-    this.themes = const [],
-  });
+  const BasketCatalog({required this.defaultQuery, this.themes = const []});
 
   factory BasketCatalog.fromJson(Map<String, dynamic> json) {
     return BasketCatalog(
       defaultQuery: json['defaultQuery'] as String? ?? '',
-      themes: (json['themes'] as List<dynamic>?)
+      themes:
+          (json['themes'] as List<dynamic>?)
               ?.map((e) => BasketTheme.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],

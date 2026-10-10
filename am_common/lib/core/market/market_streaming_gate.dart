@@ -66,8 +66,7 @@ class MarketStreamingGate {
     if (!force &&
         _status != null &&
         _lastFetchedAt != null &&
-        DateTime.now().difference(_lastFetchedAt!) <
-            const Duration(hours: 1)) {
+        DateTime.now().difference(_lastFetchedAt!) < const Duration(hours: 1)) {
       return;
     }
     _refreshing = true;
@@ -144,9 +143,8 @@ class MarketStreamingGate {
 
     if (delay == null || delay <= Duration.zero) return;
 
-    final capped = delay > const Duration(hours: 24)
-        ? const Duration(hours: 24)
-        : delay;
+    final capped =
+        delay > const Duration(hours: 24) ? const Duration(hours: 24) : delay;
     _sessionTimer = Timer(capped, () {
       unawaited(refresh());
     });

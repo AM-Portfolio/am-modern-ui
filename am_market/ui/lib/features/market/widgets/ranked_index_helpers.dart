@@ -82,8 +82,7 @@ List<StockIndicesMarketData> rankedSortedIndices({
       break;
   }
   raw.sort(
-    (a, b) => rankedDisplayPChange(b)
-        .compareTo(rankedDisplayPChange(a)),
+    (a, b) => rankedDisplayPChange(b).compareTo(rankedDisplayPChange(a)),
   );
   return raw;
 }

@@ -23,7 +23,7 @@ class TradeMetricsLoaded extends TradeMetricsState {
     required this.filter,
     this.availableMetricTypes = const [],
   });
-  
+
   final List<MetricTypes> availableMetricTypes;
 
   @override

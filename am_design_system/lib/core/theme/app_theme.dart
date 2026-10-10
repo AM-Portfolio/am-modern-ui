@@ -9,9 +9,8 @@ import 'app_typography.dart';
 /// Main Theme Engine for the Application
 /// Provides Light and Dark modes with granular control
 class AppTheme {
-  
   //-- Theme Definitions --//
-  
+
   static ThemeData get darkTheme {
     return _buildTheme(
       brightness: Brightness.dark,
@@ -86,8 +85,9 @@ class AppTheme {
   }) {
     final isDark = brightness == Brightness.dark;
     final textTheme = AppTypography.getTextTheme(isDark: isDark);
-    final colors = customColors ?? (isDark ? AppColorsTheme.dark : AppColorsTheme.light);
-    
+    final colors =
+        customColors ?? (isDark ? AppColorsTheme.dark : AppColorsTheme.light);
+
     // Apply Google Fonts Inter globally if desired, overlaying our custom TextTheme
     // final fontTheme = GoogleFonts.interTextTheme(textTheme);
     final fontTheme = textTheme; // Temporarily using default textTheme
@@ -99,7 +99,7 @@ class AppTheme {
       scaffoldBackgroundColor: backgroundColor,
       fontFamily: 'Inter',
       extensions: <ThemeExtension<dynamic>>[colors],
-      
+
       // Color Scheme
       colorScheme: ColorScheme(
         brightness: brightness,
@@ -115,10 +115,10 @@ class AppTheme {
         surfaceContainerHighest: colors.cardSurface,
         outline: colors.border,
       ),
-      
+
       // Typography
       textTheme: fontTheme,
-      
+
       // Component Themes
       cardTheme: CardThemeData(
         color: colors.cardSurface,
@@ -132,7 +132,7 @@ class AppTheme {
           ),
         ),
       ),
-      
+
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -143,18 +143,18 @@ class AppTheme {
           fontWeight: FontWeight.bold,
         ),
       ),
-      
+
       dividerTheme: DividerThemeData(
         color: colors.divider,
         thickness: 1,
         space: 1,
       ),
-      
+
       iconTheme: IconThemeData(
         color: textColor,
         size: 24,
       ),
-      
+
       // Inputs
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -187,7 +187,7 @@ class AppTheme {
           color: colors.textDisabled,
         ),
       ),
-      
+
       // Buttons
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(

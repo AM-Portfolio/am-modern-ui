@@ -3,11 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'dashboard_widget_id.dart';
 
-typedef DashboardWidgetBuilder = Widget Function(
-  BuildContext context,
-  WidgetRef ref,
-  DashboardWidgetContext ctx,
-);
+typedef DashboardWidgetBuilder =
+    Widget Function(
+      BuildContext context,
+      WidgetRef ref,
+      DashboardWidgetContext ctx,
+    );
 
 class DashboardWidgetDescriptor {
   const DashboardWidgetDescriptor({

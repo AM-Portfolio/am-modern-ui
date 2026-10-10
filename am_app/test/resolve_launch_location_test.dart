@@ -31,7 +31,8 @@ void main() {
     test('keeps reset-password with short code query', () {
       expect(
         resolveLaunchLocation(
-          launchUri: Uri.parse('https://am.asrax.in/reset-password?c=3vxnvHhX0IP3'),
+          launchUri:
+              Uri.parse('https://am.asrax.in/reset-password?c=3vxnvHhX0IP3'),
         ),
         '/reset-password?c=3vxnvHhX0IP3',
       );
@@ -60,7 +61,8 @@ void main() {
     test('keeps verify-email deep link', () {
       expect(
         resolveLaunchLocation(
-          launchUri: Uri.parse('https://am.asrax.in/verify-email?c=CwgH9qkDWi9V'),
+          launchUri:
+              Uri.parse('https://am.asrax.in/verify-email?c=CwgH9qkDWi9V'),
         ),
         '/verify-email?c=CwgH9qkDWi9V',
       );
@@ -85,7 +87,8 @@ void main() {
         AppRoutes.login,
       );
       expect(
-        resolveLaunchLocation(launchUri: Uri.parse('https://am.asrax.in/unknown')),
+        resolveLaunchLocation(
+            launchUri: Uri.parse('https://am.asrax.in/unknown')),
         AppRoutes.login,
       );
     });
@@ -94,7 +97,8 @@ void main() {
       expect(resolveLaunchLocation(launchUri: null), AppRoutes.dashboard);
     });
 
-    test('null launchUri uses cached session nav path when available', () async {
+    test('null launchUri uses cached session nav path when available',
+        () async {
       await common.SessionPersistenceService.instance.saveNow(
         'test-user',
         common.AppSessionState.initial(globalNav: 'Market'),
@@ -105,7 +109,8 @@ void main() {
       );
     });
 
-    test('null launchUri restores portfolio path from cached session', () async {
+    test('null launchUri restores portfolio path from cached session',
+        () async {
       await common.SessionPersistenceService.instance.saveNow(
         'test-user',
         common.AppSessionState(

@@ -26,11 +26,7 @@ class MarketCapAllocationWidget extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.insights,
-                color: ModuleColors.portfolio,
-                size: 24,
-              ),
+              Icon(Icons.insights, color: ModuleColors.portfolio, size: 24),
               const SizedBox(width: 8),
               Text(
                 'Market Cap Allocation',

@@ -34,7 +34,8 @@ class OutboxQueue {
     required OutboxItem item,
   }) async {
     await ensureInitialized();
-    await _box!.put(_key(userId, item.clientMutationId), jsonEncode(item.toJson()));
+    await _box!
+        .put(_key(userId, item.clientMutationId), jsonEncode(item.toJson()));
     _emitPending();
   }
 

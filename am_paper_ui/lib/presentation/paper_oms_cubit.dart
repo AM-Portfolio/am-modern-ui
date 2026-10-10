@@ -30,14 +30,16 @@ class PaperOmsCubit extends Cubit<PaperOmsState> {
         positions = await _source.listPositions(paper.walletId);
       }
       final favorite = await _source.getOrderTypeFavorite();
-      emit(state.copyWith(
-        wallet: paper,
-        orders: orders,
-        positions: positions,
-        orderTypeFavorite: favorite,
-        loading: false,
-        clearError: true,
-      ));
+      emit(
+        state.copyWith(
+          wallet: paper,
+          orders: orders,
+          positions: positions,
+          orderTypeFavorite: favorite,
+          loading: false,
+          clearError: true,
+        ),
+      );
     } catch (e) {
       emit(state.copyWith(loading: false, error: e.toString()));
     }
@@ -47,12 +49,14 @@ class PaperOmsCubit extends Cubit<PaperOmsState> {
     emit(state.copyWith(submitting: true, clearError: true, clearToast: true));
     try {
       final wallet = await _source.createPaperWallet();
-      emit(state.copyWith(
-        wallet: wallet,
-        submitting: false,
-        toast:
-            'Paper trading enabled — ₹${wallet.available} virtual cash (not live broker money).',
-      ));
+      emit(
+        state.copyWith(
+          wallet: wallet,
+          submitting: false,
+          toast:
+              'Paper trading enabled — ₹${wallet.available} virtual cash (not live broker money).',
+        ),
+      );
       await refreshBooks();
     } catch (e) {
       final msg = omsRejectMessage(omsErrorCode(e));
@@ -125,14 +129,16 @@ class PaperOmsCubit extends Cubit<PaperOmsState> {
       final toast = order.isRejected
           ? omsRejectMessage(order.rejectReason)
           : order.isWorking
-              ? 'Working ${order.orderType} ${order.side} ${order.quantity} ${order.symbol}'
-              : 'Filled ${order.side} ${order.quantity} ${order.symbol} at ${order.fillPrice}';
-      emit(state.copyWith(
-        wallet: next,
-        orders: [order, ...state.orders],
-        submitting: false,
-        toast: toast,
-      ));
+          ? 'Working ${order.orderType} ${order.side} ${order.quantity} ${order.symbol}'
+          : 'Filled ${order.side} ${order.quantity} ${order.symbol} at ${order.fillPrice}';
+      emit(
+        state.copyWith(
+          wallet: next,
+          orders: [order, ...state.orders],
+          submitting: false,
+          toast: toast,
+        ),
+      );
       // Refresh books in background — do not block Instant Buy UI.
       unawaited(refreshBooks());
       return order;
@@ -161,10 +167,14 @@ class PaperOmsCubit extends Cubit<PaperOmsState> {
     emit(state.copyWith(submitting: true, clearToast: true));
     try {
       final n = await _source.cancelAllOrders(walletId: wallet.walletId);
-      emit(state.copyWith(
-        submitting: false,
-        toast: n == 0 ? 'No pending orders to cancel' : 'Cancelled $n pending order(s)',
-      ));
+      emit(
+        state.copyWith(
+          submitting: false,
+          toast: n == 0
+              ? 'No pending orders to cancel'
+              : 'Cancelled $n pending order(s)',
+        ),
+      );
       await refreshBooks();
     } catch (e) {
       final msg = omsRejectMessage(omsErrorCode(e));

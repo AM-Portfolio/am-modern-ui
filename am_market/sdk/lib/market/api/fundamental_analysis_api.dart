@@ -7,14 +7,16 @@
 part of openapi.api;
 
 class FundamentalAnalysisApi {
-  FundamentalAnalysisApi([ApiClient? apiClient]) : apiClient = apiClient ?? defaultApiClient;
+  FundamentalAnalysisApi([ApiClient? apiClient])
+      : apiClient = apiClient ?? defaultApiClient;
 
   final ApiClient apiClient;
 
   // ─── Unified Endpoint: GET /v1/fundamentals/{symbol} ───────────────────────
   // Returns company profile + valuation + profitability + financials in one call.
 
-  Future<Response> getFundamentalsWithHttpInfo(String symbol, {String? exchange}) async {
+  Future<Response> getFundamentalsWithHttpInfo(String symbol,
+      {String? exchange}) async {
     final path = r'/v1/fundamentals/{symbol}'.replaceAll('{symbol}', symbol);
     final queryParams = <QueryParam>[];
     if (exchange != null && exchange.isNotEmpty) {
@@ -24,14 +26,17 @@ class FundamentalAnalysisApi {
   }
 
   /// Get unified fundamental analysis (company profile + ratios + financials).
-  Future<FundamentalRatiosResponse?> getFundamentals(String symbol, {String? exchange}) async {
-    final response = await getFundamentalsWithHttpInfo(symbol, exchange: exchange);
+  Future<FundamentalRatiosResponse?> getFundamentals(String symbol,
+      {String? exchange}) async {
+    final response =
+        await getFundamentalsWithHttpInfo(symbol, exchange: exchange);
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
       final decoded = await apiClient.deserializeAsync(
-              await _decodeBodyBytes(response), 'FundamentalRatiosResponse');
+          await _decodeBodyBytes(response), 'FundamentalRatiosResponse');
       return decoded is FundamentalRatiosResponse ? decoded : null;
     }
     return null;
@@ -39,8 +44,10 @@ class FundamentalAnalysisApi {
 
   // ─── Ratios Only: GET /v1/fundamentals/{symbol}/ratios ─────────────────────
 
-  Future<Response> getRatiosWithHttpInfo(String symbol, {String? exchange}) async {
-    final path = r'/v1/fundamentals/{symbol}/ratios'.replaceAll('{symbol}', symbol);
+  Future<Response> getRatiosWithHttpInfo(String symbol,
+      {String? exchange}) async {
+    final path =
+        r'/v1/fundamentals/{symbol}/ratios'.replaceAll('{symbol}', symbol);
     final queryParams = <QueryParam>[];
     if (exchange != null && exchange.isNotEmpty) {
       queryParams.add(QueryParam('exchange', exchange));
@@ -49,14 +56,16 @@ class FundamentalAnalysisApi {
   }
 
   /// Get valuation & profitability ratios for a given symbol.
-  Future<FundamentalRatiosResponse?> getRatios(String symbol, {String? exchange}) async {
+  Future<FundamentalRatiosResponse?> getRatios(String symbol,
+      {String? exchange}) async {
     final response = await getRatiosWithHttpInfo(symbol, exchange: exchange);
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
       final decoded = await apiClient.deserializeAsync(
-              await _decodeBodyBytes(response), 'FundamentalRatiosResponse');
+          await _decodeBodyBytes(response), 'FundamentalRatiosResponse');
       return decoded is FundamentalRatiosResponse ? decoded : null;
     }
     return null;
@@ -64,8 +73,10 @@ class FundamentalAnalysisApi {
 
   // ─── Profile: GET /v1/fundamentals/{symbol}/profile ────────────────────────
 
-  Future<Response> getProfileWithHttpInfo(String symbol, {String? exchange}) async {
-    final path = r'/v1/fundamentals/{symbol}/profile'.replaceAll('{symbol}', symbol);
+  Future<Response> getProfileWithHttpInfo(String symbol,
+      {String? exchange}) async {
+    final path =
+        r'/v1/fundamentals/{symbol}/profile'.replaceAll('{symbol}', symbol);
     final queryParams = <QueryParam>[];
     if (exchange != null && exchange.isNotEmpty) {
       queryParams.add(QueryParam('exchange', exchange));
@@ -73,14 +84,16 @@ class FundamentalAnalysisApi {
     return apiClient.invokeAPI(path, 'GET', queryParams, null, {}, {}, null);
   }
 
-  Future<FundamentalRatiosResponse?> getProfile(String symbol, {String? exchange}) async {
+  Future<FundamentalRatiosResponse?> getProfile(String symbol,
+      {String? exchange}) async {
     final response = await getProfileWithHttpInfo(symbol, exchange: exchange);
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
       final decoded = await apiClient.deserializeAsync(
-              await _decodeBodyBytes(response), 'FundamentalRatiosResponse');
+          await _decodeBodyBytes(response), 'FundamentalRatiosResponse');
       return decoded is FundamentalRatiosResponse ? decoded : null;
     }
     return null;
@@ -89,7 +102,8 @@ class FundamentalAnalysisApi {
   // ─── Financials: GET /v1/fundamentals/{symbol}/financials ──────────────────
 
   Future<Response> getFinancialsWithHttpInfo(String symbol) async {
-    final path = r'/v1/fundamentals/{symbol}/financials'.replaceAll('{symbol}', symbol);
+    final path =
+        r'/v1/fundamentals/{symbol}/financials'.replaceAll('{symbol}', symbol);
     return apiClient.invokeAPI(path, 'GET', [], null, {}, {}, null);
   }
 
@@ -98,9 +112,10 @@ class FundamentalAnalysisApi {
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
       final decoded = await apiClient.deserializeAsync(
-              await _decodeBodyBytes(response), 'FundamentalRatiosResponse');
+          await _decodeBodyBytes(response), 'FundamentalRatiosResponse');
       return decoded is FundamentalRatiosResponse ? decoded : null;
     }
     return null;
@@ -109,7 +124,8 @@ class FundamentalAnalysisApi {
   // ─── Shareholding: GET /v1/fundamentals/{symbol}/shareholding ──────────────
 
   Future<Response> getShareholdingWithHttpInfo(String symbol) async {
-    final path = r'/v1/fundamentals/{symbol}/shareholding'.replaceAll('{symbol}', symbol);
+    final path = r'/v1/fundamentals/{symbol}/shareholding'
+        .replaceAll('{symbol}', symbol);
     return apiClient.invokeAPI(path, 'GET', [], null, {}, {}, null);
   }
 
@@ -118,7 +134,8 @@ class FundamentalAnalysisApi {
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
       final decoded = json.decode(await _decodeBodyBytes(response));
       return decoded is List ? decoded : null;
     }
@@ -127,8 +144,10 @@ class FundamentalAnalysisApi {
 
   // ─── Peers: GET /v1/fundamentals/{symbol}/peers ────────────────────────────
 
-  Future<Response> getPeersWithHttpInfo(String symbol, {String? exchange}) async {
-    final path = r'/v1/fundamentals/{symbol}/peers'.replaceAll('{symbol}', symbol);
+  Future<Response> getPeersWithHttpInfo(String symbol,
+      {String? exchange}) async {
+    final path =
+        r'/v1/fundamentals/{symbol}/peers'.replaceAll('{symbol}', symbol);
     final queryParams = <QueryParam>[];
     if (exchange != null && exchange.isNotEmpty) {
       queryParams.add(QueryParam('exchange', exchange));
@@ -136,12 +155,14 @@ class FundamentalAnalysisApi {
     return apiClient.invokeAPI(path, 'GET', queryParams, null, {}, {}, null);
   }
 
-  Future<List<CompetitorPeer>?> getPeers(String symbol, {String? exchange}) async {
+  Future<List<CompetitorPeer>?> getPeers(String symbol,
+      {String? exchange}) async {
     final response = await getPeersWithHttpInfo(symbol, exchange: exchange);
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
       final decoded = json.decode(await _decodeBodyBytes(response));
       if (decoded is List) {
         return CompetitorPeer.listFromJson(decoded);

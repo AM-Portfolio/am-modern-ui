@@ -40,10 +40,10 @@ ActivityStatus resolveStatus(ActivityItem item) {
 }
 
 String statusLabel(ActivityStatus status) => switch (status) {
-      ActivityStatus.win => 'WIN',
-      ActivityStatus.loss => 'LOSS',
-      ActivityStatus.neutral => 'NEUTRAL',
-    };
+  ActivityStatus.win => 'WIN',
+  ActivityStatus.loss => 'LOSS',
+  ActivityStatus.neutral => 'NEUTRAL',
+};
 
 Color statusAccentColor(BuildContext context, ActivityStatus status) {
   final colors = context.colors;
@@ -62,13 +62,20 @@ String formatReturnPercent(double? pct) {
 
 String formatCurrencyInr(double? value) {
   if (value == null) return '—';
-  return NumberFormat.currency(symbol: '₹', decimalDigits: 2, locale: 'en_IN')
-      .format(value);
+  return NumberFormat.currency(
+    symbol: '₹',
+    decimalDigits: 2,
+    locale: 'en_IN',
+  ).format(value);
 }
 
 String formatPnlLine(double? profitLoss) {
   if (profitLoss == null) return 'P&L —';
-  final fmt = NumberFormat.currency(symbol: '₹', decimalDigits: 2, locale: 'en_IN');
+  final fmt = NumberFormat.currency(
+    symbol: '₹',
+    decimalDigits: 2,
+    locale: 'en_IN',
+  );
   return 'P&L ${fmt.format(profitLoss)}';
 }
 

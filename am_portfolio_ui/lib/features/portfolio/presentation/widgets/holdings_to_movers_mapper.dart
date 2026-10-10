@@ -18,7 +18,9 @@ List<MoverItem> moversFromHoldings(
         return cls.isEmpty || cls == 'EQUITY';
       })
       .map((h) {
-        final pct = useDaily ? h.todayChangePercentage : h.totalGainLossPercentage;
+        final pct = useDaily
+            ? h.todayChangePercentage
+            : h.totalGainLossPercentage;
         final amt = useDaily ? h.todayChange : h.totalGainLoss;
         return MoverItem(
           symbol: h.symbol,

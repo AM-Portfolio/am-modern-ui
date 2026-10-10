@@ -14,22 +14,29 @@ class TradeReportRepositoryImpl implements TradeReportRepository {
   TradeReportRepositoryImpl(this.remoteDataSource);
 
   @override
-  Future<TradePerformanceSummary> getPerformanceSummary(MetricsFilterRequest filter) async {
+  Future<TradePerformanceSummary> getPerformanceSummary(
+      MetricsFilterRequest filter) async {
     AppLogger.debug('Repo: Requesting Summary', tag: 'TradeReportRepository');
     final filterDto = MetricsFilterRequestDto.fromEntity(filter);
     final responseDto = await remoteDataSource.getSummary(filterDto);
-    AppLogger.debug('Repo: Summary DTO received: ${responseDto.totalTrades} trades', tag: 'TradeReportRepository');
+    AppLogger.debug(
+        'Repo: Summary DTO received: ${responseDto.totalTrades} trades',
+        tag: 'TradeReportRepository');
     return TradeReportMapper.toSummary(responseDto);
   }
 
   @override
-  Future<List<DailyPerformance>> getDailyPerformance(MetricsFilterRequest filter) async {
+  Future<List<DailyPerformance>> getDailyPerformance(
+      MetricsFilterRequest filter) async {
     AppLogger.debug('Repo: Requesting Daily', tag: 'TradeReportRepository');
     final filterDto = MetricsFilterRequestDto.fromEntity(filter);
     final responseDtos = await remoteDataSource.getDaily(filterDto);
-    AppLogger.debug('Repo: Daily DTOs received: ${responseDtos.length} items', tag: 'TradeReportRepository');
-    final entities = responseDtos.map((e) => TradeReportMapper.toDaily(e)).toList();
-    AppLogger.debug('Repo: Daily Entities mapped successfully', tag: 'TradeReportRepository');
+    AppLogger.debug('Repo: Daily DTOs received: ${responseDtos.length} items',
+        tag: 'TradeReportRepository');
+    final entities =
+        responseDtos.map((e) => TradeReportMapper.toDaily(e)).toList();
+    AppLogger.debug('Repo: Daily Entities mapped successfully',
+        tag: 'TradeReportRepository');
     return entities;
   }
 
@@ -42,4 +49,3 @@ class TradeReportRepositoryImpl implements TradeReportRepository {
     return TradeReportMapper.toTimingAnalysis(responseDto);
   }
 }
-

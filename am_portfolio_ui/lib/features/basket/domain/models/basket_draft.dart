@@ -93,7 +93,8 @@ class BasketDraftDetail {
       investmentAmount: (json['investmentAmount'] as num?)?.toDouble(),
       replicaScore: (json['replicaScore'] as num?)?.toDouble(),
       hasCalculated: json['hasCalculated'] as bool? ?? false,
-      excludedSymbols: (json['excludedSymbols'] as List?)
+      excludedSymbols:
+          (json['excludedSymbols'] as List?)
               ?.map((e) => e.toString())
               .toList() ??
           const [],
@@ -101,8 +102,8 @@ class BasketDraftDetail {
       opportunity: oppRaw is Map<String, dynamic>
           ? BasketOpportunity.fromJson(oppRaw)
           : (oppRaw is Map
-              ? BasketOpportunity.fromJson(Map<String, dynamic>.from(oppRaw))
-              : null),
+                ? BasketOpportunity.fromJson(Map<String, dynamic>.from(oppRaw))
+                : null),
       updatedAt: _parseDate(json['updatedAt']),
       createdAt: _parseDate(json['createdAt']),
     );

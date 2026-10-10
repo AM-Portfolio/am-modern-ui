@@ -102,7 +102,8 @@ abstract class JournalRepository {
 
   Future<JournalEntry> updatePrePlan(String entryId, PreTradePlan plan);
 
-  Future<JournalEntry> updateExecution(String entryId, TradeExecution execution);
+  Future<JournalEntry> updateExecution(
+      String entryId, TradeExecution execution);
 
   Future<JournalEntry> updatePostReview(
     String entryId,

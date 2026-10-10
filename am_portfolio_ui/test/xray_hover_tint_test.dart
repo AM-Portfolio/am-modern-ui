@@ -130,22 +130,13 @@ void main() {
         xrayDonutTapKind(local: a, side: side, weights: equalThirds),
         XrayDonutTapKind.slice,
       );
-      expect(
-        xrayHitSliceIndex(local: a, side: side, weights: equalThirds),
-        0,
-      );
+      expect(xrayHitSliceIndex(local: a, side: side, weights: equalThirds), 0);
 
       final b = ringPoint(math.pi);
-      expect(
-        xrayHitSliceIndex(local: b, side: side, weights: equalThirds),
-        1,
-      );
+      expect(xrayHitSliceIndex(local: b, side: side, weights: equalThirds), 1);
 
       final c = ringPoint(5 * math.pi / 3);
-      expect(
-        xrayHitSliceIndex(local: c, side: side, weights: equalThirds),
-        2,
-      );
+      expect(xrayHitSliceIndex(local: c, side: side, weights: equalThirds), 2);
     });
 
     test('re-select path: different angles yield different indices', () {

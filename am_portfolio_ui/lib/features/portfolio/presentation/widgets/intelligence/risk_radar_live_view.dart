@@ -47,9 +47,7 @@ class _RiskRadarLiveViewState extends State<RiskRadarLiveView>
     super.initState();
     _sweep = AnimationController(
       vsync: this,
-      duration: Duration(
-        milliseconds: (kRiskRadarSweepSeconds * 1000).round(),
-      ),
+      duration: Duration(milliseconds: (kRiskRadarSweepSeconds * 1000).round()),
     )..addListener(_onSweepTick);
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncSweep());
   }
@@ -132,11 +130,11 @@ class _RiskRadarLiveViewState extends State<RiskRadarLiveView>
   Widget build(BuildContext context) {
     _syncSweep();
     final labelStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: Theme.of(context).hintColor,
-          fontWeight: FontWeight.w700,
-          fontSize: 11,
-          height: 1.12,
-        );
+      color: Theme.of(context).hintColor,
+      fontWeight: FontWeight.w700,
+      fontSize: 11,
+      height: 1.12,
+    );
 
     return Semantics(
       label: widget.semanticsLabel ?? 'Risk radar chart',
@@ -144,12 +142,8 @@ class _RiskRadarLiveViewState extends State<RiskRadarLiveView>
         builder: (context, constraints) {
           final side = math
               .min(
-                constraints.maxWidth.isFinite
-                    ? constraints.maxWidth
-                    : 260.0,
-                constraints.maxHeight.isFinite
-                    ? constraints.maxHeight
-                    : 260.0,
+                constraints.maxWidth.isFinite ? constraints.maxWidth : 260.0,
+                constraints.maxHeight.isFinite ? constraints.maxHeight : 260.0,
               )
               .clamp(0.0, 320.0);
 
@@ -262,11 +256,11 @@ class _RiskRadarLivePainter extends CustomPainter {
     }
 
     Offset pt(int i, double frac) => riskRadarFlatPoint(
-          center: center,
-          radius: radius,
-          angle: riskRadarAxisAngle(i, n),
-          radiusFraction: frac,
-        );
+      center: center,
+      radius: radius,
+      angle: riskRadarAxisAngle(i, n),
+      radiusFraction: frac,
+    );
 
     Path ring(double frac) {
       final path = Path();
@@ -287,7 +281,9 @@ class _RiskRadarLivePainter extends CustomPainter {
       canvas.drawPath(
         ring(frac),
         Paint()
-          ..color = gold.withValues(alpha: ringI == 4 ? 0.4 : 0.12 + ringI * 0.04)
+          ..color = gold.withValues(
+            alpha: ringI == 4 ? 0.4 : 0.12 + ringI * 0.04,
+          )
           ..style = PaintingStyle.stroke
           ..strokeWidth = ringI == 4 ? 1.5 : 1.0,
       );
@@ -333,14 +329,10 @@ class _RiskRadarLivePainter extends CustomPainter {
     canvas.drawPath(
       data,
       Paint()
-        ..shader = ui.Gradient.radial(
-          center,
-          radius * 0.9,
-          [
-            gold.withValues(alpha: 0.42),
-            gold.withValues(alpha: 0.12),
-          ],
-        ),
+        ..shader = ui.Gradient.radial(center, radius * 0.9, [
+          gold.withValues(alpha: 0.42),
+          gold.withValues(alpha: 0.12),
+        ]),
     );
     canvas.drawPath(
       data,
@@ -408,7 +400,9 @@ class _RiskRadarLivePainter extends CustomPainter {
         p,
         r + (selected ? 5 : 3),
         Paint()
-          ..color = ac.withValues(alpha: selected ? 0.4 : (focused ? 0.22 : 0.1))
+          ..color = ac.withValues(
+            alpha: selected ? 0.4 : (focused ? 0.22 : 0.1),
+          )
           ..style = PaintingStyle.stroke
           ..strokeWidth = selected ? 1.8 : 1.3,
       );
@@ -422,7 +416,8 @@ class _RiskRadarLivePainter extends CustomPainter {
       }
     }
 
-    final style = labelStyle ??
+    final style =
+        labelStyle ??
         TextStyle(
           color: color.withValues(alpha: 0.9),
           fontSize: 11,
@@ -474,8 +469,7 @@ class _RiskRadarLivePainter extends CustomPainter {
         0 => const Offset(0, -2), // top
         _ => const Offset(0, 2), // bottom
       };
-      final anchor =
-          tipPt + unit * (tipClearance + extentAlong) + cornerBias;
+      final anchor = tipPt + unit * (tipClearance + extentAlong) + cornerBias;
       var dx = anchor.dx - tp.width / 2;
       var dy = anchor.dy - tp.height / 2;
       const edge = 2.0;

@@ -59,11 +59,7 @@ class HoldingFormState {
 
   HoldingFormState updateTotalValue(String newTotal) {
     // If the user manually edits the total value, we clear qty and price to avoid mathematical conflicts.
-    return copyWith(
-      totalValue: newTotal,
-      quantity: '',
-      pricePerUnit: '',
-    );
+    return copyWith(totalValue: newTotal, quantity: '', pricePerUnit: '');
   }
 
   String _computeTotal(String qtyStr, String priceStr) {
@@ -86,7 +82,7 @@ class HoldingsNotifier extends Notifier<List<HoldingFormState>> {
     final type = ref.read(addAssetClassTypeProvider);
     String? defaultExchange;
     String? defaultSegment;
-    
+
     if (type == 'bonds') {
       defaultExchange = 'NSE';
       defaultSegment = 'Government';
@@ -111,7 +107,10 @@ class HoldingsNotifier extends Notifier<List<HoldingFormState>> {
     state = state.where((h) => h.id != id).toList();
   }
 
-  void updateRow(String id, HoldingFormState Function(HoldingFormState) updater) {
+  void updateRow(
+    String id,
+    HoldingFormState Function(HoldingFormState) updater,
+  ) {
     state = state.map((h) {
       if (h.id == id) {
         return updater(h);
@@ -119,7 +118,7 @@ class HoldingsNotifier extends Notifier<List<HoldingFormState>> {
       return h;
     }).toList();
   }
-  
+
   void reset() {
     state = [_createEmptyRow()];
   }
@@ -140,9 +139,10 @@ final addAssetClassTypeProvider = NotifierProvider<TypeNotifier, String>(
   TypeNotifier.new,
 );
 
-final addAssetClassHoldingsProvider = NotifierProvider<HoldingsNotifier, List<HoldingFormState>>(
-  HoldingsNotifier.new,
-);
+final addAssetClassHoldingsProvider =
+    NotifierProvider<HoldingsNotifier, List<HoldingFormState>>(
+      HoldingsNotifier.new,
+    );
 
 class AssetClassNameNotifier extends Notifier<String> {
   @override
@@ -151,6 +151,7 @@ class AssetClassNameNotifier extends Notifier<String> {
   void setName(String name) => state = name;
 }
 
-final addAssetClassNameProvider = NotifierProvider<AssetClassNameNotifier, String>(
-  AssetClassNameNotifier.new,
-);
+final addAssetClassNameProvider =
+    NotifierProvider<AssetClassNameNotifier, String>(
+      AssetClassNameNotifier.new,
+    );

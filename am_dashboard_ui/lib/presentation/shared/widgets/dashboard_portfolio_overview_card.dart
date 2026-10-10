@@ -27,8 +27,9 @@ class DashboardPortfolioOverviewCard extends StatelessWidget {
     final positiveBg = context.colors.statusSuccess.withValues(alpha: 0.15);
     final negativeBg = context.colors.statusError.withValues(alpha: 0.15);
     final trendBg = isPositive ? positiveBg : negativeBg;
-    final trendColor =
-        isPositive ? context.colors.statusSuccess : context.colors.statusError;
+    final trendColor = isPositive
+        ? context.colors.statusSuccess
+        : context.colors.statusError;
 
     return InkWell(
       onTap: onTap,
@@ -44,15 +45,11 @@ class DashboardPortfolioOverviewCard extends StatelessWidget {
                 Text(
                   overview.type,
                   style: context.text.body().copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: onSurface,
-                      ),
+                    fontWeight: FontWeight.w700,
+                    color: onSurface,
+                  ),
                 ),
-                Icon(
-                  Icons.chevron_right,
-                  color: onSurfaceVariant,
-                  size: 16,
-                ),
+                Icon(Icons.chevron_right, color: onSurfaceVariant, size: 16),
               ],
             ),
             const SizedBox(height: AppSpacing.sm + 4),
@@ -65,9 +62,9 @@ class DashboardPortfolioOverviewCard extends StatelessWidget {
                   children: [
                     Text(
                       'Invested',
-                      style: context.text
-                          .caption()
-                          .copyWith(color: onSurfaceVariant),
+                      style: context.text.caption().copyWith(
+                        color: onSurfaceVariant,
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.xxs),
                     Text(
@@ -75,9 +72,9 @@ class DashboardPortfolioOverviewCard extends StatelessWidget {
                         overview.totalValue - overview.totalReturn,
                       ),
                       style: context.text.label().copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: onSurface,
-                          ),
+                        fontWeight: FontWeight.w600,
+                        color: onSurface,
+                      ),
                     ),
                   ],
                 ),
@@ -86,17 +83,17 @@ class DashboardPortfolioOverviewCard extends StatelessWidget {
                   children: [
                     Text(
                       'Current',
-                      style: context.text
-                          .caption()
-                          .copyWith(color: onSurfaceVariant),
+                      style: context.text.caption().copyWith(
+                        color: onSurfaceVariant,
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.xxs),
                     Text(
                       currencyFormat.format(overview.totalValue),
                       style: context.text.body().copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: onSurface,
-                          ),
+                        fontWeight: FontWeight.w700,
+                        color: onSurface,
+                      ),
                     ),
                   ],
                 ),
@@ -118,16 +115,16 @@ class DashboardPortfolioOverviewCard extends StatelessWidget {
                   Text(
                     'Returns',
                     style: context.text.caption().copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: trendColor,
-                        ),
+                      fontWeight: FontWeight.w600,
+                      color: trendColor,
+                    ),
                   ),
                   Text(
                     '${isPositive ? "+" : ""}${currencyFormat.format(overview.totalReturn)} (${overview.returnPercentage.toStringAsFixed(2)}%)',
                     style: context.text.caption().copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: trendColor,
-                        ),
+                      fontWeight: FontWeight.w700,
+                      color: trendColor,
+                    ),
                   ),
                 ],
               ),

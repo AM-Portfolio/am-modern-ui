@@ -12,19 +12,20 @@ class CalendarCardFactory {
     required calendar_types.CardData data,
     VoidCallback? onTap,
     Map<String, dynamic>? customization,
-  }) => CalendarCard(
-    config: config,
-    data: data,
-    onTap: onTap,
-    customization: customization,
-  );
+  }) =>
+      CalendarCard(
+        config: config,
+        data: data,
+        onTap: onTap,
+        customization: customization,
+      );
 
   static List<Widget> createCardGrid({
     required List<calendar_types.CalendarCardConfig> configs,
     required Map<String, List<calendar_types.CardData>> dataMap,
     required String dateKey,
     Function(calendar_types.CalendarCardConfig, calendar_types.CardData)?
-    onCardTap,
+        onCardTap,
     int crossAxisCount = 2,
   }) {
     final cards = <Widget>[];
@@ -123,20 +124,20 @@ class CalendarCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-    onTap: config.isInteractive ? onTap : null,
-    child: Container(
-      constraints: _getCardConstraints(),
-      decoration: _getCardDecoration(context),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (config.showHeader) _buildHeader(context),
-          Expanded(child: _buildContent(context)),
-          if (config.showFooter) _buildFooter(context),
-        ],
-      ),
-    ),
-  );
+        onTap: config.isInteractive ? onTap : null,
+        child: Container(
+          constraints: _getCardConstraints(),
+          decoration: _getCardDecoration(context),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (config.showHeader) _buildHeader(context),
+              Expanded(child: _buildContent(context)),
+              if (config.showFooter) _buildFooter(context),
+            ],
+          ),
+        ),
+      );
 
   BoxConstraints _getCardConstraints() {
     switch (config.size) {
@@ -392,9 +393,9 @@ class CalendarCard extends StatelessWidget {
   }
 
   Widget _buildFooter(BuildContext context) => Container(
-    padding: const EdgeInsets.all(8),
-    child: const Text('Footer', style: TextStyle(fontSize: 10)),
-  );
+        padding: const EdgeInsets.all(8),
+        child: const Text('Footer', style: TextStyle(fontSize: 10)),
+      );
 
   Map<String, String?> _getMetricData() {
     if (data is calendar_types.TradeCardData) {

@@ -158,9 +158,7 @@ class TimingRankTable extends StatelessWidget {
             : context.statusError);
 
     return Container(
-      color: striped
-          ? colors.textPrimary.withValues(alpha: 0.025)
-          : null,
+      color: striped ? colors.textPrimary.withValues(alpha: 0.025) : null,
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
         vertical: AppSpacing.sm,
@@ -196,9 +194,9 @@ class TimingRankTable extends StatelessWidget {
                     child: Text(
                       'Low',
                       style: context.text.caption(compact: true).copyWith(
-                        color: ModuleColors.trade,
-                        fontWeight: FontWeight.w700,
-                      ),
+                            color: ModuleColors.trade,
+                            fontWeight: FontWeight.w700,
+                          ),
                     ),
                   ),
                 ],
@@ -296,8 +294,7 @@ class _RrCell extends StatelessWidget {
     }
 
     final rr = value!;
-    final barColor =
-        rr >= 1.0 ? context.statusSuccess : context.statusError;
+    final barColor = rr >= 1.0 ? context.statusSuccess : context.statusError;
     // Cap visual at 3.0 for scale; keep a minimum visible stub.
     final fraction = (rr.abs() / 3.0).clamp(0.08, 1.0);
 

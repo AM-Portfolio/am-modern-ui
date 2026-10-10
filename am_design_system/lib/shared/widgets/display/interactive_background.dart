@@ -206,8 +206,8 @@ class Particle {
 
     if (type == ParticleType.candle) {
       if (position.dy < -length && velocity.dy < 0) {
-        position =
-            Offset(bounds.width * Random().nextDouble(), bounds.height + length);
+        position = Offset(
+            bounds.width * Random().nextDouble(), bounds.height + length);
       } else if (position.dy > bounds.height + length && velocity.dy > 0) {
         position = Offset(bounds.width * Random().nextDouble(), -length);
       }
@@ -265,8 +265,10 @@ class ParticlePainter extends CustomPainter {
 
       linePaint.color = particle.color;
       canvas.drawLine(
-        Offset(particle.position.dx, particle.position.dy - particle.length / 2 - 5),
-        Offset(particle.position.dx, particle.position.dy + particle.length / 2 + 5),
+        Offset(particle.position.dx,
+            particle.position.dy - particle.length / 2 - 5),
+        Offset(particle.position.dx,
+            particle.position.dy + particle.length / 2 + 5),
         linePaint,
       );
 
@@ -308,10 +310,10 @@ class ParticlePainter extends CustomPainter {
 
         // Stay on theme accent — never cyan.
         if (force > 0.5) {
-          drawColor = Color.lerp(particle.color, hoverBright, (force - 0.5) * 2)!;
-        } else {
           drawColor =
-              Color.lerp(particle.color, highlightColor, force * 2)!;
+              Color.lerp(particle.color, hoverBright, (force - 0.5) * 2)!;
+        } else {
+          drawColor = Color.lerp(particle.color, highlightColor, force * 2)!;
         }
       }
 

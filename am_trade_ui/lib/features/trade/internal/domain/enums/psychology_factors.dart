@@ -27,7 +27,8 @@ enum EntryPsychologyFactors {
 }
 
 /// Converter for EntryPsychologyFactors enum
-class EntryPsychologyFactorsConverter implements JsonConverter<EntryPsychologyFactors?, String?> {
+class EntryPsychologyFactorsConverter
+    implements JsonConverter<EntryPsychologyFactors?, String?> {
   const EntryPsychologyFactorsConverter();
 
   @override
@@ -159,7 +160,8 @@ enum ExitPsychologyFactors {
 }
 
 /// Converter for ExitPsychologyFactors enum
-class ExitPsychologyFactorsConverter implements JsonConverter<ExitPsychologyFactors?, String?> {
+class ExitPsychologyFactorsConverter
+    implements JsonConverter<ExitPsychologyFactors?, String?> {
   const ExitPsychologyFactorsConverter();
 
   @override
@@ -289,7 +291,8 @@ enum BehaviorPatterns {
 }
 
 /// Converter for BehaviorPatterns enum
-class BehaviorPatternsConverter implements JsonConverter<BehaviorPatterns?, String?> {
+class BehaviorPatternsConverter
+    implements JsonConverter<BehaviorPatterns?, String?> {
   const BehaviorPatternsConverter();
 
   @override
@@ -372,14 +375,18 @@ extension BehaviorPatternsExtension on BehaviorPatterns {
 }
 
 /// List converter for EntryPsychologyFactors
-class EntryPsychologyFactorsListConverter implements JsonConverter<List<EntryPsychologyFactors>?, List<dynamic>?> {
+class EntryPsychologyFactorsListConverter
+    implements JsonConverter<List<EntryPsychologyFactors>?, List<dynamic>?> {
   const EntryPsychologyFactorsListConverter();
 
   @override
   List<EntryPsychologyFactors>? fromJson(List<dynamic>? json) {
     if (json == null) return null;
     const converter = EntryPsychologyFactorsConverter();
-    return json.map((e) => converter.fromJson(e as String?)).whereType<EntryPsychologyFactors>().toList();
+    return json
+        .map((e) => converter.fromJson(e as String?))
+        .whereType<EntryPsychologyFactors>()
+        .toList();
   }
 
   @override
@@ -391,14 +398,18 @@ class EntryPsychologyFactorsListConverter implements JsonConverter<List<EntryPsy
 }
 
 /// List converter for ExitPsychologyFactors
-class ExitPsychologyFactorsListConverter implements JsonConverter<List<ExitPsychologyFactors>?, List<dynamic>?> {
+class ExitPsychologyFactorsListConverter
+    implements JsonConverter<List<ExitPsychologyFactors>?, List<dynamic>?> {
   const ExitPsychologyFactorsListConverter();
 
   @override
   List<ExitPsychologyFactors>? fromJson(List<dynamic>? json) {
     if (json == null) return null;
     const converter = ExitPsychologyFactorsConverter();
-    return json.map((e) => converter.fromJson(e as String?)).whereType<ExitPsychologyFactors>().toList();
+    return json
+        .map((e) => converter.fromJson(e as String?))
+        .whereType<ExitPsychologyFactors>()
+        .toList();
   }
 
   @override
@@ -410,14 +421,18 @@ class ExitPsychologyFactorsListConverter implements JsonConverter<List<ExitPsych
 }
 
 /// List converter for BehaviorPatterns
-class BehaviorPatternsListConverter implements JsonConverter<List<BehaviorPatterns>?, List<dynamic>?> {
+class BehaviorPatternsListConverter
+    implements JsonConverter<List<BehaviorPatterns>?, List<dynamic>?> {
   const BehaviorPatternsListConverter();
 
   @override
   List<BehaviorPatterns>? fromJson(List<dynamic>? json) {
     if (json == null) return null;
     const converter = BehaviorPatternsConverter();
-    return json.map((e) => converter.fromJson(e as String?)).whereType<BehaviorPatterns>().toList();
+    return json
+        .map((e) => converter.fromJson(e as String?))
+        .whereType<BehaviorPatterns>()
+        .toList();
   }
 
   @override

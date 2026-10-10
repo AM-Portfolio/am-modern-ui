@@ -169,10 +169,12 @@ TradePortfolioViewModel _mergeViewModel(
   }
 
   // Calculate overall win rate using both closed trades and live holdings
-  final int totalWinning = realized.winningTrades + (liveSummary.gainersCount ?? 0);
+  final int totalWinning =
+      realized.winningTrades + (liveSummary.gainersCount ?? 0);
   final int totalItems = realized.totalTrades + (liveSummary.totalAssets ?? 0);
-  
-  double? overallWinRate = realized.winRate; // Default to existing if no trades/holdings
+
+  double? overallWinRate =
+      realized.winRate; // Default to existing if no trades/holdings
   if (totalItems > 0) {
     overallWinRate = totalWinning / totalItems;
   }

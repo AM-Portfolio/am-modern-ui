@@ -21,7 +21,7 @@ class AmDonutSparkline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fraction = total > 0 ? (value / total).clamp(0.0, 1.0) : 0.0;
-    
+
     return CustomPaint(
       painter: _DonutPainter(
         fraction: fraction,
@@ -82,8 +82,8 @@ class _DonutPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _DonutPainter oldDelegate) {
     return oldDelegate.fraction != fraction ||
-           oldDelegate.color != color ||
-           oldDelegate.backgroundColor != backgroundColor ||
-           oldDelegate.strokeWidth != strokeWidth;
+        oldDelegate.color != color ||
+        oldDelegate.backgroundColor != backgroundColor ||
+        oldDelegate.strokeWidth != strokeWidth;
   }
 }

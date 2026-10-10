@@ -15,15 +15,18 @@ class AddToWatchlistPopup extends ConsumerStatefulWidget {
     this.sourceWatchlistId,
   });
 
-  static Future<void> show(BuildContext context, String symbol, {String? sourceWatchlistId}) {
+  static Future<void> show(BuildContext context, String symbol,
+      {String? sourceWatchlistId}) {
     return showDialog(
       context: context,
-      builder: (context) => AddToWatchlistPopup(symbol: symbol, sourceWatchlistId: sourceWatchlistId),
+      builder: (context) => AddToWatchlistPopup(
+          symbol: symbol, sourceWatchlistId: sourceWatchlistId),
     );
   }
 
   @override
-  ConsumerState<AddToWatchlistPopup> createState() => _AddToWatchlistPopupState();
+  ConsumerState<AddToWatchlistPopup> createState() =>
+      _AddToWatchlistPopupState();
 }
 
 class _AddToWatchlistPopupState extends ConsumerState<AddToWatchlistPopup> {
@@ -44,11 +47,12 @@ class _AddToWatchlistPopupState extends ConsumerState<AddToWatchlistPopup> {
 
     try {
       String? targetId = _selectedWatchlistId;
-      
+
       // If creating a new one
       if (_isCreatingNew && _newWatchlistController.text.trim().isNotEmpty) {
         final client = ref.read(watchlistApiClientProvider);
-        final newWatchlist = await client.createWatchlist(_newWatchlistController.text.trim());
+        final newWatchlist =
+            await client.createWatchlist(_newWatchlistController.text.trim());
         targetId = newWatchlist.id;
       }
 
@@ -58,7 +62,8 @@ class _AddToWatchlistPopupState extends ConsumerState<AddToWatchlistPopup> {
       }
 
       if (widget.sourceWatchlistId != null) {
-        await notifier.moveStock(widget.sourceWatchlistId!, targetId, widget.symbol);
+        await notifier.moveStock(
+            widget.sourceWatchlistId!, targetId, widget.symbol);
       } else {
         await notifier.addStock(targetId, widget.symbol);
       }
@@ -70,7 +75,9 @@ class _AddToWatchlistPopupState extends ConsumerState<AddToWatchlistPopup> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save to watchlist: $e'), backgroundColor: context.colors.statusError),
+          SnackBar(
+              content: Text('Failed to save to watchlist: $e'),
+              backgroundColor: context.colors.statusError),
         );
       }
     } finally {
@@ -121,7 +128,8 @@ class _AddToWatchlistPopupState extends ConsumerState<AddToWatchlistPopup> {
                     decoration: BoxDecoration(
                       color: ModuleColors.market.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: ModuleColors.market.withValues(alpha: 0.35)),
+                      border: Border.all(
+                          color: ModuleColors.market.withValues(alpha: 0.35)),
                     ),
                     alignment: Alignment.center,
                     child: Text(
@@ -166,7 +174,12 @@ class _AddToWatchlistPopupState extends ConsumerState<AddToWatchlistPopup> {
                   ),
                   const SizedBox(width: 12),
                   ElevatedButton(
-                    onPressed: (_selectedWatchlistId != null || (_isCreatingNew && _newWatchlistController.text.trim().isNotEmpty)) && !_isLoading
+                    onPressed: (_selectedWatchlistId != null ||
+                                (_isCreatingNew &&
+                                    _newWatchlistController.text
+                                        .trim()
+                                        .isNotEmpty)) &&
+                            !_isLoading
                         ? _handleSave
                         : null,
                     style: ElevatedButton.styleFrom(
@@ -174,7 +187,11 @@ class _AddToWatchlistPopupState extends ConsumerState<AddToWatchlistPopup> {
                       foregroundColor: Colors.white,
                     ),
                     child: _isLoading
-                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
                         : const Text('Save'),
                   ),
                 ],
@@ -190,7 +207,8 @@ class _AddToWatchlistPopupState extends ConsumerState<AddToWatchlistPopup> {
 
   Widget _buildWatchlistSelector() {
     final watchlistsAsync = ref.watch(watchlistsProvider);
-    final checkStatusAsync = ref.watch(watchlistCheckStatusProvider(widget.symbol));
+    final checkStatusAsync =
+        ref.watch(watchlistCheckStatusProvider(widget.symbol));
 
     return watchlistsAsync.when(
       data: (watchlists) {
@@ -205,9 +223,16 @@ class _AddToWatchlistPopupState extends ConsumerState<AddToWatchlistPopup> {
               itemCount: watchlists.length,
               itemBuilder: (context, index) {
                 final list = watchlists[index];
-                final status = statuses.firstWhere((s) => s.watchlistId == list.id, orElse: () => WatchlistCheckStatus(watchlistId: list.id, name: list.name, containsSymbol: false, itemCount: 0));
-                
-                final isAlreadyAdded = status.containsSymbol && list.id != widget.sourceWatchlistId;
+                final status = statuses.firstWhere(
+                    (s) => s.watchlistId == list.id,
+                    orElse: () => WatchlistCheckStatus(
+                        watchlistId: list.id,
+                        name: list.name,
+                        containsSymbol: false,
+                        itemCount: 0));
+
+                final isAlreadyAdded = status.containsSymbol &&
+                    list.id != widget.sourceWatchlistId;
 
                 return RadioListTile<String>(
                   title: Row(
@@ -216,7 +241,9 @@ class _AddToWatchlistPopupState extends ConsumerState<AddToWatchlistPopup> {
                         child: Text(
                           list.name,
                           style: TextStyle(
-                            color: isAlreadyAdded ? context.colors.textDisabled : context.colors.textPrimary,
+                            color: isAlreadyAdded
+                                ? context.colors.textDisabled
+                                : context.colors.textPrimary,
                           ),
                         ),
                       ),
@@ -291,7 +318,8 @@ class _AddToWatchlistPopupState extends ConsumerState<AddToWatchlistPopup> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             ),
             onChanged: (val) => setState(() {}),
           ),

@@ -6,7 +6,8 @@ class TradeEntryExitInfoMapper {
     if (dto == null) return null;
 
     return TradeEntryExitInfo(
-      timestamp: dto.timestamp != null ? DateTime.tryParse(dto.timestamp!) : null,
+      timestamp:
+          dto.timestamp != null ? DateTime.tryParse(dto.timestamp!) : null,
       price: dto.price,
       quantity: dto.quantity,
       totalValue: dto.totalValue,

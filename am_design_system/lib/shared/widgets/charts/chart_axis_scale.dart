@@ -56,7 +56,8 @@ class ChartAxisScale {
     final floorAtZero = dataMin >= 0;
     final mid = (dataMin + dataMax) / 2;
     var range = dataMax - dataMin;
-    final magnitude = [mid.abs(), dataMin.abs(), dataMax.abs()].reduce(math.max);
+    final magnitude =
+        [mid.abs(), dataMin.abs(), dataMax.abs()].reduce(math.max);
     final minSpan = math.max(magnitude * minBandFraction, 1.0);
     if (range < minSpan) {
       final extra = (minSpan - range) / 2;

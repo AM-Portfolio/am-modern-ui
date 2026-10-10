@@ -34,7 +34,7 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
   late final Animation<double> _pulseAnimation;
   late final AnimationController _hoverController;
   late final Animation<double> _hoverAnimation;
-  
+
   int _selectedTab = 0; // 0 = Sector, 1 = Industry, 2 = Cap
   String? _expandedId;
   bool _showAllSectors = false;
@@ -103,7 +103,10 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
       return;
     }
 
-    double totalWeight = weights.fold(0.0, (sum, item) => sum + item.weightPercentage);
+    double totalWeight = weights.fold(
+      0.0,
+      (sum, item) => sum + item.weightPercentage,
+    );
     if (totalWeight <= 0) totalWeight = 100.0;
 
     double angle = math.atan2(dy, dx);
@@ -111,9 +114,10 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
 
     double cumulative = 0;
     for (int i = 0; i < weights.length; i++) {
-      double normalizedWeight = (weights[i].weightPercentage / totalWeight) * 100;
+      double normalizedWeight =
+          (weights[i].weightPercentage / totalWeight) * 100;
       cumulative += (normalizedWeight / 100) * (2 * math.pi);
-      
+
       if (angle <= cumulative) {
         if (_hoveredIndex != i) {
           setState(() {
@@ -162,11 +166,10 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
                   ? [
                       context.colors.cardSurface.withValues(alpha: 0.95),
                       Color.lerp(
-                            context.colors.cardSurface,
-                            ModuleColors.portfolio,
-                            ModuleColors.isBrandSynced ? 0.12 : 0.04,
-                          )!
-                          .withValues(alpha: 0.85),
+                        context.colors.cardSurface,
+                        ModuleColors.portfolio,
+                        ModuleColors.isBrandSynced ? 0.12 : 0.04,
+                      )!.withValues(alpha: 0.85),
                     ]
                   : [
                       context.cardColor.withValues(alpha: 0.45),
@@ -179,45 +182,45 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
                   : context.glassOverlay(0.07),
               width: 1,
             ),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            // ── Header ──
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(7),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context)
-                        .primaryColor
-                        .withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              // ── Header ──
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(7),
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).primaryColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.donut_small_rounded,
+                      color: ModuleColors.portfolio,
+                      size: 18,
+                    ),
                   ),
-                  child: Icon(
-                    Icons.donut_small_rounded,
-                    color: ModuleColors.portfolio,
-                    size: 18,
+                  const SizedBox(width: 10),
+                  Text(
+                    'Allocation',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  'Allocation',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 22),
-            Expanded(child: _buildContent()),
-          ],
+                ],
+              ),
+              const SizedBox(height: 22),
+              Expanded(child: _buildContent()),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -237,21 +240,30 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline,
-                  color: Theme.of(context).colorScheme.error, size: 48),
+              Icon(
+                Icons.error_outline,
+                color: Theme.of(context).colorScheme.error,
+                size: 48,
+              ),
               const SizedBox(height: 8),
-              Text('Failed to load allocation data',
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                      fontSize: 14)),
+              Text(
+                'Failed to load allocation data',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: 14,
+                ),
+              ),
               const SizedBox(height: 4),
-              Text(widget.error!,
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontSize: 12),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis),
+              Text(
+                widget.error!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 12,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
               if (widget.onRetry != null) ...[
                 const SizedBox(height: 8),
                 TextButton(
@@ -275,8 +287,10 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
             children: [
               Icon(Icons.data_usage_outlined, size: 48),
               SizedBox(height: 8),
-              Text('No allocation data available',
-                  style: TextStyle(fontSize: 14)),
+              Text(
+                'No allocation data available',
+                style: TextStyle(fontSize: 14),
+              ),
             ],
           ),
         ),
@@ -287,29 +301,37 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
     String sectionTitle = 'Distribution';
     String emptyText = 'No allocation data available';
     String centerTitle = 'Sectors';
-    
+
     if (_selectedTab == 0 && widget.sectorAllocation != null) {
       weights = widget.sectorAllocation!.sectorWeights;
       sectionTitle = 'Sector Distribution';
       emptyText = 'No sector data available';
       centerTitle = 'Sectors';
     } else if (_selectedTab == 1 && widget.sectorAllocation != null) {
-      weights = widget.sectorAllocation!.industryWeights.map((w) => SectorWeight(
-        sectorName: w.industryName,
-        weightPercentage: w.weightPercentage,
-        marketCap: w.marketCap,
-        topStocks: w.topStocks,
-      )).toList();
+      weights = widget.sectorAllocation!.industryWeights
+          .map(
+            (w) => SectorWeight(
+              sectorName: w.industryName,
+              weightPercentage: w.weightPercentage,
+              marketCap: w.marketCap,
+              topStocks: w.topStocks,
+            ),
+          )
+          .toList();
       sectionTitle = 'Industry Distribution';
       emptyText = 'No industry data available';
       centerTitle = 'Industries';
     } else if (_selectedTab == 2 && widget.marketCapAllocation != null) {
-      weights = widget.marketCapAllocation!.segments.map((w) => SectorWeight(
-        sectorName: w.segmentName,
-        weightPercentage: w.weightPercentage,
-        marketCap: w.segmentValue,
-        topStocks: w.topStocks,
-      )).toList();
+      weights = widget.marketCapAllocation!.segments
+          .map(
+            (w) => SectorWeight(
+              sectorName: w.segmentName,
+              weightPercentage: w.weightPercentage,
+              marketCap: w.segmentValue,
+              topStocks: w.topStocks,
+            ),
+          )
+          .toList();
       sectionTitle = 'Market Cap Distribution';
       emptyText = 'No market cap data available';
       centerTitle = 'Market Cap';
@@ -346,14 +368,19 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
             width: 220,
             height: 220,
             child: AnimatedBuilder(
-              animation: Listenable.merge([_donutAnimation, _pulseAnimation, _hoverAnimation]),
+              animation: Listenable.merge([
+                _donutAnimation,
+                _pulseAnimation,
+                _hoverAnimation,
+              ]),
               builder: (context, _) {
                 return Stack(
                   clipBehavior: Clip.none,
                   alignment: Alignment.center,
                   children: [
                     MouseRegion(
-                      onHover: (event) => _onHover(event.localPosition, weights),
+                      onHover: (event) =>
+                          _onHover(event.localPosition, weights),
                       onExit: (_) => _onHoverExit(),
                       child: GestureDetector(
                         onTapDown: (d) => _onHover(d.localPosition, weights),
@@ -381,13 +408,16 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
                       animation: _hoverAnimation,
                       builder: (context, _) {
                         double hoverProgress = _hoverAnimation.value;
-                        
+
                         double defaultOpacity;
-                        if (_hoveredIndex != null && _previousHoveredIndex == null) {
+                        if (_hoveredIndex != null &&
+                            _previousHoveredIndex == null) {
                           defaultOpacity = 1.0 - hoverProgress;
-                        } else if (_hoveredIndex == null && _previousHoveredIndex != null) {
+                        } else if (_hoveredIndex == null &&
+                            _previousHoveredIndex != null) {
                           defaultOpacity = hoverProgress;
-                        } else if (_hoveredIndex == null && _previousHoveredIndex == null) {
+                        } else if (_hoveredIndex == null &&
+                            _previousHoveredIndex == null) {
                           defaultOpacity = 1.0;
                         } else {
                           defaultOpacity = 0.0;
@@ -404,14 +434,18 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
                                 children: [
                                   Text(
                                     centerTitle,
-                                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headlineSmall
+                                        ?.copyWith(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 22,
                                         ),
                                   ),
                                   Text(
                                     'Tap to explore',
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
                                           color: context.glassOverlay(0.45),
                                           fontSize: 12,
                                         ),
@@ -422,12 +456,18 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
                             if (_hoveredIndex != null)
                               Opacity(
                                 opacity: hoverProgress,
-                                child: _buildCenterText(_hoveredIndex!, weights),
+                                child: _buildCenterText(
+                                  _hoveredIndex!,
+                                  weights,
+                                ),
                               ),
                             if (_previousHoveredIndex != null)
                               Opacity(
                                 opacity: 1.0 - hoverProgress,
-                                child: _buildCenterText(_previousHoveredIndex!, weights),
+                                child: _buildCenterText(
+                                  _previousHoveredIndex!,
+                                  weights,
+                                ),
                               ),
                           ],
                         );
@@ -448,11 +488,11 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
           child: Text(
             sectionTitle,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: context.glassOverlay(_isDark ? 0.45 : 0.4),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 0.3,
-                ),
+              color: context.glassOverlay(_isDark ? 0.45 : 0.4),
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.3,
+            ),
           ),
         ),
         const SizedBox(height: 10),
@@ -486,16 +526,27 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 300),
                             decoration: BoxDecoration(
-                              color: _expandedId == weight.sectorName ? colors.first.withValues(alpha: 0.05) : Colors.transparent,
+                              color: _expandedId == weight.sectorName
+                                  ? colors.first.withValues(alpha: 0.05)
+                                  : Colors.transparent,
                               borderRadius: BorderRadius.circular(12),
-                              border: _expandedId == weight.sectorName ? Border.all(color: colors.first.withValues(alpha: 0.2)) : Border.all(color: Colors.transparent),
+                              border: _expandedId == weight.sectorName
+                                  ? Border.all(
+                                      color: colors.first.withValues(
+                                        alpha: 0.2,
+                                      ),
+                                    )
+                                  : Border.all(color: Colors.transparent),
                             ),
-                            padding: _expandedId == weight.sectorName ? const EdgeInsets.all(12) : EdgeInsets.zero,
+                            padding: _expandedId == weight.sectorName
+                                ? const EdgeInsets.all(12)
+                                : EdgeInsets.zero,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(
                                       child: Row(
@@ -503,7 +554,9 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
                                           Container(
                                             width: 8,
                                             height: 8,
-                                            margin: const EdgeInsets.only(right: 8),
+                                            margin: const EdgeInsets.only(
+                                              right: 8,
+                                            ),
                                             decoration: BoxDecoration(
                                               shape: BoxShape.circle,
                                               color: colors.first,
@@ -512,7 +565,10 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
                                           Expanded(
                                             child: Text(
                                               weight.sectorName,
-                                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodySmall
+                                                  ?.copyWith(
                                                     fontWeight: FontWeight.w600,
                                                     fontSize: 13,
                                                   ),
@@ -524,7 +580,10 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
                                     ),
                                     Text(
                                       '${weight.weightPercentage.toStringAsFixed(1)}%',
-                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
                                             fontWeight: FontWeight.w700,
                                             fontSize: 13,
                                             color: colors.first,
@@ -532,16 +591,27 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
                                     ),
                                     const SizedBox(width: 8),
                                     AnimatedRotation(
-                                      turns: _expandedId == weight.sectorName ? 0.5 : 0,
-                                      duration: const Duration(milliseconds: 300),
-                                      child: Icon(Icons.keyboard_arrow_down, size: 16, color: colors.first),
+                                      turns: _expandedId == weight.sectorName
+                                          ? 0.5
+                                          : 0,
+                                      duration: const Duration(
+                                        milliseconds: 300,
+                                      ),
+                                      child: Icon(
+                                        Icons.keyboard_arrow_down,
+                                        size: 16,
+                                        color: colors.first,
+                                      ),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 8),
                                 TweenAnimationBuilder<double>(
                                   key: ValueKey(weight.sectorName),
-                                  tween: Tween<double>(begin: 0, end: weight.weightPercentage / 100),
+                                  tween: Tween<double>(
+                                    begin: 0,
+                                    end: weight.weightPercentage / 100,
+                                  ),
                                   duration: const Duration(milliseconds: 900),
                                   curve: Curves.easeOutQuart,
                                   builder: (context, value, _) {
@@ -553,15 +623,20 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
                                               height: 6,
                                               width: double.infinity,
                                               decoration: BoxDecoration(
-                                                color: context.glassOverlay(_isDark ? 0.08 : 0.07),
-                                                borderRadius: BorderRadius.circular(3),
+                                                color: context.glassOverlay(
+                                                  _isDark ? 0.08 : 0.07,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(3),
                                               ),
                                             ),
                                             Container(
                                               height: 6,
-                                              width: constraints.maxWidth * value,
+                                              width:
+                                                  constraints.maxWidth * value,
                                               decoration: BoxDecoration(
-                                                borderRadius: BorderRadius.circular(3),
+                                                borderRadius:
+                                                    BorderRadius.circular(3),
                                                 gradient: LinearGradient(
                                                   colors: colors,
                                                   begin: Alignment.centerLeft,
@@ -569,7 +644,10 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
                                                 ),
                                                 boxShadow: [
                                                   BoxShadow(
-                                                    color: colors.first.withValues(alpha: 0.45),
+                                                    color: colors.first
+                                                        .withValues(
+                                                          alpha: 0.45,
+                                                        ),
                                                     blurRadius: 6,
                                                   ),
                                                 ],
@@ -628,20 +706,20 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
         Text(
           '${weights[index].weightPercentage.toStringAsFixed(1)}%',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                fontSize: 24,
-                color: palette[index % palette.length],
-              ),
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+            color: palette[index % palette.length],
+          ),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
             weights[index].sectorName,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: context.glassOverlay(0.7),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                ),
+              color: context.glassOverlay(0.7),
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -701,8 +779,8 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
           style: TextStyle(
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-            color: isSelected 
-                ? context.colors.actionPrimaryFg 
+            color: isSelected
+                ? context.colors.actionPrimaryFg
                 : context.textSecondary,
           ),
         ),
@@ -720,11 +798,17 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
 
     Iterable<PortfolioHolding> filteredHoldings;
     if (_selectedTab == 0) {
-      filteredHoldings = widget.holdings!.where((h) => h.sector == weight.sectorName);
+      filteredHoldings = widget.holdings!.where(
+        (h) => h.sector == weight.sectorName,
+      );
     } else if (_selectedTab == 1) {
-      filteredHoldings = widget.holdings!.where((h) => h.industry == weight.sectorName);
+      filteredHoldings = widget.holdings!.where(
+        (h) => h.industry == weight.sectorName,
+      );
     } else {
-      filteredHoldings = widget.holdings!.where((h) => weight.topStocks.contains(h.symbol));
+      filteredHoldings = widget.holdings!.where(
+        (h) => weight.topStocks.contains(h.symbol),
+      );
     }
 
     final groupHoldings = filteredHoldings.toList()
@@ -746,7 +830,9 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
-                  color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                  color: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                 ),
               ),
             ),
@@ -758,7 +844,9 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
-                  color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                  color: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                 ),
               ),
             ),
@@ -770,7 +858,9 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
-                  color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                  color: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                 ),
               ),
             ),
@@ -778,10 +868,10 @@ class _AllocationPanelWidgetState extends State<AllocationPanelWidget>
         ),
         const SizedBox(height: 8),
         ...topHoldings.map((h) {
-          final groupPercent = weight.weightPercentage > 0 
-              ? (h.portfolioWeight / weight.weightPercentage) * 100 
+          final groupPercent = weight.weightPercentage > 0
+              ? (h.portfolioWeight / weight.weightPercentage) * 100
               : 0.0;
-              
+
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 6),
             child: Row(
@@ -875,25 +965,28 @@ class _GlowingDonutPainter extends CustomPainter {
     const gapAngle = 0.045;
     double startAngle = -math.pi / 2;
 
-    double totalWeight = sectorWeights.fold(0.0, (sum, item) => sum + item.weightPercentage);
+    double totalWeight = sectorWeights.fold(
+      0.0,
+      (sum, item) => sum + item.weightPercentage,
+    );
     if (totalWeight <= 0) totalWeight = 100.0;
 
     for (int i = 0; i < sectorWeights.length; i++) {
       final weight = sectorWeights[i];
       final color = palette[i % palette.length];
-      
+
       double getTargetColorAlpha(int? activeHover) {
         if (activeHover == null) return 1.0;
         if (i == activeHover) return 1.0;
         return 0.35;
       }
-      
+
       double getTargetGlowAlpha(int? activeHover) {
         if (activeHover == null) return 0.3;
         if (i == activeHover) return 0.65;
         return 0.1;
       }
-      
+
       double getTargetHoverProg(int? activeHover) {
         if (activeHover == null) return 0.0;
         if (i == activeHover) return 1.0;
@@ -902,22 +995,31 @@ class _GlowingDonutPainter extends CustomPainter {
 
       double startColorAlpha = getTargetColorAlpha(previousHoveredIndex);
       double endColorAlpha = getTargetColorAlpha(hoveredIndex);
-      double colorAlpha = startColorAlpha + (endColorAlpha - startColorAlpha) * hoverProgress;
+      double colorAlpha =
+          startColorAlpha + (endColorAlpha - startColorAlpha) * hoverProgress;
 
       double startGlowAlpha = getTargetGlowAlpha(previousHoveredIndex);
       double endGlowAlpha = getTargetGlowAlpha(hoveredIndex);
-      double glowAlpha = startGlowAlpha + (endGlowAlpha - startGlowAlpha) * hoverProgress;
+      double glowAlpha =
+          startGlowAlpha + (endGlowAlpha - startGlowAlpha) * hoverProgress;
 
       double startProg = getTargetHoverProg(previousHoveredIndex);
       double endProg = getTargetHoverProg(hoveredIndex);
-      double currentHoverProg = startProg + (endProg - startProg) * hoverProgress;
-      
-      bool isIdle = hoveredIndex == null && (previousHoveredIndex == null || hoverProgress >= 0.99);
-      final double currentPulse = (i == 0 && isIdle && progress > 0.98) ? pulse : 0.0;
+      double currentHoverProg =
+          startProg + (endProg - startProg) * hoverProgress;
 
-      final double outerRadius = baseRadius + (8 * currentHoverProg) + (2 * currentPulse);
-      final double strokeWidth = 24.0 + (4 * currentHoverProg) + (1 * currentPulse);
-      
+      bool isIdle =
+          hoveredIndex == null &&
+          (previousHoveredIndex == null || hoverProgress >= 0.99);
+      final double currentPulse = (i == 0 && isIdle && progress > 0.98)
+          ? pulse
+          : 0.0;
+
+      final double outerRadius =
+          baseRadius + (8 * currentHoverProg) + (2 * currentPulse);
+      final double strokeWidth =
+          24.0 + (4 * currentHoverProg) + (1 * currentPulse);
+
       final rect = Rect.fromCircle(center: center, radius: outerRadius);
 
       double normalizedWeight = (weight.weightPercentage / totalWeight) * 100;
@@ -933,7 +1035,10 @@ class _GlowingDonutPainter extends CustomPainter {
           ..style = PaintingStyle.stroke
           ..strokeWidth = strokeWidth + 6 + (8 * currentHoverProg)
           ..strokeCap = StrokeCap.butt
-          ..maskFilter = MaskFilter.blur(BlurStyle.normal, 6 + (10 * currentHoverProg));
+          ..maskFilter = MaskFilter.blur(
+            BlurStyle.normal,
+            6 + (10 * currentHoverProg),
+          );
         canvas.drawArc(rect, startAngle, actualSweep, false, glowPaint);
 
         final paint = Paint()

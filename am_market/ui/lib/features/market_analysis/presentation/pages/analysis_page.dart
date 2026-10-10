@@ -24,7 +24,7 @@ class AnalysisPage extends ConsumerWidget {
     final scaffoldBg = context.colors.scaffoldBackground;
     final chartSymbol = ref.watch(marketAnalysisSymbolProvider);
     final newsSymbol = _newsSymbol(chartSymbol);
-    
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(

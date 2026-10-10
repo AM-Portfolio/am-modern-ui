@@ -8,10 +8,7 @@ import '../../data/datasources/subscription_remote_datasource.dart';
 ///
 /// Prefer Profile's native tile + [onOpenReferral] when wiring from the shell.
 class ReferralSettingsSection extends StatefulWidget {
-  const ReferralSettingsSection({
-    required this.onOpen,
-    super.key,
-  });
+  const ReferralSettingsSection({required this.onOpen, super.key});
 
   final VoidCallback onOpen;
 
@@ -34,8 +31,8 @@ class _ReferralSettingsSectionState extends State<ReferralSettingsSection> {
       if (!GetIt.instance.isRegistered<SubscriptionRemoteDataSource>()) {
         return;
       }
-      final summary =
-          await GetIt.instance<SubscriptionRemoteDataSource>().getReferralSummary();
+      final summary = await GetIt.instance<SubscriptionRemoteDataSource>()
+          .getReferralSummary();
       if (!mounted) return;
       final days = summary.qualifiedCount * 14;
       setState(() {

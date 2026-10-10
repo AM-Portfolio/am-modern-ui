@@ -9,11 +9,7 @@ class EtfSearchBar extends StatefulWidget {
   /// Called when the clear (X) control cancels the current search text.
   final VoidCallback? onCleared;
 
-  const EtfSearchBar({
-    super.key,
-    required this.onEtfSelected,
-    this.onCleared,
-  });
+  const EtfSearchBar({super.key, required this.onEtfSelected, this.onCleared});
 
   @override
   State<EtfSearchBar> createState() => EtfSearchBarState();
@@ -103,136 +99,146 @@ class EtfSearchBarState extends State<EtfSearchBar> {
           onSelected: (EtfSearchResult selection) {
             widget.onEtfSelected(selection);
           },
-          fieldViewBuilder: (
-            BuildContext context,
-            TextEditingController fieldTextEditingController,
-            FocusNode fieldFocusNode,
-            VoidCallback onFieldSubmitted,
-          ) {
-            _attachFieldListener(fieldTextEditingController, fieldFocusNode);
+          fieldViewBuilder:
+              (
+                BuildContext context,
+                TextEditingController fieldTextEditingController,
+                FocusNode fieldFocusNode,
+                VoidCallback onFieldSubmitted,
+              ) {
+                _attachFieldListener(
+                  fieldTextEditingController,
+                  fieldFocusNode,
+                );
 
-            return SizedBox(
-              height: AppComponentSizes.inputHeight,
-              child: TextField(
-                controller: fieldTextEditingController,
-                focusNode: fieldFocusNode,
-                style: Theme.of(context).textTheme.bodyMedium,
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.search),
-                  hintText: 'Search ETFs, baskets or themes...',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadii.md),
-                    borderSide: BorderSide(
-                      color: Theme.of(context)
-                          .dividerColor
-                          .withValues(alpha: 0.5),
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadii.md),
-                    borderSide: BorderSide(
-                      color: Theme.of(context)
-                          .dividerColor
-                          .withValues(alpha: 0.5),
-                    ),
-                  ),
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.sm + 2,
-                  ),
-                  suffixIcon: _hasText
-                      ? IconButton(
-                          tooltip: 'Clear search',
-                          icon: const Icon(Icons.close, size: 20),
-                          onPressed: () => _clearSearch(
-                            fieldTextEditingController,
-                            fieldFocusNode,
-                          ),
-                        )
-                      : null,
-                ),
-                onSubmitted: (value) {
-                  if (value.contains(',')) {
-                    widget.onEtfSelected(
-                      EtfSearchResult(
-                        symbol: value,
-                        name: 'Custom List',
-                        isin: value,
+                return SizedBox(
+                  height: AppComponentSizes.inputHeight,
+                  child: TextField(
+                    controller: fieldTextEditingController,
+                    focusNode: fieldFocusNode,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.search),
+                      hintText: 'Search ETFs, baskets or themes...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadii.md),
+                        borderSide: BorderSide(
+                          color: Theme.of(
+                            context,
+                          ).dividerColor.withValues(alpha: 0.5),
+                        ),
                       ),
-                    );
-                    fieldFocusNode.unfocus();
-                  } else {
-                    onFieldSubmitted();
-                  }
-                },
-              ),
-            );
-          },
-          optionsViewBuilder: (
-            BuildContext context,
-            AutocompleteOnSelected<EtfSearchResult> onSelected,
-            Iterable<EtfSearchResult> options,
-          ) {
-            return Align(
-              alignment: Alignment.topLeft,
-              child: Material(
-                elevation: 4.0,
-                color: Theme.of(context).cardColor,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(
-                    bottom: Radius.circular(AppRadii.md),
-                  ),
-                ),
-                child: Container(
-                  width: constraints.maxWidth,
-                  constraints: const BoxConstraints(maxHeight: 300),
-                  child: ListView.builder(
-                    padding: EdgeInsets.zero,
-                    shrinkWrap: true,
-                    itemCount: options.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      final EtfSearchResult option = options.elementAt(index);
-                      return ListTile(
-                        title: Text(
-                          option.symbol,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadii.md),
+                        borderSide: BorderSide(
+                          color: Theme.of(
+                            context,
+                          ).dividerColor.withValues(alpha: 0.5),
                         ),
-                        subtitle: Text(
-                          '${option.name}${option.marketCapCategory != null ? ' • ${option.marketCapCategory}' : ''}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        trailing: option.marketCapCategory != null
-                            ? Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: ModuleColors.portfolio
-                                      .withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  option.marketCapCategory!,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: ModuleColors.portfolio,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              )
-                            : null,
-                        onTap: () => onSelected(option),
-                      );
+                      ),
+                      filled: true,
+                      fillColor: Theme.of(context).cardColor,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.sm + 2,
+                      ),
+                      suffixIcon: _hasText
+                          ? IconButton(
+                              tooltip: 'Clear search',
+                              icon: const Icon(Icons.close, size: 20),
+                              onPressed: () => _clearSearch(
+                                fieldTextEditingController,
+                                fieldFocusNode,
+                              ),
+                            )
+                          : null,
+                    ),
+                    onSubmitted: (value) {
+                      if (value.contains(',')) {
+                        widget.onEtfSelected(
+                          EtfSearchResult(
+                            symbol: value,
+                            name: 'Custom List',
+                            isin: value,
+                          ),
+                        );
+                        fieldFocusNode.unfocus();
+                      } else {
+                        onFieldSubmitted();
+                      }
                     },
                   ),
-                ),
-              ),
-            );
-          },
+                );
+              },
+          optionsViewBuilder:
+              (
+                BuildContext context,
+                AutocompleteOnSelected<EtfSearchResult> onSelected,
+                Iterable<EtfSearchResult> options,
+              ) {
+                return Align(
+                  alignment: Alignment.topLeft,
+                  child: Material(
+                    elevation: 4.0,
+                    color: Theme.of(context).cardColor,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(
+                        bottom: Radius.circular(AppRadii.md),
+                      ),
+                    ),
+                    child: Container(
+                      width: constraints.maxWidth,
+                      constraints: const BoxConstraints(maxHeight: 300),
+                      child: ListView.builder(
+                        padding: EdgeInsets.zero,
+                        shrinkWrap: true,
+                        itemCount: options.length,
+                        itemBuilder: (BuildContext context, int index) {
+                          final EtfSearchResult option = options.elementAt(
+                            index,
+                          );
+                          return ListTile(
+                            title: Text(
+                              option.symbol,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            subtitle: Text(
+                              '${option.name}${option.marketCapCategory != null ? ' • ${option.marketCapCategory}' : ''}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            trailing: option.marketCapCategory != null
+                                ? Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: ModuleColors.portfolio.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      option.marketCapCategory!,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: ModuleColors.portfolio,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  )
+                                : null,
+                            onTap: () => onSelected(option),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                );
+              },
         );
       },
     );

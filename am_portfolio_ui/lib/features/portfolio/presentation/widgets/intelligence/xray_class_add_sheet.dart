@@ -9,11 +9,12 @@ import 'intelligence_suggest_search.dart';
 import 'xray_display_name.dart';
 
 /// Wire values for PUT `/v1/portfolios/{id}/asset-classes/{assetClass}`.
-const kXrayClassAddWireOptions = <({String wire, String apiName, IconData icon})>[
-  (wire: 'bonds', apiName: 'BONDS', icon: Icons.account_balance_rounded),
-  (wire: 'commodities', apiName: 'COMMODITY', icon: Icons.diamond_outlined),
-  (wire: 'cash', apiName: 'CASH', icon: Icons.payments_outlined),
-];
+const kXrayClassAddWireOptions =
+    <({String wire, String apiName, IconData icon})>[
+      (wire: 'bonds', apiName: 'BONDS', icon: Icons.account_balance_rounded),
+      (wire: 'commodities', apiName: 'COMMODITY', icon: Icons.diamond_outlined),
+      (wire: 'cash', apiName: 'CASH', icon: Icons.payments_outlined),
+    ];
 
 Future<void> showXrayClassAddSheet({
   required BuildContext context,
@@ -23,10 +24,7 @@ Future<void> showXrayClassAddSheet({
   final width = MediaQuery.sizeOf(context).width;
   final isPhone = width < 600;
 
-  final form = XrayClassAddSheet(
-    portfolioId: portfolioId,
-    onSaved: onSaved,
-  );
+  final form = XrayClassAddSheet(portfolioId: portfolioId, onSaved: onSaved);
 
   if (isPhone) {
     return showModalBottomSheet<void>(
@@ -46,10 +44,7 @@ Future<void> showXrayClassAddSheet({
           minChildSize: 0.55,
           maxChildSize: 0.96,
           builder: (_, controller) => _SheetShell(
-            child: ListView(
-              controller: controller,
-              children: [form],
-            ),
+            child: ListView(controller: controller, children: [form]),
           ),
         ),
       ),
@@ -97,10 +92,7 @@ class _SheetShell extends StatelessWidget {
                   context.backgroundColor,
                   context.surfaceColor,
                 ]
-              : [
-                  context.cardColor,
-                  IntelligenceColors.mist,
-                ],
+              : [context.cardColor, IntelligenceColors.mist],
         ),
         border: Border.all(color: context.glassOverlay(isDark ? 0.10 : 0.06)),
         boxShadow: [
@@ -118,10 +110,7 @@ class _SheetShell extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(22),
-        child: Material(
-          color: Colors.transparent,
-          child: child,
-        ),
+        child: Material(color: Colors.transparent, child: child),
       ),
     );
   }
@@ -177,10 +166,11 @@ class _XrayClassAddSheetState extends ConsumerState<XrayClassAddSheet> {
     );
     _symbolByName.clear();
     for (final h in _holdings()) {
-      final label = (h.companyName.isNotEmpty
-              ? h.companyName
-              : (h.name.isNotEmpty ? h.name : h.symbol))
-          .trim();
+      final label =
+          (h.companyName.isNotEmpty
+                  ? h.companyName
+                  : (h.name.isNotEmpty ? h.name : h.symbol))
+              .trim();
       final sym = h.symbol.trim();
       if (label.isEmpty || sym.isEmpty) continue;
       if (sym.toUpperCase() == label.toUpperCase()) continue;
@@ -226,15 +216,15 @@ class _XrayClassAddSheetState extends ConsumerState<XrayClassAddSheet> {
   }
 
   List<Map<String, dynamic>> _bodyItems() => [
-        for (final r in _rows)
-          <String, dynamic>{
-            'name': r.name.text.trim(),
-            if (r.symbol.text.trim().isNotEmpty) 'symbol': r.symbol.text.trim(),
-            if (r.quantity.text.trim().isNotEmpty)
-              'quantity': double.parse(r.quantity.text.trim()),
-            'currentValue': double.parse(r.value.text.trim()),
-          },
-      ];
+    for (final r in _rows)
+      <String, dynamic>{
+        'name': r.name.text.trim(),
+        if (r.symbol.text.trim().isNotEmpty) 'symbol': r.symbol.text.trim(),
+        if (r.quantity.text.trim().isNotEmpty)
+          'quantity': double.parse(r.quantity.text.trim()),
+        'currentValue': double.parse(r.value.text.trim()),
+      },
+  ];
 
   String _friendlyError(Object e) {
     final raw = e.toString();
@@ -282,10 +272,7 @@ class _XrayClassAddSheetState extends ConsumerState<XrayClassAddSheet> {
     }
   }
 
-  InputDecoration _fieldDeco({
-    required String label,
-    String? hint,
-  }) {
+  InputDecoration _fieldDeco({required String label, String? hint}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return InputDecoration(
       // External labels — avoids float overlap with section headers.
@@ -318,13 +305,12 @@ class _XrayClassAddSheetState extends ConsumerState<XrayClassAddSheet> {
       child: Text(
         text,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.2,
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.72),
-            ),
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.2,
+          color: Theme.of(
+            context,
+          ).colorScheme.onSurface.withValues(alpha: 0.72),
+        ),
       ),
     );
   }
@@ -372,8 +358,9 @@ class _XrayClassAddSheetState extends ConsumerState<XrayClassAddSheet> {
                     Text(
                       'Bond, precious metal, or cash — not covered by Doc Intel.',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface
-                            .withValues(alpha: 0.55),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.55,
+                        ),
                         height: 1.35,
                       ),
                     ),
@@ -412,12 +399,10 @@ class _XrayClassAddSheetState extends ConsumerState<XrayClassAddSheet> {
                     icon: kXrayClassAddWireOptions[i].icon,
                     selected: _wire == kXrayClassAddWireOptions[i].wire,
                     enabled: !_saving,
-                    onTap: () => setState(
-                      () {
-                        _wire = kXrayClassAddWireOptions[i].wire;
-                        _symbolByName.clear();
-                      },
-                    ),
+                    onTap: () => setState(() {
+                      _wire = kXrayClassAddWireOptions[i].wire;
+                      _symbolByName.clear();
+                    }),
                   ),
                 ),
               ],
@@ -590,10 +575,9 @@ class _ClassPickCard extends StatelessWidget {
                 size: 20,
                 color: selected
                     ? ModuleColors.portfolio
-                    : Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.55),
+                    : Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.55),
               ),
               const SizedBox(height: 8),
               Text(
@@ -605,9 +589,7 @@ class _ClassPickCard extends StatelessWidget {
                   fontSize: 11.5,
                   height: 1.2,
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  color: selected
-                      ? context.textPrimary
-                      : context.textSecondary,
+                  color: selected ? context.textPrimary : context.textSecondary,
                 ),
               ),
             ],
@@ -636,12 +618,12 @@ class _HoldingCard extends StatelessWidget {
   final bool canRemove;
   final VoidCallback onRemove;
   final InputDecoration Function({required String label, String? hint})
-      fieldDeco;
+  fieldDeco;
   final Widget Function(String text) fieldLabel;
   final String nameHint;
   final ValueChanged<String> onNameSelected;
   final Future<List<market.SecurityDocument>> Function(String query)
-      searchNames;
+  searchNames;
 
   @override
   Widget build(BuildContext context) {
@@ -661,9 +643,9 @@ class _HoldingCard extends StatelessWidget {
               children: [
                 Text(
                   'Holding ${index + 1}',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const Spacer(),
                 if (canRemove)
@@ -673,10 +655,9 @@ class _HoldingCard extends StatelessWidget {
                     icon: Icon(
                       Icons.remove_circle_outline_rounded,
                       size: 18,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.45),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.45),
                     ),
                     visualDensity: VisualDensity.compact,
                   ),

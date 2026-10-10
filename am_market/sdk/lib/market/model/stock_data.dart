@@ -84,29 +84,32 @@ class StockData {
   String? industry;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is StockData &&
-    other.symbol == symbol &&
-    other.identifier == identifier &&
-    other.series == series &&
-    other.name == name &&
-    other.ffmc == ffmc &&
-    other.companyName == companyName &&
-    other.isin == isin &&
-    other.industry == industry;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is StockData &&
+          other.symbol == symbol &&
+          other.identifier == identifier &&
+          other.series == series &&
+          other.name == name &&
+          other.ffmc == ffmc &&
+          other.companyName == companyName &&
+          other.isin == isin &&
+          other.industry == industry;
 
   @override
   int get hashCode =>
-    (symbol == null ? 0 : symbol!.hashCode) +
-    (identifier == null ? 0 : identifier!.hashCode) +
-    (series == null ? 0 : series!.hashCode) +
-    (name == null ? 0 : name!.hashCode) +
-    (ffmc == null ? 0 : ffmc!.hashCode) +
-    (companyName == null ? 0 : companyName!.hashCode) +
-    (isin == null ? 0 : isin!.hashCode) +
-    (industry == null ? 0 : industry!.hashCode);
+      (symbol == null ? 0 : symbol!.hashCode) +
+      (identifier == null ? 0 : identifier!.hashCode) +
+      (series == null ? 0 : series!.hashCode) +
+      (name == null ? 0 : name!.hashCode) +
+      (ffmc == null ? 0 : ffmc!.hashCode) +
+      (companyName == null ? 0 : companyName!.hashCode) +
+      (isin == null ? 0 : isin!.hashCode) +
+      (industry == null ? 0 : industry!.hashCode);
 
   @override
-  String toString() => 'StockData[symbol=$symbol, identifier=$identifier, series=$series, name=$name, ffmc=$ffmc, companyName=$companyName, isin=$isin, industry=$industry]';
+  String toString() =>
+      'StockData[symbol=$symbol, identifier=$identifier, series=$series, name=$name, ffmc=$ffmc, companyName=$companyName, isin=$isin, industry=$industry]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -164,8 +167,10 @@ class StockData {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "StockData[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "StockData[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "StockData[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "StockData[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -184,7 +189,10 @@ class StockData {
     return null;
   }
 
-  static List<StockData> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<StockData> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <StockData>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -200,7 +208,7 @@ class StockData {
   static Map<String, StockData> mapFromJson(dynamic json) {
     final map = <String, StockData>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); 
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
         final value = StockData.fromJson(entry.value);
         if (value != null) {
@@ -212,19 +220,23 @@ class StockData {
   }
 
   // maps a json object with a list of StockData-objects as value to a dart map
-  static Map<String, List<StockData>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<StockData>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<StockData>>{};
     if (json is Map && json.isNotEmpty) {
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = StockData.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = StockData.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'dart:async'; // Required for Timer-based staggered preloading of background historical base prices
 import 'package:provider/provider.dart' hide Consumer;
@@ -6,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_library/am_library.dart';
+import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_market_common/providers/market_provider.dart';
 import 'package:am_market_common/models/indices_region.dart';
 import 'package:am_market_common/models/market_data.dart';
@@ -35,20 +37,20 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
   @override
   bool get wantKeepAlive => true;
   late final ApiService _apiService;
-  
+
   // Selected index for top movers (default: NIFTY 50)
   String selectedIndexForMovers = 'NIFTY 50';
-  
+
   // Selected indices for comparison chart
   List<String> selectedIndicesForChart = ['NIFTY 50', 'NIFTY BANK'];
   IndicesRegion _compareRegion = IndicesRegion.indian;
-  
+
   // Top movers data
   List<TopMoverStock> topGainers = [];
   List<TopMoverStock> topLosers = [];
   bool isLoadingMovers = false;
   String? moversError;
-  
+
   // Historical chart data
   Map<String, List<Map<String, dynamic>>> historicalData = {};
   bool isLoadingChart = false;
@@ -57,7 +59,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
   int _historyRequestId = 0;
 
   // REMOVED: final ScrollController _indicesScrollController = ScrollController();
-  
+
   // Desktop drawer animation state
   late AnimationController _drawerController;
   bool _isDrawerVisible = false;
@@ -67,7 +69,6 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
   final LayerLink _popoverLink = LayerLink();
   late final AnimationController _popoverAnimationController;
   String _popoverSearchQuery = '';
-
 
   // Cache for all timeframe base prices
   final Map<String, Map<String, double>> allTimeframeBasePrices = {
@@ -146,7 +147,8 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
       await _loadBasePricesForTimeframe(symbols, nextTf);
       _loadedTimeframes.add(nextTf);
     } catch (e) {
-      CommonLogger.error('SIP background preloader error for timeframe $nextTf', tag: 'UserDashboardPage', error: e);
+      CommonLogger.error('SIP background preloader error for timeframe $nextTf',
+          tag: 'UserDashboardPage', error: e);
     } finally {
       if (mounted) {
         setState(() {
@@ -165,36 +167,63 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
   }
 
   /// [SIP Optimization] Executes the actual historical API request for a specific list of symbols and timeframe.
-  Future<void> _loadBasePricesForTimeframe(List<String> symbols, String tf) async {
+  Future<void> _loadBasePricesForTimeframe(
+      List<String> symbols, String tf) async {
     if (symbols.isEmpty) return;
 
     final now = DateTime.now();
     DateTime fromDate;
-    
+
     // Calculate the from-date based on the requested timeframe.
     // Daily historical timeframes are computed using standard lookback offsets.
     switch (tf) {
-      case '1W': fromDate = now.subtract(const Duration(days: 7)); break;
-      case '1M': fromDate = DateTime(now.year, now.month - 1, now.day); break;
-      case '3M': fromDate = DateTime(now.year, now.month - 3, now.day); break;
-      case '6M': fromDate = DateTime(now.year, now.month - 6, now.day); break;
-      case '1Y': fromDate = DateTime(now.year - 1, now.month, now.day); break;
-      case '5Y': fromDate = DateTime(now.year - 5, now.month, now.day); break;
-      default: fromDate = now.subtract(const Duration(days: 7));
+      case '1W':
+        fromDate = now.subtract(const Duration(days: 7));
+        break;
+      case '1M':
+        fromDate = DateTime(now.year, now.month - 1, now.day);
+        break;
+      case '3M':
+        fromDate = DateTime(now.year, now.month - 3, now.day);
+        break;
+      case '6M':
+        fromDate = DateTime(now.year, now.month - 6, now.day);
+        break;
+      case '1Y':
+        fromDate = DateTime(now.year - 1, now.month, now.day);
+        break;
+      case '5Y':
+        fromDate = DateTime(now.year - 5, now.month, now.day);
+        break;
+      default:
+        fromDate = now.subtract(const Duration(days: 7));
     }
 
     DateTime toDate;
-    
+
     // Calculate the to-date to fetch a small window of data points at the start
     // of the timeframe to find the reference base price.
     switch (tf) {
-      case '1W': toDate = fromDate.add(const Duration(days: 3)); break;
-      case '1M': toDate = fromDate.add(const Duration(days: 5)); break;
-      case '3M': toDate = fromDate.add(const Duration(days: 7)); break;
-      case '6M': toDate = fromDate.add(const Duration(days: 7)); break;
-      case '1Y': toDate = fromDate.add(const Duration(days: 10)); break;
-      case '5Y': toDate = fromDate.add(const Duration(days: 10)); break;
-      default: toDate = fromDate.add(const Duration(days: 3));
+      case '1W':
+        toDate = fromDate.add(const Duration(days: 3));
+        break;
+      case '1M':
+        toDate = fromDate.add(const Duration(days: 5));
+        break;
+      case '3M':
+        toDate = fromDate.add(const Duration(days: 7));
+        break;
+      case '6M':
+        toDate = fromDate.add(const Duration(days: 7));
+        break;
+      case '1Y':
+        toDate = fromDate.add(const Duration(days: 10));
+        break;
+      case '5Y':
+        toDate = fromDate.add(const Duration(days: 10));
+        break;
+      default:
+        toDate = fromDate.add(const Duration(days: 3));
     }
 
     if (toDate.isAfter(now)) {
@@ -259,7 +288,9 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
       _loadedTimeframes.add(tf);
       // [SIP Optimization] Ensure the MarketProvider is in sync with our local cache when bypassing fetch
       if (mounted) {
-        context.read<MarketProvider>().updateTimeframeBasePrices(tf, cachedForTf);
+        context
+            .read<MarketProvider>()
+            .updateTimeframeBasePrices(tf, cachedForTf);
       }
       return;
     }
@@ -270,16 +301,23 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
     try {
       // Perform the priority fetch for the requested symbols
       await _loadBasePricesForTimeframe(symbols, tf);
-      
+
       // If we fetched the main pinned symbols, mark this timeframe as loaded for them
-      final pinnedSymbols = context.read<MarketProvider>().allIndicesData.take(6).map((e) => e.indexSymbol).toSet();
-      final bool containsAllPinned = symbols.every((sym) => pinnedSymbols.contains(sym));
+      final pinnedSymbols = context
+          .read<MarketProvider>()
+          .allIndicesData
+          .take(6)
+          .map((e) => e.indexSymbol)
+          .toSet();
+      final bool containsAllPinned =
+          symbols.every((sym) => pinnedSymbols.contains(sym));
       if (containsAllPinned) {
         _loadedTimeframes.add(tf);
         _preloadingQueue.remove(tf);
       }
     } catch (e) {
-      CommonLogger.error('On-demand priority load error for timeframe $tf', tag: 'UserDashboardPage', error: e);
+      CommonLogger.error('On-demand priority load error for timeframe $tf',
+          tag: 'UserDashboardPage', error: e);
     } finally {
       if (mounted) {
         setState(() {});
@@ -287,7 +325,10 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
         // Resume the staggered background preloading queue for remaining timeframes after a 1.5s delay
         if (_preloadingQueue.isNotEmpty) {
           final provider = context.read<MarketProvider>();
-          final pinnedList = provider.allIndicesData.take(6).map((e) => e.indexSymbol).toList();
+          final pinnedList = provider.allIndicesData
+              .take(6)
+              .map((e) => e.indexSymbol)
+              .toList();
           _preloadTimer = Timer(const Duration(milliseconds: 1500), () {
             if (mounted) {
               _preloadNextInQueue(pinnedList);
@@ -327,7 +368,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
       _isDrawerVisible = true;
     });
     _drawerController.forward();
-    
+
     // Fetch base prices for all 30 indices on-demand. Since this only requests 1 timeframe,
     // it is very lightweight and runs only when the user explicitly opens the drawer.
     final provider = context.read<MarketProvider>();
@@ -344,7 +385,8 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
 
   /// [SIP Optimization] Opens the mobile bottom sheet and lazy-loads the base prices
   /// for all indices for the current timeframe so they display correct percentages.
-  void _showMobileAllIndicesBottomSheet(BuildContext context, MarketProvider provider) {
+  void _showMobileAllIndicesBottomSheet(
+      BuildContext context, MarketProvider provider) {
     final allSymbols = [
       ...provider.allIndicesData.map((e) => e.indexSymbol),
       ...provider.globalIndicesData.map((e) => e.indexSymbol),
@@ -412,7 +454,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
   void initState() {
     super.initState();
     _apiService = ApiService();
-    
+
     _drawerController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 250),
@@ -448,7 +490,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
   /// Load top gainers and losers for selected index
   Future<void> _loadTopMovers() async {
     if (!mounted) return;
-    
+
     setState(() {
       isLoadingMovers = true;
       moversError = null;
@@ -469,15 +511,19 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
         operation: 'fetch',
         technicalArea: 'market',
       );
-      
+
       if (!mounted) return;
 
-      final gainers = (unifiedData['gainers'] ?? []).map((e) => TopMoverStock.fromJson(e)).toList();
-      final losers = (unifiedData['losers'] ?? []).map((e) => TopMoverStock.fromJson(e)).toList();
+      final gainers = (unifiedData['gainers'] ?? [])
+          .map((e) => TopMoverStock.fromJson(e))
+          .toList();
+      final losers = (unifiedData['losers'] ?? [])
+          .map((e) => TopMoverStock.fromJson(e))
+          .toList();
       if (gainers.isEmpty && losers.isEmpty) {
         ProductTelemetry.instance.emptyState('market_top_movers_empty');
       }
-      
+
       setState(() {
         topGainers = gainers;
         topLosers = losers;
@@ -498,7 +544,8 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
         isLoadingMovers = false;
         moversError = 'Could not load top movers';
       });
-      CommonLogger.error('Error loading top movers', tag: 'UserDashboardPage', error: e);
+      CommonLogger.error('Error loading top movers',
+          tag: 'UserDashboardPage', error: e);
     }
   }
 
@@ -540,12 +587,10 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
     final provider = _marketProvider ?? context.read<MarketProvider>();
     setState(() {
       selectedIndexForMovers = symbol;
-      final rest =
-          selectedIndicesForChart.where((s) => s != symbol).toList();
+      final rest = selectedIndicesForChart.where((s) => s != symbol).toList();
       selectedIndicesForChart = [symbol, ...rest].take(5).toList();
       if (selectedIndicesForChart.length == 1) {
-        final fallback =
-            symbol == 'NIFTY BANK' ? 'NIFTY 50' : 'NIFTY BANK';
+        final fallback = symbol == 'NIFTY BANK' ? 'NIFTY 50' : 'NIFTY BANK';
         selectedIndicesForChart = [symbol, fallback];
       }
     });
@@ -583,7 +628,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
       if (empty) {
         ProductTelemetry.instance.emptyState('market_history_empty');
       }
-      
+
       setState(() {
         historicalData = data;
         isLoadingChart = false;
@@ -602,7 +647,8 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
         chartError = 'Failed to load chart data';
         isLoadingChart = false;
       });
-      CommonLogger.error('Error loading historical data', tag: 'UserDashboardPage', error: e);
+      CommonLogger.error('Error loading historical data',
+          tag: 'UserDashboardPage', error: e);
     }
   }
 
@@ -756,7 +802,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
       final marketProvider = context.read<MarketProvider>();
       _onGlobalTimeFrameChanged(next.code, marketProvider);
     });
-    
+
     final marketProvider = context.watch<MarketProvider>();
 
     // Loading state
@@ -850,9 +896,17 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                     onIndexSelected: _onDashboardIndexSelected,
                   ),
 
-                    const SizedBox(height: 12),
+                  const SizedBox(height: 12),
 
-                    /* // REMOVED:
+                  PinnedIndicesGrid(
+                    indices: marketProvider.allIndicesData,
+                    selectedIndexSymbol: selectedIndexForMovers,
+                    onIndexSelected: _onDashboardIndexSelected,
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  /* // REMOVED:
                     // Index Cards Carousel  
                     SizedBox(
                       height: 156, // Increased height to accommodate scrollbar
@@ -898,469 +952,703 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                     ),
                     */
 
-                // --- INDICES COMPARISON & MARKET WATCH SECTION ---
-                _ResponsiveRow(
-                  isMobile: isMobile,
-                  leftFlex: 2,
-                  rightFlex: 1,
-                  left: Container(
-                    height: isMobile
-                        ? (MediaQuery.sizeOf(context).height * 0.38)
-                            .clamp(380.0, 440.0)
-                        : 360,
-                    padding: EdgeInsets.fromLTRB(
-                      isMobile ? 10 : 14,
-                      isMobile ? 8 : 10,
-                      isMobile ? 10 : 14,
-                      isMobile ? 8 : 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: MarketColors.cardSurface(context),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: MarketColors.borderDefault(context)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              'Indices Comparison',
-                              style: TextStyle(
-                                color: MarketColors.textPrimary(context),
-                                fontSize: isMobile ? 11 : 14,
-                                fontWeight: FontWeight.bold,
+                  // --- INDICES COMPARISON & MARKET WATCH SECTION ---
+                  _ResponsiveRow(
+                    isMobile: isMobile,
+                    leftFlex: 2,
+                    rightFlex: 1,
+                    left: Container(
+                      height: isMobile
+                          ? (MediaQuery.sizeOf(context).height * 0.38)
+                              .clamp(380.0, 440.0)
+                          : 360,
+                      padding: EdgeInsets.fromLTRB(
+                        isMobile ? 10 : 14,
+                        isMobile ? 8 : 10,
+                        isMobile ? 10 : 14,
+                        isMobile ? 8 : 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: MarketColors.cardSurface(context),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                            color: MarketColors.borderDefault(context)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                'Indices Comparison',
+                                style: TextStyle(
+                                  color: MarketColors.textPrimary(context),
+                                  fontSize: isMobile ? 11 : 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                            if (!isMobile) ...[
-                              const SizedBox(width: 12),
-                              ...selectedIndicesForChart.take(3).map((symbol) {
-                                final data = marketProvider.allIndicesData.where((e) => e.indexSymbol == symbol).firstOrNull ??
-                                    marketProvider.globalIndicesData.where((e) => e.indexSymbol == symbol).firstOrNull;
-                                if (data == null) return const SizedBox.shrink();
-                                final isPos = data.change >= 0;
-                                final tone = isPos
-                                    ? MarketColors.positive(context)
-                                    : MarketColors.negative(context);
-                                return Padding(
-                                  padding: const EdgeInsets.only(right: 8.0),
-                                  child: _buildLegendBadge(
-                                      symbol, 
-                                      data.lastPrice.toStringAsFixed(2), 
-                                      '${isPos ? '+' : ''}${data.pChange.toStringAsFixed(2)}%', 
-                                      tone, 
-                                      tone),
-                                );
-                              }),
-                            ],
-                            const Spacer(),
-                            // Toggle Chart Type
-                            Container(
-                              decoration: BoxDecoration(
-                                color: MarketColors.cardSurface(context),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: MarketColors.borderDefault(context)),
+                              if (!isMobile) ...[
+                                const SizedBox(width: 12),
+                                ...selectedIndicesForChart
+                                    .take(3)
+                                    .map((symbol) {
+                                  final data = marketProvider.allIndicesData
+                                          .where((e) => e.indexSymbol == symbol)
+                                          .firstOrNull ??
+                                      marketProvider.globalIndicesData
+                                          .where((e) => e.indexSymbol == symbol)
+                                          .firstOrNull;
+                                  if (data == null)
+                                    return const SizedBox.shrink();
+                                  final isPos = data.change >= 0;
+                                  final tone = isPos
+                                      ? MarketColors.positive(context)
+                                      : MarketColors.negative(context);
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 8.0),
+                                    child: _buildLegendBadge(
+                                        symbol,
+                                        data.lastPrice.toStringAsFixed(2),
+                                        '${isPos ? '+' : ''}${data.pChange.toStringAsFixed(2)}%',
+                                        tone,
+                                        tone),
+                                  );
+                                }),
+                              ],
+                              const Spacer(),
+                              // Toggle Chart Type
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: MarketColors.cardSurface(context),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                      color:
+                                          MarketColors.borderDefault(context)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(Icons.show_chart,
+                                          color: !isBarChart
+                                              ? ModuleColors.market
+                                              : MarketColors.textMuted(context),
+                                          size: 16),
+                                      padding: const EdgeInsets.all(4),
+                                      constraints: const BoxConstraints(
+                                          minWidth: 28, minHeight: 28),
+                                      onPressed: () =>
+                                          setState(() => isBarChart = false),
+                                      tooltip: 'Line Chart',
+                                    ),
+                                    IconButton(
+                                      icon: Icon(Icons.bar_chart,
+                                          color: isBarChart
+                                              ? ModuleColors.market
+                                              : MarketColors.textMuted(context),
+                                          size: 16),
+                                      padding: const EdgeInsets.all(4),
+                                      constraints: const BoxConstraints(
+                                          minWidth: 28, minHeight: 28),
+                                      onPressed: () =>
+                                          setState(() => isBarChart = true),
+                                      tooltip: 'Bar Chart',
+                                    ),
+                                  ],
+                                ),
                               ),
-                              child: Row(
-                                children: [
-                                  IconButton(
-                                    icon: Icon(Icons.show_chart,
-                                        color: !isBarChart
-                                            ? ModuleColors.market
-                                            : MarketColors.textMuted(context),
-                                        size: 16),
-                                    padding: const EdgeInsets.all(4),
-                                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                                    onPressed: () => setState(() => isBarChart = false),
-                                    tooltip: 'Line Chart',
-                                  ),
-                                  IconButton(
-                                    icon: Icon(Icons.bar_chart,
-                                        color: isBarChart
-                                            ? ModuleColors.market
-                                            : MarketColors.textMuted(context),
-                                        size: 16),
-                                    padding: const EdgeInsets.all(4),
-                                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                                    onPressed: () => setState(() => isBarChart = true),
-                                    tooltip: 'Bar Chart',
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            // Add Index Button (Anchored Popover on desktop; Sheet on mobile)
-                            CompositedTransformTarget(
-                              link: _popoverLink,
-                              child: OverlayPortal(
-                                controller: _popoverController,
-                                overlayChildBuilder: (context) {
-                                  return Stack(
-                                    children: [
-                                      Positioned.fill(
-                                        child: GestureDetector(
-                                          behavior: HitTestBehavior.translucent,
-                                          onTap: _togglePopover,
-                                          child: Container(color: Colors.transparent),
+                              const SizedBox(width: 6),
+                              // Add Index Button (Anchored Popover on desktop; Sheet on mobile)
+                              CompositedTransformTarget(
+                                link: _popoverLink,
+                                child: OverlayPortal(
+                                  controller: _popoverController,
+                                  overlayChildBuilder: (context) {
+                                    return Stack(
+                                      children: [
+                                        Positioned.fill(
+                                          child: GestureDetector(
+                                            behavior:
+                                                HitTestBehavior.translucent,
+                                            onTap: _togglePopover,
+                                            child: Container(
+                                                color: Colors.transparent),
+                                          ),
                                         ),
-                                      ),
-                                      Positioned(
-                                        child: CompositedTransformFollower(
-                                          link: _popoverLink,
-                                          showWhenUnlinked: false,
-                                          offset: const Offset(0, 40),
-                                          targetAnchor: Alignment.bottomRight,
-                                          followerAnchor: Alignment.topRight,
-                                          child: AnimatedBuilder(
-                                            animation: _popoverAnimationController,
-                                            builder: (context, child) {
-                                              final scale = CurvedAnimation(
-                                                parent: _popoverAnimationController,
-                                                curve: Curves.easeOutCubic,
-                                              ).value;
-                                              final opacity = CurvedAnimation(
-                                                parent: _popoverAnimationController,
-                                                curve: Curves.easeOutCubic,
-                                              ).value;
-                                              return Transform.scale(
-                                                scale: scale,
-                                                alignment: Alignment.topRight,
-                                                child: Opacity(
-                                                  opacity: opacity,
-                                                  child: child,
-                                                ),
-                                              );
-                                            },
-                                            child: Material(
-                                              color: Colors.transparent,
-                                              child: Container(
-                                                width: 280,
-                                                constraints: const BoxConstraints(maxHeight: 400),
-                                                decoration: BoxDecoration(
-                                                  color: MarketColors.cardSurface(context),
-                                                  borderRadius: BorderRadius.circular(12),
-                                                  border: Border.all(
-                                                    color: MarketColors.borderDefault(context),
+                                        Positioned(
+                                          child: CompositedTransformFollower(
+                                            link: _popoverLink,
+                                            showWhenUnlinked: false,
+                                            offset: const Offset(0, 40),
+                                            targetAnchor: Alignment.bottomRight,
+                                            followerAnchor: Alignment.topRight,
+                                            child: AnimatedBuilder(
+                                              animation:
+                                                  _popoverAnimationController,
+                                              builder: (context, child) {
+                                                final scale = CurvedAnimation(
+                                                  parent:
+                                                      _popoverAnimationController,
+                                                  curve: Curves.easeOutCubic,
+                                                ).value;
+                                                final opacity = CurvedAnimation(
+                                                  parent:
+                                                      _popoverAnimationController,
+                                                  curve: Curves.easeOutCubic,
+                                                ).value;
+                                                return Transform.scale(
+                                                  scale: scale,
+                                                  alignment: Alignment.topRight,
+                                                  child: Opacity(
+                                                    opacity: opacity,
+                                                    child: child,
                                                   ),
-                                                  boxShadow: [
-                                                    BoxShadow(
-                                                      color: context.shadow(0.2),
-                                                      blurRadius: 10,
-                                                      offset: const Offset(0, 4),
+                                                );
+                                              },
+                                              child: Material(
+                                                color: Colors.transparent,
+                                                child: Container(
+                                                  width: 280,
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                          maxHeight: 400),
+                                                  decoration: BoxDecoration(
+                                                    color: MarketColors
+                                                        .cardSurface(context),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12),
+                                                    border: Border.all(
+                                                      color: MarketColors
+                                                          .borderDefault(
+                                                              context),
                                                     ),
-                                                  ],
-                                                ),
-                                                child: StatefulBuilder(
-                                                  builder: (context, setPopoverState) {
-                                                    final source = _compareRegion == IndicesRegion.global
-                                                        ? marketProvider.globalIndicesData
-                                                        : marketProvider.allIndicesData;
-                                                    final filteredIndices = source.where((data) =>
-                                                      data.indexSymbol.toLowerCase().contains(_popoverSearchQuery.toLowerCase()) ||
-                                                      (data.indexName?.toLowerCase().contains(_popoverSearchQuery.toLowerCase()) ?? false)
-                                                    ).toList();
-                                                    final accent = ModuleColors.market;
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color:
+                                                            context.shadow(0.2),
+                                                        blurRadius: 10,
+                                                        offset:
+                                                            const Offset(0, 4),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  child: StatefulBuilder(
+                                                    builder: (context,
+                                                        setPopoverState) {
+                                                      final source = _compareRegion ==
+                                                              IndicesRegion
+                                                                  .global
+                                                          ? marketProvider
+                                                              .globalIndicesData
+                                                          : marketProvider
+                                                              .allIndicesData;
+                                                      final filteredIndices = source
+                                                          .where((data) =>
+                                                              data.indexSymbol
+                                                                  .toLowerCase()
+                                                                  .contains(
+                                                                      _popoverSearchQuery
+                                                                          .toLowerCase()) ||
+                                                              (data.indexName
+                                                                      ?.toLowerCase()
+                                                                      .contains(
+                                                                          _popoverSearchQuery
+                                                                              .toLowerCase()) ??
+                                                                  false))
+                                                          .toList();
+                                                      final accent =
+                                                          ModuleColors.market;
 
-                                                    return Column(
-                                                      mainAxisSize: MainAxisSize.min,
-                                                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                                                      children: [
-                                                        Padding(
-                                                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                                                          child: Text(
-                                                            'Compare Indices',
-                                                            style: TextStyle(
-                                                              fontSize: 14,
-                                                              fontWeight: FontWeight.bold,
-                                                              color: Theme.of(context).colorScheme.onSurface,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                        Padding(
-                                                          padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                                                          child: MarketRegionToggle(
-                                                            value: _compareRegion,
-                                                            onChanged: (region) {
-                                                              setPopoverState(() {
-                                                                _compareRegion = region;
-                                                              });
-                                                              setState(() {});
-                                                              if (region == IndicesRegion.global &&
-                                                                  marketProvider.globalIndicesData.isEmpty) {
-                                                                marketProvider.loadGlobalIndicesData();
-                                                              }
-                                                            },
-                                                          ),
-                                                        ),
-                                                        Padding(
-                                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                                          child: TextField(
-                                                            onChanged: (value) {
-                                                              setPopoverState(() {
-                                                                _popoverSearchQuery = value;
-                                                              });
-                                                            },
-                                                            controller: TextEditingController.fromValue(
-                                                              TextEditingValue(
-                                                                text: _popoverSearchQuery,
-                                                                selection: TextSelection.collapsed(offset: _popoverSearchQuery.length),
+                                                      return Column(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .stretch,
+                                                        children: [
+                                                          Padding(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .fromLTRB(
+                                                                    16,
+                                                                    12,
+                                                                    16,
+                                                                    8),
+                                                            child: Text(
+                                                              'Compare Indices',
+                                                              style: TextStyle(
+                                                                fontSize: 14,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                                color: Theme.of(
+                                                                        context)
+                                                                    .colorScheme
+                                                                    .onSurface,
                                                               ),
                                                             ),
-                                                            style: TextStyle(
-                                                              fontSize: 12,
-                                                              color: Theme.of(context).colorScheme.onSurface,
+                                                          ),
+                                                          Padding(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .fromLTRB(
+                                                                    12,
+                                                                    0,
+                                                                    12,
+                                                                    8),
+                                                            child:
+                                                                MarketRegionToggle(
+                                                              value:
+                                                                  _compareRegion,
+                                                              onChanged:
+                                                                  (region) {
+                                                                setPopoverState(
+                                                                    () {
+                                                                  _compareRegion =
+                                                                      region;
+                                                                });
+                                                                setState(() {});
+                                                                if (region ==
+                                                                        IndicesRegion
+                                                                            .global &&
+                                                                    marketProvider
+                                                                        .globalIndicesData
+                                                                        .isEmpty) {
+                                                                  marketProvider
+                                                                      .loadGlobalIndicesData();
+                                                                }
+                                                              },
                                                             ),
-                                                            decoration: InputDecoration(
-                                                              hintText: 'Search indices...',
-                                                              hintStyle: TextStyle(
+                                                          ),
+                                                          Padding(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .symmetric(
+                                                                    horizontal:
+                                                                        12,
+                                                                    vertical:
+                                                                        4),
+                                                            child: TextField(
+                                                              onChanged:
+                                                                  (value) {
+                                                                setPopoverState(
+                                                                    () {
+                                                                  _popoverSearchQuery =
+                                                                      value;
+                                                                });
+                                                              },
+                                                              controller:
+                                                                  TextEditingController
+                                                                      .fromValue(
+                                                                TextEditingValue(
+                                                                  text:
+                                                                      _popoverSearchQuery,
+                                                                  selection: TextSelection
+                                                                      .collapsed(
+                                                                          offset:
+                                                                              _popoverSearchQuery.length),
+                                                                ),
+                                                              ),
+                                                              style: TextStyle(
                                                                 fontSize: 12,
-                                                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                                                                color: Theme.of(
+                                                                        context)
+                                                                    .colorScheme
+                                                                    .onSurface,
                                                               ),
-                                                              prefixIcon: Icon(
-                                                                Icons.search,
-                                                                size: 16,
-                                                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                                                              ),
-                                                              suffixIcon: _popoverSearchQuery.isNotEmpty
-                                                                  ? IconButton(
-                                                                      icon: const Icon(Icons.clear, size: 14),
-                                                                      padding: EdgeInsets.zero,
-                                                                      constraints: const BoxConstraints(),
-                                                                      onPressed: () {
-                                                                        setPopoverState(() {
-                                                                          _popoverSearchQuery = '';
-                                                                        });
-                                                                      },
-                                                                    )
-                                                                  : null,
-                                                              isDense: true,
-                                                              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                                                              filled: true,
-                                                              fillColor: MarketColors.cardSurface(context),
-                                                              border: OutlineInputBorder(
-                                                                borderRadius: BorderRadius.circular(8),
-                                                                borderSide: BorderSide(
-                                                                  color: MarketColors.borderDefault(context),
+                                                              decoration:
+                                                                  InputDecoration(
+                                                                hintText:
+                                                                    'Search indices...',
+                                                                hintStyle:
+                                                                    TextStyle(
+                                                                  fontSize: 12,
+                                                                  color: Theme.of(
+                                                                          context)
+                                                                      .colorScheme
+                                                                      .onSurface
+                                                                      .withOpacity(
+                                                                          0.4),
                                                                 ),
-                                                              ),
-                                                              enabledBorder: OutlineInputBorder(
-                                                                borderRadius: BorderRadius.circular(8),
-                                                                borderSide: BorderSide(
-                                                                  color: MarketColors.borderDefault(context),
+                                                                prefixIcon:
+                                                                    Icon(
+                                                                  Icons.search,
+                                                                  size: 16,
+                                                                  color: Theme.of(
+                                                                          context)
+                                                                      .colorScheme
+                                                                      .onSurface
+                                                                      .withOpacity(
+                                                                          0.5),
                                                                 ),
-                                                              ),
-                                                              focusedBorder: OutlineInputBorder(
-                                                                borderRadius: BorderRadius.circular(8),
-                                                                borderSide: BorderSide(color: accent),
+                                                                suffixIcon:
+                                                                    _popoverSearchQuery
+                                                                            .isNotEmpty
+                                                                        ? IconButton(
+                                                                            icon:
+                                                                                const Icon(Icons.clear, size: 14),
+                                                                            padding:
+                                                                                EdgeInsets.zero,
+                                                                            constraints:
+                                                                                const BoxConstraints(),
+                                                                            onPressed:
+                                                                                () {
+                                                                              setPopoverState(() {
+                                                                                _popoverSearchQuery = '';
+                                                                              });
+                                                                            },
+                                                                          )
+                                                                        : null,
+                                                                isDense: true,
+                                                                contentPadding:
+                                                                    const EdgeInsets
+                                                                        .symmetric(
+                                                                        horizontal:
+                                                                            8,
+                                                                        vertical:
+                                                                            8),
+                                                                filled: true,
+                                                                fillColor: MarketColors
+                                                                    .cardSurface(
+                                                                        context),
+                                                                border:
+                                                                    OutlineInputBorder(
+                                                                  borderRadius:
+                                                                      BorderRadius
+                                                                          .circular(
+                                                                              8),
+                                                                  borderSide:
+                                                                      BorderSide(
+                                                                    color: MarketColors
+                                                                        .borderDefault(
+                                                                            context),
+                                                                  ),
+                                                                ),
+                                                                enabledBorder:
+                                                                    OutlineInputBorder(
+                                                                  borderRadius:
+                                                                      BorderRadius
+                                                                          .circular(
+                                                                              8),
+                                                                  borderSide:
+                                                                      BorderSide(
+                                                                    color: MarketColors
+                                                                        .borderDefault(
+                                                                            context),
+                                                                  ),
+                                                                ),
+                                                                focusedBorder:
+                                                                    OutlineInputBorder(
+                                                                  borderRadius:
+                                                                      BorderRadius
+                                                                          .circular(
+                                                                              8),
+                                                                  borderSide:
+                                                                      BorderSide(
+                                                                          color:
+                                                                              accent),
+                                                                ),
                                                               ),
                                                             ),
                                                           ),
-                                                        ),
-                                                        const SizedBox(height: 4),
-                                                        const Divider(height: 1),
-                                                        Flexible(
-                                                          child: filteredIndices.isEmpty
-                                                              ? Padding(
-                                                                  padding: const EdgeInsets.all(24.0),
+                                                          const SizedBox(
+                                                              height: 4),
+                                                          const Divider(
+                                                              height: 1),
+                                                          Flexible(
+                                                            child:
+                                                                filteredIndices
+                                                                        .isEmpty
+                                                                    ? Padding(
+                                                                        padding: const EdgeInsets
+                                                                            .all(
+                                                                            24.0),
+                                                                        child:
+                                                                            Text(
+                                                                          _compareRegion == IndicesRegion.global
+                                                                              ? 'No global indices found'
+                                                                              : 'No indices found',
+                                                                          textAlign:
+                                                                              TextAlign.center,
+                                                                          style:
+                                                                              TextStyle(
+                                                                            fontSize:
+                                                                                12,
+                                                                            color:
+                                                                                Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                                                                          ),
+                                                                        ),
+                                                                      )
+                                                                    : ListView
+                                                                        .builder(
+                                                                        shrinkWrap:
+                                                                            true,
+                                                                        padding:
+                                                                            EdgeInsets.zero,
+                                                                        itemCount:
+                                                                            filteredIndices.length,
+                                                                        itemBuilder:
+                                                                            (context,
+                                                                                index) {
+                                                                          final data =
+                                                                              filteredIndices[index];
+                                                                          final isSelected =
+                                                                              selectedIndicesForChart.contains(data.indexSymbol);
+                                                                          final title = data.indexName?.isNotEmpty == true
+                                                                              ? data.indexName!
+                                                                              : data.indexSymbol;
+                                                                          return CheckboxListTile(
+                                                                            title:
+                                                                                Text(
+                                                                              title,
+                                                                              style: TextStyle(
+                                                                                fontSize: 13,
+                                                                                color: Theme.of(context).colorScheme.onSurface,
+                                                                              ),
+                                                                            ),
+                                                                            subtitle: data.suspended
+                                                                                ? Text(
+                                                                                    'Suspended',
+                                                                                    style: TextStyle(
+                                                                                      fontSize: 10,
+                                                                                      color: MarketColors.textMuted(context),
+                                                                                    ),
+                                                                                  )
+                                                                                : (data.indexName != null && data.indexName != data.indexSymbol
+                                                                                    ? Text(
+                                                                                        data.indexSymbol,
+                                                                                        style: TextStyle(
+                                                                                          fontSize: 10,
+                                                                                          color: MarketColors.textMuted(context),
+                                                                                        ),
+                                                                                      )
+                                                                                    : null),
+                                                                            value:
+                                                                                isSelected,
+                                                                            activeColor:
+                                                                                accent,
+                                                                            checkColor:
+                                                                                Theme.of(context).colorScheme.surface,
+                                                                            dense:
+                                                                                true,
+                                                                            visualDensity:
+                                                                                VisualDensity.compact,
+                                                                            onChanged:
+                                                                                (bool? value) {
+                                                                              setPopoverState(() {
+                                                                                if (value == true) {
+                                                                                  if (selectedIndicesForChart.length < 5) {
+                                                                                    selectedIndicesForChart.add(data.indexSymbol);
+                                                                                  }
+                                                                                } else {
+                                                                                  if (selectedIndicesForChart.length > 1) {
+                                                                                    selectedIndicesForChart.remove(data.indexSymbol);
+                                                                                  }
+                                                                                }
+                                                                              });
+                                                                              setState(() {});
+                                                                            },
+                                                                          );
+                                                                        },
+                                                                      ),
+                                                          ),
+                                                          const Divider(
+                                                              height: 1),
+                                                          Padding(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .symmetric(
+                                                                    horizontal:
+                                                                        12,
+                                                                    vertical:
+                                                                        8),
+                                                            child: Row(
+                                                              mainAxisAlignment:
+                                                                  MainAxisAlignment
+                                                                      .end,
+                                                              children: [
+                                                                TextButton(
+                                                                  onPressed:
+                                                                      () {
+                                                                    _togglePopover();
+                                                                    _loadHistoricalData();
+                                                                  },
                                                                   child: Text(
-                                                                    _compareRegion == IndicesRegion.global
-                                                                        ? 'No global indices found'
-                                                                        : 'No indices found',
-                                                                    textAlign: TextAlign.center,
-                                                                    style: TextStyle(
-                                                                      fontSize: 12,
-                                                                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                                                                    'Done',
+                                                                    style:
+                                                                        TextStyle(
+                                                                      color:
+                                                                          accent,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold,
                                                                     ),
                                                                   ),
-                                                                )
-                                                              : ListView.builder(
-                                                                  shrinkWrap: true,
-                                                                  padding: EdgeInsets.zero,
-                                                                  itemCount: filteredIndices.length,
-                                                                  itemBuilder: (context, index) {
-                                                                    final data = filteredIndices[index];
-                                                                    final isSelected = selectedIndicesForChart.contains(data.indexSymbol);
-                                                                    final title = data.indexName?.isNotEmpty == true
-                                                                        ? data.indexName!
-                                                                        : data.indexSymbol;
-                                                                    return CheckboxListTile(
-                                                                      title: Text(
-                                                                        title,
-                                                                        style: TextStyle(
-                                                                          fontSize: 13,
-                                                                          color: Theme.of(context).colorScheme.onSurface,
-                                                                        ),
-                                                                      ),
-                                                                      subtitle: data.suspended
-                                                                          ? Text(
-                                                                              'Suspended',
-                                                                              style: TextStyle(
-                                                                                fontSize: 10,
-                                                                                color: MarketColors.textMuted(context),
-                                                                              ),
-                                                                            )
-                                                                          : (data.indexName != null &&
-                                                                                  data.indexName != data.indexSymbol
-                                                                              ? Text(
-                                                                                  data.indexSymbol,
-                                                                                  style: TextStyle(
-                                                                                    fontSize: 10,
-                                                                                    color: MarketColors.textMuted(context),
-                                                                                  ),
-                                                                                )
-                                                                              : null),
-                                                                      value: isSelected,
-                                                                      activeColor: accent,
-                                                                      checkColor: Theme.of(context).colorScheme.surface,
-                                                                      dense: true,
-                                                                      visualDensity: VisualDensity.compact,
-                                                                      onChanged: (bool? value) {
-                                                                        setPopoverState(() {
-                                                                          if (value == true) {
-                                                                            if (selectedIndicesForChart.length < 5) {
-                                                                              selectedIndicesForChart.add(data.indexSymbol);
-                                                                            }
-                                                                          } else {
-                                                                            if (selectedIndicesForChart.length > 1) {
-                                                                              selectedIndicesForChart.remove(data.indexSymbol);
-                                                                            }
-                                                                          }
-                                                                        });
-                                                                        setState(() {});
-                                                                      },
-                                                                    );
-                                                                  },
                                                                 ),
-                                                        ),
-                                                        const Divider(height: 1),
-                                                        Padding(
-                                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                                          child: Row(
-                                                            mainAxisAlignment: MainAxisAlignment.end,
-                                                            children: [
-                                                              TextButton(
-                                                                onPressed: () {
-                                                                  _togglePopover();
-                                                                  _loadHistoricalData();
-                                                                },
-                                                                child: Text(
-                                                                  'Done',
-                                                                  style: TextStyle(
-                                                                    color: accent,
-                                                                    fontWeight: FontWeight.bold,
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                            ],
+                                                              ],
+                                                            ),
                                                           ),
-                                                        ),
-                                                      ],
-                                                    );
-                                                  },
+                                                        ],
+                                                      );
+                                                    },
+                                                  ),
                                                 ),
                                               ),
                                             ),
                                           ),
                                         ),
-                                      ),
-                                    ],
-                                  );
-                                },
-                                child: IconButton(
-                                  icon: RotationTransition(
-                                    turns: Tween<double>(begin: 0.0, end: 0.125).animate(_popoverAnimationController),
-                                    child: Icon(Icons.add, color: ModuleColors.market, size: 18),
-                                  ),
-                                  padding: const EdgeInsets.all(4),
-                                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                                  onPressed: () {
-                                    if (isMobile) {
-                                      _showCompareIndicesBottomSheet(
-                                        context,
-                                        marketProvider,
-                                      );
-                                    } else {
-                                      _togglePopover();
-                                    }
+                                      ],
+                                    );
                                   },
-                                  tooltip: 'Compare Indices',
+                                  child: IconButton(
+                                    icon: RotationTransition(
+                                      turns: Tween<double>(
+                                              begin: 0.0, end: 0.125)
+                                          .animate(_popoverAnimationController),
+                                      child: Icon(Icons.add,
+                                          color: ModuleColors.market, size: 18),
+                                    ),
+                                    padding: const EdgeInsets.all(4),
+                                    constraints: const BoxConstraints(
+                                        minWidth: 28, minHeight: 28),
+                                    onPressed: () {
+                                      if (isMobile) {
+                                        _showCompareIndicesBottomSheet(
+                                          context,
+                                          marketProvider,
+                                        );
+                                      } else {
+                                        _togglePopover();
+                                      }
+                                    },
+                                    tooltip: 'Compare Indices',
+                                  ),
                                 ),
                               ),
+                            ],
+                          ),
+                          SizedBox(height: isMobile ? 6 : 8),
+                          Expanded(
+                            child: ComparisonChartView(
+                              data: MultiSeriesChartData.fromLegacyMaps(
+                                  historicalData),
+                              config: MultiSeriesChartConfig(
+                                selectedSeries: selectedIndicesForChart,
+                                isLoading: isLoadingChart,
+                                error: chartError,
+                                isBarChart: isBarChart,
+                                timeFrameCode: selectedTimeframe,
+                                expandedChartPath:
+                                    '/app/chart/compare?context=market&tf=&series=',
+                                onOpenExpanded: () {
+                                  context.push(
+                                    '/app/chart/compare?context=market&tf=&series=',
+                                  );
+                                },
+                                onRemoveSeries: (symbol) {
+                                  setState(() {
+                                    selectedIndicesForChart =
+                                        List.from(selectedIndicesForChart)
+                                          ..remove(symbol);
+                                  });
+                                },
+                              ),
                             ),
-                          ],
-                        ),
-                        SizedBox(height: isMobile ? 6 : 8),
-                        Expanded(
-                          child: ComparisonChartView(
-                            data: MultiSeriesChartData.fromLegacyMaps(historicalData),
-                            config: MultiSeriesChartConfig(
-                              selectedSeries: selectedIndicesForChart,
-                              isLoading: isLoadingChart,
-                              error: chartError,
-                              isBarChart: isBarChart,
-                              timeFrameCode: selectedTimeframe,
-                              expandedChartPath:
-                                  '/app/chart/compare?context=market&tf=&series=',
-                              onOpenExpanded: () {
-                                context.push(
-                                  '/app/chart/compare?context=market&tf=&series=',
+                          ),
+                        ],
+                      ),
+                    ),
+                      right: SizedBox(
+                        height: isMobile ? 320 : 360,
+                        child: TopMoversWidgetV2(
+                          gainers: topGainers,
+                          losers: topLosers,
+                          isLoading: isLoadingMovers,
+                          error: moversError,
+                          headerTrailing: GestureDetector(
+                            onTap: () {
+                              if (MediaQuery.sizeOf(context).width < 768) {
+                                _showMobileAllIndicesBottomSheet(
+                                  context,
+                                  marketProvider,
                                 );
-                              },
-                              onRemoveSeries: (symbol) {
-                                setState(() {
-                                  selectedIndicesForChart =
-                                      List.from(selectedIndicesForChart)
-                                        ..remove(symbol);
-                                });
-                              },
+                              } else {
+                                _openDrawer();
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color:
+                                    ModuleColors.market.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: ModuleColors.market
+                                      .withValues(alpha: 0.35),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    selectedIndexForMovers,
+                                    style: TextStyle(
+                                      color: ModuleColors.market,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    Icons.keyboard_arrow_down_rounded,
+                                    size: 16,
+                                    color: ModuleColors.market
+                                        .withValues(alpha: 0.9),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ],
+                      ),
+                    ),
+
+                  const SizedBox(height: 12),
+
+                  // --- INDEX HEATMAP (same API + tiles as Market Analysis) ---
+                  Container(
+                    decoration: BoxDecoration(
+                      color: MarketColors.cardSurface(context),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                          color: MarketColors.borderDefault(context)),
+                    ),
+                    child: DashboardAnalysisHeatmapPanel(
+                      indexSymbol: selectedIndexForMovers,
+                      timeframe: selectedTimeframe,
                     ),
                   ),
-                  right: SizedBox(
-                    height: isMobile ? 320 : 360,
-                    child: TopMoversWidgetV2(
-                      gainers: topGainers,
-                      losers: topLosers,
-                      isLoading: isLoadingMovers,
-                      error: moversError,
+                  // Shown on all widths — section has its own mobile drum-roll layout.
+                  const SizedBox(height: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: MarketColors.cardSurface(context),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                          color: MarketColors.borderDefault(context)),
+                    ),
+                    child: HistoricalPerformanceSection(
+                      focusSymbol: selectedIndexForMovers,
                     ),
                   ),
-                ),
-
-                const SizedBox(height: 12),
-
-                // --- INDEX HEATMAP (same API + tiles as Market Analysis) ---
-                Container(
-                  decoration: BoxDecoration(
-                    color: MarketColors.cardSurface(context),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: MarketColors.borderDefault(context)),
-                  ),
-                  child: DashboardAnalysisHeatmapPanel(
-                    indexSymbol: selectedIndexForMovers,
-                    timeframe: selectedTimeframe,
-                  ),
-                ),
-                // Shown on all widths — section has its own mobile drum-roll layout.
-                const SizedBox(height: 12),
-                Container(
-                  decoration: BoxDecoration(
-                    color: MarketColors.cardSurface(context),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: MarketColors.borderDefault(context)),
-                  ),
-                  child: HistoricalPerformanceSection(
-                    focusSymbol: selectedIndexForMovers,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
-      ),
 
         // Drawer Overlay (semi-transparent background)
         if (_isDrawerVisible)
@@ -1478,7 +1766,6 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
       ),
     );
   }
-
 }
 
 class _ResponsiveRow extends StatelessWidget {
@@ -1514,4 +1801,3 @@ class _ResponsiveRow extends StatelessWidget {
     );
   }
 }
-

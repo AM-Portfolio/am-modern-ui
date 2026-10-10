@@ -55,11 +55,15 @@ class AiTokenUsage {
   static String _fmt(int n) {
     if (n >= 1000000) {
       final v = n / 1000000;
-      return v == v.roundToDouble() ? '${v.toInt()}M' : '${v.toStringAsFixed(1)}M';
+      return v == v.roundToDouble()
+          ? '${v.toInt()}M'
+          : '${v.toStringAsFixed(1)}M';
     }
     if (n >= 1000) {
       final v = n / 1000;
-      return v == v.roundToDouble() ? '${v.toInt()}k' : '${v.toStringAsFixed(1)}k';
+      return v == v.roundToDouble()
+          ? '${v.toInt()}k'
+          : '${v.toStringAsFixed(1)}k';
     }
     return '$n';
   }
@@ -99,7 +103,8 @@ class AiUsageService {
     if (usage is List) {
       for (final item in usage) {
         if (item is! Map) continue;
-        final code = (item['metric_code'] ?? item['metricCode'] ?? '').toString();
+        final code =
+            (item['metric_code'] ?? item['metricCode'] ?? '').toString();
         if (code != 'ai_chat_tokens') continue;
         var used = (item['used'] as num?)?.toInt() ?? 0;
         var limit = (item['limit'] as num?)?.toInt() ?? 0;

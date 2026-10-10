@@ -14,7 +14,10 @@ class FuturesContractDetailsCard extends ConsumerWidget {
     final selectedContract = ref.watch(selectedFutureContractProvider);
 
     final tradingSymbol = selectedContract != null
-        ? (selectedContract['trading_symbol'] ?? selectedContract['tradingSymbol'] ?? '$activeSymbol FUT 24 SEP 26').toString()
+        ? (selectedContract['trading_symbol'] ??
+                selectedContract['tradingSymbol'] ??
+                '$activeSymbol FUT 24 SEP 26')
+            .toString()
         : '$activeSymbol FUT 24 SEP 26';
 
     final expiryStr = (selectedContract?['expiry'] ?? '24 Sep 2026').toString();
@@ -27,7 +30,9 @@ class FuturesContractDetailsCard extends ConsumerWidget {
         tradingSymbol.startsWith('FINNIFTY') ||
         tradingSymbol.startsWith('MIDCPNIFTY');
 
-    final instType = (selectedContract?['instrument_type'] ?? (isIndex ? 'FUTIDX' : 'FUTSTK')).toString();
+    final instType = (selectedContract?['instrument_type'] ??
+            (isIndex ? 'FUTIDX' : 'FUTSTK'))
+        .toString();
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -41,23 +46,29 @@ class FuturesContractDetailsCard extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Text('Contract Details', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
+              Text('Contract Details',
+                  style: TextStyle(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16)),
               const SizedBox(width: 6),
               Tooltip(
-                message: 'Specifications for the active derivative contract including trading symbol, exchange, expiry date, and lot size multiplier.',
+                message:
+                    'Specifications for the active derivative contract including trading symbol, exchange, expiry date, and lot size multiplier.',
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: colors.surface,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: ModuleColors.market.withValues(alpha: 0.6)),
+                  border: Border.all(
+                      color: ModuleColors.market.withValues(alpha: 0.6)),
                 ),
                 textStyle: TextStyle(color: colors.textPrimary, fontSize: 12),
-                child: Icon(Icons.info_outline_rounded, color: colors.textSecondary, size: 16),
+                child: Icon(Icons.info_outline_rounded,
+                    color: colors.textSecondary, size: 16),
               ),
             ],
           ),
           const SizedBox(height: 16),
-
           _buildRow('Trading Symbol', tradingSymbol, colors),
           const Divider(height: 16, thickness: 0.5),
           _buildRow('Instrument Type', instType, colors),
@@ -76,8 +87,13 @@ class FuturesContractDetailsCard extends ConsumerWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: TextStyle(color: colors.textSecondary, fontSize: 13)),
-        Text(value, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
+        Text(label,
+            style: TextStyle(color: colors.textSecondary, fontSize: 13)),
+        Text(value,
+            style: TextStyle(
+                color: colors.textPrimary,
+                fontWeight: FontWeight.w600,
+                fontSize: 13)),
       ],
     );
   }

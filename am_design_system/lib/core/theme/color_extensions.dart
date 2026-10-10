@@ -82,8 +82,9 @@ extension ThemeColorExtensions on BuildContext {
   // ==========================================================================
 
   /// Get theme-aware glass overlay with opacity
-  Color glassOverlay(double opacity) =>
-      isDark ? AppColors.glassOverlayDark(opacity) : AppColors.glassOverlayLight(opacity);
+  Color glassOverlay(double opacity) => isDark
+      ? AppColors.glassOverlayDark(opacity)
+      : AppColors.glassOverlayLight(opacity);
 
   /// Get theme-aware shadow color with opacity
   Color shadow(double opacity) =>

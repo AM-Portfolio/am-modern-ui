@@ -10,7 +10,8 @@ class VerticalAttachmentsFeed extends StatefulWidget {
   final TradeHoldingViewModel trade;
 
   @override
-  State<VerticalAttachmentsFeed> createState() => _VerticalAttachmentsFeedState();
+  State<VerticalAttachmentsFeed> createState() =>
+      _VerticalAttachmentsFeedState();
 }
 
 class _VerticalAttachmentsFeedState extends State<VerticalAttachmentsFeed> {
@@ -45,7 +46,8 @@ class _VerticalAttachmentsFeedState extends State<VerticalAttachmentsFeed> {
                   color: ModuleColors.trade.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(Icons.image_rounded, size: 24, color: ModuleColors.trade),
+                child: Icon(Icons.image_rounded,
+                    size: 24, color: ModuleColors.trade),
               ),
               const SizedBox(width: 12),
               Column(
@@ -56,13 +58,18 @@ class _VerticalAttachmentsFeedState extends State<VerticalAttachmentsFeed> {
                     'Evidence & Analysis',
                     style: Theme.of(
                       context,
-                    ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 0.3),
+                    ).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold, letterSpacing: 0.3),
                   ),
                   Text(
                     '${attachments.length} ${attachments.length == 1 ? 'image' : 'images'} attached',
                     style: Theme.of(
                       context,
-                    ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                    ).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.6)),
                   ),
                 ],
               ),
@@ -84,7 +91,8 @@ class _VerticalAttachmentsFeedState extends State<VerticalAttachmentsFeed> {
             itemCount: attachments.length,
             itemBuilder: (context, index) {
               final attachment = attachments[index];
-              return _buildCompactImageTile(context, attachment, index, attachments);
+              return _buildCompactImageTile(
+                  context, attachment, index, attachments);
             },
           ),
         ),
@@ -94,7 +102,8 @@ class _VerticalAttachmentsFeedState extends State<VerticalAttachmentsFeed> {
   }
 
   /// Builds a compact image tile for the grid layout (3-4 per row)
-  Widget _buildCompactImageTile(BuildContext context, attachment, int index, List<dynamic> allAttachments) =>
+  Widget _buildCompactImageTile(BuildContext context, attachment, int index,
+          List<dynamic> allAttachments) =>
       MouseRegion(
         onEnter: (_) => setState(() => _hoveredIndex = index),
         onExit: (_) => setState(() => _hoveredIndex = null),
@@ -103,7 +112,8 @@ class _VerticalAttachmentsFeedState extends State<VerticalAttachmentsFeed> {
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.3)),
+              border: Border.all(
+                  color: Theme.of(context).dividerColor.withOpacity(0.3)),
             ),
             child: Stack(
               fit: StackFit.expand,
@@ -121,7 +131,8 @@ class _VerticalAttachmentsFeedState extends State<VerticalAttachmentsFeed> {
                         child: Center(
                           child: CircularProgressIndicator(
                             value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded / (loadingProgress.expectedTotalBytes ?? 1)
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    (loadingProgress.expectedTotalBytes ?? 1)
                                 : null,
                             strokeWidth: 2,
                           ),
@@ -131,7 +142,9 @@ class _VerticalAttachmentsFeedState extends State<VerticalAttachmentsFeed> {
                     errorBuilder: (context, error, stackTrace) => Container(
                       color: Theme.of(context).colorScheme.errorContainer,
                       child: Center(
-                        child: Icon(Icons.broken_image_rounded, color: Theme.of(context).colorScheme.error, size: 32),
+                        child: Icon(Icons.broken_image_rounded,
+                            color: Theme.of(context).colorScheme.error,
+                            size: 32),
                       ),
                     ),
                   ),
@@ -145,7 +158,10 @@ class _VerticalAttachmentsFeedState extends State<VerticalAttachmentsFeed> {
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        colors: [Colors.transparent, Colors.black.withOpacity(0.6)],
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.6)
+                        ],
                       ),
                     ),
                     child: Align(
@@ -155,15 +171,19 @@ class _VerticalAttachmentsFeedState extends State<VerticalAttachmentsFeed> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.fullscreen_rounded, color: Colors.white, size: 20),
+                            const Icon(Icons.fullscreen_rounded,
+                                color: Colors.white, size: 20),
                             const SizedBox(height: 4),
                             Text(
                               'View',
-                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 11,
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                  ),
                             ),
                           ],
                         ),
@@ -177,7 +197,8 @@ class _VerticalAttachmentsFeedState extends State<VerticalAttachmentsFeed> {
                   child: Padding(
                     padding: const EdgeInsets.all(6),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: ModuleColors.trade.withOpacity(0.9),
                         borderRadius: BorderRadius.circular(4),
@@ -185,10 +206,10 @@ class _VerticalAttachmentsFeedState extends State<VerticalAttachmentsFeed> {
                       child: Text(
                         '${index + 1}',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 10,
-                        ),
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10,
+                            ),
                       ),
                     ),
                   ),
@@ -200,54 +221,64 @@ class _VerticalAttachmentsFeedState extends State<VerticalAttachmentsFeed> {
       );
 
   Widget _buildEmptyState(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-    child: Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: ModuleColors.trade.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(
-              Icons.image_not_supported_outlined,
-              size: 48,
-              color: ModuleColors.trade.withOpacity(0.6),
-            ),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: ModuleColors.trade.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  Icons.image_not_supported_outlined,
+                  size: 48,
+                  color: ModuleColors.trade.withOpacity(0.6),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No Images Attached',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.7),
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Attach images to this trade to see them here',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.5)),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            'No Images Attached',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Attach images to this trade to see them here',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
-          ),
-        ],
-      ),
-    ),
-  );
+        ),
+      );
 
-  void _showFullImageDialog(BuildContext context, int startIndex, List<dynamic> attachments) {
+  void _showFullImageDialog(
+      BuildContext context, int startIndex, List<dynamic> attachments) {
     showDialog(
       context: context,
-      builder: (context) => _FullScreenImageViewer(attachments: attachments, initialIndex: startIndex),
+      builder: (context) => _FullScreenImageViewer(
+          attachments: attachments, initialIndex: startIndex),
     );
   }
 }
 
 /// Full-screen image viewer with left/right navigation
 class _FullScreenImageViewer extends StatefulWidget {
-  const _FullScreenImageViewer({required this.attachments, required this.initialIndex});
+  const _FullScreenImageViewer(
+      {required this.attachments, required this.initialIndex});
 
   final List<dynamic> attachments;
   final int initialIndex;
@@ -289,7 +320,9 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
       // Date parsing failed
     }
 
-    final formattedDate = uploadDate != null ? DateFormat('MMM dd, yyyy • hh:mm a').format(uploadDate) : 'Date unknown';
+    final formattedDate = uploadDate != null
+        ? DateFormat('MMM dd, yyyy • hh:mm a').format(uploadDate)
+        : 'Date unknown';
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -320,7 +353,10 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
                           Icon(
                             Icons.image_not_supported_outlined,
                             size: 48,
-                            color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .outline
+                                .withOpacity(0.5),
                           ),
                           const SizedBox(height: 12),
                           const Text('Image failed to load'),
@@ -344,21 +380,25 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
               child: InkWell(
                 onTap: _currentIndex > 0
                     ? () => _pageController.previousPage(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      )
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        )
                     : null,
-                hoverColor: Colors.white.withOpacity(_currentIndex > 0 ? 0.1 : 0),
+                hoverColor:
+                    Colors.white.withOpacity(_currentIndex > 0 ? 0.1 : 0),
                 child: Center(
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: _currentIndex > 0 ? Colors.white.withOpacity(0.2) : Colors.transparent,
+                      color: _currentIndex > 0
+                          ? Colors.white.withOpacity(0.2)
+                          : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
                       Icons.chevron_left_rounded,
-                      color: Colors.white.withOpacity(_currentIndex > 0 ? 0.8 : 0.3),
+                      color: Colors.white
+                          .withOpacity(_currentIndex > 0 ? 0.8 : 0.3),
                       size: 32,
                     ),
                   ),
@@ -376,10 +416,12 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
               color: Colors.transparent,
               child: InkWell(
                 onTap: _currentIndex < widget.attachments.length - 1
-                    ? () =>
-                          _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut)
+                    ? () => _pageController.nextPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut)
                     : null,
-                hoverColor: Colors.white.withOpacity(_currentIndex < widget.attachments.length - 1 ? 0.1 : 0),
+                hoverColor: Colors.white.withOpacity(
+                    _currentIndex < widget.attachments.length - 1 ? 0.1 : 0),
                 child: Center(
                   child: Container(
                     padding: const EdgeInsets.all(8),
@@ -391,7 +433,10 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
                     ),
                     child: Icon(
                       Icons.chevron_right_rounded,
-                      color: Colors.white.withOpacity(_currentIndex < widget.attachments.length - 1 ? 0.8 : 0.3),
+                      color: Colors.white.withOpacity(
+                          _currentIndex < widget.attachments.length - 1
+                              ? 0.8
+                              : 0.3),
                       size: 32,
                     ),
                   ),
@@ -415,7 +460,8 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
                     color: Colors.black.withOpacity(0.5),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Icon(Icons.close_rounded, color: Colors.white, size: 20),
+                  child: const Icon(Icons.close_rounded,
+                      color: Colors.white, size: 20),
                 ),
               ),
             ),
@@ -435,9 +481,9 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
                   child: InkWell(
                     onTap: _currentIndex > 0
                         ? () => _pageController.previousPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          )
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            )
                         : null,
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
@@ -448,7 +494,8 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
                       ),
                       child: Icon(
                         Icons.chevron_left_rounded,
-                        color: Colors.white.withOpacity(_currentIndex > 0 ? 0.9 : 0.4),
+                        color: Colors.white
+                            .withOpacity(_currentIndex > 0 ? 0.9 : 0.4),
                       ),
                     ),
                   ),
@@ -456,14 +503,18 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
 
                 // Image counter
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.6),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     '${_currentIndex + 1} / ${widget.attachments.length}',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12),
                   ),
                 ),
 
@@ -473,9 +524,9 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
                   child: InkWell(
                     onTap: _currentIndex < widget.attachments.length - 1
                         ? () => _pageController.nextPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          )
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            )
                         : null,
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
@@ -486,7 +537,10 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
                       ),
                       child: Icon(
                         Icons.chevron_right_rounded,
-                        color: Colors.white.withOpacity(_currentIndex < widget.attachments.length - 1 ? 0.9 : 0.4),
+                        color: Colors.white.withOpacity(
+                            _currentIndex < widget.attachments.length - 1
+                                ? 0.9
+                                : 0.4),
                       ),
                     ),
                   ),
@@ -516,17 +570,25 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
                 children: [
                   Text(
                     fileName,
-                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  Text(formattedDate, style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12)),
+                  Text(formattedDate,
+                      style: TextStyle(
+                          color: Colors.white.withOpacity(0.7), fontSize: 12)),
                   if (description.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Text(
                       description,
-                      style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12, height: 1.4),
+                      style: TextStyle(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: 12,
+                          height: 1.4),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),

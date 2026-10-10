@@ -21,7 +21,8 @@ final gmailApiConfigProvider = FutureProvider<GmailApiConfig>((ref) async {
   return config.api.gmail!;
 });
 
-final portfolioApiConfigProvider = FutureProvider<PortfolioApiConfig>((ref) async {
+final portfolioApiConfigProvider =
+    FutureProvider<PortfolioApiConfig>((ref) async {
   final config = await ref.watch(appConfigProvider.future);
   if (config.api.portfolio == null) {
     throw Exception('Portfolio API configuration is not available');
@@ -40,8 +41,7 @@ final analysisApiClientProvider = FutureProvider<ApiClient>((ref) async {
 final omsApiClientProvider = FutureProvider<ApiClient>((ref) async {
   final config = await ref.watch(appConfigProvider.future);
   const localOmsUrl = String.fromEnvironment('AM_OMS_BASE_URL');
-  final base = localOmsUrl.isNotEmpty
-      ? localOmsUrl
-      : (config.api.oms?.baseUrl ?? '');
+  final base =
+      localOmsUrl.isNotEmpty ? localOmsUrl : (config.api.oms?.baseUrl ?? '');
   return ApiClient(baseUrl: base, category: 'oms');
 });

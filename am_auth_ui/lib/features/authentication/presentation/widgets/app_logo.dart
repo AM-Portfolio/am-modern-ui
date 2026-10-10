@@ -12,7 +12,7 @@ class AppLogo extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       child: Image.asset(
         'assets/images/app_icon_new.jpg',
-        width: size * 1.8,  // Adjusted scaling for aspect ratio
+        width: size * 1.8, // Adjusted scaling for aspect ratio
         height: size,
         fit: BoxFit.contain,
       ),

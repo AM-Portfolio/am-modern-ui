@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class JournalFormHeader extends StatelessWidget {
-  const JournalFormHeader({required this.entryDate, required this.isEditMode, required this.onDateSelect, super.key});
+  const JournalFormHeader(
+      {required this.entryDate,
+      required this.isEditMode,
+      required this.onDateSelect,
+      super.key});
 
   final DateTime entryDate;
   final bool isEditMode;
@@ -36,9 +40,11 @@ class JournalFormHeader extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide(color: theme.dividerColor.withOpacity(0.5)),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         ),
-        child: Text(DateFormat('MMM dd, yyyy').format(entryDate), style: theme.textTheme.bodyMedium),
+        child: Text(DateFormat('MMM dd, yyyy').format(entryDate),
+            style: theme.textTheme.bodyMedium),
       ),
     );
   }

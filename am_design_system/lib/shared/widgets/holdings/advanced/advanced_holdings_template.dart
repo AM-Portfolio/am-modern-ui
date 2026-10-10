@@ -144,8 +144,7 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
               a.totalGainLossPercentage.compareTo(b.totalGainLossPercentage);
           break;
         case 9:
-          result =
-              a.todayChangePercentage.compareTo(b.todayChangePercentage);
+          result = a.todayChangePercentage.compareTo(b.todayChangePercentage);
           break;
         case 10:
           result = a.portfolioWeight.compareTo(b.portfolioWeight);
@@ -395,9 +394,7 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
             Icon(
               icon,
               size: 16,
-              color: selected
-                  ? _accent
-                  : context.textSecondary,
+              color: selected ? _accent : context.textSecondary,
             ),
             const SizedBox(width: 4),
             Text(
@@ -447,9 +444,7 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: selected
-                ? accent
-                : context.textSecondary,
+            color: selected ? accent : context.textSecondary,
           ),
         ),
       ),

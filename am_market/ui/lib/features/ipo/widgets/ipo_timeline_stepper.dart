@@ -37,7 +37,8 @@ class IpoTimelineStepper extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.calendar_month_outlined, size: 18, color: ModuleColors.market),
+              Icon(Icons.calendar_month_outlined,
+                  size: 18, color: ModuleColors.market),
               const SizedBox(width: 8),
               Text(
                 'Important Dates',
@@ -64,7 +65,8 @@ class IpoTimelineStepper extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildStageNode(context, stage),
-                      if (!isLast) _buildConnectorLine(context, stage.isCompleted),
+                      if (!isLast)
+                        _buildConnectorLine(context, stage.isCompleted),
                     ],
                   );
                 }),
@@ -84,7 +86,8 @@ class IpoTimelineStepper extends StatelessWidget {
       indicator = Container(
         width: 26,
         height: 26,
-        decoration: BoxDecoration(color: context.colors.statusSuccess,
+        decoration: BoxDecoration(
+          color: context.colors.statusSuccess,
           shape: BoxShape.circle,
         ),
         child: const Icon(Icons.check, size: 16, color: Colors.white),
@@ -102,7 +105,8 @@ class IpoTimelineStepper extends StatelessWidget {
         child: Container(
           width: 10,
           height: 10,
-          decoration: BoxDecoration(color: ModuleColors.market,
+          decoration: BoxDecoration(
+            color: ModuleColors.market,
             shape: BoxShape.circle,
           ),
         ),
@@ -135,7 +139,8 @@ class IpoTimelineStepper extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: stage.isActive ? FontWeight.w700 : FontWeight.w500,
-              color: stage.isActive ? ModuleColors.market : context.textSecondary,
+              color:
+                  stage.isActive ? ModuleColors.market : context.textSecondary,
             ),
           ),
           const SizedBox(height: 3),
@@ -145,7 +150,9 @@ class IpoTimelineStepper extends StatelessWidget {
             style: TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.w700,
-              color: stage.isActive || stage.isCompleted ? context.textPrimary : context.textSecondary,
+              color: stage.isActive || stage.isCompleted
+                  ? context.textPrimary
+                  : context.textSecondary,
             ),
           ),
           if (stage.subtitle != null && stage.subtitle!.isNotEmpty) ...[
@@ -171,7 +178,9 @@ class IpoTimelineStepper extends StatelessWidget {
       width: 44,
       height: 2,
       margin: const EdgeInsets.only(top: 12),
-      color: isCompleted ? context.colors.statusSuccess : (isDark ? context.dividerColor : context.dividerColor),
+      color: isCompleted
+          ? context.colors.statusSuccess
+          : (isDark ? context.dividerColor : context.dividerColor),
     );
   }
 
@@ -189,8 +198,10 @@ class IpoTimelineStepper extends StatelessWidget {
 
     return [
       _createStage('Pre-Apply Start', preApply, '(Optional)', now),
-      _createStage('Application Start', appStart, _formatTime(dailyStartTime, '10:00 AM'), now),
-      _createStage('Application End', appEnd, _formatTime(dailyEndTime, '5:00 PM'), now),
+      _createStage('Application Start', appStart,
+          _formatTime(dailyStartTime, '10:00 AM'), now),
+      _createStage(
+          'Application End', appEnd, _formatTime(dailyEndTime, '5:00 PM'), now),
       _createStage('Allotment Start', allotStart, null, now),
       _createStage('Allotment Date', allotDate, null, now),
       _createStage('Refund Initiation', refund, null, now),
@@ -199,7 +210,8 @@ class IpoTimelineStepper extends StatelessWidget {
     ];
   }
 
-  _TimelineStage _createStage(String title, String? dateStr, String? subtitle, DateTime now) {
+  _TimelineStage _createStage(
+      String title, String? dateStr, String? subtitle, DateTime now) {
     if (dateStr == null || dateStr.isEmpty) {
       return _TimelineStage(
         title: title,
@@ -213,7 +225,9 @@ class IpoTimelineStepper extends StatelessWidget {
     try {
       final date = DateTime.parse(dateStr);
       final isCompleted = now.isAfter(date);
-      final isToday = now.year == date.year && now.month == date.month && now.day == date.day;
+      final isToday = now.year == date.year &&
+          now.month == date.month &&
+          now.day == date.day;
 
       return _TimelineStage(
         title: title,
@@ -234,7 +248,20 @@ class IpoTimelineStepper extends StatelessWidget {
   }
 
   String _formatDate(DateTime date) {
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
     return '${date.day.toString().padLeft(2, '0')} ${months[date.month - 1]} ${date.year}';
   }
 

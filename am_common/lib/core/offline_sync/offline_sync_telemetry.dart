@@ -22,11 +22,9 @@ class OfflineSyncTelemetry {
   void cacheMiss(String domainId) =>
       _emit('offline_cache_miss', {'domainId': domainId});
 
-  void outboxEnqueued(String type) =>
-      _emit('outbox_enqueued', {'type': type});
+  void outboxEnqueued(String type) => _emit('outbox_enqueued', {'type': type});
 
-  void outboxFlushed(String type) =>
-      _emit('outbox_flushed', {'type': type});
+  void outboxFlushed(String type) => _emit('outbox_flushed', {'type': type});
 
   void outboxFailed(String type, String reason) =>
       _emit('outbox_failed', {'type': type, 'reason': reason});

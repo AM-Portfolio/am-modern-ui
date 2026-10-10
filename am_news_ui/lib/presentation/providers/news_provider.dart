@@ -25,23 +25,24 @@ final newsInsightProvider = FutureProvider<InsightNews>((ref) async {
 });
 
 String _symbolsKey(List<String> symbols) {
-  final normalized = symbols
-      .map((s) => s.trim().toUpperCase())
-      .where((s) => s.isNotEmpty)
-      .toSet()
-      .toList()
-    ..sort();
+  final normalized =
+      symbols
+          .map((s) => s.trim().toUpperCase())
+          .where((s) => s.isNotEmpty)
+          .toSet()
+          .toList()
+        ..sort();
   return normalized.join(',');
 }
 
 /// Insight for an explicit symbol list (host supplies symbols).
 final newsInsightForSymbolsProvider =
     FutureProvider.family<InsightNews, String>((ref, key) async {
-  if (key.isEmpty) return const InsightNews();
-  final repo = await ref.watch(newsRepositoryProvider.future);
-  final symbols = key.split(',').where((s) => s.isNotEmpty).toList();
-  return repo.insight(symbols);
-});
+      if (key.isEmpty) return const InsightNews();
+      final repo = await ref.watch(newsRepositoryProvider.future);
+      final symbols = key.split(',').where((s) => s.isNotEmpty).toList();
+      return repo.insight(symbols);
+    });
 
 /// Helper for hosts: stable family key from symbols.
 String newsSymbolsProviderKey(List<String> symbols) => _symbolsKey(symbols);

@@ -290,7 +290,8 @@ class _ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
           IconButton(
             tooltip: 'Search',
             onPressed: onSearch,
-            icon: Icon(Icons.search_rounded, color: context.textPrimary, size: 22),
+            icon: Icon(Icons.search_rounded,
+                color: context.textPrimary, size: 22),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
           ),
@@ -583,8 +584,7 @@ class _MessageBubble extends StatelessWidget {
               constraints: BoxConstraints(
                 maxWidth: MediaQuery.of(context).size.width * 0.72,
               ),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
               decoration: BoxDecoration(
                 gradient: context.aiPrimaryGradient,
                 borderRadius: BorderRadius.circular(24),
@@ -623,7 +623,8 @@ class _MessageBubble extends StatelessWidget {
                 ),
               ],
             ),
-            child: Icon(Icons.auto_awesome, color: context.aiOnPrimary, size: 14),
+            child:
+                Icon(Icons.auto_awesome, color: context.aiOnPrimary, size: 14),
           ),
           Expanded(
             child: Column(
@@ -1108,9 +1109,9 @@ class _InputBarState extends ConsumerState<_InputBar> {
     return LayoutBuilder(
       builder: (context, constraints) {
         const maxContentWidth = 920.0;
-        final horizontalPad =
-            (constraints.maxWidth - maxContentWidth).clamp(0.0, double.infinity) /
-                2;
+        final horizontalPad = (constraints.maxWidth - maxContentWidth)
+                .clamp(0.0, double.infinity) /
+            2;
 
         // Popover sits above the composer as its own card — do not expand the
         // opaque footer surface (that reads as a modal "background"/scrim).
@@ -1170,12 +1171,11 @@ class _InputBarState extends ConsumerState<_InputBar> {
                               decoration: BoxDecoration(
                                 color: context.surfaceColor,
                                 borderRadius: BorderRadius.circular(28),
-                                border:
-                                    Border.all(color: context.borderColor),
+                                border: Border.all(color: context.borderColor),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: context.shadow(
-                                        context.isDark ? 0.2 : 0.04),
+                                    color: context
+                                        .shadow(context.isDark ? 0.2 : 0.04),
                                     blurRadius: 12,
                                     offset: const Offset(0, 3),
                                   ),
@@ -1206,8 +1206,7 @@ class _InputBarState extends ConsumerState<_InputBar> {
                                   disabledBorder: InputBorder.none,
                                   errorBorder: InputBorder.none,
                                   focusedErrorBorder: InputBorder.none,
-                                  contentPadding:
-                                      const EdgeInsets.symmetric(
+                                  contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 18,
                                     vertical: 14,
                                   ),
@@ -1240,8 +1239,7 @@ class _InputBarState extends ConsumerState<_InputBar> {
                                             color: context.statusError),
                                       ),
                                       child: Icon(Icons.stop_rounded,
-                                          color: context.statusError,
-                                          size: 22),
+                                          color: context.statusError, size: 22),
                                     ),
                                   )
                                 : InkWell(
@@ -1253,8 +1251,7 @@ class _InputBarState extends ConsumerState<_InputBar> {
                                       height: 48,
                                       decoration: BoxDecoration(
                                         gradient: context.aiPrimaryGradient,
-                                        borderRadius:
-                                            BorderRadius.circular(24),
+                                        borderRadius: BorderRadius.circular(24),
                                         boxShadow: [
                                           BoxShadow(
                                             color: context.aiPrimary
@@ -1265,8 +1262,7 @@ class _InputBarState extends ConsumerState<_InputBar> {
                                         ],
                                       ),
                                       child: Icon(Icons.send_rounded,
-                                          color: context.aiOnPrimary,
-                                          size: 18),
+                                          color: context.aiOnPrimary, size: 18),
                                     ),
                                   ),
                           ),
@@ -1336,7 +1332,8 @@ class _TokenUsagePopover extends StatelessWidget {
           color: context.cardColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: context.borderColor.withValues(alpha: context.isDark ? 0.55 : 0.9),
+            color: context.borderColor
+                .withValues(alpha: context.isDark ? 0.55 : 0.9),
           ),
           boxShadow: [
             BoxShadow(
@@ -1365,10 +1362,12 @@ class _TokenUsagePopover extends StatelessWidget {
                 ),
                 IconButton(
                   onPressed: onClose,
-                  icon: Icon(Icons.close_rounded, size: 18, color: context.textSecondary),
+                  icon: Icon(Icons.close_rounded,
+                      size: 18, color: context.textSecondary),
                   visualDensity: VisualDensity.compact,
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                  constraints:
+                      const BoxConstraints(minWidth: 28, minHeight: 28),
                   tooltip: 'Close',
                 ),
               ],
@@ -1402,13 +1401,16 @@ class _TokenUsagePopover extends StatelessWidget {
             _UsageBreakdownRow(
               color: context.aiUsageUsed,
               label: 'Used this month',
-              value: hasLimit ? '~${AiTokenUsage.formatCount(usage.used)}' : '—',
+              value:
+                  hasLimit ? '~${AiTokenUsage.formatCount(usage.used)}' : '—',
             ),
             const SizedBox(height: 8),
             _UsageBreakdownRow(
               color: context.aiUsageRemaining,
               label: 'Remaining',
-              value: hasLimit ? '~${AiTokenUsage.formatCount(usage.remaining)}' : '—',
+              value: hasLimit
+                  ? '~${AiTokenUsage.formatCount(usage.remaining)}'
+                  : '—',
             ),
           ],
         ),
@@ -1547,9 +1549,8 @@ class _TokenUsageRingButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fill = usage.fractionUsed;
-    final ringColor = usage.percentFull >= 90
-        ? context.statusError
-        : context.aiPrimary;
+    final ringColor =
+        usage.percentFull >= 90 ? context.statusError : context.aiPrimary;
     final tooltip = usage.hasLimit
         ? '${usage.chipLabel} · ${usage.remainingLabel}'
         : 'Token usage';
@@ -1600,7 +1601,8 @@ class _TokenUsageRingButton extends StatelessWidget {
                 usage.percentLabel,
                 style: TextStyle(
                   color: context.textPrimary,
-                  fontSize: usage.hasLimit && usage.percentFull >= 100 ? 10 : 11,
+                  fontSize:
+                      usage.hasLimit && usage.percentFull >= 100 ? 10 : 11,
                   fontWeight: FontWeight.w700,
                   height: 1,
                 ),

@@ -61,10 +61,7 @@ class FpStatusPill extends StatelessWidget {
     );
 
     if (subLabel != null) {
-      return Tooltip(
-        message: subLabel,
-        child: pill,
-      );
+      return Tooltip(message: subLabel, child: pill);
     }
     return pill;
   }

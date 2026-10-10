@@ -20,7 +20,8 @@ class PortfolioSocketUpdateDto {
   });
 
   factory PortfolioSocketUpdateDto.fromJson(Map<String, dynamic> json) {
-    return PortfolioSocketUpdateDto(      portfolioId: json['portfolioId'] as String?,
+    return PortfolioSocketUpdateDto(
+      portfolioId: json['portfolioId'] as String?,
       currentValue: _parseDouble(json['currentValue']),
       investmentValue: _parseDouble(json['investmentValue']),
       totalGainLoss: _parseDouble(json['totalGainLoss']),

@@ -243,7 +243,8 @@ class _BehaviorTrackingSectionState extends State<BehaviorTrackingSection>
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: AppRadii.input,
-              borderSide: BorderSide(color: colors.border.withValues(alpha: 0.4)),
+              borderSide:
+                  BorderSide(color: colors.border.withValues(alpha: 0.4)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: AppRadii.input,

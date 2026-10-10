@@ -10,7 +10,8 @@ import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../../features/shell/app_shell.dart';
-import '../../features/chart/comparison_chart_expanded_page.dart';
+import '../../features/shell/not_found_page.dart';
+import '../../features/chart/chart_terminal_host_page.dart';
 import 'app_routes.dart';
 import 'auth_refresh_listenable.dart';
 import 'deferred_routes.dart';
@@ -42,8 +43,7 @@ GoRouter createAppRouter({
       final authState = authCubit.state;
       final location = AppRoutes.normalizePath(state.matchedLocation);
       final isAuthenticated = authState is Authenticated;
-      final authPending = authState is AuthInitial ||
-          authState is AuthLoading;
+      final authPending = authState is AuthInitial || authState is AuthLoading;
 
       if (!kIsWeb &&
           isAuthenticated &&
@@ -63,10 +63,11 @@ GoRouter createAppRouter({
         return null;
       }
 
-      // Browser opens http://localhost:9000/ — no page registered for `/`.
-      // Never send auth-pending users to dashboard (spinner / no login page).
+      // Browser opens http://localhost:9000/ — land guests on public Market.
       if (location == '/' || location.isEmpty) {
-        return isAuthenticated ? AppRoutes.dashboard : AppRoutes.login;
+        return isAuthenticated
+            ? AppRoutes.dashboard
+            : AppRoutes.publicMarketLanding;
       }
 
       // Auth deep links must not bounce to login/dashboard while session restores.
@@ -85,6 +86,33 @@ GoRouter createAppRouter({
         return null;
       }
 
+      // Public Market browse (excludes Paper).
+      if (!isAuthenticated && AppRoutes.isPublicMarketRoute(location)) {
+        return null;
+      }
+
+      // Gated Paper / Chart deep links → Market + auth prompt (stay browseable).
+      if (!isAuthenticated && !authPending) {
+        if (location == AppRoutes.marketPath('paper') ||
+            location.startsWith('${AppRoutes.market}/paper')) {
+          return AppRoutes.marketAuthPromptPath(auth: 'paper');
+        }
+        if (location == AppRoutes.chartWorkspace ||
+            location.startsWith('${AppRoutes.chartWorkspace}/') ||
+            location == AppRoutes.chartCompare) {
+          final qp = state.uri.queryParameters;
+          return AppRoutes.marketAuthPromptPath(
+            auth: 'chart',
+            symbol: qp['symbol'],
+            tf: qp['tf'],
+          );
+        }
+        if (location == AppRoutes.paper ||
+            location.startsWith('${AppRoutes.paper}/')) {
+          return AppRoutes.marketAuthPromptPath(auth: 'paper');
+        }
+      }
+
       // Restoring session — stay on current /app/* URL (avoids login flash on reload).
       if (authPending && AppRoutes.isAuthenticatedAppRoute(location)) {
         return null;
@@ -92,20 +120,20 @@ GoRouter createAppRouter({
 
       if (!isAuthenticated &&
           AppRoutes.isAuthenticatedAppRoute(location) &&
-          !AppRoutes.isPublicLegalRoute(location)) {
+          !AppRoutes.isPublicBrowseRoute(location)) {
         return AuthRedirect.loginLocationFromAppUri(state.uri);
       }
 
       // Lab is disabled in navigation — block direct URL access.
-      if (location == AppRoutes.lab || location.startsWith('${AppRoutes.lab}/')) {
+      if (location == AppRoutes.lab ||
+          location.startsWith('${AppRoutes.lab}/')) {
         return AppRoutes.dashboard;
       }
 
       // Global Analysis is admin-only.
       if (location == AppRoutes.analysis ||
           location.startsWith('${AppRoutes.analysis}/')) {
-        final isAdmin =
-            authState is Authenticated && authState.user.isAdmin;
+        final isAdmin = authState is Authenticated && authState.user.isAdmin;
         if (!isAdmin) return AppRoutes.dashboard;
       }
 
@@ -136,34 +164,9 @@ GoRouter createAppRouter({
     errorBuilder: (context, state) {
       final authState = authCubit.state;
       final isAuthenticated = authState is Authenticated;
-      return Scaffold(
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error_outline, size: 48),
-                const SizedBox(height: 16),
-                Text(
-                  'Page not found: ${state.uri}',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: () {
-                    if (isAuthenticated) {
-                      context.go(AppRoutes.dashboard);
-                      return;
-                    }
-                    context.go(AuthRedirect.recoverLoginLocation(state.uri));
-                  },
-                  child: Text(isAuthenticated ? 'Go to dashboard' : 'Go to login'),
-                ),
-              ],
-            ),
-          ),
-        ),
+      return NotFoundPage(
+        uri: state.uri,
+        isAuthenticated: isAuthenticated,
       );
     },
     routes: [
@@ -223,9 +226,7 @@ GoRouter createAppRouter({
           onBack: () {
             final authState = authCubit.state;
             context.go(
-              authState is Authenticated
-                  ? AppRoutes.profile
-                  : AppRoutes.login,
+              authState is Authenticated ? AppRoutes.profile : AppRoutes.login,
             );
           },
           onOpenTerms: () => context.go(AppRoutes.termsOfService),
@@ -237,9 +238,7 @@ GoRouter createAppRouter({
           onBack: () {
             final authState = authCubit.state;
             context.go(
-              authState is Authenticated
-                  ? AppRoutes.profile
-                  : AppRoutes.login,
+              authState is Authenticated ? AppRoutes.profile : AppRoutes.login,
             );
           },
           onOpenPrivacy: () => context.go(AppRoutes.privacyPolicy),
@@ -266,19 +265,24 @@ GoRouter createAppRouter({
           ),
           GoRoute(
             path: AppRoutes.chartCompare,
-            builder: (context, state) {
+            redirect: (context, state) {
               final qp = state.uri.queryParameters;
-              final chartContext = qp['context'] ?? 'market';
-              final tf = qp['tf'] ?? '1W';
+              final tf = qp['tf'] ?? '1D';
               final seriesRaw = qp['series'] ?? '';
               final series = seriesRaw.isEmpty
                   ? <String>[]
                   : Uri.decodeComponent(seriesRaw).split(',');
-              return ComparisonChartExpandedPage(
-                chartContext: chartContext,
-                timeFrameCode: tf,
-                series: series,
-                userId: _userId(context),
+              final symbol = series.isNotEmpty ? series.first : 'NIFTY 50';
+              return AppRoutes.chartWorkspacePath(symbol: symbol, tf: tf);
+            },
+          ),
+          GoRoute(
+            path: AppRoutes.chartWorkspace,
+            builder: (context, state) {
+              final qp = state.uri.queryParameters;
+              return ChartTerminalHostPage(
+                initialSymbol: qp['symbol'],
+                initialTimeframe: qp['tf'],
               );
             },
           ),
@@ -295,11 +299,10 @@ GoRouter createAppRouter({
                 ),
                 onPortfolioChanged: (id, name) {
                   _patchPortfolioSession(context, id, name);
-                  final currentTab =
-                      ShareUrlBuilder.portfolioTabFromLocation(
-                            GoRouterState.of(context).matchedLocation,
-                          ) ??
-                          tab;
+                  final currentTab = ShareUrlBuilder.portfolioTabFromLocation(
+                        GoRouterState.of(context).matchedLocation,
+                      ) ??
+                      tab;
                   context.go(AppRoutes.portfolioPath(id, currentTab));
                 },
                 onOpenDocIntel: () =>
@@ -312,7 +315,8 @@ GoRouter createAppRouter({
                         data: theme.copyWith(
                           colorScheme: theme.colorScheme.copyWith(
                             primary: ModuleColors.portfolio,
-                            primaryContainer: ModuleColors.portfolio.withOpacity(0.12),
+                            primaryContainer:
+                                ModuleColors.portfolio.withOpacity(0.12),
                           ),
                           primaryColor: ModuleColors.portfolio,
                         ),
@@ -347,7 +351,8 @@ GoRouter createAppRouter({
                         data: theme.copyWith(
                           colorScheme: theme.colorScheme.copyWith(
                             primary: ModuleColors.portfolio,
-                            primaryContainer: ModuleColors.portfolio.withOpacity(0.12),
+                            primaryContainer:
+                                ModuleColors.portfolio.withOpacity(0.12),
                           ),
                           primaryColor: ModuleColors.portfolio,
                         ),
@@ -495,6 +500,16 @@ GoRouter createAppRouter({
               );
             },
           ),
+          // Junk / pasted suffixes (e.g. /doc-processor/eqqw]) → valid tab.
+          GoRoute(
+            path: '${AppRoutes.docIntel}/:tab/:path(.*)',
+            redirect: (context, state) {
+              final tab = state.pathParameters['tab'] ?? 'doc-processor';
+              final resolved =
+                  AppRoutes.isDocIntelTab(tab) ? tab : 'doc-processor';
+              return AppRoutes.docIntelPath(resolved);
+            },
+          ),
           GoRoute(
             path: AppRoutes.profile,
             builder: (context, state) {
@@ -506,39 +521,36 @@ GoRouter createAppRouter({
               void openReferral() => context.go(AppRoutes.referral);
               final authState = context.read<AuthCubit>().state;
               if (authState is Authenticated) {
-              return buildProfileRoute(
-                userId: authState.user.id,
-                email: authState.user.email,
-                displayName: authState.user.displayName,
-                photoUrl: authState.user.photoUrl,
-                highlightSubscription: highlightSubscription,
-                onOpenPrivacyPolicy: () =>
-                    context.go(AppRoutes.privacyPolicy),
-                onOpenTermsOfService: () =>
-                    context.go(AppRoutes.termsOfService),
-                onOpenSubscription: openSubscription,
-                onOpenReferral: openReferral,
-                onOpenActiveSessions: () =>
-                    context.go(AppRoutes.activeSessions),
-                onOpenScanWebLogin: kIsWeb
-                    ? null
-                    : () => context.go(AppRoutes.scanWebLogin),
-              );
+                return buildProfileRoute(
+                  userId: authState.user.id,
+                  email: authState.user.email,
+                  displayName: authState.user.displayName,
+                  photoUrl: authState.user.photoUrl,
+                  highlightSubscription: highlightSubscription,
+                  onOpenPrivacyPolicy: () =>
+                      context.go(AppRoutes.privacyPolicy),
+                  onOpenTermsOfService: () =>
+                      context.go(AppRoutes.termsOfService),
+                  onOpenSubscription: openSubscription,
+                  onOpenReferral: openReferral,
+                  onOpenActiveSessions: () =>
+                      context.go(AppRoutes.activeSessions),
+                  onOpenScanWebLogin:
+                      kIsWeb ? null : () => context.go(AppRoutes.scanWebLogin),
+                );
               }
               return buildProfileRoute(
                 userId: _userId(context),
                 highlightSubscription: highlightSubscription,
-                onOpenPrivacyPolicy: () =>
-                    context.go(AppRoutes.privacyPolicy),
+                onOpenPrivacyPolicy: () => context.go(AppRoutes.privacyPolicy),
                 onOpenTermsOfService: () =>
                     context.go(AppRoutes.termsOfService),
                 onOpenSubscription: openSubscription,
                 onOpenReferral: openReferral,
                 onOpenActiveSessions: () =>
                     context.go(AppRoutes.activeSessions),
-                onOpenScanWebLogin: kIsWeb
-                    ? null
-                    : () => context.go(AppRoutes.scanWebLogin),
+                onOpenScanWebLogin:
+                    kIsWeb ? null : () => context.go(AppRoutes.scanWebLogin),
               );
             },
           ),
@@ -592,7 +604,9 @@ GoRouter createAppRouter({
 String? _legacyPortfolioTabRedirect(String location) {
   if (!location.startsWith('${AppRoutes.portfolio}/')) return null;
   final segments = location.split('/').where((s) => s.isNotEmpty).toList();
-  if (segments.length != 3 || segments[0] != 'app' || segments[1] != 'portfolio') {
+  if (segments.length != 3 ||
+      segments[0] != 'app' ||
+      segments[1] != 'portfolio') {
     return null;
   }
   final segment = segments[2];
@@ -634,4 +648,3 @@ void _patchPortfolioSession(BuildContext context, String id, String name) {
     );
   }
 }
-

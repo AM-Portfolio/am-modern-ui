@@ -9,7 +9,8 @@ enum TradeDirections {
 }
 
 /// Custom converter for TradeDirections to handle BUY/SELL and LONG/SHORT
-class TradeDirectionsConverter implements JsonConverter<TradeDirections, String> {
+class TradeDirectionsConverter
+    implements JsonConverter<TradeDirections, String> {
   const TradeDirectionsConverter();
 
   @override

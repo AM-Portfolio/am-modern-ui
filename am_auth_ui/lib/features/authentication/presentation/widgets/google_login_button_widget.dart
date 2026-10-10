@@ -14,7 +14,8 @@ class GoogleLoginButtonWidget extends StatefulWidget {
   });
 
   @override
-  State<GoogleLoginButtonWidget> createState() => _GoogleLoginButtonWidgetState();
+  State<GoogleLoginButtonWidget> createState() =>
+      _GoogleLoginButtonWidgetState();
 }
 
 class _GoogleLoginButtonWidgetState extends State<GoogleLoginButtonWidget> {
@@ -71,7 +72,8 @@ class _GoogleLoginButtonWidgetState extends State<GoogleLoginButtonWidget> {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(textColor),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(textColor),
                           ),
                         )
                       else
@@ -145,7 +147,8 @@ class _GoogleGLogoPainter extends CustomPainter {
       ..color = const Color(0xFF4285F4)
       ..style = PaintingStyle.fill;
     canvas.drawRect(
-      Rect.fromLTRB(center.dx, center.dy - (strokeW / 2), center.dx + (radius * 0.8), center.dy + (strokeW / 2)),
+      Rect.fromLTRB(center.dx, center.dy - (strokeW / 2),
+          center.dx + (radius * 0.8), center.dy + (strokeW / 2)),
       barPaint,
     );
   }

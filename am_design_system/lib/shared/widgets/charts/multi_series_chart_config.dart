@@ -35,6 +35,7 @@ class MultiSeriesChartConfig extends Equatable {
   final List<String>? selectedSeries;
   final List<String>? preferredSeriesOrder;
   final MultiSeriesChartRenderer renderer;
+
   /// When true, skips outer card padding/shadow only (legend + toggles still show).
   final bool embedMode;
   final bool isLoading;

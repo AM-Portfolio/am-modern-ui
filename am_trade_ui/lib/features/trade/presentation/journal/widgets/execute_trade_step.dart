@@ -21,10 +21,10 @@ class ExecuteTradeStep extends StatelessWidget {
       entry.copyWith(
         tradeExecution: exec,
         content: content ?? entry.content,
-        journalStatus: entry.journalStatus == 'DRAFT' ||
-                entry.journalStatus == 'PLANNED'
-            ? 'OPEN'
-            : entry.journalStatus,
+        journalStatus:
+            entry.journalStatus == 'DRAFT' || entry.journalStatus == 'PLANNED'
+                ? 'OPEN'
+                : entry.journalStatus,
       ),
     );
   }
@@ -48,7 +48,8 @@ class ExecuteTradeStep extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               if (related.isNotEmpty) ...[
-                Text('Related trades', style: Theme.of(ctx).textTheme.labelLarge),
+                Text('Related trades',
+                    style: Theme.of(ctx).textTheme.labelLarge),
                 const SizedBox(height: 8),
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxHeight: 160),
@@ -330,7 +331,8 @@ class ExecuteTradeStep extends StatelessWidget {
               dense: true,
               leading: const Icon(Icons.insert_drive_file_outlined),
               title: Text(a.fileName),
-              subtitle: Text(a.fileUrl, maxLines: 1, overflow: TextOverflow.ellipsis),
+              subtitle:
+                  Text(a.fileUrl, maxLines: 1, overflow: TextOverflow.ellipsis),
               trailing: IconButton(
                 icon: const Icon(Icons.delete_outline),
                 onPressed: () {

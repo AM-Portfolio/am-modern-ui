@@ -27,8 +27,9 @@ class PaperOrderTicketMobile extends StatelessWidget {
     final colors = context.colors;
     final c = controller;
     final isBuy = c.side == 'BUY';
-    final ctaColor =
-        isBuy ? ModuleColors.market : colors.marketNegativeIndicator;
+    final ctaColor = isBuy
+        ? ModuleColors.market
+        : colors.marketNegativeIndicator;
     final fmt = NumberFormat('#,##0.00');
     final ltp = c.quote?.ltp ?? 0;
     final change = c.quote?.change ?? 0;
@@ -36,8 +37,8 @@ class PaperOrderTicketMobile extends StatelessWidget {
     final priceColor = change < 0
         ? colors.marketNegativeIndicator
         : change > 0
-            ? colors.marketPositiveIndicator
-            : colors.textPrimary;
+        ? colors.marketPositiveIndicator
+        : colors.textPrimary;
     final sym = symbol.trim().toUpperCase();
     const compact = true;
     const pad = EdgeInsets.fromLTRB(12, 6, 12, 4);
@@ -93,7 +94,8 @@ class PaperOrderTicketMobile extends StatelessWidget {
                                   selected: c.orderType == t.$1,
                                   superStyle: t.$4,
                                   compact: compact,
-                                  onTap: () => c.setOrderType(t.$1, context: context),
+                                  onTap: () =>
+                                      c.setOrderType(t.$1, context: context),
                                 ),
                               ),
                             ],
@@ -150,9 +152,7 @@ class PaperOrderTicketMobile extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             'Executes at live last price during market hours.',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
+                            style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(color: colors.textSecondary),
                           ),
                         ],
@@ -160,9 +160,7 @@ class PaperOrderTicketMobile extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             'Paper fills when price touches your limit (not an exchange order book).',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
+                            style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(color: colors.textSecondary),
                           ),
                         ],
@@ -206,8 +204,9 @@ class PaperOrderTicketMobile extends StatelessWidget {
                                   const SizedBox(width: 8),
                                   Text(
                                     'Add trigger price',
-                                    style:
-                                        Theme.of(context).textTheme.bodyMedium,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium,
                                   ),
                                 ],
                               ),
@@ -273,8 +272,9 @@ class PaperOrderTicketMobile extends StatelessWidget {
                                       vertical: 3,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: ModuleColors.market
-                                          .withValues(alpha: 0.12),
+                                      color: ModuleColors.market.withValues(
+                                        alpha: 0.12,
+                                      ),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(
@@ -346,12 +346,8 @@ class PaperOrderTicketMobile extends StatelessWidget {
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 'More options to exit',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelMedium
-                                    ?.copyWith(
-                                      color: colors.textSecondary,
-                                    ),
+                                style: Theme.of(context).textTheme.labelMedium
+                                    ?.copyWith(color: colors.textSecondary),
                               ),
                             ),
                             const SizedBox(height: 6),

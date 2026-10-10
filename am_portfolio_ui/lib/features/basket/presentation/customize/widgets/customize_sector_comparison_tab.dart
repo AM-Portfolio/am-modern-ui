@@ -50,14 +50,16 @@ class CustomizeSectorComparisonTab extends StatelessWidget {
       myTotalWeight += weight;
     }
     if (myTotalWeight > 0) {
-      mySectorWeights
-          .updateAll((key, value) => (value / myTotalWeight) * 100);
+      mySectorWeights.updateAll((key, value) => (value / myTotalWeight) * 100);
     }
 
-    final allSectors =
-        {...etfSectorWeights.keys, ...mySectorWeights.keys}.toList();
+    final allSectors = {
+      ...etfSectorWeights.keys,
+      ...mySectorWeights.keys,
+    }.toList();
     allSectors.sort(
-        (a, b) => (etfSectorWeights[b] ?? 0).compareTo(etfSectorWeights[a] ?? 0));
+      (a, b) => (etfSectorWeights[b] ?? 0).compareTo(etfSectorWeights[a] ?? 0),
+    );
 
     return ListView.separated(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -69,48 +71,55 @@ class CustomizeSectorComparisonTab extends StatelessWidget {
         final myPct = mySectorWeights[sector] ?? 0.0;
         final color = _getColorForSector(sector);
 
-        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  sector,
-                  style:
-                      const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    sector,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'ETF: ${etfPct.toStringAsFixed(1)}% | My: ${myPct.toStringAsFixed(1)}%',
-                style: TextStyle(fontSize: 10, color: context.textSecondary),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(children: [
-            Expanded(
-              child: LinearProgressIndicator(
-                value: etfPct / 100,
-                backgroundColor: context.dividerColor,
-                color: context.textTertiary,
-                minHeight: 8,
-                borderRadius: BorderRadius.circular(4),
-              ),
+                const SizedBox(width: 8),
+                Text(
+                  'ETF: ${etfPct.toStringAsFixed(1)}% | My: ${myPct.toStringAsFixed(1)}%',
+                  style: TextStyle(fontSize: 10, color: context.textSecondary),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: LinearProgressIndicator(
-                value: myPct / 100,
-                backgroundColor: color.withValues(alpha: 0.2),
-                color: color,
-                minHeight: 8,
-                borderRadius: BorderRadius.circular(4),
-              ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(
+                  child: LinearProgressIndicator(
+                    value: etfPct / 100,
+                    backgroundColor: context.dividerColor,
+                    color: context.textTertiary,
+                    minHeight: 8,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: LinearProgressIndicator(
+                    value: myPct / 100,
+                    backgroundColor: color.withValues(alpha: 0.2),
+                    color: color,
+                    minHeight: 8,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
             ),
-          ]),
-        ]);
+          ],
+        );
       },
     );
   }

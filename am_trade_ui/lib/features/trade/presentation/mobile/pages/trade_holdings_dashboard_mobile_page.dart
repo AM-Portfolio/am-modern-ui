@@ -13,18 +13,20 @@ import '../widgets/mobile_filter_panel.dart';
 
 class TradeHoldingsDashboardMobilePage extends ConsumerStatefulWidget {
   const TradeHoldingsDashboardMobilePage({
-        required this.portfolioId,
+    required this.portfolioId,
     super.key,
     this.portfolioName,
   });
-    final String portfolioId;
+  final String portfolioId;
   final String? portfolioName;
 
   @override
-  ConsumerState<TradeHoldingsDashboardMobilePage> createState() => _TradeHoldingsDashboardMobilePageState();
+  ConsumerState<TradeHoldingsDashboardMobilePage> createState() =>
+      _TradeHoldingsDashboardMobilePageState();
 }
 
-class _TradeHoldingsDashboardMobilePageState extends ConsumerState<TradeHoldingsDashboardMobilePage> {
+class _TradeHoldingsDashboardMobilePageState
+    extends ConsumerState<TradeHoldingsDashboardMobilePage> {
   MetricsFilterConfig _currentFilter = MetricsFilterConfig.empty();
 
   @override
@@ -54,7 +56,8 @@ class _TradeHoldingsDashboardMobilePageState extends ConsumerState<TradeHoldings
     return holdingsAsync.when(
       data: (holdingsViewModel) {
         // Apply filters to holdings
-        final filteredHoldings = _applyFilters(holdingsViewModel.holdings, _currentFilter);
+        final filteredHoldings =
+            _applyFilters(holdingsViewModel.holdings, _currentFilter);
 
         return RefreshIndicator(
           onRefresh: () async {
@@ -66,11 +69,13 @@ class _TradeHoldingsDashboardMobilePageState extends ConsumerState<TradeHoldings
             holdings: filteredHoldings,
             isLoading: false,
             isWebView: false,
-            onHoldingSelected: (holding) => _navigateToHoldingDetails(context, holding),
+            onHoldingSelected: (holding) =>
+                _navigateToHoldingDetails(context, holding),
           ),
         );
       },
-      loading: () => const TradeHoldingsTemplate(holdings: [], isLoading: true, isWebView: false),
+      loading: () => const TradeHoldingsTemplate(
+          holdings: [], isLoading: true, isWebView: false),
       error: (error, stack) => TradeHoldingsTemplate(
         holdings: const [],
         isLoading: false,
@@ -101,12 +106,12 @@ class _TradeHoldingsDashboardMobilePageState extends ConsumerState<TradeHoldings
       count++;
     if (_currentFilter.profitLossFilters != null &&
         (_currentFilter.profitLossFilters!.minProfitLoss != null ||
-            _currentFilter.profitLossFilters!.maxProfitLoss != null))
-      count++;
+            _currentFilter.profitLossFilters!.maxProfitLoss != null)) count++;
     return count;
   }
 
-  List<TradeHoldingViewModel> _applyFilters(List<TradeHoldingViewModel> holdings, MetricsFilterConfig filter) {
+  List<TradeHoldingViewModel> _applyFilters(
+      List<TradeHoldingViewModel> holdings, MetricsFilterConfig filter) {
     var result = holdings;
 
     // Apply date range filter
@@ -133,8 +138,8 @@ class _TradeHoldingsDashboardMobilePageState extends ConsumerState<TradeHoldings
       if (instrumentFilter.baseSymbols.isNotEmpty) {
         result = result
             .where(
-              (h) =>
-                  instrumentFilter.baseSymbols.any((symbol) => h.symbol.toUpperCase().contains(symbol.toUpperCase())),
+              (h) => instrumentFilter.baseSymbols.any((symbol) =>
+                  h.symbol.toUpperCase().contains(symbol.toUpperCase())),
             )
             .toList();
       }
@@ -148,7 +153,8 @@ class _TradeHoldingsDashboardMobilePageState extends ConsumerState<TradeHoldings
       if (tradeChar.statuses.isNotEmpty) {
         result = result.where((h) {
           if (h.status == null) return false;
-          return tradeChar.statuses.any((status) => h.status!.toLowerCase() == status.name.toLowerCase());
+          return tradeChar.statuses.any(
+              (status) => h.status!.toLowerCase() == status.name.toLowerCase());
         }).toList();
       }
 
@@ -188,11 +194,13 @@ class _TradeHoldingsDashboardMobilePageState extends ConsumerState<TradeHoldings
     return result;
   }
 
-  void _navigateToHoldingDetails(BuildContext context, TradeHoldingViewModel holding) {
+  void _navigateToHoldingDetails(
+      BuildContext context, TradeHoldingViewModel holding) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => Scaffold(
-          body: TradeDetailViewPage(trade: holding,  portfolioId: widget.portfolioId),
+          body: TradeDetailViewPage(
+              trade: holding, portfolioId: widget.portfolioId),
         ),
       ),
     );

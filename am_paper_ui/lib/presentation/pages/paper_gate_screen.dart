@@ -16,12 +16,10 @@ class PaperGateScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(paperOmsCubitProvider);
     return async.when(
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
-      error: (e, _) => Scaffold(
-        body: Center(child: Text('Paper OMS unavailable: $e')),
-      ),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (e, _) =>
+          Scaffold(body: Center(child: Text('Paper OMS unavailable: $e'))),
       data: (cubit) {
         return BlocProvider<PaperOmsCubit>.value(
           value: cubit,

@@ -19,7 +19,10 @@ final aiChatServiceProvider = Provider<AiChatService>((ref) {
       baseUrl: AiChatService.baseUrl,
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 45),
-      headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
       extra: kIsWeb ? const {'withCredentials': true} : null,
     ),
   );
@@ -122,8 +125,9 @@ class AiChatNotifier extends Notifier<ChatState> {
         );
         state = state.copyWith(
           isLoading: false,
-          sessionId:
-              response.sessionId.isNotEmpty ? response.sessionId : state.sessionId,
+          sessionId: response.sessionId.isNotEmpty
+              ? response.sessionId
+              : state.sessionId,
         );
         unawaited(ref.read(aiUsageProvider.notifier).refresh());
       } on AiQuotaExceededException catch (e) {
@@ -221,13 +225,18 @@ class AiChatNotifier extends Notifier<ChatState> {
               );
               state = state.copyWith(
                 isLoading: false,
-                sessionId: fallbackResponse.sessionId.isNotEmpty ? fallbackResponse.sessionId : state.sessionId,
+                sessionId: fallbackResponse.sessionId.isNotEmpty
+                    ? fallbackResponse.sessionId
+                    : state.sessionId,
               );
               return;
             }
             fullText.write(event.content ?? 'An error occurred.');
             widgetId = 'ERROR';
-            widgetParams = {'reason': event.content ?? 'Stream error', 'traceId': traceId};
+            widgetParams = {
+              'reason': event.content ?? 'Stream error',
+              'traceId': traceId
+            };
             break;
 
           case StreamEventType.cancelled:
@@ -412,7 +421,8 @@ class AiChatNotifier extends Notifier<ChatState> {
     if (sessionId == null || sessionId.isEmpty) return;
 
     final service = ref.read(aiChatServiceProvider);
-    await service.sendFeedback(sessionId: sessionId, rating: rating, comment: comment);
+    await service.sendFeedback(
+        sessionId: sessionId, rating: rating, comment: comment);
 
     final updated = List<ChatMessage>.from(state.messages);
     updated[messageIndex] = msg.copyWith(userRating: rating);

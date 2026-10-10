@@ -10,9 +10,9 @@
 
 part of openapi.api;
 
-
 class AnalysisControllerApi {
-  AnalysisControllerApi([ApiClient? apiClient]) : apiClient = apiClient ?? defaultApiClient;
+  AnalysisControllerApi([ApiClient? apiClient])
+      : apiClient = apiClient ?? defaultApiClient;
 
   final ApiClient apiClient;
 
@@ -28,11 +28,17 @@ class AnalysisControllerApi {
   /// * [String] groupBy:
   ///
   /// * [String] groupBy2:
-  Future<Response> getAllocationWithHttpInfo(String authorization, String type, String id, { String? groupBy, String? groupBy2, }) async {
+  Future<Response> getAllocationWithHttpInfo(
+    String authorization,
+    String type,
+    String id, {
+    String? groupBy,
+    String? groupBy2,
+  }) async {
     // ignore: prefer_const_declarations
     final path = r'/v1/analysis/{type}/{id}/allocation'
-      .replaceAll('{type}', type)
-      .replaceAll('{id}', id);
+        .replaceAll('{type}', type)
+        .replaceAll('{id}', id);
 
     // ignore: prefer_final_locals
     Object? postBody;
@@ -52,7 +58,6 @@ class AnalysisControllerApi {
 
     const contentTypes = <String>[];
 
-
     return apiClient.invokeAPI(
       path,
       'GET',
@@ -75,17 +80,32 @@ class AnalysisControllerApi {
   /// * [String] groupBy:
   ///
   /// * [String] groupBy2:
-  Future<AllocationResponse?> getAllocation(String authorization, String type, String id, { String? groupBy, String? groupBy2, }) async {
-    final response = await getAllocationWithHttpInfo(authorization, type, id,  groupBy: groupBy, groupBy2: groupBy2, );
+  Future<AllocationResponse?> getAllocation(
+    String authorization,
+    String type,
+    String id, {
+    String? groupBy,
+    String? groupBy2,
+  }) async {
+    final response = await getAllocationWithHttpInfo(
+      authorization,
+      type,
+      id,
+      groupBy: groupBy,
+      groupBy2: groupBy2,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'AllocationResponse',) as AllocationResponse;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'AllocationResponse',
+      ) as AllocationResponse;
     }
     return null;
   }
@@ -96,7 +116,10 @@ class AnalysisControllerApi {
   /// * [String] arg0 (required):
   ///
   /// * [String] arg1:
-  Future<Response> getDashboardPerformanceWithHttpInfo(String arg0, { String? arg1, }) async {
+  Future<Response> getDashboardPerformanceWithHttpInfo(
+    String arg0, {
+    String? arg1,
+  }) async {
     // ignore: prefer_const_declarations
     final path = r'/v1/analysis/dashboard/performance';
 
@@ -107,13 +130,12 @@ class AnalysisControllerApi {
     final headerParams = <String, String>{};
     final formParams = <String, String>{};
 
-      queryParams.addAll(_queryParams('', 'userId', arg0));
+    queryParams.addAll(_queryParams('', 'userId', arg0));
     if (arg1 != null) {
       queryParams.addAll(_queryParams('', 'timeFrame', arg1));
     }
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -131,17 +153,26 @@ class AnalysisControllerApi {
   /// * [String] userId (required):
   ///
   /// * [String] timeFrame:
-  Future<PerformanceResponse?> getDashboardPerformance(String userId, { String? timeFrame, }) async {
-    final response = await getDashboardPerformanceWithHttpInfo(userId,  arg1: timeFrame, );
+  Future<PerformanceResponse?> getDashboardPerformance(
+    String userId, {
+    String? timeFrame,
+  }) async {
+    final response = await getDashboardPerformanceWithHttpInfo(
+      userId,
+      arg1: timeFrame,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'PerformanceResponse',) as PerformanceResponse;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'PerformanceResponse',
+      ) as PerformanceResponse;
     }
     return null;
   }
@@ -150,7 +181,9 @@ class AnalysisControllerApi {
   /// Parameters:
   ///
   /// * [String] arg0 (required):
-  Future<Response> getDashboardSummaryWithHttpInfo(String arg0,) async {
+  Future<Response> getDashboardSummaryWithHttpInfo(
+    String arg0,
+  ) async {
     // ignore: prefer_const_declarations
     final path = r'/v1/analysis/dashboard/summary';
 
@@ -161,10 +194,9 @@ class AnalysisControllerApi {
     final headerParams = <String, String>{};
     final formParams = <String, String>{};
 
-      queryParams.addAll(_queryParams('', 'userId', arg0));
+    queryParams.addAll(_queryParams('', 'userId', arg0));
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -180,17 +212,24 @@ class AnalysisControllerApi {
   /// Parameters:
   ///
   /// * [String] arg0 (required):
-  Future<DashboardSummary?> getDashboardSummary(String arg0,) async {
-    final response = await getDashboardSummaryWithHttpInfo(arg0,);
+  Future<DashboardSummary?> getDashboardSummary(
+    String arg0,
+  ) async {
+    final response = await getDashboardSummaryWithHttpInfo(
+      arg0,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'DashboardSummary',) as DashboardSummary;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'DashboardSummary',
+      ) as DashboardSummary;
     }
     return null;
   }
@@ -201,7 +240,10 @@ class AnalysisControllerApi {
   /// * [String] arg0 (required):
   ///
   /// * [String] arg1:
-  Future<Response> getDashboardTopMoversWithHttpInfo(String arg0, { String? arg1, }) async {
+  Future<Response> getDashboardTopMoversWithHttpInfo(
+    String arg0, {
+    String? arg1,
+  }) async {
     // ignore: prefer_const_declarations
     final path = r'/v1/analysis/dashboard/top-movers';
 
@@ -212,13 +254,12 @@ class AnalysisControllerApi {
     final headerParams = <String, String>{};
     final formParams = <String, String>{};
 
-      queryParams.addAll(_queryParams('', 'arg0', arg0));
+    queryParams.addAll(_queryParams('', 'arg0', arg0));
     if (arg1 != null) {
       queryParams.addAll(_queryParams('', 'arg1', arg1));
     }
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -236,17 +277,26 @@ class AnalysisControllerApi {
   /// * [String] arg0 (required):
   ///
   /// * [String] arg1:
-  Future<TopMoversResponse?> getDashboardTopMovers(String arg0, { String? arg1, }) async {
-    final response = await getDashboardTopMoversWithHttpInfo(arg0,  arg1: arg1, );
+  Future<TopMoversResponse?> getDashboardTopMovers(
+    String arg0, {
+    String? arg1,
+  }) async {
+    final response = await getDashboardTopMoversWithHttpInfo(
+      arg0,
+      arg1: arg1,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'TopMoversResponse',) as TopMoversResponse;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'TopMoversResponse',
+      ) as TopMoversResponse;
     }
     return null;
   }
@@ -261,11 +311,16 @@ class AnalysisControllerApi {
   /// * [String] id (required):
   ///
   /// * [String] timeFrame:
-  Future<Response> getPerformanceWithHttpInfo(String authorization, String type, String id, { String? timeFrame, }) async {
+  Future<Response> getPerformanceWithHttpInfo(
+    String authorization,
+    String type,
+    String id, {
+    String? timeFrame,
+  }) async {
     // ignore: prefer_const_declarations
     final path = r'/v1/analysis/{type}/{id}/performance'
-      .replaceAll('{type}', type)
-      .replaceAll('{id}', id);
+        .replaceAll('{type}', type)
+        .replaceAll('{id}', id);
 
     // ignore: prefer_final_locals
     Object? postBody;
@@ -282,7 +337,6 @@ class AnalysisControllerApi {
 
     const contentTypes = <String>[];
 
-
     return apiClient.invokeAPI(
       path,
       'GET',
@@ -303,17 +357,30 @@ class AnalysisControllerApi {
   /// * [String] id (required):
   ///
   /// * [String] timeFrame:
-  Future<PerformanceResponse?> getPerformance(String authorization, String type, String id, { String? timeFrame, }) async {
-    final response = await getPerformanceWithHttpInfo(authorization, type, id,  timeFrame: timeFrame, );
+  Future<PerformanceResponse?> getPerformance(
+    String authorization,
+    String type,
+    String id, {
+    String? timeFrame,
+  }) async {
+    final response = await getPerformanceWithHttpInfo(
+      authorization,
+      type,
+      id,
+      timeFrame: timeFrame,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'PerformanceResponse',) as PerformanceResponse;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'PerformanceResponse',
+      ) as PerformanceResponse;
     }
     return null;
   }
@@ -324,7 +391,10 @@ class AnalysisControllerApi {
   /// * [String] arg0 (required):
   ///
   /// * [String] arg1:
-  Future<Response> getPortfolioOverviewsWithHttpInfo(String arg0, { String? arg1, }) async {
+  Future<Response> getPortfolioOverviewsWithHttpInfo(
+    String arg0, {
+    String? arg1,
+  }) async {
     // ignore: prefer_const_declarations
     final path = r'/v1/analysis/dashboard/portfolio-overviews';
 
@@ -335,13 +405,12 @@ class AnalysisControllerApi {
     final headerParams = <String, String>{};
     final formParams = <String, String>{};
 
-      queryParams.addAll(_queryParams('', 'arg0', arg0));
+    queryParams.addAll(_queryParams('', 'arg0', arg0));
     if (arg1 != null) {
       queryParams.addAll(_queryParams('', 'arg1', arg1));
     }
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -359,20 +428,27 @@ class AnalysisControllerApi {
   /// * [String] arg0 (required):
   ///
   /// * [String] arg1:
-  Future<List<PortfolioOverview>?> getPortfolioOverviews(String arg0, { String? arg1, }) async {
-    final response = await getPortfolioOverviewsWithHttpInfo(arg0,  arg1: arg1, );
+  Future<List<PortfolioOverview>?> getPortfolioOverviews(
+    String arg0, {
+    String? arg1,
+  }) async {
+    final response = await getPortfolioOverviewsWithHttpInfo(
+      arg0,
+      arg1: arg1,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
       final responseBody = await _decodeBodyBytes(response);
-      return (await apiClient.deserializeAsync(responseBody, 'List<PortfolioOverview>') as List)
-        .cast<PortfolioOverview>()
-        .toList(growable: false);
-
+      return (await apiClient.deserializeAsync(
+              responseBody, 'List<PortfolioOverview>') as List)
+          .cast<PortfolioOverview>()
+          .toList(growable: false);
     }
     return null;
   }
@@ -395,7 +471,16 @@ class AnalysisControllerApi {
   /// * [int] arg6:
   ///
   /// * [int] arg7:
-  Future<Response> getRecentActivityWithHttpInfo(String arg0, { String? arg1, String? arg2, String? arg3, String? arg4, String? arg5, int? arg6, int? arg7, }) async {
+  Future<Response> getRecentActivityWithHttpInfo(
+    String arg0, {
+    String? arg1,
+    String? arg2,
+    String? arg3,
+    String? arg4,
+    String? arg5,
+    int? arg6,
+    int? arg7,
+  }) async {
     // ignore: prefer_const_declarations
     final path = r'/v1/analysis/dashboard/recent-activity';
 
@@ -406,7 +491,7 @@ class AnalysisControllerApi {
     final headerParams = <String, String>{};
     final formParams = <String, String>{};
 
-      queryParams.addAll(_queryParams('', 'arg0', arg0));
+    queryParams.addAll(_queryParams('', 'arg0', arg0));
     if (arg1 != null) {
       queryParams.addAll(_queryParams('', 'arg1', arg1));
     }
@@ -431,7 +516,6 @@ class AnalysisControllerApi {
 
     const contentTypes = <String>[];
 
-
     return apiClient.invokeAPI(
       path,
       'GET',
@@ -460,17 +544,38 @@ class AnalysisControllerApi {
   /// * [int] arg6:
   ///
   /// * [int] arg7:
-  Future<RecentActivityResponse?> getRecentActivity(String arg0, { String? arg1, String? arg2, String? arg3, String? arg4, String? arg5, int? arg6, int? arg7, }) async {
-    final response = await getRecentActivityWithHttpInfo(arg0,  arg1: arg1, arg2: arg2, arg3: arg3, arg4: arg4, arg5: arg5, arg6: arg6, arg7: arg7, );
+  Future<RecentActivityResponse?> getRecentActivity(
+    String arg0, {
+    String? arg1,
+    String? arg2,
+    String? arg3,
+    String? arg4,
+    String? arg5,
+    int? arg6,
+    int? arg7,
+  }) async {
+    final response = await getRecentActivityWithHttpInfo(
+      arg0,
+      arg1: arg1,
+      arg2: arg2,
+      arg3: arg3,
+      arg4: arg4,
+      arg5: arg5,
+      arg6: arg6,
+      arg7: arg7,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'RecentActivityResponse',) as RecentActivityResponse;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'RecentActivityResponse',
+      ) as RecentActivityResponse;
     }
     return null;
   }
@@ -487,10 +592,15 @@ class AnalysisControllerApi {
   /// * [String] groupBy:
   ///
   /// * [String] groupBy2:
-  Future<Response> getTopMoversByCategoryWithHttpInfo(String authorization, String type, { String? timeFrame, String? groupBy, String? groupBy2, }) async {
+  Future<Response> getTopMoversByCategoryWithHttpInfo(
+    String authorization,
+    String type, {
+    String? timeFrame,
+    String? groupBy,
+    String? groupBy2,
+  }) async {
     // ignore: prefer_const_declarations
-    final path = r'/v1/analysis/{type}/top-movers'
-      .replaceAll('{type}', type);
+    final path = r'/v1/analysis/{type}/top-movers'.replaceAll('{type}', type);
 
     // ignore: prefer_final_locals
     Object? postBody;
@@ -512,7 +622,6 @@ class AnalysisControllerApi {
     }
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -536,17 +645,32 @@ class AnalysisControllerApi {
   /// * [String] groupBy:
   ///
   /// * [String] groupBy2:
-  Future<TopMoversResponse?> getTopMoversByCategory(String authorization, String type, { String? timeFrame, String? groupBy, String? groupBy2, }) async {
-    final response = await getTopMoversByCategoryWithHttpInfo(authorization, type,  timeFrame: timeFrame, groupBy: groupBy, groupBy2: groupBy2, );
+  Future<TopMoversResponse?> getTopMoversByCategory(
+    String authorization,
+    String type, {
+    String? timeFrame,
+    String? groupBy,
+    String? groupBy2,
+  }) async {
+    final response = await getTopMoversByCategoryWithHttpInfo(
+      authorization,
+      type,
+      timeFrame: timeFrame,
+      groupBy: groupBy,
+      groupBy2: groupBy2,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'TopMoversResponse',) as TopMoversResponse;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'TopMoversResponse',
+      ) as TopMoversResponse;
     }
     return null;
   }
@@ -565,11 +689,18 @@ class AnalysisControllerApi {
   /// * [String] groupBy:
   ///
   /// * [String] groupBy2:
-  Future<Response> getTopMoversByEntityWithHttpInfo(String authorization, String type, String id, { String? timeFrame, String? groupBy, String? groupBy2, }) async {
+  Future<Response> getTopMoversByEntityWithHttpInfo(
+    String authorization,
+    String type,
+    String id, {
+    String? timeFrame,
+    String? groupBy,
+    String? groupBy2,
+  }) async {
     // ignore: prefer_const_declarations
     final path = r'/v1/analysis/{type}/{id}/top-movers'
-      .replaceAll('{type}', type)
-      .replaceAll('{id}', id);
+        .replaceAll('{type}', type)
+        .replaceAll('{id}', id);
 
     // ignore: prefer_final_locals
     Object? postBody;
@@ -591,7 +722,6 @@ class AnalysisControllerApi {
     }
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -617,17 +747,34 @@ class AnalysisControllerApi {
   /// * [String] groupBy:
   ///
   /// * [String] groupBy2:
-  Future<TopMoversResponse?> getTopMoversByEntity(String authorization, String type, String id, { String? timeFrame, String? groupBy, String? groupBy2, }) async {
-    final response = await getTopMoversByEntityWithHttpInfo(authorization, type, id,  timeFrame: timeFrame, groupBy: groupBy, groupBy2: groupBy2, );
+  Future<TopMoversResponse?> getTopMoversByEntity(
+    String authorization,
+    String type,
+    String id, {
+    String? timeFrame,
+    String? groupBy,
+    String? groupBy2,
+  }) async {
+    final response = await getTopMoversByEntityWithHttpInfo(
+      authorization,
+      type,
+      id,
+      timeFrame: timeFrame,
+      groupBy: groupBy,
+      groupBy2: groupBy2,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'TopMoversResponse',) as TopMoversResponse;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'TopMoversResponse',
+      ) as TopMoversResponse;
     }
     return null;
   }
@@ -636,7 +783,9 @@ class AnalysisControllerApi {
   /// Parameters:
   ///
   /// * [String] arg0 (required):
-  Future<Response> publishDashboardUpdateWithHttpInfo(String arg0,) async {
+  Future<Response> publishDashboardUpdateWithHttpInfo(
+    String arg0,
+  ) async {
     // ignore: prefer_const_declarations
     final path = r'/v1/analysis/dashboard/publish-update';
 
@@ -647,10 +796,9 @@ class AnalysisControllerApi {
     final headerParams = <String, String>{};
     final formParams = <String, String>{};
 
-      queryParams.addAll(_queryParams('', 'arg0', arg0));
+    queryParams.addAll(_queryParams('', 'arg0', arg0));
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -666,8 +814,12 @@ class AnalysisControllerApi {
   /// Parameters:
   ///
   /// * [String] arg0 (required):
-  Future<void> publishDashboardUpdate(String arg0,) async {
-    final response = await publishDashboardUpdateWithHttpInfo(arg0,);
+  Future<void> publishDashboardUpdate(
+    String arg0,
+  ) async {
+    final response = await publishDashboardUpdateWithHttpInfo(
+      arg0,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }

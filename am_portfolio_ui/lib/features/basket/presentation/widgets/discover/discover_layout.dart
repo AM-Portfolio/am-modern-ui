@@ -45,6 +45,5 @@ class DiscoverLayout {
       flexRequired +
       flexAction;
 
-  static bool get cardHeightInRange =>
-      cardHeight >= 180 && cardHeight <= 210;
+  static bool get cardHeightInRange => cardHeight >= 180 && cardHeight <= 210;
 }

@@ -1,4 +1,4 @@
-﻿// AI Intent Response model — matches the FastAPI AiIntentResponse schema exactly
+// AI Intent Response model — matches the FastAPI AiIntentResponse schema exactly
 class AiIntentResponse {
   final String message;
   final String widgetId;
@@ -17,26 +17,31 @@ class AiIntentResponse {
   });
 
   factory AiIntentResponse.fromJson(Map<String, dynamic> json) {
-    final rawParams =
-        json['widgetParams'] ?? json['widget_params'] ?? const <String, dynamic>{};
+    final rawParams = json['widgetParams'] ??
+        json['widget_params'] ??
+        const <String, dynamic>{};
     return AiIntentResponse(
       message: json['message'] as String? ?? '',
-      widgetId: json['widgetId'] as String? ?? (json['widget_id'] as String? ?? 'TEXT_RESPONSE'),
+      widgetId: json['widgetId'] as String? ??
+          (json['widget_id'] as String? ?? 'TEXT_RESPONSE'),
       // Copy — Dio/web JSON maps are often unmodifiable.
       widgetParams: rawParams is Map
           ? Map<String, dynamic>.from(rawParams)
           : <String, dynamic>{},
-      sessionId: json['sessionId'] as String? ?? (json['session_id'] as String? ?? ''),
+      sessionId:
+          json['sessionId'] as String? ?? (json['session_id'] as String? ?? ''),
       toolsUsed: ((json['toolsUsed'] ?? json['tools_used']) as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           [],
-      traceId: json['traceId'] as String? ?? (json['trace_id'] as String? ?? ''),
+      traceId:
+          json['traceId'] as String? ?? (json['trace_id'] as String? ?? ''),
     );
   }
 
   // Fallback for error states
-  factory AiIntentResponse.error(String message, {String traceId = ''}) => AiIntentResponse(
+  factory AiIntentResponse.error(String message, {String traceId = ''}) =>
+      AiIntentResponse(
         message: message,
         widgetId: 'ERROR',
         widgetParams: {'reason': message, 'traceId': traceId},

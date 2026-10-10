@@ -73,9 +73,7 @@ class PortfolioService {
 
   /// Retrieves portfolio holdings for the specified user and portfolio
   /// Returns holdings data or throws an exception if retrieval fails
-  Future<PortfolioHoldings> getPortfolioHoldingsById(
-    String portfolioId,
-  ) async {
+  Future<PortfolioHoldings> getPortfolioHoldingsById(String portfolioId) async {
     CommonLogger.methodEntry(
       'getPortfolioHoldingsById',
       tag: 'PortfolioService',
@@ -117,7 +115,9 @@ class PortfolioService {
   }
 
   /// Gets cached portfolio holdings for the specified user and portfolio
-  Future<PortfolioHoldings?> getCachedPortfolioHoldingsById(String portfolioId) async {
+  Future<PortfolioHoldings?> getCachedPortfolioHoldingsById(
+    String portfolioId,
+  ) async {
     return _getPortfolioHoldings.getCached(portfolioId);
   }
 
@@ -208,7 +208,9 @@ class PortfolioService {
   }
 
   /// Gets cached portfolio summary for the specified user and portfolio
-  Future<PortfolioSummary?> getCachedPortfolioSummaryById(String portfolioId) async {
+  Future<PortfolioSummary?> getCachedPortfolioSummaryById(
+    String portfolioId,
+  ) async {
     return _getPortfolioSummary.getCached(portfolioId);
   }
 

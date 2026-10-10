@@ -48,21 +48,24 @@ class OHLCRequest {
   bool? refresh;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is OHLCRequest &&
-    other.symbols == symbols &&
-    other.isIndexSymbol == isIndexSymbol &&
-    other.timeFrame == timeFrame &&
-    other.refresh == refresh;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is OHLCRequest &&
+          other.symbols == symbols &&
+          other.isIndexSymbol == isIndexSymbol &&
+          other.timeFrame == timeFrame &&
+          other.refresh == refresh;
 
   @override
   int get hashCode =>
-    (symbols == null ? 0 : symbols!.hashCode) +
-    (isIndexSymbol == null ? 0 : isIndexSymbol!.hashCode) +
-    (timeFrame == null ? 0 : timeFrame!.hashCode) +
-    (refresh == null ? 0 : refresh!.hashCode);
+      (symbols == null ? 0 : symbols!.hashCode) +
+      (isIndexSymbol == null ? 0 : isIndexSymbol!.hashCode) +
+      (timeFrame == null ? 0 : timeFrame!.hashCode) +
+      (refresh == null ? 0 : refresh!.hashCode);
 
   @override
-  String toString() => 'OHLCRequest[symbols=$symbols, isIndexSymbol=$isIndexSymbol, timeFrame=$timeFrame, refresh=$refresh]';
+  String toString() =>
+      'OHLCRequest[symbols=$symbols, isIndexSymbol=$isIndexSymbol, timeFrame=$timeFrame, refresh=$refresh]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -100,8 +103,10 @@ class OHLCRequest {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "OHLCRequest[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "OHLCRequest[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "OHLCRequest[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "OHLCRequest[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -116,7 +121,10 @@ class OHLCRequest {
     return null;
   }
 
-  static List<OHLCRequest> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<OHLCRequest> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <OHLCRequest>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -132,7 +140,7 @@ class OHLCRequest {
   static Map<String, OHLCRequest> mapFromJson(dynamic json) {
     final map = <String, OHLCRequest>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); 
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
         final value = OHLCRequest.fromJson(entry.value);
         if (value != null) {
@@ -144,19 +152,23 @@ class OHLCRequest {
   }
 
   // maps a json object with a list of OHLCRequest-objects as value to a dart map
-  static Map<String, List<OHLCRequest>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<OHLCRequest>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<OHLCRequest>>{};
     if (json is Map && json.isNotEmpty) {
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = OHLCRequest.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = OHLCRequest.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

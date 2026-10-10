@@ -6,9 +6,9 @@
 
 part of openapi.api;
 
-
 class InstrumentManagementApi {
-  InstrumentManagementApi([ApiClient? apiClient]) : apiClient = apiClient ?? defaultApiClient;
+  InstrumentManagementApi([ApiClient? apiClient])
+      : apiClient = apiClient ?? defaultApiClient;
 
   final ApiClient apiClient;
 
@@ -21,7 +21,9 @@ class InstrumentManagementApi {
   /// Parameters:
   ///
   /// * [InstrumentSearchCriteria] instrumentSearchCriteria (required):
-  Future<Response> searchInstrumentsWithHttpInfo(InstrumentSearchCriteria instrumentSearchCriteria,) async {
+  Future<Response> searchInstrumentsWithHttpInfo(
+    InstrumentSearchCriteria instrumentSearchCriteria,
+  ) async {
     final path = r'/v1/instruments/search';
     Object? postBody = instrumentSearchCriteria;
 
@@ -30,7 +32,6 @@ class InstrumentManagementApi {
     final formParams = <String, String>{};
 
     const contentTypes = <String>['application/json'];
-
 
     return apiClient.invokeAPI(
       path,
@@ -50,20 +51,25 @@ class InstrumentManagementApi {
   /// Parameters:
   ///
   /// * [InstrumentSearchCriteria] instrumentSearchCriteria (required):
-  Future<List<Object>?> searchInstruments(InstrumentSearchCriteria instrumentSearchCriteria,) async {
-    final response = await searchInstrumentsWithHttpInfo(instrumentSearchCriteria,);
+  Future<List<Object>?> searchInstruments(
+    InstrumentSearchCriteria instrumentSearchCriteria,
+  ) async {
+    final response = await searchInstrumentsWithHttpInfo(
+      instrumentSearchCriteria,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
       final responseBody = await _decodeBodyBytes(response);
-      return (await apiClient.deserializeAsync(responseBody, 'List<Object>') as List)
-        .cast<Object>()
-        .toList(growable: false);
-
+      return (await apiClient.deserializeAsync(responseBody, 'List<Object>')
+              as List)
+          .cast<Object>()
+          .toList(growable: false);
     }
     return null;
   }
@@ -79,7 +85,10 @@ class InstrumentManagementApi {
   /// * [String] filePath:
   ///
   /// * [String] provider:
-  Future<Response> updateInstrumentsWithHttpInfo({ String? filePath, String? provider, }) async {
+  Future<Response> updateInstrumentsWithHttpInfo({
+    String? filePath,
+    String? provider,
+  }) async {
     final path = r'/v1/instruments/update';
     Object? postBody;
 
@@ -96,7 +105,6 @@ class InstrumentManagementApi {
 
     const contentTypes = <String>[];
 
-
     return apiClient.invokeAPI(
       path,
       'POST',
@@ -117,17 +125,26 @@ class InstrumentManagementApi {
   /// * [String] filePath:
   ///
   /// * [String] provider:
-  Future<String?> updateInstruments({ String? filePath, String? provider, }) async {
-    final response = await updateInstrumentsWithHttpInfo( filePath: filePath, provider: provider, );
+  Future<String?> updateInstruments({
+    String? filePath,
+    String? provider,
+  }) async {
+    final response = await updateInstrumentsWithHttpInfo(
+      filePath: filePath,
+      provider: provider,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'String',) as String;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'String',
+      ) as String;
     }
     return null;
   }

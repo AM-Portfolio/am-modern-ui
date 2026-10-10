@@ -95,7 +95,8 @@ class _AiHistoryDrawerState extends ConsumerState<AiHistoryDrawer> {
             decoration: BoxDecoration(
               color: context.colors.cardSurface.withValues(alpha: 0.92),
               border: Border(
-                left: BorderSide(color: accent.withValues(alpha: 0.45), width: 1.4),
+                left: BorderSide(
+                    color: accent.withValues(alpha: 0.45), width: 1.4),
               ),
               boxShadow: [
                 BoxShadow(
@@ -148,8 +149,9 @@ class _AiHistoryDrawerState extends ConsumerState<AiHistoryDrawer> {
                           tooltip: 'Refresh',
                           onPressed: state.isLoading
                               ? null
-                              : () =>
-                                  ref.read(aiSessionProvider.notifier).refresh(),
+                              : () => ref
+                                  .read(aiSessionProvider.notifier)
+                                  .refresh(),
                           icon: Icon(
                             Icons.refresh_rounded,
                             color: context.textSecondary,

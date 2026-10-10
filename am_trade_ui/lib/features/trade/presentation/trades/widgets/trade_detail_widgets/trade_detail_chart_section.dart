@@ -11,7 +11,8 @@ class TradeDetailChartSection extends StatefulWidget {
   });
 
   @override
-  State<TradeDetailChartSection> createState() => _TradeDetailChartSectionState();
+  State<TradeDetailChartSection> createState() =>
+      _TradeDetailChartSectionState();
 }
 
 class _TradeDetailChartSectionState extends State<TradeDetailChartSection> {
@@ -22,8 +23,8 @@ class _TradeDetailChartSectionState extends State<TradeDetailChartSection> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isProfit = widget.trade.isProfit;
-    
-    // Fallback to a nice blue if it's not strictly profit/loss driven, 
+
+    // Fallback to a nice blue if it's not strictly profit/loss driven,
     // but the mockup uses a beautiful primary color curve.
     final chartColor = theme.colorScheme.primary;
 
@@ -46,9 +47,11 @@ class _TradeDetailChartSectionState extends State<TradeDetailChartSection> {
               children: [
                 // Ranges
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.5),
+                    color: theme.colorScheme.surfaceContainerHigh
+                        .withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -57,19 +60,25 @@ class _TradeDetailChartSectionState extends State<TradeDetailChartSection> {
                       return GestureDetector(
                         onTap: () => setState(() => _selectedRange = range),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: isSelected ? theme.colorScheme.primaryContainer : Colors.transparent,
+                            color: isSelected
+                                ? theme.colorScheme.primaryContainer
+                                : Colors.transparent,
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             range,
                             style: TextStyle(
                               fontSize: 12,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                              color: isSelected 
-                                  ? theme.colorScheme.onPrimaryContainer 
-                                  : theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.w500,
+                              color: isSelected
+                                  ? theme.colorScheme.onPrimaryContainer
+                                  : theme.colorScheme.onSurface
+                                      .withValues(alpha: 0.6),
                             ),
                           ),
                         ),
@@ -94,11 +103,12 @@ class _TradeDetailChartSectionState extends State<TradeDetailChartSection> {
               ],
             ),
           ),
-          
+
           // Chart
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(right: 0, left: 0, top: 24, bottom: 0),
+              padding:
+                  const EdgeInsets.only(right: 0, left: 0, top: 24, bottom: 0),
               child: LineChart(
                 LineChartData(
                   gridData: const FlGridData(
@@ -112,7 +122,7 @@ class _TradeDetailChartSectionState extends State<TradeDetailChartSection> {
                     LineChartBarData(
                       spots: _generateDummyData(),
                       isCurved: true,
-                      color: chartColor, 
+                      color: chartColor,
                       barWidth: 3,
                       isStrokeCapRound: true,
                       dotData: const FlDotData(show: false),

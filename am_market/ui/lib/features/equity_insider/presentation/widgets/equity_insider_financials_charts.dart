@@ -150,7 +150,8 @@ class FinancialBarChartWidget extends StatelessWidget {
             sideTitles: SideTitles(
               showTitles: true,
               getTitlesWidget: (value, meta) {
-                if (value < 0 || value >= dataList.length) return const SizedBox();
+                if (value < 0 || value >= dataList.length)
+                  return const SizedBox();
                 final String period =
                     (dataList[value.toInt()]['period'] ?? '').toString();
                 final parts = period.split(' ');
@@ -189,8 +190,10 @@ class FinancialBarChartWidget extends StatelessWidget {
               },
             ),
           ),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
         gridData: FlGridData(
           show: true,

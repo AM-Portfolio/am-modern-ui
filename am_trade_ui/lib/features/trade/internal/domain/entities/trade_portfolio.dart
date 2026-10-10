@@ -61,5 +61,6 @@ abstract class TradePortfolioList with _$TradePortfolioList {
   }) = _TradePortfolioList;
 
   /// Create empty portfolio list
-  factory TradePortfolioList.empty(String userId) => TradePortfolioList(userId: userId, portfolios: []);
+  factory TradePortfolioList.empty(String userId) =>
+      TradePortfolioList(userId: userId, portfolios: []);
 }

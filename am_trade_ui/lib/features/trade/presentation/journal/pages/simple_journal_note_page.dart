@@ -60,8 +60,7 @@ class _SimpleJournalNotePageState extends State<SimpleJournalNotePage> {
         content: _content.text,
         entryDate: widget.initialEntry?.entryDate ?? DateTime.now(),
         entryType: widget.entryType,
-        journalStatus:
-            widget.entryType == 'MISSED' ? 'MISSED' : 'COMPLETED',
+        journalStatus: widget.entryType == 'MISSED' ? 'MISSED' : 'COMPLETED',
         symbol: _symbol.text.trim().isEmpty ? null : _symbol.text.trim(),
         postTradeReview: PostTradeReview(
           lessonLearned:

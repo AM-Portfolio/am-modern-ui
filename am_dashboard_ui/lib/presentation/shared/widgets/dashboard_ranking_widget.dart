@@ -37,9 +37,9 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
         : context.colors.actionPrimaryBg.withValues(alpha: 0.1);
     final currencyFormat = NumberFormat.currency(symbol: '₹', decimalDigits: 2);
     final headerStyle = context.text.caption().copyWith(
-          color: onSurfaceVariant,
-          fontWeight: FontWeight.w600,
-        );
+      color: onSurfaceVariant,
+      fontWeight: FontWeight.w600,
+    );
     final rowStyle = context.text.label().copyWith(color: onSurface);
 
     return AmGlassCard(
@@ -49,9 +49,9 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
         children: [
           Text(
             'Market Movers',
-            style: context.text.sectionTitle(compact: true).copyWith(
-                  color: onSurface,
-                ),
+            style: context.text
+                .sectionTitle(compact: true)
+                .copyWith(color: onSurface),
           ),
           const SizedBox(height: AppSpacing.md),
           Container(
@@ -73,122 +73,135 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
             builder: (context, constraints) {
               final isMobile = MediaQuery.of(context).size.width < 600;
               if (isMobile) {
-                return _buildMobileList(items, isDark, currencyFormat, onSurface, onSurfaceVariant);
+                return _buildMobileList(
+                  items,
+                  isDark,
+                  currencyFormat,
+                  onSurface,
+                  onSurfaceVariant,
+                );
               }
               return SizedBox(
                 height: 280,
-            child: PaginatedSortableTable<MoverItem>(
-              items: items,
-              pageSize: 10,
-              pageSizeOptions: const [5, 10, 25],
-              initialSortColumnIndex: 2,
-              initialSortDirection: _showGainers
-                  ? SortDirection.descending
-                  : SortDirection.ascending,
-              headerTextStyle: headerStyle,
-              rowTextStyle: rowStyle,
-              headerBackgroundColor:
-                  isDark ? Colors.transparent : context.colors.actionPrimaryBg.withValues(alpha: 0.05),
-              rowHoverColor:
-                  isDark ? Colors.white.withOpacity(0.04) : context.colors.actionPrimaryBg.withValues(alpha: 0.05),
-              emptyMessage: 'No data available',
-              columns: [
-                SortableColumn<MoverItem>(
-                  title: 'Ticker',
-                  flex: 3,
-                  sortBy: (item) => item.symbol,
-                  builder: (item) {
-                    final isIsinTicker = _looksLikeIsin(item.symbol);
-                    // When legacy data still has ISIN as symbol, show company name as primary label.
-                    final primaryLabel = (isIsinTicker && item.name.isNotEmpty)
-                        ? item.name
-                        : item.symbol;
-                    final subtitle = isIsinTicker && item.name.isNotEmpty
-                        ? item.symbol
-                        : (item.name.isNotEmpty && item.name != item.symbol
+                child: PaginatedSortableTable<MoverItem>(
+                  items: items,
+                  pageSize: 10,
+                  pageSizeOptions: const [5, 10, 25],
+                  initialSortColumnIndex: 2,
+                  initialSortDirection: _showGainers
+                      ? SortDirection.descending
+                      : SortDirection.ascending,
+                  headerTextStyle: headerStyle,
+                  rowTextStyle: rowStyle,
+                  headerBackgroundColor: isDark
+                      ? Colors.transparent
+                      : context.colors.actionPrimaryBg.withValues(alpha: 0.05),
+                  rowHoverColor: isDark
+                      ? Colors.white.withOpacity(0.04)
+                      : context.colors.actionPrimaryBg.withValues(alpha: 0.05),
+                  emptyMessage: 'No data available',
+                  columns: [
+                    SortableColumn<MoverItem>(
+                      title: 'Ticker',
+                      flex: 3,
+                      sortBy: (item) => item.symbol,
+                      builder: (item) {
+                        final isIsinTicker = _looksLikeIsin(item.symbol);
+                        // When legacy data still has ISIN as symbol, show company name as primary label.
+                        final primaryLabel =
+                            (isIsinTicker && item.name.isNotEmpty)
                             ? item.name
-                            : null);
+                            : item.symbol;
+                        final subtitle = isIsinTicker && item.name.isNotEmpty
+                            ? item.symbol
+                            : (item.name.isNotEmpty && item.name != item.symbol
+                                  ? item.name
+                                  : null);
 
-                    return Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            primaryLabel,
-                            style: rowStyle.copyWith(fontWeight: FontWeight.w700),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (subtitle != null) ...[
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              subtitle,
-                              style: rowStyle.copyWith(color: onSurfaceVariant),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                        return Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                primaryLabel,
+                                style: rowStyle.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
+                            if (subtitle != null) ...[
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  subtitle,
+                                  style: rowStyle.copyWith(
+                                    color: onSurfaceVariant,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ],
+                        );
+                      },
+                    ),
+                    SortableColumn<MoverItem>(
+                      title: 'Price',
+                      flex: 2,
+                      textAlign: TextAlign.end,
+                      sortBy: (item) => item.price,
+                      builder: (item) => Text(
+                        currencyFormat.format(item.price),
+                        textAlign: TextAlign.right,
+                        style: rowStyle.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    SortableColumn<MoverItem>(
+                      title: 'Change %',
+                      flex: 2,
+                      textAlign: TextAlign.end,
+                      sortBy: (item) => item.changePercentage,
+                      builder: (item) {
+                        final positive = item.changePercentage >= 0;
+                        return Text(
+                          '${positive ? '+' : ''}${item.changePercentage.toStringAsFixed(2)}%',
+                          textAlign: TextAlign.right,
+                          style: rowStyle.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: positive
+                                ? context.colors.statusSuccess
+                                : context.colors.statusError,
                           ),
-                        ],
-                      ],
-                    );
-                  },
+                        );
+                      },
+                    ),
+                    SortableColumn<MoverItem>(
+                      title: 'Change ₹',
+                      flex: 2,
+                      textAlign: TextAlign.end,
+                      sortBy: (item) => item.changeAmount,
+                      builder: (item) {
+                        final positive = item.changeAmount >= 0;
+                        return Text(
+                          currencyFormat.format(item.changeAmount),
+                          textAlign: TextAlign.right,
+                          style: rowStyle.copyWith(
+                            color: positive
+                                ? context.colors.statusSuccess
+                                : context.colors.statusError,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
-                SortableColumn<MoverItem>(
-                  title: 'Price',
-                  flex: 2,
-                  textAlign: TextAlign.end,
-                  sortBy: (item) => item.price,
-                  builder: (item) => Text(
-                    currencyFormat.format(item.price),
-                    textAlign: TextAlign.right,
-                    style: rowStyle.copyWith(fontWeight: FontWeight.w600),
-                  ),
-                ),
-                SortableColumn<MoverItem>(
-                  title: 'Change %',
-                  flex: 2,
-                  textAlign: TextAlign.end,
-                  sortBy: (item) => item.changePercentage,
-                  builder: (item) {
-                    final positive = item.changePercentage >= 0;
-                    return Text(
-                      '${positive ? '+' : ''}${item.changePercentage.toStringAsFixed(2)}%',
-                      textAlign: TextAlign.right,
-                      style: rowStyle.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: positive
-                            ? context.colors.statusSuccess
-                            : context.colors.statusError,
-                      ),
-                    );
-                  },
-                ),
-                SortableColumn<MoverItem>(
-                  title: 'Change ₹',
-                  flex: 2,
-                  textAlign: TextAlign.end,
-                  sortBy: (item) => item.changeAmount,
-                  builder: (item) {
-                    final positive = item.changeAmount >= 0;
-                    return Text(
-                      currencyFormat.format(item.changeAmount),
-                      textAlign: TextAlign.right,
-                      style: rowStyle.copyWith(
-                        color: positive
-                            ? context.colors.statusSuccess
-                            : context.colors.statusError,
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          );
-        },
+              );
+            },
+          ),
+        ],
       ),
-    ],
-  ),
     );
   }
 
@@ -203,11 +216,14 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
       return Padding(
         padding: const EdgeInsets.all(24),
         child: Center(
-          child: Text('No data available', style: TextStyle(color: onSurfaceVariant)),
+          child: Text(
+            'No data available',
+            style: TextStyle(color: onSurfaceVariant),
+          ),
         ),
       );
     }
-    
+
     // Show only up to 5 items on mobile to save vertical space
     final displayItems = items.take(5).toList();
 
@@ -216,13 +232,17 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
       physics: const NeverScrollableScrollPhysics(),
       itemCount: displayItems.length,
       separatorBuilder: (context, index) => Divider(
-        color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0),
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.1)
+            : const Color(0xFFE2E8F0),
         height: 1,
       ),
       itemBuilder: (context, index) {
         final item = displayItems[index];
         final positive = item.changePercentage >= 0;
-        final changeColor = positive ? context.colors.statusSuccess : context.colors.statusError;
+        final changeColor = positive
+            ? context.colors.statusSuccess
+            : context.colors.statusError;
 
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 12.0),
@@ -233,7 +253,9 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withValues(alpha: 0.05) : context.colors.actionPrimaryBg.withValues(alpha: 0.1),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : context.colors.actionPrimaryBg.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 alignment: Alignment.center,
@@ -290,7 +312,10 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
                   ),
                   const SizedBox(height: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: changeColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(4),
@@ -327,9 +352,7 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected
-              ? ModuleColors.dashboard
-              : Colors.transparent,
+          color: isSelected ? ModuleColors.dashboard : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
           boxShadow: isSelected
               ? [
@@ -346,9 +369,7 @@ class _DashboardRankingWidgetState extends State<DashboardRankingWidget> {
           style: TextStyle(
             fontSize: 11,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-            color: isSelected
-                ? Colors.white
-                : onSurfaceVariant,
+            color: isSelected ? Colors.white : onSurfaceVariant,
             fontFamily: 'Inter',
           ),
         ),

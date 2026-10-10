@@ -43,7 +43,10 @@ class DashboardWebScreen extends ConsumerWidget {
       recentActivityProvider(userId, page: 0, size: 10),
       (_, next) => markIfReady(next),
     );
-    ref.listen(portfolioOverviewsProvider(userId), (_, next) => markIfReady(next));
+    ref.listen(
+      portfolioOverviewsProvider(userId),
+      (_, next) => markIfReady(next),
+    );
   }
 
   @override
@@ -137,9 +140,9 @@ class DashboardWebScreen extends ConsumerWidget {
                         Text(
                           'Dashboard',
                           style: context.text.sectionTitle().copyWith(
-                                color: onSurface,
-                                fontWeight: FontWeight.w600,
-                              ),
+                            color: onSurface,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         if (showDemoBanner) ...[
                           const SizedBox(width: AppSpacing.md),

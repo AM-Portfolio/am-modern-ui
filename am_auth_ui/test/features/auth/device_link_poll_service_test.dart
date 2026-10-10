@@ -9,7 +9,8 @@ class _FakeDeviceLinkApi implements DeviceLinkApi {
   _FakeDeviceLinkApi({this.pollError});
 
   int pollCount = 0;
-  DeviceLinkPollResult pollResult = const DeviceLinkPollResult(status: 'pending');
+  DeviceLinkPollResult pollResult =
+      const DeviceLinkPollResult(status: 'pending');
   Object? pollError;
 
   @override

@@ -91,7 +91,8 @@ void main() {
     expect(find.text('p=100'), findsOneWidget);
   });
 
-  testWidgets('metrics change on maximize rebuilds layout size', (tester) async {
+  testWidgets('metrics change on maximize rebuilds layout size',
+      (tester) async {
     var inner = 1100.0;
     var outer = 1650.0;
     await tester.pumpWidget(
@@ -126,7 +127,8 @@ void main() {
     expect(find.text('layout=1920'), findsOneWidget);
   });
 
-  testWidgets('does not paint an in-app zoom chip or FittedBox', (tester) async {
+  testWidgets('does not paint an in-app zoom chip or FittedBox',
+      (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         builder: (context, child) {

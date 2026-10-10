@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'module_type.dart';
 
 /// Provides module-specific accent color to descendant widgets via InheritedWidget.
-/// 
+///
 /// This allows any widget in the tree to access the current module's accent color
 /// without explicit prop drilling.
-/// 
+///
 /// Usage:
 /// ```dart
 /// ModuleColorProvider(
 ///   module: ModuleType.trade,
 ///   child: YourWidget(),
 /// )
-/// 
+///
 /// // In descendant widget:
 /// final color = ModuleColorProvider.of(context);
 /// ```
@@ -30,7 +30,8 @@ class ModuleColorProvider extends InheritedWidget {
 
   /// Access the nearest ModuleColorProvider in the widget tree
   static Color? maybeOf(BuildContext context) {
-    final provider = context.dependOnInheritedWidgetOfExactType<ModuleColorProvider>();
+    final provider =
+        context.dependOnInheritedWidgetOfExactType<ModuleColorProvider>();
     return provider?.accentColor;
   }
 

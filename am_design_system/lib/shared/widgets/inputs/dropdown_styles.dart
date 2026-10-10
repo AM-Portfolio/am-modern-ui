@@ -59,7 +59,7 @@ class DropdownStyles {
   }) {
     if (!enabled) return Colors.grey.shade500;
     if (textColor != null) return textColor;
-    
+
     final theme = Theme.of(context);
     return isPlaceholder
         ? theme.colorScheme.onSurface.withValues(alpha: 0.6)
@@ -85,23 +85,24 @@ class DropdownStyles {
     Color? borderColor,
     double borderRadius = defaultBorderRadius,
     bool enabled = true,
-  }) => BoxDecoration(
-    color: getBackgroundColor(
-      context,
-      primaryColor: primaryColor,
-      backgroundColor: backgroundColor,
-      enabled: enabled,
-    ),
-    borderRadius: BorderRadius.circular(borderRadius),
-    border: Border.all(
-      color: getBorderColor(
-        context,
-        primaryColor: primaryColor,
-        borderColor: borderColor,
-        enabled: enabled,
-      ),
-    ),
-  );
+  }) =>
+      BoxDecoration(
+        color: getBackgroundColor(
+          context,
+          primaryColor: primaryColor,
+          backgroundColor: backgroundColor,
+          enabled: enabled,
+        ),
+        borderRadius: BorderRadius.circular(borderRadius),
+        border: Border.all(
+          color: getBorderColor(
+            context,
+            primaryColor: primaryColor,
+            borderColor: borderColor,
+            enabled: enabled,
+          ),
+        ),
+      );
 
   /// Create standard text style
   static TextStyle createTextStyle(
@@ -112,17 +113,18 @@ class DropdownStyles {
     FontWeight fontWeight = FontWeight.w500,
     bool isPlaceholder = false,
     bool enabled = true,
-  }) => TextStyle(
-    color: getTextColor(
-      context,
-      primaryColor: primaryColor,
-      textColor: textColor,
-      isPlaceholder: isPlaceholder,
-      enabled: enabled,
-    ),
-    fontSize: fontSize,
-    fontWeight: fontWeight,
-  );
+  }) =>
+      TextStyle(
+        color: getTextColor(
+          context,
+          primaryColor: primaryColor,
+          textColor: textColor,
+          isPlaceholder: isPlaceholder,
+          enabled: enabled,
+        ),
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+      );
 }
 
 /// Predefined dropdown configurations for common use cases

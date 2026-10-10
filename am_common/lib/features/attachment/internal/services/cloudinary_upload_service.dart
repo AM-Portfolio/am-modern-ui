@@ -11,7 +11,7 @@ import 'file_upload_service.dart';
 /// Backend handles Cloudinary interactions, providing abstraction
 class CloudinaryUploadService implements FileUploadService {
   CloudinaryUploadService({required CloudinaryRepository repository})
-    : _repository = repository;
+      : _repository = repository;
   final CloudinaryRepository _repository;
 
   @override

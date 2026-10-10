@@ -28,11 +28,11 @@ class DashboardLayoutNotifier extends Notifier<DashboardLayoutModel> {
     final saved = await repo.load(_userId);
     if (saved != null && saved.slots.isNotEmpty) {
       final hadLegacyPortfolioChart = saved.slots.any(
-        (s) =>
-            s.id == DashboardWidgetId.portfolioWealthChart &&
-            s.visible,
+        (s) => s.id == DashboardWidgetId.portfolioWealthChart && s.visible,
       );
-      final normalized = mergeWithDefaultLayout(normalizeDashboardLayout(saved));
+      final normalized = mergeWithDefaultLayout(
+        normalizeDashboardLayout(saved),
+      );
       if (hadLegacyPortfolioChart) {
         state = defaultDashboardLayout();
         await repo.save(_userId, state);
@@ -89,5 +89,5 @@ class DashboardLayoutNotifier extends Notifier<DashboardLayoutModel> {
 
 final dashboardLayoutProvider =
     NotifierProvider<DashboardLayoutNotifier, DashboardLayoutModel>(
-  DashboardLayoutNotifier.new,
-);
+      DashboardLayoutNotifier.new,
+    );

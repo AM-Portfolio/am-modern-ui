@@ -92,7 +92,9 @@ class _SymbolNewsSectionState extends ConsumerState<SymbolNewsSection> {
 
     final key = newsSymbolsProviderKey([symbol]);
     final insight = ref.watch(newsInsightForSymbolsProvider(key));
-    final quotes = ref.watch(priceStreamProvider).maybeWhen(
+    final quotes = ref
+        .watch(priceStreamProvider)
+        .maybeWhen(
           data: (value) => value,
           orElse: () => const <String, QuoteChange>{},
         );

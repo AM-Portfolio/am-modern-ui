@@ -22,11 +22,15 @@ class PaperPositionsPanel extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text('Positions', style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      'Positions',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
                     const Spacer(),
                     IconButton(
                       tooltip: 'Refresh',
-                      onPressed: () => context.read<PaperOmsCubit>().refreshBooks(),
+                      onPressed: () =>
+                          context.read<PaperOmsCubit>().refreshBooks(),
                       icon: const Icon(Icons.refresh),
                     ),
                   ],
@@ -35,8 +39,8 @@ class PaperPositionsPanel extends StatelessWidget {
                   Text(
                     'No open positions yet.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: context.colors.textSecondary,
-                        ),
+                      color: context.colors.textSecondary,
+                    ),
                   )
                 else
                   ...state.positions.map(
@@ -48,13 +52,16 @@ class PaperPositionsPanel extends StatelessWidget {
                     ),
                   ),
                 const Divider(),
-                Text('Working orders', style: Theme.of(context).textTheme.titleSmall),
+                Text(
+                  'Working orders',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
                 if (working.isEmpty)
                   Text(
                     'No working Limit / Super / Trail orders.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: context.colors.textSecondary,
-                        ),
+                      color: context.colors.textSecondary,
+                    ),
                   )
                 else
                   ...working.map(
@@ -70,13 +77,18 @@ class PaperPositionsPanel extends StatelessWidget {
                       trailing: TextButton(
                         onPressed: state.submitting
                             ? null
-                            : () => context.read<PaperOmsCubit>().cancel(o.orderId),
+                            : () => context.read<PaperOmsCubit>().cancel(
+                                o.orderId,
+                              ),
                         child: const Text('Cancel'),
                       ),
                     ),
                   ),
                 const Divider(),
-                Text('Recent blotter', style: Theme.of(context).textTheme.titleSmall),
+                Text(
+                  'Recent blotter',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
                 SizedBox(
                   height: 160,
                   child: ListView.builder(

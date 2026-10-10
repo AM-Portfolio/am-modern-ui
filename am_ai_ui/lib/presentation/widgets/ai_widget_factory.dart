@@ -39,7 +39,8 @@ class AiWidgetFactory {
     return _coerceDataMap(widgetParams['data']) ?? widgetParams;
   }
 
-  static Map<String, dynamic> _normalizePortfolioData(Map<String, dynamic> data) {
+  static Map<String, dynamic> _normalizePortfolioData(
+      Map<String, dynamic> data) {
     num? pick(List<String> keys) {
       for (final key in keys) {
         final value = data[key];
@@ -74,7 +75,8 @@ class AiWidgetFactory {
       'totalGainLoss': pick(['totalGainLoss']),
       'totalGainLossPercentage': pick(['totalGainLossPercentage']),
       'dayChange': pick(['dayChange', 'todayGainLoss']),
-      'dayChangePercentage': pick(['dayChangePercentage', 'todayGainLossPercentage']),
+      'dayChangePercentage':
+          pick(['dayChangePercentage', 'todayGainLossPercentage']),
       'totalHoldings': totalHoldings,
       'totalAssets': totalAssets,
       'totalPortfolios': data['totalPortfolios'] ?? 1,
@@ -178,11 +180,18 @@ class _BasketCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final basket = (widgetParams['basket'] as Map<String, dynamic>?) ?? widgetParams;
-    final name = basket['name'] as String? ?? basket['basket_name'] as String? ?? 'Investment Basket';
-    final description = basket['description'] as String? ?? 'Curated portfolio basket';
-    final items = (basket['items'] as List<dynamic>?) ?? (basket['constituents'] as List<dynamic>?) ?? [];
-    final totalValue = basket['total_value'] as num? ?? basket['totalValue'] as num?;
+    final basket =
+        (widgetParams['basket'] as Map<String, dynamic>?) ?? widgetParams;
+    final name = basket['name'] as String? ??
+        basket['basket_name'] as String? ??
+        'Investment Basket';
+    final description =
+        basket['description'] as String? ?? 'Curated portfolio basket';
+    final items = (basket['items'] as List<dynamic>?) ??
+        (basket['constituents'] as List<dynamic>?) ??
+        [];
+    final totalValue =
+        basket['total_value'] as num? ?? basket['totalValue'] as num?;
     final rebalanceFreq = basket['rebalance_frequency'] as String? ?? 'Monthly';
 
     return Container(
@@ -205,7 +214,8 @@ class _BasketCard extends StatelessWidget {
                     color: context.aiPrimary.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(Icons.shopping_basket_rounded, color: context.aiPrimary, size: 20),
+                  child: Icon(Icons.shopping_basket_rounded,
+                      color: context.aiPrimary, size: 20),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -222,7 +232,8 @@ class _BasketCard extends StatelessWidget {
                       ),
                       Text(
                         description,
-                        style: TextStyle(fontSize: 11, color: context.textSecondary),
+                        style: TextStyle(
+                            fontSize: 11, color: context.textSecondary),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -259,18 +270,25 @@ class _BasketCard extends StatelessWidget {
               final symbol = m['symbol'] as String? ?? '—';
               final weight = m['weight'] as num? ?? m['weightage'] as num?;
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       symbol,
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: context.textPrimary),
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: context.textPrimary),
                     ),
                     if (weight != null)
                       Text(
                         '${weight.toStringAsFixed(1)}%',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.aiPrimary),
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: context.aiPrimary),
                       ),
                   ],
                 ),
@@ -281,7 +299,10 @@ class _BasketCard extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
                 child: Text(
                   '+${items.length - 3} more assets',
-                  style: TextStyle(fontSize: 10, color: context.aiPrimary, fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                      fontSize: 10,
+                      color: context.aiPrimary,
+                      fontWeight: FontWeight.w500),
                 ),
               ),
           ],
@@ -304,7 +325,8 @@ class _TopMoversCard extends StatelessWidget {
 
   String _symbol(dynamic item) {
     if (item is Map) {
-      return (item['symbol'] ?? item['tradingsymbol'] ?? item['name'] ?? '').toString();
+      return (item['symbol'] ?? item['tradingsymbol'] ?? item['name'] ?? '')
+          .toString();
     }
     return item.toString();
   }
@@ -317,7 +339,8 @@ class _TopMoversCard extends StatelessWidget {
     if (gainers.isEmpty && losers.isEmpty) {
       gainers = _moversList(data, 'movers');
     }
-    final isMarket = data['source'] == 'market' || (data.containsKey('movers') && gainers.isNotEmpty);
+    final isMarket = data['source'] == 'market' ||
+        (data.containsKey('movers') && gainers.isNotEmpty);
 
     return Container(
       margin: const EdgeInsets.only(top: 8),
@@ -325,18 +348,23 @@ class _TopMoversCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.cardColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: context.marketPositive.withValues(alpha: 0.35)),
+        border:
+            Border.all(color: context.marketPositive.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.trending_up_rounded, color: context.marketPositive, size: 18),
+              Icon(Icons.trending_up_rounded,
+                  color: context.marketPositive, size: 18),
               const SizedBox(width: 6),
               Text(
                 isMarket ? 'Market Top Movers' : 'Portfolio Top Movers',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.textPrimary),
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: context.textPrimary),
               ),
             ],
           ),
@@ -347,7 +375,11 @@ class _TopMoversCard extends StatelessWidget {
               style: TextStyle(fontSize: 11, color: context.textSecondary),
             ),
           if (gainers.isNotEmpty) ...[
-            Text('Top Gainers', style: TextStyle(fontSize: 11, color: context.marketPositive, fontWeight: FontWeight.w600)),
+            Text('Top Gainers',
+                style: TextStyle(
+                    fontSize: 11,
+                    color: context.marketPositive,
+                    fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
             Wrap(
               spacing: 6,
@@ -366,7 +398,11 @@ class _TopMoversCard extends StatelessWidget {
           ],
           if (losers.isNotEmpty) ...[
             const SizedBox(height: 8),
-            Text('Top Losers', style: TextStyle(fontSize: 11, color: context.marketNegative, fontWeight: FontWeight.w600)),
+            Text('Top Losers',
+                style: TextStyle(
+                    fontSize: 11,
+                    color: context.marketNegative,
+                    fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
             Wrap(
               spacing: 6,
@@ -402,7 +438,8 @@ class _HoldingsTableCard extends StatelessWidget {
 
   String _holdingLabel(dynamic item) {
     if (item is! Map) return item.toString();
-    return (item['symbol'] ?? item['sourceId'] ?? item['name'] ?? '').toString();
+    return (item['symbol'] ?? item['sourceId'] ?? item['name'] ?? '')
+        .toString();
   }
 
   String _cell(dynamic item, List<String> keys) {
@@ -421,9 +458,8 @@ class _HoldingsTableCard extends StatelessWidget {
       data,
       messageText: messageText,
     );
-    final count = data['count'] is num
-        ? (data['count'] as num).toInt()
-        : holdings.length;
+    final count =
+        data['count'] is num ? (data['count'] as num).toInt() : holdings.length;
 
     if (holdings.isEmpty) return const SizedBox.shrink();
 
@@ -443,7 +479,8 @@ class _HoldingsTableCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.table_chart_rounded, color: ModuleColors.trade, size: 18),
+              Icon(Icons.table_chart_rounded,
+                  color: ModuleColors.trade, size: 18),
               const SizedBox(width: 6),
               Text(
                 'Holdings ($displayCount)',
@@ -485,7 +522,8 @@ class _HoldingsTableCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         qty,
-                        style: TextStyle(fontSize: 11, color: context.textSecondary),
+                        style: TextStyle(
+                            fontSize: 11, color: context.textSecondary),
                         textAlign: TextAlign.end,
                       ),
                     ),
@@ -494,7 +532,8 @@ class _HoldingsTableCard extends StatelessWidget {
                       flex: 2,
                       child: Text(
                         value,
-                        style: TextStyle(fontSize: 11, color: context.textSecondary),
+                        style: TextStyle(
+                            fontSize: 11, color: context.textSecondary),
                         textAlign: TextAlign.end,
                       ),
                     ),
@@ -551,18 +590,23 @@ class _AllocationCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.cardColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: ModuleColors.portfolio.withValues(alpha: 0.35)),
+        border:
+            Border.all(color: ModuleColors.portfolio.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.pie_chart_rounded, color: ModuleColors.portfolio, size: 18),
+              Icon(Icons.pie_chart_rounded,
+                  color: ModuleColors.portfolio, size: 18),
               const SizedBox(width: 6),
               Text(
                 title,
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.textPrimary),
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: context.textPrimary),
               ),
             ],
           ),
@@ -576,7 +620,9 @@ class _AllocationCard extends StatelessWidget {
             )
           else
             ...entries.take(6).map((e) {
-              final pct = e.value is num ? '${(e.value as num).toStringAsFixed(1)}%' : e.value.toString();
+              final pct = e.value is num
+                  ? '${(e.value as num).toStringAsFixed(1)}%'
+                  : e.value.toString();
               return Padding(
                 padding: const EdgeInsets.only(top: 6),
                 child: Row(
@@ -584,7 +630,8 @@ class _AllocationCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         e.key,
-                        style: TextStyle(fontSize: 11, color: context.textPrimary),
+                        style:
+                            TextStyle(fontSize: 11, color: context.textPrimary),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -615,7 +662,8 @@ class _RecentActivityCard extends StatelessWidget {
   String _activityLine(dynamic item) {
     if (item is! Map) return item.toString();
     final symbol = (item['symbol'] ?? item['tradingsymbol'] ?? '').toString();
-    final side = (item['side'] ?? item['transactionType'] ?? item['type'] ?? '').toString();
+    final side = (item['side'] ?? item['transactionType'] ?? item['type'] ?? '')
+        .toString();
     final qty = item['quantity'] ?? item['qty'];
     final parts = <String>[];
     if (side.isNotEmpty) parts.add(side.toUpperCase());
@@ -630,7 +678,9 @@ class _RecentActivityCard extends StatelessWidget {
     final activities = (data['activities'] as List<dynamic>?) ??
         (data['trades'] as List<dynamic>?) ??
         const [];
-    final count = data['count'] is num ? (data['count'] as num).toInt() : activities.length;
+    final count = data['count'] is num
+        ? (data['count'] as num).toInt()
+        : activities.length;
 
     return Container(
       margin: const EdgeInsets.only(top: 8),
@@ -645,11 +695,15 @@ class _RecentActivityCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.receipt_long_rounded, color: ModuleColors.market, size: 18),
+              Icon(Icons.receipt_long_rounded,
+                  color: ModuleColors.market, size: 18),
               const SizedBox(width: 6),
               Text(
                 'Recent Activity ($count)',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.textPrimary),
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: context.textPrimary),
               ),
             ],
           ),
@@ -709,7 +763,9 @@ class _PortfolioSummaryCard extends StatelessWidget {
 
   Color _gainColor(dynamic raw, BuildContext context) {
     if (raw == null) return context.textSecondary;
-    return (raw as num).toDouble() >= 0 ? context.marketPositive : context.marketNegative;
+    return (raw as num).toDouble() >= 0
+        ? context.marketPositive
+        : context.marketNegative;
   }
 
   String _todayLabel(num? dayChange, num? dayChangePct) {
@@ -726,9 +782,8 @@ class _PortfolioSummaryCard extends StatelessWidget {
         resolved.containsKey('currentValue') ||
         resolved.containsKey('totalInvested') ||
         resolved.containsKey('investmentValue');
-    final data = hasMetrics
-        ? AiWidgetFactory._normalizePortfolioData(resolved)
-        : null;
+    final data =
+        hasMetrics ? AiWidgetFactory._normalizePortfolioData(resolved) : null;
 
     // Fallback when data is absent (intent detected but data not yet loaded)
     if (data == null) {
@@ -743,7 +798,8 @@ class _PortfolioSummaryCard extends StatelessWidget {
     final dayChangePct = data['dayChangePercentage'] as num?;
     final totalHoldings = data['totalHoldings'] as int? ?? 0;
     final totalAssets = data['totalAssets'] as int? ?? totalHoldings;
-    final breakdown = (data['portfolioBreakdown'] as List<dynamic>?) ?? const [];
+    final breakdown =
+        (data['portfolioBreakdown'] as List<dynamic>?) ?? const [];
     final best = data['bestPerformer'] as Map<String, dynamic>?;
     final worst = data['worstPerformer'] as Map<String, dynamic>?;
 
@@ -808,7 +864,8 @@ class _PortfolioSummaryCard extends StatelessWidget {
   }) {
     final pad = embedded ? 10.0 : 14.0;
     final valueSize = embedded ? 22.0 : 24.0;
-    final dayColor = dayIsPositive ? context.marketPositive : context.marketNegative;
+    final dayColor =
+        dayIsPositive ? context.marketPositive : context.marketNegative;
 
     return Padding(
       padding: EdgeInsets.all(pad),
@@ -927,9 +984,8 @@ class _PortfolioSummaryCard extends StatelessWidget {
               ),
             ),
           ),
-          ...breakdown
-              .take(4)
-              .map((item) => _buildBreakdownRow(context, item as Map<String, dynamic>)),
+          ...breakdown.take(4).map((item) =>
+              _buildBreakdownRow(context, item as Map<String, dynamic>)),
           if (breakdown.length > 4)
             Padding(
               padding: const EdgeInsets.only(left: 12, right: 12, bottom: 8),
@@ -976,23 +1032,39 @@ class _PortfolioSummaryCard extends StatelessWidget {
     final value = item['currentValue'] as num?;
     final gainPct = item['gainLossPercent'] as num?;
     final gainIsPos = (gainPct?.toDouble() ?? 0.0) >= 0;
-    final gainColor = gainIsPos ? context.marketPositive : context.marketNegative;
+    final gainColor =
+        gainIsPos ? context.marketPositive : context.marketNegative;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       child: Row(
         children: [
           Expanded(
-            child: Text(name, style: TextStyle(fontSize: 12, color: context.textPrimary, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis),
+            child: Text(name,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: context.textPrimary,
+                    fontWeight: FontWeight.w500),
+                overflow: TextOverflow.ellipsis),
           ),
           const SizedBox(width: 8),
-          Text(value != null ? _formatCurrency(value) : '₹—', style: TextStyle(fontSize: 12, color: context.textPrimary, fontWeight: FontWeight.w600)),
+          Text(value != null ? _formatCurrency(value) : '₹—',
+              style: TextStyle(
+                  fontSize: 12,
+                  color: context.textPrimary,
+                  fontWeight: FontWeight.w600)),
           const SizedBox(width: 6),
           if (gainPct != null)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-              decoration: BoxDecoration(color: gainColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(4)),
-              child: Text(_formatPct(gainPct), style: TextStyle(fontSize: 10, color: gainColor, fontWeight: FontWeight.w600)),
+              decoration: BoxDecoration(
+                  color: gainColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(4)),
+              child: Text(_formatPct(gainPct),
+                  style: TextStyle(
+                      fontSize: 10,
+                      color: gainColor,
+                      fontWeight: FontWeight.w600)),
             ),
         ],
       ),
@@ -1006,8 +1078,8 @@ class _PortfolioSummaryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.cardColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-            color: ModuleColors.portfolio.withValues(alpha: 0.35)),
+        border:
+            Border.all(color: ModuleColors.portfolio.withValues(alpha: 0.35)),
       ),
       child: Row(
         children: [
@@ -1035,15 +1107,13 @@ class _PortfolioSummaryCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   'Tap to view portfolio',
-                  style: TextStyle(
-                      color: context.textSecondary, fontSize: 11),
+                  style: TextStyle(color: context.textSecondary, fontSize: 11),
                 ),
               ],
             ),
           ),
           Icon(Icons.arrow_forward_ios,
-              size: 14,
-              color: ModuleColors.portfolio.withValues(alpha: 0.6)),
+              size: 14, color: ModuleColors.portfolio.withValues(alpha: 0.6)),
         ],
       ),
     );
@@ -1108,7 +1178,8 @@ class _GridMetric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final subColor = subPositive ? context.marketPositive : context.marketNegative;
+    final subColor =
+        subPositive ? context.marketPositive : context.marketNegative;
     return Container(
       padding: EdgeInsets.all(compact ? 8 : 10),
       decoration: BoxDecoration(
@@ -1119,7 +1190,8 @@ class _GridMetric extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(fontSize: 10, color: context.textSecondary)),
+          Text(label,
+              style: TextStyle(fontSize: 10, color: context.textSecondary)),
           SizedBox(height: compact ? 2 : 4),
           Text(
             value,
@@ -1164,7 +1236,8 @@ class _IconStat extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: TextStyle(fontSize: 10, color: context.textSecondary)),
+            Text(label,
+                style: TextStyle(fontSize: 10, color: context.textSecondary)),
             Text(
               value,
               style: TextStyle(
@@ -1199,15 +1272,24 @@ class _MetricCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final badgeColor = badgePositive ? context.marketPositive : context.marketNegative;
+    final badgeColor =
+        badgePositive ? context.marketPositive : context.marketNegative;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(fontSize: 10, color: context.textSecondary)),
+        Text(label,
+            style: TextStyle(fontSize: 10, color: context.textSecondary)),
         const SizedBox(height: 3),
-        Text(value, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: valueColor), overflow: TextOverflow.ellipsis),
+        Text(value,
+            style: TextStyle(
+                fontSize: 12, fontWeight: FontWeight.w700, color: valueColor),
+            overflow: TextOverflow.ellipsis),
         if (badge != null)
-          Text(badge!, style: TextStyle(fontSize: 10, color: badgeColor, fontWeight: FontWeight.w600)),
+          Text(badge!,
+              style: TextStyle(
+                  fontSize: 10,
+                  color: badgeColor,
+                  fontWeight: FontWeight.w600)),
       ],
     );
   }
@@ -1258,10 +1340,14 @@ class _PerformerChip extends StatelessWidget {
         children: [
           Icon(icon, size: 13, color: color),
           const SizedBox(width: 4),
-          Text('$label: $symbol', style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600)),
+          Text('$label: $symbol',
+              style: TextStyle(
+                  fontSize: 11, color: color, fontWeight: FontWeight.w600)),
           if (pctText.isNotEmpty) ...[
             const SizedBox(width: 4),
-            Text(pctText, style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w500)),
+            Text(pctText,
+                style: TextStyle(
+                    fontSize: 10, color: color, fontWeight: FontWeight.w500)),
           ],
         ],
       ),
@@ -1309,13 +1395,20 @@ class _IntentCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: TextStyle(fontWeight: FontWeight.w600, color: color, fontSize: 13)),
+                Text(title,
+                    style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: color,
+                        fontSize: 13)),
                 const SizedBox(height: 2),
-                Text(subtitle, style: TextStyle(color: context.textSecondary, fontSize: 11)),
+                Text(subtitle,
+                    style:
+                        TextStyle(color: context.textSecondary, fontSize: 11)),
               ],
             ),
           ),
-          Icon(Icons.arrow_forward_ios, size: 14, color: color.withValues(alpha: 0.6)),
+          Icon(Icons.arrow_forward_ios,
+              size: 14, color: color.withValues(alpha: 0.6)),
         ],
       ),
     );
@@ -1348,7 +1441,11 @@ class _ErrorBanner extends StatelessWidget {
               Icon(Icons.error_outline, color: context.statusError, size: 18),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(message, style: TextStyle(color: context.statusError, fontSize: 12, fontWeight: FontWeight.w500)),
+                child: Text(message,
+                    style: TextStyle(
+                        color: context.statusError,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500)),
               ),
             ],
           ),
@@ -1364,8 +1461,6 @@ class _ErrorBanner extends StatelessWidget {
     );
   }
 }
-
-
 
 class _OrderPreviewCard extends ConsumerStatefulWidget {
   final Map<String, dynamic> widgetParams;
@@ -1384,38 +1479,53 @@ class _OrderPreviewCardState extends ConsumerState<_OrderPreviewCard> {
     final userId = widget.widgetParams['userId']?.toString() ?? 'user';
     if (token == null || token.isEmpty) return;
 
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final success = await ref.read(aiChatProvider.notifier).confirmAction(
-        confirmToken: token,
-        userId: userId,
-      );
+            confirmToken: token,
+            userId: userId,
+          );
       if (success) {
-        setState(() { _confirmed = true; _loading = false; });
+        setState(() {
+          _confirmed = true;
+          _loading = false;
+        });
       } else {
-        setState(() { _error = 'Failed to execute order. Action rejected.'; _loading = false; });
+        setState(() {
+          _error = 'Failed to execute order. Action rejected.';
+          _loading = false;
+        });
       }
     } catch (e) {
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final data = widget.widgetParams['data']?['order'] ?? widget.widgetParams['order'] ?? {};
+    final data = widget.widgetParams['data']?['order'] ??
+        widget.widgetParams['order'] ??
+        {};
     final symbol = data['symbol'] ?? 'Unknown';
     final action = data['action'] ?? 'BUY';
     final qty = data['quantity'] ?? 1;
     final val = data['totalValue'] ?? 0.0;
     final token = widget.widgetParams['confirmToken'];
-    
+
     return Container(
       margin: const EdgeInsets.only(top: 8, bottom: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: context.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: ModuleColors.trade.withValues(alpha: 0.4), width: 2),
+        border: Border.all(
+            color: ModuleColors.trade.withValues(alpha: 0.4), width: 2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1424,24 +1534,36 @@ class _OrderPreviewCardState extends ConsumerState<_OrderPreviewCard> {
             children: [
               Icon(Icons.gavel_rounded, color: ModuleColors.trade),
               const SizedBox(width: 8),
-              Text('Smart Order Preview', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              Text('Smart Order Preview',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             ],
           ),
           const SizedBox(height: 12),
-          Text('$action $qty shares of $symbol', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+          Text('$action $qty shares of $symbol',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
           const SizedBox(height: 4),
-          Text('Estimated Value: ₹$val', style: TextStyle(fontSize: 14, color: context.textSecondary)),
+          Text('Estimated Value: ₹$val',
+              style: TextStyle(fontSize: 14, color: context.textSecondary)),
           const SizedBox(height: 16),
           if (_error != null)
-            Padding(padding: const EdgeInsets.only(bottom: 12), child: Text(_error!, style: TextStyle(color: context.statusError, fontSize: 12))),
+            Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(_error!,
+                    style:
+                        TextStyle(color: context.statusError, fontSize: 12))),
           if (_confirmed)
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: context.colors.marketPositiveBg, borderRadius: BorderRadius.circular(8)),
+              decoration: BoxDecoration(
+                  color: context.colors.marketPositiveBg,
+                  borderRadius: BorderRadius.circular(8)),
               child: Row(children: [
                 Icon(Icons.check_circle, color: context.marketPositive),
                 const SizedBox(width: 8),
-                Text('Order Placed Successfully!', style: TextStyle(color: context.marketPositive, fontWeight: FontWeight.bold))
+                Text('Order Placed Successfully!',
+                    style: TextStyle(
+                        color: context.marketPositive,
+                        fontWeight: FontWeight.bold))
               ]),
             )
           else if (token != null)
@@ -1449,7 +1571,9 @@ class _OrderPreviewCardState extends ConsumerState<_OrderPreviewCard> {
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: ModuleColors.trade, foregroundColor: context.aiOnPrimary),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: ModuleColors.trade,
+                        foregroundColor: context.aiOnPrimary),
                     onPressed: _loading ? null : _confirmOrder,
                     child: _loading
                         ? SizedBox(

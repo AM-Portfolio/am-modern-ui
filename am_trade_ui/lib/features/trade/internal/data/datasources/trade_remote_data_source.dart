@@ -77,6 +77,7 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
   final ApiClient _apiClient;
   final TradeApiConfig _tradeConfig;
   final PortfolioApiConfig? _portfolioConfig;
+
   /// Only when config says so — never inject mock-pf-001 against dig/prod just because kDebugMode.
   final bool _useMockData;
 
@@ -211,7 +212,8 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
             tag: 'TradeRemoteDataSource',
           );
           AppLogger.methodExit('getTradeHoldings',
-              tag: 'TradeRemoteDataSource', result: 'success_portfolio_fallback');
+              tag: 'TradeRemoteDataSource',
+              result: 'success_portfolio_fallback');
           return fromPortfolio;
         }
       }
@@ -258,7 +260,8 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
   }
 
   /// GET {portfolioBase}/v1/portfolios/holdings?portfolioId=… and map to trade holdings shape.
-  Future<TradeHoldingsDto?> _holdingsFromPortfolioApi(String portfolioId) async {
+  Future<TradeHoldingsDto?> _holdingsFromPortfolioApi(
+      String portfolioId) async {
     final portfolio = _portfolioConfig;
     if (portfolio == null || portfolio.baseUrl.isEmpty) {
       return null;

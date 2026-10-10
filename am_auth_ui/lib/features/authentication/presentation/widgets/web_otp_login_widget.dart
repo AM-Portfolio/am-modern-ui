@@ -83,7 +83,8 @@ class _WebOtpLoginWidgetState extends State<WebOtpLoginWidget> {
       _channel = channel;
     });
     try {
-      final result = await AuthProviders.identityAuthRemoteDataSource.sendWebOtp(
+      final result =
+          await AuthProviders.identityAuthRemoteDataSource.sendWebOtp(
         channel: channel,
         destination: destination,
       );
@@ -118,15 +119,15 @@ class _WebOtpLoginWidgetState extends State<WebOtpLoginWidget> {
       );
       if (!mounted) return;
       await context.read<AuthCubit>().completeWebSession(
-        userId: result.user.sub,
-        email: result.user.email ??
-            result.user.preferredUsername ??
-            result.user.sub,
-        displayName: result.user.preferredUsername,
-        accessToken: result.tokens?.accessToken,
-        refreshToken: result.tokens?.refreshToken,
-        expiresInSeconds: result.tokens?.expiresIn,
-      );
+            userId: result.user.sub,
+            email: result.user.email ??
+                result.user.preferredUsername ??
+                result.user.sub,
+            displayName: result.user.preferredUsername,
+            accessToken: result.tokens?.accessToken,
+            refreshToken: result.tokens?.refreshToken,
+            expiresInSeconds: result.tokens?.expiresIn,
+          );
     } catch (error) {
       if (!mounted) return;
       setState(() {

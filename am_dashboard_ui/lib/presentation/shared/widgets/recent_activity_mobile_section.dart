@@ -44,9 +44,9 @@ class RecentActivityMobileSection extends StatelessWidget {
           children: [
             Text(
               'Recent Activity',
-              style: context.text.sectionTitle(compact: true).copyWith(
-                    color: onSurface,
-                  ),
+              style: context.text
+                  .sectionTitle(compact: true)
+                  .copyWith(color: onSurface),
             ),
             if (showPaging)
               InkWell(
@@ -57,9 +57,9 @@ class RecentActivityMobileSection extends StatelessWidget {
                   children: [
                     Text(
                       'View All ($totalItems)',
-                      style: context.text.link(compact: true).copyWith(
-                            color: accent,
-                          ),
+                      style: context.text
+                          .link(compact: true)
+                          .copyWith(color: accent),
                     ),
                     Icon(Icons.chevron_right, size: 16, color: accent),
                   ],
@@ -85,10 +85,10 @@ class RecentActivityMobileSection extends StatelessWidget {
                 selectedColor: ModuleColors.dashboard.withValues(alpha: 0.25),
                 checkmarkColor: ModuleColors.dashboard,
                 labelStyle: context.text.caption().copyWith(
-                      color: statusFilter == entry.$1
-                          ? ModuleColors.dashboard
-                          : context.colors.textSecondary,
-                    ),
+                  color: statusFilter == entry.$1
+                      ? ModuleColors.dashboard
+                      : context.colors.textSecondary,
+                ),
                 side: BorderSide(
                   color: statusFilter == entry.$1
                       ? ModuleColors.dashboard.withValues(alpha: 0.5)
@@ -106,9 +106,9 @@ class RecentActivityMobileSection extends StatelessWidget {
             child: Center(
               child: Text(
                 'No recent activity',
-                style: context.text
-                    .bodyMuted()
-                    .copyWith(color: onSurfaceVariant),
+                style: context.text.bodyMuted().copyWith(
+                  color: onSurfaceVariant,
+                ),
               ),
             ),
           )

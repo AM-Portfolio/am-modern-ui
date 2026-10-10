@@ -39,11 +39,11 @@ class _MarketIndexDetailViewState extends State<MarketIndexDetailView> {
 
   @override
   Widget build(BuildContext context) => Stack(
-    children: [
-      Positioned.fill(child: _buildContent()),
-      Positioned(top: 20, right: 20, child: _buildViewModeToggle()),
-    ],
-  );
+        children: [
+          Positioned.fill(child: _buildContent()),
+          Positioned(top: 20, right: 20, child: _buildViewModeToggle()),
+        ],
+      );
 
   Widget _buildContent() {
     if (widget.provider.isLoading) {
@@ -72,21 +72,21 @@ class _MarketIndexDetailViewState extends State<MarketIndexDetailView> {
   }
 
   Widget _buildViewModeToggle() => Container(
-    padding: const EdgeInsets.all(4),
-    decoration: BoxDecoration(
-      color: Colors.black.withOpacity(0.3),
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: Colors.white.withOpacity(0.1)),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _toggleButton(0, Icons.table_chart_rounded, 'Table'),
-        _toggleButton(1, Icons.grid_view_rounded, 'Heatmap'),
-        _toggleButton(2, Icons.analytics_rounded, 'Analytics'),
-      ],
-    ),
-  );
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withOpacity(0.1)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _toggleButton(0, Icons.table_chart_rounded, 'Table'),
+            _toggleButton(1, Icons.grid_view_rounded, 'Heatmap'),
+            _toggleButton(2, Icons.analytics_rounded, 'Analytics'),
+          ],
+        ),
+      );
 
   Widget _toggleButton(int mode, IconData icon, String label) {
     final isSelected = _viewMode == mode;

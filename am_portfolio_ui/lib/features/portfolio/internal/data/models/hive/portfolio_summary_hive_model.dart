@@ -298,7 +298,8 @@ class PortfolioSummaryHiveModelAdapter
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return PortfolioSummaryHiveModel(      totalValue: fields[1] as double,
+    return PortfolioSummaryHiveModel(
+      totalValue: fields[1] as double,
       totalInvested: fields[2] as double,
       investmentValue: fields[3] as double,
       totalGainLoss: fields[4] as double,

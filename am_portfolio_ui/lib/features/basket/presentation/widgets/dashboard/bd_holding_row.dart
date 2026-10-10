@@ -16,7 +16,11 @@ class BdHoldingRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fmt = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
+    final fmt = NumberFormat.currency(
+      locale: 'en_IN',
+      symbol: '₹',
+      decimalDigits: 2,
+    );
     final hasMarket = BdDashboardMath.hasMarketPrice(line);
     final pnlPct = BdDashboardMath.pnlPercent(line);
     final pnlColor = !hasMarket
@@ -26,12 +30,21 @@ class BdHoldingRow extends StatelessWidget {
     final barValue = (weightPercent / 100.0).clamp(0.0, 1.0);
     final isSubstitute = line.status.toUpperCase() == 'SUBSTITUTE';
     final displaySymbol = line.symbol;
-    final company = line.companyName?.isNotEmpty == true ? line.companyName! : '—';
+    final company = line.companyName?.isNotEmpty == true
+        ? line.companyName!
+        : '—';
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: context.colors.border.withValues(alpha: 0.5))),
+        border: Border(
+          bottom: BorderSide(
+            color: context.colors.border.withValues(alpha: 0.5),
+          ),
+        ),
       ),
       child: Row(
         children: [
@@ -41,10 +54,16 @@ class BdHoldingRow extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 16,
-                  backgroundColor: ModuleColors.portfolio.withValues(alpha: 0.15),
+                  backgroundColor: ModuleColors.portfolio.withValues(
+                    alpha: 0.15,
+                  ),
                   child: Text(
                     displaySymbol.isNotEmpty ? displaySymbol[0] : '?',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: ModuleColors.portfolio),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: ModuleColors.portfolio,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -52,12 +71,29 @@ class BdHoldingRow extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(displaySymbol, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                      Text(company, style: TextStyle(fontSize: 11, color: context.colors.textSecondary), overflow: TextOverflow.ellipsis),
-                      if (isSubstitute && line.coversEtfSymbol?.isNotEmpty == true)
+                      Text(
+                        displaySymbol,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                      Text(
+                        company,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: context.colors.textSecondary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (isSubstitute &&
+                          line.coversEtfSymbol?.isNotEmpty == true)
                         Text(
                           'sub for ${line.coversEtfSymbol}',
-                          style: TextStyle(fontSize: 10, color: context.colors.textTertiary),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: context.colors.textTertiary,
+                          ),
                         ),
                     ],
                   ),
@@ -72,7 +108,10 @@ class BdHoldingRow extends StatelessWidget {
               children: [
                 Text(
                   '${weightPercent.toStringAsFixed(1)}%',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 LayoutBuilder(
@@ -96,13 +135,33 @@ class BdHoldingRow extends StatelessWidget {
               ],
             ),
           ),
-          Expanded(flex: 8, child: Text('${line.quantity.toInt()}', style: const TextStyle(fontSize: 12))),
-          Expanded(flex: 14, child: Text(fmt.format(lineValue), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600))),
+          Expanded(
+            flex: 8,
+            child: Text(
+              '${line.quantity.toInt()}',
+              style: const TextStyle(fontSize: 12),
+            ),
+          ),
+          Expanded(
+            flex: 14,
+            child: Text(
+              fmt.format(lineValue),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+          ),
           Expanded(
             flex: 12,
             child: Text(
-              BdDashboardMath.formatPnlAmount(line.pnl, fmt, hasMarket: hasMarket),
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: pnlColor),
+              BdDashboardMath.formatPnlAmount(
+                line.pnl,
+                fmt,
+                hasMarket: hasMarket,
+              ),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: pnlColor,
+              ),
             ),
           ),
           Expanded(

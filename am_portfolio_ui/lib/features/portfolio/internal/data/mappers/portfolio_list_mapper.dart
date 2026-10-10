@@ -8,7 +8,7 @@ import 'package:am_common/am_common.dart';
 /// Handles conversion between DTO and domain entities for portfolio list operations
 class PortfolioListMapper {
   /// Convert PortfolioListDto to PortfolioList domain entity
-  static PortfolioList fromApiModel(PortfolioListDto dto, ) {
+  static PortfolioList fromApiModel(PortfolioListDto dto) {
     CommonLogger.debug(
       'Mapping PortfolioListDto to PortfolioList domain entity',
       tag: 'PortfolioListMapper',
@@ -18,39 +18,39 @@ class PortfolioListMapper {
       // Map individual portfolio items
       final portfolioItems = dto.portfolios
           .where((itemDto) => itemDto.kind?.toUpperCase() != 'DELETED')
-          .map(
-            (itemDto) {
-              String name = itemDto.portfolioName;
-              final lower = name.toLowerCase();
-              if (lower.contains('grow')) {
-                name = 'Groww';
-              } else if (lower.contains('zerodha')) {
-                name = 'Zerodha';
-              } else if (lower.contains('dhan')) {
-                name = 'Dhan';
-              } else if (lower.contains('angelone') || lower.contains('angel one')) {
-                name = 'Angel One';
-              } else if (lower.contains('upstox')) {
-                name = 'Upstox';
-              } else if (lower.contains('mstock')) {
-                name = 'MStock';
-              } else if (lower.contains('kotak')) {
-                name = 'Kotak';
-              }
+          .map((itemDto) {
+            String name = itemDto.portfolioName;
+            final lower = name.toLowerCase();
+            if (lower.contains('grow')) {
+              name = 'Groww';
+            } else if (lower.contains('zerodha')) {
+              name = 'Zerodha';
+            } else if (lower.contains('dhan')) {
+              name = 'Dhan';
+            } else if (lower.contains('angelone') ||
+                lower.contains('angel one')) {
+              name = 'Angel One';
+            } else if (lower.contains('upstox')) {
+              name = 'Upstox';
+            } else if (lower.contains('mstock')) {
+              name = 'MStock';
+            } else if (lower.contains('kotak')) {
+              name = 'Kotak';
+            }
 
-              final kind = itemDto.kind?.toUpperCase();
-              final isDummy = itemDto.isDummy ||
-                  kind == 'DUMMY' ||
-                  kind == 'DEMO' ||
-                  name.toLowerCase().contains('demo');
-              return PortfolioItem(
-                portfolioId: itemDto.portfolioId,
-                portfolioName: name,
-                isBasket: kind == 'BASKET',
-                isDummy: isDummy,
-              );
-            },
-          )
+            final kind = itemDto.kind?.toUpperCase();
+            final isDummy =
+                itemDto.isDummy ||
+                kind == 'DUMMY' ||
+                kind == 'DEMO' ||
+                name.toLowerCase().contains('demo');
+            return PortfolioItem(
+              portfolioId: itemDto.portfolioId,
+              portfolioName: name,
+              isBasket: kind == 'BASKET',
+              isDummy: isDummy,
+            );
+          })
           .toList();
 
       // Create domain entity
@@ -113,11 +113,8 @@ class PortfolioListMapper {
   }
 
   /// Create empty PortfolioList for error scenarios
-  static PortfolioList createEmpty() => PortfolioList(
-    
-    portfolios: [],
-    lastUpdated: DateTime.now(),
-  );
+  static PortfolioList createEmpty() =>
+      PortfolioList(portfolios: [], lastUpdated: DateTime.now());
 
   /// Validate portfolio list data
   static bool isValidPortfolioList(PortfolioListDto dto) {

@@ -8,7 +8,8 @@ import '../dtos/report/timing_analysis_dto.dart';
 import '../dtos/report/trade_performance_summary_dto.dart';
 
 class TradeReportMapper {
-  static ReportPerformanceMetrics toPerformanceMetrics(PerformanceMetricsDto dto) {
+  static ReportPerformanceMetrics toPerformanceMetrics(
+      PerformanceMetricsDto dto) {
     return ReportPerformanceMetrics(
       avgHoldTime: dto.avgHoldTime?.toDouble(),
       longestTradeDuration: dto.longestTradeDuration?.toDouble(),
@@ -82,65 +83,75 @@ class TradeReportMapper {
 
   static TimingAnalysis toTimingAnalysis(TimingAnalysisDto dto) {
     return TimingAnalysis(
-      hourlyPerformance: dto.hourlyPerformance.map((e) => HourlyPerformance(
-        hour: e.hour,
-        tradeCount: e.tradeCount,
-        winCount: e.winCount,
-        lossCount: e.lossCount,
-        winRate: e.winRate,
-        totalProfitLoss: e.totalProfitLoss,
-        averageWinAmount: e.averageWinAmount,
-        averageLossAmount: e.averageLossAmount,
-        averageHoldingTime: e.averageHoldingTime,
-        metrics: toPerformanceMetrics(e.metrics),
-      )).toList(),
-      dayOfWeekPerformance: dto.dayOfWeekPerformance.map((e) => DayOfWeekPerformance(
-        dayOfWeek: e.dayOfWeek,
-        dayOrder: e.dayOrder,
-        tradeCount: e.tradeCount,
-        winCount: e.winCount,
-        lossCount: e.lossCount,
-        winRate: e.winRate,
-        totalProfitLoss: e.totalProfitLoss,
-        averageWinAmount: e.averageWinAmount,
-        averageLossAmount: e.averageLossAmount,
-        averageHoldingTime: e.averageHoldingTime,
-        metrics: toPerformanceMetrics(e.metrics),
-      )).toList(),
-      monthlyPerformance: dto.monthlyPerformance.map((e) => MonthlyPerformance(
-        month: e.month,
-        monthOrder: e.monthOrder,
-        tradeCount: e.tradeCount,
-        winCount: e.winCount,
-        lossCount: e.lossCount,
-        winRate: e.winRate,
-        totalProfitLoss: e.totalProfitLoss,
-        averageWinAmount: e.averageWinAmount,
-        averageLossAmount: e.averageLossAmount,
-        averageHoldingTime: e.averageHoldingTime,
-        metrics: toPerformanceMetrics(e.metrics),
-      )).toList(),
-      yearlyPerformance: dto.yearlyPerformance.map((e) => YearlyPerformance(
-        year: e.year,
-        tradeCount: e.tradeCount,
-        winCount: e.winCount,
-        lossCount: e.lossCount,
-        winRate: e.winRate,
-        totalProfitLoss: e.totalProfitLoss,
-        averageWinAmount: e.averageWinAmount,
-        averageLossAmount: e.averageLossAmount,
-        averageHoldingTime: e.averageHoldingTime,
-        metrics: toPerformanceMetrics(e.metrics),
-      )).toList(),
-      weeklyPerformance: dto.weeklyPerformance.map((e) => WeeklyPerformance(
-        weekId: e.weekId,
-        tradeCount: e.tradeCount,
-        winCount: e.winCount,
-        lossCount: e.lossCount,
-        winRate: e.winRate,
-        totalProfitLoss: e.totalProfitLoss,
-        metrics: toPerformanceMetrics(e.metrics),
-      )).toList(),
+      hourlyPerformance: dto.hourlyPerformance
+          .map((e) => HourlyPerformance(
+                hour: e.hour,
+                tradeCount: e.tradeCount,
+                winCount: e.winCount,
+                lossCount: e.lossCount,
+                winRate: e.winRate,
+                totalProfitLoss: e.totalProfitLoss,
+                averageWinAmount: e.averageWinAmount,
+                averageLossAmount: e.averageLossAmount,
+                averageHoldingTime: e.averageHoldingTime,
+                metrics: toPerformanceMetrics(e.metrics),
+              ))
+          .toList(),
+      dayOfWeekPerformance: dto.dayOfWeekPerformance
+          .map((e) => DayOfWeekPerformance(
+                dayOfWeek: e.dayOfWeek,
+                dayOrder: e.dayOrder,
+                tradeCount: e.tradeCount,
+                winCount: e.winCount,
+                lossCount: e.lossCount,
+                winRate: e.winRate,
+                totalProfitLoss: e.totalProfitLoss,
+                averageWinAmount: e.averageWinAmount,
+                averageLossAmount: e.averageLossAmount,
+                averageHoldingTime: e.averageHoldingTime,
+                metrics: toPerformanceMetrics(e.metrics),
+              ))
+          .toList(),
+      monthlyPerformance: dto.monthlyPerformance
+          .map((e) => MonthlyPerformance(
+                month: e.month,
+                monthOrder: e.monthOrder,
+                tradeCount: e.tradeCount,
+                winCount: e.winCount,
+                lossCount: e.lossCount,
+                winRate: e.winRate,
+                totalProfitLoss: e.totalProfitLoss,
+                averageWinAmount: e.averageWinAmount,
+                averageLossAmount: e.averageLossAmount,
+                averageHoldingTime: e.averageHoldingTime,
+                metrics: toPerformanceMetrics(e.metrics),
+              ))
+          .toList(),
+      yearlyPerformance: dto.yearlyPerformance
+          .map((e) => YearlyPerformance(
+                year: e.year,
+                tradeCount: e.tradeCount,
+                winCount: e.winCount,
+                lossCount: e.lossCount,
+                winRate: e.winRate,
+                totalProfitLoss: e.totalProfitLoss,
+                averageWinAmount: e.averageWinAmount,
+                averageLossAmount: e.averageLossAmount,
+                averageHoldingTime: e.averageHoldingTime,
+                metrics: toPerformanceMetrics(e.metrics),
+              ))
+          .toList(),
+      weeklyPerformance: dto.weeklyPerformance
+          .map((e) => WeeklyPerformance(
+                weekId: e.weekId,
+                tradeCount: e.tradeCount,
+                winCount: e.winCount,
+                lossCount: e.lossCount,
+                winRate: e.winRate,
+                totalProfitLoss: e.totalProfitLoss,
+                metrics: toPerformanceMetrics(e.metrics),
+              ))
+          .toList(),
       bestTradingHour: dto.bestTradingHour,
       worstTradingHour: dto.worstTradingHour,
       bestTradingDay: dto.bestTradingDay,

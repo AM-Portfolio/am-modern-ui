@@ -62,7 +62,8 @@ class SecondarySidebar extends StatelessWidget {
     this.showDividers = false,
     this.isCompact = false,
     this.onToggleCollapse,
-  }) : assert(child != null || items != null || sections != null, 'Either child, items, or sections must be provided');
+  }) : assert(child != null || items != null || sections != null,
+            'Either child, items, or sections must be provided');
 
   final String? title;
   final String? subtitle;
@@ -105,17 +106,14 @@ class SecondarySidebar extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(context, isDark),
-
           if (showDividers)
             Divider(color: isDark ? Colors.white10 : Colors.black12, height: 1),
-
           Expanded(
             child: child ??
                 (sections != null
                     ? _buildSectionsList(context, isDark)
                     : _buildItemsList(context, items!, isDark)),
           ),
-
           if (footer != null)
             Padding(
               padding: EdgeInsets.fromLTRB(
@@ -337,9 +335,8 @@ class _SecondaryCollapseToggleState extends State<_SecondaryCollapseToggle> {
   @override
   Widget build(BuildContext context) {
     final accent = widget.accentColor;
-    final iconColor = _pressed
-        ? accent
-        : (widget.isDark ? Colors.white54 : Colors.black87);
+    final iconColor =
+        _pressed ? accent : (widget.isDark ? Colors.white54 : Colors.black87);
 
     return Listener(
       onPointerDown: (_) => setState(() => _pressed = true),
@@ -350,8 +347,7 @@ class _SecondaryCollapseToggleState extends State<_SecondaryCollapseToggle> {
         isDark: widget.isDark,
         accentColor: accent,
         size: SidebarLayoutMetrics.headerBandHeight,
-        tooltip:
-            widget.isCompact ? 'Expand sidebar' : 'Collapse sidebar',
+        tooltip: widget.isCompact ? 'Expand sidebar' : 'Collapse sidebar',
         onTap: widget.onToggle,
         child: Icon(
           widget.isCompact
@@ -552,8 +548,7 @@ class _SecondarySidebarTileState extends State<_SecondarySidebarTile> {
                   style: TextStyle(
                     color: textColor,
                     fontSize: 13,
-                    fontWeight:
-                        isSelected ? FontWeight.w600 : FontWeight.w400,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

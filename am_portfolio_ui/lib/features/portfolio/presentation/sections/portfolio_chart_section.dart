@@ -24,6 +24,7 @@ class PortfolioChartSection extends ConsumerStatefulWidget {
     this.showPortfolioDropdown = true,
     this.showCandleToggle = true,
     this.showFormatToggle = true,
+    this.timeFrame,
   });
 
   final String? portfolioId;
@@ -32,6 +33,9 @@ class PortfolioChartSection extends ConsumerStatefulWidget {
   final bool showPortfolioDropdown;
   final bool showCandleToggle;
   final bool showFormatToggle;
+
+  /// When set, overrides [appTimeFrameProvider] (e.g. chart embed forces 1Y).
+  final TimeFrame? timeFrame;
 
   @override
   ConsumerState<PortfolioChartSection> createState() =>
@@ -101,6 +105,7 @@ class _PortfolioChartSectionState extends ConsumerState<PortfolioChartSection> {
                   showPortfolioDropdown: widget.showPortfolioDropdown,
                   showCandleToggle: widget.showCandleToggle,
                   showFormatToggle: widget.showFormatToggle,
+                  timeFrameOverride: widget.timeFrame,
                   resolvePortfolioId: _effectivePortfolioId,
                 ),
               );
@@ -141,6 +146,7 @@ class _PortfolioChartSectionState extends ConsumerState<PortfolioChartSection> {
                     showPortfolioDropdown: widget.showPortfolioDropdown,
                     showCandleToggle: widget.showCandleToggle,
                     showFormatToggle: widget.showFormatToggle,
+                    timeFrameOverride: widget.timeFrame,
                     resolvePortfolioId: _effectivePortfolioId,
                   ),
                 ),
@@ -225,6 +231,7 @@ class _PortfolioChartSectionBody extends ConsumerWidget {
     required this.showCandleToggle,
     required this.showFormatToggle,
     required this.resolvePortfolioId,
+    this.timeFrameOverride,
   });
 
   final String? portfolioId;
@@ -233,20 +240,24 @@ class _PortfolioChartSectionBody extends ConsumerWidget {
   final bool showPortfolioDropdown;
   final bool showCandleToggle;
   final bool showFormatToggle;
+  final TimeFrame? timeFrameOverride;
   final String Function(BuildContext context) resolvePortfolioId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final timeFrame = ref.watch(appTimeFrameProvider);
+    final TimeFrame timeFrame =
+        timeFrameOverride ?? ref.watch(appTimeFrameProvider);
     final effectiveId = resolvePortfolioId(context);
 
-    ref.listen(appTimeFrameProvider, (previous, next) {
-      if (previous != next) {
-        try {
-          context.read<PortfolioCubit>().setTimeFrame(next.code);
-        } catch (_) {}
-      }
-    });
+    if (timeFrameOverride == null) {
+      ref.listen(appTimeFrameProvider, (previous, next) {
+        if (previous != next) {
+          try {
+            context.read<PortfolioCubit>().setTimeFrame(next.code);
+          } catch (_) {}
+        }
+      });
+    }
 
     return PortfolioHistoryChartWidget(
       key: ValueKey('portfolio_chart_${effectiveId}_${timeFrame.code}'),

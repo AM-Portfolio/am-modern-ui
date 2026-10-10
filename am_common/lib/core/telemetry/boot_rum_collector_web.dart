@@ -74,7 +74,8 @@ class BootRumCollector {
     Map<String, dynamic> resources,
   ) {
     final htmlMs = webMarks['html_loaded'] ?? 0;
-    final dartReady = webMarks['flutter_dart_ready'] ?? marks['flutter_main_enter'] ?? 0;
+    final dartReady =
+        webMarks['flutter_dart_ready'] ?? marks['flutter_main_enter'] ?? 0;
     final configDone = marks['config_done'] ?? dartReady;
     final authDone = marks['auth_check_done'] ?? configDone;
     final shellVisible = marks['shell_visible'] ?? authDone;
@@ -115,7 +116,8 @@ class BootRumCollector {
         type: TelemetryType.wsStatus,
         category: 'Boot',
         label: 'boot_summary',
-        duration: Duration(milliseconds: (summary['totalMs'] as num?)?.toInt() ?? 0),
+        duration:
+            Duration(milliseconds: (summary['totalMs'] as num?)?.toInt() ?? 0),
         metadata: summary,
       ),
     );

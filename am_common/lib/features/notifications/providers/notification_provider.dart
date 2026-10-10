@@ -1,4 +1,3 @@
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/notification_entity.dart';
 
@@ -25,7 +24,7 @@ class NotificationState {
       error: error ?? this.error,
     );
   }
-  
+
   int get unreadCount => notifications.where((n) => !n.isRead).length;
 }
 
@@ -39,11 +38,11 @@ class NotificationNotifier extends Notifier<NotificationState> {
 
   Future<void> fetchNotifications() async {
     state = state.copyWith(isLoading: true);
-    
+
     try {
       // TODO: Replace with actual API call when backend is ready
       await Future.delayed(const Duration(seconds: 1));
-      
+
       final mockNotifications = [
         NotificationEntity(
           id: '1',
@@ -63,7 +62,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
           actionUrl: '/basket/preview/123',
         ),
       ];
-      
+
       state = state.copyWith(
         notifications: mockNotifications,
         isLoading: false,
@@ -83,15 +82,15 @@ class NotificationNotifier extends Notifier<NotificationState> {
       }
       return n;
     }).toList();
-    
+
     state = state.copyWith(notifications: updatedList);
   }
-  
+
   void markAllAsRead() {
     final updatedList = state.notifications.map((n) {
       return n.copyWith(isRead: true);
     }).toList();
-    
+
     state = state.copyWith(notifications: updatedList);
   }
 
@@ -102,4 +101,6 @@ class NotificationNotifier extends Notifier<NotificationState> {
   }
 }
 
-final notificationProvider = NotifierProvider<NotificationNotifier, NotificationState>(NotificationNotifier.new);
+final notificationProvider =
+    NotifierProvider<NotificationNotifier, NotificationState>(
+        NotificationNotifier.new);

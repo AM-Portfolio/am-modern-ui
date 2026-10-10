@@ -142,7 +142,8 @@ class _ScanWebLoginConfirmPageState extends State<ScanWebLoginConfirmPage> {
                       Text(
                         [
                           if (_preview!.geoCity != null) _preview!.geoCity,
-                          if (_preview!.geoCountry != null) _preview!.geoCountry,
+                          if (_preview!.geoCountry != null)
+                            _preview!.geoCountry,
                         ].whereType<String>().join(', '),
                         style: TextStyle(color: context.colors.textSecondary),
                       ),

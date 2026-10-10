@@ -25,52 +25,50 @@ class PillSelector<T> extends StatelessWidget {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children:
-          items.map((item) {
-            final isSelected = item == selectedItem;
-            return InkWell(
-              onTap: () => onSelectionChanged(item),
+      children: items.map((item) {
+        final isSelected = item == selectedItem;
+        return InkWell(
+          onTap: () => onSelectionChanged(item),
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 8,
+            ),
+            decoration: BoxDecoration(
+              color: isSelected ? color : Colors.transparent,
               borderRadius: BorderRadius.circular(20),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: isSelected ? color : Colors.transparent,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isSelected ? color : theme.dividerColor,
+              border: Border.all(
+                color: isSelected ? color : theme.dividerColor,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (itemIcon != null) ...[
+                  Icon(
+                    itemIcon!(item),
+                    size: 16,
+                    color: isSelected ? Colors.white : theme.iconTheme.color,
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Text(
+                  itemDisplayText(item),
+                  style: TextStyle(
+                    color: isSelected
+                        ? Colors.white
+                        : theme.textTheme.bodyMedium?.color,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontSize: 12,
                   ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (itemIcon != null) ...[
-                      Icon(
-                        itemIcon!(item),
-                        size: 16,
-                        color: isSelected ? Colors.white : theme.iconTheme.color,
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                    Text(
-                      itemDisplayText(item),
-                      style: TextStyle(
-                        color:
-                            isSelected
-                                ? Colors.white
-                                : theme.textTheme.bodyMedium?.color,
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }).toList(),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }

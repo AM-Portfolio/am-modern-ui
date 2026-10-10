@@ -67,7 +67,7 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
             heatmapData = heatmapData.copyWith(
               tiles: heatmapData.uiTiles.where((tile) {
                 return matchesHeatmapSector(tile.name, sector) ||
-                       matchesHeatmapSector(tile.displayName, sector);
+                    matchesHeatmapSector(tile.displayName, sector);
               }).toList(),
             );
           }
@@ -94,9 +94,10 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
 
               for (final tile in heatmapData.uiTiles) {
                 if (tile.children == null || tile.children!.isEmpty) {
-                  final symbol = ((tile.metadata?['symbol'] as String?) ?? tile.name)
-                      .trim()
-                      .toUpperCase();
+                  final symbol =
+                      ((tile.metadata?['symbol'] as String?) ?? tile.name)
+                          .trim()
+                          .toUpperCase();
                   if (symbols.contains(symbol)) {
                     filteredTiles.add(tile);
                   }
@@ -142,7 +143,11 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
             tag: 'PortfolioHeatmapCubit',
           );
           if (isClosed) return;
-          emit(const PortfolioHeatmapError(message: 'Failed to load portfolio data. Please retry.'));
+          emit(
+            const PortfolioHeatmapError(
+              message: 'Failed to load portfolio data. Please retry.',
+            ),
+          );
           return;
         } else {
           CommonLogger.warning(
@@ -302,5 +307,4 @@ class PortfolioHeatmapCubit extends Cubit<PortfolioHeatmapState> {
       );
     }
   }
-
 }

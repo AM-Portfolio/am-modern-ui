@@ -73,12 +73,12 @@ class FundamentalRatiosResponse {
   double? evEbitda;
   List<CompetitorPeer>? peers;
   double? currentPrice;
-  
+
   // Banking Metrics
   double? nim;
   double? netNpa;
   double? casa;
-  
+
   // Liquidity
   double? quickRatio;
 
@@ -114,41 +114,44 @@ class FundamentalRatiosResponse {
   List<dynamic>? corporateActions;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is FundamentalRatiosResponse &&
-    other.symbol == symbol &&
-    other.companyName == companyName &&
-    other.sector == sector &&
-    other.industry == industry &&
-    other.peRatio == peRatio &&
-    other.pbRatio == pbRatio &&
-    other.roe == roe &&
-    other.roce == roce &&
-    other.dividendYield == dividendYield &&
-    other.debtToEquity == debtToEquity &&
-    other.eps == eps &&
-    other.bookValue == bookValue &&
-    other.marketCap == marketCap &&
-    other.priceToSales == priceToSales;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FundamentalRatiosResponse &&
+          other.symbol == symbol &&
+          other.companyName == companyName &&
+          other.sector == sector &&
+          other.industry == industry &&
+          other.peRatio == peRatio &&
+          other.pbRatio == pbRatio &&
+          other.roe == roe &&
+          other.roce == roce &&
+          other.dividendYield == dividendYield &&
+          other.debtToEquity == debtToEquity &&
+          other.eps == eps &&
+          other.bookValue == bookValue &&
+          other.marketCap == marketCap &&
+          other.priceToSales == priceToSales;
 
   @override
   int get hashCode =>
-    (symbol == null ? 0 : symbol!.hashCode) +
-    (companyName == null ? 0 : companyName!.hashCode) +
-    (sector == null ? 0 : sector!.hashCode) +
-    (industry == null ? 0 : industry!.hashCode) +
-    (peRatio == null ? 0 : peRatio!.hashCode) +
-    (pbRatio == null ? 0 : pbRatio!.hashCode) +
-    (roe == null ? 0 : roe!.hashCode) +
-    (roce == null ? 0 : roce!.hashCode) +
-    (dividendYield == null ? 0 : dividendYield!.hashCode) +
-    (debtToEquity == null ? 0 : debtToEquity!.hashCode) +
-    (eps == null ? 0 : eps!.hashCode) +
-    (bookValue == null ? 0 : bookValue!.hashCode) +
-    (marketCap == null ? 0 : marketCap!.hashCode) +
-    (priceToSales == null ? 0 : priceToSales!.hashCode);
+      (symbol == null ? 0 : symbol!.hashCode) +
+      (companyName == null ? 0 : companyName!.hashCode) +
+      (sector == null ? 0 : sector!.hashCode) +
+      (industry == null ? 0 : industry!.hashCode) +
+      (peRatio == null ? 0 : peRatio!.hashCode) +
+      (pbRatio == null ? 0 : pbRatio!.hashCode) +
+      (roe == null ? 0 : roe!.hashCode) +
+      (roce == null ? 0 : roce!.hashCode) +
+      (dividendYield == null ? 0 : dividendYield!.hashCode) +
+      (debtToEquity == null ? 0 : debtToEquity!.hashCode) +
+      (eps == null ? 0 : eps!.hashCode) +
+      (bookValue == null ? 0 : bookValue!.hashCode) +
+      (marketCap == null ? 0 : marketCap!.hashCode) +
+      (priceToSales == null ? 0 : priceToSales!.hashCode);
 
   @override
-  String toString() => 'FundamentalRatiosResponse[symbol=$symbol, companyName=$companyName, sector=$sector, industry=$industry, peRatio=$peRatio, pbRatio=$pbRatio, roe=$roe, roce=$roce, dividendYield=$dividendYield, debtToEquity=$debtToEquity, eps=$eps, bookValue=$bookValue, marketCap=$marketCap, priceToSales=$priceToSales]';
+  String toString() =>
+      'FundamentalRatiosResponse[symbol=$symbol, companyName=$companyName, sector=$sector, industry=$industry, peRatio=$peRatio, pbRatio=$pbRatio, roe=$roe, roce=$roce, dividendYield=$dividendYield, debtToEquity=$debtToEquity, eps=$eps, bookValue=$bookValue, marketCap=$marketCap, priceToSales=$priceToSales]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -199,7 +202,9 @@ class FundamentalRatiosResponse {
       // Extract dynamic / extensible ratio map safely for backward/forward compatibility
       final dynamicRatios = json['dynamicRatios'] is Map
           ? (json['dynamicRatios'] as Map).cast<String, dynamic>()
-          : (valuation.isNotEmpty ? Map<String, dynamic>.from(valuation) : null);
+          : (valuation.isNotEmpty
+              ? Map<String, dynamic>.from(valuation)
+              : null);
 
       return FundamentalRatiosResponse(
         // Identity fields from company section (unified endpoint) or flat
@@ -210,32 +215,58 @@ class FundamentalRatiosResponse {
         sector: mapValueOfType<String>(json, r'sector') ??
             mapValueOfType<String>(company, r'sector'),
         industry: mapValueOfType<String>(json, r'industry'),
-        
+
         description: mapValueOfType<String>(json, r'description') ??
             mapValueOfType<String>(company, r'description'),
-        dayHigh: num2d(company['dayHigh']) ?? mapValueOfType<double>(json, r'dayHigh'),
-        dayLow: num2d(company['dayLow']) ?? mapValueOfType<double>(json, r'dayLow'),
-        dayChange: num2d(company['dayChange']) ?? mapValueOfType<double>(json, r'dayChange'),
-        dayChangePercent: num2d(company['dayChangePercent']) ?? mapValueOfType<double>(json, r'dayChangePercent'),
-        sectorMarketCapInr: num2d(company['sectorMarketCapInr']) ?? mapValueOfType<double>(json, r'sectorMarketCapInr'),
-        sectorMarketCapUsd: num2d(company['sectorMarketCapUsd']) ?? mapValueOfType<double>(json, r'sectorMarketCapUsd'),
+        dayHigh: num2d(company['dayHigh']) ??
+            mapValueOfType<double>(json, r'dayHigh'),
+        dayLow:
+            num2d(company['dayLow']) ?? mapValueOfType<double>(json, r'dayLow'),
+        dayChange: num2d(company['dayChange']) ??
+            mapValueOfType<double>(json, r'dayChange'),
+        dayChangePercent: num2d(company['dayChangePercent']) ??
+            mapValueOfType<double>(json, r'dayChangePercent'),
+        sectorMarketCapInr: num2d(company['sectorMarketCapInr']) ??
+            mapValueOfType<double>(json, r'sectorMarketCapInr'),
+        sectorMarketCapUsd: num2d(company['sectorMarketCapUsd']) ??
+            mapValueOfType<double>(json, r'sectorMarketCapUsd'),
 
         // Valuation ratios — try nested 'valuation' first, then flat keys
-        peRatio: num2d(valuation['pe']) ?? mapValueOfType<double>(json, r'peRatio'),
-        pbRatio: num2d(valuation['pb']) ?? mapValueOfType<double>(json, r'pbRatio'),
-        roe: num2d(valuation['roe']) ?? num2d(profitability['roe']) ?? mapValueOfType<double>(json, r'roe'),
-        roce: num2d(valuation['roce']) ?? num2d(profitability['roce']) ?? mapValueOfType<double>(json, r'roce'),
-        roa: num2d(valuation['roa']) ?? num2d(profitability['roa']) ?? mapValueOfType<double>(json, r'roa'),
-        dividendYield: num2d(valuation['dividendYield']) ?? mapValueOfType<double>(json, r'dividendYield'),
-        debtToEquity: num2d(valuation['debtToEquity']) ?? mapValueOfType<double>(json, r'debtToEquity'),
+        peRatio:
+            num2d(valuation['pe']) ?? mapValueOfType<double>(json, r'peRatio'),
+        pbRatio:
+            num2d(valuation['pb']) ?? mapValueOfType<double>(json, r'pbRatio'),
+        roe: num2d(valuation['roe']) ??
+            num2d(profitability['roe']) ??
+            mapValueOfType<double>(json, r'roe'),
+        roce: num2d(valuation['roce']) ??
+            num2d(profitability['roce']) ??
+            mapValueOfType<double>(json, r'roce'),
+        roa: num2d(valuation['roa']) ??
+            num2d(profitability['roa']) ??
+            mapValueOfType<double>(json, r'roa'),
+        dividendYield: num2d(valuation['dividendYield']) ??
+            mapValueOfType<double>(json, r'dividendYield'),
+        debtToEquity: num2d(valuation['debtToEquity']) ??
+            mapValueOfType<double>(json, r'debtToEquity'),
         eps: num2d(valuation['eps']) ?? mapValueOfType<double>(json, r'eps'),
-        bookValue: num2d(valuation['bookValue']) ?? mapValueOfType<double>(json, r'bookValue'),
-        marketCap: num2d(valuation['marketCap']) ?? mapValueOfType<double>(json, r'marketCap'),
-        priceToSales: num2d(valuation['priceToSales']) ?? mapValueOfType<double>(json, r'priceToSales'),
-        evEbitda: num2d(valuation['evEbitda']) ?? mapValueOfType<double>(json, r'evEbitda'),
-        peers: json['peers'] is List ? (json['peers'] as List).map((e) => CompetitorPeer.fromJson(e)).whereType<CompetitorPeer>().toList() : [],
-        currentPrice: num2d(company['currentPrice']) ?? mapValueOfType<double>(json, r'currentPrice'),
-        
+        bookValue: num2d(valuation['bookValue']) ??
+            mapValueOfType<double>(json, r'bookValue'),
+        marketCap: num2d(valuation['marketCap']) ??
+            mapValueOfType<double>(json, r'marketCap'),
+        priceToSales: num2d(valuation['priceToSales']) ??
+            mapValueOfType<double>(json, r'priceToSales'),
+        evEbitda: num2d(valuation['evEbitda']) ??
+            mapValueOfType<double>(json, r'evEbitda'),
+        peers: json['peers'] is List
+            ? (json['peers'] as List)
+                .map((e) => CompetitorPeer.fromJson(e))
+                .whereType<CompetitorPeer>()
+                .toList()
+            : [],
+        currentPrice: num2d(company['currentPrice']) ??
+            mapValueOfType<double>(json, r'currentPrice'),
+
         // Custom parsed banking/analytics fields
         nim: num2d(valuation['nim']),
         netNpa: num2d(valuation['netNpa']),
@@ -251,28 +282,40 @@ class FundamentalRatiosResponse {
         priceCagr3Y: num2d(analytics['priceCagr3Y']),
         priceCagr5Y: num2d(analytics['priceCagr5Y']),
         dynamicRatios: dynamicRatios,
-        
+
         // Lists
-        shareholding: json['shareholding'] is List ? json['shareholding'] as List : [],
+        shareholding:
+            json['shareholding'] is List ? json['shareholding'] as List : [],
         incomeStatement: financials['incomeStatement'] is List
             ? financials['incomeStatement'] as List
-            : (json['incomeStatement'] is List ? json['incomeStatement'] as List : []),
+            : (json['incomeStatement'] is List
+                ? json['incomeStatement'] as List
+                : []),
         quarterlyIncomeStatement: financials['quarterlyIncomeStatement'] is List
             ? financials['quarterlyIncomeStatement'] as List
-            : (json['quarterlyIncomeStatement'] is List ? json['quarterlyIncomeStatement'] as List : []),
+            : (json['quarterlyIncomeStatement'] is List
+                ? json['quarterlyIncomeStatement'] as List
+                : []),
         balanceSheet: financials['balanceSheet'] is List
             ? financials['balanceSheet'] as List
-            : (json['balanceSheet'] is List ? json['balanceSheet'] as List : []),
+            : (json['balanceSheet'] is List
+                ? json['balanceSheet'] as List
+                : []),
         cashFlow: financials['cashFlow'] is List
             ? financials['cashFlow'] as List
             : (json['cashFlow'] is List ? json['cashFlow'] as List : []),
-        corporateActions: json['corporateActions'] is List ? json['corporateActions'] as List : [],
+        corporateActions: json['corporateActions'] is List
+            ? json['corporateActions'] as List
+            : [],
       );
     }
     return null;
   }
 
-  static List<FundamentalRatiosResponse> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<FundamentalRatiosResponse> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <FundamentalRatiosResponse>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -342,7 +385,9 @@ class CompetitorPeer {
     if (value is Map) {
       final json = value.cast<String, dynamic>();
       double? num2d(dynamic v) => v is num ? v.toDouble() : null;
-      final dyn = json['dynamicRatios'] is Map ? (json['dynamicRatios'] as Map).cast<String, dynamic>() : null;
+      final dyn = json['dynamicRatios'] is Map
+          ? (json['dynamicRatios'] as Map).cast<String, dynamic>()
+          : null;
       return CompetitorPeer(
         instrumentKey: json['instrumentKey']?.toString(),
         isin: json['isin']?.toString(),
@@ -371,7 +416,8 @@ class CompetitorPeer {
     return null;
   }
 
-  static List<CompetitorPeer> listFromJson(dynamic json, {bool growable = false}) {
+  static List<CompetitorPeer> listFromJson(dynamic json,
+      {bool growable = false}) {
     final result = <CompetitorPeer>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {

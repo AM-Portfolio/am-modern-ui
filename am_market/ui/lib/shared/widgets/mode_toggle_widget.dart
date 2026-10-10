@@ -70,7 +70,7 @@ class _ModeButton extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       child: Material(
-        color: isSelected 
+        color: isSelected
             ? const Color(0xFF00D1FF).withOpacity(0.15)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(8),
@@ -85,7 +85,7 @@ class _ModeButton extends StatelessWidget {
                 Icon(
                   icon,
                   size: 16,
-                  color: isSelected 
+                  color: isSelected
                       ? const Color(0xFF00D1FF)
                       : Colors.white.withOpacity(0.5),
                 ),
@@ -93,11 +93,12 @@ class _ModeButton extends StatelessWidget {
                 Text(
                   label,
                   style: TextStyle(
-                    color: isSelected 
+                    color: isSelected
                         ? const Color(0xFF00D1FF)
                         : Colors.white.withOpacity(0.5),
                     fontSize: 12,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.normal,
                   ),
                 ),
               ],

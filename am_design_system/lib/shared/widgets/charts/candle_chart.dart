@@ -46,9 +46,10 @@ class _CandleChartViewState extends State<CandleChartView> {
     final maxY = axis.maxY;
     final ticks = axis.ticks;
 
-    final selected = _selected != null && _selected! >= 0 && _selected! < candles.length
-        ? candles[_selected!]
-        : null;
+    final selected =
+        _selected != null && _selected! >= 0 && _selected! < candles.length
+            ? candles[_selected!]
+            : null;
 
     return Column(
       children: [
@@ -65,7 +66,8 @@ class _CandleChartViewState extends State<CandleChartView> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               return GestureDetector(
-                onTapDown: (d) => _selectAt(d.localPosition, constraints.biggest, candles),
+                onTapDown: (d) =>
+                    _selectAt(d.localPosition, constraints.biggest, candles),
                 onHorizontalDragUpdate: (d) =>
                     _selectAt(d.localPosition, constraints.biggest, candles),
                 child: CustomPaint(
@@ -173,7 +175,8 @@ class _CandlePainter extends CustomPainter {
           text: TextSpan(text: label, style: tpStyle),
           textDirection: TextDirection.ltr,
         )..layout(maxWidth: leftPad - 4);
-        tp.paint(canvas, Offset(leftPad - 4 - tp.width, yFor(v) - tp.height / 2));
+        tp.paint(
+            canvas, Offset(leftPad - 4 - tp.width, yFor(v) - tp.height / 2));
       }
     }
 

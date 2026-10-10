@@ -10,6 +10,7 @@ class MetricsFilterRequest {
   final List<String>? groupBy;
   final bool includeTradeDetails;
   final Map<String, dynamic>? customFilters;
+
   /// SCALPER | INTRADAY | SWING — null means all holding styles.
   final String? holdingStyle;
 

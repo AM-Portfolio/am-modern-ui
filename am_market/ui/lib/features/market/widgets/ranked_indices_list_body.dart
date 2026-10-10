@@ -109,9 +109,7 @@ class RankedIndicesListBody extends StatelessWidget {
               : ListView.separated(
                   controller: scrollController,
                   padding: EdgeInsets.fromLTRB(
-                    (padding is EdgeInsets)
-                        ? (padding as EdgeInsets).left
-                        : 16,
+                    (padding is EdgeInsets) ? (padding as EdgeInsets).left : 16,
                     0,
                     (padding is EdgeInsets)
                         ? (padding as EdgeInsets).right
@@ -124,8 +122,8 @@ class RankedIndicesListBody extends StatelessWidget {
                     final data = sorted[index];
                     final pChange = rankedDisplayPChange(data);
                     final change = rankedDisplayChange(data);
-                    final isGlobal = globalSet
-                        .contains(data.indexSymbol.toUpperCase());
+                    final isGlobal =
+                        globalSet.contains(data.indexSymbol.toUpperCase());
                     return RankedIndexRow(
                       rank: index + 1,
                       data: data,

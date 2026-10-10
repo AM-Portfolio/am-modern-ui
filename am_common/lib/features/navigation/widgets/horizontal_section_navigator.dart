@@ -40,15 +40,16 @@ class HorizontalSectionNavigator extends StatefulWidget {
       _HorizontalSectionNavigatorState();
 }
 
-class _HorizontalSectionNavigatorState extends State<HorizontalSectionNavigator> {
+class _HorizontalSectionNavigatorState
+    extends State<HorizontalSectionNavigator> {
   bool _isNavigating = false;
   double _dragDx = 0;
 
   bool _isSwipeAllowed(BuildContext context) {
     if (!widget.enabled) return false;
     // Disable horizontal tab swiping on tablet and desktop (width >= 600px)
-    final isTabletOrDesktop =
-        AmBreakpoints.isTabletContext(context) || AmBreakpoints.isDesktopContext(context);
+    final isTabletOrDesktop = AmBreakpoints.isTabletContext(context) ||
+        AmBreakpoints.isDesktopContext(context);
     return !isTabletOrDesktop;
   }
 
@@ -81,7 +82,8 @@ class _HorizontalSectionNavigatorState extends State<HorizontalSectionNavigator>
 
     final vx = details.velocity.pixelsPerSecond.dx;
 
-    if (vx.abs() >= widget.flingVelocity || _dragDx.abs() >= widget.dragDistance) {
+    if (vx.abs() >= widget.flingVelocity ||
+        _dragDx.abs() >= widget.dragDistance) {
       if (vx < 0 || (_dragDx < 0 && vx.abs() < widget.flingVelocity)) {
         _handleNavigation(isNext: true);
       } else if (vx > 0 || (_dragDx > 0 && vx.abs() < widget.flingVelocity)) {
@@ -98,8 +100,8 @@ class _HorizontalSectionNavigatorState extends State<HorizontalSectionNavigator>
 
     return RawGestureDetector(
       gestures: <Type, GestureRecognizerFactory>{
-        HorizontalDragGestureRecognizer:
-            GestureRecognizerFactoryWithHandlers<HorizontalDragGestureRecognizer>(
+        HorizontalDragGestureRecognizer: GestureRecognizerFactoryWithHandlers<
+            HorizontalDragGestureRecognizer>(
           () => HorizontalDragGestureRecognizer(),
           (HorizontalDragGestureRecognizer instance) {
             instance

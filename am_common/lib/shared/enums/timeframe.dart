@@ -2,31 +2,31 @@
 enum TimeFrame {
   /// One day
   oneDay,
-  
+
   /// One week
   oneWeek,
-  
+
   /// One month
   oneMonth,
-  
+
   /// Three months (Quarter)
   threeMonths,
-  
-  /// Six months  
+
+  /// Six months
   sixMonths,
-  
+
   /// One year
   oneYear,
-  
+
   /// Year to date
   ytd,
-  
+
   /// Three years
   threeYears,
-  
+
   /// Five years
   fiveYears,
-  
+
   /// All time
   all;
 

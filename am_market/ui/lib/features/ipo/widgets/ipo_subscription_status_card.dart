@@ -32,7 +32,8 @@ class IpoSubscriptionStatusCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.bar_chart_rounded, size: 18, color: ModuleColors.market),
+              Icon(Icons.bar_chart_rounded,
+                  size: 18, color: ModuleColors.market),
               const SizedBox(width: 8),
               Text(
                 'Subscription Status',
@@ -45,7 +46,6 @@ class IpoSubscriptionStatusCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 18),
-
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -65,10 +65,12 @@ class IpoSubscriptionStatusCard extends StatelessWidget {
                             width: 36,
                             height: 36,
                             decoration: BoxDecoration(
-                              color: context.colors.statusSuccess.withValues(alpha: 0.15),
+                              color: context.colors.statusSuccess
+                                  .withValues(alpha: 0.15),
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(Icons.check_circle_outline_rounded, color: context.colors.statusSuccess, size: 20),
+                            child: Icon(Icons.check_circle_outline_rounded,
+                                color: context.colors.statusSuccess, size: 20),
                           ),
                           const SizedBox(width: 14),
                           Expanded(
@@ -101,21 +103,28 @@ class IpoSubscriptionStatusCard extends StatelessWidget {
                         const Divider(),
                         const SizedBox(height: 12),
                         ...eligibleInvestors.map((investor) {
-                          final value = double.tryParse(investor.subscription ?? '0') ?? 0.0;
+                          final value =
+                              double.tryParse(investor.subscription ?? '0') ??
+                                  0.0;
                           final isSubscribed = value >= 1.0;
-                          final displayValue = (investor.subscription != null && investor.subscription!.isNotEmpty)
+                          final displayValue = (investor.subscription != null &&
+                                  investor.subscription!.isNotEmpty)
                               ? '${investor.subscription}x'
                               : 'N/A';
-                          final fillFraction = (value.clamp(0.0, 5.0) / 5.0).clamp(0.05, 1.0);
-                          final statusColor = isSubscribed ? context.colors.statusSuccess : context.colors.statusWarning;
-                          
+                          final fillFraction =
+                              (value.clamp(0.0, 5.0) / 5.0).clamp(0.05, 1.0);
+                          final statusColor = isSubscribed
+                              ? context.colors.statusSuccess
+                              : context.colors.statusWarning;
+
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 12),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
                                       investor.category,
@@ -130,7 +139,9 @@ class IpoSubscriptionStatusCard extends StatelessWidget {
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w700,
-                                        color: (investor.subscription != null && investor.subscription!.isNotEmpty)
+                                        color: (investor.subscription != null &&
+                                                investor
+                                                    .subscription!.isNotEmpty)
                                             ? statusColor
                                             : context.textTertiary,
                                       ),
@@ -147,17 +158,23 @@ class IpoSubscriptionStatusCard extends StatelessWidget {
                                   ),
                                   child: FractionallySizedBox(
                                     alignment: Alignment.centerLeft,
-                                    widthFactor: (investor.subscription != null && investor.subscription!.isNotEmpty) ? fillFraction : 0.0,
+                                    widthFactor: (investor.subscription !=
+                                                null &&
+                                            investor.subscription!.isNotEmpty)
+                                        ? fillFraction
+                                        : 0.0,
                                     child: Container(
                                       decoration: BoxDecoration(
                                         gradient: LinearGradient(
                                           colors: isSubscribed
                                               ? [
-                                                  context.colors.statusSuccess.withValues(alpha: 0.8),
+                                                  context.colors.statusSuccess
+                                                      .withValues(alpha: 0.8),
                                                   context.colors.statusSuccess,
                                                 ]
                                               : [
-                                                  context.colors.statusWarning.withValues(alpha: 0.8),
+                                                  context.colors.statusWarning
+                                                      .withValues(alpha: 0.8),
                                                   context.colors.statusWarning,
                                                 ],
                                         ),
@@ -179,10 +196,13 @@ class IpoSubscriptionStatusCard extends StatelessWidget {
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: isDark ? context.dividerColor : context.dividerColor,
+                          color: isDark
+                              ? context.dividerColor
+                              : context.dividerColor,
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(Icons.remove_rounded, color: context.textTertiary, size: 20),
+                        child: Icon(Icons.remove_rounded,
+                            color: context.textTertiary, size: 20),
                       ),
                       const SizedBox(width: 14),
                       Expanded(

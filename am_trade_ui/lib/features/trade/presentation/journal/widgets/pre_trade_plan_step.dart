@@ -92,8 +92,7 @@ class PreTradePlanStep extends StatelessWidget {
                 ButtonSegment(value: 'SHORT', label: Text('Short')),
               ],
               selected: {direction},
-              onSelectionChanged: (s) =>
-                  _updatePlan(plan, direction: s.first),
+              onSelectionChanged: (s) => _updatePlan(plan, direction: s.first),
             ),
           ],
         ),

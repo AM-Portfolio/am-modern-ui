@@ -60,11 +60,13 @@ class BasketConstituentRow extends StatelessWidget {
         item.heldQuantity != null &&
         item.heldQuantity! > 0) {
       return BasketCurrencyFormatter.formatInr(
-          item.heldQuantity! * item.lastPrice!);
+        item.heldQuantity! * item.lastPrice!,
+      );
     }
     if (item.buyQuantity == null || item.buyQuantity == 0) return '—';
     return BasketCurrencyFormatter.formatInr(
-        item.lastPrice! * item.buyQuantity!);
+      item.lastPrice! * item.buyQuantity!,
+    );
   }
 
   @override

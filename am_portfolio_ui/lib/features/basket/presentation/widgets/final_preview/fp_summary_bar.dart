@@ -20,7 +20,12 @@ class FpSummaryBar extends StatelessWidget {
     required this.isSubmitting,
   });
 
-  Widget _buildStat(BuildContext context, String label, String value, {bool isHighlight = false}) {
+  Widget _buildStat(
+    BuildContext context,
+    String label,
+    String value, {
+    bool isHighlight = false,
+  }) {
     final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,7 +53,11 @@ class FpSummaryBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fmtValue = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final fmtValue = NumberFormat.currency(
+      locale: 'en_IN',
+      symbol: '₹',
+      decimalDigits: 0,
+    );
     final isDesktop = MediaQuery.sizeOf(context).width >= AmBreakpoints.tablet;
 
     final content = Row(
@@ -59,18 +68,34 @@ class FpSummaryBar extends StatelessWidget {
             spacing: AppSpacing.xl,
             runSpacing: AppSpacing.md,
             children: [
-              _buildStat(context, 'Intended Amount', fmtValue.format(intendedAmount)),
+              _buildStat(
+                context,
+                'Intended Amount',
+                fmtValue.format(intendedAmount),
+              ),
               _buildStat(context, 'Actual Cost', fmtValue.format(actualCost)),
               _buildStat(context, 'Unallocated', fmtValue.format(unallocated)),
-              _buildStat(context, 'Coverage', '${coverage.toStringAsFixed(0)}%', isHighlight: coverage >= 90),
+              _buildStat(
+                context,
+                'Coverage',
+                '${coverage.toStringAsFixed(0)}%',
+                isHighlight: coverage >= 90,
+              ),
             ],
           ),
         ),
         const SizedBox(width: AppSpacing.lg),
         FilledButton.icon(
           onPressed: isSubmitting ? null : onConfirm,
-          icon: isSubmitting 
-              ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: context.colors.actionPrimaryFg))
+          icon: isSubmitting
+              ? SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: context.colors.actionPrimaryFg,
+                  ),
+                )
               : const Icon(Icons.check, size: 18),
           label: Text(
             isSubmitting ? 'Creating...' : 'Confirm & Create Basket',
@@ -80,7 +105,7 @@ class FpSummaryBar extends StatelessWidget {
             backgroundColor: ModuleColors.portfolio,
             foregroundColor: context.colors.actionPrimaryFg,
             padding: EdgeInsets.symmetric(
-              horizontal: isDesktop ? 32 : 16, 
+              horizontal: isDesktop ? 32 : 16,
               vertical: isDesktop ? 20 : 16,
             ),
           ),
@@ -101,9 +126,12 @@ class FpSummaryBar extends StatelessWidget {
           ),
         ],
       ),
-      child: isDesktop 
+      child: isDesktop
           ? content
-          : SingleChildScrollView(scrollDirection: Axis.horizontal, child: content),
+          : SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: content,
+            ),
     );
   }
 }

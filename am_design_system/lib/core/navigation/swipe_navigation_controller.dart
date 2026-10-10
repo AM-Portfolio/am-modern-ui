@@ -78,9 +78,8 @@ class SwipeNavigationController extends ChangeNotifier {
     final oldTitle = _items[_currentIndex].title;
     _items = newItems;
     final byTitle = newItems.indexWhere((e) => e.title == oldTitle);
-    final nextIndex = byTitle >= 0
-        ? byTitle
-        : _currentIndex.clamp(0, newItems.length - 1);
+    final nextIndex =
+        byTitle >= 0 ? byTitle : _currentIndex.clamp(0, newItems.length - 1);
     _currentIndex = nextIndex;
     if (pageController.hasClients) {
       final page = pageController.page?.round() ?? nextIndex;
@@ -96,7 +95,9 @@ class SwipeNavigationController extends ChangeNotifier {
 
   /// Called when page changes via swipe or programmatic navigation
   void onPageChanged(int index) {
-    if (_isProgrammaticNavigation && _targetIndex != null && index != _targetIndex) {
+    if (_isProgrammaticNavigation &&
+        _targetIndex != null &&
+        index != _targetIndex) {
       // Ignore intermediate page transition callbacks while navigating programmatically
       return;
     }
@@ -137,18 +138,17 @@ class SwipeNavigationController extends ChangeNotifier {
       _isProgrammaticNavigation = true;
       pageController
           .animateToPage(
-            index,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOutCubic,
-          )
+        index,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOutCubic,
+      )
           .then((_) {
-            _isProgrammaticNavigation = false;
-            _targetIndex = null;
-          })
-          .catchError((_) {
-            _isProgrammaticNavigation = false;
-            _targetIndex = null;
-          });
+        _isProgrammaticNavigation = false;
+        _targetIndex = null;
+      }).catchError((_) {
+        _isProgrammaticNavigation = false;
+        _targetIndex = null;
+      });
     }
   }
 

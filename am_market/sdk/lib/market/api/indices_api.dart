@@ -6,9 +6,9 @@
 
 part of openapi.api;
 
-
 class IndicesApi {
-  IndicesApi([ApiClient? apiClient]) : apiClient = apiClient ?? defaultApiClient;
+  IndicesApi([ApiClient? apiClient])
+      : apiClient = apiClient ?? defaultApiClient;
 
   final ApiClient apiClient;
 
@@ -26,7 +26,6 @@ class IndicesApi {
     final formParams = <String, String>{};
 
     const contentTypes = <String>[];
-
 
     return apiClient.invokeAPI(
       path,
@@ -50,9 +49,12 @@ class IndicesApi {
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'String',) as String;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'String',
+      ) as String;
     }
     return null;
   }
@@ -69,7 +71,10 @@ class IndicesApi {
   ///
   /// * [bool] forceRefresh:
   ///   Force refresh from source instead of using cache
-  Future<Response> getLatestIndicesDataWithHttpInfo(List<String> requestBody, { bool? forceRefresh, }) async {
+  Future<Response> getLatestIndicesDataWithHttpInfo(
+    List<String> requestBody, {
+    bool? forceRefresh,
+  }) async {
     final path = r'/v1/indices/batch';
     Object? postBody = requestBody;
 
@@ -82,7 +87,6 @@ class IndicesApi {
     }
 
     const contentTypes = <String>['application/json'];
-
 
     return apiClient.invokeAPI(
       path,
@@ -105,17 +109,26 @@ class IndicesApi {
   ///
   /// * [bool] forceRefresh:
   ///   Force refresh from source instead of using cache
-  Future<StockIndicesMarketData?> getLatestIndicesData(List<String> requestBody, { bool? forceRefresh, }) async {
-    final response = await getLatestIndicesDataWithHttpInfo(requestBody,  forceRefresh: forceRefresh, );
+  Future<StockIndicesMarketData?> getLatestIndicesData(
+    List<String> requestBody, {
+    bool? forceRefresh,
+  }) async {
+    final response = await getLatestIndicesDataWithHttpInfo(
+      requestBody,
+      forceRefresh: forceRefresh,
+    );
     if (response.statusCode >= HttpStatus.badRequest) {
       throw ApiException(response.statusCode, await _decodeBodyBytes(response));
     }
     // When a remote server returns no body with a status of 204, we shall not decode it.
     // At the time of writing this, `dart:convert` will throw an "Unexpected end of input"
     // FormatException when trying to decode an empty string.
-    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
-      return await apiClient.deserializeAsync(await _decodeBodyBytes(response), 'StockIndicesMarketData',) as StockIndicesMarketData;
-    
+    if (response.body.isNotEmpty &&
+        response.statusCode != HttpStatus.noContent) {
+      return await apiClient.deserializeAsync(
+        await _decodeBodyBytes(response),
+        'StockIndicesMarketData',
+      ) as StockIndicesMarketData;
     }
     return null;
   }

@@ -9,15 +9,15 @@ import 'preview_layout.dart';
 class PreviewHeroHeader extends StatelessWidget {
   final BasketOpportunity opportunity;
 
-  const PreviewHeroHeader({
-    super.key,
-    required this.opportunity,
-  });
+  const PreviewHeroHeader({super.key, required this.opportunity});
 
   @override
   Widget build(BuildContext context) {
-    final formatter =
-        NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final formatter = NumberFormat.currency(
+      locale: 'en_IN',
+      symbol: '₹',
+      decimalDigits: 0,
+    );
     final compact = BasketResponsive.useCompactPreview(context);
     final pagePad = BasketResponsive.previewPagePadding(context);
 
@@ -25,14 +25,13 @@ class PreviewHeroHeader extends StatelessWidget {
     final subPct = opportunity.substituteMatchScore ?? 0.0;
     final missingPct = (100.0 - heldPct - subPct).clamp(0.0, 100.0);
     final available =
-        opportunity.remainingPortfolioValue ?? opportunity.totalPortfolioValue ?? 0;
+        opportunity.remainingPortfolioValue ??
+        opportunity.totalPortfolioValue ??
+        0;
     final constituentCount = opportunity.composition.length;
 
     return Padding(
-      padding: pagePad.copyWith(
-        top: PreviewLayout.sectionGap,
-        bottom: 0,
-      ),
+      padding: pagePad.copyWith(top: PreviewLayout.sectionGap, bottom: 0),
       child: Container(
         padding: EdgeInsets.symmetric(
           horizontal: PreviewLayout.cardPadding,
@@ -53,8 +52,7 @@ class PreviewHeroHeader extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(AppSpacing.sm),
                   decoration: BoxDecoration(
-                    color:
-                        ModuleColors.portfolio.withValues(alpha: 0.1),
+                    color: ModuleColors.portfolio.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -68,10 +66,10 @@ class PreviewHeroHeader extends StatelessWidget {
                   child: Text(
                     opportunity.etfName,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          height: 1.15,
-                          fontSize: compact ? 15 : null,
-                        ),
+                      fontWeight: FontWeight.bold,
+                      height: 1.15,
+                      fontSize: compact ? 15 : null,
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -84,14 +82,14 @@ class PreviewHeroHeader extends StatelessWidget {
                       Text(
                         formatter.format(available),
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                       Text(
                         '$constituentCount stocks',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: context.colors.textTertiary,
-                            ),
+                          color: context.colors.textTertiary,
+                        ),
                       ),
                     ],
                   ),
@@ -115,17 +113,13 @@ class PreviewHeroHeader extends StatelessWidget {
                         children: [
                           TextSpan(
                             text: 'Avail ',
-                            style:
-                                Theme.of(context).textTheme.labelSmall?.copyWith(
-                                      color: context.colors.textSecondary,
-                                    ),
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(color: context.colors.textSecondary),
                           ),
                           TextSpan(
                             text: formatter.format(available),
-                            style:
-                                Theme.of(context).textTheme.titleSmall?.copyWith(
-                                      fontWeight: FontWeight.w800,
-                                    ),
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.w800),
                           ),
                         ],
                       ),
@@ -136,9 +130,9 @@ class PreviewHeroHeader extends StatelessWidget {
                   Text(
                     '$constituentCount stocks',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: context.colors.textTertiary,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      color: context.colors.textTertiary,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),

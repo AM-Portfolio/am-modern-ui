@@ -38,10 +38,9 @@ class BootTrace {
       _verbose = forceEnabled;
       _recording = forceEnabled;
     } else {
-      _verbose = _bootTraceFromDefine ||
-          Uri.base.queryParameters['bootTrace'] == '1';
-      _recording = _verbose ||
-          (_bootRumFromDefine && kIsWeb);
+      _verbose =
+          _bootTraceFromDefine || Uri.base.queryParameters['bootTrace'] == '1';
+      _recording = _verbose || (_bootRumFromDefine && kIsWeb);
     }
 
     if (!_recording) return;

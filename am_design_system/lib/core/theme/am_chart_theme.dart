@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Defines the color palette and styling for Charts across the application.
-/// 
+///
 /// Usage:
 /// ```dart
 /// final chartTheme = AmChartTheme.of(context);
@@ -53,7 +53,7 @@ class AmChartTheme {
     primary: const Color(0xFF6C5DD3), // Existing purple
     secondary: const Color(0xFFA098E5),
     success: const Color(0xFF00B894), // Green
-    error: const Color(0xFFFF7675),   // Red
+    error: const Color(0xFFFF7675), // Red
     warning: const Color(0xFFFDCB6E),
     background: Colors.white,
     gridLine: Colors.grey.withOpacity(0.1),
@@ -69,7 +69,7 @@ class AmChartTheme {
     primary: const Color(0xFF8B7EF8), // Lighter purple for dark mode
     secondary: const Color(0xFF6C5DD3),
     success: const Color(0xFF00D2A8), // Brighter green
-    error: const Color(0xFFFF7675),   // Soft red
+    error: const Color(0xFFFF7675), // Soft red
     warning: const Color(0xFFFFEAA7),
     background: const Color(0xFF1E1E2E), // Dark card bg
     gridLine: Colors.white.withOpacity(0.05),

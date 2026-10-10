@@ -186,20 +186,17 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
           sortBy: (p) => p.symbol,
           builder: (p) => Text(
             p.symbol,
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.copyWith(fontWeight: FontWeight.w600),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
         SortableColumn(
           title: 'Qty',
           sortBy: (p) => p.qty,
           textAlign: TextAlign.end,
-          builder: (p) => Text(
-            p.qty.toStringAsFixed(0),
-            textAlign: TextAlign.end,
-          ),
+          builder: (p) =>
+              Text(p.qty.toStringAsFixed(0), textAlign: TextAlign.end),
         ),
         SortableColumn(
           title: 'Avg',
@@ -227,9 +224,9 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
             '₹${fmt.format(p.unrealized)}',
             textAlign: TextAlign.end,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: _pnlColor(context, p.unrealized),
-                  fontWeight: FontWeight.w700,
-                ),
+              color: _pnlColor(context, p.unrealized),
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
         SortableColumn(
@@ -240,8 +237,8 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
             '${p.unrealizedPct.toStringAsFixed(2)}%',
             textAlign: TextAlign.end,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: _pnlColor(context, p.unrealizedPct),
-                ),
+              color: _pnlColor(context, p.unrealizedPct),
+            ),
           ),
         ),
       ],
@@ -274,8 +271,10 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
       builder: (context, state) {
         final computed = _computeFromFills(state.orders);
         final rows = _rows(state);
-        final unrealizedTotal =
-            rows.fold<double>(0, (s, r) => s + r.unrealized);
+        final unrealizedTotal = rows.fold<double>(
+          0,
+          (s, r) => s + r.unrealized,
+        );
         final todayPnl = computed.todayRealized + unrealizedTotal;
 
         Future<void> refresh() async {
@@ -299,15 +298,15 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
                   children: [
                     Text(
                       "Today's P&L",
-                      style: Theme.of(context)
-                          .textTheme
-                          .labelMedium
-                          ?.copyWith(color: colors.textSecondary),
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: colors.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '₹${fmt.format(todayPnl)}',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
                             color: _pnlColor(context, todayPnl),
                             fontWeight: FontWeight.w700,
                           ),
@@ -360,8 +359,8 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
                       child: Text(
                         'No open positions.',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: colors.textSecondary,
-                            ),
+                          color: colors.textSecondary,
+                        ),
                       ),
                     ),
                   )
@@ -385,8 +384,8 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
                   Text(
                     'Positions',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const Spacer(),
                   if (_loadingLtp)
@@ -422,8 +421,8 @@ class _PaperPositionsPnlPaneState extends State<PaperPositionsPnlPane> {
                     child: Text(
                       'No open positions.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: colors.textSecondary,
-                          ),
+                        color: colors.textSecondary,
+                      ),
                     ),
                   ),
                   tableBuilder: _buildTable,

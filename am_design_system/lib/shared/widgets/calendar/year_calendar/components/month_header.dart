@@ -50,14 +50,16 @@ class MonthHeader extends StatelessWidget {
                 maintainAnimation: true,
                 maintainState: true,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: (stats['totalPnL'] >= 0 ? Colors.green : Colors.red)
                         .withOpacity(0.15),
                     borderRadius: BorderRadius.circular(4),
                     border: Border.all(
-                      color: (stats['totalPnL'] >= 0 ? Colors.green : Colors.red)
-                          .withOpacity(0.4),
+                      color:
+                          (stats['totalPnL'] >= 0 ? Colors.green : Colors.red)
+                              .withOpacity(0.4),
                     ),
                   ),
                   child: Row(
@@ -68,7 +70,8 @@ class MonthHeader extends StatelessWidget {
                             ? Icons.arrow_upward
                             : Icons.arrow_downward,
                         size: 12,
-                        color: stats['totalPnL'] >= 0 ? Colors.green : Colors.red,
+                        color:
+                            stats['totalPnL'] >= 0 ? Colors.green : Colors.red,
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -130,34 +133,43 @@ class MonthHeader extends StatelessWidget {
   }
 
   /// Build compact stat indicator for mobile
-  Widget _buildCompactStat(BuildContext context, IconData icon, String label, Color color) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Icon(icon, size: 10, color: color.withOpacity(0.7)),
-      const SizedBox(width: 2),
-      Text(
-        label,
-        style: TextStyle(
-          fontSize: 10,
-          color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.8),
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    ],
-  );
+  Widget _buildCompactStat(
+          BuildContext context, IconData icon, String label, Color color) =>
+      Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 10, color: color.withOpacity(0.7)),
+          const SizedBox(width: 2),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.color
+                  ?.withOpacity(0.8),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      );
 
   /// Build icon-based stat (no background badge)
-  Widget _buildIconStat(BuildContext context, IconData icon, String label, Color color) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Icon(icon, size: 12, color: color),
-      const SizedBox(width: 4),
-      Text(
-        label,
-        style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600),
-      ),
-    ],
-  );
+  Widget _buildIconStat(
+          BuildContext context, IconData icon, String label, Color color) =>
+      Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+                fontSize: 11, color: color, fontWeight: FontWeight.w600),
+          ),
+        ],
+      );
 
   String _getMonthName(int month) {
     const monthNames = [

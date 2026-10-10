@@ -45,19 +45,20 @@ class _NewsMobileSectionState extends State<NewsMobileSection> {
   @override
   Widget build(BuildContext context) {
     final cards = _cards;
-    final pageCount =
-        cards.isEmpty ? 1 : ((cards.length + _pageSize - 1) ~/ _pageSize);
+    final pageCount = cards.isEmpty
+        ? 1
+        : ((cards.length + _pageSize - 1) ~/ _pageSize);
     final safePage = _page.clamp(0, pageCount - 1);
     if (safePage != _page) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) setState(() => _page = safePage);
       });
     }
-    final pageCards =
-        cards.skip(safePage * _pageSize).take(_pageSize).toList();
+    final pageCards = cards.skip(safePage * _pageSize).take(_pageSize).toList();
     final featured = pageCards.isEmpty ? null : pageCards.first;
-    final rest =
-        pageCards.length > 1 ? pageCards.sublist(1) : const <NewsCard>[];
+    final rest = pageCards.length > 1
+        ? pageCards.sublist(1)
+        : const <NewsCard>[];
 
     return AmGlassCard(
       padding: const EdgeInsets.all(12),
@@ -88,11 +89,7 @@ class _NewsMobileSectionState extends State<NewsMobileSection> {
                 compact: true,
               ),
             for (final card in rest)
-              NewsCompactRow(
-                card: card,
-                quotes: widget.quotes,
-                compact: true,
-              ),
+              NewsCompactRow(card: card, quotes: widget.quotes, compact: true),
             if (cards.length > _pageSize)
               NewsPager(
                 page: safePage,

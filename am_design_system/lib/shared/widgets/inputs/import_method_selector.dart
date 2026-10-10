@@ -13,16 +13,16 @@ class ImportMethodSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      const Text(
-        'Choose your import method:',
-        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-      ),
-      const SizedBox(height: 16),
-      ...ImportDataOption.values.map(_buildImportOption),
-    ],
-  );
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Choose your import method:',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 16),
+          ...ImportDataOption.values.map(_buildImportOption),
+        ],
+      );
 
   Widget _buildImportOption(ImportDataOption option) {
     final isSelected = selectedOption == option;
@@ -69,9 +69,8 @@ class ImportMethodSelector extends StatelessWidget {
                     option.label,
                     style: TextStyle(
                       fontSize: 16,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.w500,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.w500,
                       color: isSelected
                           ? const Color(0xFFFF9800)
                           : Colors.grey[800],

@@ -29,8 +29,9 @@ market.SecurityDocument labelToSecurityDocument(
   String? companyName,
 }) {
   final sym = symbol.trim();
-  final name =
-      companyName != null && companyName.trim().isNotEmpty ? companyName.trim() : sym;
+  final name = companyName != null && companyName.trim().isNotEmpty
+      ? companyName.trim()
+      : sym;
   return market.SecurityDocument(
     key: market.SecurityKey(symbol: sym),
     metadata: market.SecurityMetadata(companyName: name),
@@ -61,12 +62,15 @@ List<market.SecurityDocument> suggestItemsToDocuments(
         ),
       );
     } else {
-      final sym =
-          item.symbol?.trim().isNotEmpty == true ? item.symbol!.trim() : label;
+      final sym = item.symbol?.trim().isNotEmpty == true
+          ? item.symbol!.trim()
+          : label;
       out.add(
         labelToSecurityDocument(
           sym,
-          companyName: subtitle != null && subtitle.isNotEmpty ? subtitle : label,
+          companyName: subtitle != null && subtitle.isNotEmpty
+              ? subtitle
+              : label,
         ),
       );
     }
@@ -157,8 +161,7 @@ Future<List<market.SecurityDocument>> searchWhatIfSymbols({
   }
 
   final seen = <String>{
-    for (final d in fromBackend)
-      (d.key?.symbol ?? '').trim().toUpperCase(),
+    for (final d in fromBackend) (d.key?.symbol ?? '').trim().toUpperCase(),
   }..removeWhere((s) => s.isEmpty);
 
   List<market.SecurityDocument> fromMarket = const [];
@@ -198,7 +201,9 @@ Future<List<market.SecurityDocument>> searchClassAddNames({
   );
 }
 
-Future<List<market.SecurityDocument>?> searchMarketSecurities(String query) async {
+Future<List<market.SecurityDocument>?> searchMarketSecurities(
+  String query,
+) async {
   final trimmed = query.trim();
   if (trimmed.isEmpty) return const [];
 
@@ -208,12 +213,9 @@ Future<List<market.SecurityDocument>?> searchMarketSecurities(String query) asyn
     if (token != null && token.isNotEmpty) {
       client.addDefaultHeader('Authorization', 'Bearer $token');
     }
-    return await market.SecurityExplorerApi(client).search(
-      trimmed,
-      smartRecommendations: true,
-      category: 'STOCKS',
-      limit: 8,
-    );
+    return await market.SecurityExplorerApi(
+      client,
+    ).search(trimmed, smartRecommendations: true, category: 'STOCKS', limit: 8);
   } catch (_) {
     return null;
   }

@@ -26,15 +26,19 @@ class MinimumInvestmentWarningWidget extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.warning_amber_rounded, color: context.statusWarning, size: 20),
+          Icon(
+            Icons.warning_amber_rounded,
+            color: context.statusWarning,
+            size: 20,
+          ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
               'Minimum required investment is ₹${minimumInvestmentAmount.toStringAsFixed(0)} to maintain target weights.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: context.statusWarning,
-                    fontWeight: FontWeight.w500,
-                  ),
+                color: context.statusWarning,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],

@@ -6,10 +6,10 @@ enum PlanTier { free, pro, premium, other }
 /// Resolves billing + grant expiry fields on a [Subscription].
 extension SubscriptionEffectivePeriod on Subscription {
   DateTime? get effectivePeriodEnd => effectiveSubscriptionPeriodEnd(
-        currentPeriodEnd: currentPeriodEnd,
-        referralProExpiresAt: referralProExpiresAt,
-        trialProExpiresAt: trialProExpiresAt,
-      );
+    currentPeriodEnd: currentPeriodEnd,
+    referralProExpiresAt: referralProExpiresAt,
+    trialProExpiresAt: trialProExpiresAt,
+  );
 }
 
 /// Resolves a catalog / subscription plan code into a coarse tier.

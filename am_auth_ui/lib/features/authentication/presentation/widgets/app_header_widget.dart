@@ -6,7 +6,7 @@ class AppHeaderWidget extends StatelessWidget {
   final String appName;
   final IconData appIcon;
   final bool isCompact;
-  
+
   const AppHeaderWidget({
     super.key,
     required this.appName,
@@ -18,7 +18,7 @@ class AppHeaderWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     // Only show on compact/mobile screens
     if (!isCompact) return const SizedBox.shrink();
-    
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
@@ -44,11 +44,11 @@ class AppHeaderWidget extends StatelessWidget {
           child: Text(
             appName,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? Colors.white
-                  : Colors.black87,
-            ),
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : Colors.black87,
+                ),
             overflow: TextOverflow.ellipsis,
           ),
         ),

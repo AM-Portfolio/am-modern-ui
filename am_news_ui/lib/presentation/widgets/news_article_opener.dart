@@ -10,11 +10,12 @@ Future<bool> openNewsArticle(
   if (uri == null || (!uri.isScheme('http') && !uri.isScheme('https'))) {
     return false;
   }
-  final launch = launcher ??
+  final launch =
+      launcher ??
       (u) => launchUrl(
-            u,
-            mode: LaunchMode.platformDefault,
-            webOnlyWindowName: '_blank',
-          );
+        u,
+        mode: LaunchMode.platformDefault,
+        webOnlyWindowName: '_blank',
+      );
   return launch(uri);
 }

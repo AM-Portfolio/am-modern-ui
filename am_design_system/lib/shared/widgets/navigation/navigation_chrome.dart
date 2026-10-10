@@ -16,8 +16,7 @@ class NavigationChrome {
   static const double surfaceAlpha = 0.85;
 
   static Color surfaceColor(BuildContext context, {required bool isDark}) {
-    final themeSurface =
-        Theme.of(context).extension<AppColorsTheme>()?.surface;
+    final themeSurface = Theme.of(context).extension<AppColorsTheme>()?.surface;
     final base = themeSurface ?? (isDark ? darkSurface : Colors.white);
     return base.withValues(alpha: surfaceAlpha);
   }

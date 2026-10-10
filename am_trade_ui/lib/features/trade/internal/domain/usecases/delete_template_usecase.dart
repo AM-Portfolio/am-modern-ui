@@ -9,7 +9,7 @@ class DeleteTemplateUseCase {
 
   Future<void> call({
     required String templateId,
-    }) {
+  }) {
     return _repository.deleteTemplate(
       templateId: templateId,
     );

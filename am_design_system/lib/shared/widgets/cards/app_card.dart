@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:am_design_system/core/config/design_system_provider.dart';
 
-
 /// A platform-adaptive card widget with consistent styling
 class AppCard extends StatelessWidget {
   /// Constructor
@@ -62,10 +61,9 @@ class AppCard extends StatelessWidget {
     final config = DesignSystemProvider.of(context);
 
     // Platform-specific styling
-    final defaultElevation = defaultTargetPlatform == TargetPlatform.iOS
-        ? 0.0
-        : 1.0;
-    
+    final defaultElevation =
+        defaultTargetPlatform == TargetPlatform.iOS ? 0.0 : 1.0;
+
     // Use config radius if available, otherwise fallback
     final radiusValue = config.defaultRadius;
     final defaultBorderRadius = BorderRadius.circular(radiusValue);
@@ -106,7 +104,7 @@ class AppCard extends StatelessWidget {
             ),
           ),
         if (padding != null)
-           Padding(padding: padding!, child: child)
+          Padding(padding: padding!, child: child)
         else if (padded && (title != null || subtitle != null))
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),

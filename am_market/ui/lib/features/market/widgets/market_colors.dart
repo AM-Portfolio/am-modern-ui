@@ -18,7 +18,8 @@ class MarketColors {
       Theme.of(context).colorScheme.surface;
 
   // ── Card surface ──────────────────────────────────────────
-  static Color cardSurface(BuildContext context) => _c(context).marketCardSurface;
+  static Color cardSurface(BuildContext context) =>
+      _c(context).marketCardSurface;
 
   static Color drawerBg(BuildContext context) => _c(context).cardSurface;
 
@@ -26,7 +27,8 @@ class MarketColors {
   static Color borderDefault(BuildContext context) =>
       _c(context).marketBorderDefault;
 
-  static Color borderStrong(BuildContext context) => _c(context).marketBorderDefault;
+  static Color borderStrong(BuildContext context) =>
+      _c(context).marketBorderDefault;
 
   static Color borderSelected(BuildContext context) =>
       _c(context).marketPositiveIndicator;
@@ -45,15 +47,17 @@ class MarketColors {
   // ── Timeframe bar ─────────────────────────────────────────
   static Color tfBarBg(BuildContext context) => _c(context).marketCardSurface;
 
-  static Color tfPillDefaultText(BuildContext context) => _c(context).textSecondary;
+  static Color tfPillDefaultText(BuildContext context) =>
+      _c(context).textSecondary;
 
   // ── "All indices" button ──────────────────────────────────
-  static Color allIndicesBtnText(BuildContext context) =>
-      textMuted(context);
+  static Color allIndicesBtnText(BuildContext context) => textMuted(context);
 
-  static Color positive(BuildContext context) => _c(context).marketPositiveIndicator;
+  static Color positive(BuildContext context) =>
+      _c(context).marketPositiveIndicator;
 
-  static Color negative(BuildContext context) => _c(context).marketNegativeIndicator;
+  static Color negative(BuildContext context) =>
+      _c(context).marketNegativeIndicator;
 
   static Color positiveBg(BuildContext context) => _c(context).marketPositiveBg;
 

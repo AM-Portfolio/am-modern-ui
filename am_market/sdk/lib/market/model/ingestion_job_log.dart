@@ -117,39 +117,42 @@ class IngestionJobLog {
   List<String> logs;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is IngestionJobLog &&
-    other.id == id &&
-    other.jobId == jobId &&
-    other.startTime == startTime &&
-    other.endTime == endTime &&
-    other.status == status &&
-    other.totalSymbols == totalSymbols &&
-    other.successCount == successCount &&
-    other.failureCount == failureCount &&
-    _deepEquality.equals(other.failedSymbols, failedSymbols) &&
-    other.durationMs == durationMs &&
-    other.payloadSize == payloadSize &&
-    other.message == message &&
-    _deepEquality.equals(other.logs, logs);
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is IngestionJobLog &&
+          other.id == id &&
+          other.jobId == jobId &&
+          other.startTime == startTime &&
+          other.endTime == endTime &&
+          other.status == status &&
+          other.totalSymbols == totalSymbols &&
+          other.successCount == successCount &&
+          other.failureCount == failureCount &&
+          _deepEquality.equals(other.failedSymbols, failedSymbols) &&
+          other.durationMs == durationMs &&
+          other.payloadSize == payloadSize &&
+          other.message == message &&
+          _deepEquality.equals(other.logs, logs);
 
   @override
   int get hashCode =>
-    (id == null ? 0 : id!.hashCode) +
-    (jobId == null ? 0 : jobId!.hashCode) +
-    (startTime == null ? 0 : startTime!.hashCode) +
-    (endTime == null ? 0 : endTime!.hashCode) +
-    (status == null ? 0 : status!.hashCode) +
-    (totalSymbols == null ? 0 : totalSymbols!.hashCode) +
-    (successCount == null ? 0 : successCount!.hashCode) +
-    (failureCount == null ? 0 : failureCount!.hashCode) +
-    (failedSymbols.hashCode) +
-    (durationMs == null ? 0 : durationMs!.hashCode) +
-    (payloadSize == null ? 0 : payloadSize!.hashCode) +
-    (message == null ? 0 : message!.hashCode) +
-    (logs.hashCode);
+      (id == null ? 0 : id!.hashCode) +
+      (jobId == null ? 0 : jobId!.hashCode) +
+      (startTime == null ? 0 : startTime!.hashCode) +
+      (endTime == null ? 0 : endTime!.hashCode) +
+      (status == null ? 0 : status!.hashCode) +
+      (totalSymbols == null ? 0 : totalSymbols!.hashCode) +
+      (successCount == null ? 0 : successCount!.hashCode) +
+      (failureCount == null ? 0 : failureCount!.hashCode) +
+      (failedSymbols.hashCode) +
+      (durationMs == null ? 0 : durationMs!.hashCode) +
+      (payloadSize == null ? 0 : payloadSize!.hashCode) +
+      (message == null ? 0 : message!.hashCode) +
+      (logs.hashCode);
 
   @override
-  String toString() => 'IngestionJobLog[id=$id, jobId=$jobId, startTime=$startTime, endTime=$endTime, status=$status, totalSymbols=$totalSymbols, successCount=$successCount, failureCount=$failureCount, failedSymbols=$failedSymbols, durationMs=$durationMs, payloadSize=$payloadSize, message=$message, logs=$logs]';
+  String toString() =>
+      'IngestionJobLog[id=$id, jobId=$jobId, startTime=$startTime, endTime=$endTime, status=$status, totalSymbols=$totalSymbols, successCount=$successCount, failureCount=$failureCount, failedSymbols=$failedSymbols, durationMs=$durationMs, payloadSize=$payloadSize, message=$message, logs=$logs]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -193,7 +196,7 @@ class IngestionJobLog {
     } else {
       json[r'failureCount'] = null;
     }
-      json[r'failedSymbols'] = this.failedSymbols;
+    json[r'failedSymbols'] = this.failedSymbols;
     if (this.durationMs != null) {
       json[r'durationMs'] = this.durationMs;
     } else {
@@ -209,7 +212,7 @@ class IngestionJobLog {
     } else {
       json[r'message'] = null;
     }
-      json[r'logs'] = this.logs;
+    json[r'logs'] = this.logs;
     return json;
   }
 
@@ -224,8 +227,10 @@ class IngestionJobLog {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "IngestionJobLog[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "IngestionJobLog[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "IngestionJobLog[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "IngestionJobLog[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -240,7 +245,9 @@ class IngestionJobLog {
         successCount: mapValueOfType<int>(json, r'successCount'),
         failureCount: mapValueOfType<int>(json, r'failureCount'),
         failedSymbols: json[r'failedSymbols'] is Iterable
-            ? (json[r'failedSymbols'] as Iterable).cast<String>().toList(growable: false)
+            ? (json[r'failedSymbols'] as Iterable)
+                .cast<String>()
+                .toList(growable: false)
             : const [],
         durationMs: mapValueOfType<int>(json, r'durationMs'),
         payloadSize: mapValueOfType<int>(json, r'payloadSize'),
@@ -253,7 +260,10 @@ class IngestionJobLog {
     return null;
   }
 
-  static List<IngestionJobLog> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<IngestionJobLog> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <IngestionJobLog>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -269,7 +279,7 @@ class IngestionJobLog {
   static Map<String, IngestionJobLog> mapFromJson(dynamic json) {
     final map = <String, IngestionJobLog>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); 
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
         final value = IngestionJobLog.fromJson(entry.value);
         if (value != null) {
@@ -281,19 +291,23 @@ class IngestionJobLog {
   }
 
   // maps a json object with a list of IngestionJobLog-objects as value to a dart map
-  static Map<String, List<IngestionJobLog>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<IngestionJobLog>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<IngestionJobLog>>{};
     if (json is Map && json.isNotEmpty) {
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = IngestionJobLog.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = IngestionJobLog.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

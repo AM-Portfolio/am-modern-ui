@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import 'package:am_design_system/shared/models/holding.dart';
@@ -79,8 +78,7 @@ class HoldingsTemplateFactory {
         spacing: 8,
         runSpacing: 8,
         children: [
-          if (config.showChangeTypeSelector)
-            _buildChangeTypeSelector(core),
+          if (config.showChangeTypeSelector) _buildChangeTypeSelector(core),
           if (config.showDisplayFormatSelector)
             _buildDisplayFormatSelector(core),
           if (config.showSortControls) _buildSortControls(core),

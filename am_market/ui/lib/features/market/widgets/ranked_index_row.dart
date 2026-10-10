@@ -100,10 +100,12 @@ class RankedIndexRow extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: colors.actionPrimaryBg.withValues(alpha: 0.12),
+                            color:
+                                colors.actionPrimaryBg.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(99),
                             border: Border.all(
-                              color: colors.actionPrimaryBg.withValues(alpha: 0.4),
+                              color:
+                                  colors.actionPrimaryBg.withValues(alpha: 0.4),
                             ),
                           ),
                           child: Text(
@@ -160,8 +162,8 @@ class RankedIndexRow extends StatelessWidget {
               const SizedBox(height: 8),
               LayoutBuilder(
                 builder: (context, constraints) {
-                  final fillW =
-                      (constraints.maxWidth * frac).clamp(0.0, constraints.maxWidth);
+                  final fillW = (constraints.maxWidth * frac)
+                      .clamp(0.0, constraints.maxWidth);
                   return SizedBox(
                     height: 8,
                     child: Stack(

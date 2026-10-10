@@ -14,5 +14,6 @@ class CreateFavoriteFilterUseCase {
     String? description,
     bool? isDefault,
   }) async =>
-      _repository.createFavoriteFilter(name, filterConfig, description: description, isDefault: isDefault);
+      _repository.createFavoriteFilter(name, filterConfig,
+          description: description, isDefault: isDefault);
 }

@@ -21,8 +21,8 @@ class _ScanWebLoginPageState extends State<ScanWebLoginPage> {
     final raw = capture.barcodes.firstOrNull?.rawValue;
     if (raw == null || raw.isEmpty) return;
 
-    final deviceLinkId =
-        AuthProviders.deviceLinkRemoteDataSource.parseDeviceLinkIdFromPayload(raw);
+    final deviceLinkId = AuthProviders.deviceLinkRemoteDataSource
+        .parseDeviceLinkIdFromPayload(raw);
     if (deviceLinkId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Not an AM login code')),

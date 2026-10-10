@@ -7,7 +7,8 @@ class PeerColumnDef {
   final String label;
   final String key;
   final double? Function(CompetitorPeer peer) valueGetter;
-  final Widget Function(BuildContext context, CompetitorPeer peer, double maxRoe) cellBuilder;
+  final Widget Function(
+      BuildContext context, CompetitorPeer peer, double maxRoe) cellBuilder;
 
   const PeerColumnDef({
     required this.label,
@@ -42,7 +43,8 @@ class PeerColumnsHelper {
         label: 'ROE %',
         key: 'roe',
         valueGetter: (p) => p.roe,
-        cellBuilder: (context, p, maxRoe) => buildMetricBar(context, p.roe, maxRoe),
+        cellBuilder: (context, p, maxRoe) =>
+            buildMetricBar(context, p.roe, maxRoe),
       ),
       PeerColumnDef(
         label: 'ROA %',
@@ -53,7 +55,9 @@ class PeerColumnsHelper {
           style: TextStyle(
             color: p.roa != null && p.roa! > 1.5
                 ? context.marketTheme.positive
-                : (p.roa != null && p.roa! < 0 ? context.marketTheme.negative : context.textSecondary),
+                : (p.roa != null && p.roa! < 0
+                    ? context.marketTheme.negative
+                    : context.textSecondary),
           ),
         ),
       ),
@@ -64,7 +68,9 @@ class PeerColumnsHelper {
         cellBuilder: (context, p, _) => Text(
           p.nim != null ? '${p.nim!.toStringAsFixed(2)}%' : '—',
           style: TextStyle(
-            color: p.nim != null && p.nim! > 3.0 ? context.marketTheme.positive : context.textSecondary,
+            color: p.nim != null && p.nim! > 3.0
+                ? context.marketTheme.positive
+                : context.textSecondary,
           ),
         ),
       ),
@@ -77,7 +83,9 @@ class PeerColumnsHelper {
           style: TextStyle(
             color: p.netNpa != null && p.netNpa! < 0.5
                 ? context.marketTheme.positive
-                : (p.netNpa != null && p.netNpa! > 1.0 ? context.marketTheme.negative : context.textSecondary),
+                : (p.netNpa != null && p.netNpa! > 1.0
+                    ? context.marketTheme.negative
+                    : context.textSecondary),
           ),
         ),
       ),
@@ -88,7 +96,9 @@ class PeerColumnsHelper {
         cellBuilder: (context, p, _) => Text(
           p.casa != null ? '${p.casa!.toStringAsFixed(2)}%' : '—',
           style: TextStyle(
-            color: p.casa != null && p.casa! > 40.0 ? context.marketTheme.positive : context.textSecondary,
+            color: p.casa != null && p.casa! > 40.0
+                ? context.marketTheme.positive
+                : context.textSecondary,
           ),
         ),
       ),
@@ -101,8 +111,12 @@ class PeerColumnsHelper {
           style: TextStyle(
             color: p.roce != null && p.roce! > 15.0
                 ? context.marketTheme.positive
-                : (p.roce != null && p.roce! < 0 ? context.marketTheme.negative : context.textSecondary),
-            fontWeight: p.roce != null && p.roce! > 15.0 ? FontWeight.w600 : FontWeight.normal,
+                : (p.roce != null && p.roce! < 0
+                    ? context.marketTheme.negative
+                    : context.textSecondary),
+            fontWeight: p.roce != null && p.roce! > 15.0
+                ? FontWeight.w600
+                : FontWeight.normal,
             fontSize: 12,
           ),
         ),
@@ -127,15 +141,20 @@ class PeerColumnsHelper {
       ),
     ];
 
-    return candidates.where((c) => peers.any((p) => c.valueGetter(p) != null)).toList();
+    return candidates
+        .where((c) => peers.any((p) => c.valueGetter(p) != null))
+        .toList();
   }
 
-  static Widget buildMetricBar(BuildContext context, double? roe, double maxRoe) {
+  static Widget buildMetricBar(
+      BuildContext context, double? roe, double maxRoe) {
     if (roe == null) {
-      return Text('—', style: TextStyle(color: context.textSecondary, fontSize: 12));
+      return Text('—',
+          style: TextStyle(color: context.textSecondary, fontSize: 12));
     }
     final isPos = roe >= 0;
-    final color = isPos ? context.marketTheme.positive : context.marketTheme.negative;
+    final color =
+        isPos ? context.marketTheme.positive : context.marketTheme.negative;
 
     return Text(
       roe.toStringAsFixed(2),

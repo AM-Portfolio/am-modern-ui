@@ -3,12 +3,11 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_design_system/am_design_system.dart';
 
 /// Callback for date range selection with context
-typedef DateRangeCallback =
-    void Function(
-      DateTime? startDate,
-      DateTime? endDate,
-      String selectionDescription,
-    );
+typedef DateRangeCallback = void Function(
+  DateTime? startDate,
+  DateTime? endDate,
+  String selectionDescription,
+);
 
 /// Trade Calendar Date Selector using Universal Calendar System
 /// This widget is now a wrapper around the universal calendar system
@@ -82,10 +81,10 @@ class _TradeCalendarDateSelectorState extends State<TradeCalendarDateSelector> {
 
   @override
   Widget build(BuildContext context) => TradeDateFilter(
-    onDateSelectionChanged: _handleDateSelectionChanged,
-    title: 'Trade Date Filter',
-    initialSelection: _currentSelection,
-  );
+        onDateSelectionChanged: _handleDateSelectionChanged,
+        title: 'Trade Date Filter',
+        initialSelection: _currentSelection,
+      );
 }
 
 /// Enhanced Trade Calendar Date Selector with more options
@@ -140,9 +139,9 @@ class WebTradeCalendarDateSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => WebDateFilter(
-    onDateSelectionChanged: onDateSelectionChanged,
-    title: title ?? 'Trade Date Filter',
-    initialSelection: initialSelection,
-    fullFeatures: fullFeatures,
-  );
+        onDateSelectionChanged: onDateSelectionChanged,
+        title: title ?? 'Trade Date Filter',
+        initialSelection: initialSelection,
+        fullFeatures: fullFeatures,
+      );
 }

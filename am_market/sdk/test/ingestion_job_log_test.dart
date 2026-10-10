@@ -80,8 +80,5 @@ void main() {
     test('to test the property `logs`', () async {
       // TODO
     });
-
-
   });
-
 }

@@ -29,9 +29,12 @@ class FuturesView extends ConsumerWidget {
           children: [
             Icon(Icons.error_outline, color: marketTheme.negative, size: 36),
             const SizedBox(height: 12),
-            Text('Failed to load Futures contracts from backend API', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold)),
+            Text('Failed to load Futures contracts from backend API',
+                style: TextStyle(
+                    color: colors.textPrimary, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
-            Text(err.toString(), style: TextStyle(color: colors.textSecondary, fontSize: 12)),
+            Text(err.toString(),
+                style: TextStyle(color: colors.textSecondary, fontSize: 12)),
           ],
         ),
       ),
@@ -49,11 +52,15 @@ class FuturesView extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.warning_amber_rounded, color: colors.statusWarning, size: 40),
+                  Icon(Icons.warning_amber_rounded,
+                      color: colors.statusWarning, size: 40),
                   const SizedBox(height: 12),
                   Text(
                     'No Futures Contracts Found in Backend Database',
-                    style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
+                    style: TextStyle(
+                        color: colors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16),
                   ),
                   const SizedBox(height: 8),
                   Text(

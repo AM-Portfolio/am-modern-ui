@@ -25,7 +25,8 @@ abstract class TradeControllerRemoteDataSource {
 
   /// PUT /v1/trades/details/{tradeId}
   /// Update an existing trade
-  Future<TradeDetailsDto> updateTrade({required String tradeId, required TradeDetailsDto tradeDetails});
+  Future<TradeDetailsDto> updateTrade(
+      {required String tradeId, required TradeDetailsDto tradeDetails});
 
   /// DELETE /v1/trades/details/{tradeId}
   /// Delete a trade by ID
@@ -51,7 +52,8 @@ abstract class TradeControllerRemoteDataSource {
 
   /// POST /v1/trades/details/by-ids
   /// Get trade details by trade IDs
-  Future<List<TradeDetailsDto>> getTradeDetailsByTradeIds(List<String> tradeIds);
+  Future<List<TradeDetailsDto>> getTradeDetailsByTradeIds(
+      List<String> tradeIds);
 
   /// POST /v1/trades/details/filter
   /// Filter trade details using favorite filter configuration
@@ -65,13 +67,14 @@ abstract class TradeControllerRemoteDataSource {
 }
 
 /// Implementation of TradeControllerRemoteDataSource
-class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSource {
+class TradeControllerRemoteDataSourceImpl
+    implements TradeControllerRemoteDataSource {
   TradeControllerRemoteDataSourceImpl({
     required ApiClient apiClient,
   }) : _apiClient = apiClient;
 
   final ApiClient _apiClient;
-  
+
   /// Use ConfigService baseUrl if configured, fall back to the constant
   String get _baseUrl {
     const localTradeUrl = String.fromEnvironment('AM_TRADE_BASE_URL');
@@ -92,9 +95,7 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
     final cleanBase = baseUrl.endsWith('/')
         ? baseUrl.substring(0, baseUrl.length - 1)
         : baseUrl;
-    final cleanResource = resource.startsWith('/')
-        ? resource
-        : '/$resource';
+    final cleanResource = resource.startsWith('/') ? resource : '/$resource';
     return '$cleanBase$cleanResource';
   }
 
@@ -122,13 +123,17 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
         fullUri,
         parser: (data) {
           if (data is List) {
-            return data.map((json) => TradeDetailsDto.fromJson(json as Map<String, dynamic>)).toList();
+            return data
+                .map((json) =>
+                    TradeDetailsDto.fromJson(json as Map<String, dynamic>))
+                .toList();
           }
           return [];
         },
       );
 
-      AppLogger.methodExit('getTradeDetailsByPortfolioAndSymbols', tag: 'TradeControllerRemoteDataSource');
+      AppLogger.methodExit('getTradeDetailsByPortfolioAndSymbols',
+          tag: 'TradeControllerRemoteDataSource');
       return response;
     } catch (e) {
       AppLogger.error(
@@ -157,12 +162,14 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
       // Convert to JSON for API call
       final jsonPayload = tradeDetails.toJson();
 
-      AppLogger.debug('📤 POST Request Payload (Complete JSON)', tag: 'TradeControllerRemoteDataSource');
+      AppLogger.debug('📤 POST Request Payload (Complete JSON)',
+          tag: 'TradeControllerRemoteDataSource');
 
       final response = await _apiClient.post<TradeDetailsDto>(
         fullUri,
         body: tradeRequestBodyWithoutUserId(jsonPayload),
-        parser: (data) => TradeDetailsDto.fromJson(data! as Map<String, dynamic>),
+        parser: (data) =>
+            TradeDetailsDto.fromJson(data! as Map<String, dynamic>),
       );
 
       AppLogger.methodExit('addTrade', tag: 'TradeControllerRemoteDataSource');
@@ -179,8 +186,10 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
   }
 
   @override
-  Future<TradeDetailsDto> updateTrade({required String tradeId, required TradeDetailsDto tradeDetails}) async {
-    AppLogger.methodEntry('updateTrade', tag: 'TradeControllerRemoteDataSource', params: {'tradeId': tradeId});
+  Future<TradeDetailsDto> updateTrade(
+      {required String tradeId, required TradeDetailsDto tradeDetails}) async {
+    AppLogger.methodEntry('updateTrade',
+        tag: 'TradeControllerRemoteDataSource', params: {'tradeId': tradeId});
 
     try {
       final baseUri = _buildUri(_baseUrl, TradeEndpoints.details);
@@ -189,10 +198,12 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
       final response = await _apiClient.put<TradeDetailsDto>(
         fullUri,
         body: tradeRequestBodyWithoutUserId(tradeDetails.toJson()),
-        parser: (data) => TradeDetailsDto.fromJson(data! as Map<String, dynamic>),
+        parser: (data) =>
+            TradeDetailsDto.fromJson(data! as Map<String, dynamic>),
       );
 
-      AppLogger.methodExit('updateTrade', tag: 'TradeControllerRemoteDataSource');
+      AppLogger.methodExit('updateTrade',
+          tag: 'TradeControllerRemoteDataSource');
       return response;
     } catch (e) {
       AppLogger.error(
@@ -207,7 +218,8 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
 
   @override
   Future<void> deleteTrade(String tradeId) async {
-    AppLogger.methodEntry('deleteTrade', tag: 'TradeControllerRemoteDataSource', params: {'tradeId': tradeId});
+    AppLogger.methodEntry('deleteTrade',
+        tag: 'TradeControllerRemoteDataSource', params: {'tradeId': tradeId});
 
     try {
       final baseUri = _buildUri(_baseUrl, TradeEndpoints.details);
@@ -215,8 +227,10 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
 
       await _apiClient.delete<void>(fullUri, parser: (_) {});
 
-      AppLogger.info('Trade deleted successfully - tradeId: $tradeId', tag: 'TradeControllerRemoteDataSource');
-      AppLogger.methodExit('deleteTrade', tag: 'TradeControllerRemoteDataSource');
+      AppLogger.info('Trade deleted successfully - tradeId: $tradeId',
+          tag: 'TradeControllerRemoteDataSource');
+      AppLogger.methodExit('deleteTrade',
+          tag: 'TradeControllerRemoteDataSource');
     } catch (e) {
       AppLogger.error(
         'Failed to delete trade',
@@ -240,7 +254,8 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
     int size = 20,
     String? sort,
   }) async {
-    AppLogger.methodEntry('getTradesByFilters', tag: 'TradeControllerRemoteDataSource');
+    AppLogger.methodEntry('getTradesByFilters',
+        tag: 'TradeControllerRemoteDataSource');
 
     try {
       final queryParams = <String>[];
@@ -274,10 +289,12 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
 
       final response = await _apiClient.get<PaginatedTradeResponseDto>(
         fullUri,
-        parser: (data) => PaginatedTradeResponseDto.fromJson(data! as Map<String, dynamic>),
+        parser: (data) =>
+            PaginatedTradeResponseDto.fromJson(data! as Map<String, dynamic>),
       );
 
-      AppLogger.methodExit('getTradesByFilters', tag: 'TradeControllerRemoteDataSource');
+      AppLogger.methodExit('getTradesByFilters',
+          tag: 'TradeControllerRemoteDataSource');
       return response;
     } catch (e) {
       AppLogger.error(
@@ -291,7 +308,8 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
   }
 
   @override
-  Future<List<TradeDetailsDto>> addOrUpdateTrades(List<TradeDetailsDto> trades) async {
+  Future<List<TradeDetailsDto>> addOrUpdateTrades(
+      List<TradeDetailsDto> trades) async {
     AppLogger.methodEntry(
       'addOrUpdateTrades',
       tag: 'TradeControllerRemoteDataSource',
@@ -303,16 +321,22 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
 
       final response = await _apiClient.post<List<TradeDetailsDto>>(
         fullUri,
-        body: trades.map((trade) => tradeRequestBodyWithoutUserId(trade.toJson())).toList(),
+        body: trades
+            .map((trade) => tradeRequestBodyWithoutUserId(trade.toJson()))
+            .toList(),
         parser: (data) {
           if (data is List) {
-            return data.map((json) => TradeDetailsDto.fromJson(json as Map<String, dynamic>)).toList();
+            return data
+                .map((json) =>
+                    TradeDetailsDto.fromJson(json as Map<String, dynamic>))
+                .toList();
           }
           return [];
         },
       );
 
-      AppLogger.methodExit('addOrUpdateTrades', tag: 'TradeControllerRemoteDataSource');
+      AppLogger.methodExit('addOrUpdateTrades',
+          tag: 'TradeControllerRemoteDataSource');
       return response;
     } catch (e) {
       AppLogger.error(
@@ -326,7 +350,8 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
   }
 
   @override
-  Future<List<TradeDetailsDto>> getTradeDetailsByTradeIds(List<String> tradeIds) async {
+  Future<List<TradeDetailsDto>> getTradeDetailsByTradeIds(
+      List<String> tradeIds) async {
     AppLogger.methodEntry(
       'getTradeDetailsByTradeIds',
       tag: 'TradeControllerRemoteDataSource',
@@ -341,13 +366,17 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
         body: tradeIds,
         parser: (data) {
           if (data is List) {
-            return data.map((json) => TradeDetailsDto.fromJson(json as Map<String, dynamic>)).toList();
+            return data
+                .map((json) =>
+                    TradeDetailsDto.fromJson(json as Map<String, dynamic>))
+                .toList();
           }
           return [];
         },
       );
 
-      AppLogger.methodExit('getTradeDetailsByTradeIds', tag: 'TradeControllerRemoteDataSource');
+      AppLogger.methodExit('getTradeDetailsByTradeIds',
+          tag: 'TradeControllerRemoteDataSource');
       return response;
     } catch (e) {
       AppLogger.error(
@@ -368,7 +397,8 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
     int size = 20,
     String? sort,
   }) async {
-    AppLogger.methodEntry('filterTradeDetails', tag: 'TradeControllerRemoteDataSource', params: {});
+    AppLogger.methodEntry('filterTradeDetails',
+        tag: 'TradeControllerRemoteDataSource', params: {});
 
     try {
       final queryParams = <String>[];
@@ -389,10 +419,12 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
       final response = await _apiClient.post<FilterTradeDetailsResponseDto>(
         fullUri,
         body: tradeRequestBodyWithoutUserId(requestData.toJson()),
-        parser: (data) => FilterTradeDetailsResponseDto.fromJson(data! as Map<String, dynamic>),
+        parser: (data) => FilterTradeDetailsResponseDto.fromJson(
+            data! as Map<String, dynamic>),
       );
 
-      AppLogger.methodExit('filterTradeDetails', tag: 'TradeControllerRemoteDataSource');
+      AppLogger.methodExit('filterTradeDetails',
+          tag: 'TradeControllerRemoteDataSource');
       return response;
     } catch (e) {
       AppLogger.error(
@@ -405,4 +437,3 @@ class TradeControllerRemoteDataSourceImpl implements TradeControllerRemoteDataSo
     }
   }
 }
-

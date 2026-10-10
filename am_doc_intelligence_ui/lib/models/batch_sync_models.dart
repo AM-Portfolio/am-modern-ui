@@ -20,7 +20,8 @@ class BatchSyncStatus {
 
   int get needsInput => files.where((f) => f.status == 'NEEDS_INPUT').length;
 
-  int get needsConfirm => files.where((f) => f.status == 'NEEDS_CONFIRM').length;
+  int get needsConfirm =>
+      files.where((f) => f.status == 'NEEDS_CONFIRM').length;
 
   bool get isTerminal =>
       overallStatus == 'COMPLETED' ||

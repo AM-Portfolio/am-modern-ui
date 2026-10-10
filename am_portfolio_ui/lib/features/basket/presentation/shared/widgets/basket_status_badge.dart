@@ -8,18 +8,20 @@ class BasketStatusBadge extends StatelessWidget {
   final ItemStatus? status;
   final bool isExcluded;
 
-  const BasketStatusBadge({
-    super.key,
-    this.status,
-    this.isExcluded = false,
-  });
+  const BasketStatusBadge({super.key, this.status, this.isExcluded = false});
 
   @override
   Widget build(BuildContext context) {
-    final label = BasketItemStatusTheme.labelFor(status, isExcluded: isExcluded);
+    final label = BasketItemStatusTheme.labelFor(
+      status,
+      isExcluded: isExcluded,
+    );
     if (label.isEmpty) return const SizedBox.shrink();
-    final color =
-        BasketItemStatusTheme.colorFor(context, status, isExcluded: isExcluded);
+    final color = BasketItemStatusTheme.colorFor(
+      context,
+      status,
+      isExcluded: isExcluded,
+    );
     return _pill(label, color);
   }
 
@@ -47,16 +49,15 @@ class BasketStatusDot extends StatelessWidget {
   final ItemStatus? status;
   final bool isExcluded;
 
-  const BasketStatusDot({
-    super.key,
-    this.status,
-    this.isExcluded = false,
-  });
+  const BasketStatusDot({super.key, this.status, this.isExcluded = false});
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        BasketItemStatusTheme.colorFor(context, status, isExcluded: isExcluded);
+    final color = BasketItemStatusTheme.colorFor(
+      context,
+      status,
+      isExcluded: isExcluded,
+    );
     return Container(
       width: 8,
       height: 8,

@@ -34,7 +34,12 @@ class FpStockRow extends StatelessWidget {
     final r = (hash & 0xFF0000) >> 16;
     final g = (hash & 0x00FF00) >> 8;
     final b = (hash & 0x0000FF);
-    return Color.fromARGB(255, 100 + (r % 100), 100 + (g % 100), 100 + (b % 100));
+    return Color.fromARGB(
+      255,
+      100 + (r % 100),
+      100 + (g % 100),
+      100 + (b % 100),
+    );
   }
 
   Widget _buildAvatar(BuildContext context, {double radius = 16}) {
@@ -55,13 +60,15 @@ class FpStockRow extends StatelessWidget {
   Widget _buildCompactCard(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.colors;
-    final fmtValue =
-        NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final fmtValue = NumberFormat.currency(
+      locale: 'en_IN',
+      symbol: '₹',
+      decimalDigits: 0,
+    );
 
     final metaParts = <String>[
       'Wt ${weightage.toStringAsFixed(1)}%',
-      if (showValue)
-        value != null ? fmtValue.format(value) : '—',
+      if (showValue) value != null ? fmtValue.format(value) : '—',
       if (showValue && valueSubLabel != null) valueSubLabel!,
     ];
 
@@ -109,10 +116,7 @@ class FpStockRow extends StatelessWidget {
               ],
             ),
           ),
-          if (pill != null) ...[
-            const SizedBox(width: AppSpacing.sm),
-            pill,
-          ],
+          if (pill != null) ...[const SizedBox(width: AppSpacing.sm), pill],
         ],
       ),
     );
@@ -125,14 +129,23 @@ class FpStockRow extends StatelessWidget {
     }
 
     final theme = Theme.of(context);
-    final fmtValue = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final fmtValue = NumberFormat.currency(
+      locale: 'en_IN',
+      symbol: '₹',
+      decimalDigits: 0,
+    );
     const minTableWidth = 520.0;
 
     final row = Container(
       color: isEven ? context.colors.cardSurface : Colors.transparent,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
       child: Row(
-        mainAxisAlignment: (showValue && showStatus) ? MainAxisAlignment.start : MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: (showValue && showStatus)
+            ? MainAxisAlignment.start
+            : MainAxisAlignment.spaceBetween,
         children: [
           Expanded(
             flex: (showValue && showStatus) ? 3 : 0,
@@ -161,7 +174,9 @@ class FpStockRow extends StatelessWidget {
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: context.colors.textPrimary,
               ),
-              textAlign: (showValue && showStatus) ? TextAlign.left : TextAlign.right,
+              textAlign: (showValue && showStatus)
+                  ? TextAlign.left
+                  : TextAlign.right,
             ),
           ),
           if (showValue)
@@ -202,7 +217,9 @@ class FpStockRow extends StatelessWidget {
       ),
     );
 
-    if (BasketResponsive.useScrollablePreviewTable(context) && showValue && showStatus) {
+    if (BasketResponsive.useScrollablePreviewTable(context) &&
+        showValue &&
+        showStatus) {
       return SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: ConstrainedBox(

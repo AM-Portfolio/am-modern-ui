@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:am_chart_ui/am_chart_ui.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -10,9 +11,9 @@ import 'url_strategy_noop.dart'
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 
-
 import 'core/di/injection.dart';
 import 'app.dart';
+import 'features/chart/market_sdk_chart_providers.dart';
 import 'presentation/splash/app_splash_screen.dart';
 
 // Android pipeline test trigger
@@ -42,7 +43,14 @@ void main() {
     usePathUrlStrategy();
   }
 
-  runApp(ProviderScope(child: _BootstrapApp(launchUri: launchUri)));
+  // App-wide live Market SDK for charts (package default is mock for tests).
+  runApp(ProviderScope(
+    overrides: [
+      chartHistoricalProvider.overrideWithValue(MarketSdkHistoricalProvider()),
+      chartMarketProvider.overrideWithValue(MarketSdkMarketDataProvider()),
+    ],
+    child: _BootstrapApp(launchUri: launchUri),
+  ));
 }
 
 class _BootstrapApp extends StatefulWidget {

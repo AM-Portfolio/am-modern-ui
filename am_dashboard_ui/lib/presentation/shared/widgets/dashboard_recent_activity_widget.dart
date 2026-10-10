@@ -85,7 +85,8 @@ class _DashboardRecentActivitySectionState
         onJumpToLatest: () {
           // Newest rows: page 0 for TIMESTAMP desc; last page when ascending.
           final lastPage = (response.totalPages - 1).clamp(0, 1 << 30);
-          final target = _sortBy == 'TIMESTAMP' &&
+          final target =
+              _sortBy == 'TIMESTAMP' &&
                   _sortDirection == SortDirection.ascending
               ? lastPage
               : 0;
@@ -222,10 +223,10 @@ class _DashboardRecentActivityWidgetState
             selectedColor: ModuleColors.dashboard.withValues(alpha: 0.25),
             checkmarkColor: ModuleColors.dashboard,
             labelStyle: context.text.caption().copyWith(
-                  color: _filter == value
-                      ? ModuleColors.dashboard
-                      : context.colors.textSecondary,
-                ),
+              color: _filter == value
+                  ? ModuleColors.dashboard
+                  : context.colors.textSecondary,
+            ),
             side: BorderSide(
               color: _filter == value
                   ? ModuleColors.dashboard.withValues(alpha: 0.5)
@@ -245,12 +246,13 @@ class _DashboardRecentActivityWidgetState
     final currencyFormat = NumberFormat.currency(symbol: '₹', decimalDigits: 2);
     final dateFormat = DateFormat('MMM d, yyyy');
     final headerStyle = context.text.caption().copyWith(
-          color: onSurfaceVariant,
-          fontWeight: FontWeight.w600,
-        );
+      color: onSurfaceVariant,
+      fontWeight: FontWeight.w600,
+    );
     final rowStyle = context.text.label().copyWith(color: onSurface);
     final activities = _filtered;
-    final showJump = widget.response.totalItems > widget.pageSize ||
+    final showJump =
+        widget.response.totalItems > widget.pageSize ||
         widget.response.totalItems > 20;
 
     return AmGlassCard(
@@ -263,9 +265,9 @@ class _DashboardRecentActivityWidgetState
             children: [
               Text(
                 'Recent Activity',
-                style: context.text.sectionTitle(compact: true).copyWith(
-                      color: onSurface,
-                    ),
+                style: context.text
+                    .sectionTitle(compact: true)
+                    .copyWith(color: onSurface),
               ),
               if (widget.response.totalItems > widget.pageSize)
                 InkWell(
@@ -273,9 +275,9 @@ class _DashboardRecentActivityWidgetState
                   hoverColor: Colors.transparent,
                   child: Text(
                     'View All (${widget.response.totalItems}) →',
-                    style: context.text.link(compact: true).copyWith(
-                          color: context.colors.actionPrimaryBg,
-                        ),
+                    style: context.text
+                        .link(compact: true)
+                        .copyWith(color: context.colors.actionPrimaryBg),
                   ),
                 ),
             ],
@@ -311,8 +313,8 @@ class _DashboardRecentActivityWidgetState
                           child: Text(
                             'Jump to latest',
                             style: context.text.caption().copyWith(
-                                  color: context.colors.actionPrimaryBg,
-                                ),
+                              color: context.colors.actionPrimaryBg,
+                            ),
                           ),
                         )
                       : null,

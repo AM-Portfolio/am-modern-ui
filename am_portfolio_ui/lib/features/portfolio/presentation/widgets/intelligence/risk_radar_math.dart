@@ -124,9 +124,7 @@ IconData riskRadarAxisIcon(String axisId) {
 
 /// Ordered primary axes present in [axes] (Vol/Beta excluded from shout UI).
 List<RiskAxis> riskRadarPrimaryAxes(List<RiskAxis> axes) {
-  final byId = <String, RiskAxis>{
-    for (final a in axes) a.id.toUpperCase(): a,
-  };
+  final byId = <String, RiskAxis>{for (final a in axes) a.id.toUpperCase(): a};
   return [
     for (final id in kRiskRadarPrimaryAxisIds)
       if (byId.containsKey(id)) byId[id]!,

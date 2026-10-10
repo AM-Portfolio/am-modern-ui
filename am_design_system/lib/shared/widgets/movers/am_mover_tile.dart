@@ -50,8 +50,9 @@ class _AmMoverTileState extends State<AmMoverTile> {
     final pillBg = _isHovered
         ? accentColor.withOpacity(widget.isDark ? 0.28 : 0.18)
         : bgColor;
-    final pillBorderColor =
-        _isHovered ? accentColor.withOpacity(0.70) : accentColor.withOpacity(0.35);
+    final pillBorderColor = _isHovered
+        ? accentColor.withOpacity(0.70)
+        : accentColor.withOpacity(0.35);
     final pillTextColor =
         _isHovered ? (widget.isDark ? Colors.white : accentColor) : accentColor;
 
@@ -70,9 +71,8 @@ class _AmMoverTileState extends State<AmMoverTile> {
         // ── Scale via Matrix4: layout size fixed → no overflow ──
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOutCubic,
-        transform: _isHovered
-            ? (Matrix4.identity()..scale(1.03))
-            : Matrix4.identity(),
+        transform:
+            _isHovered ? (Matrix4.identity()..scale(1.03)) : Matrix4.identity(),
         transformAlignment: Alignment.center,
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),

@@ -15,11 +15,10 @@ final marketDataStreamProvider = StreamProvider<MarketDataUpdate>((ref) {
   return service.stream ?? const Stream.empty();
 });
 
-
 final marketAnalysisSymbolProvider =
     NotifierProvider<MarketAnalysisSymbolNotifier, String>(
-      MarketAnalysisSymbolNotifier.new,
-    );
+  MarketAnalysisSymbolNotifier.new,
+);
 
 class MarketAnalysisSymbolNotifier extends Notifier<String> {
   @override

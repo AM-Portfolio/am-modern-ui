@@ -8,30 +8,31 @@ import 'trade_api_request_util.dart';
 
 /// Abstract interface for journal template remote data source
 abstract class JournalTemplateRemoteDataSource {
-  Future<JournalTemplateResponseDto> createTemplate(JournalTemplateRequestDto request);
-  
+  Future<JournalTemplateResponseDto> createTemplate(
+      JournalTemplateRequestDto request);
+
   Future<List<JournalTemplateResponseDto>> getTemplates({
     String? category,
     String? search,
   });
-  
+
   Future<JournalTemplateResponseDto> getTemplate(String templateId);
-  
+
   Future<JournalTemplateResponseDto> updateTemplate(
     String templateId,
     JournalTemplateRequestDto request,
   );
-  
+
   Future<void> deleteTemplate(String templateId);
-  
+
   Future<List<JournalTemplateResponseDto>> getFavoriteTemplates();
-  
+
   Future<List<JournalTemplateResponseDto>> getRecommendedTemplates();
-  
+
   Future<List<JournalTemplateResponseDto>> getMyTemplates();
-  
+
   Future<JournalTemplateResponseDto> toggleFavorite(String templateId);
-  
+
   Future<TradeJournalEntryResponseDto> useTemplate(
     String templateId,
     UseTemplateRequestDto request,
@@ -40,7 +41,8 @@ abstract class JournalTemplateRemoteDataSource {
 
 /// Implementation of journal template remote data source
 /// Implementation of journal template remote data source
-class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSource {
+class JournalTemplateRemoteDataSourceImpl
+    implements JournalTemplateRemoteDataSource {
   JournalTemplateRemoteDataSourceImpl({
     required ApiClient apiClient,
     required TradeApiConfig tradeConfig,
@@ -55,9 +57,7 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
     final cleanBase = baseUrl.endsWith('/')
         ? baseUrl.substring(0, baseUrl.length - 1)
         : baseUrl;
-    final cleanResource = resource.startsWith('/')
-        ? resource
-        : '/$resource';
+    final cleanResource = resource.startsWith('/') ? resource : '/$resource';
     return '$cleanBase$cleanResource';
   }
 
@@ -77,7 +77,8 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
       final response = await _apiClient.post<JournalTemplateResponseDto>(
         fullUri,
         body: request.toJson(),
-        parser: (data) => JournalTemplateResponseDto.fromJson(data! as Map<String, dynamic>),
+        parser: (data) =>
+            JournalTemplateResponseDto.fromJson(data! as Map<String, dynamic>),
       );
 
       AppLogger.info(
@@ -126,7 +127,10 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
         queryParams: queryParams,
         parser: (data) {
           if (data is List) {
-            return data.map((item) => JournalTemplateResponseDto.fromJson(item as Map<String, dynamic>)).toList();
+            return data
+                .map((item) => JournalTemplateResponseDto.fromJson(
+                    item as Map<String, dynamic>))
+                .toList();
           }
           return [];
         },
@@ -170,7 +174,8 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
 
       final response = await _apiClient.get<JournalTemplateResponseDto>(
         fullUri,
-        parser: (data) => JournalTemplateResponseDto.fromJson(data! as Map<String, dynamic>),
+        parser: (data) =>
+            JournalTemplateResponseDto.fromJson(data! as Map<String, dynamic>),
       );
 
       AppLogger.info(
@@ -213,7 +218,8 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
       final response = await _apiClient.put<JournalTemplateResponseDto>(
         fullUri,
         body: request.toJson(),
-        parser: (data) => JournalTemplateResponseDto.fromJson(data! as Map<String, dynamic>),
+        parser: (data) =>
+            JournalTemplateResponseDto.fromJson(data! as Map<String, dynamic>),
       );
 
       AppLogger.info(
@@ -291,7 +297,10 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
         fullUri,
         parser: (data) {
           if (data is List) {
-            return data.map((item) => JournalTemplateResponseDto.fromJson(item as Map<String, dynamic>)).toList();
+            return data
+                .map((item) => JournalTemplateResponseDto.fromJson(
+                    item as Map<String, dynamic>))
+                .toList();
           }
           return [];
         },
@@ -335,7 +344,10 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
         fullUri,
         parser: (data) {
           if (data is List) {
-            return data.map((item) => JournalTemplateResponseDto.fromJson(item as Map<String, dynamic>)).toList();
+            return data
+                .map((item) => JournalTemplateResponseDto.fromJson(
+                    item as Map<String, dynamic>))
+                .toList();
           }
           return [];
         },
@@ -379,7 +391,10 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
         fullUri,
         parser: (data) {
           if (data is List) {
-            return data.map((item) => JournalTemplateResponseDto.fromJson(item as Map<String, dynamic>)).toList();
+            return data
+                .map((item) => JournalTemplateResponseDto.fromJson(
+                    item as Map<String, dynamic>))
+                .toList();
           }
           return [];
         },
@@ -423,7 +438,8 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
 
       final response = await _apiClient.post<JournalTemplateResponseDto>(
         fullUri,
-        parser: (data) => JournalTemplateResponseDto.fromJson(data! as Map<String, dynamic>),
+        parser: (data) =>
+            JournalTemplateResponseDto.fromJson(data! as Map<String, dynamic>),
       );
 
       AppLogger.info(
@@ -466,7 +482,8 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
       final response = await _apiClient.post<TradeJournalEntryResponseDto>(
         fullUri,
         body: tradeRequestBodyWithoutUserId(request.toJson()),
-        parser: (data) => TradeJournalEntryResponseDto.fromJson(data! as Map<String, dynamic>),
+        parser: (data) => TradeJournalEntryResponseDto.fromJson(
+            data! as Map<String, dynamic>),
       );
 
       AppLogger.info(
@@ -491,4 +508,3 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
     }
   }
 }
-

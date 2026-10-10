@@ -38,7 +38,8 @@ class TradeFormValidator {
   }
 
   /// Validates numeric values
-  static void validateNumericValues({required double? entryPrice, required double? entryQuantity}) {
+  static void validateNumericValues(
+      {required double? entryPrice, required double? entryQuantity}) {
     if (entryPrice == null || entryPrice <= 0) {
       throw ArgumentError('Invalid entry price');
     }

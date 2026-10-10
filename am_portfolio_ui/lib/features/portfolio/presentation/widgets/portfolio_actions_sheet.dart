@@ -30,10 +30,8 @@ void showPortfolioActionsSheet({
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
-    builder: (context) => _PortfolioActionsSheet(
-      triggerColor: triggerColor,
-      actions: actions,
-    ),
+    builder: (context) =>
+        _PortfolioActionsSheet(triggerColor: triggerColor, actions: actions),
   );
 }
 
@@ -48,10 +46,12 @@ class _PortfolioActionsSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).extension<AppColorsTheme>() ?? AppColorsTheme.dark;
+    final colors =
+        Theme.of(context).extension<AppColorsTheme>() ?? AppColorsTheme.dark;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     // Clear floating bottom nav (shell Stack paints above modal routes).
-    final bottomPad = MediaQuery.paddingOf(context).bottom +
+    final bottomPad =
+        MediaQuery.paddingOf(context).bottom +
         PlatformConstants.globalBottomNavReserve(context);
 
     return ClipRRect(
@@ -100,7 +100,11 @@ class _PortfolioActionsSheet extends StatelessWidget {
                       color: triggerColor.withOpacity(0.15),
                       border: Border.all(color: triggerColor.withOpacity(0.3)),
                     ),
-                    child: Icon(Icons.bolt_rounded, color: triggerColor, size: 20),
+                    child: Icon(
+                      Icons.bolt_rounded,
+                      color: triggerColor,
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Text(
@@ -122,7 +126,11 @@ class _PortfolioActionsSheet extends StatelessWidget {
                         shape: BoxShape.circle,
                         color: colors.border.withValues(alpha: 0.12),
                       ),
-                      child: Icon(Icons.close_rounded, color: colors.textSecondary, size: 18),
+                      child: Icon(
+                        Icons.close_rounded,
+                        color: colors.textSecondary,
+                        size: 18,
+                      ),
                     ),
                   ),
                 ],
@@ -228,10 +236,7 @@ class _ActionRowState extends State<_ActionRow> {
                   const SizedBox(height: 2),
                   Text(
                     action.subtitle,
-                    style: TextStyle(
-                      color: colors.textTertiary,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: colors.textTertiary, fontSize: 12),
                   ),
                 ],
               ),

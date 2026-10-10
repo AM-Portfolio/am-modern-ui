@@ -8,7 +8,8 @@ class GetTradeCalendar {
   final TradeRepository _repository;
 
   /// Execute the use case to get trade calendar for a specific portfolio
-  Future<TradeCalendar> call(String portfolioId, {int? year, int? month}) async {
+  Future<TradeCalendar> call(String portfolioId,
+      {int? year, int? month}) async {
     AppLogger.methodEntry(
       'GetTradeCalendar.call',
       tag: 'GetTradeCalendar',
@@ -16,17 +17,22 @@ class GetTradeCalendar {
     );
 
     if (portfolioId.isEmpty) {
-      AppLogger.error('Validation failed - empty userId or portfolioId', tag: 'GetTradeCalendar');
+      AppLogger.error('Validation failed - empty userId or portfolioId',
+          tag: 'GetTradeCalendar');
       throw ArgumentError('Portfolio ID cannot be empty');
     }
 
     try {
-      AppLogger.info('Executing get trade calendar use case', tag: 'GetTradeCalendar');
+      AppLogger.info('Executing get trade calendar use case',
+          tag: 'GetTradeCalendar');
 
-      final result = await _repository.getTradeCalendar(portfolioId, year: year, month: month);
+      final result = await _repository.getTradeCalendar(portfolioId,
+          year: year, month: month);
 
-      AppLogger.info('Trade calendar use case completed successfully', tag: 'GetTradeCalendar');
-      AppLogger.methodExit('GetTradeCalendar.call', tag: 'GetTradeCalendar', result: 'success');
+      AppLogger.info('Trade calendar use case completed successfully',
+          tag: 'GetTradeCalendar');
+      AppLogger.methodExit('GetTradeCalendar.call',
+          tag: 'GetTradeCalendar', result: 'success');
 
       return result;
     } catch (e) {
@@ -36,7 +42,8 @@ class GetTradeCalendar {
         error: e,
         stackTrace: StackTrace.current,
       );
-      AppLogger.methodExit('GetTradeCalendar.call', tag: 'GetTradeCalendar', result: 'error');
+      AppLogger.methodExit('GetTradeCalendar.call',
+          tag: 'GetTradeCalendar', result: 'error');
       rethrow;
     }
   }
@@ -58,4 +65,3 @@ class GetTradeCalendar {
     return _repository.watchTradeCalendar(portfolioId);
   }
 }
-

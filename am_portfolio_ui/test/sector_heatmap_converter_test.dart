@@ -8,35 +8,33 @@ Sector _sector({
   required double changePercent,
   required double totalValue,
   List<Stock> stocks = const [],
-}) =>
-    Sector(
-      sectorName: name,
-      performanceRank: 1,
-      performance: changePercent,
-      changePercent: changePercent,
-      weightage: 0,
-      color: '',
-      stockCount: stocks.length,
-      totalValue: totalValue,
-      totalReturnAmount: 0,
-      stocks: stocks,
-    );
+}) => Sector(
+  sectorName: name,
+  performanceRank: 1,
+  performance: changePercent,
+  changePercent: changePercent,
+  weightage: 0,
+  color: '',
+  stockCount: stocks.length,
+  totalValue: totalValue,
+  totalReturnAmount: 0,
+  stocks: stocks,
+);
 
 Stock _stock({
   required String symbol,
   required String sector,
   required double changePercent,
   required double marketValue,
-}) =>
-    Stock(
-      symbol: symbol,
-      companyName: symbol,
-      lastPrice: 100,
-      changeAmount: 0,
-      changePercent: changePercent,
-      sector: sector,
-      marketValue: marketValue,
-    );
+}) => Stock(
+  symbol: symbol,
+  companyName: symbol,
+  lastPrice: 100,
+  changeAmount: 0,
+  changePercent: changePercent,
+  sector: sector,
+  marketValue: marketValue,
+);
 
 void main() {
   group('SectorHeatmapConverter', () {
@@ -121,7 +119,11 @@ void main() {
     test('all-flat performances yield -- for Top/Weakest', () {
       final heatmap = Heatmap(
         sectors: [
-          _sector(name: 'Financial Services', changePercent: 0, totalValue: 50000),
+          _sector(
+            name: 'Financial Services',
+            changePercent: 0,
+            totalValue: 50000,
+          ),
           _sector(name: 'Energy', changePercent: 0, totalValue: 50000),
         ],
       );
@@ -252,79 +254,81 @@ void main() {
       );
       expect(summary.worstSector, 'Information Technology');
     });
-    test('incomplete heatmap still falls back when allocation has richer names',
-        () {
-      final heatmap = Heatmap(
-        sectors: [
-          _sector(
-            name: 'Financial Services',
-            changePercent: 1.0,
-            totalValue: 50000,
-            stocks: [
-              _stock(
-                symbol: 'HDFCBANK',
-                sector: 'Financial Services',
-                changePercent: 1.0,
-                marketValue: 50000,
-              ),
-            ],
-          ),
-          _sector(
-            name: 'Unknown',
-            changePercent: -1.0,
-            totalValue: 50000,
-            stocks: [
-              _stock(
-                symbol: 'TCS',
-                sector: 'Unknown',
-                changePercent: -2.0,
-                marketValue: 30000,
-              ),
-              _stock(
-                symbol: 'RELIANCE',
-                sector: 'Unknown',
-                changePercent: 0.5,
-                marketValue: 20000,
-              ),
-            ],
-          ),
-        ],
-      );
-      final allocation = SectorAllocation(
-        sectorWeights: [
-          SectorWeight(
-            sectorName: 'Financial Services',
-            weightPercentage: 40,
-            marketCap: 40000,
-            topStocks: const ['HDFCBANK'],
-          ),
-          SectorWeight(
-            sectorName: 'Information Technology',
-            weightPercentage: 35,
-            marketCap: 35000,
-            topStocks: const ['TCS'],
-          ),
-          SectorWeight(
-            sectorName: 'Energy',
-            weightPercentage: 25,
-            marketCap: 25000,
-            topStocks: const ['RELIANCE'],
-          ),
-        ],
-        industryWeights: const [],
-      );
+    test(
+      'incomplete heatmap still falls back when allocation has richer names',
+      () {
+        final heatmap = Heatmap(
+          sectors: [
+            _sector(
+              name: 'Financial Services',
+              changePercent: 1.0,
+              totalValue: 50000,
+              stocks: [
+                _stock(
+                  symbol: 'HDFCBANK',
+                  sector: 'Financial Services',
+                  changePercent: 1.0,
+                  marketValue: 50000,
+                ),
+              ],
+            ),
+            _sector(
+              name: 'Unknown',
+              changePercent: -1.0,
+              totalValue: 50000,
+              stocks: [
+                _stock(
+                  symbol: 'TCS',
+                  sector: 'Unknown',
+                  changePercent: -2.0,
+                  marketValue: 30000,
+                ),
+                _stock(
+                  symbol: 'RELIANCE',
+                  sector: 'Unknown',
+                  changePercent: 0.5,
+                  marketValue: 20000,
+                ),
+              ],
+            ),
+          ],
+        );
+        final allocation = SectorAllocation(
+          sectorWeights: [
+            SectorWeight(
+              sectorName: 'Financial Services',
+              weightPercentage: 40,
+              marketCap: 40000,
+              topStocks: const ['HDFCBANK'],
+            ),
+            SectorWeight(
+              sectorName: 'Information Technology',
+              weightPercentage: 35,
+              marketCap: 35000,
+              topStocks: const ['TCS'],
+            ),
+            SectorWeight(
+              sectorName: 'Energy',
+              weightPercentage: 25,
+              marketCap: 25000,
+              topStocks: const ['RELIANCE'],
+            ),
+          ],
+          industryWeights: const [],
+        );
 
-      final data = SectorHeatmapConverter.convertToHeatmapData(
-        heatmap: heatmap,
-        sectorAllocation: allocation,
-        showSubCards: false,
-      );
-      final names = data.tiles.map((t) => t.name).toSet();
-      expect(names.contains('Financial Services'), isTrue);
-      expect(names.contains('Information Technology'), isTrue);
-      expect(names.contains('Energy'), isTrue);
-      expect(data.tiles.length, greaterThanOrEqualTo(3));
-    });
+        final data = SectorHeatmapConverter.convertToHeatmapData(
+          heatmap: heatmap,
+          sectorAllocation: allocation,
+          showSubCards: false,
+        );
+        final names = data.tiles.map((t) => t.name).toSet();
+        expect(names.contains('Financial Services'), isTrue);
+        expect(names.contains('Information Technology'), isTrue);
+        expect(names.contains('Energy'), isTrue);
+        expect(data.tiles.length, greaterThanOrEqualTo(3));
+      },
+    );
 
     test('complete heatmap prefers heatmap-direct over richer allocation', () {
       final heatmap = Heatmap(
@@ -421,16 +425,8 @@ void main() {
             changePercent: 0.2,
             totalValue: 200,
           ),
-          _sector(
-            name: 'Energy',
-            changePercent: 0.1,
-            totalValue: 100,
-          ),
-          _sector(
-            name: 'Healthcare',
-            changePercent: -0.1,
-            totalValue: 100,
-          ),
+          _sector(name: 'Energy', changePercent: 0.1, totalValue: 100),
+          _sector(name: 'Healthcare', changePercent: -0.1, totalValue: 100),
         ],
       );
       final allocation = SectorAllocation(
@@ -463,7 +459,9 @@ void main() {
         showSubCards: false,
       );
       // Allocation path: tile values follow marketCap weights, not tiny heatmap.
-      final finance = data.tiles.firstWhere((t) => t.name == 'Financial Services');
+      final finance = data.tiles.firstWhere(
+        (t) => t.name == 'Financial Services',
+      );
       expect(finance.value, closeTo(50000, 0.01));
     });
 
@@ -477,7 +475,11 @@ void main() {
             changePercent: 0.22,
             totalValue: 21655,
           ),
-          _sector(name: 'Information Technology', changePercent: 0, totalValue: 0),
+          _sector(
+            name: 'Information Technology',
+            changePercent: 0,
+            totalValue: 0,
+          ),
           _sector(name: 'Healthcare', changePercent: 0, totalValue: 0),
           _sector(name: 'Energy', changePercent: 0, totalValue: 0),
         ],
@@ -518,8 +520,9 @@ void main() {
         showSubCards: false,
       );
       expect(data.tiles.length, greaterThanOrEqualTo(3));
-      final financeTile =
-          data.tiles.firstWhere((t) => t.name == 'Financial Services');
+      final financeTile = data.tiles.firstWhere(
+        (t) => t.name == 'Financial Services',
+      );
       expect(financeTile.value, closeTo(400000, 0.01));
     });
 
@@ -590,8 +593,9 @@ void main() {
           value: 1500,
         ),
       ];
-      final merged =
-          SectorHeatmapConverter.mergeSmallWeightTilesForTreemap(tiles);
+      final merged = SectorHeatmapConverter.mergeSmallWeightTilesForTreemap(
+        tiles,
+      );
       final names = merged.map((t) => t.name).toSet();
       expect(names.contains('Other (<3%)'), isTrue);
       expect(names.contains('Utilities'), isFalse);

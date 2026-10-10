@@ -35,7 +35,9 @@ class IntelligenceDonutView extends StatelessWidget {
       child: CustomPaint(
         painter: _SimpleDonutPainter(
           weights: weights,
-          emptyTrackColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+          emptyTrackColor: Theme.of(
+            context,
+          ).colorScheme.onSurface.withValues(alpha: 0.1),
         ),
         child: Center(
           child: Column(
@@ -44,16 +46,16 @@ class IntelligenceDonutView extends StatelessWidget {
               Text(
                 centerLabel,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Theme.of(context).hintColor,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  color: Theme.of(context).hintColor,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               if (centerValue != null)
                 Text(
                   centerValue!,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
             ],
           ),
@@ -74,7 +76,7 @@ class _SimpleDonutPainter extends CustomPainter {
     final slices = weights.where((w) => w.weightPct > 0).take(8).toList();
     final center = Offset(size.width / 2, size.height / 2);
     final baseRadius = size.shortestSide / 2 - 8;
-    
+
     if (slices.isEmpty) {
       // Draw Empty State Track
       canvas.drawCircle(
@@ -88,16 +90,16 @@ class _SimpleDonutPainter extends CustomPainter {
       );
       return;
     }
-    
+
     const gap = 0.03;
     var start = -3.14159 / 2;
     final total = slices.fold<double>(0, (s, w) => s + w.weightPct);
-    
+
     for (var i = 0; i < slices.length; i++) {
       final color = intelligenceDonutColor(i);
       final fullSweep = (slices[i].weightPct / total) * 6.28318;
       final sweep = (fullSweep - gap).clamp(0.0, fullSweep);
-      
+
       if (sweep > 0) {
         // Glow layer
         canvas.drawArc(

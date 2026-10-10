@@ -19,6 +19,7 @@ class YearCalendarWidget extends StatefulWidget {
     this.onYearChanged,
     this.controller,
     this.initialColorMode = CalendarColorMode.profitIntensity,
+
     /// When provided (typically mobile), months scroll continuously across years
     /// and the sticky year follows Dec ↔ Jan transitions.
     this.yearsData,
@@ -177,8 +178,7 @@ class _YearCalendarWidgetState extends State<YearCalendarWidget> {
       await Scrollable.ensureVisible(
         ctx,
         alignment: 0.0,
-        duration:
-            animate ? const Duration(milliseconds: 200) : Duration.zero,
+        duration: animate ? const Duration(milliseconds: 200) : Duration.zero,
         curve: Curves.easeOutCubic,
       );
     }
@@ -235,9 +235,9 @@ class _YearCalendarWidgetState extends State<YearCalendarWidget> {
     if (bestYear == null && !anyKeyReady) {
       const statsHeight = 44.0;
       const avgMonthHeight = 340.0;
-      final raw = (_scrollController.offset - statsHeight).clamp(0.0, double.infinity);
-      final index =
-          (raw / avgMonthHeight).floor().clamp(0, months.length - 1);
+      final raw =
+          (_scrollController.offset - statsHeight).clamp(0.0, double.infinity);
+      final index = (raw / avgMonthHeight).floor().clamp(0, months.length - 1);
       bestYear = months[index].year;
     }
 
@@ -301,7 +301,8 @@ class _YearCalendarWidgetState extends State<YearCalendarWidget> {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                child: YearCalendarStatsStrip(monthsData: _monthsForPinnedYear()),
+                child:
+                    YearCalendarStatsStrip(monthsData: _monthsForPinnedYear()),
               ),
             ),
             if (useContinuous)

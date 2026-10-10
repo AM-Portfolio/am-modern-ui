@@ -47,17 +47,18 @@ class MarketCapSelector extends StatelessWidget {
     Color? primaryColor,
     bool showIcons = false,
     String? title,
-  }) => MarketCapSelector(
-    key: key,
-    selectedMarketCap: selectedMarketCap,
-    onMarketCapChanged: onMarketCapChanged,
-    availableMarketCaps: MarketCapType.portfolioMarketCaps,
-    compact: compact,
-    primaryColor: primaryColor,
-    showIcons: showIcons,
-    title: title,
-    asDropdown: false,
-  );
+  }) =>
+      MarketCapSelector(
+        key: key,
+        selectedMarketCap: selectedMarketCap,
+        onMarketCapChanged: onMarketCapChanged,
+        availableMarketCaps: MarketCapType.portfolioMarketCaps,
+        compact: compact,
+        primaryColor: primaryColor,
+        showIcons: showIcons,
+        title: title,
+        asDropdown: false,
+      );
 
   /// Factory constructor for heatmap context
   factory MarketCapSelector.heatmap({
@@ -67,15 +68,16 @@ class MarketCapSelector extends StatelessWidget {
     bool asDropdown = true,
     Color? primaryColor,
     String? title,
-  }) => MarketCapSelector(
-    key: key,
-    selectedMarketCap: selectedMarketCap,
-    onMarketCapChanged: onMarketCapChanged,
-    availableMarketCaps: MarketCapType.standardMarketCaps,
-    asDropdown: asDropdown,
-    primaryColor: primaryColor,
-    title: title,
-  );
+  }) =>
+      MarketCapSelector(
+        key: key,
+        selectedMarketCap: selectedMarketCap,
+        onMarketCapChanged: onMarketCapChanged,
+        availableMarketCaps: MarketCapType.standardMarketCaps,
+        asDropdown: asDropdown,
+        primaryColor: primaryColor,
+        title: title,
+      );
 
   /// Currently selected market cap
   final MarketCapType selectedMarketCap;
@@ -162,110 +164,123 @@ class MarketCapSelector extends StatelessWidget {
   Widget _buildCompactSelector(
     BuildContext context,
     List<MarketCapType> marketCaps,
-  ) => Wrap(
-    spacing: 8,
-    runSpacing: 8,
-    children: marketCaps.map((marketCap) {
-      final isSelected = marketCap == selectedMarketCap;
+  ) =>
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: marketCaps.map((marketCap) {
+          final isSelected = marketCap == selectedMarketCap;
 
-      return Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => onMarketCapChanged(marketCap),
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            constraints: const BoxConstraints(
-              minHeight: 40,
-            ), // Better touch target
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? (primaryColor ?? Theme.of(context).primaryColor)
-                  : Theme.of(context).colorScheme.surface,
+          return Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => onMarketCapChanged(marketCap),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isSelected
-                    ? (primaryColor ?? Theme.of(context).primaryColor)
-                    : Theme.of(context).colorScheme.outline.withOpacity(0.3),
-                width: 1.5,
-              ),
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: (primaryColor ?? Theme.of(context).primaryColor)
-                            .withOpacity(0.2),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (showIcons) ...[
-                  Icon(
-                    marketCap.icon,
-                    size: 16,
+              child: Container(
+                constraints: const BoxConstraints(
+                  minHeight: 40,
+                ), // Better touch target
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? (primaryColor ?? Theme.of(context).primaryColor)
+                      : Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
                     color: isSelected
-                        ? Colors.white
-                        : Theme.of(context).colorScheme.onSurface,
+                        ? (primaryColor ?? Theme.of(context).primaryColor)
+                        : Theme.of(context)
+                            .colorScheme
+                            .outline
+                            .withOpacity(0.3),
+                    width: 1.5,
                   ),
-                  const SizedBox(width: 8),
-                ],
-                Text(
-                  useDisplayNames ? marketCap.displayName : marketCap.shortName,
-                  style: TextStyle(
-                    color: isSelected
-                        ? Colors.white
-                        : Theme.of(context).colorScheme.onSurface,
-                    fontSize: 14,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    letterSpacing: 0.2,
-                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color:
+                                (primaryColor ?? Theme.of(context).primaryColor)
+                                    .withOpacity(0.2),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
                 ),
-              ],
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (showIcons) ...[
+                      Icon(
+                        marketCap.icon,
+                        size: 16,
+                        color: isSelected
+                            ? Colors.white
+                            : Theme.of(context).colorScheme.onSurface,
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Text(
+                      useDisplayNames
+                          ? marketCap.displayName
+                          : marketCap.shortName,
+                      style: TextStyle(
+                        color: isSelected
+                            ? Colors.white
+                            : Theme.of(context).colorScheme.onSurface,
+                        fontSize: 14,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.w500,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ),
+          );
+        }).toList(),
       );
-    }).toList(),
-  );
 
   Widget _buildDropdownSelector(
     BuildContext context,
     List<MarketCapType> marketCaps,
-  ) => DropdownButtonFormField<MarketCapType>(
-    value: selectedMarketCap,
-    decoration: InputDecoration(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-      isDense: true,
-    ),
-    items: marketCaps
-        .map(
-          (marketCap) => DropdownMenuItem<MarketCapType>(
-            value: marketCap,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (showIcons) ...[
-                  Icon(marketCap.icon, size: 16),
-                  const SizedBox(width: 8),
-                ],
-                Text(
-                  useDisplayNames ? marketCap.displayName : marketCap.shortName,
-                  style: const TextStyle(fontSize: 14),
+  ) =>
+      DropdownButtonFormField<MarketCapType>(
+        value: selectedMarketCap,
+        decoration: InputDecoration(
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          isDense: true,
+        ),
+        items: marketCaps
+            .map(
+              (marketCap) => DropdownMenuItem<MarketCapType>(
+                value: marketCap,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (showIcons) ...[
+                      Icon(marketCap.icon, size: 16),
+                      const SizedBox(width: 8),
+                    ],
+                    Text(
+                      useDisplayNames
+                          ? marketCap.displayName
+                          : marketCap.shortName,
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-        )
-        .toList(),
-    onChanged: (marketCap) {
-      if (marketCap != null) {
-        onMarketCapChanged(marketCap);
-      }
-    },
-  );
+              ),
+            )
+            .toList(),
+        onChanged: (marketCap) {
+          if (marketCap != null) {
+            onMarketCapChanged(marketCap);
+          }
+        },
+      );
 }

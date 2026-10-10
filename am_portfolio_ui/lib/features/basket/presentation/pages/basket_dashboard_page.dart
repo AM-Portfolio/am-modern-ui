@@ -29,7 +29,8 @@ class BasketDashboardPage extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<BasketDashboardPage> createState() => _BasketDashboardPageState();
+  ConsumerState<BasketDashboardPage> createState() =>
+      _BasketDashboardPageState();
 }
 
 class _BasketDashboardPageState extends ConsumerState<BasketDashboardPage> {
@@ -37,13 +38,21 @@ class _BasketDashboardPageState extends ConsumerState<BasketDashboardPage> {
   DateTime _lastFetchedAt = DateTime.now();
 
   Future<void> _refresh() async {
-    ref.invalidate(basketDetailProvider(basketId: widget.basketId, userId: widget.userId));
+    ref.invalidate(
+      basketDetailProvider(basketId: widget.basketId, userId: widget.userId),
+    );
     setState(() => _lastFetchedAt = DateTime.now());
-    await ref.read(basketDetailProvider(basketId: widget.basketId, userId: widget.userId).future);
+    await ref.read(
+      basketDetailProvider(
+        basketId: widget.basketId,
+        userId: widget.userId,
+      ).future,
+    );
   }
 
   void _shareBasket(BasketDetail basket) {
-    final summary = 'Basket: ${basket.name}\n'
+    final summary =
+        'Basket: ${basket.name}\n'
         'ETF: ${basket.etfName}\n'
         'Invested: ₹${basket.totalInvestedValue.toStringAsFixed(0)}\n'
         'Current: ₹${basket.totalCurrentValue.toStringAsFixed(0)}\n'
@@ -55,7 +64,9 @@ class _BasketDashboardPageState extends ConsumerState<BasketDashboardPage> {
   }
 
   void _downloadCsv(BasketDetail basket) {
-    final buf = StringBuffer('Symbol,Company,Status,Units,AvgPrice,CurrentPrice,Value,PnL,Weight%\n');
+    final buf = StringBuffer(
+      'Symbol,Company,Status,Units,AvgPrice,CurrentPrice,Value,PnL,Weight%\n',
+    );
     final total = basket.totalCurrentValue;
     for (final line in basket.lines) {
       final weight = BdDashboardMath.basketWeightPercent(line, total);
@@ -79,13 +90,18 @@ class _BasketDashboardPageState extends ConsumerState<BasketDashboardPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: Icon(Icons.share_outlined, color: ModuleColors.portfolio),
+              leading: Icon(
+                Icons.share_outlined,
+                color: ModuleColors.portfolio,
+              ),
               title: const Text('Share'),
               onTap: () => Navigator.pop(ctx, 'share'),
             ),
             ListTile(
-              leading:
-                  Icon(Icons.download_outlined, color: ModuleColors.portfolio),
+              leading: Icon(
+                Icons.download_outlined,
+                color: ModuleColors.portfolio,
+              ),
               title: const Text('Download'),
               onTap: () => Navigator.pop(ctx, 'download'),
             ),
@@ -114,18 +130,28 @@ class _BasketDashboardPageState extends ConsumerState<BasketDashboardPage> {
           title: const Text('Delete basket?'),
           content: Text('Remove "${basket.name}" permanently?'),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Delete'),
+            ),
           ],
         ),
       );
       if (confirm == true && mounted) {
         try {
-          await ref.read(deleteBasketProvider(
-            basketId: widget.basketId,
-            userId: widget.userId,
-          ).future);
-          ref.invalidate(myBasketsProvider(userId: widget.userId, portfolioId: ''));
+          await ref.read(
+            deleteBasketProvider(
+              basketId: widget.basketId,
+              userId: widget.userId,
+            ).future,
+          );
+          ref.invalidate(
+            myBasketsProvider(userId: widget.userId, portfolioId: ''),
+          );
           if (mounted) {
             await BasketPortfolioSync.afterBasketMutation(
               context,
@@ -146,10 +172,9 @@ class _BasketDashboardPageState extends ConsumerState<BasketDashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final detailAsync = ref.watch(basketDetailProvider(
-      basketId: widget.basketId,
-      userId: widget.userId,
-    ));
+    final detailAsync = ref.watch(
+      basketDetailProvider(basketId: widget.basketId, userId: widget.userId),
+    );
     final isMobile = BasketResponsive.isMobile(context);
 
     return Scaffold(
@@ -159,8 +184,15 @@ class _BasketDashboardPageState extends ConsumerState<BasketDashboardPage> {
           if (basket.id.isEmpty) {
             return const Center(child: Text('Basket not found'));
           }
-          final activeLines = basket.lines.where((l) => l.quantity > 0 || l.status.toUpperCase() != 'MISSING').toList();
-          final stockCount = BdDashboardMath.filterLines(basket.lines, BdHoldingsFilter.active).length;
+          final activeLines = basket.lines
+              .where(
+                (l) => l.quantity > 0 || l.status.toUpperCase() != 'MISSING',
+              )
+              .toList();
+          final stockCount = BdDashboardMath.filterLines(
+            basket.lines,
+            BdHoldingsFilter.active,
+          ).length;
 
           return Column(
             children: [
@@ -168,9 +200,9 @@ class _BasketDashboardPageState extends ConsumerState<BasketDashboardPage> {
                 BdPageHeader(
                   onBack: widget.embedded
                       ? () => BasketNavigation.returnToMyBaskets(
-                            context,
-                            userId: widget.userId,
-                          )
+                          context,
+                          userId: widget.userId,
+                        )
                       : null,
                   onShare: () => _shareBasket(basket),
                   onDownload: () => _downloadCsv(basket),
@@ -193,9 +225,7 @@ class _BasketDashboardPageState extends ConsumerState<BasketDashboardPage> {
                         BdIdentityCard(
                           basket: basket,
                           stockCount: stockCount,
-                          onMore: isMobile
-                              ? () => _showMoreMenu(basket)
-                              : null,
+                          onMore: isMobile ? () => _showMoreMenu(basket) : null,
                         ),
                         const SizedBox(height: 16),
                         BdKpiRow(basket: basket),
@@ -257,7 +287,13 @@ class _DashboardSkeleton extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         children: [
-          Container(height: 80, decoration: BoxDecoration(color: context.colors.border.withValues(alpha: 0.3), borderRadius: AppRadii.card)),
+          Container(
+            height: 80,
+            decoration: BoxDecoration(
+              color: context.colors.border.withValues(alpha: 0.3),
+              borderRadius: AppRadii.card,
+            ),
+          ),
           const SizedBox(height: AppSpacing.lg),
           GridView.count(
             crossAxisCount: isMobile ? 2 : 5,
@@ -266,18 +302,30 @@ class _DashboardSkeleton extends StatelessWidget {
             mainAxisSpacing: AppSpacing.md,
             crossAxisSpacing: AppSpacing.md,
             childAspectRatio: 1.5,
-            children: List.generate(isMobile ? 4 : 5, (_) =>
-              Container(decoration: BoxDecoration(color: context.colors.border.withValues(alpha: 0.3), borderRadius: AppRadii.card)),
+            children: List.generate(
+              isMobile ? 4 : 5,
+              (_) => Container(
+                decoration: BoxDecoration(
+                  color: context.colors.border.withValues(alpha: 0.3),
+                  borderRadius: AppRadii.card,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          ...List.generate(5, (_) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Container(
-                  height: 48,
-                  decoration: BoxDecoration(color: context.colors.border.withValues(alpha: 0.2), borderRadius: AppRadii.card),
+          ...List.generate(
+            5,
+            (_) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Container(
+                height: 48,
+                decoration: BoxDecoration(
+                  color: context.colors.border.withValues(alpha: 0.2),
+                  borderRadius: AppRadii.card,
                 ),
-              )),
+              ),
+            ),
+          ),
         ],
       ),
     );

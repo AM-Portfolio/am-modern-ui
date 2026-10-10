@@ -102,7 +102,8 @@ void main() {
         greaterThanOrEqualTo(0),
       );
       expect(
-        CrossModuleSectionSequence.indexOfLocation('${AppRoutes.aiChat}/session'),
+        CrossModuleSectionSequence.indexOfLocation(
+            '${AppRoutes.aiChat}/session'),
         CrossModuleSectionSequence.indexOfLocation(AppRoutes.aiChat),
       );
     });

@@ -119,7 +119,8 @@ void main() {
     engine.dispose();
   });
 
-  testWidgets('empty baskets context includes create-basket action', (tester) async {
+  testWidgets('empty baskets context includes create-basket action',
+      (tester) async {
     final catalog = _catalogWithGold();
     final engine = UnifiedSearchEngine(
       debounce: Duration.zero,
@@ -176,7 +177,8 @@ void main() {
     engine.dispose();
   });
 
-  testWidgets('baskets query surfaces Gold theme before Market', (tester) async {
+  testWidgets('baskets query surfaces Gold theme before Market',
+      (tester) async {
     final engine = UnifiedSearchEngine(
       debounce: Duration.zero,
       securities: _FakeSecurities(

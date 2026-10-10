@@ -163,9 +163,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
         foregroundColor: context.colors.textPrimary,
         title: Text(
           'Profile & Settings',
-          style: context.text.pageTitle(compact: true).copyWith(
-            color: context.colors.textPrimary,
-          ),
+          style: context.text
+              .pageTitle(compact: true)
+              .copyWith(color: context.colors.textPrimary),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -242,7 +242,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
               ],
             ),
             border: Border.all(
-              color: context.colors.premiumActionPrimary.withValues(alpha: 0.22),
+              color: context.colors.premiumActionPrimary.withValues(
+                alpha: 0.22,
+              ),
             ),
             boxShadow: [
               BoxShadow(
@@ -263,7 +265,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: context.colors.premiumActionPrimary.withValues(alpha: 0.15),
+                        color: context.colors.premiumActionPrimary.withValues(
+                          alpha: 0.15,
+                        ),
                       ),
                       child: Icon(
                         Icons.workspace_premium_rounded,
@@ -330,11 +334,11 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
     final glowAlpha = isDark ? 0.5 : 0.4;
 
     void openPicker() => showAvatarPickerSheet(
-          context: context,
-          userId: userId,
-          displayName: displayName,
-          remotePhotoUrl: photoUrl,
-        );
+      context: context,
+      userId: userId,
+      displayName: displayName,
+      remotePhotoUrl: photoUrl,
+    );
 
     return Column(
       children: [
@@ -372,8 +376,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                       color: context.cardColor,
                       border: isPaidSubscription
                           ? Border.all(
-                              color: const Color(0xFFFFD700)
-                                  .withValues(alpha: 0.85),
+                              color: const Color(
+                                0xFFFFD700,
+                              ).withValues(alpha: 0.85),
                               width: 2.5,
                             )
                           : null,
@@ -397,8 +402,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFFFD700)
-                                  .withValues(alpha: 0.55),
+                              color: const Color(
+                                0xFFFFD700,
+                              ).withValues(alpha: 0.55),
                               blurRadius: 12,
                               offset: const Offset(0, 2),
                             ),
@@ -438,8 +444,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: ModuleColors.portfolio
-                                          .withValues(alpha: glowAlpha),
+                                      color: ModuleColors.portfolio.withValues(
+                                        alpha: glowAlpha,
+                                      ),
                                       blurRadius: 8,
                                       offset: const Offset(0, 2),
                                     ),
@@ -474,9 +481,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
             style: context.text.pageTitle().copyWith(
-                  color: context.textPrimary,
-                  letterSpacing: 0.5,
-                ),
+              color: context.textPrimary,
+              letterSpacing: 0.5,
+            ),
           ),
         ],
         const SizedBox(height: AppSpacing.sm),
@@ -487,8 +494,8 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
             Text(
               'User ID',
               style: context.text.caption().copyWith(
-                    color: context.textSecondary,
-                  ),
+                color: context.textSecondary,
+              ),
             ),
             const SizedBox(width: 4),
             Tooltip(
@@ -535,7 +542,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                     truncateUserId(userId),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: context.text.body(compact: true).copyWith(
+                    style: context.text
+                        .body(compact: true)
+                        .copyWith(
                           color: context.textPrimary,
                           fontWeight: FontWeight.w500,
                         ),
@@ -700,7 +709,8 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                   context,
                   icon: Icons.card_giftcard_outlined,
                   title: 'Referral',
-                  subtitle: referralStatusLabel ??
+                  subtitle:
+                      referralStatusLabel ??
                       'Up to 6 months Pro · invite friends',
                   isDark: isDark,
                   onTap: onOpenReferral!,
@@ -757,7 +767,8 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
               title: 'Active sessions',
               subtitle: 'Review browsers and devices signed in',
               isDark: isDark,
-              onTap: onOpenActiveSessions ??
+              onTap:
+                  onOpenActiveSessions ??
                   () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -924,9 +935,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
   }) {
     final accent = ModuleColors.portfolio;
     final bgTint = highlighted
-        ? accent.withValues(
-            alpha: 0.1 + highlightStrength * 0.12,
-          )
+        ? accent.withValues(alpha: 0.1 + highlightStrength * 0.12)
         : null;
 
     return Material(
@@ -950,8 +959,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                 ),
                 child: Icon(
                   icon,
-                  color:
-                      iconColor ?? context.colors.textPrimary,
+                  color: iconColor ?? context.colors.textPrimary,
                   size: 20,
                 ),
               ),
@@ -962,9 +970,11 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                   children: [
                     Text(
                       title,
-                      style: context.text.sectionTitle(compact: true).copyWith(
-                        color: textColor ?? context.colors.textPrimary,
-                      ),
+                      style: context.text
+                          .sectionTitle(compact: true)
+                          .copyWith(
+                            color: textColor ?? context.colors.textPrimary,
+                          ),
                     ),
                     if (subtitle != null) ...[
                       const SizedBox(height: AppSpacing.xs),
@@ -981,9 +991,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
               trailing ??
                   Icon(
                     Icons.chevron_right_rounded,
-                    color: highlighted
-                        ? accent
-                        : context.colors.divider,
+                    color: highlighted ? accent : context.colors.divider,
                     size: 20,
                   ),
             ],
@@ -1200,7 +1208,10 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
     );
   }
 
-  void _showThemeSelectionDialog(BuildContext context, AppThemeMode currentMode) {
+  void _showThemeSelectionDialog(
+    BuildContext context,
+    AppThemeMode currentMode,
+  ) {
     showThemeModePickerDialog(
       context: context,
       currentMode: currentMode,
@@ -1362,7 +1373,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
                       );
 
                       try {
-                        await authCubit.requestAccountDeletion(feedback: feedback);
+                        await authCubit.requestAccountDeletion(
+                          feedback: feedback,
+                        );
                         if (context.mounted) {
                           showDialog(
                             context: context,

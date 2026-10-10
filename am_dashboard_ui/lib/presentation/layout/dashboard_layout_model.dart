@@ -35,12 +35,12 @@ class DashboardWidgetSlot extends Equatable {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id.name,
-        'visible': visible,
-        'order': order,
-        'size': size.name,
-        if (widgetConfig != null) 'widgetConfig': widgetConfig,
-      };
+    'id': id.name,
+    'visible': visible,
+    'order': order,
+    'size': size.name,
+    if (widgetConfig != null) 'widgetConfig': widgetConfig,
+  };
 
   factory DashboardWidgetSlot.fromJson(Map<String, dynamic> json) {
     final idRaw = json['id'] as String? ?? '';
@@ -80,8 +80,8 @@ class DashboardLayoutModel extends Equatable {
   }
 
   Map<String, dynamic> toJson() => {
-        'slots': slots.map((s) => s.toJson()).toList(),
-      };
+    'slots': slots.map((s) => s.toJson()).toList(),
+  };
 
   factory DashboardLayoutModel.fromJson(Map<String, dynamic> json) {
     final raw = json['slots'] as List<dynamic>? ?? const [];

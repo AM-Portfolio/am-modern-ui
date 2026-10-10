@@ -8,10 +8,7 @@ import '../shared/basket_item_status_theme.dart';
 class BasketCompositionList extends StatefulWidget {
   final List<BasketItem> items;
 
-  const BasketCompositionList({
-    super.key,
-    required this.items,
-  });
+  const BasketCompositionList({super.key, required this.items});
 
   @override
   State<BasketCompositionList> createState() => _BasketCompositionListState();
@@ -34,14 +31,18 @@ class _BasketCompositionListState extends State<BasketCompositionList>
   }
 
   List<BasketItem> get _matchedItems {
-    return widget.items.where((item) => item.status == ItemStatus.held).toList();
+    return widget.items
+        .where((item) => item.status == ItemStatus.held)
+        .toList();
   }
 
   List<BasketItem> get _gapItems {
     return widget.items
-        .where((item) =>
-            item.status == ItemStatus.missing ||
-            item.status == ItemStatus.substitute)
+        .where(
+          (item) =>
+              item.status == ItemStatus.missing ||
+              item.status == ItemStatus.substitute,
+        )
         .toList();
   }
 
@@ -303,8 +304,10 @@ class _BasketCompositionListState extends State<BasketCompositionList>
                 if (item.reason != null) ...[
                   const SizedBox(height: 8),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: ModuleColors.portfolio.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),

@@ -7,8 +7,11 @@ import '../../domain/models/basket_opportunity.dart';
 abstract final class BasketItemStatusTheme {
   BasketItemStatusTheme._();
 
-  static Color colorFor(BuildContext context, ItemStatus? status,
-      {bool isExcluded = false}) {
+  static Color colorFor(
+    BuildContext context,
+    ItemStatus? status, {
+    bool isExcluded = false,
+  }) {
     if (isExcluded) return context.textTertiary;
     return switch (status) {
       ItemStatus.held => context.statusSuccess,

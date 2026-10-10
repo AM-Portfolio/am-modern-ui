@@ -98,7 +98,8 @@ class _AvatarFace extends StatelessWidget {
                 width: 2,
               ),
             ),
-            child: const Icon(Icons.edit_rounded, size: 14, color: Colors.white),
+            child:
+                const Icon(Icons.edit_rounded, size: 14, color: Colors.white),
           ),
         ),
       ],

@@ -4,18 +4,22 @@ import 'package:am_common/am_common.dart';
 class BasketEndpoints {
   // Base URL - Basket service runs on port 8072
   static String get baseUrl => EnvDomains.portfolio;
-  
+
   // Basket endpoints - using full URLs so ApiClient handles them correctly
   static String get opportunities => '$baseUrl/v1/basket/opportunities';
   static String get preview => '$baseUrl/v1/basket/preview';
   static String get catalog => '$baseUrl/v1/basket/catalog';
-  static String get calculateQuantities => '$baseUrl/v1/basket/calculate-quantities';
-  static String get calculateQuantitiesFinalPreview => '$baseUrl/v1/basket/calculate-quantities/final-preview';
+  static String get calculateQuantities =>
+      '$baseUrl/v1/basket/calculate-quantities';
+  static String get calculateQuantitiesFinalPreview =>
+      '$baseUrl/v1/basket/calculate-quantities/final-preview';
   static String get myBaskets => '$baseUrl/v1/basket/my';
   static String get createPortfolio => '$baseUrl/v1/basket/create-portfolio';
   static String get applySubstitutes => '$baseUrl/v1/basket/apply-substitutes';
   static String get drafts => '$baseUrl/v1/basket/drafts';
-  static String draftById(String draftId) => '$baseUrl/v1/basket/drafts/$draftId';
+  static String draftById(String draftId) =>
+      '$baseUrl/v1/basket/drafts/$draftId';
   static String deleteBasket(String basketId) => '$baseUrl/v1/basket/$basketId';
-  static String getBasketDetail(String basketId) => '$baseUrl/v1/basket/$basketId';
+  static String getBasketDetail(String basketId) =>
+      '$baseUrl/v1/basket/$basketId';
 }

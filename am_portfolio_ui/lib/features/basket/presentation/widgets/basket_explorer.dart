@@ -193,24 +193,25 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
           query: activeQuery,
         );
 
-        ref.listen<AsyncValue<List<BasketOpportunity>>>(
-          opportunitiesProvider,
-          (previous, next) {
-            if (!_watchOpportunities) return;
-            next.whenOrNull(
-              data: (opportunities) {
-                if (opportunities.isEmpty &&
-                    _lastEmptyTelemetryQuery != activeQuery) {
-                  _lastEmptyTelemetryQuery = activeQuery;
-                  ProductTelemetry.instance
-                      .emptyState('basket_opportunities_empty');
-                } else if (opportunities.isNotEmpty) {
-                  _lastEmptyTelemetryQuery = null;
-                }
-              },
-            );
-          },
-        );
+        ref.listen<AsyncValue<List<BasketOpportunity>>>(opportunitiesProvider, (
+          previous,
+          next,
+        ) {
+          if (!_watchOpportunities) return;
+          next.whenOrNull(
+            data: (opportunities) {
+              if (opportunities.isEmpty &&
+                  _lastEmptyTelemetryQuery != activeQuery) {
+                _lastEmptyTelemetryQuery = activeQuery;
+                ProductTelemetry.instance.emptyState(
+                  'basket_opportunities_empty',
+                );
+              } else if (opportunities.isNotEmpty) {
+                _lastEmptyTelemetryQuery = null;
+              }
+            },
+          );
+        });
 
         final opportunitiesAsync = _watchOpportunities
             ? ref.watch(opportunitiesProvider)
@@ -361,9 +362,9 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                         if (isMobile) {
                           final bottomInset =
                               PlatformConstants.globalBottomNavReserve(
-                                    context,
-                                  ) +
-                                  AppSpacing.md;
+                                context,
+                              ) +
+                              AppSpacing.md;
                           return ListView.builder(
                             controller: _discoverScroll,
                             padding: EdgeInsets.fromLTRB(
@@ -388,9 +389,10 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                                           ),
                                           style: theme.textTheme.bodySmall
                                               ?.copyWith(
-                                            color:
-                                                context.colors.textSecondary,
-                                          ),
+                                                color: context
+                                                    .colors
+                                                    .textSecondary,
+                                              ),
                                         ),
                                       ),
                                       TextButton(
@@ -409,9 +411,9 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                                           DiscoverCopy.viewAll,
                                           style: theme.textTheme.labelLarge
                                               ?.copyWith(
-                                            color: ModuleColors.portfolio,
-                                            fontWeight: FontWeight.w700,
-                                          ),
+                                                color: ModuleColors.portfolio,
+                                                fontWeight: FontWeight.w700,
+                                              ),
                                         ),
                                       ),
                                     ],
@@ -432,8 +434,8 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                         // Single Top picks row: 3 by default, 5 on wide desktop.
                         final topCount =
                             constraints.maxWidth >= AmBreakpoints.wideDesktop
-                                ? 5
-                                : 3;
+                            ? 5
+                            : 3;
                         final top = _discoverState.topPicks(
                           displayList,
                           limit: topCount,
@@ -454,26 +456,31 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                               sliver: SliverGrid(
                                 gridDelegate:
                                     SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: top.length.clamp(1, topCount),
-                                  mainAxisExtent: DiscoverLayout.cardHeight,
-                                  crossAxisSpacing: DiscoverLayout.gridGap,
-                                  mainAxisSpacing: DiscoverLayout.gridGap,
-                                ),
-                                delegate: SliverChildBuilderDelegate(
-                                  (context, index) {
-                                    final opp = top[index];
-                                    return DiscoverOpportunityCard(
-                                      opportunity: opp,
-                                      period: _discoverState.period,
-                                      onTap: () => _openPreview(opp),
-                                    );
-                                  },
-                                  childCount: top.length,
-                                ),
+                                      crossAxisCount: top.length.clamp(
+                                        1,
+                                        topCount,
+                                      ),
+                                      mainAxisExtent: DiscoverLayout.cardHeight,
+                                      crossAxisSpacing: DiscoverLayout.gridGap,
+                                      mainAxisSpacing: DiscoverLayout.gridGap,
+                                    ),
+                                delegate: SliverChildBuilderDelegate((
+                                  context,
+                                  index,
+                                ) {
+                                  final opp = top[index];
+                                  return DiscoverOpportunityCard(
+                                    opportunity: opp,
+                                    period: _discoverState.period,
+                                    onTap: () => _openPreview(opp),
+                                  );
+                                }, childCount: top.length),
                               ),
                             ),
                             SliverToBoxAdapter(
-                              child: SizedBox(height: DiscoverLayout.sectionGap),
+                              child: SizedBox(
+                                height: DiscoverLayout.sectionGap,
+                              ),
                             ),
                             SliverToBoxAdapter(
                               child: KeyedSubtree(

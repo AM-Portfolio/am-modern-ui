@@ -53,15 +53,38 @@ class AuthRedirect {
     if (candidate.contains('%3F') || candidate.contains('%3f')) return null;
 
     final qIndex = candidate.indexOf('?');
-    if (qIndex < 0) return candidate;
+    final rawPath = qIndex < 0 ? candidate : candidate.substring(0, qIndex);
+    if (!rawPath.startsWith('/app')) return null;
+    final path = _collapseSingleSegmentModules(rawPath);
 
-    final path = candidate.substring(0, qIndex);
-    if (!path.startsWith('/app')) return null;
+    if (qIndex < 0) return path;
+
     final query = candidate.substring(qIndex + 1);
     if (query.isEmpty) return path;
     final params = Uri.splitQueryString(query);
     if (params.isEmpty) return path;
     return Uri(path: path, queryParameters: params).toString();
+  }
+
+  /// Modules that only accept `/app/<module>/<one-segment>` (e.g. doc-intel tab).
+  /// Extra junk segments (`/doc-processor/eqqw]`) would 404 in go_router.
+  static const _singleSegmentModulePrefixes = [
+    '/app/doc-intel/',
+  ];
+
+  static String _collapseSingleSegmentModules(String path) {
+    for (final prefix in _singleSegmentModulePrefixes) {
+      if (!path.startsWith(prefix)) continue;
+      final rest = path.substring(prefix.length);
+      if (rest.isEmpty) return path;
+      final first = rest.split('/').firstWhere(
+            (s) => s.isNotEmpty,
+            orElse: () => '',
+          );
+      if (first.isEmpty) return path;
+      return '$prefix$first';
+    }
+    return path;
   }
 
   /// Login URL when bouncing an unauthenticated `/app…` request.
