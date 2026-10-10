@@ -6,7 +6,7 @@ import 'package:am_design_system/core/theme/cubit/theme_cubit.dart';
 class ThemeToggleWidget extends StatelessWidget {
   final bool showLabel;
   final double iconSize;
-  
+
   const ThemeToggleWidget({
     super.key,
     this.showLabel = false,
@@ -18,7 +18,7 @@ class ThemeToggleWidget extends StatelessWidget {
     return BlocBuilder<ThemeCubit, ThemeState>(
       builder: (context, state) {
         final isDark = state.isDarkMode;
-        
+
         return Material(
           color: Colors.transparent,
           child: InkWell(

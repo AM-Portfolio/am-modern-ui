@@ -12,7 +12,7 @@ class TradeAttachmentSection extends StatelessWidget {
   const TradeAttachmentSection({
     required this.imageUrls,
     required this.onAttachmentsChanged,
-        required this.isEditMode,
+    required this.isEditMode,
     super.key,
     this.label,
     this.maxAttachments = 15,
@@ -20,7 +20,7 @@ class TradeAttachmentSection extends StatelessWidget {
 
   final List<String> imageUrls;
   final ValueChanged<List<String>> onAttachmentsChanged;
-    final bool isEditMode;
+  final bool isEditMode;
   final String? label;
   final int maxAttachments;
 

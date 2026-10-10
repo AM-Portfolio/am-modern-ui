@@ -13,8 +13,9 @@ PortfolioOverlayHistory parsePortfolioOverlayHistory(
   final aggregateKeys = isIntraday
       ? const ['totalWealth', 'totalUserWealth', 'close']
       : const ['totalUserWealth', 'totalWealth', 'close'];
-  final entryValueKeys =
-      isIntraday ? const ['value', 'close'] : const ['close', 'value'];
+  final entryValueKeys = isIntraday
+      ? const ['value', 'close']
+      : const ['close', 'value'];
 
   final orderedIds = <String>[];
   final rawNames = <String, String>{};

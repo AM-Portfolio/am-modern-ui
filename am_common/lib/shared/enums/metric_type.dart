@@ -2,48 +2,48 @@
 enum MetricType {
   /// Change percentage
   changePercent,
-  
+
   /// Market value
   marketValue,
-  
+
   /// Trading volume
   volume,
   averageVolume,
-  
+
   /// Returns
   returns,
-  
+
   dailyReturns,
   weeklyReturns,
   monthlyReturns,
-  
+
   /// Return on Investment
   roi,
-  
+
   investedValue,
   profitLoss,
   allocationPercent,
-  
+
   /// Compound Annual Growth Rate
   cagr,
-  
+
   /// Sharpe Ratio
   sharpeRatio,
-  
+
   /// Maximum Drawdown
   maxDrawdown,
   drawdown,
   valueAtRisk,
-  
+
   /// Volatility
   volatility,
-  
+
   /// Alpha
   alpha,
-  
+
   /// Beta
   beta,
-  
+
   /// All metrics
   all;
 
@@ -164,27 +164,48 @@ extension MetricTypeExtension on MetricType {
   /// Short name for compact display
   String get shortName {
     switch (this) {
-      case MetricType.changePercent: return 'Change %';
-      case MetricType.marketValue: return 'Value';
-      case MetricType.volume: return 'Volume';
-      case MetricType.averageVolume: return 'Avg Vol';
-      case MetricType.returns: return 'Returns';
-      case MetricType.dailyReturns: return 'Daily';
-      case MetricType.weeklyReturns: return 'Weekly';
-      case MetricType.monthlyReturns: return 'Monthly';
-      case MetricType.roi: return 'ROI';
-      case MetricType.investedValue: return 'Invested';
-      case MetricType.profitLoss: return 'P&L';
-      case MetricType.allocationPercent: return 'Alloc %';
-      case MetricType.cagr: return 'CAGR';
-      case MetricType.sharpeRatio: return 'Sharpe';
-      case MetricType.maxDrawdown: return 'Max DD';
-      case MetricType.drawdown: return 'Drawdown';
-      case MetricType.valueAtRisk: return 'VaR';
-      case MetricType.volatility: return 'Volatility';
-      case MetricType.alpha: return 'Alpha';
-      case MetricType.beta: return 'Beta';
-      case MetricType.all: return 'All';
+      case MetricType.changePercent:
+        return 'Change %';
+      case MetricType.marketValue:
+        return 'Value';
+      case MetricType.volume:
+        return 'Volume';
+      case MetricType.averageVolume:
+        return 'Avg Vol';
+      case MetricType.returns:
+        return 'Returns';
+      case MetricType.dailyReturns:
+        return 'Daily';
+      case MetricType.weeklyReturns:
+        return 'Weekly';
+      case MetricType.monthlyReturns:
+        return 'Monthly';
+      case MetricType.roi:
+        return 'ROI';
+      case MetricType.investedValue:
+        return 'Invested';
+      case MetricType.profitLoss:
+        return 'P&L';
+      case MetricType.allocationPercent:
+        return 'Alloc %';
+      case MetricType.cagr:
+        return 'CAGR';
+      case MetricType.sharpeRatio:
+        return 'Sharpe';
+      case MetricType.maxDrawdown:
+        return 'Max DD';
+      case MetricType.drawdown:
+        return 'Drawdown';
+      case MetricType.valueAtRisk:
+        return 'VaR';
+      case MetricType.volatility:
+        return 'Volatility';
+      case MetricType.alpha:
+        return 'Alpha';
+      case MetricType.beta:
+        return 'Beta';
+      case MetricType.all:
+        return 'All';
     }
   }
 }

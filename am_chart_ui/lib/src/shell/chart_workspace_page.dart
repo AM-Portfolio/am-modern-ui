@@ -10,11 +10,12 @@ import '../timeframe/chart_timeframe.dart';
 import 'chart_pane_card.dart';
 import 'chart_terminal_controller.dart';
 
-typedef ChartPaneBuilder = Widget Function(
-  BuildContext context,
-  ChartTerminalState state,
-  ChartTerminalController ctrl,
-);
+typedef ChartPaneBuilder =
+    Widget Function(
+      BuildContext context,
+      ChartTerminalState state,
+      ChartTerminalController ctrl,
+    );
 
 /// Full advanced chart terminal. Hosts may override sidebar / bottom panes.
 class ChartWorkspacePage extends ConsumerStatefulWidget {
@@ -34,8 +35,10 @@ class ChartWorkspacePage extends ConsumerStatefulWidget {
   final ChartPaneBuilder? sidebarBuilder;
   final ChartPaneBuilder? bottomPanelBuilder;
   final double sidebarWidth;
+
   /// Initial bottom panel height (resizable via drag handle).
   final double bottomPanelHeight;
+
   /// When false, symbol is chosen only via sidebar / host (no top search).
   final bool showHeaderSearch;
 
@@ -56,7 +59,9 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
     super.initState();
     _bottomHeight = widget.bottomPanelHeight;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(chartTerminalProvider.notifier).bootstrap(
+      ref
+          .read(chartTerminalProvider.notifier)
+          .bootstrap(
             symbol: widget.initialSymbol,
             timeframeCode: widget.initialTimeframe,
           );
@@ -69,18 +74,23 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
     final ctrl = ref.read(chartTerminalProvider.notifier);
     final theme = Theme.of(context);
 
-    ref.listen(chartTerminalProvider.select((s) => s.activePaneIndex),
-        (prev, next) {
+    ref.listen(chartTerminalProvider.select((s) => s.activePaneIndex), (
+      prev,
+      next,
+    ) {
       if (prev != next) {
         setState(() => _activeDrawingsCount = 0);
       }
     });
 
-    final sidebar = widget.sidebarBuilder?.call(context, state, ctrl) ??
+    final sidebar =
+        widget.sidebarBuilder?.call(context, state, ctrl) ??
         const _MissingPane(label: 'Watchlist — host did not provide pane');
-    final bottom = widget.bottomPanelBuilder?.call(context, state, ctrl) ??
+    final bottom =
+        widget.bottomPanelBuilder?.call(context, state, ctrl) ??
         const _MissingPane(
-            label: 'Fundamentals / F&O — host did not provide pane');
+          label: 'Fundamentals / F&O — host did not provide pane',
+        );
 
     return Scaffold(
       body: Column(
@@ -119,8 +129,9 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
                                   activeTool: _drawTool,
                                   drawingCount: _activeDrawingsCount,
                                   onToggleExpanded: () => setState(
-                                      () => _drawRailExpanded =
-                                          !_drawRailExpanded),
+                                    () =>
+                                        _drawRailExpanded = !_drawRailExpanded,
+                                  ),
                                   onSelectTool: (t) => setState(() {
                                     _drawTool = t;
                                   }),
@@ -137,7 +148,8 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
                                     onDrawingsCountChanged: (n) {
                                       if (_activeDrawingsCount != n) {
                                         setState(
-                                            () => _activeDrawingsCount = n);
+                                          () => _activeDrawingsCount = n,
+                                        );
                                       }
                                     },
                                   ),
@@ -150,24 +162,25 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
                               behavior: HitTestBehavior.opaque,
                               onVerticalDragUpdate: (d) {
                                 setState(() {
-                                  _bottomHeight =
-                                      (_bottomHeight - d.delta.dy)
-                                          .clamp(220.0, maxH * 0.7);
+                                  _bottomHeight = (_bottomHeight - d.delta.dy)
+                                      .clamp(220.0, maxH * 0.7);
                                 });
                               },
                               child: MouseRegion(
                                 cursor: SystemMouseCursors.resizeUpDown,
                                 child: Container(
                                   height: handleH,
-                                  color: theme.dividerColor
-                                      .withValues(alpha: 0.35),
+                                  color: theme.dividerColor.withValues(
+                                    alpha: 0.35,
+                                  ),
                                   alignment: Alignment.center,
                                   child: Container(
                                     width: 36,
                                     height: 3,
                                     decoration: BoxDecoration(
-                                      color: theme.hintColor
-                                          .withValues(alpha: 0.5),
+                                      color: theme.hintColor.withValues(
+                                        alpha: 0.5,
+                                      ),
                                       borderRadius: BorderRadius.circular(2),
                                     ),
                                   ),
@@ -213,14 +226,14 @@ class _ChartGrid extends StatelessWidget {
     final multi = state.layout != ChartGridLayout.one;
 
     Widget card(int i) => ChartPaneCard(
-          paneIndex: i,
-          pane: panes[i],
-          isActive: i == active,
-          showIdentityStrip: multi,
-          drawTool: drawTool,
-          clearDrawingsEpoch: clearDrawingsEpoch,
-          onDrawingsCountChanged: onDrawingsCountChanged,
-        );
+      paneIndex: i,
+      pane: panes[i],
+      isActive: i == active,
+      showIdentityStrip: multi,
+      drawTool: drawTool,
+      clearDrawingsEpoch: clearDrawingsEpoch,
+      onDrawingsCountChanged: onDrawingsCountChanged,
+    );
 
     switch (state.layout) {
       case ChartGridLayout.one:
@@ -335,8 +348,7 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
                   PopupMenuItem(
                     value: tf,
                     height: 32,
-                    child:
-                        Text(tf.label, style: const TextStyle(fontSize: 12)),
+                    child: Text(tf.label, style: const TextStyle(fontSize: 12)),
                   ),
               ],
               child: const Padding(
@@ -354,46 +366,54 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
                 const PopupMenuItem(
                   enabled: false,
                   height: 28,
-                  child: Text('Intraday',
-                      style: TextStyle(
-                          fontSize: 10, fontWeight: FontWeight.w700)),
+                  child: Text(
+                    'Intraday',
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+                  ),
                 ),
                 for (final tf in _intraday)
                   PopupMenuItem(
                     value: tf,
                     height: 32,
-                    child: Text(tf.label,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: active.timeframe == tf
-                              ? FontWeight.w700
-                              : FontWeight.w400,
-                        )),
+                    child: Text(
+                      tf.label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: active.timeframe == tf
+                            ? FontWeight.w700
+                            : FontWeight.w400,
+                      ),
+                    ),
                   ),
                 const PopupMenuDivider(),
                 const PopupMenuItem(
                   enabled: false,
                   height: 28,
-                  child: Text('Daily',
-                      style: TextStyle(
-                          fontSize: 10, fontWeight: FontWeight.w700)),
+                  child: Text(
+                    'Daily',
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+                  ),
                 ),
                 for (final tf in _daily)
                   PopupMenuItem(
                     value: tf,
                     height: 32,
-                    child: Text(tf.label,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: active.timeframe == tf
-                              ? FontWeight.w700
-                              : FontWeight.w400,
-                        )),
+                    child: Text(
+                      tf.label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: active.timeframe == tf
+                            ? FontWeight.w700
+                            : FontWeight.w400,
+                      ),
+                    ),
                   ),
               ],
               child: Chip(
-                label: Text(active.timeframe.label,
-                    style: const TextStyle(fontSize: 11)),
+                label: Text(
+                  active.timeframe.label,
+                  style: const TextStyle(fontSize: 11),
+                ),
                 visualDensity: VisualDensity.compact,
                 labelPadding: const EdgeInsets.symmetric(horizontal: 10),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -417,17 +437,16 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
               onPressed: () => Navigator.of(context).maybePop(),
             ),
             const SizedBox(width: 4),
-            _LayoutIconToggle(
-              layout: state.layout,
-              onChanged: ctrl.setLayout,
-            ),
+            _LayoutIconToggle(layout: state.layout, onChanged: ctrl.setLayout),
             const SizedBox(width: 12),
             ConstrainedBox(
               constraints: const BoxConstraints(minWidth: 80, maxWidth: 180),
               child: Text(
                 '${active.symbol} · ${active.exchange}',
                 style: const TextStyle(
-                    fontWeight: FontWeight.w700, fontSize: 14),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -476,11 +495,14 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
                           ),
                       ],
                       child: Chip(
-                        label: Text(active.chartType.label,
-                            style: const TextStyle(fontSize: 11)),
+                        label: Text(
+                          active.chartType.label,
+                          style: const TextStyle(fontSize: 11),
+                        ),
                         visualDensity: VisualDensity.compact,
-                        labelPadding:
-                            const EdgeInsets.symmetric(horizontal: 10),
+                        labelPadding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -488,8 +510,10 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
                       tooltip: 'Fit chart',
                       iconSize: 18,
                       padding: EdgeInsets.zero,
-                      constraints:
-                          const BoxConstraints(minWidth: 32, minHeight: 32),
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
                       onPressed: ctrl.requestFit,
                       icon: const Icon(Icons.fit_screen),
                     ),
@@ -501,8 +525,7 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
             // Right: search + focus — anchored to trailing edge
             if (showSearch)
               ConstrainedBox(
-                constraints:
-                    const BoxConstraints(minWidth: 200, maxWidth: 320),
+                constraints: const BoxConstraints(minWidth: 200, maxWidth: 320),
                 child: SizedBox(
                   width: 260,
                   child: SmartSearchAnchor(
@@ -558,10 +581,7 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
 
 /// Icon-only layout toggle: 1 pane / side-by-side / 2×2 grid.
 class _LayoutIconToggle extends StatelessWidget {
-  const _LayoutIconToggle({
-    required this.layout,
-    required this.onChanged,
-  });
+  const _LayoutIconToggle({required this.layout, required this.onChanged});
 
   final ChartGridLayout layout;
   final ValueChanged<ChartGridLayout> onChanged;

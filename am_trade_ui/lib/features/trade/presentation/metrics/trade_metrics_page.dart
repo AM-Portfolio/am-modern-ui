@@ -277,9 +277,8 @@ class _TradeMetricsPageState extends ConsumerState<TradeMetricsPage> {
       builder: (context, constraints) {
         final crossAxisCount = constraints.maxWidth > 600 ? 4 : 2;
         const spacing = AppSpacing.sm;
-        final width =
-            (constraints.maxWidth - (crossAxisCount - 1) * spacing) /
-                crossAxisCount;
+        final width = (constraints.maxWidth - (crossAxisCount - 1) * spacing) /
+            crossAxisCount;
         return Wrap(
           spacing: spacing,
           runSpacing: spacing,

@@ -10,12 +10,12 @@ import 'template_form_builder.dart';
 class TemplateDetailDialog extends ConsumerStatefulWidget {
   const TemplateDetailDialog({
     required this.template,
-        this.onUseTemplate,
+    this.onUseTemplate,
     super.key,
   });
 
   final JournalTemplate template;
-    final Function(JournalTemplate)? onUseTemplate;
+  final Function(JournalTemplate)? onUseTemplate;
 
   @override
   ConsumerState<TemplateDetailDialog> createState() =>
@@ -73,12 +73,18 @@ class _TemplateDetailDialogState extends ConsumerState<TemplateDetailDialog>
                       end: Alignment.bottomRight,
                       colors: [
                         Theme.of(context).colorScheme.surface.withOpacity(0.9),
-                        Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.8),
+                        Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest
+                            .withOpacity(0.8),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .outline
+                          .withOpacity(0.2),
                       width: 1.5,
                     ),
                   ),
@@ -158,7 +164,7 @@ class _TemplateDetailDialogState extends ConsumerState<TemplateDetailDialog>
 
   Widget _buildDescription(BuildContext context) {
     if (widget.template.description == null) return const SizedBox.shrink();
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -216,10 +222,12 @@ class _TemplateDetailDialogState extends ConsumerState<TemplateDetailDialog>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: (color ?? Theme.of(context).colorScheme.primary).withOpacity(0.1),
+        color:
+            (color ?? Theme.of(context).colorScheme.primary).withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: (color ?? Theme.of(context).colorScheme.primary).withOpacity(0.3),
+          color:
+              (color ?? Theme.of(context).colorScheme.primary).withOpacity(0.3),
         ),
       ),
       child: Row(
@@ -244,7 +252,7 @@ class _TemplateDetailDialogState extends ConsumerState<TemplateDetailDialog>
 
   Widget _buildFields(BuildContext context) {
     if (widget.template.fields.isEmpty) return const SizedBox.shrink();
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -260,7 +268,10 @@ class _TemplateDetailDialogState extends ConsumerState<TemplateDetailDialog>
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+              color: Theme.of(context)
+                  .colorScheme
+                  .surfaceContainerHighest
+                  .withOpacity(0.3),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
@@ -287,18 +298,24 @@ class _TemplateDetailDialogState extends ConsumerState<TemplateDetailDialog>
                       if (field.helpText != null)
                         Text(
                           field.helpText!,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.6),
+                                  ),
                         ),
                     ],
                   ),
                 ),
                 if (field.required)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.error.withOpacity(0.1),
+                      color:
+                          Theme.of(context).colorScheme.error.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -318,7 +335,7 @@ class _TemplateDetailDialogState extends ConsumerState<TemplateDetailDialog>
 
   Widget _buildTags(BuildContext context) {
     if (widget.template.tags.isEmpty) return const SizedBox.shrink();
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -336,7 +353,10 @@ class _TemplateDetailDialogState extends ConsumerState<TemplateDetailDialog>
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.tertiaryContainer.withOpacity(0.5),
+                color: Theme.of(context)
+                    .colorScheme
+                    .tertiaryContainer
+                    .withOpacity(0.5),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
@@ -356,7 +376,10 @@ class _TemplateDetailDialogState extends ConsumerState<TemplateDetailDialog>
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        color: Theme.of(context)
+            .colorScheme
+            .surfaceContainerHighest
+            .withOpacity(0.3),
         border: Border(
           top: BorderSide(
             color: Theme.of(context).colorScheme.outline.withOpacity(0.1),

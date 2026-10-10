@@ -4,11 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class NewsSymbolChip extends StatelessWidget {
-  const NewsSymbolChip({
-    super.key,
-    required this.symbol,
-    this.quote,
-  });
+  const NewsSymbolChip({super.key, required this.symbol, this.quote});
 
   final String symbol;
   final QuoteChange? quote;
@@ -22,7 +18,9 @@ class NewsSymbolChip extends StatelessWidget {
     final positive = (changePct ?? 0) >= 0;
     final changeColor = changePct == null
         ? context.colors.textSecondary
-        : (positive ? context.colors.statusSuccess : context.colors.statusError);
+        : (positive
+              ? context.colors.statusSuccess
+              : context.colors.statusError);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

@@ -77,8 +77,8 @@ class AuthProviders {
   static TokenRefreshService get tokenRefreshService {
     _tokenRefreshService ??= TokenRefreshService(
       storageService: secureStorageService,
-      refreshApi: (refreshToken) => IdentityAuthRemoteDataSource(_refreshDio)
-          .refreshToken(refreshToken),
+      refreshApi: (refreshToken) =>
+          IdentityAuthRemoteDataSource(_refreshDio).refreshToken(refreshToken),
     )..configureProactiveRefresh();
     return _tokenRefreshService!;
   }
@@ -92,8 +92,7 @@ class AuthProviders {
   }
 
   static DeviceLinkRemoteDataSource get deviceLinkRemoteDataSource {
-    _deviceLinkRemoteDataSource ??=
-        DeviceLinkRemoteDataSource(cookieDio);
+    _deviceLinkRemoteDataSource ??= DeviceLinkRemoteDataSource(cookieDio);
     return _deviceLinkRemoteDataSource!;
   }
 
@@ -189,19 +188,19 @@ class AuthProviders {
   static RegisterUseCase get registerUseCase => RegisterUseCase(authRepository);
 
   static AuthCubit createAuthCubit() => AuthCubit(
-    emailLoginUseCase: emailLoginUseCase,
-    googleLoginUseCase: googleLoginUseCase,
-    demoLoginUseCase: demoLoginUseCase,
-    logoutUseCase: logoutUseCase,
-    checkAuthStatusUseCase: checkAuthStatusUseCase,
-    getCurrentUserUseCase: getCurrentUserUseCase,
-    registerUseCase: registerUseCase,
-    authRepository: authRepository,
-  );
+        emailLoginUseCase: emailLoginUseCase,
+        googleLoginUseCase: googleLoginUseCase,
+        demoLoginUseCase: demoLoginUseCase,
+        logoutUseCase: logoutUseCase,
+        checkAuthStatusUseCase: checkAuthStatusUseCase,
+        getCurrentUserUseCase: getCurrentUserUseCase,
+        registerUseCase: registerUseCase,
+        authRepository: authRepository,
+      );
 
   static List<BlocProvider> get providers => [
-    BlocProvider<AuthCubit>(
-      create: (context) => createAuthCubit()..checkAuthStatus(),
-    ),
-  ];
+        BlocProvider<AuthCubit>(
+          create: (context) => createAuthCubit()..checkAuthStatus(),
+        ),
+      ];
 }

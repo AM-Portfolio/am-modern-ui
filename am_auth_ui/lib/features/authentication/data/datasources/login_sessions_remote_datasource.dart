@@ -35,7 +35,8 @@ class LoginSessionsRemoteDataSource implements LoginSessionsApi {
 
   Future<Dio> _client() async {
     final token = await _storage.getAccessToken();
-    if (token == _cookieSessionToken || token?.startsWith('web-access-') == true) {
+    if (token == _cookieSessionToken ||
+        token?.startsWith('web-access-') == true) {
       return _cookieDio;
     }
     return _dio;

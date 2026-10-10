@@ -36,8 +36,8 @@ class PaperEnablePage extends StatelessWidget {
                     'Practice buy/sell with ₹10,00,000 virtual cash and live market prices. '
                     'This is not a live broker account and uses no real money.',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: colors.textSecondary,
-                        ),
+                      color: colors.textSecondary,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),

@@ -29,8 +29,9 @@ class PortfolioRiskRadarCard extends ConsumerWidget {
     final async = ref.watch(portfolioIntelligenceProvider(portfolioId));
 
     return async.when(
-      loading: () =>
-          IntelligenceCardSkeleton(height: minHeight ?? (fillHeight ? 320 : 220)),
+      loading: () => IntelligenceCardSkeleton(
+        height: minHeight ?? (fillHeight ? 320 : 220),
+      ),
       error: (e, _) => IntelligenceGlassCard(
         title: 'Risk Radar',
         icon: Icons.radar_rounded,
@@ -52,7 +53,9 @@ class PortfolioRiskRadarCard extends ConsumerWidget {
             minHeight: minHeight,
             fillHeight: fillHeight,
             padding: padding,
-            child: const IntelligenceEmptyHint(message: 'Risk data unavailable'),
+            child: const IntelligenceEmptyHint(
+              message: 'Risk data unavailable',
+            ),
           );
         }
 
@@ -88,6 +91,7 @@ class _RiskRadarLoadedBodyState extends State<_RiskRadarLoadedBody> {
   String? _selectedAxisId;
   String? _expandedKey;
   String? _sweepFocusId;
+
   /// User pinned a row; sweep must not clear pin.
   bool _userPinned = false;
 
@@ -136,8 +140,9 @@ class _RiskRadarLoadedBodyState extends State<_RiskRadarLoadedBody> {
     final risk = widget.risk;
     final isPhone = MediaQuery.sizeOf(context).width < 600;
     final primaryAxes = riskRadarPrimaryAxes(risk.axes);
-    final chartAxes =
-        primaryAxes.length >= 3 ? primaryAxes : risk.axes.take(4).toList();
+    final chartAxes = primaryAxes.length >= 3
+        ? primaryAxes
+        : risk.axes.take(4).toList();
     final factors = _riskFactorRows(risk, chartAxes);
     final overall = _worstBandLabel(factors);
     final overallColor = _severityColor(context, overall);
@@ -148,10 +153,12 @@ class _RiskRadarLoadedBodyState extends State<_RiskRadarLoadedBody> {
 
     final spider = LayoutBuilder(
       builder: (context, constraints) {
-        final maxW =
-            constraints.maxWidth.isFinite ? constraints.maxWidth : 260.0;
-        final maxH =
-            constraints.maxHeight.isFinite ? constraints.maxHeight : 260.0;
+        final maxW = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : 260.0;
+        final maxH = constraints.maxHeight.isFinite
+            ? constraints.maxHeight
+            : 260.0;
         // Prefer a readable size, but never exceed the pane (caption eats height).
         final available = math.min(maxW, maxH);
         final lo = isPhone ? 176.0 : 200.0;
@@ -178,9 +185,11 @@ class _RiskRadarLoadedBodyState extends State<_RiskRadarLoadedBody> {
 
     Widget factorList({required bool scroll}) {
       final cards = factors.map((r) {
-        final expanded = _expandedKey != null &&
+        final expanded =
+            _expandedKey != null &&
             _expandedKey!.toUpperCase() == r.axisId.toUpperCase();
-        final selected = _userPinned &&
+        final selected =
+            _userPinned &&
             _selectedAxisId != null &&
             r.axisId.toUpperCase() == _selectedAxisId!.toUpperCase();
         return Semantics(
@@ -214,38 +223,38 @@ class _RiskRadarLoadedBodyState extends State<_RiskRadarLoadedBody> {
 
     final mid = isPhone
         ? (widget.fillHeight
-            ? Column(
-                children: [
-                  Expanded(flex: 6, child: spider),
-                  const SizedBox(height: 4),
-                  Expanded(flex: 4, child: factorList(scroll: true)),
-                ],
-              )
-            : Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  spider,
-                  const SizedBox(height: 4),
-                  factorList(scroll: false),
-                ],
-              ))
+              ? Column(
+                  children: [
+                    Expanded(flex: 6, child: spider),
+                    const SizedBox(height: 4),
+                    Expanded(flex: 4, child: factorList(scroll: true)),
+                  ],
+                )
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    spider,
+                    const SizedBox(height: 4),
+                    factorList(scroll: false),
+                  ],
+                ))
         : (widget.fillHeight
-            ? Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(flex: 6, child: spider),
-                  const SizedBox(width: 8),
-                  Expanded(flex: 4, child: factorList(scroll: true)),
-                ],
-              )
-            : Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(flex: 6, child: spider),
-                  const SizedBox(width: 8),
-                  Expanded(flex: 4, child: factorList(scroll: false)),
-                ],
-              ));
+              ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(flex: 6, child: spider),
+                    const SizedBox(width: 8),
+                    Expanded(flex: 4, child: factorList(scroll: true)),
+                  ],
+                )
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(flex: 6, child: spider),
+                    const SizedBox(width: 8),
+                    Expanded(flex: 4, child: factorList(scroll: false)),
+                  ],
+                ));
 
     final body = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -253,9 +262,9 @@ class _RiskRadarLoadedBodyState extends State<_RiskRadarLoadedBody> {
       children: [
         Text(
           'Scores are 0–100. Higher means more risk.',
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: Theme.of(context).hintColor,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.labelSmall?.copyWith(color: Theme.of(context).hintColor),
         ),
         const SizedBox(height: 8),
         if (widget.fillHeight) Expanded(child: mid) else mid,
@@ -425,15 +434,16 @@ class _RiskFactorCardState extends State<_RiskFactorCard> {
                           final showPill = rowConstraints.maxWidth >= 120;
                           return Row(
                             children: [
-                              Icon(riskRadarAxisIcon(row.axisId),
-                                  size: 17, color: accent),
+                              Icon(
+                                riskRadarAxisIcon(row.axisId),
+                                size: 17,
+                                color: accent,
+                              ),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
                                   row.label,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
+                                  style: Theme.of(context).textTheme.bodyMedium
                                       ?.copyWith(
                                         fontSize: 13,
                                         fontWeight: widget.expanded
@@ -448,9 +458,7 @@ class _RiskFactorCardState extends State<_RiskFactorCard> {
                               const SizedBox(width: 4),
                               Text(
                                 row.scoreLabel,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
+                                style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w800,
@@ -465,8 +473,9 @@ class _RiskFactorCardState extends State<_RiskFactorCard> {
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color:
-                                        severityColor.withValues(alpha: 0.15),
+                                    color: severityColor.withValues(
+                                      alpha: 0.15,
+                                    ),
                                     borderRadius: BorderRadius.circular(6),
                                     border: Border.all(
                                       color: severityColor.withValues(
@@ -539,9 +548,9 @@ class _KeyInsightPanel extends StatelessWidget {
               Text(
                 'Key Insight',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: accent,
-                    ),
+                  fontWeight: FontWeight.w800,
+                  color: accent,
+                ),
               ),
             ],
           ),
@@ -549,18 +558,18 @@ class _KeyInsightPanel extends StatelessWidget {
           Text(
             insight,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  height: 1.3,
-                  color: Theme.of(context).hintColor,
-                ),
+              height: 1.3,
+              color: Theme.of(context).hintColor,
+            ),
           ),
           if (findingLabel != null && findingLabel!.trim().isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(
               findingLabel!.trim(),
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
           ],
         ],

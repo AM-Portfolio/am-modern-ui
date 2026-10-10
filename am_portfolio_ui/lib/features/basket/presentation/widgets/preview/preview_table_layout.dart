@@ -28,11 +28,17 @@ abstract final class PreviewTableLayout {
   static int get etfPanelFlex => etfNameFlex + etfWeightFlex;
   static int get portfolioPanelFlex => unitsFlex + valueFlex;
 
-  static EdgeInsets get rowPadding =>
-      const EdgeInsets.symmetric(horizontal: hPadding, vertical: AppSpacing.sm + 2);
+  static EdgeInsets get rowPadding => const EdgeInsets.symmetric(
+    horizontal: hPadding,
+    vertical: AppSpacing.sm + 2,
+  );
 
-  static EdgeInsets get headerPadding =>
-      const EdgeInsets.fromLTRB(hPadding, AppSpacing.sm, hPadding, AppSpacing.sm);
+  static EdgeInsets get headerPadding => const EdgeInsets.fromLTRB(
+    hPadding,
+    AppSpacing.sm,
+    hPadding,
+    AppSpacing.sm,
+  );
 
   static Widget divider(BuildContext context, {double height = 28}) {
     return Container(
@@ -90,40 +96,25 @@ abstract final class PreviewTableLayout {
         children: [
           Expanded(
             flex: etfNameFlex,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: etfName,
-            ),
+            child: Align(alignment: Alignment.centerLeft, child: etfName),
           ),
           Expanded(
             flex: etfWeightFlex,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: etfWeight,
-            ),
+            child: Align(alignment: Alignment.centerRight, child: etfWeight),
           ),
           divider(context),
           Expanded(
             flex: unitsFlex,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: units,
-            ),
+            child: Align(alignment: Alignment.centerLeft, child: units),
           ),
           Expanded(
             flex: valueFlex,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: value,
-            ),
+            child: Align(alignment: Alignment.centerRight, child: value),
           ),
           SizedBox(width: colGap),
           SizedBox(
             width: statusWidth,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: status,
-            ),
+            child: Align(alignment: Alignment.centerRight, child: status),
           ),
         ],
       ),

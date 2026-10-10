@@ -48,7 +48,9 @@ Future<DashboardRepository> dashboardRepository(Ref ref) async {
 void _attachDashboardStreaming(Ref ref, String userId) {
   if (userId.isEmpty) return;
   unawaited(
-    ref.read(dashboardStreamingSessionProvider(userId).future).catchError((_) {}),
+    ref
+        .read(dashboardStreamingSessionProvider(userId).future)
+        .catchError((_) {}),
   );
 }
 
@@ -91,8 +93,11 @@ void dashboardParallelKickoff(
   String timeFrame = '1D',
 }) {
   if (userId.isEmpty) return;
-  final visible =
-      ref.watch(dashboardLayoutProvider).visibleSlots.map((s) => s.id).toSet();
+  final visible = ref
+      .watch(dashboardLayoutProvider)
+      .visibleSlots
+      .map((s) => s.id)
+      .toSet();
   if (visible.contains(DashboardWidgetId.summary)) {
     ref.watch(dashboardStreamProvider(userId));
   }
@@ -125,13 +130,15 @@ double _parseDouble(dynamic val) {
   return 0.0;
 }
 
-DashboardSummary _dashboardSummaryFromPortfolioRaw(Map<String, dynamic> rawData) {
+DashboardSummary _dashboardSummaryFromPortfolioRaw(
+  Map<String, dynamic> rawData,
+) {
   final brokerPortfolios = rawData['brokerPortfolios'] is Map
       ? rawData['brokerPortfolios'] as Map
       : null;
   final brokers = rawData['brokers'];
-  final totalPortfolios = brokerPortfolios?.keys.length ??
-      (brokers is List ? brokers.length : 0);
+  final totalPortfolios =
+      brokerPortfolios?.keys.length ?? (brokers is List ? brokers.length : 0);
 
   return DashboardSummary(
     totalValue: _parseDouble(rawData['currentValue'] ?? rawData['totalValue']),
@@ -173,8 +180,9 @@ Future<DashboardSummary> _resolveDashboardSummary(
   DashboardRepository repository,
   String userId,
 ) async {
-  final portfolioFallback = _loadPortfolioSummaryFallback(ref)
-      .then(_dashboardSummaryFromPortfolioRaw);
+  final portfolioFallback = _loadPortfolioSummaryFallback(
+    ref,
+  ).then(_dashboardSummaryFromPortfolioRaw);
 
   try {
     return await repository
@@ -191,7 +199,8 @@ Future<DashboardSummary> _resolveDashboardSummary(
       // Last chance: fresh portfolio fetch (clears a poisoned keepAlive).
       ref.invalidate(portfolioSummaryFallbackProvider);
       try {
-        final raw = await ref.read(portfolioSummaryFallbackProvider.future)
+        final raw = await ref
+            .read(portfolioSummaryFallbackProvider.future)
             .timeout(const Duration(seconds: 25));
         return _dashboardSummaryFromPortfolioRaw(raw);
       } catch (finalError) {
@@ -233,13 +242,18 @@ PerformanceResponse _performanceFromPortfolioRaw(
   );
 }
 
-PerformanceResponse _generatePerformanceFromSummary(double totalValue, double totalGainLoss, double todayGainLoss, String timeFrame) {
+PerformanceResponse _generatePerformanceFromSummary(
+  double totalValue,
+  double totalGainLoss,
+  double todayGainLoss,
+  String timeFrame,
+) {
   final now = DateTime.now();
   final List<DataPoint> chartData = [];
   int pointsCount = 10;
-  
+
   double rangeGainLoss = totalGainLoss;
-  
+
   if (timeFrame == '1D') {
     pointsCount = 24;
     rangeGainLoss = todayGainLoss;
@@ -265,9 +279,9 @@ PerformanceResponse _generatePerformanceFromSummary(double totalValue, double to
     pointsCount = 5;
     rangeGainLoss = totalGainLoss;
   }
-  
+
   final startValue = totalValue - rangeGainLoss;
-  
+
   for (int i = 0; i < pointsCount; i++) {
     DateTime date;
     if (timeFrame == '1D') {
@@ -283,22 +297,26 @@ PerformanceResponse _generatePerformanceFromSummary(double totalValue, double to
     } else {
       date = DateTime(now.year - (pointsCount - 1 - i), now.month, now.day);
     }
-    
+
     // Create a smooth progressive look with a tiny bit of sine wave fluctuation
     final double fraction = i / (pointsCount - 1 == 0 ? 1 : pointsCount - 1);
-    final double fluctuation = (i == pointsCount - 1) ? 0.0 : ((i % 2 == 0 ? 1.0 : -1.0) * (totalValue * 0.0015));
-    final calculatedValue = startValue + (fraction * rangeGainLoss) + fluctuation;
-    
-    chartData.add(DataPoint(
-      date: date.toIso8601String(),
-      value: calculatedValue,
-    ));
+    final double fluctuation = (i == pointsCount - 1)
+        ? 0.0
+        : ((i % 2 == 0 ? 1.0 : -1.0) * (totalValue * 0.0015));
+    final calculatedValue =
+        startValue + (fraction * rangeGainLoss) + fluctuation;
+
+    chartData.add(
+      DataPoint(date: date.toIso8601String(), value: calculatedValue),
+    );
   }
-  
+
   return PerformanceResponse(
     portfolioId: 'ALL',
     timeFrame: timeFrame,
-    totalReturnPercentage: startValue > 0 ? (rangeGainLoss / startValue) * 100 : 0.0,
+    totalReturnPercentage: startValue > 0
+        ? (rangeGainLoss / startValue) * 100
+        : 0.0,
     totalReturnValue: rangeGainLoss,
     chartData: chartData,
   );
@@ -316,7 +334,11 @@ Stream<DashboardSummary> dashboardStream(Ref ref, String userId) async* {
 
   final repository = await ref.watch(dashboardRepositoryProvider.future);
 
-  final summary = await _resolveDashboardSummary(ref, repository, resolvedUserId);
+  final summary = await _resolveDashboardSummary(
+    ref,
+    repository,
+    resolvedUserId,
+  );
   yield summary;
 
   _attachDashboardStreaming(ref, resolvedUserId);
@@ -334,15 +356,18 @@ Stream<List<ActivityItem>> activityStream(Ref ref, String userId) async* {
   if (userId.isEmpty) throw ArgumentError('User ID cannot be empty');
 
   final repository = await ref.watch(dashboardRepositoryProvider.future);
-  
+
   List<ActivityItem> items = [];
   try {
     final initial = await repository.getRecentActivity(userId, size: 10);
     items = initial.items;
   } catch (e) {
-    AppLogger.warning('Failed to get initial recent activity, using empty list', error: e);
+    AppLogger.warning(
+      'Failed to get initial recent activity, using empty list',
+      error: e,
+    );
   }
-  
+
   yield items;
 
   _attachDashboardStreaming(ref, userId);
@@ -358,14 +383,17 @@ Stream<AllocationResponse> allocationStream(Ref ref, String userId) async* {
   if (userId.isEmpty) throw ArgumentError('User ID cannot be empty');
 
   final repository = await ref.watch(dashboardRepositoryProvider.future);
-  
+
   AllocationResponse allocation = const AllocationResponse();
   try {
     allocation = await repository.getAllocation(userId);
   } catch (e) {
-    AppLogger.warning('Failed to get allocation from analysis service', error: e);
+    AppLogger.warning(
+      'Failed to get allocation from analysis service',
+      error: e,
+    );
   }
-  
+
   yield allocation;
 
   _attachDashboardStreaming(ref, userId);
@@ -377,18 +405,32 @@ Stream<AllocationResponse> allocationStream(Ref ref, String userId) async* {
 }
 
 @riverpod
-Stream<TopMoversResponse> moversStream(Ref ref, String userId, {String timeFrame = '1D'}) async* {
+Stream<TopMoversResponse> moversStream(
+  Ref ref,
+  String userId, {
+  String timeFrame = '1D',
+}) async* {
   final resolvedUserId = await _requireDashboardUserId(ref, userId);
 
   final repository = await ref.watch(dashboardRepositoryProvider.future);
-  
-  TopMoversResponse movers = TopMoversResponse(timeFrame: timeFrame, gainers: [], losers: []);
+
+  TopMoversResponse movers = TopMoversResponse(
+    timeFrame: timeFrame,
+    gainers: [],
+    losers: [],
+  );
   try {
-    movers = await repository.getTopMovers(resolvedUserId, timeFrame: timeFrame);
+    movers = await repository.getTopMovers(
+      resolvedUserId,
+      timeFrame: timeFrame,
+    );
   } catch (e) {
-    AppLogger.warning('Failed to get top movers from analysis service', error: e);
+    AppLogger.warning(
+      'Failed to get top movers from analysis service',
+      error: e,
+    );
   }
-  
+
   yield movers;
 
   _attachDashboardStreaming(ref, resolvedUserId);
@@ -400,7 +442,11 @@ Stream<TopMoversResponse> moversStream(Ref ref, String userId, {String timeFrame
 }
 
 @riverpod
-Stream<PerformanceResponse> historyStream(Ref ref, String userId, {String timeFrame = '1D'}) async* {
+Stream<PerformanceResponse> historyStream(
+  Ref ref,
+  String userId, {
+  String timeFrame = '1D',
+}) async* {
   if (userId.isEmpty) throw ArgumentError('User ID cannot be empty');
 
   final repository = await ref.watch(dashboardRepositoryProvider.future);
@@ -426,7 +472,10 @@ Stream<PerformanceResponse> historyStream(Ref ref, String userId, {String timeFr
         technicalArea: 'dashboard',
       );
       ProductTelemetry.instance.clientError(errorType: 'dashboard_performance');
-      AppLogger.error('Dashboard history fallback also failed', error: fallbackError);
+      AppLogger.error(
+        'Dashboard history fallback also failed',
+        error: fallbackError,
+      );
       rethrow;
     }
   }
@@ -452,7 +501,10 @@ Stream<PerformanceResponse> historyStream(Ref ref, String userId, {String timeFr
 }
 
 @riverpod
-Future<List<PortfolioOverview>> portfolioOverviews(Ref ref, String userId) async {
+Future<List<PortfolioOverview>> portfolioOverviews(
+  Ref ref,
+  String userId,
+) async {
   final repository = await ref.watch(dashboardRepositoryProvider.future);
   try {
     return await repository.getPortfolioOverviews(userId);
@@ -481,24 +533,38 @@ Future<AllocationResponse> dashboardAllocation(Ref ref, String userId) async {
   try {
     return await repository.getAllocation(userId);
   } catch (e) {
-    AppLogger.warning('Failed to get allocation from analysis service', error: e);
+    AppLogger.warning(
+      'Failed to get allocation from analysis service',
+      error: e,
+    );
     return const AllocationResponse();
   }
 }
 
 @riverpod
-Future<TopMoversResponse> topMovers(Ref ref, String userId, {String timeFrame = '1D'}) async {
+Future<TopMoversResponse> topMovers(
+  Ref ref,
+  String userId, {
+  String timeFrame = '1D',
+}) async {
   final repository = await ref.watch(dashboardRepositoryProvider.future);
   try {
     return await repository.getTopMovers(userId, timeFrame: timeFrame);
   } catch (e) {
-    AppLogger.warning('Failed to get top movers from analysis service', error: e);
+    AppLogger.warning(
+      'Failed to get top movers from analysis service',
+      error: e,
+    );
     return TopMoversResponse(timeFrame: timeFrame, gainers: [], losers: []);
   }
 }
 
 @riverpod
-Future<PerformanceResponse> dashboardPerformance(Ref ref, String userId, {String timeFrame = '1D'}) async {
+Future<PerformanceResponse> dashboardPerformance(
+  Ref ref,
+  String userId, {
+  String timeFrame = '1D',
+}) async {
   final repository = await ref.watch(dashboardRepositoryProvider.future);
   try {
     return await repository.getPerformance(userId, timeFrame: timeFrame);
@@ -529,7 +595,14 @@ Future<RecentActivityResponse> recentActivity(
       sortBy: sortBy,
     );
   } catch (e) {
-    AppLogger.warning('Failed to get recent activity from analysis service', error: e);
-    return const RecentActivityResponse(items: [], totalItems: 0, totalPages: 0);
+    AppLogger.warning(
+      'Failed to get recent activity from analysis service',
+      error: e,
+    );
+    return const RecentActivityResponse(
+      items: [],
+      totalItems: 0,
+      totalPages: 0,
+    );
   }
 }

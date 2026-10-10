@@ -170,9 +170,7 @@ class _ResetPasswordPageFormState extends State<ResetPasswordPageForm> {
                 prefixIcon: Icons.lock_outline,
                 suffixIcon: IconButton(
                   icon: Icon(
-                    _obscurePassword
-                        ? Icons.visibility_off
-                        : Icons.visibility,
+                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
                     color: context.colors.textSecondary,
                   ),
                   onPressed: () =>
@@ -199,8 +197,7 @@ class _ResetPasswordPageFormState extends State<ResetPasswordPageForm> {
                     color: context.colors.textSecondary,
                   ),
                   onPressed: () => setState(
-                    () =>
-                        _obscureConfirmPassword = !_obscureConfirmPassword,
+                    () => _obscureConfirmPassword = !_obscureConfirmPassword,
                   ),
                 ),
                 validator: (value) => Validators.validatePasswordMatch(

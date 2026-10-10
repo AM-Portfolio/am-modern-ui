@@ -14,28 +14,32 @@ abstract class FavoriteFilterRemoteDataSource {
   Future<FavoriteFilterResponseDto> getFavoriteFilterById(String filterId);
 
   /// Create a new favorite filter
-  Future<FavoriteFilterResponseDto> createFavoriteFilter(FavoriteFilterRequestDto request);
+  Future<FavoriteFilterResponseDto> createFavoriteFilter(
+      FavoriteFilterRequestDto request);
 
   /// Update an existing favorite filter
-  Future<FavoriteFilterResponseDto> updateFavoriteFilter(String filterId, FavoriteFilterRequestDto request);
+  Future<FavoriteFilterResponseDto> updateFavoriteFilter(
+      String filterId, FavoriteFilterRequestDto request);
 
   /// Delete a favorite filter
   Future<void> deleteFavoriteFilter(String filterId);
 
   /// Bulk delete favorite filters
-  Future<BulkDeleteResponseDto> bulkDeleteFavoriteFilters(BulkDeleteRequestDto request);
+  Future<BulkDeleteResponseDto> bulkDeleteFavoriteFilters(
+      BulkDeleteRequestDto request);
 
   /// Set a filter as default
   Future<FavoriteFilterResponseDto> setDefaultFilter(String filterId);
 }
 
 /// Concrete implementation of favorite filter remote data source
-class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSource {
+class FavoriteFilterRemoteDataSourceImpl
+    implements FavoriteFilterRemoteDataSource {
   const FavoriteFilterRemoteDataSourceImpl({
     required ApiClient apiClient,
     required TradeApiConfig tradeConfig,
-  }) : _apiClient = apiClient,
-       _tradeConfig = tradeConfig;
+  })  : _apiClient = apiClient,
+        _tradeConfig = tradeConfig;
 
   final ApiClient _apiClient;
   final TradeApiConfig _tradeConfig;
@@ -45,18 +49,16 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
     final cleanBase = baseUrl.endsWith('/')
         ? baseUrl.substring(0, baseUrl.length - 1)
         : baseUrl;
-    final cleanResource = resource.startsWith('/')
-        ? resource
-        : '/$resource';
+    final cleanResource = resource.startsWith('/') ? resource : '/$resource';
     return '$cleanBase$cleanResource';
   }
 
   @override
   Future<List<FavoriteFilterResponseDto>> getFavoriteFilters() async {
-    AppLogger.methodEntry('getFavoriteFilters', tag: 'FavoriteFilterRemoteDataSource', params: {});
+    AppLogger.methodEntry('getFavoriteFilters',
+        tag: 'FavoriteFilterRemoteDataSource', params: {});
 
     try {
-     
       final baseUri = _buildUri(_tradeConfig.baseUrl, 'v1/filters');
       final fullUri = baseUri;
 
@@ -64,14 +66,19 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
         fullUri,
         parser: (data) {
           if (data is List) {
-            return data.map((item) => FavoriteFilterResponseDto.fromJson(item as Map<String, dynamic>)).toList();
+            return data
+                .map((item) => FavoriteFilterResponseDto.fromJson(
+                    item as Map<String, dynamic>))
+                .toList();
           }
           return [];
         },
       );
 
-      AppLogger.info('Favorite filters fetched successfully', tag: 'FavoriteFilterRemoteDataSource');
-      AppLogger.methodExit('getFavoriteFilters', tag: 'FavoriteFilterRemoteDataSource', result: 'success');
+      AppLogger.info('Favorite filters fetched successfully',
+          tag: 'FavoriteFilterRemoteDataSource');
+      AppLogger.methodExit('getFavoriteFilters',
+          tag: 'FavoriteFilterRemoteDataSource', result: 'success');
 
       return response;
     } catch (e) {
@@ -86,7 +93,8 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
   }
 
   @override
-  Future<FavoriteFilterResponseDto> getFavoriteFilterById(String filterId) async {
+  Future<FavoriteFilterResponseDto> getFavoriteFilterById(
+      String filterId) async {
     AppLogger.methodEntry(
       'getFavoriteFilterById',
       tag: 'FavoriteFilterRemoteDataSource',
@@ -99,11 +107,14 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
 
       final response = await _apiClient.get<FavoriteFilterResponseDto>(
         fullUri,
-        parser: (data) => FavoriteFilterResponseDto.fromJson(data! as Map<String, dynamic>),
+        parser: (data) =>
+            FavoriteFilterResponseDto.fromJson(data! as Map<String, dynamic>),
       );
 
-      AppLogger.info('Favorite filter fetched successfully', tag: 'FavoriteFilterRemoteDataSource');
-      AppLogger.methodExit('getFavoriteFilterById', tag: 'FavoriteFilterRemoteDataSource', result: 'success');
+      AppLogger.info('Favorite filter fetched successfully',
+          tag: 'FavoriteFilterRemoteDataSource');
+      AppLogger.methodExit('getFavoriteFilterById',
+          tag: 'FavoriteFilterRemoteDataSource', result: 'success');
 
       return response;
     } catch (e) {
@@ -118,7 +129,8 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
   }
 
   @override
-  Future<FavoriteFilterResponseDto> createFavoriteFilter(FavoriteFilterRequestDto request) async {
+  Future<FavoriteFilterResponseDto> createFavoriteFilter(
+      FavoriteFilterRequestDto request) async {
     AppLogger.methodEntry(
       'createFavoriteFilter',
       tag: 'FavoriteFilterRemoteDataSource',
@@ -133,11 +145,14 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
       final response = await _apiClient.post<FavoriteFilterResponseDto>(
         fullUri,
         body: tradeRequestBodyWithoutUserId(request.toJson()),
-        parser: (data) => FavoriteFilterResponseDto.fromJson(data! as Map<String, dynamic>),
+        parser: (data) =>
+            FavoriteFilterResponseDto.fromJson(data! as Map<String, dynamic>),
       );
 
-      AppLogger.info('Favorite filter created successfully', tag: 'FavoriteFilterRemoteDataSource');
-      AppLogger.methodExit('createFavoriteFilter', tag: 'FavoriteFilterRemoteDataSource', result: 'success');
+      AppLogger.info('Favorite filter created successfully',
+          tag: 'FavoriteFilterRemoteDataSource');
+      AppLogger.methodExit('createFavoriteFilter',
+          tag: 'FavoriteFilterRemoteDataSource', result: 'success');
 
       return response;
     } catch (e) {
@@ -170,11 +185,14 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
       final response = await _apiClient.put<FavoriteFilterResponseDto>(
         fullUri,
         body: tradeRequestBodyWithoutUserId(request.toJson()),
-        parser: (data) => FavoriteFilterResponseDto.fromJson(data! as Map<String, dynamic>),
+        parser: (data) =>
+            FavoriteFilterResponseDto.fromJson(data! as Map<String, dynamic>),
       );
 
-      AppLogger.info('Favorite filter updated successfully', tag: 'FavoriteFilterRemoteDataSource');
-      AppLogger.methodExit('updateFavoriteFilter', tag: 'FavoriteFilterRemoteDataSource', result: 'success');
+      AppLogger.info('Favorite filter updated successfully',
+          tag: 'FavoriteFilterRemoteDataSource');
+      AppLogger.methodExit('updateFavoriteFilter',
+          tag: 'FavoriteFilterRemoteDataSource', result: 'success');
 
       return response;
     } catch (e) {
@@ -203,8 +221,10 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
 
       await _apiClient.delete<void>(fullUri, parser: (_) {});
 
-      AppLogger.info('Favorite filter deleted successfully', tag: 'FavoriteFilterRemoteDataSource');
-      AppLogger.methodExit('deleteFavoriteFilter', tag: 'FavoriteFilterRemoteDataSource', result: 'success');
+      AppLogger.info('Favorite filter deleted successfully',
+          tag: 'FavoriteFilterRemoteDataSource');
+      AppLogger.methodExit('deleteFavoriteFilter',
+          tag: 'FavoriteFilterRemoteDataSource', result: 'success');
     } catch (e) {
       AppLogger.error(
         'Failed to delete favorite filter',
@@ -217,11 +237,15 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
   }
 
   @override
-  Future<BulkDeleteResponseDto> bulkDeleteFavoriteFilters(BulkDeleteRequestDto request) async {
+  Future<BulkDeleteResponseDto> bulkDeleteFavoriteFilters(
+      BulkDeleteRequestDto request) async {
     AppLogger.methodEntry(
       'bulkDeleteFavoriteFilters',
       tag: 'FavoriteFilterRemoteDataSource',
-      params: {'userId': request.userId, 'filterCount': request.filterIds.length},
+      params: {
+        'userId': request.userId,
+        'filterCount': request.filterIds.length
+      },
     );
 
     try {
@@ -231,11 +255,14 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
       final response = await _apiClient.delete<BulkDeleteResponseDto>(
         fullUri,
         body: tradeRequestBodyWithoutUserId(request.toJson()),
-        parser: (data) => BulkDeleteResponseDto.fromJson(data! as Map<String, dynamic>),
+        parser: (data) =>
+            BulkDeleteResponseDto.fromJson(data! as Map<String, dynamic>),
       );
 
-      AppLogger.info('Bulk delete completed successfully', tag: 'FavoriteFilterRemoteDataSource');
-      AppLogger.methodExit('bulkDeleteFavoriteFilters', tag: 'FavoriteFilterRemoteDataSource', result: 'success');
+      AppLogger.info('Bulk delete completed successfully',
+          tag: 'FavoriteFilterRemoteDataSource');
+      AppLogger.methodExit('bulkDeleteFavoriteFilters',
+          tag: 'FavoriteFilterRemoteDataSource', result: 'success');
 
       return response;
     } catch (e) {
@@ -264,11 +291,14 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
 
       final response = await _apiClient.put<FavoriteFilterResponseDto>(
         fullUri,
-        parser: (data) => FavoriteFilterResponseDto.fromJson(data! as Map<String, dynamic>),
+        parser: (data) =>
+            FavoriteFilterResponseDto.fromJson(data! as Map<String, dynamic>),
       );
 
-      AppLogger.info('Filter set as default successfully', tag: 'FavoriteFilterRemoteDataSource');
-      AppLogger.methodExit('setDefaultFilter', tag: 'FavoriteFilterRemoteDataSource', result: 'success');
+      AppLogger.info('Filter set as default successfully',
+          tag: 'FavoriteFilterRemoteDataSource');
+      AppLogger.methodExit('setDefaultFilter',
+          tag: 'FavoriteFilterRemoteDataSource', result: 'success');
 
       return response;
     } catch (e) {
@@ -282,4 +312,3 @@ class FavoriteFilterRemoteDataSourceImpl implements FavoriteFilterRemoteDataSour
     }
   }
 }
-

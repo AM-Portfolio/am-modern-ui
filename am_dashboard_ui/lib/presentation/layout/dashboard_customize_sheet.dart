@@ -44,8 +44,8 @@ class DashboardCustomizeSheet extends ConsumerWidget {
             Text(
               'Choose which widgets appear and their order.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 16),
             Flexible(

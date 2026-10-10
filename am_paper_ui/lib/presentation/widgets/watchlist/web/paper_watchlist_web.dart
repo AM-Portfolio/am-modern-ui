@@ -54,7 +54,8 @@ class _PaperWatchlistWebState extends State<PaperWatchlistWeb> {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const Spacer(),
-                if ((controller.refreshing && controller.pageNeedsQuoteSpinner) ||
+                if ((controller.refreshing &&
+                        controller.pageNeedsQuoteSpinner) ||
                     controller.loadingList)
                   SizedBox(
                     width: 14,
@@ -69,8 +70,9 @@ class _PaperWatchlistWebState extends State<PaperWatchlistWeb> {
                     tooltip: 'Refresh quotes',
                     iconSize: 18,
                     visualDensity: VisualDensity.compact,
-                    onPressed:
-                        pageRows.isEmpty ? null : controller.refreshVisibleQuotes,
+                    onPressed: pageRows.isEmpty
+                        ? null
+                        : controller.refreshVisibleQuotes,
                     icon: Icon(Icons.refresh, color: colors.textSecondary),
                   ),
               ],
@@ -124,9 +126,9 @@ class _PaperWatchlistWebState extends State<PaperWatchlistWeb> {
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Text(
                 'Quotes unavailable — tap refresh',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colors.textSecondary,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: colors.textSecondary),
               ),
             ),
           ],

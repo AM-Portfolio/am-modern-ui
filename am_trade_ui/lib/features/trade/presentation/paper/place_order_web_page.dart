@@ -164,7 +164,8 @@ class _Blotter extends StatelessWidget {
         child: Text(
           'No paper orders yet.',
           style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+            color:
+                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
           ),
         ),
       );

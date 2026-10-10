@@ -12,7 +12,7 @@ import 'watchlist_models.dart';
 /// Market search + live LTP / quotes — same path as Equity Insider.
 class PaperMarketClient {
   PaperMarketClient({MarketDataSdkService? sdk})
-      : _sdk = sdk ?? MarketDataSdkService();
+    : _sdk = sdk ?? MarketDataSdkService();
 
   final MarketDataSdkService _sdk;
   String? _bearer;
@@ -78,8 +78,9 @@ class PaperMarketClient {
   Future<List<WatchlistStock>> fetchNifty50Constituents() async {
     await _ensureAuth();
     try {
-      final result =
-          await _sdk.marketIndexApi.getLatestIndicesData(const ['NIFTY 50']);
+      final result = await _sdk.marketIndexApi.getLatestIndicesData(const [
+        'NIFTY 50',
+      ]);
       if (result != null && result.data.isNotEmpty) {
         return _mapIndexStocks(result.data);
       }
@@ -101,13 +102,16 @@ class PaperMarketClient {
       if (decoded is! List || decoded.isEmpty) return const [];
       final first = decoded.first;
       if (first is! Map) return const [];
-      final list = first['data'] as List? ?? first['stocks'] as List? ?? const [];
+      final list =
+          first['data'] as List? ?? first['stocks'] as List? ?? const [];
       final out = <WatchlistStock>[];
       for (final row in list) {
         if (row is! Map) continue;
         final sym = (row['symbol'] ?? '').toString().trim().toUpperCase();
         if (sym.isEmpty) continue;
-        final name = (row['companyName'] ?? row['name'] ?? sym).toString().trim();
+        final name = (row['companyName'] ?? row['name'] ?? sym)
+            .toString()
+            .trim();
         out.add(stockFromSymbol(sym, name: name.isEmpty ? sym : name));
       }
       return out;
@@ -127,10 +131,7 @@ class PaperMarketClient {
     return out;
   }
 
-  Future<List<SecurityDocument>?> search(
-    String query, {
-    int limit = 8,
-  }) async {
+  Future<List<SecurityDocument>?> search(String query, {int limit = 8}) async {
     await _ensureAuth();
     final q = query.trim();
     if (q.isEmpty) return const [];
@@ -197,18 +198,14 @@ class PaperMarketClient {
       }
       final futures = <Future<Map<String, Map<String, dynamic>>>>[];
       if (equity.isNotEmpty) {
-        futures.add(_fetchLiveLtpMap(
-          equity,
-          isIndexSymbol: false,
-          exchange: exchange,
-        ));
+        futures.add(
+          _fetchLiveLtpMap(equity, isIndexSymbol: false, exchange: exchange),
+        );
       }
       if (indices.isNotEmpty) {
-        futures.add(_fetchLiveLtpMap(
-          indices,
-          isIndexSymbol: true,
-          exchange: exchange,
-        ));
+        futures.add(
+          _fetchLiveLtpMap(indices, isIndexSymbol: true, exchange: exchange),
+        );
       }
       for (final part in await Future.wait(futures)) {
         dataMap.addAll(part);
@@ -268,7 +265,10 @@ class PaperMarketClient {
   }) async {
     if (symbols.isEmpty) return {};
     final ex = _normalizeExchange(exchange);
-    final joined = symbols.map(_bareSymbol).where((s) => s.isNotEmpty).join(',');
+    final joined = symbols
+        .map(_bareSymbol)
+        .where((s) => s.isNotEmpty)
+        .join(',');
     if (joined.isEmpty) return {};
     final root = await _fetchQuotesHttp(
       joined,
@@ -410,13 +410,15 @@ class PaperMarketClient {
   }) async {
     try {
       final uri = Uri.parse('${EnvDomains.market}/v1/market-data/live-ltp')
-          .replace(queryParameters: {
-        'symbols': symbols,
-        'exchange': _normalizeExchange(exchange),
-        'isIndexSymbol': isIndexSymbol.toString(),
-        'timeframe': '1D',
-        'refresh': refresh.toString(),
-      });
+          .replace(
+            queryParameters: {
+              'symbols': symbols,
+              'exchange': _normalizeExchange(exchange),
+              'isIndexSymbol': isIndexSymbol.toString(),
+              'timeframe': '1D',
+              'refresh': refresh.toString(),
+            },
+          );
       final headers = <String, String>{
         'Accept': 'application/json',
         if (_bearer != null && _bearer!.isNotEmpty)
@@ -446,11 +448,13 @@ class PaperMarketClient {
   }) async {
     try {
       final uri = Uri.parse('${EnvDomains.market}/v1/market-data/quotes')
-          .replace(queryParameters: {
-        'symbols': symbol,
-        'exchange': _normalizeExchange(exchange),
-        'refresh': forceRefresh.toString(),
-      });
+          .replace(
+            queryParameters: {
+              'symbols': symbol,
+              'exchange': _normalizeExchange(exchange),
+              'refresh': forceRefresh.toString(),
+            },
+          );
       final headers = <String, String>{
         'Accept': 'application/json',
         if (_bearer != null && _bearer!.isNotEmpty)
@@ -562,21 +566,19 @@ class PaperMarketClient {
 
     final prices = _parsePriceFields(item);
     final ohlc = item['ohlc'] is Map ? item['ohlc'] as Map : null;
-    final openRaw = _asDouble(item['open'] ??
-            item['openPrice'] ??
-            ohlc?['open']) ??
+    final openRaw =
+        _asDouble(item['open'] ?? item['openPrice'] ?? ohlc?['open']) ??
         prices.open;
-    final highRaw = _asDouble(item['high'] ??
-            item['highPrice'] ??
-            ohlc?['high']) ??
+    final highRaw =
+        _asDouble(item['high'] ?? item['highPrice'] ?? ohlc?['high']) ??
         prices.high;
-    final lowRaw = _asDouble(item['low'] ??
-            item['lowPrice'] ??
-            ohlc?['low']) ??
+    final lowRaw =
+        _asDouble(item['low'] ?? item['lowPrice'] ?? ohlc?['low']) ??
         prices.low;
-    final prev = _asDouble(item['previousClose'] ??
-            item['previous_close'] ??
-            ohlc?['close']) ??
+    final prev =
+        _asDouble(
+          item['previousClose'] ?? item['previous_close'] ?? ohlc?['close'],
+        ) ??
         prices.previousClose;
     // Provider often sends 0.0 for missing OHLC outside session.
     final open = (openRaw != null && openRaw > 0) ? openRaw : null;
@@ -589,15 +591,18 @@ class PaperMarketClient {
     final depth = item['marketDepth'] ?? item['depth'] ?? item['market_depth'];
     final buy = _parseDepthSide(depth, isBuy: true);
     final sell = _parseDepthSide(depth, isBuy: false);
-    final volume = (_asDouble(item['volume'] ??
-                item['totalTradedQuantity'] ??
-                item['total_traded_quantity'] ??
-                item['totalTradedVolume'] ??
-                item['tradedQuantity'] ??
-                item['vtt'] ??
-                item['vol']) ??
-            0)
-        .round();
+    final volume =
+        (_asDouble(
+                  item['volume'] ??
+                      item['totalTradedQuantity'] ??
+                      item['total_traded_quantity'] ??
+                      item['totalTradedVolume'] ??
+                      item['tradedQuantity'] ??
+                      item['vtt'] ??
+                      item['vol'],
+                ) ??
+                0)
+            .round();
 
     return QuoteDetail(
       symbol: sym,
@@ -713,7 +718,8 @@ class PaperMarketClient {
   }
 
   _PriceFields _parsePriceFields(Map item) {
-    final lp = _asDouble(
+    final lp =
+        _asDouble(
           item['lastPrice'] ??
               item['last_price'] ??
               item['ltp'] ??
@@ -722,7 +728,8 @@ class PaperMarketClient {
         ) ??
         0;
     final prev = _asDouble(item['previousClose'] ?? item['previous_close']);
-    final change = _asDouble(
+    final change =
+        _asDouble(
           item['change'] ??
               item['net_change'] ??
               item['dayChange'] ??
@@ -730,7 +737,8 @@ class PaperMarketClient {
               item['chg'],
         ) ??
         (prev != null && prev > 0 && lp > 0 ? lp - prev : 0.0);
-    final changePct = _asDouble(
+    final changePct =
+        _asDouble(
           item['changePercent'] ??
               item['change_percent'] ??
               item['pChange'] ??
@@ -769,11 +777,13 @@ class PaperMarketClient {
       final price = _asDouble(e['price'] ?? e['p']);
       final qty = (_asDouble(e['quantity'] ?? e['qty'] ?? e['q']) ?? 0).round();
       if (price == null || price <= 0) continue;
-      out.add(DepthLevel(
-        price: price,
-        quantity: qty,
-        orders: (_asDouble(e['orders'] ?? e['orderCount']))?.round(),
-      ));
+      out.add(
+        DepthLevel(
+          price: price,
+          quantity: qty,
+          orders: (_asDouble(e['orders'] ?? e['orderCount']))?.round(),
+        ),
+      );
     }
     return out;
   }

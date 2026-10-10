@@ -33,7 +33,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
   // Subscription management
   bool _isSubscribed = false;
   StreamSubscription? _socketSubscription;
-  
+
   String? _subPortfolioId;
   String? _lastSentPortfolioId;
   DateTime? _lastStatusErrorTime;
@@ -64,7 +64,11 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         );
         emit(currentState.copyWith(summary: summary, isRefreshing: false));
       } catch (e) {
-        CommonLogger.error('Failed to refresh summary for timeframe $_currentTimeFrame', error: e, tag: 'PortfolioCubit');
+        CommonLogger.error(
+          'Failed to refresh summary for timeframe $_currentTimeFrame',
+          error: e,
+          tag: 'PortfolioCubit',
+        );
         emit(currentState.copyWith(isRefreshing: false));
       }
     }
@@ -114,8 +118,9 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       if (status == StompStatus.error) {
         // Throttle error logs to once every 30 seconds
         final now = DateTime.now();
-        if (_lastStatusErrorTime == null || 
-            now.difference(_lastStatusErrorTime!) > const Duration(seconds: 30)) {
+        if (_lastStatusErrorTime == null ||
+            now.difference(_lastStatusErrorTime!) >
+                const Duration(seconds: 30)) {
           CommonLogger.info(
             '[$_debugId] PortfolioCubit: Status changed to $status (Throttled)',
             tag: 'PortfolioCubit',
@@ -128,7 +133,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
           tag: 'PortfolioCubit',
         );
       }
-      
+
       if (status == StompStatus.connected && _portfolioStreamingAllowed) {
         CommonLogger.info(
           '[$_debugId] PortfolioCubit: Connected event received, calling _performSubscription',
@@ -166,8 +171,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
     if (_subPortfolioId != null &&
         (forceResubscribe || _lastSentPortfolioId != _subPortfolioId)) {
       final traceId = Uuid().v4();
-      final body =
-          '{"portfolioId": "$_subPortfolioId"}';
+      final body = '{"portfolioId": "$_subPortfolioId"}';
 
       CommonLogger.info(
         'Triggering calculation for portfolio: $_subPortfolioId',
@@ -318,7 +322,9 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       );
 
       // Progressive Loading: Fetch Summary first (Fast)
-      final summary = await _portfolioService.getPortfolioSummary(_currentTimeFrame);
+      final summary = await _portfolioService.getPortfolioSummary(
+        _currentTimeFrame,
+      );
 
       if (!isClosed) {
         emit(
@@ -398,9 +404,11 @@ class PortfolioCubit extends Cubit<PortfolioState> {
     }
 
     try {
-      final summary = await _portfolioService.getPortfolioSummary(_currentTimeFrame);
+      final summary = await _portfolioService.getPortfolioSummary(
+        _currentTimeFrame,
+      );
       final holdings = await _portfolioService.getPortfolioHoldings();
-      
+
       if (!isClosed) {
         emit(
           PortfolioLoaded(
@@ -412,7 +420,11 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         );
       }
     } catch (e) {
-      CommonLogger.error('loadAllPortfolios Error', error: e, tag: 'PortfolioCubit');
+      CommonLogger.error(
+        'loadAllPortfolios Error',
+        error: e,
+        tag: 'PortfolioCubit',
+      );
       if (!isClosed) {
         emit(PortfolioError(e.toString(), portfolioList: state.portfolioList));
       }
@@ -445,8 +457,10 @@ class PortfolioCubit extends Cubit<PortfolioState> {
     );
 
     try {
-      final cachedHoldings = await _portfolioService.getCachedPortfolioHoldingsById(portfolioId);
-      final cachedSummary = await _portfolioService.getCachedPortfolioSummaryById(portfolioId);
+      final cachedHoldings = await _portfolioService
+          .getCachedPortfolioHoldingsById(portfolioId);
+      final cachedSummary = await _portfolioService
+          .getCachedPortfolioSummaryById(portfolioId);
 
       if (cachedHoldings != null && cachedSummary != null) {
         if (!isClosed) {
@@ -463,7 +477,12 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       } else {
         if (!isClosed) {
           if (state is PortfolioLoaded) {
-            emit((state as PortfolioLoaded).copyWith(isStale: true, isHoldingsLoading: true));
+            emit(
+              (state as PortfolioLoaded).copyWith(
+                isStale: true,
+                isHoldingsLoading: true,
+              ),
+            );
           } else {
             emit(PortfolioLoading(portfolioList: state.portfolioList));
           }
@@ -472,7 +491,12 @@ class PortfolioCubit extends Cubit<PortfolioState> {
     } catch (e) {
       if (!isClosed) {
         if (state is PortfolioLoaded) {
-          emit((state as PortfolioLoaded).copyWith(isStale: true, isHoldingsLoading: true));
+          emit(
+            (state as PortfolioLoaded).copyWith(
+              isStale: true,
+              isHoldingsLoading: true,
+            ),
+          );
         } else {
           emit(PortfolioLoading(portfolioList: state.portfolioList));
         }
@@ -505,7 +529,9 @@ class PortfolioCubit extends Cubit<PortfolioState> {
       }
 
       // Then fetch Holdings (Slow)
-      final holdings = await _portfolioService.getPortfolioHoldingsById(portfolioId);
+      final holdings = await _portfolioService.getPortfolioHoldingsById(
+        portfolioId,
+      );
       sw.stop();
       ProductTelemetry.instance.widgetTiming(
         widget: 'portfolio_holdings',
@@ -586,9 +612,7 @@ class PortfolioCubit extends Cubit<PortfolioState> {
   }
 
   /// Load only portfolio summary (without holdings) for overview page
-  Future<void> loadPortfolioSummaryOnly(
-    String portfolioId,
-  ) async {
+  Future<void> loadPortfolioSummaryOnly(String portfolioId) async {
     CommonLogger.methodEntry(
       'loadPortfolioSummaryOnly',
       tag: 'PortfolioCubit',
@@ -748,7 +772,10 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         // Use portfolio service to refresh data by portfolio ID
         final results = await Future.wait([
           _portfolioService.getPortfolioHoldingsById(portfolioId),
-          _portfolioService.getPortfolioSummaryById(portfolioId, _currentTimeFrame),
+          _portfolioService.getPortfolioSummaryById(
+            portfolioId,
+            _currentTimeFrame,
+          ),
         ]);
 
         final holdings = results[0] as PortfolioHoldings;
@@ -942,15 +969,19 @@ class PortfolioCubit extends Cubit<PortfolioState> {
         // 2. Update Summary
         double newTotalGainLoss = dto.totalGainLoss;
         double newTotalGainLossPercentage = dto.totalGainLossPercentage;
-        
+
         if (_currentTimeFrame != 'all') {
-          final baselineWealth = currentState.summary.totalValue - currentState.summary.totalGainLoss;
+          final baselineWealth =
+              currentState.summary.totalValue -
+              currentState.summary.totalGainLoss;
           if (baselineWealth > 0) {
             newTotalGainLoss = dto.currentValue - baselineWealth;
-            newTotalGainLossPercentage = (newTotalGainLoss / baselineWealth) * 100.0;
+            newTotalGainLossPercentage =
+                (newTotalGainLoss / baselineWealth) * 100.0;
           } else {
             newTotalGainLoss = currentState.summary.totalGainLoss;
-            newTotalGainLossPercentage = currentState.summary.totalGainLossPercentage;
+            newTotalGainLossPercentage =
+                currentState.summary.totalGainLossPercentage;
           }
         }
 

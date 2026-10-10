@@ -43,12 +43,16 @@ class AdvancedChartCanvas extends StatefulWidget {
   final ChartTypeId chartType;
   final bool isMock;
   final void Function(ChartBar? bar)? onCrosshair;
+
   /// Synced multi-pane crosshair: show nearest bar at this time when not locally hovering.
   final DateTime? externalCrosshairTime;
+
   /// When false, pointer drag does not pan (drawing tools own the gestures).
   final bool panZoomEnabled;
+
   /// Fired when wheel/pan requests older data past the left edge of loaded bars.
   final VoidCallback? onNeedOlderHistory;
+
   /// Increment to reset zoom/pan (Fit).
   final int viewEpoch;
 
@@ -119,7 +123,8 @@ class _AdvancedChartCanvasState extends State<AdvancedChartCanvas> {
     final visible = _visibleCount(n);
     final maxStart = math.max(0, n - visible);
     final startBefore = _startIndex(n, visible);
-    final panDelta = -e.scrollDelta.dy; // invert: down dy>0 → older → decrease start
+    final panDelta =
+        -e.scrollDelta.dy; // invert: down dy>0 → older → decrease start
     setState(() {
       _pan += panDelta;
     });
@@ -200,8 +205,10 @@ class _AdvancedChartCanvasState extends State<AdvancedChartCanvas> {
                   left: 12,
                   top: 8,
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.orange.withValues(alpha: 0.85),
                       borderRadius: BorderRadius.circular(4),
@@ -278,8 +285,10 @@ class _OhlcBadge extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(fmt.format(bar.time),
-                style: const TextStyle(fontWeight: FontWeight.w600)),
+            Text(
+              fmt.format(bar.time),
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
             Text('O ${bar.open.toStringAsFixed(2)}'),
             Text('H ${bar.high.toStringAsFixed(2)}'),
             Text('L ${bar.low.toStringAsFixed(2)}'),
@@ -336,8 +345,7 @@ class _ChartPainter extends CustomPainter {
         .max(10, (math.min(bars.length, 80) / zoom).round())
         .clamp(10, bars.length);
     final maxStart = math.max(0, bars.length - visible);
-    final start =
-        (maxStart + (-pan / 8).round()).clamp(0, maxStart);
+    final start = (maxStart + (-pan / 8).round()).clamp(0, maxStart);
     final end = math.min(bars.length - 1, start + visible - 1);
     final slice = bars.sublist(start, end + 1);
 
@@ -387,8 +395,14 @@ class _ChartPainter extends CustomPainter {
       case ChartTypeId.line:
       case ChartTypeId.area:
       case ChartTypeId.baseline:
-        _paintLine(canvas, plot, slice, slot, yFor,
-            fill: chartType != ChartTypeId.line);
+        _paintLine(
+          canvas,
+          plot,
+          slice,
+          slot,
+          yFor,
+          fill: chartType != ChartTypeId.line,
+        );
         break;
       case ChartTypeId.columns:
         _paintColumns(canvas, plot, slice, slot, yFor);
@@ -416,9 +430,7 @@ class _ChartPainter extends CustomPainter {
         break;
     }
 
-    if (hoverIndex != null &&
-        hoverIndex! >= start &&
-        hoverIndex! <= end) {
+    if (hoverIndex != null && hoverIndex! >= start && hoverIndex! <= end) {
       final i = hoverIndex! - start;
       final cx = plot.left + (i + 0.5) * slot;
       canvas.drawLine(
@@ -505,9 +517,15 @@ class _ChartPainter extends CustomPainter {
         ..strokeCap = StrokeCap.round;
       canvas.drawLine(Offset(cx, yFor(b.high)), Offset(cx, yFor(b.low)), p);
       canvas.drawLine(
-          Offset(cx - slot * 0.25, yFor(b.open)), Offset(cx, yFor(b.open)), p);
+        Offset(cx - slot * 0.25, yFor(b.open)),
+        Offset(cx, yFor(b.open)),
+        p,
+      );
       canvas.drawLine(
-          Offset(cx, yFor(b.close)), Offset(cx + slot * 0.25, yFor(b.close)), p);
+        Offset(cx, yFor(b.close)),
+        Offset(cx + slot * 0.25, yFor(b.close)),
+        p,
+      );
     }
   }
 
@@ -567,8 +585,12 @@ class _ChartPainter extends CustomPainter {
       final y0 = yFor(b.open);
       final y1 = yFor(b.close);
       canvas.drawRect(
-        Rect.fromLTRB(cx - slot * 0.3, math.min(y0, y1), cx + slot * 0.3,
-            math.max(y0, y1)),
+        Rect.fromLTRB(
+          cx - slot * 0.3,
+          math.min(y0, y1),
+          cx + slot * 0.3,
+          math.max(y0, y1),
+        ),
         Paint()..color = color.withValues(alpha: 0.7),
       );
     }

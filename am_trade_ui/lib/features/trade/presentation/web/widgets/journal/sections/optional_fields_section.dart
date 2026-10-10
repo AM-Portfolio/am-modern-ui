@@ -50,7 +50,8 @@ class _OptionalFieldsSectionState extends State<OptionalFieldsSection> {
   void initState() {
     super.initState();
     _watchlistController = TextEditingController();
-    _reflectionController = TextEditingController(text: widget.initialReflection ?? '');
+    _reflectionController =
+        TextEditingController(text: widget.initialReflection ?? '');
     _watchlistItems = List.from(widget.initialWatchlist ?? []);
   }
 
@@ -105,7 +106,10 @@ class _OptionalFieldsSectionState extends State<OptionalFieldsSection> {
           ),
 
           // Trade ID field - only show in edit mode or if it has a value
-          if (widget.isEditMode || hasTradeId) ...[const SizedBox(height: 12), _buildTradeIdField(theme)],
+          if (widget.isEditMode || hasTradeId) ...[
+            const SizedBox(height: 12),
+            _buildTradeIdField(theme)
+          ],
 
           // URL section - only show in edit mode or if URL exists
           if (widget.isEditMode || hasUrl) ...[
@@ -114,7 +118,8 @@ class _OptionalFieldsSectionState extends State<OptionalFieldsSection> {
               onTap: widget.onToggleUrlExpansion,
               borderRadius: BorderRadius.circular(8),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   border: Border.all(
                     color: widget.isUrlExpanded
@@ -122,28 +127,40 @@ class _OptionalFieldsSectionState extends State<OptionalFieldsSection> {
                         : theme.dividerColor.withOpacity(0.3),
                   ),
                   borderRadius: BorderRadius.circular(8),
-                  color: widget.isUrlExpanded ? theme.colorScheme.primaryContainer.withOpacity(0.2) : null,
+                  color: widget.isUrlExpanded
+                      ? theme.colorScheme.primaryContainer.withOpacity(0.2)
+                      : null,
                 ),
                 child: Row(
                   children: [
                     Icon(
                       Icons.link,
                       size: 18,
-                      color: widget.isUrlExpanded ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+                      color: widget.isUrlExpanded
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       widget.isUrlExpanded ? 'Add URL' : 'Add URL (optional)',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: widget.isUrlExpanded ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
-                        fontWeight: widget.isUrlExpanded ? FontWeight.w600 : FontWeight.normal,
+                        color: widget.isUrlExpanded
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.onSurfaceVariant,
+                        fontWeight: widget.isUrlExpanded
+                            ? FontWeight.w600
+                            : FontWeight.normal,
                       ),
                     ),
                     const Spacer(),
                     Icon(
-                      widget.isUrlExpanded ? Icons.expand_less : Icons.expand_more,
+                      widget.isUrlExpanded
+                          ? Icons.expand_less
+                          : Icons.expand_more,
                       size: 20,
-                      color: widget.isUrlExpanded ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+                      color: widget.isUrlExpanded
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurfaceVariant,
                     ),
                   ],
                 ),
@@ -156,41 +173,49 @@ class _OptionalFieldsSectionState extends State<OptionalFieldsSection> {
               _buildUrlField(theme),
               if (widget.urlPreview != null) ...[
                 const SizedBox(height: 8),
-                UrlPreviewWidget(url: widget.urlPreview!, onClose: widget.onClearUrl),
+                UrlPreviewWidget(
+                    url: widget.urlPreview!, onClose: widget.onClearUrl),
               ],
             ],
           ],
 
           // Pre-Market Watchlist Section
-          if (widget.isEditMode || hasWatchlist) ...[const SizedBox(height: 16), _buildWatchlistSection(theme)],
+          if (widget.isEditMode || hasWatchlist) ...[
+            const SizedBox(height: 16),
+            _buildWatchlistSection(theme)
+          ],
 
           // Post-Session Reflection Section
-          if (widget.isEditMode || hasReflection) ...[const SizedBox(height: 16), _buildReflectionSection(theme)],
+          if (widget.isEditMode || hasReflection) ...[
+            const SizedBox(height: 16),
+            _buildReflectionSection(theme)
+          ],
         ],
       ),
     );
   }
 
   Widget _buildTradeIdField(ThemeData theme) => Container(
-    decoration: BoxDecoration(
-      border: Border.all(color: theme.dividerColor.withOpacity(0.5)),
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: TextFormField(
-      controller: widget.tradeIdController,
-      decoration: const InputDecoration(
-        labelText: 'Trade ID (optional)',
-        floatingLabelBehavior: FloatingLabelBehavior.always,
-        floatingLabelAlignment: FloatingLabelAlignment.start,
-        hintText: 'Optional',
-        prefixIcon: const Icon(Icons.tag, size: 18),
-        border: InputBorder.none,
-        enabledBorder: InputBorder.none,
-        focusedBorder: InputBorder.none,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      ),
-    ),
-  );
+        decoration: BoxDecoration(
+          border: Border.all(color: theme.dividerColor.withOpacity(0.5)),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: TextFormField(
+          controller: widget.tradeIdController,
+          decoration: const InputDecoration(
+            labelText: 'Trade ID (optional)',
+            floatingLabelBehavior: FloatingLabelBehavior.always,
+            floatingLabelAlignment: FloatingLabelAlignment.start,
+            hintText: 'Optional',
+            prefixIcon: const Icon(Icons.tag, size: 18),
+            border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          ),
+        ),
+      );
 
   Widget _buildUrlField(ThemeData theme) {
     final hasUrl = widget.urlController.text.trim().isNotEmpty;
@@ -198,11 +223,14 @@ class _OptionalFieldsSectionState extends State<OptionalFieldsSection> {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(
-          color: hasUrl ? theme.colorScheme.primary.withOpacity(0.5) : theme.dividerColor.withOpacity(0.5),
+          color: hasUrl
+              ? theme.colorScheme.primary.withOpacity(0.5)
+              : theme.dividerColor.withOpacity(0.5),
           width: hasUrl ? 1.5 : 1,
         ),
         borderRadius: BorderRadius.circular(12),
-        color: hasUrl ? theme.colorScheme.primaryContainer.withOpacity(0.1) : null,
+        color:
+            hasUrl ? theme.colorScheme.primaryContainer.withOpacity(0.1) : null,
       ),
       child: TextFormField(
         controller: widget.urlController,
@@ -211,136 +239,154 @@ class _OptionalFieldsSectionState extends State<OptionalFieldsSection> {
           floatingLabelBehavior: FloatingLabelBehavior.always,
           floatingLabelAlignment: FloatingLabelAlignment.start,
           hintText: 'https://tradingview.com/chart/...',
-          prefixIcon: Icon(Icons.link, size: 20, color: hasUrl ? theme.colorScheme.primary : null),
+          prefixIcon: Icon(Icons.link,
+              size: 20, color: hasUrl ? theme.colorScheme.primary : null),
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
       ),
     );
   }
 
   Widget _buildWatchlistSection(ThemeData theme) => Container(
-    decoration: BoxDecoration(
-      border: Border.all(color: theme.colorScheme.secondary.withOpacity(0.2)),
-      borderRadius: BorderRadius.circular(12),
-      color: theme.colorScheme.secondary.withOpacity(0.08),
-    ),
-    padding: const EdgeInsets.all(12),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+        decoration: BoxDecoration(
+          border:
+              Border.all(color: theme.colorScheme.secondary.withOpacity(0.2)),
+          borderRadius: BorderRadius.circular(12),
+          color: theme.colorScheme.secondary.withOpacity(0.08),
+        ),
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.visibility, size: 18, color: theme.colorScheme.secondary),
-            const SizedBox(width: 8),
-            Text(
-              'Pre-Market Watchlist',
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.secondary,
-              ),
+            Row(
+              children: [
+                Icon(Icons.visibility,
+                    size: 18, color: theme.colorScheme.secondary),
+                const SizedBox(width: 8),
+                Text(
+                  'Pre-Market Watchlist',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.secondary,
+                  ),
+                ),
+              ],
             ),
+            const SizedBox(height: 12),
+            // Watchlist input row
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _watchlistController,
+                    decoration: InputDecoration(
+                      hintText: 'Add stock symbol (e.g., AAPL, NIFTY50)',
+                      prefixIcon: Icon(Icons.search,
+                          size: 18, color: theme.colorScheme.secondary),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 10),
+                      isDense: true,
+                    ),
+                    onSubmitted: (_) => _addWatchlistItem(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton.filled(
+                    onPressed: _addWatchlistItem, icon: const Icon(Icons.add)),
+              ],
+            ),
+            // Watchlist items
+            if (_watchlistItems.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _watchlistItems.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final item = entry.value;
+                  return Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.secondary.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                          color: theme.colorScheme.secondary.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          item,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.secondary,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        GestureDetector(
+                          onTap: () => _removeWatchlistItem(index),
+                          child: Icon(Icons.close,
+                              size: 14,
+                              color:
+                                  theme.colorScheme.secondary.withOpacity(0.7)),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
           ],
         ),
-        const SizedBox(height: 12),
-        // Watchlist input row
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _watchlistController,
-                decoration: InputDecoration(
-                  hintText: 'Add stock symbol (e.g., AAPL, NIFTY50)',
-                  prefixIcon: Icon(Icons.search, size: 18, color: theme.colorScheme.secondary),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  isDense: true,
-                ),
-                onSubmitted: (_) => _addWatchlistItem(),
-              ),
-            ),
-            const SizedBox(width: 8),
-            IconButton.filled(onPressed: _addWatchlistItem, icon: const Icon(Icons.add)),
-          ],
-        ),
-        // Watchlist items
-        if (_watchlistItems.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _watchlistItems.asMap().entries.map((entry) {
-              final index = entry.key;
-              final item = entry.value;
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.secondary.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: theme.colorScheme.secondary.withOpacity(0.3)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      item,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.secondary,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    GestureDetector(
-                      onTap: () => _removeWatchlistItem(index),
-                      child: Icon(Icons.close, size: 14, color: theme.colorScheme.secondary.withOpacity(0.7)),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ],
-    ),
-  );
+      );
 
   Widget _buildReflectionSection(ThemeData theme) => Container(
-    decoration: BoxDecoration(
-      border: Border.all(color: theme.colorScheme.tertiary.withOpacity(0.2)),
-      borderRadius: BorderRadius.circular(12),
-      color: theme.colorScheme.tertiary.withOpacity(0.08),
-    ),
-    padding: const EdgeInsets.all(12),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+        decoration: BoxDecoration(
+          border:
+              Border.all(color: theme.colorScheme.tertiary.withOpacity(0.2)),
+          borderRadius: BorderRadius.circular(12),
+          color: theme.colorScheme.tertiary.withOpacity(0.08),
+        ),
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.lightbulb, size: 18, color: theme.colorScheme.tertiary),
-            const SizedBox(width: 8),
-            Text(
-              'Post-Session Thoughts',
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.tertiary,
+            Row(
+              children: [
+                Icon(Icons.lightbulb,
+                    size: 18, color: theme.colorScheme.tertiary),
+                const SizedBox(width: 8),
+                Text(
+                  'Post-Session Thoughts',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.tertiary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _reflectionController,
+              maxLines: 3,
+              onChanged: (value) => widget.onReflectionChanged?.call(value),
+              decoration: InputDecoration(
+                hintText:
+                    'What did you learn? What mistakes did you make? How will you improve?',
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _reflectionController,
-          maxLines: 3,
-          onChanged: (value) => widget.onReflectionChanged?.call(value),
-          decoration: InputDecoration(
-            hintText: 'What did you learn? What mistakes did you make? How will you improve?',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          ),
-        ),
-      ],
-    ),
-  );
+      );
 }

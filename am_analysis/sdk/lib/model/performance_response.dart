@@ -64,26 +64,29 @@ class PerformanceResponse {
   String? errorMessage;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is PerformanceResponse &&
-    other.portfolioId == portfolioId &&
-    other.timeFrame == timeFrame &&
-    other.totalReturnPercentage == totalReturnPercentage &&
-    other.totalReturnValue == totalReturnValue &&
-    _deepEquality.equals(other.chartData, chartData) &&
-    other.errorMessage == errorMessage;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PerformanceResponse &&
+          other.portfolioId == portfolioId &&
+          other.timeFrame == timeFrame &&
+          other.totalReturnPercentage == totalReturnPercentage &&
+          other.totalReturnValue == totalReturnValue &&
+          _deepEquality.equals(other.chartData, chartData) &&
+          other.errorMessage == errorMessage;
 
   @override
   int get hashCode =>
-    // ignore: unnecessary_parenthesis
-    (portfolioId == null ? 0 : portfolioId!.hashCode) +
-    (timeFrame == null ? 0 : timeFrame!.hashCode) +
-    (totalReturnPercentage == null ? 0 : totalReturnPercentage!.hashCode) +
-    (totalReturnValue == null ? 0 : totalReturnValue!.hashCode) +
-    (chartData.hashCode) +
-    (errorMessage == null ? 0 : errorMessage!.hashCode);
+      // ignore: unnecessary_parenthesis
+      (portfolioId == null ? 0 : portfolioId!.hashCode) +
+      (timeFrame == null ? 0 : timeFrame!.hashCode) +
+      (totalReturnPercentage == null ? 0 : totalReturnPercentage!.hashCode) +
+      (totalReturnValue == null ? 0 : totalReturnValue!.hashCode) +
+      (chartData.hashCode) +
+      (errorMessage == null ? 0 : errorMessage!.hashCode);
 
   @override
-  String toString() => 'PerformanceResponse[portfolioId=$portfolioId, timeFrame=$timeFrame, totalReturnPercentage=$totalReturnPercentage, totalReturnValue=$totalReturnValue, chartData=$chartData, errorMessage=$errorMessage]';
+  String toString() =>
+      'PerformanceResponse[portfolioId=$portfolioId, timeFrame=$timeFrame, totalReturnPercentage=$totalReturnPercentage, totalReturnValue=$totalReturnValue, chartData=$chartData, errorMessage=$errorMessage]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -107,7 +110,7 @@ class PerformanceResponse {
     } else {
       json[r'totalReturnValue'] = null;
     }
-      json[r'chartData'] = this.chartData;
+    json[r'chartData'] = this.chartData;
     if (this.errorMessage != null) {
       json[r'errorMessage'] = this.errorMessage;
     } else {
@@ -128,8 +131,10 @@ class PerformanceResponse {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "PerformanceResponse[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "PerformanceResponse[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "PerformanceResponse[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "PerformanceResponse[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -137,8 +142,13 @@ class PerformanceResponse {
       return PerformanceResponse(
         portfolioId: mapValueOfType<String>(json, r'portfolioId'),
         timeFrame: mapValueOfType<String>(json, r'timeFrame'),
-        totalReturnPercentage: mapValueOfType<double>(json, r'totalReturnPercentage'),
-        totalReturnValue: json[r'totalReturnValue'] == null ? null : (json[r'totalReturnValue'] is num ? json[r'totalReturnValue'] : num.tryParse('${json[r'totalReturnValue']}')),
+        totalReturnPercentage:
+            mapValueOfType<double>(json, r'totalReturnPercentage'),
+        totalReturnValue: json[r'totalReturnValue'] == null
+            ? null
+            : (json[r'totalReturnValue'] is num
+                ? json[r'totalReturnValue']
+                : num.tryParse('${json[r'totalReturnValue']}')),
         chartData: DataPoint.listFromJson(json[r'chartData']),
         errorMessage: mapValueOfType<String>(json, r'errorMessage'),
       );
@@ -146,7 +156,10 @@ class PerformanceResponse {
     return null;
   }
 
-  static List<PerformanceResponse> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<PerformanceResponse> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <PerformanceResponse>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -174,20 +187,24 @@ class PerformanceResponse {
   }
 
   // maps a json object with a list of PerformanceResponse-objects as value to a dart map
-  static Map<String, List<PerformanceResponse>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<PerformanceResponse>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<PerformanceResponse>>{};
     if (json is Map && json.isNotEmpty) {
       // ignore: parameter_assignments
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = PerformanceResponse.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = PerformanceResponse.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

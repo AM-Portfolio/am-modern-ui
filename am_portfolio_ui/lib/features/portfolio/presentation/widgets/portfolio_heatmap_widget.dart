@@ -15,7 +15,6 @@ import '../cubit/portfolio_state.dart';
 import '../mappers/sector_heatmap_converter.dart';
 import 'portfolio_metric_card.dart';
 
-
 /// Platform UI settings for the portfolio heatmap page widget
 /// (distinct from presentation/config/portfolio_heatmap_config.dart).
 class PortfolioHeatmapUiConfig {
@@ -157,7 +156,9 @@ class _PortfolioHeatmapWidgetState
               'Analytics failed, skipping heatmap data load',
               tag: '${widget.config.logTag}.Data',
             );
-            portfolioHeatmapCubit.showError('Failed to load portfolio data. Please retry.');
+            portfolioHeatmapCubit.showError(
+              'Failed to load portfolio data. Please retry.',
+            );
             return;
           }
 
@@ -328,10 +329,10 @@ class _PortfolioHeatmapWidgetState
     final convertedHeatmapData = state.heatmapData;
 
     // Create configuration with selected layout
-    final baseSelectors = convertedHeatmapData.configuration.selectors ??
-        const SelectorConfig();
-    final baseLayout = convertedHeatmapData.configuration.layout ??
-        const LayoutConfig();
+    final baseSelectors =
+        convertedHeatmapData.configuration.selectors ?? const SelectorConfig();
+    final baseLayout =
+        convertedHeatmapData.configuration.layout ?? const LayoutConfig();
     final customConfig = convertedHeatmapData.configuration.copyWith(
       display: convertedHeatmapData.configuration.display?.copyWith(
         showPerformance: false, // Hides old default legend
@@ -341,8 +342,9 @@ class _PortfolioHeatmapWidgetState
         showLayoutSelector: widget.config.compactMode ? true : null,
       ),
       selectors: baseSelectors.copyWith(
-        selectorLayout:
-            widget.config.compactMode ? SelectorLayoutType.compact : null,
+        selectorLayout: widget.config.compactMode
+            ? SelectorLayoutType.compact
+            : null,
         showSectorSelector: widget.config.compactMode ? true : null,
         showMarketCapSelector: widget.config.compactMode ? true : null,
         showTimeFrameSelector: widget.config.compactMode ? false : null,
@@ -360,8 +362,9 @@ class _PortfolioHeatmapWidgetState
           .map((t) => t is HeatmapTileData ? t : HeatmapTileData.fromEntity(t))
           .toList();
     } else if (_selectedLayout == HeatmapLayoutType.treemap) {
-      workingTiles =
-          SectorHeatmapConverter.mergeSmallWeightTilesForTreemap(workingTiles);
+      workingTiles = SectorHeatmapConverter.mergeSmallWeightTilesForTreemap(
+        workingTiles,
+      );
     }
 
     workingTiles = workingTiles.map((tile) {
@@ -414,7 +417,11 @@ class _PortfolioHeatmapWidgetState
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.arrow_back, size: 16, color: ModuleColors.portfolio),
+                  Icon(
+                    Icons.arrow_back,
+                    size: 16,
+                    color: ModuleColors.portfolio,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     'Portfolio > ${_drillDownTile!.displayName}',
@@ -450,15 +457,16 @@ class _PortfolioHeatmapWidgetState
                   tag: '${widget.config.logTag}.Action',
                 );
               },
-              onFiltersChanged: ({timeFrame, metric, sector, marketCap, layout}) {
-                _onFiltersChanged(
-                  timeFrame: timeFrame,
-                  metric: metric,
-                  sector: sector,
-                  marketCap: marketCap,
-                  layout: layout,
-                );
-              },
+              onFiltersChanged:
+                  ({timeFrame, metric, sector, marketCap, layout}) {
+                    _onFiltersChanged(
+                      timeFrame: timeFrame,
+                      metric: metric,
+                      sector: sector,
+                      marketCap: marketCap,
+                      layout: layout,
+                    );
+                  },
               templateType: widget.config.templateType,
             ),
           )
@@ -489,24 +497,24 @@ class _PortfolioHeatmapWidgetState
                         tag: '${widget.config.logTag}.Action',
                       );
                     },
-                    onFiltersChanged: ({timeFrame, metric, sector, marketCap, layout}) {
-                      _onFiltersChanged(
-                        timeFrame: timeFrame,
-                        metric: metric,
-                        sector: sector,
-                        marketCap: marketCap,
-                        layout: layout,
-                      );
-                    },
+                    onFiltersChanged:
+                        ({timeFrame, metric, sector, marketCap, layout}) {
+                          _onFiltersChanged(
+                            timeFrame: timeFrame,
+                            metric: metric,
+                            sector: sector,
+                            marketCap: marketCap,
+                            layout: layout,
+                          );
+                        },
                     templateType: widget.config.templateType,
                   ),
                 );
-                
+
                 return heatmapContent;
               },
             ),
           ),
-
       ],
     );
   }
@@ -599,8 +607,8 @@ class _PortfolioHeatmapWidgetState
                     accentColor: worstSectorChange.isEmpty
                         ? ModuleColors.portfolio
                         : (worstSectorChange.startsWith('-')
-                            ? context.marketNegative
-                            : context.marketPositive),
+                              ? context.marketNegative
+                              : context.marketPositive),
                     chromeColor: ModuleColors.portfolio,
                     isPositive: worstSectorChange.isEmpty
                         ? null
@@ -612,12 +620,13 @@ class _PortfolioHeatmapWidgetState
 
                 if (isWide) {
                   return Row(
-                    children: cards
-                        .map((c) => Expanded(child: c))
-                        .toList()
-                        .expand((w) => [w, const SizedBox(width: 12)])
-                        .toList()
-                      ..removeLast(),
+                    children:
+                        cards
+                            .map((c) => Expanded(child: c))
+                            .toList()
+                            .expand((w) => [w, const SizedBox(width: 12)])
+                            .toList()
+                          ..removeLast(),
                   );
                 } else {
                   return Wrap(
@@ -681,11 +690,7 @@ class _PortfolioHeatmapWidgetState
             runSpacing: 10,
             crossAxisAlignment: WrapCrossAlignment.center,
             alignment: WrapAlignment.spaceBetween,
-            children: [
-              titleWidget,
-              filterRow,
-              timeframeBar,
-            ],
+            children: [titleWidget, filterRow, timeframeBar],
           );
         }
 
@@ -694,14 +699,14 @@ class _PortfolioHeatmapWidgetState
           children: [
             // Left: Title
             titleWidget,
-            
+
             const SizedBox(width: 20),
-            
+
             // Center-left: Filters grouped beside title
             filterRow,
-            
+
             const Spacer(),
-            
+
             // Right: Timeframe Pills
             timeframeBar,
           ],
@@ -722,8 +727,12 @@ class _PortfolioHeatmapWidgetState
           child: CustomDropdown<SectorType>(
             value: _selectedSector ?? SectorType.all,
             items: SectorType.values
-                .map((item) => item.toDropdownItem(
-                    text: item.displayName, icon: Icons.category_outlined))
+                .map(
+                  (item) => item.toDropdownItem(
+                    text: item.displayName,
+                    icon: Icons.category_outlined,
+                  ),
+                )
                 .toList(),
             onChanged: (val) {
               if (val != null) _onFiltersChanged(sector: val);
@@ -739,8 +748,12 @@ class _PortfolioHeatmapWidgetState
           child: CustomDropdown<MarketCapType>(
             value: _selectedMarketCap ?? MarketCapType.all,
             items: MarketCapType.values
-                .map((item) => item.toDropdownItem(
-                    text: item.displayName, icon: Icons.pie_chart_outline))
+                .map(
+                  (item) => item.toDropdownItem(
+                    text: item.displayName,
+                    icon: Icons.pie_chart_outline,
+                  ),
+                )
                 .toList(),
             onChanged: (val) {
               if (val != null) _onFiltersChanged(marketCap: val);
@@ -756,8 +769,12 @@ class _PortfolioHeatmapWidgetState
           child: CustomDropdown<HeatmapLayoutType>(
             value: _selectedLayout,
             items: HeatmapLayoutType.values
-                .map((item) => item.toDropdownItem(
-                    text: item.displayName, icon: Icons.grid_view_outlined))
+                .map(
+                  (item) => item.toDropdownItem(
+                    text: item.displayName,
+                    icon: Icons.grid_view_outlined,
+                  ),
+                )
                 .toList(),
             onChanged: (val) {
               if (val != null) _onFiltersChanged(layout: val);
@@ -769,8 +786,6 @@ class _PortfolioHeatmapWidgetState
       ],
     );
   }
-
-
 
   /// Builds empty state UI
   Widget _buildEmptyWidget(PortfolioHeatmapEmpty state) {
@@ -788,7 +803,11 @@ class _PortfolioHeatmapWidgetState
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.folder_open, size: iconSize, color: context.statusNeutral),
+            Icon(
+              Icons.folder_open,
+              size: iconSize,
+              color: context.statusNeutral,
+            ),
             const SizedBox(height: 24),
             Text(
               state.message,
@@ -820,7 +839,11 @@ class _PortfolioHeatmapWidgetState
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.bar_chart_outlined, size: iconSize, color: context.statusNeutral),
+          Icon(
+            Icons.bar_chart_outlined,
+            size: iconSize,
+            color: context.statusNeutral,
+          ),
           const SizedBox(height: 16),
           Text(
             'Loading ${widget.config.compactMode ? '' : 'portfolio '}data...',

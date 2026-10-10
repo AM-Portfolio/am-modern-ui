@@ -16,30 +16,30 @@ enum ChartDrawTool {
 
 extension ChartDrawToolX on ChartDrawTool {
   String get label => switch (this) {
-        ChartDrawTool.none => 'Cursor',
-        ChartDrawTool.trendLine => 'Trend line',
-        ChartDrawTool.hLine => 'Horizontal',
-        ChartDrawTool.vLine => 'Vertical',
-        ChartDrawTool.ray => 'Ray',
-        ChartDrawTool.channel => 'Channel',
-        ChartDrawTool.fibRetrace => 'Fib retrace',
-        ChartDrawTool.note => 'Note',
-        ChartDrawTool.measure => 'Measure',
-        ChartDrawTool.eraser => 'Eraser',
-      };
+    ChartDrawTool.none => 'Cursor',
+    ChartDrawTool.trendLine => 'Trend line',
+    ChartDrawTool.hLine => 'Horizontal',
+    ChartDrawTool.vLine => 'Vertical',
+    ChartDrawTool.ray => 'Ray',
+    ChartDrawTool.channel => 'Channel',
+    ChartDrawTool.fibRetrace => 'Fib retrace',
+    ChartDrawTool.note => 'Note',
+    ChartDrawTool.measure => 'Measure',
+    ChartDrawTool.eraser => 'Eraser',
+  };
 
   IconData get icon => switch (this) {
-        ChartDrawTool.none => Icons.mouse_outlined,
-        ChartDrawTool.trendLine => Icons.timeline,
-        ChartDrawTool.hLine => Icons.horizontal_rule,
-        ChartDrawTool.vLine => Icons.height,
-        ChartDrawTool.ray => Icons.north_east,
-        ChartDrawTool.channel => Icons.view_week_outlined,
-        ChartDrawTool.fibRetrace => Icons.stacked_line_chart,
-        ChartDrawTool.note => Icons.title,
-        ChartDrawTool.measure => Icons.straighten,
-        ChartDrawTool.eraser => Icons.delete_sweep_outlined,
-      };
+    ChartDrawTool.none => Icons.mouse_outlined,
+    ChartDrawTool.trendLine => Icons.timeline,
+    ChartDrawTool.hLine => Icons.horizontal_rule,
+    ChartDrawTool.vLine => Icons.height,
+    ChartDrawTool.ray => Icons.north_east,
+    ChartDrawTool.channel => Icons.view_week_outlined,
+    ChartDrawTool.fibRetrace => Icons.stacked_line_chart,
+    ChartDrawTool.note => Icons.title,
+    ChartDrawTool.measure => Icons.straighten,
+    ChartDrawTool.eraser => Icons.delete_sweep_outlined,
+  };
 
   /// Tools that need two clicks to complete.
   bool get needsTwoPoints =>

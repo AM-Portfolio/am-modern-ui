@@ -86,7 +86,11 @@ class BdKpiRow extends StatelessWidget {
   }
 
   List<Widget> _buildMetricCards(BuildContext context) {
-    final fmt = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
+    final fmt = NumberFormat.currency(
+      locale: 'en_IN',
+      symbol: '₹',
+      decimalDigits: 2,
+    );
     final hasMarket = BdDashboardMath.basketHasMarketPrices(basket);
     final pnlSign = basket.totalPnL >= 0 ? '+' : '';
     final created = basket.createdAt;
@@ -94,9 +98,7 @@ class BdKpiRow extends StatelessWidget {
     final coverage = BdDashboardMath.coverageAtCreation(basket);
     final isCompact = MediaQuery.sizeOf(context).width < 1100;
 
-    final pnlValue = hasMarket
-        ? '$pnlSign${fmt.format(basket.totalPnL)}'
-        : '—';
+    final pnlValue = hasMarket ? '$pnlSign${fmt.format(basket.totalPnL)}' : '—';
     final pnlSub = hasMarket
         ? '$pnlSign${basket.pnlPercent.toStringAsFixed(2)}%'
         : 'Awaiting live prices';
@@ -130,7 +132,9 @@ class BdKpiRow extends StatelessWidget {
         title: 'Total P&L',
         value: pnlValue,
         subtitle: pnlSub,
-        accentColor: basket.totalPnL >= 0 ? context.statusSuccess : context.statusError,
+        accentColor: basket.totalPnL >= 0
+            ? context.statusSuccess
+            : context.statusError,
         icon: basket.totalPnL >= 0
             ? Icons.arrow_upward_rounded
             : Icons.arrow_downward_rounded,
@@ -166,8 +170,18 @@ class BdKpiRow extends StatelessWidget {
 
   String _formatDate(DateTime dt) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
   }

@@ -471,7 +471,8 @@ class _RankControls extends StatelessWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.table_rows_outlined, size: 16, color: colors.textSecondary),
+            Icon(Icons.table_rows_outlined,
+                size: 16, color: colors.textSecondary),
             const SizedBox(width: AppSpacing.xs),
             Text(
               'Showing $rowCount '

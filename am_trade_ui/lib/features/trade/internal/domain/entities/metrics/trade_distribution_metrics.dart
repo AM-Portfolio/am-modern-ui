@@ -66,6 +66,7 @@ class TradeDistributionMetrics {
 
   /// Distinct entry dates with eligible PnL across Timing universe.
   final int activeTradingDaysCount;
+
   /// Overall eligible PnL ÷ [activeTradingDaysCount].
   final double? avgPnlPerActiveDay;
 

@@ -66,18 +66,20 @@ class DashboardSummaryWidget extends StatelessWidget {
   TextStyle _labelStyle(BuildContext context) =>
       context.text.label().copyWith(color: context.colors.textSecondary);
 
-  TextStyle _valueStyle(BuildContext context, {bool compact = false}) =>
-      context.text
-          .pageTitle(compact: compact)
-          .copyWith(
-            color: context.colors.textPrimary,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.5,
-          );
+  TextStyle _valueStyle(BuildContext context, {bool compact = false}) => context
+      .text
+      .pageTitle(compact: compact)
+      .copyWith(
+        color: context.colors.textPrimary,
+        fontWeight: FontWeight.w800,
+        letterSpacing: -0.5,
+      );
 
   Widget _buildPortfolioCard(BuildContext context, bool isMobile) {
-    final currencyFormat =
-        NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
+    final currencyFormat = NumberFormat.currency(
+      symbol: '₹ ',
+      decimalDigits: 0,
+    );
     final isPositiveDay = summary.dayChangePercentage >= 0;
     final isDark = context.isDark;
 
@@ -99,11 +101,11 @@ class DashboardSummaryWidget extends StatelessWidget {
         Text(
           '${isPositiveDay ? "+" : ""}${summary.dayChangePercentage}% Today',
           style: context.text.label().copyWith(
-                color: isPositiveDay
-                    ? context.colors.statusSuccess
-                    : context.colors.statusError,
-                fontWeight: FontWeight.w600,
-              ),
+            color: isPositiveDay
+                ? context.colors.statusSuccess
+                : context.colors.statusError,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ],
     );
@@ -127,9 +129,8 @@ class DashboardSummaryWidget extends StatelessWidget {
               Text(
                 'Total Portfolio Value',
                 style: context.text.label().copyWith(
-                      color: context.colors.actionPrimaryFg
-                          .withValues(alpha: 0.85),
-                    ),
+                  color: context.colors.actionPrimaryFg.withValues(alpha: 0.85),
+                ),
               ),
               const SizedBox(height: AppSpacing.xs),
               FittedBox(
@@ -149,9 +150,9 @@ class DashboardSummaryWidget extends StatelessWidget {
               Text(
                 '${isPositiveDay ? "+" : ""}${summary.dayChangePercentage}% Today',
                 style: context.text.label().copyWith(
-                      color: context.colors.actionPrimaryFg,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  color: context.colors.actionPrimaryFg,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
@@ -166,8 +167,10 @@ class DashboardSummaryWidget extends StatelessWidget {
   }
 
   Widget _buildInvestedCard(BuildContext context) {
-    final currencyFormat =
-        NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
+    final currencyFormat = NumberFormat.currency(
+      symbol: '₹ ',
+      decimalDigits: 0,
+    );
 
     return AmGlassCard(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -188,9 +191,9 @@ class DashboardSummaryWidget extends StatelessWidget {
           const SizedBox(height: AppSpacing.xs),
           Text(
             'Principal Capital',
-            style: context.text
-                .caption()
-                .copyWith(color: context.colors.textSecondary),
+            style: context.text.caption().copyWith(
+              color: context.colors.textSecondary,
+            ),
           ),
         ],
       ),
@@ -198,8 +201,10 @@ class DashboardSummaryWidget extends StatelessWidget {
   }
 
   Widget _buildReturnCard(BuildContext context) {
-    final currencyFormat =
-        NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
+    final currencyFormat = NumberFormat.currency(
+      symbol: '₹ ',
+      decimalDigits: 0,
+    );
     final percentFormat = NumberFormat.decimalPercentPattern(decimalDigits: 2);
     final isPositiveReturn = summary.totalGainLoss >= 0;
     final valueColor = isPositiveReturn
@@ -226,9 +231,9 @@ class DashboardSummaryWidget extends StatelessWidget {
           Text(
             '${isPositiveReturn ? "+" : ""}${percentFormat.format(summary.totalGainLossPercentage / 100)}',
             style: context.text.label().copyWith(
-                  color: valueColor,
-                  fontWeight: FontWeight.w600,
-                ),
+              color: valueColor,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
@@ -255,9 +260,9 @@ class DashboardSummaryWidget extends StatelessWidget {
           const SizedBox(height: AppSpacing.xs),
           Text(
             'Live Strategies',
-            style: context.text
-                .caption()
-                .copyWith(color: context.colors.textSecondary),
+            style: context.text.caption().copyWith(
+              color: context.colors.textSecondary,
+            ),
           ),
         ],
       ),

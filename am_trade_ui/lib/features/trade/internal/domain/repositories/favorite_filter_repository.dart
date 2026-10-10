@@ -10,14 +10,16 @@ abstract class FavoriteFilterRepository {
   Future<FavoriteFilter> getFavoriteFilterById(String filterId);
 
   /// Create a new favorite filter
-  Future<FavoriteFilter> createFavoriteFilter(String name,
+  Future<FavoriteFilter> createFavoriteFilter(
+    String name,
     MetricsFilterConfig filterConfig, {
     String? description,
     bool? isDefault,
   });
 
   /// Update an existing favorite filter
-  Future<FavoriteFilter> updateFavoriteFilter(String filterId,
+  Future<FavoriteFilter> updateFavoriteFilter(
+    String filterId,
     String name,
     MetricsFilterConfig filterConfig, {
     String? description,

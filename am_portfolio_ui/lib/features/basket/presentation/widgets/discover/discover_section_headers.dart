@@ -5,10 +5,7 @@ import 'discover_layout.dart';
 
 /// Compact section headers for Top picks / All baskets.
 class DiscoverTopPicksHeader extends StatelessWidget {
-  const DiscoverTopPicksHeader({
-    super.key,
-    required this.onViewAll,
-  });
+  const DiscoverTopPicksHeader({super.key, required this.onViewAll});
 
   final VoidCallback onViewAll;
 
@@ -66,10 +63,7 @@ class DiscoverTopPicksHeader extends StatelessWidget {
 }
 
 class DiscoverAllBasketsHeader extends StatelessWidget {
-  const DiscoverAllBasketsHeader({
-    super.key,
-    required this.count,
-  });
+  const DiscoverAllBasketsHeader({super.key, required this.count});
 
   final int count;
 

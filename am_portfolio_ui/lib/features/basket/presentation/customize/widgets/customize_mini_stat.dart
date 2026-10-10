@@ -16,13 +16,15 @@ class CustomizeMiniStat extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: TextStyle(fontSize: 9, color: context.textTertiary)),
-        Text(value,
-            style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: context.textPrimary)),
+        Text(label, style: TextStyle(fontSize: 9, color: context.textTertiary)),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: context.textPrimary,
+          ),
+        ),
       ],
     );
   }

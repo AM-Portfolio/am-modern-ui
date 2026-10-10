@@ -31,8 +31,6 @@ class GetPortfolioSummary {
 
   /// Execute with stream for real-time updates
   Stream<PortfolioSummary> watchSummary() {
-    
-
     return _repository.watchPortfolioSummary();
   }
 }

@@ -45,14 +45,14 @@ class _TimingInsightsBannerState extends State<TimingInsightsBanner> {
         : NumberFormat.decimalPattern('en_IN').format(widget.tradeCount);
 
     final styleHint = widget.styleHint;
-    final styleValue = (styleHint != null &&
-            styleHint.style.toUpperCase() != 'UNKNOWN')
-        ? 'Mostly ${styleHintDisplayLabel(styleHint.style)} · '
-            '${styleHint.confidencePercent.toStringAsFixed(0)}% of '
-            '${styleHint.sampleSize}'
-        : ((widget.tradeCount ?? 0) == 0
-            ? 'No style yet'
-            : 'Style mixed / unknown');
+    final styleValue =
+        (styleHint != null && styleHint.style.toUpperCase() != 'UNKNOWN')
+            ? 'Mostly ${styleHintDisplayLabel(styleHint.style)} · '
+                '${styleHint.confidencePercent.toStringAsFixed(0)}% of '
+                '${styleHint.sampleSize}'
+            : ((widget.tradeCount ?? 0) == 0
+                ? 'No style yet'
+                : 'Style mixed / unknown');
 
     final tzRaw = widget.timezoneNote?.trim() ?? '';
     final tzValue = (tzRaw.isEmpty ||
@@ -85,15 +85,15 @@ class _TimingInsightsBannerState extends State<TimingInsightsBanner> {
               Text(
                 value,
                 style: context.text.label(compact: true).copyWith(
-                  color: colors.textPrimary,
-                  fontWeight: FontWeight.w600,
-                ),
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
               ),
               Text(
                 sub,
                 style: context.text.caption(compact: true).copyWith(
-                  color: colors.textSecondary,
-                ),
+                      color: colors.textSecondary,
+                    ),
               ),
             ],
           ),
@@ -117,9 +117,9 @@ class _TimingInsightsBannerState extends State<TimingInsightsBanner> {
               Text(
                 label,
                 style: context.text.caption(compact: true).copyWith(
-                  color: ModuleColors.trade,
-                  fontWeight: FontWeight.w600,
-                ),
+                      color: ModuleColors.trade,
+                      fontWeight: FontWeight.w600,
+                    ),
               ),
             ],
           ),
@@ -148,8 +148,7 @@ class _TimingInsightsBannerState extends State<TimingInsightsBanner> {
                 'In selected period'),
             fact(Icons.pie_chart_outline_rounded, styleValue,
                 'Inferred from hold time'),
-            fact(Icons.schedule_rounded, tzValue,
-                'Session windows as stored'),
+            fact(Icons.schedule_rounded, tzValue, 'Session windows as stored'),
             link(Icons.calendar_today_outlined, 'View Calendar',
                 widget.onOpenCalendar),
             link(Icons.auto_stories_outlined, 'Journal Insights',
@@ -158,8 +157,8 @@ class _TimingInsightsBannerState extends State<TimingInsightsBanner> {
               Text(
                 honesty.join('  ·  '),
                 style: context.text.caption(compact: true).copyWith(
-                  color: colors.textSecondary,
-                ),
+                      color: colors.textSecondary,
+                    ),
               ),
             IconButton(
               icon: Icon(Icons.close, size: 16, color: colors.textSecondary),

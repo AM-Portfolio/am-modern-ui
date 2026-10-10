@@ -9,10 +9,10 @@ enum ChartGridLayout { one, two, four }
 
 extension ChartGridLayoutX on ChartGridLayout {
   int get paneCount => switch (this) {
-        ChartGridLayout.one => 1,
-        ChartGridLayout.two => 2,
-        ChartGridLayout.four => 4,
-      };
+    ChartGridLayout.one => 1,
+    ChartGridLayout.two => 2,
+    ChartGridLayout.four => 4,
+  };
 
   String get code => name;
 
@@ -40,16 +40,16 @@ class PaneSnapshot {
   final ChartTypeId chartType;
 
   Map<String, dynamic> toJson() => {
-        'symbol': symbol,
-        'tf': timeframe.code,
-        'type': chartType.id,
-      };
+    'symbol': symbol,
+    'tf': timeframe.code,
+    'type': chartType.id,
+  };
 
   factory PaneSnapshot.fromJson(Map<String, dynamic> j) => PaneSnapshot(
-        symbol: (j['symbol'] as String?) ?? 'NIFTY 50',
-        timeframe: ChartTimeframe.fromCode(j['tf'] as String?),
-        chartType: ChartTypeId.fromId(j['type'] as String?),
-      );
+    symbol: (j['symbol'] as String?) ?? 'NIFTY 50',
+    timeframe: ChartTimeframe.fromCode(j['tf'] as String?),
+    chartType: ChartTypeId.fromId(j['type'] as String?),
+  );
 }
 
 class WorkspaceSnapshot {
@@ -64,10 +64,10 @@ class WorkspaceSnapshot {
   final int activePaneIndex;
 
   Map<String, dynamic> toJson() => {
-        'layout': layout.code,
-        'active': activePaneIndex,
-        'panes': panes.map((p) => p.toJson()).toList(),
-      };
+    'layout': layout.code,
+    'active': activePaneIndex,
+    'panes': panes.map((p) => p.toJson()).toList(),
+  };
 
   factory WorkspaceSnapshot.fromJson(Map<String, dynamic> j) {
     final layout = ChartGridLayoutX.fromCode(j['layout'] as String?);
@@ -82,18 +82,22 @@ class WorkspaceSnapshot {
     }
     // Legacy single-pane shape
     if (panes.isEmpty && j['symbol'] != null) {
-      panes.add(PaneSnapshot(
-        symbol: (j['symbol'] as String?) ?? 'NIFTY 50',
-        timeframe: ChartTimeframe.fromCode(j['tf'] as String?),
-        chartType: ChartTypeId.fromId(j['type'] as String?),
-      ));
+      panes.add(
+        PaneSnapshot(
+          symbol: (j['symbol'] as String?) ?? 'NIFTY 50',
+          timeframe: ChartTimeframe.fromCode(j['tf'] as String?),
+          chartType: ChartTypeId.fromId(j['type'] as String?),
+        ),
+      );
     }
     if (panes.isEmpty) {
-      panes.add(const PaneSnapshot(
-        symbol: 'NIFTY 50',
-        timeframe: ChartTimeframe.d1,
-        chartType: ChartTypeId.candlestick,
-      ));
+      panes.add(
+        const PaneSnapshot(
+          symbol: 'NIFTY 50',
+          timeframe: ChartTimeframe.d1,
+          chartType: ChartTypeId.candlestick,
+        ),
+      );
     }
     return WorkspaceSnapshot(
       layout: layout,
@@ -108,7 +112,8 @@ class WorkspaceStore {
 
   Future<WorkspaceSnapshot?> load() async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_key) ?? prefs.getString('am_chart_ui.workspace.v1');
+    final raw =
+        prefs.getString(_key) ?? prefs.getString('am_chart_ui.workspace.v1');
     if (raw == null || raw.isEmpty) return null;
     try {
       return WorkspaceSnapshot.fromJson(

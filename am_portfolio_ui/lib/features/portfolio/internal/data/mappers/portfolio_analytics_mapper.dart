@@ -290,7 +290,8 @@ class PortfolioAnalyticsMapper {
 
     return PortfolioAnalyticsRequest(
       coreIdentifiers: CoreIdentifiers(portfolioId: portfolioId),
-      featureToggles: featureToggles ??
+      featureToggles:
+          featureToggles ??
           const FeatureToggles(
             includeHeatmap: true,
             includeMovers: true,

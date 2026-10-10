@@ -30,19 +30,14 @@ class WatchlistSourceDropdown extends StatelessWidget {
       offset: const Offset(0, 40),
       itemBuilder: (context) => [
         for (final s in sources)
-          PopupMenuItem(
-            value: s.id,
-            child: Text(s.name),
-          ),
+          PopupMenuItem(value: s.id, child: Text(s.name)),
       ],
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: accent.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: accent.withValues(alpha: 0.35),
-          ),
+          border: Border.all(color: accent.withValues(alpha: 0.35)),
         ),
         child: Row(
           children: [
@@ -53,9 +48,9 @@ class WatchlistSourceDropdown extends StatelessWidget {
                 selected.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
             Icon(Icons.arrow_drop_down, color: accent),
@@ -104,9 +99,9 @@ class WatchlistPageChips extends StatelessWidget {
                 child: Text(
                   '${i + 1}',
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: i == pageIndex ? accent : colors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: i == pageIndex ? accent : colors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
@@ -151,8 +146,8 @@ class WatchlistRow extends StatelessWidget {
     final priceColor = stock.isNegative
         ? colors.marketNegativeIndicator
         : stock.isPositive
-            ? colors.marketPositiveIndicator
-            : colors.textPrimary;
+        ? colors.marketPositiveIndicator
+        : colors.textPrimary;
     final fmt = NumberFormat('#,##0.00');
 
     final row = Material(
@@ -174,15 +169,15 @@ class WatchlistRow extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       stock.exchange,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: colors.textSecondary,
-                          ),
+                        color: colors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -204,9 +199,9 @@ class WatchlistRow extends StatelessWidget {
                       Text(
                         stock.ltp > 0 ? fmt.format(stock.ltp) : '—',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: priceColor,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          color: priceColor,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       if (stock.ltp > 0) ...[
                         const SizedBox(width: 4),
@@ -224,9 +219,9 @@ class WatchlistRow extends StatelessWidget {
                     stock.ltp > 0
                         ? '${fmt.format(stock.change)} (${stock.changePercent.toStringAsFixed(2)}%)'
                         : '',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: priceColor,
-                        ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: priceColor),
                   ),
                 ],
               ),
@@ -236,7 +231,10 @@ class WatchlistRow extends StatelessWidget {
                   iconSize: 18,
                   visualDensity: VisualDensity.compact,
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                  constraints: const BoxConstraints(
+                    minWidth: 28,
+                    minHeight: 28,
+                  ),
                   onPressed: onRemove,
                   icon: Icon(Icons.close, color: colors.textSecondary),
                 ),
@@ -273,11 +271,7 @@ class WatchlistActionToolbar extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        WatchlistSq(
-          label: 'B',
-          bg: _watchlistAccent(context),
-          onTap: onBuy,
-        ),
+        WatchlistSq(label: 'B', bg: _watchlistAccent(context), onTap: onBuy),
         const SizedBox(width: 4),
         WatchlistSq(
           label: 'S',
@@ -339,114 +333,114 @@ class WatchlistDepthExpandPanel extends StatelessWidget {
               ),
             )
           : quote == null
-              ? Text(
-                  'Unable to load quote',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colors.textSecondary,
+          ? Text(
+              'Unable to load quote',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Market depth',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                WatchlistDepthPressureBar(quote: quote!),
+                const SizedBox(height: 8),
+                WatchlistDepthTable(quote: quote!, fmt: fmt),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Divider(height: 1, color: colors.divider),
+                ),
+                _WatchlistStatGrid(
+                  rows: [
+                    [
+                      WatchlistStat(
+                        label: 'LTP',
+                        value: quote!.ltp > 0 ? fmt.format(quote!.ltp) : '—',
                       ),
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      'Market depth',
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                    const SizedBox(height: 8),
-                    WatchlistDepthPressureBar(quote: quote!),
-                    const SizedBox(height: 8),
-                    WatchlistDepthTable(quote: quote!, fmt: fmt),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      child: Divider(height: 1, color: colors.divider),
-                    ),
-                    _WatchlistStatGrid(
-                      rows: [
-                        [
-                          WatchlistStat(
-                            label: 'LTP',
-                            value: quote!.ltp > 0 ? fmt.format(quote!.ltp) : '—',
-                          ),
-                          WatchlistStat(
-                            label: 'Change',
-                            value: quote!.ltp > 0
-                                ? '${quote!.change >= 0 ? '+' : ''}${fmt.format(quote!.change)}'
-                                : '—',
-                            valueColor: quote!.ltp > 0
-                                ? (quote!.isPositive
-                                    ? colors.marketPositiveIndicator
-                                    : quote!.isNegative
-                                        ? colors.marketNegativeIndicator
-                                        : null)
-                                : null,
-                          ),
-                          WatchlistStat(
-                            label: 'Change %',
-                            value: quote!.ltp > 0
-                                ? '${quote!.changePercent >= 0 ? '+' : ''}${quote!.changePercent.toStringAsFixed(2)}%'
-                                : '—',
-                            valueColor: quote!.ltp > 0
-                                ? (quote!.isPositive
-                                    ? colors.marketPositiveIndicator
-                                    : quote!.isNegative
-                                        ? colors.marketNegativeIndicator
-                                        : null)
-                                : null,
-                          ),
-                        ],
-                        [
-                          WatchlistStat(
-                            label: 'Open',
-                            value: quote!.open != null
-                                ? fmt.format(quote!.open)
-                                : '—',
-                          ),
-                          WatchlistStat(
-                            label: 'High',
-                            value: quote!.high != null
-                                ? fmt.format(quote!.high)
-                                : '—',
-                          ),
-                          WatchlistStat(
-                            label: 'Low',
-                            value: quote!.low != null
-                                ? fmt.format(quote!.low)
-                                : '—',
-                          ),
-                        ],
-                        [
-                          WatchlistStat(
-                            label: 'Prev close',
-                            value: quote!.previousClose != null
-                                ? fmt.format(quote!.previousClose)
-                                : '—',
-                          ),
-                          WatchlistStat(
-                            label: 'Vol traded',
-                            value: quote!.volume != null && quote!.volume! > 0
-                                ? NumberFormat.compact().format(quote!.volume)
-                                : '—',
-                          ),
-                          WatchlistStat(
-                            label: 'Exchange',
-                            value: quote!.exchange.isNotEmpty
-                                ? quote!.exchange
-                                : '—',
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    WatchlistLtpRangeBar(
-                      low: quote!.low,
-                      high: quote!.high,
-                      ltp: quote!.ltp,
-                      fmt: fmt,
-                    ),
+                      WatchlistStat(
+                        label: 'Change',
+                        value: quote!.ltp > 0
+                            ? '${quote!.change >= 0 ? '+' : ''}${fmt.format(quote!.change)}'
+                            : '—',
+                        valueColor: quote!.ltp > 0
+                            ? (quote!.isPositive
+                                  ? colors.marketPositiveIndicator
+                                  : quote!.isNegative
+                                  ? colors.marketNegativeIndicator
+                                  : null)
+                            : null,
+                      ),
+                      WatchlistStat(
+                        label: 'Change %',
+                        value: quote!.ltp > 0
+                            ? '${quote!.changePercent >= 0 ? '+' : ''}${quote!.changePercent.toStringAsFixed(2)}%'
+                            : '—',
+                        valueColor: quote!.ltp > 0
+                            ? (quote!.isPositive
+                                  ? colors.marketPositiveIndicator
+                                  : quote!.isNegative
+                                  ? colors.marketNegativeIndicator
+                                  : null)
+                            : null,
+                      ),
+                    ],
+                    [
+                      WatchlistStat(
+                        label: 'Open',
+                        value: quote!.open != null
+                            ? fmt.format(quote!.open)
+                            : '—',
+                      ),
+                      WatchlistStat(
+                        label: 'High',
+                        value: quote!.high != null
+                            ? fmt.format(quote!.high)
+                            : '—',
+                      ),
+                      WatchlistStat(
+                        label: 'Low',
+                        value: quote!.low != null
+                            ? fmt.format(quote!.low)
+                            : '—',
+                      ),
+                    ],
+                    [
+                      WatchlistStat(
+                        label: 'Prev close',
+                        value: quote!.previousClose != null
+                            ? fmt.format(quote!.previousClose)
+                            : '—',
+                      ),
+                      WatchlistStat(
+                        label: 'Vol traded',
+                        value: quote!.volume != null && quote!.volume! > 0
+                            ? NumberFormat.compact().format(quote!.volume)
+                            : '—',
+                      ),
+                      WatchlistStat(
+                        label: 'Exchange',
+                        value: quote!.exchange.isNotEmpty
+                            ? quote!.exchange
+                            : '—',
+                      ),
+                    ],
                   ],
                 ),
+                const SizedBox(height: 10),
+                WatchlistLtpRangeBar(
+                  low: quote!.low,
+                  high: quote!.high,
+                  ltp: quote!.ltp,
+                  fmt: fmt,
+                ),
+              ],
+            ),
     );
   }
 }
@@ -496,9 +490,9 @@ class WatchlistStat extends StatelessWidget {
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: colors.textSecondary,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.labelMedium?.copyWith(color: colors.textSecondary),
         ),
         const SizedBox(height: 2),
         Text(
@@ -506,9 +500,9 @@ class WatchlistStat extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: valueColor,
-              ),
+            fontWeight: FontWeight.w700,
+            color: valueColor,
+          ),
         ),
       ],
     );
@@ -543,9 +537,9 @@ class WatchlistDepthPressureBar extends StatelessWidget {
           children: [
             Text(
               'Book',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: colors.textSecondary,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelSmall?.copyWith(color: colors.textSecondary),
             ),
             const Spacer(),
             Flexible(
@@ -554,9 +548,9 @@ class WatchlistDepthPressureBar extends StatelessWidget {
                 textAlign: TextAlign.end,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: colors.textSecondary,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.labelSmall?.copyWith(color: colors.textSecondary),
               ),
             ),
           ],
@@ -615,17 +609,17 @@ class WatchlistLtpRangeBar extends StatelessWidget {
           children: [
             Text(
               'Day range',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: colors.textSecondary,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelSmall?.copyWith(color: colors.textSecondary),
             ),
             const Spacer(),
             Text(
               hasRange ? 'LTP ${fmt.format(ltp)}' : 'Range unavailable',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: colors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                color: colors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
@@ -676,9 +670,7 @@ class WatchlistLtpRangeBar extends StatelessWidget {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: ModuleColors.market.withValues(
-                              alpha: 0.35,
-                            ),
+                            color: ModuleColors.market.withValues(alpha: 0.35),
                             blurRadius: 4,
                           ),
                         ],
@@ -695,16 +687,16 @@ class WatchlistLtpRangeBar extends StatelessWidget {
           children: [
             Text(
               'Min ${lo != null ? fmt.format(lo) : '—'}',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: colors.textSecondary,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelSmall?.copyWith(color: colors.textSecondary),
             ),
             const Spacer(),
             Text(
               'Max ${hi != null ? fmt.format(hi) : '—'}',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: colors.textSecondary,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelSmall?.copyWith(color: colors.textSecondary),
             ),
           ],
         ),
@@ -743,9 +735,9 @@ class WatchlistDepthTable extends StatelessWidget {
             Expanded(
               child: Text(
                 'Bid qty',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: colors.textSecondary,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.labelSmall?.copyWith(color: colors.textSecondary),
               ),
             ),
             Expanded(
@@ -753,8 +745,8 @@ class WatchlistDepthTable extends StatelessWidget {
                 'Bid',
                 textAlign: TextAlign.end,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: colors.marketPositiveIndicator,
-                    ),
+                  color: colors.marketPositiveIndicator,
+                ),
               ),
             ),
             const SizedBox(width: 8),
@@ -762,17 +754,17 @@ class WatchlistDepthTable extends StatelessWidget {
               child: Text(
                 'Ask',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: colors.marketNegativeIndicator,
-                    ),
+                  color: colors.marketNegativeIndicator,
+                ),
               ),
             ),
             Expanded(
               child: Text(
                 'Ask qty',
                 textAlign: TextAlign.end,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: colors.textSecondary,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.labelSmall?.copyWith(color: colors.textSecondary),
               ),
             ),
           ],
@@ -803,9 +795,9 @@ class WatchlistDepthTable extends StatelessWidget {
                         : fmt.format(0),
                     textAlign: TextAlign.end,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colors.marketPositiveIndicator,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      color: colors.marketPositiveIndicator,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -815,9 +807,9 @@ class WatchlistDepthTable extends StatelessWidget {
                         ? fmt.format(quote.sellDepth[i].price)
                         : fmt.format(0),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colors.marketNegativeIndicator,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      color: colors.marketNegativeIndicator,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 Expanded(
@@ -858,7 +850,9 @@ class _DepthQtyCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final frac = maxQuantity > 0 ? (quantity / maxQuantity).clamp(0.0, 1.0) : 0.0;
+    final frac = maxQuantity > 0
+        ? (quantity / maxQuantity).clamp(0.0, 1.0)
+        : 0.0;
     final label = orders != null && orders! > 0
         ? '$quantity ($orders)'
         : '$quantity';
@@ -869,8 +863,9 @@ class _DepthQtyCell extends StatelessWidget {
         children: [
           Positioned.fill(
             child: FractionallySizedBox(
-              alignment:
-                  alignEnd ? Alignment.centerRight : Alignment.centerLeft,
+              alignment: alignEnd
+                  ? Alignment.centerRight
+                  : Alignment.centerLeft,
               widthFactor: frac,
               child: DecoratedBox(
                 decoration: BoxDecoration(
@@ -881,12 +876,8 @@ class _DepthQtyCell extends StatelessWidget {
             ),
           ),
           Align(
-            alignment:
-                alignEnd ? Alignment.centerRight : Alignment.centerLeft,
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            alignment: alignEnd ? Alignment.centerRight : Alignment.centerLeft,
+            child: Text(label, style: Theme.of(context).textTheme.bodySmall),
           ),
         ],
       ),
@@ -921,9 +912,9 @@ class WatchlistSq extends StatelessWidget {
             child: Text(
               label,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: context.colors.actionPrimaryFg,
-                    fontWeight: FontWeight.w700,
-                  ),
+                color: context.colors.actionPrimaryFg,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ),

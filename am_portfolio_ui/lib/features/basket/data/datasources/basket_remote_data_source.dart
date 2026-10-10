@@ -32,10 +32,7 @@ abstract class BasketRemoteDataSource {
   Future<dynamic> calculateQuantities(Map<String, dynamic> request);
   Future<dynamic> calculateQuantitiesFinalPreview(Map<String, dynamic> request);
 
-  Future<void> deleteBasket({
-    required String basketId,
-    required String userId,
-  });
+  Future<void> deleteBasket({required String basketId, required String userId});
 
   Future<dynamic> getBasketDetail({
     required String basketId,
@@ -54,10 +51,7 @@ abstract class BasketRemoteDataSource {
 
   Future<Map<String, dynamic>> upsertDraft(Map<String, dynamic> request);
 
-  Future<void> deleteDraft({
-    required String draftId,
-    required String userId,
-  });
+  Future<void> deleteDraft({required String draftId, required String userId});
 }
 
 class BasketRemoteDataSourceImpl implements BasketRemoteDataSource {
@@ -106,11 +100,7 @@ class BasketRemoteDataSourceImpl implements BasketRemoteDataSource {
     final response = await apiClient.post(
       BasketEndpoints.preview,
       parser: (data) => data,
-      body: {
-        'etfIsin': etfIsin,
-        'userId': userId,
-        'portfolioId': portfolioId,
-      },
+      body: {'etfIsin': etfIsin, 'userId': userId, 'portfolioId': portfolioId},
     );
 
     return BasketOpportunity.fromJson(response as Map<String, dynamic>);
@@ -123,10 +113,7 @@ class BasketRemoteDataSourceImpl implements BasketRemoteDataSource {
   }) async {
     final response = await apiClient.get(
       BasketEndpoints.myBaskets,
-      queryParams: {
-        'userId': userId,
-        'portfolioId': portfolioId,
-      },
+      queryParams: {'userId': userId, 'portfolioId': portfolioId},
       parser: (data) => data,
     );
     return response as List<dynamic>;
@@ -153,7 +140,9 @@ class BasketRemoteDataSourceImpl implements BasketRemoteDataSource {
   }
 
   @override
-  Future<dynamic> calculateQuantitiesFinalPreview(Map<String, dynamic> request) async {
+  Future<dynamic> calculateQuantitiesFinalPreview(
+    Map<String, dynamic> request,
+  ) async {
     final response = await apiClient.post(
       BasketEndpoints.calculateQuantitiesFinalPreview,
       body: request,
@@ -179,9 +168,7 @@ class BasketRemoteDataSourceImpl implements BasketRemoteDataSource {
   }) async {
     final response = await apiClient.get(
       BasketEndpoints.getBasketDetail(basketId),
-      queryParams: {
-        'userId': userId,
-      },
+      queryParams: {'userId': userId},
       parser: (data) => data,
     );
     return response;
@@ -194,9 +181,7 @@ class BasketRemoteDataSourceImpl implements BasketRemoteDataSource {
   }) async {
     await apiClient.delete(
       BasketEndpoints.deleteBasket(basketId),
-      queryParams: {
-        'userId': userId,
-      },
+      queryParams: {'userId': userId},
       parser: (data) => data,
     );
   }

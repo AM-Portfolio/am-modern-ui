@@ -22,21 +22,21 @@ import '../shared/basket_panel_styles.dart';
 class BasketFinalPreviewPage extends ConsumerStatefulWidget {
   final BasketFinalPreviewArgs args;
 
-  const BasketFinalPreviewPage({
-    super.key,
-    required this.args,
-  });
+  const BasketFinalPreviewPage({super.key, required this.args});
 
   @override
-  ConsumerState<BasketFinalPreviewPage> createState() => _BasketFinalPreviewPageState();
+  ConsumerState<BasketFinalPreviewPage> createState() =>
+      _BasketFinalPreviewPageState();
 }
 
-class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage> {
+class _BasketFinalPreviewPageState
+    extends ConsumerState<BasketFinalPreviewPage> {
   bool _isSubmitting = false;
   bool _isLoading = true;
   String? _error;
   late BasketOpportunity _validatedOpportunity;
   late List<BasketItem> _validatedItems;
+
   /// 0 = Your Basket (default), 1 = Original ETF — mobile only.
   int _mobilePanelIndex = 0;
 
@@ -51,8 +51,9 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
     if (args.trustCustomizeOutput) {
       if (mounted) {
         setState(() {
-          _validatedOpportunity =
-              args.finalOpportunity.copyWith(composition: args.finalItems);
+          _validatedOpportunity = args.finalOpportunity.copyWith(
+            composition: args.finalItems,
+          );
           _validatedItems = args.finalItems;
           _isLoading = false;
         });
@@ -63,7 +64,9 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
     try {
       final request = {
         'investmentAmount': args.investmentAmount,
-        'opportunity': args.finalOpportunity.copyWith(composition: args.finalItems).toJson(),
+        'opportunity': args.finalOpportunity
+            .copyWith(composition: args.finalItems)
+            .toJson(),
         'includeHeld': true,
         'excludedSymbols': args.excludedItems.toList(),
       };
@@ -105,16 +108,20 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
         draftId: args.draftId,
       );
 
-      final newBasketId = await ref.read(createBasketPortfolioProvider(request: request).future);
+      final newBasketId = await ref.read(
+        createBasketPortfolioProvider(request: request).future,
+      );
 
       if (!mounted) return;
       ref.read(basketFlowControllerProvider.notifier).resetFlow();
       BasketNavigation.clearBasketSession(args.userId);
       ref.invalidate(myBasketsProvider(userId: args.userId, portfolioId: ''));
-      ref.invalidate(basketDraftsProvider((
-        userId: args.userId,
-        portfolioId: args.portfolioId,
-      )));
+      ref.invalidate(
+        basketDraftsProvider((
+          userId: args.userId,
+          portfolioId: args.portfolioId,
+        )),
+      );
       await BasketPortfolioSync.afterBasketMutation(context);
 
       Navigator.of(context).pushReplacement(
@@ -130,10 +137,12 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Failed to create basket: ${basketApiErrorMessage(e)}'),
-        backgroundColor: context.statusError,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to create basket: ${basketApiErrorMessage(e)}'),
+          backgroundColor: context.statusError,
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -152,8 +161,10 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
       return Scaffold(
         backgroundColor: context.backgroundColor,
         body: Center(
-          child: Text('Failed to load final preview: $_error',
-              style: TextStyle(color: context.statusError)),
+          child: Text(
+            'Failed to load final preview: $_error',
+            style: TextStyle(color: context.statusError),
+          ),
         ),
       );
     }
@@ -162,12 +173,19 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
     final pagePad = BasketResponsive.pagePadding(context);
     final args = widget.args;
 
-    final heldCount = _validatedItems.where((i) => i.status == ItemStatus.held).length;
-    final subCount = _validatedItems.where((i) => i.status == ItemStatus.substitute).length;
+    final heldCount = _validatedItems
+        .where((i) => i.status == ItemStatus.held)
+        .length;
+    final subCount = _validatedItems
+        .where((i) => i.status == ItemStatus.substitute)
+        .length;
 
     final actualCost = _validatedOpportunity.actualInvestmentCost ?? 0.0;
     final excluded = args.excludedItems;
-    final targetSum = BasketAllocationMath.targetWeightSum(_validatedItems, excluded);
+    final targetSum = BasketAllocationMath.targetWeightSum(
+      _validatedItems,
+      excluded,
+    );
     final customWeightSum = BasketAllocationMath.totalCustomWeightPercent(
       _validatedItems,
       args.investmentAmount,
@@ -194,7 +212,11 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
                   ? Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(child: FpEtfPanel(originalOpportunity: args.originalOpportunity)),
+                        Expanded(
+                          child: FpEtfPanel(
+                            originalOpportunity: args.originalOpportunity,
+                          ),
+                        ),
                         const SizedBox(width: AppSpacing.xl),
                         Expanded(
                           child: FpBasketPanel(
@@ -218,7 +240,10 @@ class _BasketFinalPreviewPageState extends ConsumerState<BasketFinalPreviewPage>
                               ButtonSegment(
                                 value: 0,
                                 label: Text('Your Basket'),
-                                icon: Icon(Icons.shopping_basket_outlined, size: 16),
+                                icon: Icon(
+                                  Icons.shopping_basket_outlined,
+                                  size: 16,
+                                ),
                               ),
                               ButtonSegment(
                                 value: 1,

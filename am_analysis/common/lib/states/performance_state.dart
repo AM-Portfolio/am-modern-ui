@@ -4,7 +4,7 @@ import '../models/models.dart';
 /// Base class for all performance states
 abstract class PerformanceState extends Equatable {
   const PerformanceState();
-  
+
   @override
   List<Object?> get props => [];
 }
@@ -23,9 +23,9 @@ class PerformanceLoading extends PerformanceState {
 class PerformanceLoaded extends PerformanceState {
   final List<PerformanceDataPoint> dataPoints;
   final TimeFrame timeFrame;
-  
+
   const PerformanceLoaded(this.dataPoints, this.timeFrame);
-  
+
   @override
   List<Object?> get props => [dataPoints, timeFrame];
 }
@@ -34,9 +34,9 @@ class PerformanceLoaded extends PerformanceState {
 class PerformanceError extends PerformanceState {
   final String message;
   final StackTrace? stackTrace;
-  
+
   const PerformanceError(this.message, [this.stackTrace]);
-  
+
   @override
   List<Object?> get props => [message, stackTrace];
 }

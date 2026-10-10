@@ -91,7 +91,10 @@ class _EmailLoginFormWidgetState extends State<EmailLoginFormWidget> {
                 enabled: !widget.isLoading,
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
-                autofillHints: const [AutofillHints.email, AutofillHints.username],
+                autofillHints: const [
+                  AutofillHints.email,
+                  AutofillHints.username
+                ],
                 labelText: 'Email address',
                 hintText: 'Enter your email',
                 prefixIcon: Icons.email_outlined,
@@ -293,8 +296,10 @@ class _LiquidTextFieldState extends State<LiquidTextField> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final baseBgColor = isDark
-        ? Colors.white.withValues(alpha: (_isHovering || _isFocused) ? 0.17 : 0.12)
-        : Colors.white.withValues(alpha: (_isHovering || _isFocused) ? 0.15 : 0.05);
+        ? Colors.white
+            .withValues(alpha: (_isHovering || _isFocused) ? 0.17 : 0.12)
+        : Colors.white
+            .withValues(alpha: (_isHovering || _isFocused) ? 0.15 : 0.05);
 
     final borderColor = isDark
         ? Colors.white.withValues(alpha: 0.35)

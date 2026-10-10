@@ -5,8 +5,9 @@ import 'package:am_common/core/di/network_providers.dart';
 import '../data/paper_oms_data_source.dart';
 import '../presentation/paper_oms_cubit.dart';
 
-final paperOmsDataSourceProvider =
-    FutureProvider<PaperOmsDataSource>((ref) async {
+final paperOmsDataSourceProvider = FutureProvider<PaperOmsDataSource>((
+  ref,
+) async {
   final client = await ref.watch(omsApiClientProvider.future);
   final config = ConfigService.config.api.oms;
   if (config == null) {
@@ -15,7 +16,9 @@ final paperOmsDataSourceProvider =
   return PaperOmsDataSource(apiClient: client, config: config);
 });
 
-final paperOmsCubitProvider = FutureProvider.autoDispose<PaperOmsCubit>((ref) async {
+final paperOmsCubitProvider = FutureProvider.autoDispose<PaperOmsCubit>((
+  ref,
+) async {
   final source = await ref.watch(paperOmsDataSourceProvider.future);
   final cubit = PaperOmsCubit(source);
   await cubit.load();

@@ -10,9 +10,7 @@ abstract class PortfolioRepository {
   Future<PortfolioHoldings> getPortfolioHoldings();
 
   /// Get portfolio holdings for a user and specific portfolio
-  Future<PortfolioHoldings> getPortfolioHoldingsById(
-    String portfolioId,
-  );
+  Future<PortfolioHoldings> getPortfolioHoldingsById(String portfolioId);
 
   /// Gets cached portfolio holdings for the specified user and portfolio
   Future<PortfolioHoldings?> getCachedPortfolioHoldingsById(String portfolioId);

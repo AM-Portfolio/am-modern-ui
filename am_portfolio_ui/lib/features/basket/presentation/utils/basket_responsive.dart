@@ -3,7 +3,8 @@ import 'package:am_design_system/am_design_system.dart';
 
 /// Shared breakpoint helpers for the basket flow (preview → dashboard).
 abstract final class BasketResponsive {
-  static double widthOf(BuildContext context) => MediaQuery.sizeOf(context).width;
+  static double widthOf(BuildContext context) =>
+      MediaQuery.sizeOf(context).width;
 
   static bool isMobile(BuildContext context) =>
       AmBreakpoints.isMobileContext(context);

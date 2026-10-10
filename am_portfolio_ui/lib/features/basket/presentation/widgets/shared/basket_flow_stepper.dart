@@ -43,9 +43,7 @@ class BasketFlowStepper extends StatelessWidget {
         : context.colors.border;
     final textColor = isCompleted || isActive
         ? context.colors.textPrimary
-        : (isNext
-            ? context.colors.textSecondary
-            : context.colors.textTertiary);
+        : (isNext ? context.colors.textSecondary : context.colors.textTertiary);
     final label = compact ? _shortLabel(step) : step.label;
 
     return Row(
@@ -61,7 +59,11 @@ class BasketFlowStepper extends StatelessWidget {
           ),
           alignment: Alignment.center,
           child: isCompleted
-              ? Icon(Icons.check, size: 16, color: context.colors.actionPrimaryFg)
+              ? Icon(
+                  Icons.check,
+                  size: 16,
+                  color: context.colors.actionPrimaryFg,
+                )
               : Text(
                   '${step.stepNumber}',
                   style: theme.textTheme.labelSmall?.copyWith(
@@ -132,11 +134,12 @@ class BasketFlowStepper extends StatelessWidget {
                         _buildStep(
                           context,
                           steps[i],
-                          isCompleted: steps[i].stepNumber <
-                              currentStep.stepNumber,
+                          isCompleted:
+                              steps[i].stepNumber < currentStep.stepNumber,
                           isActive: steps[i] == currentStep,
                           isNext: i == currentIndex + 1,
-                          showLabel: showAllLabels ||
+                          showLabel:
+                              showAllLabels ||
                               steps[i] == currentStep ||
                               steps[i].stepNumber < currentStep.stepNumber ||
                               i == currentIndex + 1,

@@ -8,8 +8,8 @@ class NewsRepository {
     required ApiClient portfolioClient,
     required this.holdingsResource,
     this.timeout = const Duration(milliseconds: 800),
-  })  : _newsClient = newsClient,
-        _portfolioClient = portfolioClient;
+  }) : _newsClient = newsClient,
+       _portfolioClient = portfolioClient;
 
   final ApiClient _newsClient;
   final ApiClient _portfolioClient;

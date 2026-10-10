@@ -47,12 +47,15 @@ class BdHoldingsSection extends StatelessWidget {
                 Text(
                   'Basket Holdings',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: ModuleColors.portfolio.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
@@ -96,12 +99,14 @@ class BdHoldingsSection extends StatelessWidget {
                     child: FilterChip(
                       label: Text(
                         _filterLabel(f),
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
                               color: selected
                                   ? accent
                                   : context.colors.textSecondary,
-                              fontWeight:
-                                  selected ? FontWeight.w700 : FontWeight.w500,
+                              fontWeight: selected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
                             ),
                       ),
                       selected: selected,
@@ -136,7 +141,10 @@ class BdHoldingsSection extends StatelessWidget {
               ),
             )
           else
-            BdHoldingsTable(lines: sorted, totalCurrentValue: totalCurrentValue),
+            BdHoldingsTable(
+              lines: sorted,
+              totalCurrentValue: totalCurrentValue,
+            ),
           if (filter == BdHoldingsFilter.active &&
               lines.any((l) => l.status.toUpperCase() == 'MISSING'))
             Padding(

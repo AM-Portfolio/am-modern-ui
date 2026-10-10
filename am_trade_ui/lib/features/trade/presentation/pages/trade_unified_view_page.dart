@@ -22,8 +22,8 @@ class _TradeUnifiedViewPageState extends ConsumerState<TradeUnifiedViewPage>
   @override
   void initState() {
     super.initState();
-    _tabController =
-        TabController(length: 3, vsync: this, initialIndex: 1); // Default to Chart
+    _tabController = TabController(
+        length: 3, vsync: this, initialIndex: 1); // Default to Chart
   }
 
   @override
@@ -122,8 +122,7 @@ class _TradeUnifiedViewPageState extends ConsumerState<TradeUnifiedViewPage>
                       const SizedBox(width: 16),
                       _buildStatChip(context, "Net P&L", "-₹16", Colors.red),
                       const SizedBox(width: 12),
-                      _buildStatChip(
-                          context, "ROI", "(1.20%)", Colors.orange),
+                      _buildStatChip(context, "ROI", "(1.20%)", Colors.orange),
                       const Spacer(),
                       // TABS
                       Container(
@@ -164,8 +163,8 @@ class _TradeUnifiedViewPageState extends ConsumerState<TradeUnifiedViewPage>
                     children: [
                       // Tab 1: Stats
                       const Center(
-                          child: Text(
-                              "Detailed Statistics & Strategy Info Here")),
+                          child:
+                              Text("Detailed Statistics & Strategy Info Here")),
 
                       // Tab 2: Chart (Reusing the Fullscreen Widget)
                       Consumer(

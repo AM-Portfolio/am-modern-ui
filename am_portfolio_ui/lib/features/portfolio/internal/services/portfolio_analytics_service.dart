@@ -131,7 +131,10 @@ class PortfolioAnalyticsService {
     );
 
     try {
-      final request = _createHeatmapOnlyRequest(portfolioId, timeFrame: timeFrame);
+      final request = _createHeatmapOnlyRequest(
+        portfolioId,
+        timeFrame: timeFrame,
+      );
 
       CommonLogger.info(
         'Getting portfolio heatmap data',

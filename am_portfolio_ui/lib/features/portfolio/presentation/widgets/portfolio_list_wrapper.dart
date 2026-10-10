@@ -11,7 +11,6 @@ import 'package:am_common/am_common.dart';
 import '../mobile/portfolio_mobile_screen.dart';
 import '../web/portfolio_web_screen.dart';
 
-
 /// Wrapper widget that handles portfolio list loading and selection
 /// Provides portfolio selection functionality for both mobile and web screens
 class PortfolioListWrapper extends ConsumerStatefulWidget {
@@ -35,15 +34,34 @@ class PortfolioListWrapper extends ConsumerStatefulWidget {
   final String? initialPortfolioId;
   final String initialTab;
   final ValueChanged<String>? onTabChanged;
-  final void Function(String portfolioId, String portfolioName)? onPortfolioChanged;
+  final void Function(String portfolioId, String portfolioName)?
+  onPortfolioChanged;
   final bool isSidebarVisible;
   final VoidCallback? onToggleSidebar;
   final VoidCallback? onBack;
-  final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
-  final Widget Function(BuildContext context, String portfolioId)? holdingsPageBuilder;
+  final Widget Function(
+    BuildContext context,
+    String portfolioId,
+    String? portfolioName,
+    VoidCallback onComplete,
+  )?
+  addTradeBuilder;
+  final Widget Function(BuildContext context, String portfolioId)?
+  holdingsPageBuilder;
   final VoidCallback? onOpenDocIntel;
-  final Widget Function(String portfolioId, String? portfolioName, VoidCallback onCancel)? uploadPortfolioBuilder;
-  final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addAssetClassBuilder;
+  final Widget Function(
+    String portfolioId,
+    String? portfolioName,
+    VoidCallback onCancel,
+  )?
+  uploadPortfolioBuilder;
+  final Widget Function(
+    BuildContext context,
+    String portfolioId,
+    String? portfolioName,
+    VoidCallback onComplete,
+  )?
+  addAssetClassBuilder;
 
   @override
   ConsumerState<PortfolioListWrapper> createState() =>
@@ -86,9 +104,9 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
     if (_streamActivatedForId == portfolioId) return;
     _streamActivatedForId = portfolioId;
     context.read<PortfolioCubit>().subscribeToPortfolioUpdates(
-          portfolioId: portfolioId,
-          forceResubscribe: true,
-        );
+      portfolioId: portfolioId,
+      forceResubscribe: true,
+    );
     CommonLogger.info(
       'Portfolio stream activated for $portfolioId',
       tag: 'PortfolioListWrapper',
@@ -118,7 +136,8 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
   void _autoSelectFirstPortfolio(List<PortfolioItem> portfolios) {
     if (portfolios.isEmpty) return;
 
-    if (selectedPortfolioId == 'all' || context.selectedPortfolioId == 'all') return;
+    if (selectedPortfolioId == 'all' || context.selectedPortfolioId == 'all')
+      return;
     if (selectedPortfolioId != null) {
       _ensureStreamActive(selectedPortfolioId!);
       return;
@@ -153,8 +172,8 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
             content: Text(
               'Portfolio not found or access denied. Showing default.',
               style: context.text.body().copyWith(
-                    color: context.colors.textPrimary,
-                  ),
+                color: context.colors.textPrimary,
+              ),
             ),
             backgroundColor: context.statusError,
           ),
@@ -283,8 +302,7 @@ class _PortfolioListWrapperState extends ConsumerState<PortfolioListWrapper> {
   bool _shouldListenForListChanges(
     PortfolioState previous,
     PortfolioState current,
-  ) =>
-      current is PortfolioListLoaded && previous is! PortfolioListLoaded;
+  ) => current is PortfolioListLoaded && previous is! PortfolioListLoaded;
 
   /// Handles portfolio state changes
   void _handlePortfolioStateChange(BuildContext context, PortfolioState state) {

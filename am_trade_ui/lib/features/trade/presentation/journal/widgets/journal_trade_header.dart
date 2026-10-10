@@ -15,7 +15,10 @@ class JournalTradeHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16.0),
-      color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+      color: Theme.of(context)
+          .colorScheme
+          .surfaceContainerHighest
+          .withOpacity(0.3),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -25,7 +28,8 @@ class JournalTradeHeader extends StatelessWidget {
                 backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                 child: Text(
                   entry.symbol?.substring(0, 1) ?? 'T',
-                  style: TextStyle(color: Theme.of(context).colorScheme.onPrimaryContainer),
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimaryContainer),
                 ),
               ),
               const SizedBox(width: 16),
@@ -34,13 +38,16 @@ class JournalTradeHeader extends StatelessWidget {
                 children: [
                   Text(
                     entry.symbol ?? 'New Trade',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   Text(
                     entry.setup ?? 'No Setup Selected',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                   ),
                 ],
               ),
@@ -50,9 +57,11 @@ class JournalTradeHeader extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: _getStatusColor(context, entry.journalStatus).withOpacity(0.1),
+              color: _getStatusColor(context, entry.journalStatus)
+                  .withOpacity(0.1),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: _getStatusColor(context, entry.journalStatus)),
+              border: Border.all(
+                  color: _getStatusColor(context, entry.journalStatus)),
             ),
             child: Text(
               entry.journalStatus ?? 'OPEN',

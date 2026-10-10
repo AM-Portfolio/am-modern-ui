@@ -47,7 +47,8 @@ class OmsCubit extends Cubit<OmsState> {
       emit(state.copyWith(
         paperWallet: wallet,
         submitting: false,
-        toast: 'Paper wallet ready — ₹${wallet.available} virtual cash, not a live broker order.',
+        toast:
+            'Paper wallet ready — ₹${wallet.available} virtual cash, not a live broker order.',
       ));
       await loadOrders();
     } catch (e) {
@@ -85,7 +86,8 @@ class OmsCubit extends Cubit<OmsState> {
         symbol: symbol,
         side: side,
         quantity: quantity,
-        idempotencyKey: '${DateTime.now().toUtc().microsecondsSinceEpoch}-$symbol-$side-$quantity',
+        idempotencyKey:
+            '${DateTime.now().toUtc().microsecondsSinceEpoch}-$symbol-$side-$quantity',
       );
       OmsWallet nextWallet = wallet;
       if (order.available != null) {

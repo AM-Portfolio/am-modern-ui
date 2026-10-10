@@ -6,33 +6,27 @@ import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intellig
 void main() {
   group('suggestItemsToDocuments', () {
     test('selectLabel keeps label as selection key', () {
-      final docs = suggestItemsToDocuments(
-        const [
-          IntelligenceSuggestItem(
-            label: 'IT',
-            subtitle: '2 holdings · 10.0% of book',
-            source: 'CANONICAL',
-          ),
-        ],
-        selectLabel: true,
-      );
+      final docs = suggestItemsToDocuments(const [
+        IntelligenceSuggestItem(
+          label: 'IT',
+          subtitle: '2 holdings · 10.0% of book',
+          source: 'CANONICAL',
+        ),
+      ], selectLabel: true);
       expect(docs.single.key?.symbol, 'IT');
       expect(docs.single.metadata?.companyName, contains('IT'));
       expect(docs.single.metadata?.companyName, contains('2 holdings'));
     });
 
     test('ticker mode selects symbol', () {
-      final docs = suggestItemsToDocuments(
-        const [
-          IntelligenceSuggestItem(
-            label: 'TCS',
-            symbol: 'TCS',
-            subtitle: 'Held · 5.0%',
-            source: 'HOLDING',
-          ),
-        ],
-        selectLabel: false,
-      );
+      final docs = suggestItemsToDocuments(const [
+        IntelligenceSuggestItem(
+          label: 'TCS',
+          symbol: 'TCS',
+          subtitle: 'Held · 5.0%',
+          source: 'HOLDING',
+        ),
+      ], selectLabel: false);
       expect(docs.single.key?.symbol, 'TCS');
       expect(docs.single.metadata?.companyName, 'Held · 5.0%');
     });
@@ -57,12 +51,9 @@ void main() {
   group('searchWhatIfSymbols market fill', () {
     test('merges backend holdings then market when under limit', () async {
       // Unit-level merge path via suggestItems + manual merge pattern.
-      final fromBackend = suggestItemsToDocuments(
-        const [
-          IntelligenceSuggestItem(label: 'TCS', symbol: 'TCS', source: 'HOLDING'),
-        ],
-        selectLabel: false,
-      );
+      final fromBackend = suggestItemsToDocuments(const [
+        IntelligenceSuggestItem(label: 'TCS', symbol: 'TCS', source: 'HOLDING'),
+      ], selectLabel: false);
       final fromMarket = [
         labelToSecurityDocument('TECHM', companyName: 'Tech Mahindra'),
         labelToSecurityDocument('TCS', companyName: 'dup'),
@@ -77,10 +68,7 @@ void main() {
         seen.add(sym);
         merged.add(doc);
       }
-      expect(
-        merged.map((d) => d.key?.symbol).toList(),
-        ['TCS', 'TECHM'],
-      );
+      expect(merged.map((d) => d.key?.symbol).toList(), ['TCS', 'TECHM']);
     });
   });
 }

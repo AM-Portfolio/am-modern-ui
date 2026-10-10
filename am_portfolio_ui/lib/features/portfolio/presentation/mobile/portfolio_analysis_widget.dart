@@ -37,9 +37,7 @@ class _PortfolioAnalysisWidgetState extends State<PortfolioAnalysisWidget> {
         '🔍 PortfolioAnalysisWidget: About to call loadAnalytics with portfolioId: ${widget.portfolioId}',
         tag: 'PortfolioAnalysisWidget',
       );
-      context.read<PortfolioAnalyticsCubit>().loadAnalytics(
-        widget.portfolioId,
-      );
+      context.read<PortfolioAnalyticsCubit>().loadAnalytics(widget.portfolioId);
     });
   }
 

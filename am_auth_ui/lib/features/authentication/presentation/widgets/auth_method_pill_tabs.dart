@@ -85,9 +85,7 @@ class _PillSegment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fg = selected
-        ? Colors.white
-        : context.colors.textSecondary;
+    final fg = selected ? Colors.white : context.colors.textSecondary;
 
     return Material(
       color: Colors.transparent,

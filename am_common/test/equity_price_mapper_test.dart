@@ -28,7 +28,8 @@ void main() {
     expect(quote.changePercent, closeTo(0.22, 0.01));
   });
 
-  test('quoteChangeFromEquityPriceJson computes change from ITC-style payload', () {
+  test('quoteChangeFromEquityPriceJson computes change from ITC-style payload',
+      () {
     final quote = quoteChangeFromEquityPriceJson({
       'symbol': 'ITC',
       'lastPrice': 289.28,
@@ -46,7 +47,9 @@ void main() {
     expect(quote.previousClose, 289.85);
   });
 
-  test('quoteChangeFromEquityPriceJson uses explicit change fields when present', () {
+  test(
+      'quoteChangeFromEquityPriceJson uses explicit change fields when present',
+      () {
     final quote = quoteChangeFromEquityPriceJson({
       'lastPrice': 100.0,
       'previousClose': 98.0,

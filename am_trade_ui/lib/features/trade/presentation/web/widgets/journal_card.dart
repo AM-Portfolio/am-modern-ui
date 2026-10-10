@@ -24,14 +24,16 @@ class JournalCard extends StatefulWidget {
   State<JournalCard> createState() => _JournalCardState();
 }
 
-class _JournalCardState extends State<JournalCard> with SingleTickerProviderStateMixin {
+class _JournalCardState extends State<JournalCard>
+    with SingleTickerProviderStateMixin {
   late AnimationController _hoverController;
   bool _isHovered = false;
 
   @override
   void initState() {
     super.initState();
-    _hoverController = AnimationController(duration: const Duration(milliseconds: 200), vsync: this);
+    _hoverController = AnimationController(
+        duration: const Duration(milliseconds: 200), vsync: this);
   }
 
   @override
@@ -62,11 +64,13 @@ class _JournalCardState extends State<JournalCard> with SingleTickerProviderStat
             scale: 1.0 + (0.02 * _hoverController.value),
             child: Card(
               elevation: 2 + (6 * _hoverController.value),
-              shadowColor: theme.colorScheme.primary.withOpacity(0.3 * _hoverController.value),
+              shadowColor: theme.colorScheme.primary
+                  .withOpacity(0.3 * _hoverController.value),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
                 side: BorderSide(
-                  color: theme.colorScheme.primary.withOpacity(0.1 + (0.3 * _hoverController.value)),
+                  color: theme.colorScheme.primary
+                      .withOpacity(0.1 + (0.3 * _hoverController.value)),
                   width: 1.5,
                 ),
               ),
@@ -78,7 +82,8 @@ class _JournalCardState extends State<JournalCard> with SingleTickerProviderStat
                     end: Alignment.bottomRight,
                     colors: [
                       theme.colorScheme.surface,
-                      theme.colorScheme.surfaceContainerHighest.withOpacity(0.2 + (0.3 * _hoverController.value)),
+                      theme.colorScheme.surfaceContainerHighest
+                          .withOpacity(0.2 + (0.3 * _hoverController.value)),
                     ],
                   ),
                 ),
@@ -89,8 +94,12 @@ class _JournalCardState extends State<JournalCard> with SingleTickerProviderStat
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       // Header with date and metadata
-                      Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 12), child: _buildHeader(theme)),
-                      Divider(height: 1, color: theme.dividerColor.withOpacity(0.2)),
+                      Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                          child: _buildHeader(theme)),
+                      Divider(
+                          height: 1,
+                          color: theme.dividerColor.withOpacity(0.2)),
 
                       // Main content
                       Padding(
@@ -101,10 +110,22 @@ class _JournalCardState extends State<JournalCard> with SingleTickerProviderStat
                             _buildTitle(theme),
                             const SizedBox(height: 12),
                             _buildContent(theme),
-                            if (_hasMoodOrSentiment()) ...[const SizedBox(height: 12), _buildMoodAndSentiment(theme)],
-                            if (_hasWatchlistItems()) ...[const SizedBox(height: 12), _buildWatchlistSection(theme)],
-                            if (_hasReflectionItems()) ...[const SizedBox(height: 12), _buildReflectionSection(theme)],
-                            if (_hasTags()) ...[const SizedBox(height: 12), _buildTags(theme)],
+                            if (_hasMoodOrSentiment()) ...[
+                              const SizedBox(height: 12),
+                              _buildMoodAndSentiment(theme)
+                            ],
+                            if (_hasWatchlistItems()) ...[
+                              const SizedBox(height: 12),
+                              _buildWatchlistSection(theme)
+                            ],
+                            if (_hasReflectionItems()) ...[
+                              const SizedBox(height: 12),
+                              _buildReflectionSection(theme)
+                            ],
+                            if (_hasTags()) ...[
+                              const SizedBox(height: 12),
+                              _buildTags(theme)
+                            ],
                           ],
                         ),
                       ),
@@ -127,7 +148,8 @@ class _JournalCardState extends State<JournalCard> with SingleTickerProviderStat
 
   bool _hasTags() {
     if (widget.entry.behaviorPatternSummaries.isEmpty) return false;
-    return widget.entry.behaviorPatternSummaries.any((pattern) => pattern.tags.isNotEmpty);
+    return widget.entry.behaviorPatternSummaries
+        .any((pattern) => pattern.tags.isNotEmpty);
   }
 
   bool _hasWatchlistItems() =>
@@ -140,23 +162,27 @@ class _JournalCardState extends State<JournalCard> with SingleTickerProviderStat
 
   Widget _buildHeader(ThemeData theme) {
     final entry = widget.entry;
-    final attachmentCount = entry.attachments.isNotEmpty ? entry.attachments.length : entry.imageUrls.length;
+    final attachmentCount = entry.attachments.isNotEmpty
+        ? entry.attachments.length
+        : entry.imageUrls.length;
     final hasBehaviorTracking =
         entry.customFields.containsKey('startBehavior') ||
-        entry.customFields.containsKey('midBehavior') ||
-        entry.customFields.containsKey('endBehavior');
+            entry.customFields.containsKey('midBehavior') ||
+            entry.customFields.containsKey('endBehavior');
 
     return Row(
       children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5),
+            color:
+                Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
             entry.entryDate.toString().split(' ')[0],
-            style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.primary, fontWeight: FontWeight.w600),
+            style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.primary, fontWeight: FontWeight.w600),
           ),
         ),
         const SizedBox(width: 8),
@@ -179,14 +205,19 @@ class _JournalCardState extends State<JournalCard> with SingleTickerProviderStat
           const SizedBox(width: 6),
         ],
         if (hasBehaviorTracking) ...[
-          _buildMetadataChip(theme, icon: Icons.psychology, label: 'Behavior', color: theme.colorScheme.primary),
+          _buildMetadataChip(theme,
+              icon: Icons.psychology,
+              label: 'Behavior',
+              color: theme.colorScheme.primary),
         ],
         const Spacer(),
         IconButton(
           icon: Icon(
             Icons.delete_outline,
             size: 18,
-            color: _isHovered ? theme.colorScheme.error : theme.colorScheme.error.withOpacity(0.5),
+            color: _isHovered
+                ? theme.colorScheme.error
+                : theme.colorScheme.error.withOpacity(0.5),
           ),
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),
@@ -197,29 +228,35 @@ class _JournalCardState extends State<JournalCard> with SingleTickerProviderStat
   }
 
   Widget _buildTitle(ThemeData theme) => Text(
-    widget.entry.title,
-    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.3),
-    maxLines: 2,
-    overflow: TextOverflow.ellipsis,
-  );
+        widget.entry.title,
+        style: theme.textTheme.titleMedium
+            ?.copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.3),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      );
 
   Widget _buildContent(ThemeData theme) => Text(
-    widget.limitToWords(widget.extractPlainText(widget.entry.content), 25),
-    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.7), height: 1.5),
-    maxLines: 3,
-    overflow: TextOverflow.ellipsis,
-  );
+        widget.limitToWords(widget.extractPlainText(widget.entry.content), 25),
+        style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurface.withOpacity(0.7), height: 1.5),
+        maxLines: 3,
+        overflow: TextOverflow.ellipsis,
+      );
 
   Widget _buildMoodAndSentiment(ThemeData theme) {
-    if (widget.entry.behaviorPatternSummaries.isEmpty) return const SizedBox.shrink();
+    if (widget.entry.behaviorPatternSummaries.isEmpty)
+      return const SizedBox.shrink();
     final firstPattern = widget.entry.behaviorPatternSummaries.first;
 
     return Row(
       children: [
         if (firstPattern.mood != null) _buildMoodChip(firstPattern.mood!),
-        if (firstPattern.mood != null && firstPattern.marketSentiment != null) const SizedBox(width: 6),
+        if (firstPattern.mood != null && firstPattern.marketSentiment != null)
+          const SizedBox(width: 6),
         if (firstPattern.marketSentiment != null)
-          _buildSentimentChip(JournalHelpers.mapSentimentFromValue(firstPattern.marketSentiment) ?? 'neutral'),
+          _buildSentimentChip(JournalHelpers.mapSentimentFromValue(
+                  firstPattern.marketSentiment) ??
+              'neutral'),
       ],
     );
   }
@@ -240,7 +277,8 @@ class _JournalCardState extends State<JournalCard> with SingleTickerProviderStat
         children: [
           Row(
             children: [
-              Icon(Icons.visibility, size: 14, color: theme.colorScheme.secondary),
+              Icon(Icons.visibility,
+                  size: 14, color: theme.colorScheme.secondary),
               const SizedBox(width: 6),
               Text(
                 'Pre-Market Watchlist',
@@ -252,9 +290,7 @@ class _JournalCardState extends State<JournalCard> with SingleTickerProviderStat
             ],
           ),
           const SizedBox(height: 8),
-          ...watchlist
-              .take(2)
-              .map(
+          ...watchlist.take(2).map(
                 (item) => Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
@@ -286,7 +322,8 @@ class _JournalCardState extends State<JournalCard> with SingleTickerProviderStat
         children: [
           Row(
             children: [
-              Icon(Icons.lightbulb, size: 14, color: theme.colorScheme.tertiary),
+              Icon(Icons.lightbulb,
+                  size: 14, color: theme.colorScheme.tertiary),
               const SizedBox(width: 6),
               Text(
                 'Post-Session Thoughts',
@@ -298,7 +335,10 @@ class _JournalCardState extends State<JournalCard> with SingleTickerProviderStat
             ],
           ),
           const SizedBox(height: 8),
-          Text(reflection, style: theme.textTheme.bodySmall, maxLines: 2, overflow: TextOverflow.ellipsis),
+          Text(reflection,
+              style: theme.textTheme.bodySmall,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis),
         ],
       ),
     );
@@ -325,7 +365,10 @@ class _JournalCardState extends State<JournalCard> with SingleTickerProviderStat
       ),
       child: Text(
         '${moodData['emoji']} ${moodData['label']}',
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: moodData['color'] as Color),
+        style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: moodData['color'] as Color),
       ),
     );
   }
@@ -344,11 +387,15 @@ class _JournalCardState extends State<JournalCard> with SingleTickerProviderStat
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(sentimentData['icon'] as IconData, size: 12, color: sentimentData['color'] as Color),
+          Icon(sentimentData['icon'] as IconData,
+              size: 12, color: sentimentData['color'] as Color),
           const SizedBox(width: 4),
           Text(
             sentimentData['label'] as String,
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: sentimentData['color'] as Color),
+            style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: sentimentData['color'] as Color),
           ),
         ],
       ),
@@ -356,10 +403,16 @@ class _JournalCardState extends State<JournalCard> with SingleTickerProviderStat
   }
 
   Widget _buildTags(ThemeData theme) {
-    final allTags = widget.entry.behaviorPatternSummaries.expand((pattern) => pattern.tags).toSet().toList();
+    final allTags = widget.entry.behaviorPatternSummaries
+        .expand((pattern) => pattern.tags)
+        .toSet()
+        .toList();
     if (allTags.isEmpty) return const SizedBox.shrink();
 
-    return Wrap(spacing: 6, runSpacing: 6, children: allTags.take(3).map(_buildTagChip).toList());
+    return Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        children: allTags.take(3).map(_buildTagChip).toList());
   }
 
   Widget _buildTagChip(String tag) {
@@ -377,12 +430,18 @@ class _JournalCardState extends State<JournalCard> with SingleTickerProviderStat
       ),
       child: Text(
         tag,
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: tagData['color'] as Color),
+        style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: tagData['color'] as Color),
       ),
     );
   }
 
-  Widget _buildMetadataChip(ThemeData theme, {required IconData icon, required String label, required Color color}) =>
+  Widget _buildMetadataChip(ThemeData theme,
+          {required IconData icon,
+          required String label,
+          required Color color}) =>
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
@@ -397,7 +456,8 @@ class _JournalCardState extends State<JournalCard> with SingleTickerProviderStat
             const SizedBox(width: 4),
             Text(
               label,
-              style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w600, color: color, fontSize: 11),
+              style: theme.textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w600, color: color, fontSize: 11),
             ),
           ],
         ),

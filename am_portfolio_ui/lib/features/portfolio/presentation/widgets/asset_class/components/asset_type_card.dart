@@ -24,7 +24,7 @@ class AssetTypeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     // The width will be controlled by the parent layout (Expanded/Row).
 
     return Semantics(
@@ -44,7 +44,9 @@ class AssetTypeCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               color: isSelected
                   ? ModuleColors.portfolio.withValues(alpha: 0.1)
-                  : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  : theme.colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.3,
+                    ),
               border: Border.all(
                 color: isSelected
                     ? ModuleColors.portfolio
@@ -57,7 +59,7 @@ class AssetTypeCard extends StatelessWidget {
                         color: ModuleColors.portfolio.withValues(alpha: 0.2),
                         blurRadius: 16,
                         spreadRadius: 2,
-                      )
+                      ),
                     ]
                   : [],
             ),
@@ -74,11 +76,7 @@ class AssetTypeCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Center(
-                        child: Icon(
-                          icon,
-                          size: 24,
-                          color: iconColor,
-                        ),
+                        child: Icon(icon, size: 24, color: iconColor),
                       ),
                     ),
                     const SizedBox(width: AppSpacing.md),
@@ -88,16 +86,20 @@ class AssetTypeCard extends StatelessWidget {
                         children: [
                           const SizedBox(height: 2),
                           Text(
-                            title, 
+                            title,
                             style: TextStyle(
                               fontSize: 14,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                              color: isSelected ? context.textPrimary : context.textSecondary,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.w600,
+                              color: isSelected
+                                  ? context.textPrimary
+                                  : context.textSecondary,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            subtitle, 
+                            subtitle,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                               height: 1.3,
@@ -113,7 +115,8 @@ class AssetTypeCard extends StatelessWidget {
                   right: -2,
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 150),
-                    transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
+                    transitionBuilder: (child, animation) =>
+                        ScaleTransition(scale: animation, child: child),
                     child: isSelected
                         ? Icon(
                             Icons.check_circle,
@@ -125,7 +128,8 @@ class AssetTypeCard extends StatelessWidget {
                             Icons.circle_outlined,
                             key: const ValueKey('unchecked'),
                             size: 24,
-                            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                            color: theme.colorScheme.onSurfaceVariant
+                                .withValues(alpha: 0.5),
                           ),
                   ),
                 ),

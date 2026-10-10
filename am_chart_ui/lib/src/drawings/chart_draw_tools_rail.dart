@@ -99,11 +99,10 @@ class ChartDrawToolsRail extends StatelessWidget {
                     ),
                   Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 6),
-                    child: Divider(
-                      height: 1,
-                      color: edge,
+                      horizontal: 10,
+                      vertical: 6,
                     ),
+                    child: Divider(height: 1, color: edge),
                   ),
                   _RailIcon(
                     tooltip: ChartDrawTool.eraser.label,
@@ -163,7 +162,9 @@ class _RailIcon extends StatelessWidget {
         child: Material(
           color: selected
               ? (selectedBg ??
-                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.22))
+                    Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.22))
               : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
           child: InkWell(

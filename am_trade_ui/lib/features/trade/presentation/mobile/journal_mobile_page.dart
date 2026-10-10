@@ -280,7 +280,8 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
           return ListView.separated(
             padding: const EdgeInsets.all(AppSpacing.md),
             itemCount: entries.length,
-            separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm + 4),
+            separatorBuilder: (_, __) =>
+                const SizedBox(height: AppSpacing.sm + 4),
             itemBuilder: (context, index) {
               final entry = entries[index];
               return Card(

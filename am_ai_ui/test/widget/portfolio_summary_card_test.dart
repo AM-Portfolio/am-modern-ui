@@ -200,8 +200,7 @@ void main() {
     // ── Gain / loss color ─────────────────────────────────────────────────────
 
     group('gain/loss color', () {
-      testWidgets(
-          'positive totalGainLoss — uses theme market-positive color',
+      testWidgets('positive totalGainLoss — uses theme market-positive color',
           (WidgetTester tester) async {
         await tester.pumpWidget(
           _buildCard(_baseData(
@@ -220,8 +219,7 @@ void main() {
         expect(profitTexts, isNotEmpty);
       });
 
-      testWidgets(
-          'negative totalGainLoss — uses theme market-negative color',
+      testWidgets('negative totalGainLoss — uses theme market-negative color',
           (WidgetTester tester) async {
         await tester.pumpWidget(
           _buildCard(_baseData(
@@ -252,7 +250,8 @@ void main() {
           (i) => _breakdownItem('Portfolio ${i + 1}', 20000 + i * 1000, 5.0),
         );
 
-        await tester.pumpWidget(_buildCard(_baseData(portfolioBreakdown: items)));
+        await tester
+            .pumpWidget(_buildCard(_baseData(portfolioBreakdown: items)));
         await tester.pumpAndSettle();
 
         // Overflow text: '+${5 - 4} more portfolios' = '+1 more portfolios'
@@ -268,7 +267,8 @@ void main() {
           (i) => _breakdownItem('Portfolio ${i + 1}', 20000 + i * 1000, 5.0),
         );
 
-        await tester.pumpWidget(_buildCard(_baseData(portfolioBreakdown: items)));
+        await tester
+            .pumpWidget(_buildCard(_baseData(portfolioBreakdown: items)));
         await tester.pumpAndSettle();
 
         expect(find.textContaining('more portfolios'), findsNothing);
@@ -283,7 +283,8 @@ void main() {
           (i) => _breakdownItem('Portfolio ${i + 1}', 10000, 2.5),
         );
 
-        await tester.pumpWidget(_buildCard(_baseData(portfolioBreakdown: items)));
+        await tester
+            .pumpWidget(_buildCard(_baseData(portfolioBreakdown: items)));
         await tester.pumpAndSettle();
 
         expect(find.textContaining('more portfolios'), findsNothing);
@@ -294,8 +295,7 @@ void main() {
     // ── Performer chips ───────────────────────────────────────────────────────
 
     group('performer chips', () {
-      testWidgets(
-          'bestPerformer present — renders "Best: RELIANCE" chip text',
+      testWidgets('bestPerformer present — renders "Best: RELIANCE" chip text',
           (WidgetTester tester) async {
         await tester.pumpWidget(
           _buildCard(_baseData(
@@ -308,8 +308,7 @@ void main() {
         expect(find.text('Best: RELIANCE'), findsOneWidget);
       });
 
-      testWidgets(
-          'worstPerformer present — renders "Worst: INFY" chip text',
+      testWidgets('worstPerformer present — renders "Worst: INFY" chip text',
           (WidgetTester tester) async {
         await tester.pumpWidget(
           _buildCard(_baseData(
@@ -322,8 +321,7 @@ void main() {
         expect(find.text('Worst: INFY'), findsOneWidget);
       });
 
-      testWidgets(
-          'worstPerformer absent — worst performer chip not visible',
+      testWidgets('worstPerformer absent — worst performer chip not visible',
           (WidgetTester tester) async {
         await tester.pumpWidget(
           _buildCard(_baseData(
@@ -337,8 +335,7 @@ void main() {
         expect(find.textContaining('Worst:'), findsNothing);
       });
 
-      testWidgets(
-          'bestPerformer absent — best performer chip not visible',
+      testWidgets('bestPerformer absent — best performer chip not visible',
           (WidgetTester tester) async {
         await tester.pumpWidget(
           _buildCard(_baseData(
@@ -352,8 +349,7 @@ void main() {
         expect(find.text('Worst: HDFC'), findsOneWidget);
       });
 
-      testWidgets(
-          'neither performer present — performer section not rendered',
+      testWidgets('neither performer present — performer section not rendered',
           (WidgetTester tester) async {
         await tester.pumpWidget(_buildCard(_baseData()));
         await tester.pumpAndSettle();

@@ -33,7 +33,11 @@ class FpStepper extends StatelessWidget {
           ),
           alignment: Alignment.center,
           child: isCompleted
-              ? Icon(Icons.check, size: 16, color: context.colors.actionPrimaryFg)
+              ? Icon(
+                  Icons.check,
+                  size: 16,
+                  color: context.colors.actionPrimaryFg,
+                )
               : Text(
                   number ?? '',
                   style: theme.textTheme.labelSmall?.copyWith(
@@ -47,7 +51,9 @@ class FpStepper extends StatelessWidget {
           label,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: textColor,
-            fontWeight: (isCompleted || isActive) ? FontWeight.bold : FontWeight.normal,
+            fontWeight: (isCompleted || isActive)
+                ? FontWeight.bold
+                : FontWeight.normal,
           ),
         ),
       ],
@@ -72,13 +78,39 @@ class FpStepper extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildStep(context, 'Preview', isCompleted: true, isActive: false, isPending: false),
+            _buildStep(
+              context,
+              'Preview',
+              isCompleted: true,
+              isActive: false,
+              isPending: false,
+            ),
             _buildLine(context),
-            _buildStep(context, 'Customize', isCompleted: true, isActive: false, isPending: false),
+            _buildStep(
+              context,
+              'Customize',
+              isCompleted: true,
+              isActive: false,
+              isPending: false,
+            ),
             _buildLine(context),
-            _buildStep(context, 'Final Preview', isCompleted: false, isActive: true, isPending: false, number: '3'),
+            _buildStep(
+              context,
+              'Final Preview',
+              isCompleted: false,
+              isActive: true,
+              isPending: false,
+              number: '3',
+            ),
             _buildLine(context),
-            _buildStep(context, 'Confirm & Create', isCompleted: false, isActive: false, isPending: true, number: '4'),
+            _buildStep(
+              context,
+              'Confirm & Create',
+              isCompleted: false,
+              isActive: false,
+              isPending: true,
+              number: '4',
+            ),
           ],
         ),
       ),

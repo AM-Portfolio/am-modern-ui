@@ -65,8 +65,9 @@ class JournalRepositoryImpl implements JournalRepository {
             : null,
         planAdherenceScore: planAdherenceScore,
         checklistCompletionPct: checklistCompletionPct,
-        behaviorPatternSummaries:
-            behaviorPatternSummaries?.map(JournalEntryMapper.toBehaviorPatternDto).toList(),
+        behaviorPatternSummaries: behaviorPatternSummaries
+            ?.map(JournalEntryMapper.toBehaviorPatternDto)
+            .toList(),
         customFields: customFields,
         imageUrls: imageUrls,
         attachments:
@@ -216,8 +217,7 @@ class JournalRepositoryImpl implements JournalRepository {
   Future<List<JournalEntry>> getJournalEntriesByUser({
     Map<String, dynamic>? query,
   }) async {
-    final dtos =
-        await _remoteDataSource.getJournalEntriesByUser(query: query);
+    final dtos = await _remoteDataSource.getJournalEntriesByUser(query: query);
     return dtos.map(JournalEntryMapper.fromResponseDto).toList();
   }
 

@@ -47,11 +47,21 @@ class _AnalysisDashboardState extends State<AnalysisDashboard> {
   }
 
   void _loadData() {
-    _allocationFuture = widget.analysisService.getAllocation(widget.entityId, widget.entityType);
-    _performanceFuture = widget.analysisService.getPerformance(widget.entityId, widget.entityType, '1M');
+    _allocationFuture = widget.analysisService.getAllocation(
+      widget.entityId,
+      widget.entityType,
+    );
+    _performanceFuture = widget.analysisService.getPerformance(
+      widget.entityId,
+      widget.entityType,
+      '1M',
+    );
     // For top movers, if entityId is present, we get generic movers WITHIN that entity
     // If not, we get top movers OF that type (e.g. top ETF performers)
-    _moversFuture = widget.analysisService.getTopMovers(id: widget.entityId, type: widget.entityType);
+    _moversFuture = widget.analysisService.getTopMovers(
+      id: widget.entityId,
+      type: widget.entityType,
+    );
   }
 
   @override
@@ -61,7 +71,10 @@ class _AnalysisDashboardState extends State<AnalysisDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Analysis Dashboard', style: Theme.of(context).textTheme.headlineMedium),
+          Text(
+            'Analysis Dashboard',
+            style: Theme.of(context).textTheme.headlineMedium,
+          ),
           const SizedBox(height: 16),
           LayoutBuilder(
             builder: (context, constraints) {
@@ -92,10 +105,7 @@ class _AnalysisDashboardState extends State<AnalysisDashboard> {
           ),
         ),
         const SizedBox(width: 16),
-        Expanded(
-          flex: 1,
-          child: _buildMoversSection(),
-        ),
+        Expanded(flex: 1, child: _buildMoversSection()),
       ],
     );
   }

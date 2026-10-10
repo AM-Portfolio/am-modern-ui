@@ -21,7 +21,8 @@ class _FakeSecurityEventsApi implements SecurityEventsApi {
 
 void main() {
   group('SecurityAlertService', () {
-    test('pollNow emits unread new_device_login events when tab visible', () async {
+    test('pollNow emits unread new_device_login events when tab visible',
+        () async {
       final dataSource = _FakeSecurityEventsApi();
       dataSource.events = const [
         SecurityEventModel(
@@ -44,7 +45,8 @@ void main() {
       service.events.listen(completer.complete);
 
       await service.pollNow();
-      final emitted = await completer.future.timeout(const Duration(seconds: 1));
+      final emitted =
+          await completer.future.timeout(const Duration(seconds: 1));
 
       expect(emitted, hasLength(1));
       expect(emitted.first.eventId, 'evt-1');

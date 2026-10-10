@@ -30,12 +30,11 @@ abstract class BasketRepository {
   Future<BasketOpportunity> applySubstitutes(Map<String, dynamic> request);
 
   Future<BasketOpportunity> calculateQuantities(Map<String, dynamic> request);
-  Future<BasketOpportunity> calculateQuantitiesFinalPreview(Map<String, dynamic> request);
+  Future<BasketOpportunity> calculateQuantitiesFinalPreview(
+    Map<String, dynamic> request,
+  );
 
-  Future<void> deleteBasket({
-    required String basketId,
-    required String userId,
-  });
+  Future<void> deleteBasket({required String basketId, required String userId});
 
   Future<BasketDetail> getBasketDetail({
     required String basketId,
@@ -54,8 +53,5 @@ abstract class BasketRepository {
 
   Future<BasketDraftDetail> upsertDraft(Map<String, dynamic> request);
 
-  Future<void> deleteDraft({
-    required String draftId,
-    required String userId,
-  });
+  Future<void> deleteDraft({required String draftId, required String userId});
 }

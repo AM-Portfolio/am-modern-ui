@@ -80,8 +80,10 @@ class TradeSummaryTemplate extends StatelessWidget {
         Expanded(
           child: _buildSummaryCard(
             title: 'Net P&L',
-            value: '${isPositive ? '+' : ''}\$${(metrics.netProfitLoss ?? 0).toStringAsFixed(2)}',
-            subtitle: '${isPositive ? '+' : ''}${(metrics.netProfitLossPercentage ?? 0).toStringAsFixed(2)}%',
+            value:
+                '${isPositive ? '+' : ''}\$${(metrics.netProfitLoss ?? 0).toStringAsFixed(2)}',
+            subtitle:
+                '${isPositive ? '+' : ''}${(metrics.netProfitLossPercentage ?? 0).toStringAsFixed(2)}%',
             color: isPositive ? Colors.green : Colors.red,
           ),
         ),
@@ -103,24 +105,28 @@ class TradeSummaryTemplate extends StatelessWidget {
     required String value,
     required String subtitle,
     required Color color,
-  }) => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color),
+  }) =>
+      Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title,
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+              const SizedBox(height: 8),
+              Text(
+                value,
+                style: TextStyle(
+                    fontSize: 24, fontWeight: FontWeight.bold, color: color),
+              ),
+              const SizedBox(height: 4),
+              Text(subtitle,
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-        ],
-      ),
-    ),
-  );
+        ),
+      );
 
   Widget _buildSectorAllocation() {
     // Asset allocations will be available later in development
@@ -131,7 +137,8 @@ class TradeSummaryTemplate extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Asset Allocation', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text('Asset Allocation',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
               Center(
                 child: Text(
@@ -151,7 +158,8 @@ class TradeSummaryTemplate extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Asset Allocation', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text('Asset Allocation',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             ...summary.assetAllocations!.map(
               (allocation) => Padding(
@@ -162,7 +170,9 @@ class TradeSummaryTemplate extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(allocation.assetType, style: const TextStyle(fontWeight: FontWeight.w500)),
+                        Text(allocation.assetType,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w500)),
                         Text(
                           '${allocation.percentage.toStringAsFixed(1)}%',
                           style: const TextStyle(fontWeight: FontWeight.bold),
@@ -173,7 +183,8 @@ class TradeSummaryTemplate extends StatelessWidget {
                     LinearProgressIndicator(
                       value: allocation.percentage / 100,
                       backgroundColor: Colors.grey[200],
-                      valueColor: AlwaysStoppedAnimation<Color>(_getAssetColor(allocation.assetType)),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                          _getAssetColor(allocation.assetType)),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -191,78 +202,84 @@ class TradeSummaryTemplate extends StatelessWidget {
   }
 
   Widget _buildTopGainers() => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Top Gainers', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          if (summary.topGainers.isEmpty)
-            const Text('No gainers')
-          else
-            ...summary.topGainers.map(
-              (mover) => ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(mover.symbol),
-                subtitle: Text(mover.name),
-                trailing: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      '+\$${mover.change.toStringAsFixed(2)}',
-                      style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Top Gainers',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              if (summary.topGainers.isEmpty)
+                const Text('No gainers')
+              else
+                ...summary.topGainers.map(
+                  (mover) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(mover.symbol),
+                    subtitle: Text(mover.name),
+                    trailing: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '+\$${mover.change.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                              color: Colors.green, fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          '+${mover.changePercentage.toStringAsFixed(2)}%',
+                          style: const TextStyle(
+                              color: Colors.green, fontSize: 12),
+                        ),
+                      ],
                     ),
-                    Text(
-                      '+${mover.changePercentage.toStringAsFixed(2)}%',
-                      style: const TextStyle(color: Colors.green, fontSize: 12),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-        ],
-      ),
-    ),
-  );
+            ],
+          ),
+        ),
+      );
 
   Widget _buildTopLosers() => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Top Losers', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          if (summary.topLosers.isEmpty)
-            const Text('No losers')
-          else
-            ...summary.topLosers.map(
-              (mover) => ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(mover.symbol),
-                subtitle: Text(mover.name),
-                trailing: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      '\$${mover.change.toStringAsFixed(2)}',
-                      style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Top Losers',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              if (summary.topLosers.isEmpty)
+                const Text('No losers')
+              else
+                ...summary.topLosers.map(
+                  (mover) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(mover.symbol),
+                    subtitle: Text(mover.name),
+                    trailing: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '\$${mover.change.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                              color: Colors.red, fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          '${mover.changePercentage.toStringAsFixed(2)}%',
+                          style:
+                              const TextStyle(color: Colors.red, fontSize: 12),
+                        ),
+                      ],
                     ),
-                    Text(
-                      '${mover.changePercentage.toStringAsFixed(2)}%',
-                      style: const TextStyle(color: Colors.red, fontSize: 12),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-        ],
-      ),
-    ),
-  );
+            ],
+          ),
+        ),
+      );
 
   Color _getAssetColor(String assetType) {
     final colors = {

@@ -36,7 +36,8 @@ class TradePortfolioListMobilePage extends ConsumerWidget {
         data: (portfolios) => TradePortfolioDiscoveryTemplate(
           portfolios: portfolios,
           isLoading: false,
-          onPortfolioSelected: (portfolio) => _navigateToHoldings(context, portfolio),
+          onPortfolioSelected: (portfolio) =>
+              _navigateToHoldings(context, portfolio),
           onRefresh: handleRefresh,
           isWebView: false,
         ),
@@ -58,7 +59,8 @@ class TradePortfolioListMobilePage extends ConsumerWidget {
     );
   }
 
-  void _navigateToHoldings(BuildContext context, TradePortfolioViewModel portfolio) {
+  void _navigateToHoldings(
+      BuildContext context, TradePortfolioViewModel portfolio) {
     Navigator.pushNamed(
       context,
       '/trade/holdings/${portfolio.id}',

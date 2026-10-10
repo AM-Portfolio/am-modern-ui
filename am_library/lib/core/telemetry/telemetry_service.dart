@@ -9,7 +9,7 @@ class TelemetryEvent {
   final DateTime timestamp;
   final TelemetryType type;
   final String category; // e.g., 'Analysis', 'Market', 'Auth'
-  final String label;    // e.g., 'GET /summary'
+  final String label; // e.g., 'GET /summary'
   final Map<String, dynamic>? metadata;
   final Duration? duration;
   final int? statusCode;
@@ -49,14 +49,18 @@ class TelemetryService {
     Duration? duration,
     Map<String, dynamic>? extra,
   }) {
-    record(TelemetryEvent(
-      type: statusCode >= 400 ? TelemetryType.apiError : TelemetryType.apiResponse,
-      category: category,
-      label: '$method $path',
-      statusCode: statusCode,
-      duration: duration,
-      metadata: extra,
-    ));
+    record(
+      TelemetryEvent(
+        type: statusCode >= 400
+            ? TelemetryType.apiError
+            : TelemetryType.apiResponse,
+        category: category,
+        label: '$method $path',
+        statusCode: statusCode,
+        duration: duration,
+        metadata: extra,
+      ),
+    );
   }
 
   void dispose() {

@@ -75,8 +75,11 @@ class _TradingViewChartWidgetState extends State<TradingViewChartWidget> {
             Text(
               'Interval: ${widget.config.interval}',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-              ),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.7),
+                  ),
             ),
             const SizedBox(height: 24),
             Container(

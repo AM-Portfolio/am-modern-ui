@@ -35,7 +35,7 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  
+
   JournalTemplateCategory? _selectedCategory;
   String _searchQuery = '';
   bool _isGridView = true;
@@ -56,7 +56,7 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
       curve: Curves.easeInOut,
     );
     _animationController.forward();
-    
+
     // Load templates
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final cubit = await ref.read(journalTemplateCubitProvider.future);
@@ -87,10 +87,12 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
   @override
   Widget build(BuildContext context) {
     final cubitAsync = ref.watch(journalTemplateCubitProvider);
-    
+
     return cubitAsync.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (error, stack) => Scaffold(body: Center(child: Text('Error: $error'))),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (error, stack) =>
+          Scaffold(body: Center(child: Text('Error: $error'))),
       data: (cubit) => Listener(
         behavior: HitTestBehavior.translucent,
         onPointerDown: (_) => _resetFabHideTimer(),
@@ -105,96 +107,106 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
           child: Scaffold(
             body: Container(
               decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Theme.of(context).colorScheme.surface,
-              Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
-              Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          top: !widget.embedded,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isMobile = constraints.maxWidth < 768;
-              
-              Widget mainContent = Expanded(
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: BlocConsumer<JournalTemplateCubit,
-                      JournalTemplateState>(
-                    bloc: cubit,
-                    listener: (context, state) {
-                      if (state is JournalTemplateError) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(state.message),
-                            backgroundColor: Theme.of(context).colorScheme.error,
-                          ),
-                        );
-                      } else if (state is JournalTemplateCreated) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Template "${state.template.name}" created!'),
-                            backgroundColor: Theme.of(context).colorScheme.primary,
-                          ),
-                        );
-                        cubit.loadTemplates();
-                      }
-                    },
-                    builder: (context, state) {
-                      if (state is JournalTemplateLoading) {
-                        return _buildLoadingState();
-                      } else if (state is JournalTemplateLoaded) {
-                        return _buildTemplateGrid(context, state.templates);
-                      } else if (state is JournalTemplateError) {
-                        return _buildErrorState(context, state.message);
-                      }
-                      return _buildEmptyState(context);
-                    },
-                  ),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Theme.of(context).colorScheme.surface,
+                    Theme.of(context)
+                        .colorScheme
+                        .surfaceContainerHighest
+                        .withOpacity(0.5),
+                    Theme.of(context)
+                        .colorScheme
+                        .primaryContainer
+                        .withOpacity(0.3),
+                  ],
                 ),
-              );
+              ),
+              child: SafeArea(
+                top: !widget.embedded,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isMobile = constraints.maxWidth < 768;
 
-              Widget filterContent = TemplateCategoryFilter(
-                selectedCategory: _selectedCategory,
-                isHorizontal: isMobile,
-                onCategorySelected: (category) {
-                  setState(() => _selectedCategory = category);
-                  cubit.loadTemplates(
-                    category: category,
-                    search: _searchQuery.isEmpty ? null : _searchQuery,
-                  );
-                },
-              );
+                    Widget mainContent = Expanded(
+                      child: FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: BlocConsumer<JournalTemplateCubit,
+                            JournalTemplateState>(
+                          bloc: cubit,
+                          listener: (context, state) {
+                            if (state is JournalTemplateError) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(state.message),
+                                  backgroundColor:
+                                      Theme.of(context).colorScheme.error,
+                                ),
+                              );
+                            } else if (state is JournalTemplateCreated) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                      'Template "${state.template.name}" created!'),
+                                  backgroundColor:
+                                      Theme.of(context).colorScheme.primary,
+                                ),
+                              );
+                              cubit.loadTemplates();
+                            }
+                          },
+                          builder: (context, state) {
+                            if (state is JournalTemplateLoading) {
+                              return _buildLoadingState();
+                            } else if (state is JournalTemplateLoaded) {
+                              return _buildTemplateGrid(
+                                  context, state.templates);
+                            } else if (state is JournalTemplateError) {
+                              return _buildErrorState(context, state.message);
+                            }
+                            return _buildEmptyState(context);
+                          },
+                        ),
+                      ),
+                    );
 
-              return Column(
-                children: [
-                  _buildHeader(context),
-                  if (isMobile) filterContent,
-                  Expanded(
-                    child: isMobile
-                        ? mainContent
-                        : Row(
-                            children: [
-                              filterContent,
-                              mainContent,
-                            ],
-                          ),
-                  ),
-                ],
-              );
-            },
+                    Widget filterContent = TemplateCategoryFilter(
+                      selectedCategory: _selectedCategory,
+                      isHorizontal: isMobile,
+                      onCategorySelected: (category) {
+                        setState(() => _selectedCategory = category);
+                        cubit.loadTemplates(
+                          category: category,
+                          search: _searchQuery.isEmpty ? null : _searchQuery,
+                        );
+                      },
+                    );
+
+                    return Column(
+                      children: [
+                        _buildHeader(context),
+                        if (isMobile) filterContent,
+                        Expanded(
+                          child: isMobile
+                              ? mainContent
+                              : Row(
+                                  children: [
+                                    filterContent,
+                                    mainContent,
+                                  ],
+                                ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+            floatingActionButton: _buildFloatingActionButton(context),
           ),
         ),
       ),
-      floatingActionButton: _buildFloatingActionButton(context),
-    ),
-    ),
-    ),
     );
   }
 
@@ -246,9 +258,10 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
                   children: [
                     Text(
                       'Journal Templates',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -280,7 +293,10 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
   Widget _buildSearchBar(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        color: Theme.of(context)
+            .colorScheme
+            .surfaceContainerHighest
+            .withOpacity(0.3),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
@@ -299,13 +315,15 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
           hintText: 'Search templates...',
           prefixIcon: const Icon(Icons.search),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
       ),
     );
   }
 
-  Widget _buildTemplateGrid(BuildContext context, List<JournalTemplate> templates) {
+  Widget _buildTemplateGrid(
+      BuildContext context, List<JournalTemplate> templates) {
     if (templates.isEmpty) {
       return _buildEmptyState(context);
     }
@@ -410,7 +428,8 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
           Text(
             'Try adjusting your filters or create a new template',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
           ),
         ],
@@ -490,8 +509,7 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
   void _showCreateTemplateDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => CreateTemplateDialog(
-      ),
+      builder: (context) => CreateTemplateDialog(),
     );
   }
 

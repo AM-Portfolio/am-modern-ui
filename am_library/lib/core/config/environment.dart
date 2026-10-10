@@ -44,9 +44,7 @@ class EnvironmentConfig {
   // Native apps use file:/// where [Uri.origin] throws — avoid that path.
   static String get apiBaseUrl {
     final host = Uri.base.host;
-    if (host.isNotEmpty &&
-        host != 'localhost' &&
-        host != '127.0.0.1') {
+    if (host.isNotEmpty && host != 'localhost' && host != '127.0.0.1') {
       return 'https://$host';
     }
     final scheme = Uri.base.scheme;

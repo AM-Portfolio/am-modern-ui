@@ -65,7 +65,8 @@ class _InstrumentCardState extends State<InstrumentCard> {
     setState(() => _isSearching = true);
     try {
       final apiService = GetIt.I<ApiService>();
-      final results = await apiService.searchInstruments(query, 'UPSTOX'); // Defaulting to UPSTOX as provider
+      final results = await apiService.searchInstruments(
+          query, 'UPSTOX'); // Defaulting to UPSTOX as provider
       setState(() {
         _searchResults = results;
         _isSearching = false;
@@ -85,7 +86,12 @@ class _InstrumentCardState extends State<InstrumentCard> {
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: theme.colorScheme.outline.withOpacity(0.1)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 2))
+        ],
       ),
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -99,7 +105,8 @@ class _InstrumentCardState extends State<InstrumentCard> {
                   color: theme.colorScheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Icon(Icons.candlestick_chart, size: 16, color: theme.colorScheme.primary),
+                child: Icon(Icons.candlestick_chart,
+                    size: 16, color: theme.colorScheme.primary),
               ),
               const SizedBox(width: 10),
               Text(
@@ -123,20 +130,31 @@ class _InstrumentCardState extends State<InstrumentCard> {
                       labelText: 'Symbol *',
                       hintText: 'e.g., RELIANCE',
                       prefixIcon: const Icon(Icons.search, size: 18),
-                      suffixIcon: _isSearching 
-                        ? const SizedBox(width: 20, height: 20, child: Padding(padding: EdgeInsets.all(10), child: CircularProgressIndicator(strokeWidth: 2)))
-                        : null,
+                      suffixIcon: _isSearching
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: Padding(
+                                  padding: EdgeInsets.all(10),
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2)))
+                          : null,
                       isDense: true,
                       filled: true,
-                      fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                      fillColor: theme.colorScheme.surfaceContainerHighest
+                          .withOpacity(0.3),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide.none),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: theme.colorScheme.outline.withOpacity(0.1)),
+                        borderSide: BorderSide(
+                            color: theme.colorScheme.outline.withOpacity(0.1)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
+                        borderSide: BorderSide(
+                            color: theme.colorScheme.primary, width: 1.5),
                       ),
                     ),
                     textCapitalization: TextCapitalization.characters,
@@ -149,7 +167,12 @@ class _InstrumentCardState extends State<InstrumentCard> {
                           value: widget.selectedExchange,
                           hint: 'Exchange',
                           items: ExchangeTypes.values
-                              .map((exchange) => exchange.toSimpleDropdownItem(text: exchange.toString().split('.').last.toUpperCase()))
+                              .map((exchange) => exchange.toSimpleDropdownItem(
+                                  text: exchange
+                                      .toString()
+                                      .split('.')
+                                      .last
+                                      .toUpperCase()))
                               .toList(),
                           onChanged: widget.onExchangeChanged,
                           icon: Icons.account_balance,
@@ -161,7 +184,12 @@ class _InstrumentCardState extends State<InstrumentCard> {
                           value: widget.selectedSegment,
                           hint: 'Segment',
                           items: MarketSegments.values
-                              .map((segment) => segment.toSimpleDropdownItem(text: segment.toString().split('.').last.toUpperCase()))
+                              .map((segment) => segment.toSimpleDropdownItem(
+                                  text: segment
+                                      .toString()
+                                      .split('.')
+                                      .last
+                                      .toUpperCase()))
                               .toList(),
                           onChanged: widget.onSegmentChanged,
                           icon: Icons.pie_chart,
@@ -184,18 +212,27 @@ class _InstrumentCardState extends State<InstrumentCard> {
                       decoration: BoxDecoration(
                         color: theme.colorScheme.surface,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.1)),
+                        border: Border.all(
+                            color: theme.colorScheme.outline.withOpacity(0.1)),
                       ),
                       child: ListView.separated(
                         shrinkWrap: true,
                         itemCount: _searchResults.length,
-                        separatorBuilder: (context, index) => Divider(height: 1, color: theme.colorScheme.outline.withOpacity(0.05)),
+                        separatorBuilder: (context, index) => Divider(
+                            height: 1,
+                            color: theme.colorScheme.outline.withOpacity(0.05)),
                         itemBuilder: (context, index) {
                           final instrument = _searchResults[index];
                           return ListTile(
                             dense: true,
-                            title: Text(instrument['displayName'] ?? instrument['description'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text('${instrument['symbol'] ?? instrument['tradingSymbol'] ?? instrument['tradingsymbol'] ?? ''} | ${instrument['exchange'] ?? ''}'),
+                            title: Text(
+                                instrument['displayName'] ??
+                                    instrument['description'] ??
+                                    '',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold)),
+                            subtitle: Text(
+                                '${instrument['symbol'] ?? instrument['tradingSymbol'] ?? instrument['tradingsymbol'] ?? ''} | ${instrument['exchange'] ?? ''}'),
                             onTap: () {
                               widget.onInstrumentSelected?.call(instrument);
                               setState(() => _searchResults = []);

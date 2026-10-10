@@ -1,8 +1,4 @@
-enum BasketItemStatus {
-  held,
-  missing,
-  substitute,
-}
+enum BasketItemStatus { held, missing, substitute }
 
 enum BasketStatus {
   active,
@@ -17,7 +13,8 @@ enum BasketStatus {
     final normalized = value.trim().toLowerCase();
     for (final s in BasketStatus.values) {
       if (s.name.toLowerCase() == normalized ||
-          s.name.replaceAll('_', '').toLowerCase() == normalized.replaceAll('_', '')) {
+          s.name.replaceAll('_', '').toLowerCase() ==
+              normalized.replaceAll('_', '')) {
         return s;
       }
     }

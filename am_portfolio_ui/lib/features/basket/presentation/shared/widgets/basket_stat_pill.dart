@@ -49,11 +49,7 @@ class BasketSummaryRow extends StatelessWidget {
   final String label;
   final String value;
 
-  const BasketSummaryRow({
-    super.key,
-    required this.label,
-    required this.value,
-  });
+  const BasketSummaryRow({super.key, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {

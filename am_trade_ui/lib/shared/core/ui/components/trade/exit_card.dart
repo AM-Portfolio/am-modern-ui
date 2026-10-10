@@ -34,7 +34,9 @@ class ExitCard extends StatelessWidget {
             children: [
               Icon(Icons.logout, size: 16, color: theme.colorScheme.primary),
               const SizedBox(width: 8),
-              Text('Exit', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
+              Text('Exit',
+                  style: theme.textTheme.labelLarge
+                      ?.copyWith(fontWeight: FontWeight.w600)),
             ],
           ),
           InkWell(

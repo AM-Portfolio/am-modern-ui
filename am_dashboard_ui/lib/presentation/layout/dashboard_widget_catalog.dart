@@ -120,8 +120,9 @@ class DashboardWidgetCatalog {
     WidgetRef ref,
     DashboardWidgetContext ctx,
   ) {
-    final topMoversAsync =
-        ref.watch(moversStreamProvider(ctx.userId, timeFrame: ctx.timeFrameCode));
+    final topMoversAsync = ref.watch(
+      moversStreamProvider(ctx.userId, timeFrame: ctx.timeFrameCode),
+    );
     return topMoversAsync.when(
       data: (topMovers) => DashboardRankingWidget(
         gainers: topMovers.gainers,

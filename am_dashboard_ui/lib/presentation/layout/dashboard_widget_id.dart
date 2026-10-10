@@ -32,25 +32,24 @@ enum DashboardWidgetId {
 
 extension DashboardWidgetIdX on DashboardWidgetId {
   String get label => switch (this) {
-        DashboardWidgetId.summary => 'Summary',
-        DashboardWidgetId.portfolioWealthChart => 'Portfolio Chart',
-        DashboardWidgetId.movers => 'Top Movers',
-        DashboardWidgetId.recentActivity => 'Recent Activity',
-        DashboardWidgetId.portfolioList => 'Your Portfolios',
-        DashboardWidgetId.allocation => 'Allocation',
-        DashboardWidgetId.benchmarkComparison => 'Performance Chart',
-        DashboardWidgetId.news => 'Market Intelligence',
-        DashboardWidgetId.paperTrading => 'Paper trading',
-      };
+    DashboardWidgetId.summary => 'Summary',
+    DashboardWidgetId.portfolioWealthChart => 'Portfolio Chart',
+    DashboardWidgetId.movers => 'Top Movers',
+    DashboardWidgetId.recentActivity => 'Recent Activity',
+    DashboardWidgetId.portfolioList => 'Your Portfolios',
+    DashboardWidgetId.allocation => 'Allocation',
+    DashboardWidgetId.benchmarkComparison => 'Performance Chart',
+    DashboardWidgetId.news => 'Market Intelligence',
+    DashboardWidgetId.paperTrading => 'Paper trading',
+  };
 
   String get module => switch (this) {
-        DashboardWidgetId.portfolioWealthChart ||
-        DashboardWidgetId.allocation =>
-          'portfolio',
-        DashboardWidgetId.benchmarkComparison => 'market',
-        DashboardWidgetId.paperTrading => 'paper',
-        _ => 'dashboard',
-      };
+    DashboardWidgetId.portfolioWealthChart ||
+    DashboardWidgetId.allocation => 'portfolio',
+    DashboardWidgetId.benchmarkComparison => 'market',
+    DashboardWidgetId.paperTrading => 'paper',
+    _ => 'dashboard',
+  };
 
   static DashboardWidgetId? tryParse(String raw) {
     for (final id in DashboardWidgetId.values) {
@@ -60,9 +59,4 @@ extension DashboardWidgetIdX on DashboardWidgetId {
   }
 }
 
-enum DashboardWidgetSize {
-  full,
-  twoThirds,
-  oneThird,
-  half,
-}
+enum DashboardWidgetSize { full, twoThirds, oneThird, half }

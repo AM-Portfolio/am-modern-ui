@@ -19,8 +19,8 @@ class ReferralIntroHost {
       if (await store.isIntroSeen(userId)) return;
       if (!GetIt.instance.isRegistered<SubscriptionRemoteDataSource>()) return;
 
-      final summary =
-          await GetIt.instance<SubscriptionRemoteDataSource>().getReferralSummary();
+      final summary = await GetIt.instance<SubscriptionRemoteDataSource>()
+          .getReferralSummary();
       final joined = summary.joined;
       if (joined == null || joined.code.isEmpty) {
         // No attribution — never show; mark seen so we do not re-hit the API.
@@ -55,9 +55,9 @@ class ReferralIntroHost {
                     textAlign: TextAlign.center,
                     style: Theme.of(sheetContext).textTheme.headlineMedium
                         ?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.4,
-                    ),
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.4,
+                        ),
                   ),
                   const SizedBox(height: 20),
                   FilledButton(

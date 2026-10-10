@@ -85,14 +85,16 @@ class MockHistoricalDataProvider implements HistoricalDataProvider {
       final close = price + drift;
       final high = math.max(open, close) * (1 + rand.nextDouble() * 0.002);
       final low = math.min(open, close) * (1 - rand.nextDouble() * 0.002);
-      bars.add(ChartBar(
-        time: t,
-        open: open,
-        high: high,
-        low: low,
-        close: close,
-        volume: 10000 + rand.nextDouble() * 50000,
-      ));
+      bars.add(
+        ChartBar(
+          time: t,
+          open: open,
+          high: high,
+          low: low,
+          close: close,
+          volume: 10000 + rand.nextDouble() * 50000,
+        ),
+      );
       price = close;
     }
     return bars;
@@ -227,13 +229,29 @@ List<WatchlistGroup> mockWatchlistGroups() {
       name: 'My Stocks',
       symbols: const [
         WatchlistSymbol(
-            symbol: 'RELIANCE', exchange: 'NSE', last: 2450, changePct: 0.8),
+          symbol: 'RELIANCE',
+          exchange: 'NSE',
+          last: 2450,
+          changePct: 0.8,
+        ),
         WatchlistSymbol(
-            symbol: 'TCS', exchange: 'NSE', last: 3850, changePct: -0.3),
+          symbol: 'TCS',
+          exchange: 'NSE',
+          last: 3850,
+          changePct: -0.3,
+        ),
         WatchlistSymbol(
-            symbol: 'INFY', exchange: 'NSE', last: 1620, changePct: 0.4),
+          symbol: 'INFY',
+          exchange: 'NSE',
+          last: 1620,
+          changePct: 0.4,
+        ),
         WatchlistSymbol(
-            symbol: 'HDFCBANK', exchange: 'NSE', last: 1680, changePct: 0.1),
+          symbol: 'HDFCBANK',
+          exchange: 'NSE',
+          last: 1680,
+          changePct: 0.1,
+        ),
       ],
     ),
     WatchlistGroup(
@@ -241,12 +259,17 @@ List<WatchlistGroup> mockWatchlistGroups() {
       name: 'F&O',
       symbols: const [
         WatchlistSymbol(
-            symbol: 'NIFTY 50', exchange: 'NSE', last: 24800, changePct: 0.2),
+          symbol: 'NIFTY 50',
+          exchange: 'NSE',
+          last: 24800,
+          changePct: 0.2,
+        ),
         WatchlistSymbol(
-            symbol: 'NIFTY BANK',
-            exchange: 'NSE',
-            last: 51200,
-            changePct: -0.1),
+          symbol: 'NIFTY BANK',
+          exchange: 'NSE',
+          last: 51200,
+          changePct: -0.1,
+        ),
       ],
     ),
   ];

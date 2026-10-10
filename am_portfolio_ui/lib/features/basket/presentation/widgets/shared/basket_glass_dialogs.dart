@@ -20,9 +20,7 @@ class BasketGlassDialog extends StatelessWidget {
     final border = context.glassOverlay(isDark ? 0.1 : 0.08);
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isCompact = screenWidth < AmBreakpoints.mobile;
-    final maxDialogWidth = isCompact
-        ? screenWidth - 48
-        : 420.0;
+    final maxDialogWidth = isCompact ? screenWidth - 48 : 420.0;
     final horizontalInset = isCompact ? 24.0 : 40.0;
 
     return Dialog(
@@ -74,8 +72,7 @@ class BasketCoverageGateDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final progress =
-        (coverage / requiredCoverage).clamp(0.0, 1.0);
+    final progress = (coverage / requiredCoverage).clamp(0.0, 1.0);
     final tips = [
       (Icons.payments_outlined, 'Raise amount'),
       (Icons.swap_horiz, 'Substitute'),
@@ -264,7 +261,9 @@ class BasketLeaveCustomizeDialog extends StatelessWidget {
             onPressed: () => Navigator.of(context).pop('discard'),
             style: OutlinedButton.styleFrom(
               foregroundColor: context.statusError,
-              side: BorderSide(color: context.statusError.withValues(alpha: 0.5)),
+              side: BorderSide(
+                color: context.statusError.withValues(alpha: 0.5),
+              ),
             ),
             child: const Text('Discard'),
           ),

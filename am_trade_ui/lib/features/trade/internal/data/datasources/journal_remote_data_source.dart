@@ -66,7 +66,8 @@ abstract class JournalRemoteDataSource {
     bool markCompleted = false,
   });
 
-  Future<TradeJournalEntryResponseDto> linkTrade(String entryId, String tradeId);
+  Future<TradeJournalEntryResponseDto> linkTrade(
+      String entryId, String tradeId);
 
   Future<TradeJournalEntryResponseDto> addAttachment(
     String entryId,
@@ -109,10 +110,10 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
   }
 
   String _buildUri(String baseUrl, String resource) {
-    final cleanBase =
-        baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
-    final cleanResource =
-        resource.startsWith('/') ? resource : '/$resource';
+    final cleanBase = baseUrl.endsWith('/')
+        ? baseUrl.substring(0, baseUrl.length - 1)
+        : baseUrl;
+    final cleanResource = resource.startsWith('/') ? resource : '/$resource';
     return '$cleanBase$cleanResource';
   }
 

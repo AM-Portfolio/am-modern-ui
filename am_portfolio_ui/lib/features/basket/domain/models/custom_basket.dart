@@ -1,4 +1,3 @@
-
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'custom_basket.freezed.dart';
@@ -13,7 +12,7 @@ class CustomBasketStock with _$CustomBasketStock {
     String? sector,
   }) = _CustomBasketStock;
 
-  factory CustomBasketStock.fromJson(Map<String, dynamic> json) => 
+  factory CustomBasketStock.fromJson(Map<String, dynamic> json) =>
       _$CustomBasketStockFromJson(json);
 }
 
@@ -27,6 +26,6 @@ class CustomBasket with _$CustomBasket {
     double? projectedCAGR,
   }) = _CustomBasket;
 
-  factory CustomBasket.fromJson(Map<String, dynamic> json) => 
+  factory CustomBasket.fromJson(Map<String, dynamic> json) =>
       _$CustomBasketFromJson(json);
 }

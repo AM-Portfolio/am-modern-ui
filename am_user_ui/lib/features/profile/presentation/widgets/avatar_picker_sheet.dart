@@ -44,10 +44,7 @@ Future<void> showAvatarPickerSheet({
 }
 
 class _AvatarPickerSheet extends StatefulWidget {
-  const _AvatarPickerSheet({
-    this.displayName,
-    this.remotePhotoUrl,
-  });
+  const _AvatarPickerSheet({this.displayName, this.remotePhotoUrl});
 
   final String? displayName;
   final String? remotePhotoUrl;
@@ -112,13 +109,10 @@ class _AvatarPickerSheetState extends State<_AvatarPickerSheet> {
       final message = e.toString().contains('too large')
           ? 'Photo is too large. Try a smaller image.'
           : _isPermissionDenied(e)
-              ? 'Photo access is optional. Enable it in Settings if you want a custom photo, or pick a style below.'
-              : 'Could not use that photo. Try another or pick a style below.';
+          ? 'Photo access is optional. Enable it in Settings if you want a custom photo, or pick a style below.'
+          : 'Could not use that photo. Try another or pick a style below.';
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          behavior: SnackBarBehavior.floating,
-        ),
+        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
       );
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -130,7 +124,8 @@ class _AvatarPickerSheetState extends State<_AvatarPickerSheet> {
     final colors = context.colors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasRemote =
-        widget.remotePhotoUrl != null && widget.remotePhotoUrl!.trim().isNotEmpty;
+        widget.remotePhotoUrl != null &&
+        widget.remotePhotoUrl!.trim().isNotEmpty;
 
     return Container(
       constraints: BoxConstraints(
@@ -291,7 +286,8 @@ class _AvatarPickerSheetState extends State<_AvatarPickerSheet> {
                 itemCount: kAvatarPresets.length,
                 itemBuilder: (context, index) {
                   final preset = kAvatarPresets[index];
-                  final selected = _current.kind == UserAvatarKind.preset &&
+                  final selected =
+                      _current.kind == UserAvatarKind.preset &&
                       _current.presetId == preset.id;
                   return InkWell(
                     onTap: _busy

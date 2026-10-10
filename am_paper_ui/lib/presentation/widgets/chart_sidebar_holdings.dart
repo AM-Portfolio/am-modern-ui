@@ -127,8 +127,8 @@ class _ChartSidebarHoldingsState extends State<ChartSidebarHoldings> {
                 child: Text(
                   'Holdings',
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
@@ -145,32 +145,38 @@ class _ChartSidebarHoldingsState extends State<ChartSidebarHoldings> {
                   if (sym.isEmpty || q == 0) return const SizedBox.shrink();
                   final avg = avgs[sym] ?? 0;
                   final ltp = _ltp[sym] ?? 0;
-                  final unrealized =
-                      ltp > 0 && avg > 0 ? (ltp - avg) * q : 0.0;
+                  final unrealized = ltp > 0 && avg > 0 ? (ltp - avg) * q : 0.0;
                   final cost = avg * q.abs();
                   final pct = cost > 0 ? (unrealized / cost) * 100 : 0.0;
                   final pnlColor = unrealized < 0
                       ? colors.statusError
                       : unrealized > 0
-                          ? colors.marketPositiveIndicator
-                          : colors.textPrimary;
+                      ? colors.marketPositiveIndicator
+                      : colors.textPrimary;
 
                   return InkWell(
                     onTap: () => widget.onSelectSymbol(sym),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       child: Row(
                         children: [
                           Expanded(
                             flex: 2,
-                            child: Text(sym,
-                                style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600)),
+                            child: Text(
+                              sym,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
-                          Text('${q.toStringAsFixed(q % 1 == 0 ? 0 : 1)}',
-                              style: const TextStyle(fontSize: 10)),
+                          Text(
+                            '${q.toStringAsFixed(q % 1 == 0 ? 0 : 1)}',
+                            style: const TextStyle(fontSize: 10),
+                          ),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
@@ -367,7 +373,8 @@ class _ChartSidebarRecentHistoryState extends State<ChartSidebarRecentHistory> {
                                   ),
                                   decoration: BoxDecoration(
                                     color: theme
-                                        .colorScheme.surfaceContainerHighest,
+                                        .colorScheme
+                                        .surfaceContainerHighest,
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
@@ -414,4 +421,3 @@ class _ChartSidebarRecentHistoryState extends State<ChartSidebarRecentHistory> {
     );
   }
 }
-

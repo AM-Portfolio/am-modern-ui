@@ -11,12 +11,12 @@ abstract final class CustomizeBasketMetrics {
   static int substituteCount(List<BasketItem> items) =>
       items.where((i) => i.status == ItemStatus.substitute).length;
 
-  static int missingCount(List<BasketItem> items, Set<String> excluded) =>
-      items
-          .where((i) =>
-              i.status == ItemStatus.missing &&
-              !excluded.contains(i.stockSymbol))
-          .length;
+  static int missingCount(List<BasketItem> items, Set<String> excluded) => items
+      .where(
+        (i) =>
+            i.status == ItemStatus.missing && !excluded.contains(i.stockSymbol),
+      )
+      .length;
 
   static double coverage({
     required bool hasCalculated,

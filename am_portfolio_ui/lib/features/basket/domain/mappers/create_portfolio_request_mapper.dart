@@ -69,7 +69,8 @@ class CreatePortfolioRequestMapper {
         final lineWeight = item.replicaWeight > 0
             ? item.replicaWeight
             : (item.rebalancedWeight ?? item.etfWeight);
-        final isHeldOrSub = item.status == ItemStatus.held ||
+        final isHeldOrSub =
+            item.status == ItemStatus.held ||
             item.status == ItemStatus.substitute;
         final avgCost = isHeldOrSub
             ? (item.heldAveragePrice ?? item.lastPrice)
@@ -79,16 +80,17 @@ class CreatePortfolioRequestMapper {
           'etfIsin': item.isin,
           'etfSymbol': item.stockSymbol,
           'etfWeight': lineWeight,
-          'holdingIsin':
-              isHeldOrSub ? (item.userHoldingIsin ?? item.isin) : item.isin,
+          'holdingIsin': isHeldOrSub
+              ? (item.userHoldingIsin ?? item.isin)
+              : item.isin,
           'holdingSymbol': isHeldOrSub
               ? (item.userHoldingSymbol ?? item.stockSymbol)
               : item.stockSymbol,
           'quantity': lineQuantity(item, investmentAmount),
           'heldQuantity':
               (item.heldQuantity != null && item.targetQuantity != null)
-                  ? math.min(item.heldQuantity!, item.targetQuantity!)
-                  : item.heldQuantity,
+              ? math.min(item.heldQuantity!, item.targetQuantity!)
+              : item.heldQuantity,
           'averageBuyingPrice': avgCost,
           'lastKnownPrice': item.lastPrice,
         };

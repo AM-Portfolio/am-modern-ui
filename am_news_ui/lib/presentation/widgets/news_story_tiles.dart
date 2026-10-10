@@ -66,11 +66,7 @@ class NewsFeaturedStory extends StatelessWidget {
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            NewsThumbnail(
-              url: card.thumbnail,
-              width: imageWidth,
-              height: 160,
-            ),
+            NewsThumbnail(url: card.thumbnail, width: imageWidth, height: 160),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: _storyCopy(context, headingSize: 16, summaryLines: 3),
@@ -206,7 +202,8 @@ class NewsCompactRow extends StatelessWidget {
                             for (final symbol in symbols)
                               NewsSymbolChip(
                                 symbol: symbol,
-                                quote: quotes[symbol] ??
+                                quote:
+                                    quotes[symbol] ??
                                     quotes[symbol.toUpperCase()],
                               ),
                           ],

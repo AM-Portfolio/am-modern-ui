@@ -64,15 +64,15 @@ class TimingAvgPnlChart extends StatelessWidget {
               Text(
                 title,
                 style: context.text.sectionTitle(compact: true).copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: colors.textPrimary,
-                ),
+                      fontWeight: FontWeight.w700,
+                      color: colors.textPrimary,
+                    ),
               ),
               Text(
                 avgAxisLabel,
                 style: context.text.caption(compact: true).copyWith(
-                  color: colors.textSecondary,
-                ),
+                      color: colors.textSecondary,
+                    ),
               ),
             ],
           ),
@@ -84,8 +84,8 @@ class TimingAvgPnlChart extends StatelessWidget {
                     child: Text(
                       emptyMessage ?? 'No data',
                       style: context.text.bodyMuted(compact: true).copyWith(
-                        color: colors.textSecondary,
-                      ),
+                            color: colors.textSecondary,
+                          ),
                       textAlign: TextAlign.center,
                     ),
                   )
@@ -108,23 +108,25 @@ class TimingAvgPnlChart extends StatelessWidget {
                           vertical: AppSpacing.xxs,
                         ),
                         decoration: BoxDecoration(
-                          border: Border.all(color: context.statusError.withValues(alpha: 0.5)),
+                          border: Border.all(
+                              color:
+                                  context.statusError.withValues(alpha: 0.5)),
                           borderRadius: BorderRadius.circular(AppRadii.md),
                         ),
                         child: Text(
                           'Weakest: ${weakest.label}',
                           style: context.text.caption(compact: true).copyWith(
-                            color: context.statusError,
-                          ),
+                                color: context.statusError,
+                              ),
                         ),
                       ),
                       const SizedBox(width: AppSpacing.xs),
                       Text(
                         _signedInr(weakest.avgPnl),
                         style: context.text.caption(compact: true).copyWith(
-                          color: context.statusError,
-                          fontWeight: FontWeight.w600,
-                        ),
+                              color: context.statusError,
+                              fontWeight: FontWeight.w600,
+                            ),
                       ),
                     ],
                   ),
@@ -138,23 +140,25 @@ class TimingAvgPnlChart extends StatelessWidget {
                           vertical: AppSpacing.xxs,
                         ),
                         decoration: BoxDecoration(
-                          border: Border.all(color: context.statusSuccess.withValues(alpha: 0.5)),
+                          border: Border.all(
+                              color:
+                                  context.statusSuccess.withValues(alpha: 0.5)),
                           borderRadius: BorderRadius.circular(AppRadii.md),
                         ),
                         child: Text(
                           'Best: ${best.label}',
                           style: context.text.caption(compact: true).copyWith(
-                            color: context.statusSuccess,
-                          ),
+                                color: context.statusSuccess,
+                              ),
                         ),
                       ),
                       const SizedBox(width: AppSpacing.xs),
                       Text(
                         _signedInr(best.avgPnl),
                         style: context.text.caption(compact: true).copyWith(
-                          color: context.statusSuccess,
-                          fontWeight: FontWeight.w600,
-                        ),
+                              color: context.statusSuccess,
+                              fontWeight: FontWeight.w600,
+                            ),
                       ),
                     ],
                   ),
@@ -188,9 +192,9 @@ class TimingAvgPnlChart extends StatelessWidget {
             return BarTooltipItem(
               '${b.label}\n₹${b.avgPnl.toStringAsFixed(0)}',
               context.text.caption().copyWith(
-                color: theme.colorScheme.onInverseSurface,
-                fontWeight: FontWeight.w600,
-              ),
+                    color: theme.colorScheme.onInverseSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
             );
           },
         ),
@@ -210,8 +214,8 @@ class TimingAvgPnlChart extends StatelessWidget {
                   text = '0';
                 } else {
                   final absVal = value.abs();
-                  text = absVal >= 1000 
-                      ? '${(absVal / 1000).toStringAsFixed(0)}K' 
+                  text = absVal >= 1000
+                      ? '${(absVal / 1000).toStringAsFixed(0)}K'
                       : absVal.toStringAsFixed(0);
                   if (value < 0) text = '-$text';
                 }
@@ -220,8 +224,8 @@ class TimingAvgPnlChart extends StatelessWidget {
                   child: Text(
                     text,
                     style: context.text.caption(compact: true).copyWith(
-                      color: colors.textSecondary,
-                    ),
+                          color: colors.textSecondary,
+                        ),
                     textAlign: TextAlign.right,
                   ),
                 );
@@ -246,8 +250,8 @@ class TimingAvgPnlChart extends StatelessWidget {
                 child: Text(
                   buckets[i].label,
                   style: context.text.caption(compact: true).copyWith(
-                    color: colors.textSecondary,
-                  ),
+                        color: colors.textSecondary,
+                      ),
                 ),
               );
             },

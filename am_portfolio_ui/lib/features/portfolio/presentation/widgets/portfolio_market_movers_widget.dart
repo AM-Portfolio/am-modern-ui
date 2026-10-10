@@ -25,7 +25,8 @@ class PortfolioMarketMoversWidget extends StatefulWidget {
       _PortfolioMarketMoversWidgetState();
 }
 
-class _PortfolioMarketMoversWidgetState extends State<PortfolioMarketMoversWidget> {
+class _PortfolioMarketMoversWidgetState
+    extends State<PortfolioMarketMoversWidget> {
   final MarketMoversService _service = MarketMoversService();
   final NumberFormat _currencyFormat = NumberFormat('#,##,###.##', 'en_IN');
 
@@ -73,7 +74,7 @@ class _PortfolioMarketMoversWidgetState extends State<PortfolioMarketMoversWidge
       setState(() {
         _data = data;
         _isLoading = false;
-        
+
         // Auto-switch to Losers tab if there are no gainers but there are losers
         if (data.gainers.isEmpty && data.losers.isNotEmpty) {
           _showGainers = false;
@@ -128,11 +129,14 @@ class _PortfolioMarketMoversWidgetState extends State<PortfolioMarketMoversWidge
                   Text(
                     'Market Movers',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: ds.ModuleColors.portfolio.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
@@ -149,10 +153,10 @@ class _PortfolioMarketMoversWidgetState extends State<PortfolioMarketMoversWidge
                 ],
               ),
               const SizedBox(height: 16),
-              
+
               // Tabs
               _buildTabs(),
-              
+
               const SizedBox(height: 16),
 
               // Content List
@@ -182,7 +186,9 @@ class _PortfolioMarketMoversWidgetState extends State<PortfolioMarketMoversWidge
 
   Widget _buildTabButton(String title, bool isGainersTab) {
     final isSelected = _showGainers == isGainersTab;
-    final color = isGainersTab ? ds.ModuleColors.portfolio : const Color(0xFFFF7675);
+    final color = isGainersTab
+        ? ds.ModuleColors.portfolio
+        : const Color(0xFFFF7675);
 
     return InkWell(
       onTap: () {
@@ -194,10 +200,14 @@ class _PortfolioMarketMoversWidgetState extends State<PortfolioMarketMoversWidge
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? color.withValues(alpha: 0.15) : Colors.transparent,
+          color: isSelected
+              ? color.withValues(alpha: 0.15)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? color.withValues(alpha: 0.5) : context.glassOverlay(context.isDark ? 0.24 : 0.12),
+            color: isSelected
+                ? color.withValues(alpha: 0.5)
+                : context.glassOverlay(context.isDark ? 0.24 : 0.12),
           ),
         ),
         child: Text(
@@ -234,7 +244,9 @@ class _PortfolioMarketMoversWidgetState extends State<PortfolioMarketMoversWidge
       itemBuilder: (context, index) {
         final item = list[index];
         final isGainer = item.changePercent >= 0;
-        final color = isGainer ? const Color(0xFF00B894) : const Color(0xFFFF7675);
+        final color = isGainer
+            ? const Color(0xFF00B894)
+            : const Color(0xFFFF7675);
 
         return Row(
           children: [
@@ -257,7 +269,7 @@ class _PortfolioMarketMoversWidgetState extends State<PortfolioMarketMoversWidge
               ),
             ),
             const SizedBox(width: 12),
-            
+
             // Symbol & Company
             Expanded(
               child: Column(
@@ -275,17 +287,14 @@ class _PortfolioMarketMoversWidgetState extends State<PortfolioMarketMoversWidge
                   ),
                   Text(
                     item.companyName,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: context.textTertiary,
-                    ),
+                    style: TextStyle(fontSize: 11, color: context.textTertiary),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
-            
+
             // Price & Change
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -300,7 +309,10 @@ class _PortfolioMarketMoversWidgetState extends State<PortfolioMarketMoversWidge
                 ),
                 const SizedBox(height: 2),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),

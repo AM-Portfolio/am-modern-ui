@@ -8,7 +8,8 @@ class GetTradeCalendarByMonth {
   final TradeRepository _repository;
 
   /// Execute the use case to get trade calendar for a specific portfolio by month
-  Future<TradeCalendar> call(String portfolioId, {required int year, required int month}) async {
+  Future<TradeCalendar> call(String portfolioId,
+      {required int year, required int month}) async {
     AppLogger.methodEntry(
       'GetTradeCalendarByMonth.call',
       tag: 'GetTradeCalendarByMonth',
@@ -16,22 +17,28 @@ class GetTradeCalendarByMonth {
     );
 
     if (portfolioId.isEmpty) {
-      AppLogger.error('Validation failed - empty userId or portfolioId', tag: 'GetTradeCalendarByMonth');
+      AppLogger.error('Validation failed - empty userId or portfolioId',
+          tag: 'GetTradeCalendarByMonth');
       throw ArgumentError('Portfolio ID cannot be empty');
     }
 
     if (month < 1 || month > 12) {
-      AppLogger.error('Validation failed - invalid month value: $month', tag: 'GetTradeCalendarByMonth');
+      AppLogger.error('Validation failed - invalid month value: $month',
+          tag: 'GetTradeCalendarByMonth');
       throw ArgumentError('Month must be between 1 and 12');
     }
 
     try {
-      AppLogger.info('Executing get trade calendar by month use case', tag: 'GetTradeCalendarByMonth');
+      AppLogger.info('Executing get trade calendar by month use case',
+          tag: 'GetTradeCalendarByMonth');
 
-      final result = await _repository.getTradeCalendarByMonth(portfolioId, year: year, month: month);
+      final result = await _repository.getTradeCalendarByMonth(portfolioId,
+          year: year, month: month);
 
-      AppLogger.info('Trade calendar by month use case completed successfully', tag: 'GetTradeCalendarByMonth');
-      AppLogger.methodExit('GetTradeCalendarByMonth.call', tag: 'GetTradeCalendarByMonth', result: 'success');
+      AppLogger.info('Trade calendar by month use case completed successfully',
+          tag: 'GetTradeCalendarByMonth');
+      AppLogger.methodExit('GetTradeCalendarByMonth.call',
+          tag: 'GetTradeCalendarByMonth', result: 'success');
 
       return result;
     } catch (e) {
@@ -41,9 +48,9 @@ class GetTradeCalendarByMonth {
         error: e,
         stackTrace: StackTrace.current,
       );
-      AppLogger.methodExit('GetTradeCalendarByMonth.call', tag: 'GetTradeCalendarByMonth', result: 'error');
+      AppLogger.methodExit('GetTradeCalendarByMonth.call',
+          tag: 'GetTradeCalendarByMonth', result: 'error');
       rethrow;
     }
   }
 }
-

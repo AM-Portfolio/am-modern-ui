@@ -81,7 +81,8 @@ void main() {
     );
     final cubit = OmsCubit(source);
     await cubit.load();
-    await cubit.placeMarketOrder(symbol: 'RELIANCE', side: 'BUY', quantity: '999999');
+    await cubit.placeMarketOrder(
+        symbol: 'RELIANCE', side: 'BUY', quantity: '999999');
     expect(cubit.state.toast, contains('virtual cash'));
     expect(cubit.state.orders.first.status, 'REJECTED');
   });

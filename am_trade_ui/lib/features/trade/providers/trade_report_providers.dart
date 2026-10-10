@@ -12,28 +12,34 @@ import 'package:am_library/am_library.dart';
 
 import 'package:am_common/core/di/network_providers.dart';
 
-final tradeReportRemoteDataSourceProvider = FutureProvider<TradeReportRemoteDataSource>((ref) async {
+final tradeReportRemoteDataSourceProvider =
+    FutureProvider<TradeReportRemoteDataSource>((ref) async {
   final apiClient = await ref.watch(apiClientProvider.future);
   final apiConfig = await ref.watch(appConfigProvider.future);
-  return TradeReportRemoteDataSource(apiClient, apiConfig.api.trade); 
+  return TradeReportRemoteDataSource(apiClient, apiConfig.api.trade);
 });
 
-final tradeReportRepositoryProvider = FutureProvider<TradeReportRepository>((ref) async {
-  final remoteDataSource = await ref.watch(tradeReportRemoteDataSourceProvider.future);
+final tradeReportRepositoryProvider =
+    FutureProvider<TradeReportRepository>((ref) async {
+  final remoteDataSource =
+      await ref.watch(tradeReportRemoteDataSourceProvider.future);
   return TradeReportRepositoryImpl(remoteDataSource);
 });
 
-final getTradePerformanceSummaryUseCaseProvider = FutureProvider<GetTradePerformanceSummaryUseCase>((ref) async {
+final getTradePerformanceSummaryUseCaseProvider =
+    FutureProvider<GetTradePerformanceSummaryUseCase>((ref) async {
   final repository = await ref.watch(tradeReportRepositoryProvider.future);
   return GetTradePerformanceSummaryUseCase(repository);
 });
 
-final getDailyPerformanceUseCaseProvider = FutureProvider<GetDailyPerformanceUseCase>((ref) async {
+final getDailyPerformanceUseCaseProvider =
+    FutureProvider<GetDailyPerformanceUseCase>((ref) async {
   final repository = await ref.watch(tradeReportRepositoryProvider.future);
   return GetDailyPerformanceUseCase(repository);
 });
 
-final getTimingAnalysisUseCaseProvider = FutureProvider<GetTimingAnalysisUseCase>((ref) async {
+final getTimingAnalysisUseCaseProvider =
+    FutureProvider<GetTimingAnalysisUseCase>((ref) async {
   final repository = await ref.watch(tradeReportRepositoryProvider.future);
   return GetTimingAnalysisUseCase(repository);
 });

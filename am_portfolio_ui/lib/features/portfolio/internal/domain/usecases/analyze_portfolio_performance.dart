@@ -8,18 +8,11 @@ class AnalyzePortfolioPerformance {
 
   /// Get sector allocation analysis
   Future<List<SectorAllocation>> getSectorAllocation() async {
-    
-
     return _repository.getSectorAllocation();
   }
 
   /// Get top performing holdings
-  Future<List<TopPerformer>> getTopPerformers(
-    {
-    int limit = 5,
-  }) async {
-    
-
+  Future<List<TopPerformer>> getTopPerformers({int limit = 5}) async {
     if (limit <= 0) {
       throw ArgumentError('Limit must be greater than 0');
     }
@@ -28,12 +21,7 @@ class AnalyzePortfolioPerformance {
   }
 
   /// Get worst performing holdings
-  Future<List<TopPerformer>> getWorstPerformers(
-    {
-    int limit = 5,
-  }) async {
-    
-
+  Future<List<TopPerformer>> getWorstPerformers({int limit = 5}) async {
     if (limit <= 0) {
       throw ArgumentError('Limit must be greater than 0');
     }

@@ -22,9 +22,9 @@ class PaperHoldingsPane extends StatelessWidget {
       webOnlyWindowName: '_blank',
     );
     if (!ok && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not open $uri')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not open $uri')));
     }
   }
 
@@ -54,8 +54,8 @@ class PaperHoldingsPane extends StatelessWidget {
                   Text(
                     'Holdings',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -64,13 +64,14 @@ class PaperHoldingsPane extends StatelessWidget {
                         : 'Paper portfolio link is not available yet.',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: colors.textSecondary,
-                        ),
+                      color: colors.textSecondary,
+                    ),
                   ),
                   const SizedBox(height: 20),
                   FilledButton.icon(
-                    onPressed:
-                        hasUuid ? () => _openHoldings(context, uuid) : null,
+                    onPressed: hasUuid
+                        ? () => _openHoldings(context, uuid)
+                        : null,
                     icon: const Icon(Icons.open_in_new, size: 18),
                     label: const Text('Open holdings'),
                   ),

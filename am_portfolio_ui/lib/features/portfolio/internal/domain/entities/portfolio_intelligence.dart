@@ -54,9 +54,11 @@ class PortfolioHealth {
       band: json['band']?.toString() ?? 'Watch',
       components: raw is List
           ? raw
-              .whereType<Map>()
-              .map((e) => HealthComponent.fromJson(Map<String, dynamic>.from(e)))
-              .toList()
+                .whereType<Map>()
+                .map(
+                  (e) => HealthComponent.fromJson(Map<String, dynamic>.from(e)),
+                )
+                .toList()
           : const [],
     );
   }
@@ -95,10 +97,7 @@ class HealthComponent {
 }
 
 class PortfolioRisk {
-  const PortfolioRisk({
-    this.axes = const [],
-    this.findings = const [],
-  });
+  const PortfolioRisk({this.axes = const [], this.findings = const []});
 
   final List<RiskAxis> axes;
   final List<RiskFinding> findings;
@@ -109,25 +108,22 @@ class PortfolioRisk {
     return PortfolioRisk(
       axes: axesRaw is List
           ? axesRaw
-              .whereType<Map>()
-              .map((e) => RiskAxis.fromJson(Map<String, dynamic>.from(e)))
-              .toList()
+                .whereType<Map>()
+                .map((e) => RiskAxis.fromJson(Map<String, dynamic>.from(e)))
+                .toList()
           : const [],
       findings: findingsRaw is List
           ? findingsRaw
-              .whereType<Map>()
-              .map((e) => RiskFinding.fromJson(Map<String, dynamic>.from(e)))
-              .toList()
+                .whereType<Map>()
+                .map((e) => RiskFinding.fromJson(Map<String, dynamic>.from(e)))
+                .toList()
           : const [],
     );
   }
 }
 
 class RiskAxis {
-  const RiskAxis({
-    required this.id,
-    required this.riskScore,
-  });
+  const RiskAxis({required this.id, required this.riskScore});
 
   final String id;
   final double riskScore;
@@ -150,11 +146,7 @@ class RiskAxis {
 }
 
 class RiskFinding {
-  const RiskFinding({
-    required this.code,
-    required this.label,
-    this.severity,
-  });
+  const RiskFinding({required this.code, required this.label, this.severity});
 
   final String code;
   final String label;
@@ -182,6 +174,7 @@ class PortfolioXray {
   final List<XrayWeight> industryWeights;
   final List<XrayWeight> marketCapWeights;
   final List<XrayWeight> assetClassWeights;
+
   /// Book NAV denominator from intelligence API (`xray.totalValue`).
   final double? totalValueInr;
 
@@ -215,6 +208,7 @@ class XrayWeight {
 
   final String name;
   final double weightPct;
+
   /// Absolute INR exposure for this slice (`value` on API).
   final double? valueInr;
 
@@ -282,19 +276,23 @@ class StressResult {
     final raw = json['scenarios'];
     return StressResult(
       portfolioId: json['portfolioId']?.toString() ?? '',
-      estimateLabel:
-          json['estimateLabel']?.toString() ?? 'Scenario estimate',
+      estimateLabel: json['estimateLabel']?.toString() ?? 'Scenario estimate',
       scenarios: raw is List
           ? raw
-              .whereType<Map>()
-              .map((e) => StressScenario.fromJson(Map<String, dynamic>.from(e)))
-              .toList()
+                .whereType<Map>()
+                .map(
+                  (e) => StressScenario.fromJson(Map<String, dynamic>.from(e)),
+                )
+                .toList()
           : const [],
       method: json['method']?.toString(),
       betaUsed: _asDouble(json['betaUsed']),
       benchmark: json['benchmark']?.toString(),
       historyDays: _asInt(json['historyDays']),
-      betaAssumed: _asBetaAssumed(json['betaAssumed'], json['method']?.toString()),
+      betaAssumed: _asBetaAssumed(
+        json['betaAssumed'],
+        json['method']?.toString(),
+      ),
     );
   }
 }
@@ -332,11 +330,7 @@ class StressScenario {
 }
 
 class WhatIfResult {
-  const WhatIfResult({
-    required this.mode,
-    this.before,
-    this.after,
-  });
+  const WhatIfResult({required this.mode, this.before, this.after});
 
   final String mode;
   final WhatIfSnapshot? before;

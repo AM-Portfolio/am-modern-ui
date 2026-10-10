@@ -13,9 +13,13 @@ class CustomizeSliverTabDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(
-          BuildContext context, double shrinkOffset, bool overlapsContent) =>
-      Container(
-          color: Theme.of(context).scaffoldBackgroundColor, child: tabBar);
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) => Container(
+    color: Theme.of(context).scaffoldBackgroundColor,
+    child: tabBar,
+  );
 
   @override
   bool shouldRebuild(CustomizeSliverTabDelegate old) => false;

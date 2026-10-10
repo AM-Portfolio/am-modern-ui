@@ -30,9 +30,7 @@ class TradePortfolioSkeletonLoader extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: accent.withValues(alpha: 0.15)),
                 ),
-              )
-                  .animate(onPlay: (controller) => controller.repeat())
-                  .shimmer(
+              ).animate(onPlay: (controller) => controller.repeat()).shimmer(
                     duration: 1200.ms,
                     color: accent.withValues(alpha: 0.22),
                   ),
@@ -45,9 +43,7 @@ class TradePortfolioSkeletonLoader extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: accent.withValues(alpha: 0.15)),
                 ),
-              )
-                  .animate(onPlay: (controller) => controller.repeat())
-                  .shimmer(
+              ).animate(onPlay: (controller) => controller.repeat()).shimmer(
                     duration: 1200.ms,
                     delay: 200.ms,
                     color: _shimmer(context),
@@ -173,9 +169,7 @@ class TradePortfolioSkeletonLoader extends StatelessWidget {
                   ),
                 ],
               ),
-            )
-                .animate(onPlay: (controller) => controller.repeat())
-                .shimmer(
+            ).animate(onPlay: (controller) => controller.repeat()).shimmer(
                   duration: 1200.ms,
                   delay: (100 * index).ms,
                   color: accent.withValues(alpha: 0.2),
@@ -239,9 +233,7 @@ class TradePortfolioSkeletonLoader extends StatelessWidget {
               ),
             ],
           ),
-        )
-            .animate(onPlay: (controller) => controller.repeat())
-            .shimmer(
+        ).animate(onPlay: (controller) => controller.repeat()).shimmer(
               duration: 1200.ms,
               delay: (100 * index).ms,
               color: accent.withValues(alpha: 0.2),

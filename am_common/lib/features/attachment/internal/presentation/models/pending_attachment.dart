@@ -43,12 +43,12 @@ class PendingAttachment {
 /// Represents the state of an attachment (either pending or uploaded)
 class AttachmentItem {
   AttachmentItem.pending(this.pendingAttachment)
-    : uploadedUrl = null,
-      isUploaded = false;
+      : uploadedUrl = null,
+        isUploaded = false;
 
   AttachmentItem.uploaded(this.uploadedUrl)
-    : pendingAttachment = null,
-      isUploaded = true;
+      : pendingAttachment = null,
+        isUploaded = true;
 
   final PendingAttachment? pendingAttachment;
   final String? uploadedUrl;

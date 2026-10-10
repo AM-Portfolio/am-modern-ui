@@ -61,10 +61,7 @@ class SdkHealthCard extends StatelessWidget {
             label: 'Avg Latency',
             value: '${metric.avgLatency.inMilliseconds}ms',
           ),
-          _MetricRow(
-            label: 'Requests',
-            value: '${metric.requests}',
-          ),
+          _MetricRow(label: 'Requests', value: '${metric.requests}'),
           _MetricRow(
             label: 'Errors',
             value: '${metric.errors}',

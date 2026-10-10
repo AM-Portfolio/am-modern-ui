@@ -94,22 +94,34 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                         children: [
                           Text(
                             nameExtractor(portfolio),
-                            style: TextStyle(
-                              color: context.textPrimary,
-                            ),
+                            style: TextStyle(color: context.textPrimary),
                           ),
-                          if (isBasketExtractor != null && isBasketExtractor!(portfolio))
+                          if (isBasketExtractor != null &&
+                              isBasketExtractor!(portfolio))
                             Container(
                               margin: const EdgeInsets.only(left: 4),
-                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
-                                color: ModuleColors.portfolio.withValues(alpha: 0.1),
+                                color: ModuleColors.portfolio.withValues(
+                                  alpha: 0.1,
+                                ),
                                 borderRadius: BorderRadius.circular(4),
-                                border: Border.all(color: ModuleColors.portfolio.withValues(alpha: 0.3)),
+                                border: Border.all(
+                                  color: ModuleColors.portfolio.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                ),
                               ),
                               child: Text(
                                 'BASKET',
-                                style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: ModuleColors.portfolio),
+                                style: TextStyle(
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold,
+                                  color: ModuleColors.portfolio,
+                                ),
                               ),
                             ),
                         ],
@@ -168,19 +180,39 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          if (currentPortfolioId != null && portfolios.isNotEmpty && isBasketExtractor != null && isBasketExtractor!(portfolios.firstWhere((p) => idExtractor(p) == currentPortfolioId)))
+                          if (currentPortfolioId != null &&
+                              portfolios.isNotEmpty &&
+                              isBasketExtractor != null &&
+                              isBasketExtractor!(
+                                portfolios.firstWhere(
+                                  (p) => idExtractor(p) == currentPortfolioId,
+                                ),
+                              ))
                             Padding(
                               padding: const EdgeInsets.only(top: 2.0),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: ModuleColors.portfolio.withValues(alpha: 0.1),
+                                  color: ModuleColors.portfolio.withValues(
+                                    alpha: 0.1,
+                                  ),
                                   borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(color: ModuleColors.portfolio.withValues(alpha: 0.3)),
+                                  border: Border.all(
+                                    color: ModuleColors.portfolio.withValues(
+                                      alpha: 0.3,
+                                    ),
+                                  ),
                                 ),
                                 child: Text(
                                   'BASKET',
-                                  style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: ModuleColors.portfolio),
+                                  style: TextStyle(
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold,
+                                    color: ModuleColors.portfolio,
+                                  ),
                                 ),
                               ),
                             ),
@@ -198,9 +230,7 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: context.glassOverlay(0.05),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: color.withValues(alpha: 0.4),
-                      ),
+                      border: Border.all(color: color.withValues(alpha: 0.4)),
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
@@ -235,18 +265,32 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
-                                    if (isBasketExtractor != null && isBasketExtractor!(portfolio))
+                                    if (isBasketExtractor != null &&
+                                        isBasketExtractor!(portfolio))
                                       Container(
                                         margin: const EdgeInsets.only(left: 4),
-                                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 4,
+                                          vertical: 2,
+                                        ),
                                         decoration: BoxDecoration(
-                                          color: ModuleColors.portfolio.withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(4),
-                                          border: Border.all(color: ModuleColors.portfolio.withValues(alpha: 0.3)),
+                                          color: ModuleColors.portfolio
+                                              .withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                          border: Border.all(
+                                            color: ModuleColors.portfolio
+                                                .withValues(alpha: 0.3),
+                                          ),
                                         ),
                                         child: Text(
                                           'BASKET',
-                                          style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: ModuleColors.portfolio),
+                                          style: TextStyle(
+                                            fontSize: 8,
+                                            fontWeight: FontWeight.bold,
+                                            color: ModuleColors.portfolio,
+                                          ),
                                         ),
                                       ),
                                   ],

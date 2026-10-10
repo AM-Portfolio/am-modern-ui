@@ -81,7 +81,8 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
       );
     }
 
-    final dateStr = DateFormat('EEE MMM dd, yyyy').format(widget.entry!.entryDate);
+    final dateStr =
+        DateFormat('EEE MMM dd, yyyy').format(widget.entry!.entryDate);
     final colors = context.colors;
 
     return Container(

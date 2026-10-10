@@ -20,8 +20,10 @@ class MoversWidget extends StatefulWidget {
   final bool isLoading;
   final String? error;
   final ValueChanged<Movers>? onViewAll;
+
   /// When true, use Gainers|Losers tabs and fewer rows (Overview intel layout).
   final bool compact;
+
   /// Stretch to peer row height on Overview bottom band.
   final bool fillHeight;
   final VoidCallback? onRetry;
@@ -35,7 +37,8 @@ class _MoversWidgetState extends State<MoversWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final showSeeAll = widget.onViewAll != null &&
+    final showSeeAll =
+        widget.onViewAll != null &&
         widget.movers != null &&
         (widget.movers!.topGainers.isNotEmpty ||
             widget.movers!.topLosers.isNotEmpty);
@@ -50,12 +53,13 @@ class _MoversWidgetState extends State<MoversWidget> {
           ? TextButton(
               onPressed: () => widget.onViewAll!(widget.movers!),
               style: TextButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                backgroundColor:
-                    ModuleColors.portfolio.withValues(alpha: 0.1),
+                backgroundColor: ModuleColors.portfolio.withValues(alpha: 0.1),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -90,20 +94,28 @@ class _MoversWidgetState extends State<MoversWidget> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline,
-                  color: Theme.of(context).colorScheme.error,
-                  size: widget.compact ? 32 : 48),
+              Icon(
+                Icons.error_outline,
+                color: Theme.of(context).colorScheme.error,
+                size: widget.compact ? 32 : 48,
+              ),
               const SizedBox(height: 8),
-              Text('Failed to load movers data',
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                      fontSize: 14)),
+              Text(
+                'Failed to load movers data',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: 14,
+                ),
+              ),
               const SizedBox(height: 4),
-              Text(widget.error!,
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontSize: 12),
-                  textAlign: TextAlign.center),
+              Text(
+                widget.error!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 12,
+                ),
+                textAlign: TextAlign.center,
+              ),
               if (widget.onRetry != null) ...[
                 const SizedBox(height: 8),
                 TextButton(
@@ -124,24 +136,26 @@ class _MoversWidgetState extends State<MoversWidget> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.data_usage_outlined,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurfaceVariant,
-                  size: widget.compact ? 32 : 48),
+              Icon(
+                Icons.data_usage_outlined,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                size: widget.compact ? 32 : 48,
+              ),
               const SizedBox(height: 8),
-              Text('No movers data available',
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontSize: 14)),
+              Text(
+                'No movers data available',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 14,
+                ),
+              ),
             ],
           ),
         ),
       );
     }
 
-    final useTabs =
-        widget.compact || MediaQuery.of(context).size.width < 600;
+    final useTabs = widget.compact || MediaQuery.of(context).size.width < 600;
 
     if (useTabs) {
       return Column(
@@ -163,7 +177,9 @@ class _MoversWidgetState extends State<MoversWidget> {
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
-                        color: _showGainers ? ModuleColors.portfolio.withValues(alpha: 0.15) : Colors.transparent,
+                        color: _showGainers
+                            ? ModuleColors.portfolio.withValues(alpha: 0.15)
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Center(
@@ -171,8 +187,13 @@ class _MoversWidgetState extends State<MoversWidget> {
                           'Gainers (${widget.movers!.topGainers.length})',
                           style: TextStyle(
                             fontSize: 13,
-                            fontWeight: _showGainers ? FontWeight.bold : FontWeight.w500,
-                            color: _showGainers ? ModuleColors.portfolio : Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+                            fontWeight: _showGainers
+                                ? FontWeight.bold
+                                : FontWeight.w500,
+                            color: _showGainers
+                                ? ModuleColors.portfolio
+                                : Theme.of(context).textTheme.bodyMedium?.color
+                                      ?.withValues(alpha: 0.5),
                           ),
                         ),
                       ),
@@ -186,7 +207,11 @@ class _MoversWidgetState extends State<MoversWidget> {
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
-                        color: !_showGainers ? context.colors.marketNegativeIndicator.withValues(alpha: 0.15) : Colors.transparent,
+                        color: !_showGainers
+                            ? context.colors.marketNegativeIndicator.withValues(
+                                alpha: 0.15,
+                              )
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Center(
@@ -194,8 +219,13 @@ class _MoversWidgetState extends State<MoversWidget> {
                           'Losers (${widget.movers!.topLosers.length})',
                           style: TextStyle(
                             fontSize: 13,
-                            fontWeight: !_showGainers ? FontWeight.bold : FontWeight.w500,
-                            color: !_showGainers ? context.colors.marketNegativeIndicator : Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+                            fontWeight: !_showGainers
+                                ? FontWeight.bold
+                                : FontWeight.w500,
+                            color: !_showGainers
+                                ? context.colors.marketNegativeIndicator
+                                : Theme.of(context).textTheme.bodyMedium?.color
+                                      ?.withValues(alpha: 0.5),
                           ),
                         ),
                       ),
@@ -209,8 +239,18 @@ class _MoversWidgetState extends State<MoversWidget> {
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
             child: _showGainers
-                ? _buildColumn(context, 'Gainers', widget.movers!.topGainers, true)
-                : _buildColumn(context, 'Losers', widget.movers!.topLosers, false),
+                ? _buildColumn(
+                    context,
+                    'Gainers',
+                    widget.movers!.topGainers,
+                    true,
+                  )
+                : _buildColumn(
+                    context,
+                    'Losers',
+                    widget.movers!.topLosers,
+                    false,
+                  ),
           ),
         ],
       );
@@ -220,13 +260,21 @@ class _MoversWidgetState extends State<MoversWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child:
-              _buildColumn(context, 'Gainers', widget.movers!.topGainers, true),
+          child: _buildColumn(
+            context,
+            'Gainers',
+            widget.movers!.topGainers,
+            true,
+          ),
         ),
         const SizedBox(width: 20),
         Expanded(
-          child:
-              _buildColumn(context, 'Losers', widget.movers!.topLosers, false),
+          child: _buildColumn(
+            context,
+            'Losers',
+            widget.movers!.topLosers,
+            false,
+          ),
         ),
       ],
     );
@@ -262,42 +310,41 @@ class _MoversWidgetState extends State<MoversWidget> {
               Text(
                 '$title (${stocks.length})',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                      color: color,
-                    ),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  color: color,
+                ),
               ),
             ],
           ),
         if (!hideTitle) const SizedBox(height: 12),
         if (stocks.isEmpty)
           Padding(
-            padding: EdgeInsets.symmetric(vertical: widget.compact ? 12.0 : 20.0),
+            padding: EdgeInsets.symmetric(
+              vertical: widget.compact ? 12.0 : 20.0,
+            ),
             child: Center(
               child: Text(
                 'No ${isGainers ? 'gainers' : 'losers'} today',
                 style: TextStyle(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurfaceVariant
-                      .withValues(alpha: 0.6),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                   fontSize: 13,
                 ),
               ),
             ),
           )
         else ...[
-          ...shown.map(
-            (stock) => MoverTile(stock: stock, isGainer: isGainers),
-          ),
+          ...shown.map((stock) => MoverTile(stock: stock, isGainer: isGainers)),
           if (widget.compact && stocks.length < take)
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
                 'Only ${stocks.length} holding${stocks.length == 1 ? '' : 's'} moved today',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Theme.of(context).hintColor,
-                    ),
+                  color: Theme.of(context).hintColor,
+                ),
               ),
             ),
         ],
@@ -320,14 +367,15 @@ class _MoverTileState extends State<MoverTile> {
 
   @override
   Widget build(BuildContext context) {
-
     final stock = widget.stock;
     final isPositive = stock.changeAmount != 0
         ? stock.changeAmount > 0
         : (stock.changePercent != 0
-            ? stock.changePercent > 0
-            : widget.isGainer);
-    final color = isPositive ? context.colors.marketPositiveIndicator : context.colors.marketNegativeIndicator;
+              ? stock.changePercent > 0
+              : widget.isGainer);
+    final color = isPositive
+        ? context.colors.marketPositiveIndicator
+        : context.colors.marketNegativeIndicator;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
@@ -336,8 +384,7 @@ class _MoverTileState extends State<MoverTile> {
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOutCubic,
         margin: const EdgeInsets.only(bottom: 8),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
         transform: _hovered
             ? (Matrix4.diagonal3Values(1.015, 1.015, 1.0))
             : Matrix4.identity(),
@@ -387,9 +434,9 @@ class _MoverTileState extends State<MoverTile> {
               child: Text(
                 stock.symbol,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                    ),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -403,10 +450,10 @@ class _MoverTileState extends State<MoverTile> {
                 Text(
                   '₹${stock.lastPrice.toStringAsFixed(2)}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 Text(
                   stock.formattedChangeAmount,
@@ -422,8 +469,7 @@ class _MoverTileState extends State<MoverTile> {
 
             // ── Percentage pill with glow ──
             Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 7, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(20),

@@ -36,13 +36,11 @@ class FpBasketPanel extends StatelessWidget {
 
   FpStatusPill _buildStatusPill(BuildContext context, BasketItem item) {
     if (item.status == ItemStatus.held) {
-      return FpStatusPill(
-        label: 'Direct Match',
-        color: context.statusSuccess,
-      );
+      return FpStatusPill(label: 'Direct Match', color: context.statusSuccess);
     } else if (item.status == ItemStatus.substitute) {
       String? subLabel;
-      if (item.userHoldingSymbol != null && item.userHoldingSymbol != item.stockSymbol) {
+      if (item.userHoldingSymbol != null &&
+          item.userHoldingSymbol != item.stockSymbol) {
         subLabel = 'By ${item.userHoldingSymbol}';
       }
       return FpStatusPill(
@@ -52,20 +50,26 @@ class FpBasketPanel extends StatelessWidget {
       );
     }
     // Should not reach here for missing/excluded items
-    return FpStatusPill(
-      label: 'Unknown',
-      color: context.colors.textTertiary,
-    );
+    return FpStatusPill(label: 'Unknown', color: context.colors.textTertiary);
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final fmtValue = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final fmtValue = NumberFormat.currency(
+      locale: 'en_IN',
+      symbol: '₹',
+      decimalDigits: 0,
+    );
     final compact = BasketResponsive.useCompactPreview(context);
 
     // Filter to only held or substitute
-    final displayItems = finalItems.where((i) => i.status == ItemStatus.held || i.status == ItemStatus.substitute).toList();
+    final displayItems = finalItems
+        .where(
+          (i) =>
+              i.status == ItemStatus.held || i.status == ItemStatus.substitute,
+        )
+        .toList();
     final totalBasketValue = displayItems.fold(
       0.0,
       (sum, item) => sum + basketLineValue(item, investmentAmount),
@@ -111,24 +115,47 @@ class FpBasketPanel extends StatelessWidget {
           Divider(color: context.colors.border, height: 1),
           if (!compact) ...[
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.md,
+              ),
               child: Row(
                 children: [
                   Expanded(
                     flex: 3,
-                    child: Text('Stock', style: theme.textTheme.labelSmall?.copyWith(color: context.colors.textSecondary)),
+                    child: Text(
+                      'Stock',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: context.colors.textSecondary,
+                      ),
+                    ),
                   ),
                   Expanded(
                     flex: 2,
-                    child: Text('Weightage (%)', style: theme.textTheme.labelSmall?.copyWith(color: context.colors.textSecondary)),
+                    child: Text(
+                      'Weightage (%)',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: context.colors.textSecondary,
+                      ),
+                    ),
                   ),
                   Expanded(
                     flex: 2,
-                    child: Text('Allocation (₹)', style: theme.textTheme.labelSmall?.copyWith(color: context.colors.textSecondary)),
+                    child: Text(
+                      'Allocation (₹)',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: context.colors.textSecondary,
+                      ),
+                    ),
                   ),
                   Expanded(
                     flex: 2,
-                    child: Text('Status', style: theme.textTheme.labelSmall?.copyWith(color: context.colors.textSecondary)),
+                    child: Text(
+                      'Status',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: context.colors.textSecondary,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -141,28 +168,29 @@ class FpBasketPanel extends StatelessWidget {
             physics: const NeverScrollableScrollPhysics(),
             itemCount: displayItems.length,
             itemBuilder: (context, index) {
-                final item = displayItems[index];
-                final weight = basketLineWeight(item);
-                final value = basketLineValue(item, investmentAmount);
-                final freshBuy = (item.buyQuantity ?? 0) * (item.lastPrice ?? 0);
-                return FpStockRow(
-                  symbol: item.status == ItemStatus.substitute &&
-                          item.userHoldingSymbol != null
-                      ? item.userHoldingSymbol!
-                      : item.stockSymbol,
-                  sector: item.sector,
-                  weightage: weight,
-                  value: value,
-                  valueSubLabel: freshBuy > 0 && freshBuy < value
-                      ? 'Buy ${fmtValue.format(freshBuy)}'
-                      : (freshBuy == 0 && value > 0 ? 'Covered' : null),
-                  statusPill: _buildStatusPill(context, item),
-                  showValue: true,
-                  showStatus: true,
-                  isEven: index % 2 == 0,
-                );
-              },
-            ),
+              final item = displayItems[index];
+              final weight = basketLineWeight(item);
+              final value = basketLineValue(item, investmentAmount);
+              final freshBuy = (item.buyQuantity ?? 0) * (item.lastPrice ?? 0);
+              return FpStockRow(
+                symbol:
+                    item.status == ItemStatus.substitute &&
+                        item.userHoldingSymbol != null
+                    ? item.userHoldingSymbol!
+                    : item.stockSymbol,
+                sector: item.sector,
+                weightage: weight,
+                value: value,
+                valueSubLabel: freshBuy > 0 && freshBuy < value
+                    ? 'Buy ${fmtValue.format(freshBuy)}'
+                    : (freshBuy == 0 && value > 0 ? 'Covered' : null),
+                statusPill: _buildStatusPill(context, item),
+                showValue: true,
+                showStatus: true,
+                isEven: index % 2 == 0,
+              );
+            },
+          ),
           // Footer
           Divider(color: context.colors.border, height: 1),
           Padding(

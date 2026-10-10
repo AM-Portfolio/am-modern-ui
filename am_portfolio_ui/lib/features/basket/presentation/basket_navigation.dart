@@ -26,8 +26,9 @@ class BasketNavigation {
       GlobalKey<NavigatorState>();
 
   /// Shared Discover / My Baskets mode (sticky header + explorer).
-  static final ValueNotifier<BasketViewMode> viewMode =
-      ValueNotifier(BasketViewMode.discover);
+  static final ValueNotifier<BasketViewMode> viewMode = ValueNotifier(
+    BasketViewMode.discover,
+  );
 
   static bool get hasNestedNavigator => navigatorKey.currentState != null;
 
@@ -36,8 +37,7 @@ class BasketNavigation {
     final nested = navigatorKey.currentState;
     if (nested != null && nested.canPop()) {
       nested.popUntil(
-        (route) =>
-            route.settings.name == explorerRoute || route.isFirst,
+        (route) => route.settings.name == explorerRoute || route.isFirst,
       );
     }
     if (viewMode.value != mode) {
@@ -157,17 +157,13 @@ class BasketNavigation {
     required String portfolioId,
     bool fromCreationFlow = false,
   }) {
-    final args = {
-      'basketId': basketId,
-      'userId': userId,
-    };
+    final args = {'basketId': basketId, 'userId': userId};
 
     final nested = navigatorKey.currentState;
     if (nested != null) {
       if (fromCreationFlow) {
         nested.popUntil(
-          (route) =>
-              route.settings.name == explorerRoute || route.isFirst,
+          (route) => route.settings.name == explorerRoute || route.isFirst,
         );
       }
       nested.pushNamed(dashboardRoute, arguments: args);
@@ -216,8 +212,7 @@ class BasketNavigation {
     final nested = navigatorKey.currentState;
     if (nested != null) {
       nested.popUntil(
-        (route) =>
-            route.settings.name == explorerRoute || route.isFirst,
+        (route) => route.settings.name == explorerRoute || route.isFirst,
       );
       _notifyShowMyBaskets();
       return;
@@ -255,8 +250,7 @@ class BasketNavigation {
     final nested = navigatorKey.currentState;
     if (nested != null) {
       nested.popUntil(
-        (route) =>
-            route.settings.name == explorerRoute || route.isFirst,
+        (route) => route.settings.name == explorerRoute || route.isFirst,
       );
       nested.pushNamed(creatorRoute, arguments: args);
       _notifyShowMyBaskets();
@@ -296,7 +290,9 @@ class BasketNavigation {
   }) {
     if (etfIsin.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ETF ISIN is missing for this opportunity')),
+        const SnackBar(
+          content: Text('ETF ISIN is missing for this opportunity'),
+        ),
       );
       return;
     }
@@ -309,11 +305,7 @@ class BasketNavigation {
       seededOpportunity: seed,
     );
 
-    _persistPreview(
-      userId: userId,
-      portfolioId: portfolioId,
-      etfIsin: etfIsin,
-    );
+    _persistPreview(userId: userId, portfolioId: portfolioId, etfIsin: etfIsin);
 
     final nested = navigatorKey.currentState;
     if (nested != null) {
@@ -391,9 +383,7 @@ class BasketNavigation {
     }
 
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => BasketFinalPreviewPage(args: args),
-      ),
+      MaterialPageRoute(builder: (_) => BasketFinalPreviewPage(args: args)),
     );
   }
 }
@@ -415,12 +405,12 @@ class BasketPreviewArgs {
   BasketOpportunity? get opportunity => seededOpportunity;
 
   Map<String, dynamic> toMap() => {
-        'etfIsin': etfIsin,
-        'userId': userId,
-        'portfolioId': portfolioId,
-        if (seededOpportunity != null) 'seededOpportunity': seededOpportunity,
-        if (opportunity != null) 'opportunity': opportunity,
-      };
+    'etfIsin': etfIsin,
+    'userId': userId,
+    'portfolioId': portfolioId,
+    if (seededOpportunity != null) 'seededOpportunity': seededOpportunity,
+    if (opportunity != null) 'opportunity': opportunity,
+  };
 
   factory BasketPreviewArgs.fromMap(Map<String, dynamic> map) {
     final seed = map['seededOpportunity'] ?? map['opportunity'];
@@ -445,10 +435,10 @@ class BasketCreatorArgs {
   final String portfolioId;
 
   Map<String, dynamic> toMap() => {
-        'opportunity': opportunity,
-        'userId': userId,
-        'portfolioId': portfolioId,
-      };
+    'opportunity': opportunity,
+    'userId': userId,
+    'portfolioId': portfolioId,
+  };
 }
 
 class BasketFinalPreviewArgs {
@@ -553,7 +543,8 @@ class _BasketSectionNavigatorState
     if (_restored) return;
     _restored = true;
 
-    final session = SessionPersistenceService.instance.cached ??
+    final session =
+        SessionPersistenceService.instance.cached ??
         await SessionPersistenceService.instance.load(widget.userId);
     final basket = session?.basket;
     if (basket == null || basket.route == BasketNavigation.explorerRoute) {
@@ -574,13 +565,15 @@ class _BasketSectionNavigatorState
         );
         final opportunity = detail.opportunity;
         if (opportunity == null || !mounted) return;
-        ref.read(basketFlowControllerProvider.notifier).restoreFromDraft(
+        ref
+            .read(basketFlowControllerProvider.notifier)
+            .restoreFromDraft(
               opportunity: opportunity,
               excludedSymbols: detail.excludedSymbols.toSet(),
               manualQtyOverrides: detail.manualQtyOverrides,
               investmentAmount: detail.investmentAmount ?? 0,
-              basketName: detail.basketName ??
-                  'My ${detail.etfName ?? 'ETF'} Basket',
+              basketName:
+                  detail.basketName ?? 'My ${detail.etfName ?? 'ETF'} Basket',
               hasCalculated: detail.hasCalculated,
               draftId: detail.id,
             );

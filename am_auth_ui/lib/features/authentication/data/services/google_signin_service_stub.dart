@@ -50,4 +50,3 @@ class GoogleSignInService {
   /// Get currently signed in account
   GoogleSignInAccount? getCurrentAccount() => null;
 }
-

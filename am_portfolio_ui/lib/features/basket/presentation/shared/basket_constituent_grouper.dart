@@ -1,13 +1,7 @@
 import '../../domain/models/basket_opportunity.dart';
 
 /// Tab filters for constituent lists in the customize flow.
-enum BasketConstituentFilter {
-  all,
-  held,
-  substitute,
-  missing,
-  excluded,
-}
+enum BasketConstituentFilter { all, held, substitute, missing, excluded }
 
 abstract final class BasketConstituentGrouper {
   BasketConstituentGrouper._();
@@ -22,16 +16,19 @@ abstract final class BasketConstituentGrouper {
         return all;
       case BasketConstituentFilter.held:
         return all
-            .where((i) =>
-                i.status == ItemStatus.held || (i.heldQuantity ?? 0) > 0)
+            .where(
+              (i) => i.status == ItemStatus.held || (i.heldQuantity ?? 0) > 0,
+            )
             .toList();
       case BasketConstituentFilter.substitute:
         return all.where((i) => i.status == ItemStatus.substitute).toList();
       case BasketConstituentFilter.missing:
         return all
-            .where((i) =>
-                i.status == ItemStatus.missing &&
-                !excludedSymbols.contains(i.stockSymbol))
+            .where(
+              (i) =>
+                  i.status == ItemStatus.missing &&
+                  !excludedSymbols.contains(i.stockSymbol),
+            )
             .toList();
       case BasketConstituentFilter.excluded:
         return all

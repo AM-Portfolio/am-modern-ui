@@ -29,15 +29,14 @@ class JournalTradeSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => TradeOverviewSelector(
-    selectedDate: selectedDate,
-    selectedPeriod: selectedPeriod,
-    selectedTradeIds: selectedTradeIds,
-    availableTrades: availableTrades,
-    onDateChanged: onDateChanged,
-    onPeriodChanged: onPeriodChanged,
-    onTradesSelected: onTradesSelected,
-    onViewTrades: onViewTrades,
-    readOnly: !isEditMode,
-  );
+        selectedDate: selectedDate,
+        selectedPeriod: selectedPeriod,
+        selectedTradeIds: selectedTradeIds,
+        availableTrades: availableTrades,
+        onDateChanged: onDateChanged,
+        onPeriodChanged: onPeriodChanged,
+        onTradesSelected: onTradesSelected,
+        onViewTrades: onViewTrades,
+        readOnly: !isEditMode,
+      );
 }
-

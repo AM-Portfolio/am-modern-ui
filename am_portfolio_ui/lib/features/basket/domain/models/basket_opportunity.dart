@@ -110,10 +110,12 @@ class BasketOpportunity {
       heldMatchScore: (json['heldMatchScore'] as num?)?.toDouble(),
       substituteMatchScore: (json['substituteMatchScore'] as num?)?.toDouble(),
       missingMatchScore: (json['missingMatchScore'] as num?)?.toDouble(),
-      remainingPortfolioValue: (json['remainingPortfolioValue'] as num?)?.toDouble(),
+      remainingPortfolioValue: (json['remainingPortfolioValue'] as num?)
+          ?.toDouble(),
       investmentAmount: (json['investmentAmount'] as num?)?.toDouble(),
       totalPortfolioValue: (json['totalPortfolioValue'] as num?)?.toDouble(),
-      minimumInvestmentAmount: (json['minimumInvestmentAmount'] as num?)?.toDouble(),
+      minimumInvestmentAmount: (json['minimumInvestmentAmount'] as num?)
+          ?.toDouble(),
       actualInvestmentCost: (json['actualInvestmentCost'] as num?)?.toDouble(),
       budgetVariance: (json['budgetVariance'] as num?)?.toDouble(),
       residualCash: (json['residualCash'] as num?)?.toDouble(),
@@ -126,26 +128,31 @@ class BasketOpportunity {
       sparklineCloses: (json['sparklineCloses'] as List<dynamic>?)
           ?.map((e) => (e as num).toDouble())
           .toList(),
-      excludedSymbols: (json['excludedSymbols'] as List<dynamic>?)
+      excludedSymbols:
+          (json['excludedSymbols'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           const [],
       sectorialBasket: json['sectorialBasket'] as bool?,
       dominantSector: json['dominantSector'] as String?,
-      etfConstituentIsins: (json['etfConstituentIsins'] as List<dynamic>?)
+      etfConstituentIsins:
+          (json['etfConstituentIsins'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           const [],
       appliedSubstituteCount: json['appliedSubstituteCount'] as int?,
-      substituteWarnings: (json['substituteWarnings'] as List<dynamic>?)
+      substituteWarnings:
+          (json['substituteWarnings'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           const [],
-      composition: (json['composition'] as List<dynamic>?)
+      composition:
+          (json['composition'] as List<dynamic>?)
               ?.map((e) => BasketItem.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
-      buyList: (json['buyList'] as List<dynamic>?)
+      buyList:
+          (json['buyList'] as List<dynamic>?)
               ?.map((e) => BasketItem.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
@@ -160,29 +167,34 @@ class BasketOpportunity {
 
   /// Sorted `SYMBOL:qty` of held/substitute lines — compared to live portfolio holdings.
   String get compositionHoldingsFingerprint {
-    final parts = composition
-        .where((item) =>
-            (item.status == ItemStatus.held ||
-                item.status == ItemStatus.substitute) &&
-            (item.heldQuantity ?? 0) > 0)
-        .map((item) {
-          final symbol = (item.userHoldingSymbol ?? item.stockSymbol).toUpperCase();
-          final qty = (item.heldQuantity ?? 0).round();
-          return '$symbol:$qty';
-        })
-        .toList()
-      ..sort();
+    final parts =
+        composition
+            .where(
+              (item) =>
+                  (item.status == ItemStatus.held ||
+                      item.status == ItemStatus.substitute) &&
+                  (item.heldQuantity ?? 0) > 0,
+            )
+            .map((item) {
+              final symbol = (item.userHoldingSymbol ?? item.stockSymbol)
+                  .toUpperCase();
+              final qty = (item.heldQuantity ?? 0).round();
+              return '$symbol:$qty';
+            })
+            .toList()
+          ..sort();
     return parts.join('|');
   }
 
   static String fingerprintFromHoldings(
     Iterable<MapEntry<String, double>> holdings,
   ) {
-    final parts = holdings
-        .where((entry) => entry.key.isNotEmpty && entry.value > 0)
-        .map((entry) => '${entry.key.toUpperCase()}:${entry.value.round()}')
-        .toList()
-      ..sort();
+    final parts =
+        holdings
+            .where((entry) => entry.key.isNotEmpty && entry.value > 0)
+            .map((entry) => '${entry.key.toUpperCase()}:${entry.value.round()}')
+            .toList()
+          ..sort();
     return parts.join('|');
   }
 
@@ -297,10 +309,12 @@ class BasketOpportunity {
       heldMatchScore: heldMatchScore ?? this.heldMatchScore,
       substituteMatchScore: substituteMatchScore ?? this.substituteMatchScore,
       missingMatchScore: missingMatchScore ?? this.missingMatchScore,
-      remainingPortfolioValue: remainingPortfolioValue ?? this.remainingPortfolioValue,
+      remainingPortfolioValue:
+          remainingPortfolioValue ?? this.remainingPortfolioValue,
       investmentAmount: investmentAmount ?? this.investmentAmount,
       totalPortfolioValue: totalPortfolioValue ?? this.totalPortfolioValue,
-      minimumInvestmentAmount: minimumInvestmentAmount ?? this.minimumInvestmentAmount,
+      minimumInvestmentAmount:
+          minimumInvestmentAmount ?? this.minimumInvestmentAmount,
       actualInvestmentCost: actualInvestmentCost ?? this.actualInvestmentCost,
       budgetVariance: budgetVariance ?? this.budgetVariance,
       residualCash: residualCash ?? this.residualCash,
@@ -315,7 +329,8 @@ class BasketOpportunity {
       sectorialBasket: sectorialBasket ?? this.sectorialBasket,
       dominantSector: dominantSector ?? this.dominantSector,
       etfConstituentIsins: etfConstituentIsins ?? this.etfConstituentIsins,
-      appliedSubstituteCount: appliedSubstituteCount ?? this.appliedSubstituteCount,
+      appliedSubstituteCount:
+          appliedSubstituteCount ?? this.appliedSubstituteCount,
       substituteWarnings: substituteWarnings ?? this.substituteWarnings,
       composition: composition ?? this.composition,
       buyList: buyList ?? this.buyList,
@@ -381,7 +396,8 @@ class BasketItem {
       isin: json['isin'] as String? ?? '',
       sector: json['sector'] as String? ?? 'Unknown',
       status: ItemStatus.values.firstWhere(
-        (e) => e.name.toUpperCase() == (json['status'] as String?)?.toUpperCase(),
+        (e) =>
+            e.name.toUpperCase() == (json['status'] as String?)?.toUpperCase(),
         orElse: () => ItemStatus.missing,
       ),
       userHoldingSymbol: json['userHoldingSymbol'] as String?,
@@ -400,7 +416,8 @@ class BasketItem {
       underfunded: json['underfunded'] as bool? ?? false,
       heldQuantity: (json['heldQuantity'] as num?)?.toDouble(),
       heldAveragePrice: (json['heldAveragePrice'] as num?)?.toDouble(),
-      alternatives: (json['alternatives'] as List<dynamic>?)
+      alternatives:
+          (json['alternatives'] as List<dynamic>?)
               ?.map((e) => Alternative.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
@@ -514,8 +531,7 @@ class Alternative {
     this.indexEtf = false,
   });
 
-  double get effectiveRemainingQty =>
-      remainingQuantity ?? quantity ?? 0.0;
+  double get effectiveRemainingQty => remainingQuantity ?? quantity ?? 0.0;
 
   factory Alternative.fromJson(Map<String, dynamic> json) {
     return Alternative(
@@ -529,10 +545,10 @@ class Alternative {
       canFullyCover: json['canFullyCover'] as bool? ?? false,
       coverageLabel: json['coverageLabel'] as String?,
       physicalQuantity: (json['physicalQuantity'] as num?)?.toDouble(),
-      usedInThisBasketQuantity:
-          (json['usedInThisBasketQuantity'] as num?)?.toDouble(),
-      usedInActiveBasketsQuantity:
-          (json['usedInActiveBasketsQuantity'] as num?)?.toDouble(),
+      usedInThisBasketQuantity: (json['usedInThisBasketQuantity'] as num?)
+          ?.toDouble(),
+      usedInActiveBasketsQuantity: (json['usedInActiveBasketsQuantity'] as num?)
+          ?.toDouble(),
       remainingQuantity: (json['remainingQuantity'] as num?)?.toDouble(),
       indexEtf: json['indexEtf'] as bool? ?? false,
     );
@@ -594,9 +610,4 @@ class Alternative {
   }
 }
 
-enum ItemStatus {
-  held,
-  missing,
-  substitute,
-  excluded,
-}
+enum ItemStatus { held, missing, substitute, excluded }

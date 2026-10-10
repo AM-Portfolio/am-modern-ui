@@ -7,28 +7,33 @@ void main() {
   group('DiscoverViewState labels', () {
     test('period labels use return / CAGR rules', () {
       expect(
-        const DiscoverViewState(period: DiscoverPerformancePeriod.oneY)
-            .periodReturnColumnLabel,
+        const DiscoverViewState(
+          period: DiscoverPerformancePeriod.oneY,
+        ).periodReturnColumnLabel,
         '1Y return',
       );
       expect(
-        const DiscoverViewState(period: DiscoverPerformancePeriod.threeY)
-            .periodReturnColumnLabel,
+        const DiscoverViewState(
+          period: DiscoverPerformancePeriod.threeY,
+        ).periodReturnColumnLabel,
         '3Y CAGR',
       );
       expect(
-        const DiscoverViewState(period: DiscoverPerformancePeriod.fiveY)
-            .periodReturnColumnLabel,
+        const DiscoverViewState(
+          period: DiscoverPerformancePeriod.fiveY,
+        ).periodReturnColumnLabel,
         '5Y CAGR',
       );
       expect(
-        const DiscoverViewState(period: DiscoverPerformancePeriod.all)
-            .periodReturnColumnLabel,
+        const DiscoverViewState(
+          period: DiscoverPerformancePeriod.all,
+        ).periodReturnColumnLabel,
         '5Y CAGR',
       );
       expect(
-        const DiscoverViewState(period: DiscoverPerformancePeriod.threeY)
-            .periodReturnSubtitle,
+        const DiscoverViewState(
+          period: DiscoverPerformancePeriod.threeY,
+        ).periodReturnSubtitle,
         '3Y CAGR',
       );
     });

@@ -239,8 +239,7 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
                     icon: Icons.account_balance_wallet,
                     isSelected: _selectedView == MobileTradeViewType.portfolios,
                     accentColor: ModuleColors.trade,
-                    onTap: () =>
-                        _onViewChanged(MobileTradeViewType.portfolios),
+                    onTap: () => _onViewChanged(MobileTradeViewType.portfolios),
                   ),
                   SecondarySidebarItem(
                     title: 'Holdings',
@@ -269,8 +268,7 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
                       icon: Icons.analytics_outlined,
                       isSelected: _selectedView == MobileTradeViewType.analysis,
                       accentColor: ModuleColors.trade,
-                      onTap: () =>
-                          _onViewChanged(MobileTradeViewType.analysis),
+                      onTap: () => _onViewChanged(MobileTradeViewType.analysis),
                     ),
                 ],
           body: _buildMainContent(context),
@@ -293,7 +291,8 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
         if (_currentPortfolioId == null) {
           return _buildSelectPortfolioPrompt(MobileTradeViewType.holdings);
         }
-        final paper = ref.watch(omsCubitProvider).asData?.value.state.paperWallet;
+        final paper =
+            ref.watch(omsCubitProvider).asData?.value.state.paperWallet;
         final holdings = TradeHoldingsDashboardMobilePage(
           portfolioId: _currentPortfolioId!,
         );
@@ -335,7 +334,8 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
         if (_currentPortfolioId == null) {
           return _buildSelectPortfolioPrompt(MobileTradeViewType.addTrade);
         }
-        final tradeControllerCubitAsync = ref.watch(tradeControllerCubitProvider);
+        final tradeControllerCubitAsync =
+            ref.watch(tradeControllerCubitProvider);
 
         return tradeControllerCubitAsync.when(
           data: (tradeControllerCubit) =>
@@ -390,178 +390,184 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
               final omsCubit = ref.watch(omsCubitProvider).asData?.value;
               final paper = omsCubit?.state.paperWallet;
               return TradePortfolioDiscoveryTemplate(
-              portfolios: mergePaperWallet(portfolios, paper),
-              isLoading: false,
-              hasPaperWallet: paper != null,
-              onPortfolioSelected: (portfolio) {
-                _onPortfolioSelected(portfolio.id, portfolio.name);
-              },
-              onCreatePaperWallet: null,
-              onCreatePortfolio: () {
-                PortfolioFormModal.show(
-                  context: context,
-                  portfolio: null,
-                  onSubmit: (name, desc) async {
-                    final service = ref.read(portfolioServiceProvider).value;
-                    if (service == null) {
-                      throw Exception('Portfolio service not ready');
-                    }
-                    final request = PortfolioCreateRequestDto(
-                      name: name,
-                      description: desc,
-                      currency: 'INR',
-                      initialCapital: 0,
-                    );
-                    final created = await service.createPortfolio(request);
-                    final repository = ref.read(tradeRepositoryProvider).value;
-                    if (repository != null) {
-                      repository.addCachedPortfolio(
-                        TradePortfolio(
-                          id: created.portfolioId,
-                          name: created.portfolioName,
-                          description: desc,
-                        ),
-                      );
-                    }
-                  },
-                );
-              },
-              onEditPortfolio: (portfolio) {
-                if (portfolio.isPaper) return;
-                final portfolioItem = PortfolioItem(
-                  portfolioId: portfolio.id,
-                  portfolioName: portfolio.name,
-                );
-                PortfolioFormModal.show(
-                  context: context,
-                  portfolio: portfolioItem,
-                  onSubmit: (name, desc) async {
-                    final service = ref.read(portfolioServiceProvider).value;
-                    if (service == null) {
-                      throw Exception('Portfolio service not ready');
-                    }
-                    final request = PortfolioUpdateRequestDto(
-                      name: name,
-                      description: desc,
-                      currency: 'INR',
-                    );
-                    await service.updatePortfolio(portfolio.id, request);
-                    final repository = ref.read(tradeRepositoryProvider).value;
-                    repository?.updateCachedPortfolio(
-                        portfolio.id, request.name, request.description);
-                  },
-                );
-              },
-              onDeletePortfolio: (portfolio) async {
-                bool deleteTrades = false;
-                final confirm = await showDialog<bool>(
-                  context: context,
-                  builder: (ctx) => StatefulBuilder(
-                    builder: (ctx, setDialogState) => AlertDialog(
-                      title: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.red.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.delete_outline_rounded,
-                                color: Colors.red, size: 20),
-                          ),
-                          const SizedBox(width: 12),
-                          const Text('Delete Portfolio'),
-                        ],
-                      ),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Are you sure you want to delete "${portfolio.name}"?',
-                            style: const TextStyle(fontWeight: FontWeight.w500),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'This action cannot be undone.',
-                            style: TextStyle(color: Colors.grey, fontSize: 13),
-                          ),
-                          const SizedBox(height: 16),
-                          CheckboxListTile(
-                            value: deleteTrades,
-                            onChanged: (v) =>
-                                setDialogState(() => deleteTrades = v ?? false),
-                            title: const Text(
-                              'Also delete all associated trades',
-                              style: TextStyle(fontSize: 14),
-                            ),
-                            subtitle: const Text(
-                              'If unchecked, trades remain in the database but will be unassigned.',
-                              style: TextStyle(fontSize: 12),
-                            ),
-                            controlAffinity: ListTileControlAffinity.leading,
-                            activeColor: Colors.red,
-                            contentPadding: EdgeInsets.zero,
-                            visualDensity: VisualDensity.compact,
-                          ),
-                        ],
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(ctx).pop(false),
-                          child: const Text('Cancel'),
-                        ),
-                        FilledButton.icon(
-                          onPressed: () => Navigator.of(ctx).pop(true),
-                          icon: const Icon(Icons.delete_rounded, size: 18),
-                          label: const Text('Delete'),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-                if (confirm == true && mounted) {
-                  final service = ref.read(portfolioServiceProvider).value;
-                  if (service == null) return;
-                  try {
-                    await service.deletePortfolio(
-                      portfolio.id,
-                      deleteTrades: deleteTrades,
-                    );
-                    if (mounted) {
-                      final repository = ref.read(tradeRepositoryProvider).value;
-                      repository?.removeCachedPortfolio(portfolio.id);
-                      if (_currentPortfolioId == portfolio.id) {
-                        setState(() {
-                          _currentPortfolioId = null;
-                          _currentPortfolioName = null;
-                        });
-                        widget.onPortfolioChanged?.call('', '');
+                portfolios: mergePaperWallet(portfolios, paper),
+                isLoading: false,
+                hasPaperWallet: paper != null,
+                onPortfolioSelected: (portfolio) {
+                  _onPortfolioSelected(portfolio.id, portfolio.name);
+                },
+                onCreatePaperWallet: null,
+                onCreatePortfolio: () {
+                  PortfolioFormModal.show(
+                    context: context,
+                    portfolio: null,
+                    onSubmit: (name, desc) async {
+                      final service = ref.read(portfolioServiceProvider).value;
+                      if (service == null) {
+                        throw Exception('Portfolio service not ready');
                       }
-                      handleRefresh();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Portfolio deleted successfully')),
+                      final request = PortfolioCreateRequestDto(
+                        name: name,
+                        description: desc,
+                        currency: 'INR',
+                        initialCapital: 0,
                       );
-                    }
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Failed to delete portfolio: $e'),
-                          backgroundColor: Colors.red,
+                      final created = await service.createPortfolio(request);
+                      final repository =
+                          ref.read(tradeRepositoryProvider).value;
+                      if (repository != null) {
+                        repository.addCachedPortfolio(
+                          TradePortfolio(
+                            id: created.portfolioId,
+                            name: created.portfolioName,
+                            description: desc,
+                          ),
+                        );
+                      }
+                    },
+                  );
+                },
+                onEditPortfolio: (portfolio) {
+                  if (portfolio.isPaper) return;
+                  final portfolioItem = PortfolioItem(
+                    portfolioId: portfolio.id,
+                    portfolioName: portfolio.name,
+                  );
+                  PortfolioFormModal.show(
+                    context: context,
+                    portfolio: portfolioItem,
+                    onSubmit: (name, desc) async {
+                      final service = ref.read(portfolioServiceProvider).value;
+                      if (service == null) {
+                        throw Exception('Portfolio service not ready');
+                      }
+                      final request = PortfolioUpdateRequestDto(
+                        name: name,
+                        description: desc,
+                        currency: 'INR',
+                      );
+                      await service.updatePortfolio(portfolio.id, request);
+                      final repository =
+                          ref.read(tradeRepositoryProvider).value;
+                      repository?.updateCachedPortfolio(
+                          portfolio.id, request.name, request.description);
+                    },
+                  );
+                },
+                onDeletePortfolio: (portfolio) async {
+                  bool deleteTrades = false;
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => StatefulBuilder(
+                      builder: (ctx, setDialogState) => AlertDialog(
+                        title: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.red.withValues(alpha: 0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.delete_outline_rounded,
+                                  color: Colors.red, size: 20),
+                            ),
+                            const SizedBox(width: 12),
+                            const Text('Delete Portfolio'),
+                          ],
                         ),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Are you sure you want to delete "${portfolio.name}"?',
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w500),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'This action cannot be undone.',
+                              style:
+                                  TextStyle(color: Colors.grey, fontSize: 13),
+                            ),
+                            const SizedBox(height: 16),
+                            CheckboxListTile(
+                              value: deleteTrades,
+                              onChanged: (v) => setDialogState(
+                                  () => deleteTrades = v ?? false),
+                              title: const Text(
+                                'Also delete all associated trades',
+                                style: TextStyle(fontSize: 14),
+                              ),
+                              subtitle: const Text(
+                                'If unchecked, trades remain in the database but will be unassigned.',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                              controlAffinity: ListTileControlAffinity.leading,
+                              activeColor: Colors.red,
+                              contentPadding: EdgeInsets.zero,
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ],
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(ctx).pop(false),
+                            child: const Text('Cancel'),
+                          ),
+                          FilledButton.icon(
+                            onPressed: () => Navigator.of(ctx).pop(true),
+                            icon: const Icon(Icons.delete_rounded, size: 18),
+                            label: const Text('Delete'),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                  if (confirm == true && mounted) {
+                    final service = ref.read(portfolioServiceProvider).value;
+                    if (service == null) return;
+                    try {
+                      await service.deletePortfolio(
+                        portfolio.id,
+                        deleteTrades: deleteTrades,
                       );
+                      if (mounted) {
+                        final repository =
+                            ref.read(tradeRepositoryProvider).value;
+                        repository?.removeCachedPortfolio(portfolio.id);
+                        if (_currentPortfolioId == portfolio.id) {
+                          setState(() {
+                            _currentPortfolioId = null;
+                            _currentPortfolioName = null;
+                          });
+                          widget.onPortfolioChanged?.call('', '');
+                        }
+                        handleRefresh();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text('Portfolio deleted successfully')),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Failed to delete portfolio: $e'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
                     }
                   }
-                }
-              },
-              onRefresh: handleRefresh,
-              isWebView: false,
-            );
+                },
+                onRefresh: handleRefresh,
+                isWebView: false,
+              );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, stack) => TradePortfolioDiscoveryTemplate(

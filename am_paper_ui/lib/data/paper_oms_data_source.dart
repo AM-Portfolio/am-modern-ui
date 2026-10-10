@@ -7,8 +7,8 @@ class PaperOmsDataSource {
   PaperOmsDataSource({
     required ApiClient apiClient,
     required OmsApiConfig config,
-  })  : _apiClient = apiClient,
-        _config = config;
+  }) : _apiClient = apiClient,
+       _config = config;
 
   final ApiClient _apiClient;
   final OmsApiConfig _config;
@@ -78,14 +78,18 @@ class PaperOmsDataSource {
       'productMode': productMode,
       'amo': amo,
     };
-    if (limitPrice != null && limitPrice.isNotEmpty) body['limitPrice'] = limitPrice;
+    if (limitPrice != null && limitPrice.isNotEmpty)
+      body['limitPrice'] = limitPrice;
     if (triggerPrice != null && triggerPrice.isNotEmpty) {
       body['triggerPrice'] = triggerPrice;
     }
-    if (targetPrice != null && targetPrice.isNotEmpty) body['targetPrice'] = targetPrice;
+    if (targetPrice != null && targetPrice.isNotEmpty)
+      body['targetPrice'] = targetPrice;
     if (stopLoss != null && stopLoss.isNotEmpty) body['stopLoss'] = stopLoss;
-    if (trailJump != null && trailJump.isNotEmpty) body['trailJump'] = trailJump;
-    if (entryType != null && entryType.isNotEmpty) body['entryType'] = entryType;
+    if (trailJump != null && trailJump.isNotEmpty)
+      body['trailJump'] = trailJump;
+    if (entryType != null && entryType.isNotEmpty)
+      body['entryType'] = entryType;
 
     return _apiClient.post<OmsOrder>(
       _uri(_config.ordersResource),

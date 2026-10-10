@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:am_design_system/am_design_system.dart';
@@ -48,7 +48,8 @@ void main() {
         expect(find.text('10'), findsWidgets);
       });
 
-      testWidgets('maps totalAssets when totalHoldings is zero', (WidgetTester tester) async {
+      testWidgets('maps totalAssets when totalHoldings is zero',
+          (WidgetTester tester) async {
         final response = AiIntentResponse(
           message: '',
           widgetId: 'PORTFOLIO_SUMMARY',
@@ -75,7 +76,8 @@ void main() {
     });
 
     group('HOLDINGS_TABLE widget id', () {
-      testWidgets('reads holdings from widgetParams.data', (WidgetTester tester) async {
+      testWidgets('reads holdings from widgetParams.data',
+          (WidgetTester tester) async {
         final response = AiIntentResponse(
           message: '',
           widgetId: 'HOLDINGS_TABLE',
@@ -103,7 +105,8 @@ void main() {
         expect(find.text('TCS'), findsOneWidget);
       });
 
-      testWidgets('falls back to markdown table in message text', (WidgetTester tester) async {
+      testWidgets('falls back to markdown table in message text',
+          (WidgetTester tester) async {
         const tableText = '''
 | Symbol | Name | Quantity |
 | --- | --- | --- |
@@ -131,7 +134,8 @@ void main() {
     });
 
     group('TOP_MOVERS widget id', () {
-      testWidgets('reads gainers from widgetParams.data', (WidgetTester tester) async {
+      testWidgets('reads gainers from widgetParams.data',
+          (WidgetTester tester) async {
         final response = AiIntentResponse(
           message: '',
           widgetId: 'TOP_MOVERS',
@@ -159,7 +163,8 @@ void main() {
         expect(find.text('WIPRO'), findsOneWidget);
       });
 
-      testWidgets('maps market movers array to gainers', (WidgetTester tester) async {
+      testWidgets('maps market movers array to gainers',
+          (WidgetTester tester) async {
         final response = AiIntentResponse(
           message: '',
           widgetId: 'TOP_MOVERS',
@@ -209,7 +214,8 @@ void main() {
     });
 
     group('RECENT_ACTIVITY widget id', () {
-      testWidgets('renders activity lines from data', (WidgetTester tester) async {
+      testWidgets('renders activity lines from data',
+          (WidgetTester tester) async {
         final response = AiIntentResponse(
           message: '',
           widgetId: 'RECENT_ACTIVITY',
@@ -235,7 +241,8 @@ void main() {
     });
 
     group('BASKET_CARD widget id', () {
-      testWidgets('renders basket name and constituents', (WidgetTester tester) async {
+      testWidgets('renders basket name and constituents',
+          (WidgetTester tester) async {
         final response = AiIntentResponse(
           message: '',
           widgetId: 'BASKET_CARD',
@@ -266,7 +273,8 @@ void main() {
     });
 
     group('ERROR widget id', () {
-      testWidgets('renders the error message and traceId', (WidgetTester tester) async {
+      testWidgets('renders the error message and traceId',
+          (WidgetTester tester) async {
         final response = AiIntentResponse.error(
           'Security check failed',
           traceId: 'trace-err-99',
@@ -281,7 +289,8 @@ void main() {
     });
 
     group('Unknown widget id', () {
-      testWidgets('returns a SizedBox.shrink (zero-size widget)', (WidgetTester tester) async {
+      testWidgets('returns a SizedBox.shrink (zero-size widget)',
+          (WidgetTester tester) async {
         final response = AiIntentResponse(
           message: '',
           widgetId: 'UNKNOWN_WIDGET_ID',

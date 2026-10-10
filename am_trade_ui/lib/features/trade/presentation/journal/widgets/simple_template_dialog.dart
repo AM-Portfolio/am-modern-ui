@@ -165,8 +165,7 @@ class _EnhancedTemplateDialogState extends State<EnhancedTemplateDialog> {
 
   void _useSelected() => widget.onTemplateSelected(_selected);
 
-  void _useBlank() =>
-      widget.onTemplateSelected(JournalTemplateCatalog.blank);
+  void _useBlank() => widget.onTemplateSelected(JournalTemplateCatalog.blank);
 
   @override
   Widget build(BuildContext context) {
@@ -201,7 +200,8 @@ class _EnhancedTemplateDialogState extends State<EnhancedTemplateDialog> {
               child: Column(
                 children: [
                   _buildHeader(theme, colors),
-                  Divider(height: 1, color: colors.border.withValues(alpha: 0.35)),
+                  Divider(
+                      height: 1, color: colors.border.withValues(alpha: 0.35)),
                   Expanded(
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -218,7 +218,8 @@ class _EnhancedTemplateDialogState extends State<EnhancedTemplateDialog> {
                       ],
                     ),
                   ),
-                  Divider(height: 1, color: colors.border.withValues(alpha: 0.35)),
+                  Divider(
+                      height: 1, color: colors.border.withValues(alpha: 0.35)),
                   _buildFooter(theme, colors),
                 ],
               ),
@@ -533,7 +534,8 @@ class _EnhancedTemplateDialogState extends State<EnhancedTemplateDialog> {
               decoration: BoxDecoration(
                 color: colors.surface.withValues(alpha: 0.55),
                 borderRadius: AppRadii.card,
-                border: Border.all(color: colors.border.withValues(alpha: 0.35)),
+                border:
+                    Border.all(color: colors.border.withValues(alpha: 0.35)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,

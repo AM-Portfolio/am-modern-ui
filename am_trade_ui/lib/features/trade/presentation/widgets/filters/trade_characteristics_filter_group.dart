@@ -13,8 +13,10 @@ class TradeCharacteristicsFilterGroup extends FilterGroup {
   List<TradeStatuses> selectedStatuses = [];
   final TextEditingController strategiesController = TextEditingController();
   final TextEditingController tagsController = TextEditingController();
-  final TextEditingController minHoldingHoursController = TextEditingController();
-  final TextEditingController maxHoldingHoursController = TextEditingController();
+  final TextEditingController minHoldingHoursController =
+      TextEditingController();
+  final TextEditingController maxHoldingHoursController =
+      TextEditingController();
   final VoidCallback onChanged;
 
   @override
@@ -45,89 +47,99 @@ class TradeCharacteristicsFilterGroup extends FilterGroup {
 
   @override
   Widget buildContent(BuildContext context) => Column(
-    children: [
-      Row(
         children: [
-          Expanded(
-            child: MultiSelectDropdown<TradeDirections>(
-              label: 'Direction',
-              selectedValues: selectedDirections,
-              allValues: TradeDirections.values,
-              formatter: _formatDirection,
-              onChanged: (values) {
-                selectedDirections = values;
-                onChanged();
-              },
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: MultiSelectDropdown<TradeDirections>(
+                  label: 'Direction',
+                  selectedValues: selectedDirections,
+                  allValues: TradeDirections.values,
+                  formatter: _formatDirection,
+                  onChanged: (values) {
+                    selectedDirections = values;
+                    onChanged();
+                  },
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: MultiSelectDropdown<TradeStatuses>(
+                  label: 'Status',
+                  selectedValues: selectedStatuses,
+                  allValues: TradeStatuses.values,
+                  formatter: _formatStatus,
+                  onChanged: (values) {
+                    selectedStatuses = values;
+                    onChanged();
+                  },
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: MultiSelectDropdown<TradeStatuses>(
-              label: 'Status',
-              selectedValues: selectedStatuses,
-              allValues: TradeStatuses.values,
-              formatter: _formatStatus,
-              onChanged: (values) {
-                selectedStatuses = values;
-                onChanged();
-              },
-            ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Expanded(
+                  child: _buildTextField('Strategies (comma-separated)',
+                      strategiesController, 'Scalping, Swing')),
+              const SizedBox(width: 6),
+              Expanded(
+                  child: _buildTextField('Tags (comma-separated)',
+                      tagsController, 'earnings, breakout')),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Expanded(
+                  child: _buildTextField('Min Holding Hours',
+                      minHoldingHoursController, '0', TextInputType.number)),
+              const SizedBox(width: 6),
+              Expanded(
+                  child: _buildTextField('Max Holding Hours',
+                      maxHoldingHoursController, '24', TextInputType.number)),
+            ],
           ),
         ],
-      ),
-      const SizedBox(height: 4),
-      Row(
-        children: [
-          Expanded(child: _buildTextField('Strategies (comma-separated)', strategiesController, 'Scalping, Swing')),
-          const SizedBox(width: 6),
-          Expanded(child: _buildTextField('Tags (comma-separated)', tagsController, 'earnings, breakout')),
-        ],
-      ),
-      const SizedBox(height: 4),
-      Row(
-        children: [
-          Expanded(child: _buildTextField('Min Holding Hours', minHoldingHoursController, '0', TextInputType.number)),
-          const SizedBox(width: 6),
-          Expanded(child: _buildTextField('Max Holding Hours', maxHoldingHoursController, '24', TextInputType.number)),
-        ],
-      ),
-    ],
-  );
+      );
 
   Widget _buildTextField(
     String label,
     TextEditingController controller,
     String hint, [
     TextInputType keyboardType = TextInputType.text,
-  ]) => SizedBox(
-    height: 40,
-    child: TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      style: const TextStyle(fontSize: 11),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(fontSize: 10),
-        hintText: hint,
-        hintStyle: const TextStyle(fontSize: 9),
-        border: const OutlineInputBorder(),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        suffixIcon: controller.text.isNotEmpty
-            ? IconButton(
-                icon: const Icon(Icons.clear, size: 14),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                onPressed: () {
-                  controller.clear();
-                  onChanged();
-                },
-              )
-            : null,
-        isDense: true,
-      ),
-      onChanged: (_) => onChanged(),
-    ),
-  );
+  ]) =>
+      SizedBox(
+        height: 40,
+        child: TextField(
+          controller: controller,
+          keyboardType: keyboardType,
+          style: const TextStyle(fontSize: 11),
+          decoration: InputDecoration(
+            labelText: label,
+            labelStyle: const TextStyle(fontSize: 10),
+            hintText: hint,
+            hintStyle: const TextStyle(fontSize: 9),
+            border: const OutlineInputBorder(),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            suffixIcon: controller.text.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear, size: 14),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed: () {
+                      controller.clear();
+                      onChanged();
+                    },
+                  )
+                : null,
+            isDense: true,
+          ),
+          onChanged: (_) => onChanged(),
+        ),
+      );
 
   String _formatDirection(TradeDirections direction) {
     switch (direction) {
@@ -152,17 +164,29 @@ class TradeCharacteristicsFilterGroup extends FilterGroup {
   }
 
   TradeCharacteristicsFilter toFilterCriteria() => TradeCharacteristicsFilter(
-    directions: selectedDirections,
-    statuses: selectedStatuses,
-    strategies: strategiesController.text.isEmpty
-        ? []
-        : strategiesController.text.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList(),
-    tags: tagsController.text.isEmpty
-        ? []
-        : tagsController.text.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList(),
-    minHoldingTimeHours: minHoldingHoursController.text.isEmpty ? null : int.tryParse(minHoldingHoursController.text),
-    maxHoldingTimeHours: maxHoldingHoursController.text.isEmpty ? null : int.tryParse(maxHoldingHoursController.text),
-  );
+        directions: selectedDirections,
+        statuses: selectedStatuses,
+        strategies: strategiesController.text.isEmpty
+            ? []
+            : strategiesController.text
+                .split(',')
+                .map((s) => s.trim())
+                .where((s) => s.isNotEmpty)
+                .toList(),
+        tags: tagsController.text.isEmpty
+            ? []
+            : tagsController.text
+                .split(',')
+                .map((s) => s.trim())
+                .where((s) => s.isNotEmpty)
+                .toList(),
+        minHoldingTimeHours: minHoldingHoursController.text.isEmpty
+            ? null
+            : int.tryParse(minHoldingHoursController.text),
+        maxHoldingTimeHours: maxHoldingHoursController.text.isEmpty
+            ? null
+            : int.tryParse(maxHoldingHoursController.text),
+      );
 
   void dispose() {
     strategiesController.dispose();

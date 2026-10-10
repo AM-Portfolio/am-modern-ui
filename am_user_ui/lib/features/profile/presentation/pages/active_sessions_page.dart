@@ -7,10 +7,7 @@ import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_design_system/am_design_system.dart';
 
 class ActiveSessionsPage extends StatefulWidget {
-  const ActiveSessionsPage({
-    super.key,
-    this.onOpenSecuritySettings,
-  });
+  const ActiveSessionsPage({super.key, this.onOpenSecuritySettings});
 
   /// Opens Profile (Security Settings). Wired from GoRouter when available.
   final VoidCallback? onOpenSecuritySettings;
@@ -93,7 +90,10 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
     } catch (error) {
       if (!mounted) return;
       _showMessage(
-        _actionErrorMessage(error, fallback: 'Could not sign out that session.'),
+        _actionErrorMessage(
+          error,
+          fallback: 'Could not sign out that session.',
+        ),
       );
     }
   }
@@ -138,9 +138,9 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   String _loadErrorMessage(Object error) {
@@ -212,31 +212,31 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
   }
 
   Widget _infoLine(String label, String value) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: 96,
-              child: Text(
-                label,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(
-                        alpha: 0.6,
-                      ),
-                  fontSize: 13,
-                ),
-              ),
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 96,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.6),
+              fontSize: 13,
             ),
-            Expanded(
-              child: Text(
-                value,
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-              ),
-            ),
-          ],
+          ),
         ),
-      );
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+          ),
+        ),
+      ],
+    ),
+  );
 
   IconData _browserIcon(LoginSessionModel session) {
     if (session.clientType == 'mobile') return Icons.phone_android_rounded;
@@ -272,35 +272,32 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : _error != null
-                  ? _buildErrorState()
-                  : _buildContent(isDark, onBack: goBack),
+              ? _buildErrorState()
+              : _buildContent(isDark, onBack: goBack),
         ),
       ),
     );
   }
 
   Widget _buildErrorState() => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _error!,
-                textAlign: TextAlign.center,
-                style: context.text.body().copyWith(
-                      color: context.colors.statusError,
-                    ),
-              ),
-              const SizedBox(height: AppSpacing.sm + AppSpacing.xs),
-              TextButton(
-                onPressed: _loadSessions,
-                child: const Text('Retry'),
-              ),
-            ],
+    child: Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            _error!,
+            textAlign: TextAlign.center,
+            style: context.text.body().copyWith(
+              color: context.colors.statusError,
+            ),
           ),
-        ),
-      );
+          const SizedBox(height: AppSpacing.sm + AppSpacing.xs),
+          TextButton(onPressed: _loadSessions, child: const Text('Retry')),
+        ],
+      ),
+    ),
+  );
 
   Widget _buildContent(bool isDark, {required VoidCallback onBack}) {
     final colors = context.colors;
@@ -348,8 +345,8 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
                         child: Text(
                           'No active sessions',
                           style: context.text.body().copyWith(
-                                color: colors.textSecondary,
-                              ),
+                            color: colors.textSecondary,
+                          ),
                         ),
                       ),
                     )
@@ -372,9 +369,9 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
                             Text(
                               'Active Now',
                               style: context.text.caption().copyWith(
-                                    color: const Color(0xFF22C55E),
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                color: const Color(0xFF22C55E),
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ],
                         ),
@@ -388,8 +385,8 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
                       trailing: Text(
                         'Auto-expires after 30 days inactivity',
                         style: context.text.caption().copyWith(
-                              color: colors.textTertiary,
-                            ),
+                          color: colors.textTertiary,
+                        ),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
@@ -399,8 +396,8 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
                         child: Text(
                           'No other sessions',
                           style: context.text.bodyMuted().copyWith(
-                                color: colors.textSecondary,
-                              ),
+                            color: colors.textSecondary,
+                          ),
                         ),
                       )
                     else
@@ -423,24 +420,24 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
   }
 
   Widget _buildBreadcrumb(AppColorsTheme colors) => Row(
-        children: [
-          Text(
-            'Security',
-            style: context.text.caption().copyWith(color: colors.textTertiary),
-          ),
-          Text(
-            '  >  ',
-            style: context.text.caption().copyWith(color: colors.textTertiary),
-          ),
-          Text(
-            'Session Manager',
-            style: context.text.caption().copyWith(
-                  color: ModuleColors.portfolio.withValues(alpha: 0.85),
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-        ],
-      );
+    children: [
+      Text(
+        'Security',
+        style: context.text.caption().copyWith(color: colors.textTertiary),
+      ),
+      Text(
+        '  >  ',
+        style: context.text.caption().copyWith(color: colors.textTertiary),
+      ),
+      Text(
+        'Session Manager',
+        style: context.text.caption().copyWith(
+          color: ModuleColors.portfolio.withValues(alpha: 0.85),
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    ],
+  );
 
   Widget _buildHeaderRow(AppColorsTheme colors) {
     return Wrap(
@@ -455,9 +452,9 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
             Text(
               'Active Sessions',
               style: context.text.pageTitle().copyWith(
-                    color: colors.textPrimary,
-                    fontWeight: FontWeight.w800,
-                  ),
+                color: colors.textPrimary,
+                fontWeight: FontWeight.w800,
+              ),
             ),
             const SizedBox(width: 10),
             Container(
@@ -472,9 +469,9 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
               child: Text(
                 '${_sessions.length} Authorized',
                 style: context.text.caption().copyWith(
-                      color: ModuleColors.portfolio,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  color: ModuleColors.portfolio,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
@@ -506,9 +503,9 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
                   Text(
                     'Signed in · protected',
                     style: context.text.caption().copyWith(
-                          color: const Color(0xFF22C55E),
-                          fontWeight: FontWeight.w600,
-                        ),
+                      color: const Color(0xFF22C55E),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -532,7 +529,10 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
               style: FilledButton.styleFrom(
                 backgroundColor: colors.statusError.withValues(alpha: 0.85),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -575,18 +575,18 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
                 Text(
                   'Device management & instant session control',
                   style: context.text.sectionTitle().copyWith(
-                        color: colors.textPrimary,
-                        fontSize: 14,
-                      ),
+                    color: colors.textPrimary,
+                    fontSize: 14,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Review browsers and devices signed into your account. Sign out any session you do not recognize.',
                   style: context.text.bodyMuted().copyWith(
-                        color: colors.textSecondary,
-                        height: 1.4,
-                        fontSize: 12,
-                      ),
+                    color: colors.textSecondary,
+                    height: 1.4,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
@@ -602,10 +602,10 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
         Text(
           title,
           style: context.text.caption().copyWith(
-                color: context.colors.textTertiary,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.8,
-              ),
+            color: context.colors.textTertiary,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.8,
+          ),
         ),
         const Spacer(),
         if (trailing != null) trailing,
@@ -648,9 +648,9 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
                   Text(
                     session.deviceLabel,
                     style: context.text.sectionTitle().copyWith(
-                          color: colors.textPrimary,
-                          fontWeight: FontWeight.w700,
-                        ),
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -664,11 +664,11 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
                     child: Text(
                       'CURRENT SESSION',
                       style: context.text.caption().copyWith(
-                            color: ModuleColors.portfolio,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 10,
-                            letterSpacing: 0.4,
-                          ),
+                        color: ModuleColors.portfolio,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 10,
+                        letterSpacing: 0.4,
+                      ),
                     ),
                   ),
                 ],
@@ -789,15 +789,15 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
                       TextSpan(
                         text: session.deviceLabel,
                         style: context.text.body().copyWith(
-                              color: colors.textPrimary,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          color: colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       TextSpan(
                         text: '  #$shortId',
                         style: context.text.caption().copyWith(
-                              color: colors.textTertiary,
-                            ),
+                          color: colors.textTertiary,
+                        ),
                       ),
                     ],
                   ),
@@ -806,8 +806,8 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
                 Text(
                   '${session.locationLabel} · Last active ${_formatTime(session.lastActiveAt)}',
                   style: context.text.caption().copyWith(
-                        color: colors.textSecondary,
-                      ),
+                    color: colors.textSecondary,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -881,11 +881,14 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
           Expanded(
             child: Text(
               'End-to-End Encrypted Session Tokens (JWT RS256)',
-              style: context.text.caption().copyWith(color: colors.textTertiary),
+              style: context.text.caption().copyWith(
+                color: colors.textTertiary,
+              ),
             ),
           ),
           TextButton(
-            onPressed: widget.onOpenSecuritySettings ??
+            onPressed:
+                widget.onOpenSecuritySettings ??
                 () {
                   if (Navigator.of(context).canPop()) {
                     Navigator.of(context).pop();
@@ -894,9 +897,9 @@ class _ActiveSessionsPageState extends State<ActiveSessionsPage> {
             child: Text(
               'Security Settings',
               style: context.text.caption().copyWith(
-                    color: colors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                color: colors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],

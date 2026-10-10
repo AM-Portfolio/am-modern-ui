@@ -100,14 +100,10 @@ class TimingKpiRow extends StatelessWidget {
                 : '${totalPct >= 0 ? '↑' : '↓'} ${totalPct.abs().toStringAsFixed(1)}%',
             valueColor: totalPnl == null
                 ? null
-                : (totalPnl >= 0
-                    ? context.statusSuccess
-                    : context.statusError),
+                : (totalPnl >= 0 ? context.statusSuccess : context.statusError),
             subtitleColor: totalPct == null
                 ? null
-                : (totalPct >= 0
-                    ? context.statusSuccess
-                    : context.statusError),
+                : (totalPct >= 0 ? context.statusSuccess : context.statusError),
             sparkline: pnlSparklineData.isEmpty
                 ? null
                 : AmSparklineChart(
@@ -127,9 +123,7 @@ class TimingKpiRow extends StatelessWidget {
                 : null,
             valueColor: avgPnl == null
                 ? null
-                : (avgPnl >= 0
-                    ? context.statusSuccess
-                    : context.statusError),
+                : (avgPnl >= 0 ? context.statusSuccess : context.statusError),
             sparkline: avgPnlSparklineData.isEmpty
                 ? null
                 : AmSparklineChart(
@@ -144,15 +138,11 @@ class TimingKpiRow extends StatelessWidget {
             value: winRate == null ? '—' : '${winRate.toStringAsFixed(1)}%',
             valueColor: winRate == null
                 ? null
-                : (winRate >= 50
-                    ? context.statusSuccess
-                    : context.statusError),
+                : (winRate >= 50 ? context.statusSuccess : context.statusError),
             subtitle: (wins != null && losses != null)
                 ? '$wins wins / $losses losses'
                 : null,
-            sparkline: (wins != null &&
-                    losses != null &&
-                    (wins + losses) > 0)
+            sparkline: (wins != null && losses != null && (wins + losses) > 0)
                 ? AmDonutSparkline(
                     value: wins.toDouble(),
                     total: (wins + losses).toDouble(),
@@ -285,9 +275,9 @@ class _KpiCard extends StatelessWidget {
                     Text(
                       title,
                       style: context.text.caption(compact: true).copyWith(
-                        color: colors.textSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
+                            color: colors.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
                     ),
                     const SizedBox(width: AppSpacing.xxs),
                     Icon(
@@ -301,10 +291,10 @@ class _KpiCard extends StatelessWidget {
                 Text(
                   value,
                   style: context.text.heroTitle(compact: true).copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: valueColor ?? colors.textPrimary,
-                    height: 1.1,
-                  ),
+                        fontWeight: FontWeight.bold,
+                        color: valueColor ?? colors.textPrimary,
+                        height: 1.1,
+                      ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -313,8 +303,8 @@ class _KpiCard extends StatelessWidget {
                   Text(
                     subtitle!,
                     style: context.text.caption(compact: true).copyWith(
-                      color: subtitleColor ?? colors.textSecondary,
-                    ),
+                          color: subtitleColor ?? colors.textSecondary,
+                        ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),

@@ -20,7 +20,7 @@ class DashboardAllocationWidget extends StatelessWidget {
         count: item.count,
       );
     }).toList();
-    
+
     // Sort by value desc
     allocations.sort((a, b) => b.value.compareTo(a.value));
 
@@ -30,7 +30,7 @@ class DashboardAllocationWidget extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-             Text(
+            Text(
               'Portfolio Allocation',
               style: Theme.of(context).textTheme.titleMedium,
             ),

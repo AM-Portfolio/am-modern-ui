@@ -17,6 +17,7 @@ class PortfolioComparisonChartSection extends ConsumerStatefulWidget {
 
   final double height;
   final String? userId;
+
   /// Sidebar-selected portfolio — preferred as the third default chart series.
   final String? portfolioId;
 
@@ -140,8 +141,9 @@ class _SyncingBanner extends StatelessWidget {
                   children: [
                     Text(
                       'Syncing portfolio and building chart in the backend…',
-                      style: theme.textTheme.bodyMedium
-                          ?.copyWith(fontWeight: FontWeight.w600),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(

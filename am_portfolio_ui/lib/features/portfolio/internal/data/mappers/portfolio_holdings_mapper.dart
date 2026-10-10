@@ -6,9 +6,7 @@ import '../../domain/entities/portfolio_holding.dart';
 /// This provides isolation between external API structure and internal business logic
 class PortfolioHoldingsMapper {
   /// Convert API response to domain entity
-  static PortfolioHoldings fromApiModel(
-    PortfolioHoldingsDto apiModel,
-  ) {
+  static PortfolioHoldings fromApiModel(PortfolioHoldingsDto apiModel) {
     final holdings = apiModel.equityHoldings.map(_mapEquityHolding).toList();
     final asOf = _parseAsOf(apiModel.asOf);
 

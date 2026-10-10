@@ -40,7 +40,9 @@ class DashboardRepository {
     _statusSubscription ??= _stompClient.status.listen((status) {
       if (status == StompStatus.disconnected || status == StompStatus.error) {
         _dashboardSubscribed = false;
-        AppLogger.info('Dashboard STOMP disconnected — will resubscribe on reconnect');
+        AppLogger.info(
+          'Dashboard STOMP disconnected — will resubscribe on reconnect',
+        );
       } else if (status == StompStatus.connected &&
           _wantsDashboardStream &&
           !_dashboardSubscribed &&
@@ -92,9 +94,7 @@ class DashboardRepository {
     _wantsDashboardStream = true;
 
     if (!_isMarketStreamingOpen) {
-      AppLogger.info(
-        'Dashboard STOMP subscribe deferred — market closed',
-      );
+      AppLogger.info('Dashboard STOMP subscribe deferred — market closed');
       return;
     }
 
@@ -115,10 +115,14 @@ class DashboardRepository {
     _dashboardSubscribed = true;
     _heartbeat ??= StreamingHeartbeatService(_stompClient);
     _heartbeat!.start();
-    AppLogger.info('Dashboard STOMP subscribe sent; queues: ${DashboardQueueDestinations.all}');
+    AppLogger.info(
+      'Dashboard STOMP subscribe sent; queues: ${DashboardQueueDestinations.all}',
+    );
   }
 
-  Future<void> trySubscribeToDashboard({Duration timeout = const Duration(seconds: 30)}) async {
+  Future<void> trySubscribeToDashboard({
+    Duration timeout = const Duration(seconds: 30),
+  }) async {
     _ensureReconnectListener();
     _wantsDashboardStream = true;
 
@@ -194,7 +198,8 @@ class DashboardRepository {
     try {
       return await _apiClient.get(
         '/v1/analysis/dashboard/portfolio-overviews',
-        parser: (data) => (data as List).map((e) => PortfolioOverview.fromJson(e)).toList(),
+        parser: (data) =>
+            (data as List).map((e) => PortfolioOverview.fromJson(e)).toList(),
       );
     } catch (e) {
       AppLogger.error('Failed to fetch portfolio overviews', error: e);
@@ -202,7 +207,10 @@ class DashboardRepository {
     }
   }
 
-  Future<AllocationResponse> getAllocation(String userId, {String groupBy = 'SECTOR'}) async {
+  Future<AllocationResponse> getAllocation(
+    String userId, {
+    String groupBy = 'SECTOR',
+  }) async {
     try {
       return await _apiClient.get(
         '/v1/analysis/PORTFOLIO/ALL/allocation',
@@ -217,7 +225,10 @@ class DashboardRepository {
     }
   }
 
-  Future<TopMoversResponse> getTopMovers(String userId, {String timeFrame = '1D'}) async {
+  Future<TopMoversResponse> getTopMovers(
+    String userId, {
+    String timeFrame = '1D',
+  }) async {
     try {
       return await _apiClient.get(
         '/v1/analysis/dashboard/top-movers',
@@ -232,7 +243,10 @@ class DashboardRepository {
     }
   }
 
-  Future<PerformanceResponse> getPerformance(String userId, {String timeFrame = '1M'}) async {
+  Future<PerformanceResponse> getPerformance(
+    String userId, {
+    String timeFrame = '1M',
+  }) async {
     try {
       return await _apiClient.get(
         '/v1/analysis/dashboard/performance',
@@ -274,50 +288,58 @@ class DashboardRepository {
   }
 
   Stream<DashboardSummary> watchSummary() => _watchWidget(
-        DashboardQueueDestinations.summary,
-        (json) => DashboardSummary.fromJson(DashboardJsonSanitizer.summary(json)),
-      );
+    DashboardQueueDestinations.summary,
+    (json) => DashboardSummary.fromJson(DashboardJsonSanitizer.summary(json)),
+  );
 
   Stream<List<ActivityItem>> watchActivity() => _watchWidget(
-        DashboardQueueDestinations.activity,
-        (json) => _parseRecentActivity(json).items,
-      );
+    DashboardQueueDestinations.activity,
+    (json) => _parseRecentActivity(json).items,
+  );
 
   Stream<AllocationResponse> watchAllocation() => _watchWidget(
-        DashboardQueueDestinations.allocation,
-        (json) => AllocationResponse.fromJson(DashboardJsonSanitizer.allocation(json)),
-      );
+    DashboardQueueDestinations.allocation,
+    (json) =>
+        AllocationResponse.fromJson(DashboardJsonSanitizer.allocation(json)),
+  );
 
-  Stream<TopMoversResponse> watchMovers({String? timeFrame}) => _watchWidget(
-        DashboardQueueDestinations.movers,
-        (json) {
-          final payload = json.containsKey('data') && json['data'] is Map
-              ? Map<String, dynamic>.from(json['data'] as Map)
-              : json;
-          return TopMoversResponse.fromJson(
-            DashboardJsonSanitizer.topMovers(payload),
-          );
-        },
-      ).where((response) {
+  Stream<TopMoversResponse> watchMovers({String? timeFrame}) =>
+      _watchWidget(DashboardQueueDestinations.movers, (json) {
+        final payload = json.containsKey('data') && json['data'] is Map
+            ? Map<String, dynamic>.from(json['data'] as Map)
+            : json;
+        return TopMoversResponse.fromJson(
+          DashboardJsonSanitizer.topMovers(payload),
+        );
+      }).where((response) {
         if (timeFrame == null || timeFrame.isEmpty) return true;
         return response.timeFrame.isEmpty || response.timeFrame == timeFrame;
       });
 
   Stream<PerformanceResponse> watchHistory() => _watchWidget(
-        DashboardQueueDestinations.history,
-        (json) => PerformanceResponse.fromJson(
-          DashboardJsonSanitizer.performance(json, defaultTimeFrame: '1D'),
-        ),
-      );
+    DashboardQueueDestinations.history,
+    (json) => PerformanceResponse.fromJson(
+      DashboardJsonSanitizer.performance(json, defaultTimeFrame: '1D'),
+    ),
+  );
 
-  Stream<T> _watchWidget<T>(String destination, T Function(Map<String, dynamic>) parser) {
+  Stream<T> _watchWidget<T>(
+    String destination,
+    T Function(Map<String, dynamic>) parser,
+  ) {
     return _stompClient.messages
-        .where((frame) => _matchesDestination(frame.headers['destination'], destination))
+        .where(
+          (frame) =>
+              _matchesDestination(frame.headers['destination'], destination),
+        )
         .map((frame) => _tryParseWidgetFrame<T>(destination, frame, parser))
         .where((parsed) => parsed != null)
         .cast<T>()
         .handleError((Object error, StackTrace stack) {
-          AppLogger.error('Error in dashboard stream $destination', error: error);
+          AppLogger.error(
+            'Error in dashboard stream $destination',
+            error: error,
+          );
         });
   }
 
@@ -334,14 +356,21 @@ class DashboardRepository {
     try {
       final decoded = jsonDecode(body);
       if (decoded is! Map) {
-        AppLogger.warning('Non-object dashboard frame on $destination — skipped');
+        AppLogger.warning(
+          'Non-object dashboard frame on $destination — skipped',
+        );
         return null;
       }
       final parsed = parser(DashboardJsonSanitizer.asObject(decoded));
-      AppLogger.info('Dashboard widget update received: ${_widgetLabel(destination)}');
+      AppLogger.info(
+        'Dashboard widget update received: ${_widgetLabel(destination)}',
+      );
       return parsed;
     } catch (e) {
-      AppLogger.error('Failed to parse dashboard frame on $destination', error: e);
+      AppLogger.error(
+        'Failed to parse dashboard frame on $destination',
+        error: e,
+      );
       return null;
     }
   }
@@ -385,21 +414,22 @@ class DashboardRepository {
     final map = data is Map<String, dynamic> ? data : <String, dynamic>{};
     final items = map['items'] as List?;
     return items?.map((e) {
-      final json = DashboardJsonSanitizer.activityItem(
-        Map<String, dynamic>.from(e as Map),
-      );
-      if (json['type'] == 'HOLDING' && json['amount'] == null) {
-        final currentValue = json['currentValue'] as double?;
-        final profitLoss = json['profitLoss'] as double?;
-        if (currentValue != null) {
-          json['amount'] = '₹${currentValue.toStringAsFixed(2)}';
-        }
-        if (profitLoss != null) {
-          json['isPositive'] = profitLoss >= 0;
-        }
-      }
-      return ActivityItem.fromJson(json);
-    }).toList() ?? [];
+          final json = DashboardJsonSanitizer.activityItem(
+            Map<String, dynamic>.from(e as Map),
+          );
+          if (json['type'] == 'HOLDING' && json['amount'] == null) {
+            final currentValue = json['currentValue'] as double?;
+            final profitLoss = json['profitLoss'] as double?;
+            if (currentValue != null) {
+              json['amount'] = '₹${currentValue.toStringAsFixed(2)}';
+            }
+            if (profitLoss != null) {
+              json['isPositive'] = profitLoss >= 0;
+            }
+          }
+          return ActivityItem.fromJson(json);
+        }).toList() ??
+        [];
   }
 
   /// Same feed as the portfolio history chart (`GET /v1/portfolios/history`).
@@ -410,16 +440,15 @@ class DashboardRepository {
     String? portfolioId,
   }) async {
     final isIntraday = timeFrame.toUpperCase() == '1D';
-    final id = (portfolioId == null ||
-            portfolioId.isEmpty ||
-            portfolioId == 'all')
+    final id =
+        (portfolioId == null || portfolioId.isEmpty || portfolioId == 'all')
         ? null
         : portfolioId;
     final path = id == null
         ? (isIntraday ? '/v1/portfolios/intraday' : '/v1/portfolios/history')
         : (isIntraday
-            ? '/v1/portfolios/$id/intraday'
-            : '/v1/portfolios/$id/history');
+              ? '/v1/portfolios/$id/intraday'
+              : '/v1/portfolios/$id/history');
     try {
       final data = await portfolioClient.get(
         path,
@@ -428,7 +457,10 @@ class DashboardRepository {
       );
       return parsePortfolioOverlayHistory(data, isIntraday: isIntraday);
     } catch (e) {
-      AppLogger.error('Failed to fetch portfolio history for overlay', error: e);
+      AppLogger.error(
+        'Failed to fetch portfolio history for overlay',
+        error: e,
+      );
       rethrow;
     }
   }
@@ -443,10 +475,7 @@ class DashboardRepository {
     try {
       final data = await marketClient.get(
         '/v1/analysis/historical-charts',
-        queryParams: {
-          'symbols': symbols.join(','),
-          'range': range,
-        },
+        queryParams: {'symbols': symbols.join(','), 'range': range},
         parser: (raw) => raw,
       );
       return _parseIndexOverlayPoints(data, symbols, range: range);
@@ -475,7 +504,8 @@ class DashboardRepository {
     if (bySymbol == null) return result;
 
     for (final symbol in symbols) {
-      final entry = bySymbol[symbol] ??
+      final entry =
+          bySymbol[symbol] ??
           bySymbol.entries
               .where((e) => e.key.toUpperCase() == symbol.toUpperCase())
               .map((e) => e.value)
@@ -487,19 +517,27 @@ class DashboardRepository {
       final rows = _asObjectList(rawPoints);
       final points = <OverlayPoint>[];
       for (final row in rows) {
-        final label = _stringOf(
-          row,
-          const ['time', 'timestamp', 'date', 'datetime', 'snapshotTime'],
-        );
-        final value = _numOf(
-          row,
-          const ['close', 'price', 'lastPrice', 'value'],
-        );
+        final label = _stringOf(row, const [
+          'time',
+          'timestamp',
+          'date',
+          'datetime',
+          'snapshotTime',
+        ]);
+        final value = _numOf(row, const [
+          'close',
+          'price',
+          'lastPrice',
+          'value',
+        ]);
         if (value == null || !value.isFinite) continue;
         final isIntraday = range.toUpperCase() == '1D';
         points.add(
           OverlayPoint(
-            xLabel: normalizeOverlayTimestamp(label ?? '', isIntraday: isIntraday),
+            xLabel: normalizeOverlayTimestamp(
+              label ?? '',
+              isIntraday: isIntraday,
+            ),
             value: value,
           ),
         );

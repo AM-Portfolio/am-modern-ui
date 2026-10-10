@@ -44,12 +44,15 @@ void main() {
     ),
   );
 
-  testWidgets('Chart|Health fixed band + fillHeight does not overflow/throw',
-      (tester) async {
+  testWidgets('Chart|Health fixed band + fillHeight does not overflow/throw', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          portfolioIntelligenceProvider('p1').overrideWith((ref) async => intel),
+          portfolioIntelligenceProvider(
+            'p1',
+          ).overrideWith((ref) async => intel),
         ],
         child: MaterialApp(
           home: Scaffold(
@@ -89,8 +92,9 @@ void main() {
     expect(find.text('View Details →'), findsNothing);
   });
 
-  testWidgets('X-Ray|Risk fixed band + fillHeight does not throw',
-      (tester) async {
+  testWidgets('X-Ray|Risk fixed band + fillHeight does not throw', (
+    tester,
+  ) async {
     final errors = <FlutterErrorDetails>[];
     final old = FlutterError.onError;
     FlutterError.onError = (details) {
@@ -107,7 +111,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          portfolioIntelligenceProvider('p1').overrideWith((ref) async => intel),
+          portfolioIntelligenceProvider(
+            'p1',
+          ).overrideWith((ref) async => intel),
         ],
         child: MaterialApp(
           home: Scaffold(

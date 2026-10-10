@@ -25,8 +25,10 @@ class PortfolioTopMoversPanel extends StatelessWidget {
   final ds.TimeFrame timeFrame;
   final double? height;
   final bool showTimeFrameSelector;
+
   /// Mobile-style Gainers|Losers tabs, fewer rows — used on intel Overview.
   final bool compact;
+
   /// Peer stretch rows (Movers | Stress | What-If).
   final bool fillHeight;
 
@@ -50,20 +52,18 @@ class PortfolioTopMoversPanel extends StatelessWidget {
             compact: compact,
             fillHeight: fillHeight,
             onViewAll: (movers) => MoversDetailModal.show(context, movers),
-            onRetry: () => context.read<PortfolioAnalyticsCubit>().loadAnalytics(
-                  portfolioId,
-                  timeFrame: timeFrame,
-                ),
+            onRetry: () => context
+                .read<PortfolioAnalyticsCubit>()
+                .loadAnalytics(portfolioId, timeFrame: timeFrame),
           );
         } else if (state is PortfolioAnalyticsError) {
           return MoversWidget(
             error: state.message,
             compact: compact,
             fillHeight: fillHeight,
-            onRetry: () => context.read<PortfolioAnalyticsCubit>().loadAnalytics(
-                  portfolioId,
-                  timeFrame: timeFrame,
-                ),
+            onRetry: () => context
+                .read<PortfolioAnalyticsCubit>()
+                .loadAnalytics(portfolioId, timeFrame: timeFrame),
           );
         } else if (state is PortfolioAnalyticsInitial) {
           return MoversWidget(compact: compact, fillHeight: fillHeight);

@@ -47,8 +47,9 @@ _newsOverrides({
 }) {
   return [
     newsUiEnabledProvider.overrideWith((ref) => enabled),
-    newsUiSurfaceEnabledProvider(NewsUiSurface.dashboard)
-        .overrideWith((ref) => enabled),
+    newsUiSurfaceEnabledProvider(
+      NewsUiSurface.dashboard,
+    ).overrideWith((ref) => enabled),
     newsInsightProvider.overrideWith((ref) async => news),
     priceStreamProvider.overrideWith(
       (ref) => Stream<Map<String, QuoteChange>>.value(quotes),
@@ -69,7 +70,10 @@ void main() {
   });
 
   test('newsSymbolsProviderKey normalizes', () {
-    expect(newsSymbolsProviderKey(['tcs', 'TCS', ' RELIANCE ']), 'RELIANCE,TCS');
+    expect(
+      newsSymbolsProviderKey(['tcs', 'TCS', ' RELIANCE ']),
+      'RELIANCE,TCS',
+    );
     expect(newsSymbolsProviderKey([]), isEmpty);
   });
 
@@ -96,8 +100,9 @@ void main() {
     expect(filterHoldingsNewsForSymbols(belOnly, ['IRCTC', 'PNB']), isEmpty);
   });
 
-  testWidgets('holdings section does not show current-affairs fallback',
-      (tester) async {
+  testWidgets('holdings section does not show current-affairs fallback', (
+    tester,
+  ) async {
     final belOnly = InsightNews.fromJson({
       'current_affairs': [
         {
@@ -113,9 +118,12 @@ void main() {
       ProviderScope(
         overrides: [
           newsUiEnabledProvider.overrideWith((ref) => true),
-          newsUiSurfaceEnabledProvider(NewsUiSurface.tradeHoldings)
-              .overrideWith((ref) => true),
-          newsInsightForSymbolsProvider(key).overrideWith((ref) async => belOnly),
+          newsUiSurfaceEnabledProvider(
+            NewsUiSurface.tradeHoldings,
+          ).overrideWith((ref) => true),
+          newsInsightForSymbolsProvider(
+            key,
+          ).overrideWith((ref) async => belOnly),
           priceStreamProvider.overrideWith(
             (ref) => Stream<Map<String, QuoteChange>>.value(const {}),
           ),
@@ -135,7 +143,10 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.textContaining('Bharat Electronics'), findsNothing);
-    expect(find.textContaining('No recent news for these symbols'), findsOneWidget);
+    expect(
+      find.textContaining('No recent news for these symbols'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('flag off hides dashboard news section', (tester) async {
@@ -155,8 +166,9 @@ void main() {
       ProviderScope(
         overrides: [
           newsUiEnabledProvider.overrideWith((ref) => true),
-          newsUiSurfaceEnabledProvider(NewsUiSurface.equityInsider)
-              .overrideWith((ref) => true),
+          newsUiSurfaceEnabledProvider(
+            NewsUiSurface.equityInsider,
+          ).overrideWith((ref) => true),
         ],
         child: const MaterialApp(
           home: Scaffold(
@@ -176,9 +188,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: _newsOverrides(news: _sampleNews()),
-        child: const MaterialApp(
-          home: Scaffold(body: DashboardNewsSection()),
-        ),
+        child: const MaterialApp(home: Scaffold(body: DashboardNewsSection())),
       ),
     );
     await tester.pumpAndSettle();
@@ -186,10 +196,7 @@ void main() {
   });
 
   test('relative time helper', () {
-    expect(
-      formatNewsRelativeTime('2026-09-06T10:03:52.107000Z'),
-      isNotEmpty,
-    );
+    expect(formatNewsRelativeTime('2026-09-06T10:03:52.107000Z'), isNotEmpty);
   });
 
   test('openNewsArticle tolerates empty', () {
@@ -199,9 +206,7 @@ void main() {
   testWidgets('NewsThumbnail builds', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
-        home: Scaffold(
-          body: NewsThumbnail(url: null, width: 40, height: 40),
-        ),
+        home: Scaffold(body: NewsThumbnail(url: null, width: 40, height: 40)),
       ),
     );
     expect(find.byType(NewsThumbnail), findsOneWidget);
@@ -210,9 +215,7 @@ void main() {
   testWidgets('NewsSymbolChip builds', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
-        home: Scaffold(
-          body: NewsSymbolChip(symbol: 'TCS'),
-        ),
+        home: Scaffold(body: NewsSymbolChip(symbol: 'TCS')),
       ),
     );
     expect(find.text('TCS'), findsOneWidget);

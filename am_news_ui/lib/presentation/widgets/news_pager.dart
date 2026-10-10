@@ -27,8 +27,9 @@ class NewsPager extends StatelessWidget {
             onPressed: onPrevious,
             style: TextButton.styleFrom(
               foregroundColor: accent,
-              disabledForegroundColor:
-                  context.colors.textSecondary.withValues(alpha: 0.4),
+              disabledForegroundColor: context.colors.textSecondary.withValues(
+                alpha: 0.4,
+              ),
             ),
             child: const Text('Previous'),
           ),
@@ -47,8 +48,9 @@ class NewsPager extends StatelessWidget {
             onPressed: onNext,
             style: TextButton.styleFrom(
               foregroundColor: accent,
-              disabledForegroundColor:
-                  context.colors.textSecondary.withValues(alpha: 0.4),
+              disabledForegroundColor: context.colors.textSecondary.withValues(
+                alpha: 0.4,
+              ),
             ),
             child: const Text('Next'),
           ),

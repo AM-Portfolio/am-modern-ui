@@ -131,7 +131,8 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
                   child: BlocConsumer<JournalCubit, JournalState>(
                     listener: (context, state) {
                       state.maybeWhen(
-                        loaded: (entries, summary, status, folder, tags, q, setup) {
+                        loaded:
+                            (entries, summary, status, folder, tags, q, setup) {
                           setState(() => _entries = entries);
                         },
                         orElse: () {},
@@ -139,7 +140,8 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
                     },
                     builder: (context, state) {
                       final loadedEntries = state.maybeWhen(
-                        loaded: (e, summary, status, folder, tags, q, setup) => e,
+                        loaded: (e, summary, status, folder, tags, q, setup) =>
+                            e,
                         orElse: () => _entries,
                       );
                       final summary = state.maybeWhen(
@@ -176,7 +178,8 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
                               children: [
                                 Text(
                                   'Could not load journal entries',
-                                  style: Theme.of(context).textTheme.titleMedium,
+                                  style:
+                                      Theme.of(context).textTheme.titleMedium,
                                   textAlign: TextAlign.center,
                                 ),
                                 const SizedBox(height: AppSpacing.sm),
@@ -234,8 +237,7 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
                           ),
                           if (_tab == _JournalTab.entries)
                             Padding(
-                              padding:
-                                  const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                               child: SymbolNewsSection(
                                 symbol: _journalSymbol,
                                 surface: NewsUiSurface.tradeJournal,
@@ -269,7 +271,8 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
     return Material(
       color: colors.cardSurface,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         child: Row(
           children: [
             for (final tab in _JournalTab.values) ...[

@@ -63,8 +63,8 @@ abstract class PortfolioSummary with _$PortfolioSummary {
     final datePart = (sessionDate != null && sessionDate!.isNotEmpty)
         ? sessionDate!
         : '${stamp.year.toString().padLeft(4, '0')}-'
-            '${stamp.month.toString().padLeft(2, '0')}-'
-            '${stamp.day.toString().padLeft(2, '0')}';
+              '${stamp.month.toString().padLeft(2, '0')}-'
+              '${stamp.day.toString().padLeft(2, '0')}';
     return 'As of $datePart $hh:$mm';
   }
 

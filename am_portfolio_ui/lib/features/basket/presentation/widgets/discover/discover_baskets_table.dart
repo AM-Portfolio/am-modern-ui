@@ -41,7 +41,10 @@ class DiscoverBasketsTable extends StatelessWidget {
       child: Column(
         children: [
           _HeaderRow(style: headerStyle, periodColumnLabel: periodColumnLabel),
-          Divider(height: 1, color: context.dividerColor.withValues(alpha: 0.5)),
+          Divider(
+            height: 1,
+            color: context.dividerColor.withValues(alpha: 0.5),
+          ),
           for (var i = 0; i < opportunities.length; i++) ...[
             if (i > 0)
               Divider(
@@ -79,10 +82,7 @@ class DiscoverBasketsTable extends StatelessWidget {
 }
 
 class _HeaderRow extends StatelessWidget {
-  const _HeaderRow({
-    required this.style,
-    required this.periodColumnLabel,
-  });
+  const _HeaderRow({required this.style, required this.periodColumnLabel});
 
   final TextStyle? style;
   final String periodColumnLabel;
@@ -181,8 +181,9 @@ class _DataRow extends StatelessWidget {
                     children: [
                       CircleAvatar(
                         radius: 12,
-                        backgroundColor:
-                            ModuleColors.portfolio.withValues(alpha: 0.15),
+                        backgroundColor: ModuleColors.portfolio.withValues(
+                          alpha: 0.15,
+                        ),
                         child: Text(
                           initial,
                           style: theme.textTheme.labelSmall?.copyWith(
@@ -291,8 +292,9 @@ class _DataRow extends StatelessWidget {
                         style: OutlinedButton.styleFrom(
                           foregroundColor: ModuleColors.portfolio,
                           side: BorderSide(
-                            color:
-                                ModuleColors.portfolio.withValues(alpha: 0.45),
+                            color: ModuleColors.portfolio.withValues(
+                              alpha: 0.45,
+                            ),
                           ),
                           padding: const EdgeInsets.symmetric(
                             horizontal: AppSpacing.sm,

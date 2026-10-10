@@ -53,8 +53,9 @@ Future<BasketOpportunity> basketPreview(
 }) async {
   if (seededOpportunity != null && seededOpportunity.etfIsin == etfIsin) {
     try {
-      final holdings =
-          await ref.watch(portfolioHoldingsProvider(portfolioId).future);
+      final holdings = await ref.watch(
+        portfolioHoldingsProvider(portfolioId).future,
+      );
       final fingerprint = BasketOpportunity.fingerprintFromHoldings(
         holdings.holdings.map((h) => MapEntry(h.symbol, h.quantity)),
       );
@@ -89,10 +90,7 @@ Future<List<TrackingBasket>> myBaskets(
   required String portfolioId,
 }) async {
   final repository = await ref.watch(basketRepositoryProvider.future);
-  return repository.getMyBaskets(
-    userId: userId,
-    portfolioId: portfolioId,
-  );
+  return repository.getMyBaskets(userId: userId, portfolioId: portfolioId);
 }
 
 @riverpod
@@ -129,10 +127,7 @@ Future<void> deleteBasket(
   required String userId,
 }) async {
   final repository = await ref.watch(basketRepositoryProvider.future);
-  return repository.deleteBasket(
-    basketId: basketId,
-    userId: userId,
-  );
+  return repository.deleteBasket(basketId: basketId, userId: userId);
 }
 
 @riverpod
@@ -142,20 +137,18 @@ Future<BasketDetail> basketDetail(
   required String userId,
 }) async {
   final repository = await ref.watch(basketRepositoryProvider.future);
-  return repository.getBasketDetail(
-    basketId: basketId,
-    userId: userId,
-  );
+  return repository.getBasketDetail(basketId: basketId, userId: userId);
 }
 
 /// Draft list for My Baskets (not codegen — avoids build_runner for this slice).
 final basketDraftsProvider = FutureProvider.autoDispose
-    .family<BasketDraftListResult, ({String userId, String portfolioId})>(
-  (ref, args) async {
-    final repository = await ref.watch(basketRepositoryProvider.future);
-    return repository.listDrafts(
-      userId: args.userId,
-      portfolioId: args.portfolioId.isEmpty ? null : args.portfolioId,
-    );
-  },
-);
+    .family<BasketDraftListResult, ({String userId, String portfolioId})>((
+      ref,
+      args,
+    ) async {
+      final repository = await ref.watch(basketRepositoryProvider.future);
+      return repository.listDrafts(
+        userId: args.userId,
+        portfolioId: args.portfolioId.isEmpty ? null : args.portfolioId,
+      );
+    });

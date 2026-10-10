@@ -15,24 +15,27 @@ import 'package:get_it/get_it.dart';
 import 'package:am_common/core/di/network_providers.dart';
 
 /// Provider for trade controller remote data source
-final _tradeControllerRemoteDataSourceProvider = FutureProvider<TradeControllerRemoteDataSource>((ref) async {
+final _tradeControllerRemoteDataSourceProvider =
+    FutureProvider<TradeControllerRemoteDataSource>((ref) async {
   final apiClient = await ref.watch(apiClientProvider.future);
 
   return TradeControllerRemoteDataSourceImpl(apiClient: apiClient);
 });
 
 /// Provider for trade controller repository
-final _tradeControllerRepositoryProvider = FutureProvider<TradeControllerRepository>((ref) async {
-  final remoteDataSource = await ref.watch(_tradeControllerRemoteDataSourceProvider.future);
-  final stompClient =
-      GetIt.instance.isRegistered<AmStompClient>() ? GetIt.instance<AmStompClient>() : null;
+final _tradeControllerRepositoryProvider =
+    FutureProvider<TradeControllerRepository>((ref) async {
+  final remoteDataSource =
+      await ref.watch(_tradeControllerRemoteDataSourceProvider.future);
+  final stompClient = GetIt.instance.isRegistered<AmStompClient>()
+      ? GetIt.instance<AmStompClient>()
+      : null;
 
   return TradeControllerRepositoryImpl(
     remoteDataSource: remoteDataSource,
     stompClient: stompClient,
   );
 });
-
 
 /// Provider for AddTrade use case
 final _addTradeProvider = FutureProvider<AddTrade>((ref) async {
@@ -53,17 +56,20 @@ final _deleteTradeProvider = FutureProvider<DeleteTrade>((ref) async {
 });
 
 /// Provider for GetTradesByPortfolio use case
-final _getTradesByPortfolioProvider = FutureProvider<GetTradesByPortfolio>((ref) async {
+final _getTradesByPortfolioProvider =
+    FutureProvider<GetTradesByPortfolio>((ref) async {
   final repository = await ref.watch(_tradeControllerRepositoryProvider.future);
   return GetTradesByPortfolio(repository);
 });
 
 /// Provider for TradeControllerCubit
-final tradeControllerCubitProvider = FutureProvider.autoDispose<TradeControllerCubit>((ref) async {
+final tradeControllerCubitProvider =
+    FutureProvider.autoDispose<TradeControllerCubit>((ref) async {
   final addTrade = await ref.watch(_addTradeProvider.future);
   final updateTrade = await ref.watch(_updateTradeProvider.future);
   final deleteTrade = await ref.watch(_deleteTradeProvider.future);
-  final getTradesByPortfolio = await ref.watch(_getTradesByPortfolioProvider.future);
+  final getTradesByPortfolio =
+      await ref.watch(_getTradesByPortfolioProvider.future);
 
   final cubit = TradeControllerCubit(
     addTrade: addTrade,
@@ -79,7 +85,8 @@ final tradeControllerCubitProvider = FutureProvider.autoDispose<TradeControllerC
 
 /// Provider for TradeControllerCubit with portfolio ID parameter
 /// Use this when you need a cubit scoped to a specific portfolio
-final tradeControllerCubitForPortfolioProvider = FutureProvider.family.autoDispose<TradeControllerCubit, String>((
+final tradeControllerCubitForPortfolioProvider =
+    FutureProvider.family.autoDispose<TradeControllerCubit, String>((
   ref,
   portfolioId,
 ) async {

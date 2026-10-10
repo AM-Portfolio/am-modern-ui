@@ -5,11 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Portfolio list path used by portfolio module ([PortfolioEndpoints.list]).
 const _portfolioListPath = '/v1/portfolios/list';
 
-bool isDemoPortfolioEntry({
-  String? kind,
-  String? name,
-  bool? isDummy,
-}) {
+bool isDemoPortfolioEntry({String? kind, String? name, bool? isDummy}) {
   if (isDummy == true) return true;
   final k = kind?.toUpperCase();
   if (k == 'DUMMY' || k == 'DEMO') return true;
@@ -32,9 +28,8 @@ bool parseHasDemoPortfolio(dynamic data) {
     final map = Map<String, dynamic>.from(raw);
     final kind = map['kind'] as String?;
     if (kind?.toUpperCase() == 'DELETED') continue;
-    final name = (map['portfolioName'] as String?) ??
-        (map['name'] as String?) ??
-        '';
+    final name =
+        (map['portfolioName'] as String?) ?? (map['name'] as String?) ?? '';
     final dummyFlag = map['isDummy'] == true || map['dummy'] == true;
     if (isDemoPortfolioEntry(kind: kind, name: name, isDummy: dummyFlag)) {
       return true;
@@ -57,10 +52,7 @@ final hasDemoPortfolioProvider = FutureProvider<bool>((ref) async {
       parser: (raw) => raw,
     );
     final hasDemo = parseHasDemoPortfolio(data);
-    AppLogger.info(
-      'hasDemoPortfolioProvider → $hasDemo',
-      tag: 'DemoAccount',
-    );
+    AppLogger.info('hasDemoPortfolioProvider → $hasDemo', tag: 'DemoAccount');
     return hasDemo;
   } catch (e, st) {
     keepAliveLink.close();

@@ -19,13 +19,15 @@ void main() {
       Uri.parse('https://asrax.in/download?ref=AbCdEfGh'),
     );
     expect(first, isTrue);
-    expect(await ReferralInstallStore.instance.pendingReferralCode(), 'ABCDEFGH');
+    expect(
+        await ReferralInstallStore.instance.pendingReferralCode(), 'ABCDEFGH');
 
     final second = await ReferralInstallStore.instance.captureFromUri(
       Uri.parse('https://asrax.in/download?ref=ZZZZZZZZ'),
     );
     expect(second, isFalse);
-    expect(await ReferralInstallStore.instance.pendingReferralCode(), 'ABCDEFGH');
+    expect(
+        await ReferralInstallStore.instance.pendingReferralCode(), 'ABCDEFGH');
   });
 
   test('signupAttribution clears only after clearPending', () async {

@@ -64,8 +64,7 @@ class SecurityAlertService {
       final events = await _dataSource.listSecurityEvents(since: _lastSeenAt);
       final unread = events
           .where(
-            (event) =>
-                !event.acknowledged && event.type == 'new_device_login',
+            (event) => !event.acknowledged && event.type == 'new_device_login',
           )
           .toList();
       if (events.isNotEmpty) {

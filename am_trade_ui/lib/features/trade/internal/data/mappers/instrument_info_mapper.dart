@@ -42,7 +42,8 @@ class InstrumentInfoMapper {
   static ExchangeTypes? _parseExchange(String? value) {
     if (value == null) return null;
     try {
-      return ExchangeTypes.values.firstWhere((e) => e.name.toLowerCase() == value.toLowerCase());
+      return ExchangeTypes.values
+          .firstWhere((e) => e.name.toLowerCase() == value.toLowerCase());
     } catch (_) {
       return null;
     }
@@ -51,7 +52,8 @@ class InstrumentInfoMapper {
   static MarketSegments? _parseSegment(String? value) {
     if (value == null) return null;
     try {
-      return MarketSegments.values.firstWhere((e) => e.name.toLowerCase() == value.toLowerCase());
+      return MarketSegments.values
+          .firstWhere((e) => e.name.toLowerCase() == value.toLowerCase());
     } catch (_) {
       return null;
     }
@@ -60,7 +62,8 @@ class InstrumentInfoMapper {
   static SeriesTypes? _parseSeries(String? value) {
     if (value == null) return null;
     try {
-      return SeriesTypes.values.firstWhere((e) => e.name.toLowerCase() == value.toLowerCase());
+      return SeriesTypes.values
+          .firstWhere((e) => e.name.toLowerCase() == value.toLowerCase());
     } catch (_) {
       return null;
     }

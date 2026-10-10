@@ -6,11 +6,7 @@ import 'package:flutter/material.dart';
 
 /// Compact mobile activity card — letter avatar, invested, performance.
 class RecentActivityMobileCard extends StatelessWidget {
-  const RecentActivityMobileCard({
-    super.key,
-    required this.item,
-    this.onTap,
-  });
+  const RecentActivityMobileCard({super.key, required this.item, this.onTap});
 
   final ActivityItem item;
   final VoidCallback? onTap;
@@ -51,18 +47,18 @@ class RecentActivityMobileCard extends StatelessWidget {
                     Text(
                       symbol,
                       style: context.text.body().copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: onSurface,
-                          ),
+                        fontWeight: FontWeight.w700,
+                        color: onSurface,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: AppSpacing.xxs + 1),
                     Text(
                       formatActivityDate(item.timestamp),
-                      style: context.text
-                          .caption()
-                          .copyWith(color: onSurfaceVariant),
+                      style: context.text.caption().copyWith(
+                        color: onSurfaceVariant,
+                      ),
                     ),
                     if (avgAtQty != null) ...[
                       const SizedBox(height: AppSpacing.xs),
@@ -78,9 +74,9 @@ class RecentActivityMobileCard extends StatelessWidget {
                             child: Text(
                               avgAtQty,
                               style: context.text.caption().copyWith(
-                                    color: onSurfaceVariant,
-                                    fontSize: AppTypeScale.xs,
-                                  ),
+                                color: onSurfaceVariant,
+                                fontSize: AppTypeScale.xs,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -100,17 +96,17 @@ class RecentActivityMobileCard extends StatelessWidget {
                     Text(
                       'Invested',
                       style: context.text.caption().copyWith(
-                            color: onSurfaceVariant,
-                            fontSize: AppTypeScale.xs,
-                          ),
+                        color: onSurfaceVariant,
+                        fontSize: AppTypeScale.xs,
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.xxs),
                     Text(
                       formatCurrencyInr(totalInvested),
                       style: context.text.label().copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: onSurface,
-                          ),
+                        fontWeight: FontWeight.w600,
+                        color: onSurface,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -131,9 +127,9 @@ class RecentActivityMobileCard extends StatelessWidget {
                     Text(
                       formatReturnPercent(item.profitLossPercent),
                       style: context.text.label().copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: accent,
-                          ),
+                        fontWeight: FontWeight.w700,
+                        color: accent,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -141,9 +137,9 @@ class RecentActivityMobileCard extends StatelessWidget {
                     Text(
                       formatPnlLine(item.profitLoss),
                       style: context.text.caption().copyWith(
-                            color: onSurfaceVariant,
-                            fontSize: AppTypeScale.xs,
-                          ),
+                        color: onSurfaceVariant,
+                        fontSize: AppTypeScale.xs,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -178,10 +174,9 @@ class _LetterAvatar extends StatelessWidget {
       ),
       child: Text(
         letter,
-        style: context.text.sectionTitle(compact: true).copyWith(
-              color: color,
-              fontWeight: FontWeight.w800,
-            ),
+        style: context.text
+            .sectionTitle(compact: true)
+            .copyWith(color: color, fontWeight: FontWeight.w800),
       ),
     );
   }
@@ -207,10 +202,10 @@ class _StatusChip extends StatelessWidget {
       child: Text(
         label,
         style: context.text.caption().copyWith(
-              color: color,
-              fontWeight: FontWeight.w700,
-              fontSize: AppTypeScale.xs,
-            ),
+          color: color,
+          fontWeight: FontWeight.w700,
+          fontSize: AppTypeScale.xs,
+        ),
       ),
     );
   }

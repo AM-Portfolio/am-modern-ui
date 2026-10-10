@@ -32,18 +32,23 @@ class _MyBasketsViewState extends ConsumerState<MyBasketsView> {
   _MyBasketsFilter _filter = _MyBasketsFilter.all;
 
   Future<void> _refresh() async {
+    ref.invalidate(myBasketsProvider(userId: widget.userId, portfolioId: ''));
     ref.invalidate(
-        myBasketsProvider(userId: widget.userId, portfolioId: ''));
-    ref.invalidate(basketDraftsProvider((
-      userId: widget.userId,
-      portfolioId: widget.portfolioId,
-    )));
-    await Future.wait([
-      ref.read(myBasketsProvider(userId: widget.userId, portfolioId: '').future),
-      ref.read(basketDraftsProvider((
+      basketDraftsProvider((
         userId: widget.userId,
         portfolioId: widget.portfolioId,
-      )).future),
+      )),
+    );
+    await Future.wait([
+      ref.read(
+        myBasketsProvider(userId: widget.userId, portfolioId: '').future,
+      ),
+      ref.read(
+        basketDraftsProvider((
+          userId: widget.userId,
+          portfolioId: widget.portfolioId,
+        )).future,
+      ),
     ]);
   }
 
@@ -52,10 +57,12 @@ class _MyBasketsViewState extends ConsumerState<MyBasketsView> {
     final basketsAsync = ref.watch(
       myBasketsProvider(userId: widget.userId, portfolioId: ''),
     );
-    final draftsAsync = ref.watch(basketDraftsProvider((
-      userId: widget.userId,
-      portfolioId: widget.portfolioId,
-    )));
+    final draftsAsync = ref.watch(
+      basketDraftsProvider((
+        userId: widget.userId,
+        portfolioId: widget.portfolioId,
+      )),
+    );
 
     if (basketsAsync.isLoading && draftsAsync.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -68,8 +75,10 @@ class _MyBasketsViewState extends ConsumerState<MyBasketsView> {
           children: [
             Icon(Icons.error_outline, size: 48, color: context.statusError),
             const SizedBox(height: AppSpacing.md),
-            Text('Failed to load baskets',
-                style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'Failed to load baskets',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: AppSpacing.sm),
             TextButton(onPressed: _refresh, child: const Text('Retry')),
           ],
@@ -111,10 +120,9 @@ class _MyBasketsViewState extends ConsumerState<MyBasketsView> {
             ),
             child: Text(
               title,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
           );
         }
@@ -128,8 +136,9 @@ class _MyBasketsViewState extends ConsumerState<MyBasketsView> {
                 sectionHeader('Drafts', isFirst: true),
                 ...visibleDrafts.map(
                   (d) => Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                    ),
                     child: _DraftBasketCard(
                       draft: d,
                       userId: widget.userId,
@@ -150,8 +159,9 @@ class _MyBasketsViewState extends ConsumerState<MyBasketsView> {
                 sectionHeader('Active', isFirst: visibleDrafts.isEmpty),
                 ...visibleActive.map(
                   (b) => Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                    ),
                     child: _TrackingBasketCard(
                       basket: b,
                       userId: widget.userId,
@@ -204,22 +214,21 @@ class _MyBasketsViewState extends ConsumerState<MyBasketsView> {
                   child: sectionHeader('Drafts', isFirst: true),
                 ),
                 SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                  ),
                   sliver: SliverGrid(
                     gridDelegate: gridDelegate,
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final d = visibleDrafts[index];
-                        return _DraftBasketCard(
-                          draft: d,
-                          userId: widget.userId,
-                          portfolioId: widget.portfolioId,
-                          onChanged: _refresh,
-                          compact: true,
-                        );
-                      },
-                      childCount: visibleDrafts.length,
-                    ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final d = visibleDrafts[index];
+                      return _DraftBasketCard(
+                        draft: d,
+                        userId: widget.userId,
+                        portfolioId: widget.portfolioId,
+                        onChanged: _refresh,
+                        compact: true,
+                      );
+                    }, childCount: visibleDrafts.length),
                   ),
                 ),
               ],
@@ -239,18 +248,15 @@ class _MyBasketsViewState extends ConsumerState<MyBasketsView> {
                   ),
                   sliver: SliverGrid(
                     gridDelegate: gridDelegate,
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final b = visibleActive[index];
-                        return _TrackingBasketCard(
-                          basket: b,
-                          userId: widget.userId,
-                          portfolioId: widget.portfolioId,
-                          compact: true,
-                        );
-                      },
-                      childCount: visibleActive.length,
-                    ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final b = visibleActive[index];
+                      return _TrackingBasketCard(
+                        basket: b,
+                        userId: widget.userId,
+                        portfolioId: widget.portfolioId,
+                        compact: true,
+                      );
+                    }, childCount: visibleActive.length),
                   ),
                 ),
               ],
@@ -275,9 +281,9 @@ class _MyBasketsViewState extends ConsumerState<MyBasketsView> {
           label: Text(
             label,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: selected ? accent : context.colors.textSecondary,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                ),
+              color: selected ? accent : context.colors.textSecondary,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            ),
           ),
           selected: selected,
           onSelected: (_) => onSelected(),
@@ -297,7 +303,11 @@ class _MyBasketsViewState extends ConsumerState<MyBasketsView> {
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-          AppSpacing.md, AppSpacing.sm, AppSpacing.md, 0),
+        AppSpacing.md,
+        AppSpacing.sm,
+        AppSpacing.md,
+        0,
+      ),
       child: Row(
         children: [
           Expanded(
@@ -327,10 +337,9 @@ class _MyBasketsViewState extends ConsumerState<MyBasketsView> {
           ),
           Text(
             'Drafts $draftCount/$draftLimit',
-            style: Theme.of(context)
-                .textTheme
-                .labelMedium
-                ?.copyWith(color: context.colors.textSecondary),
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: context.colors.textSecondary,
+            ),
           ),
         ],
       ),
@@ -344,29 +353,30 @@ class _MyBasketsViewState extends ConsumerState<MyBasketsView> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.shopping_basket_outlined,
-              size: 64, color: context.colors.textDisabled),
+          Icon(
+            Icons.shopping_basket_outlined,
+            size: 64,
+            color: context.colors.textDisabled,
+          ),
           const SizedBox(height: AppSpacing.md),
           Text(
             isDraftsOnly
                 ? 'No Drafts'
                 : isActiveOnly
-                    ? 'No Active Baskets'
-                    : 'No Baskets Tracked',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(color: context.colors.textDisabled),
+                ? 'No Active Baskets'
+                : 'No Baskets Tracked',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: context.colors.textDisabled,
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             isDraftsOnly
                 ? 'Save a draft from Customize to continue later.'
                 : 'Create a basket to see it tracked here.',
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.copyWith(color: context.colors.textDisabled),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: context.colors.textDisabled,
+            ),
           ),
         ],
       ),
@@ -399,7 +409,8 @@ class _DraftBasketCard extends ConsumerWidget {
         builder: (c) => AlertDialog(
           title: const Text('Unsaved changes'),
           content: const Text(
-              'You have unsaved edits on another basket. Discard them and continue this draft?'),
+            'You have unsaved edits on another basket. Discard them and continue this draft?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(c).pop(false),
@@ -421,7 +432,8 @@ class _DraftBasketCard extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-                'This draft belongs to a different portfolio. Switch portfolio to continue.'),
+              'This draft belongs to a different portfolio. Switch portfolio to continue.',
+            ),
           ),
         );
       }
@@ -430,19 +442,24 @@ class _DraftBasketCard extends ConsumerWidget {
 
     try {
       final repository = await ref.read(basketRepositoryProvider.future);
-      final detail =
-          await repository.getDraft(draftId: draft.id, userId: userId);
+      final detail = await repository.getDraft(
+        draftId: draft.id,
+        userId: userId,
+      );
       final opportunity = detail.opportunity;
       if (opportunity == null) {
         throw Exception('Draft is missing composition snapshot');
       }
 
-      ref.read(basketFlowControllerProvider.notifier).restoreFromDraft(
+      ref
+          .read(basketFlowControllerProvider.notifier)
+          .restoreFromDraft(
             opportunity: opportunity,
             excludedSymbols: detail.excludedSymbols.toSet(),
             manualQtyOverrides: detail.manualQtyOverrides,
             investmentAmount: detail.investmentAmount ?? 0,
-            basketName: detail.basketName ?? 'My ${detail.etfName ?? 'ETF'} Basket',
+            basketName:
+                detail.basketName ?? 'My ${detail.etfName ?? 'ETF'} Basket',
             hasCalculated: detail.hasCalculated,
             draftId: detail.id,
           );
@@ -482,8 +499,9 @@ class _DraftBasketCard extends ConsumerWidget {
             onPressed: () async {
               Navigator.of(c).pop();
               try {
-                final repository =
-                    await ref.read(basketRepositoryProvider.future);
+                final repository = await ref.read(
+                  basketRepositoryProvider.future,
+                );
                 await repository.deleteDraft(draftId: draft.id, userId: userId);
                 final flow = ref.read(basketFlowControllerProvider);
                 if (flow.draftId == draft.id) {
@@ -509,7 +527,10 @@ class _DraftBasketCard extends ConsumerWidget {
                 }
               }
             },
-            child: Text('Delete', style: TextStyle(color: c.colors.actionPrimaryFg)),
+            child: Text(
+              'Delete',
+              style: TextStyle(color: c.colors.actionPrimaryFg),
+            ),
           ),
         ],
       ),
@@ -521,8 +542,7 @@ class _DraftBasketCard extends ConsumerWidget {
     final theme = Theme.of(context);
     final colors = context.colors;
     // Prefer ETF name so cards read like Discover.
-    final title =
-        draft.etfName ?? draft.basketName ?? 'Untitled draft';
+    final title = draft.etfName ?? draft.basketName ?? 'Untitled draft';
     final initial = title.isNotEmpty ? title[0].toUpperCase() : 'D';
     final money = NumberFormat('#,##,##0');
     final planned = draft.investmentAmount != null
@@ -532,15 +552,12 @@ class _DraftBasketCard extends ConsumerWidget {
     final scoreColor = score >= 70
         ? context.statusSuccess
         : score >= 40
-            ? context.statusWarning
-            : context.statusError;
+        ? context.statusWarning
+        : context.statusError;
     final dateLabel = draft.updatedAt != null
         ? DateFormat('MMM dd, yyyy').format(draft.updatedAt!)
         : null;
-    final metaParts = <String>[
-      'Draft',
-      ?dateLabel,
-    ];
+    final metaParts = <String>['Draft', ?dateLabel];
 
     Widget metric({
       required String label,
@@ -591,8 +608,9 @@ class _DraftBasketCard extends ConsumerWidget {
                 children: [
                   CircleAvatar(
                     radius: 18,
-                    backgroundColor:
-                        ModuleColors.portfolio.withValues(alpha: 0.15),
+                    backgroundColor: ModuleColors.portfolio.withValues(
+                      alpha: 0.15,
+                    ),
                     child: Text(
                       initial,
                       style: theme.textTheme.titleSmall?.copyWith(
@@ -640,10 +658,7 @@ class _DraftBasketCard extends ConsumerWidget {
                         ? scoreColor
                         : colors.textTertiary,
                   ),
-                  metric(
-                    label: 'Invested',
-                    value: planned,
-                  ),
+                  metric(label: 'Invested', value: planned),
                   metric(
                     label: 'P&L',
                     value: '—',
@@ -651,7 +666,10 @@ class _DraftBasketCard extends ConsumerWidget {
                   ),
                 ],
               ),
-              if (compact) const Spacer() else const SizedBox(height: AppSpacing.sm),
+              if (compact)
+                const Spacer()
+              else
+                const SizedBox(height: AppSpacing.sm),
               Row(
                 children: [
                   Expanded(
@@ -703,7 +721,8 @@ class _TrackingBasketCard extends ConsumerWidget {
       builder: (c) => AlertDialog(
         title: const Text('Delete Basket?'),
         content: const Text(
-            'Are you sure you want to delete this basket? This cannot be undone.'),
+          'Are you sure you want to delete this basket? This cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(c).pop(),
@@ -714,11 +733,15 @@ class _TrackingBasketCard extends ConsumerWidget {
             onPressed: () async {
               Navigator.of(c).pop();
               try {
-                await ref.read(deleteBasketProvider(
-                        basketId: basket.basketId, userId: userId)
-                    .future);
+                await ref.read(
+                  deleteBasketProvider(
+                    basketId: basket.basketId,
+                    userId: userId,
+                  ).future,
+                );
                 ref.invalidate(
-                    myBasketsProvider(userId: userId, portfolioId: ''));
+                  myBasketsProvider(userId: userId, portfolioId: ''),
+                );
                 if (context.mounted) {
                   await BasketPortfolioSync.afterBasketMutation(
                     context,
@@ -728,22 +751,28 @@ class _TrackingBasketCard extends ConsumerWidget {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                        content: const Text('Basket deleted'),
-                        backgroundColor: context.statusSuccess),
+                      content: const Text('Basket deleted'),
+                      backgroundColor: context.statusSuccess,
+                    ),
                   );
                 }
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                        content: Text(
-                            'Failed to delete basket: ${basketApiErrorMessage(e)}'),
-                        backgroundColor: context.statusError),
+                      content: Text(
+                        'Failed to delete basket: ${basketApiErrorMessage(e)}',
+                      ),
+                      backgroundColor: context.statusError,
+                    ),
                   );
                 }
               }
             },
-            child: Text('Delete', style: TextStyle(color: c.colors.actionPrimaryFg)),
+            child: Text(
+              'Delete',
+              style: TextStyle(color: c.colors.actionPrimaryFg),
+            ),
           ),
         ],
       ),
@@ -764,8 +793,8 @@ class _TrackingBasketCard extends ConsumerWidget {
     final coverageColor = coverage >= 70
         ? context.statusSuccess
         : coverage >= 40
-            ? context.statusWarning
-            : context.statusError;
+        ? context.statusWarning
+        : context.statusError;
 
     final investedLabel = basket.investmentAmount != null
         ? '₹${money.format(basket.investmentAmount!)}'
@@ -777,8 +806,8 @@ class _TrackingBasketCard extends ConsumerWidget {
     final pnlColor = !hasPnl
         ? colors.textTertiary
         : pnl >= 0
-            ? context.statusSuccess
-            : context.statusError;
+        ? context.statusSuccess
+        : context.statusError;
     final pnlLabel = !hasPnl
         ? '—'
         : '${pnl >= 0 ? '+' : '-'}₹${money.format(pnl.abs())}';
@@ -787,10 +816,7 @@ class _TrackingBasketCard extends ConsumerWidget {
     final dateLabel = basket.createdAt != null
         ? DateFormat('MMM dd, yyyy').format(basket.createdAt!)
         : null;
-    final metaParts = <String>[
-      statusText.toLowerCase(),
-      ?dateLabel,
-    ];
+    final metaParts = <String>[statusText.toLowerCase(), ?dateLabel];
 
     Widget metric({
       required String label,
@@ -862,8 +888,9 @@ class _TrackingBasketCard extends ConsumerWidget {
                 children: [
                   CircleAvatar(
                     radius: 18,
-                    backgroundColor:
-                        ModuleColors.portfolio.withValues(alpha: 0.15),
+                    backgroundColor: ModuleColors.portfolio.withValues(
+                      alpha: 0.15,
+                    ),
                     child: Text(
                       initial,
                       style: theme.textTheme.titleSmall?.copyWith(
@@ -908,10 +935,7 @@ class _TrackingBasketCard extends ConsumerWidget {
                     value: '${coverage.toStringAsFixed(0)}%',
                     valueColor: coverageColor,
                   ),
-                  metric(
-                    label: 'Invested',
-                    value: investedLabel,
-                  ),
+                  metric(label: 'Invested', value: investedLabel),
                   metric(
                     label: 'P&L',
                     value: pnlLabel,
@@ -920,7 +944,10 @@ class _TrackingBasketCard extends ConsumerWidget {
                   ),
                 ],
               ),
-              if (compact) const Spacer() else const SizedBox(height: AppSpacing.sm),
+              if (compact)
+                const Spacer()
+              else
+                const SizedBox(height: AppSpacing.sm),
               Row(
                 children: [
                   Expanded(

@@ -48,6 +48,7 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
   String _selectedFolder = JournalFolderFilter.dailyJournal;
   String? _selectedEntryId;
   bool _isCreatingNew = false;
+
   /// When creating or viewing a trade-discipline entry, show workflow.
   bool _useTradeWorkflow = false;
   bool _isLeftSidebarCollapsed = false;
@@ -72,7 +73,8 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
     if (filtered.isNotEmpty) {
       _selectedEntryId = filtered.first.id;
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) => _notifySelectedSymbol());
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _notifySelectedSymbol());
   }
 
   @override
@@ -86,7 +88,8 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
         _selectedEntryId = filtered.isNotEmpty ? filtered.first.id : null;
       });
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) => _notifySelectedSymbol());
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _notifySelectedSymbol());
   }
 
   void _notifySelectedSymbol() {
@@ -299,15 +302,17 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
                       children: [
                         Text(
                           'New Journal Entry',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
                         ),
                         Text(
                           'Folder: $_selectedFolder',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: colors.textSecondary,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: colors.textSecondary,
+                                  ),
                         ),
                       ],
                     ),

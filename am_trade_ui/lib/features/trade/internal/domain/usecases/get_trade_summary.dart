@@ -81,4 +81,3 @@ class GetTradeSummary {
     return _repository.watchTradeSummary(portfolioId);
   }
 }
-

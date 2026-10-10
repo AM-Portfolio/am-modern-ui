@@ -15,14 +15,14 @@ class OmsWallet {
   });
 
   factory OmsWallet.fromJson(Map<String, dynamic> json) => OmsWallet(
-        walletId: json['walletId'] as String,
-        kind: json['kind'] as String? ?? 'PAPER',
-        currency: json['currency'] as String? ?? 'INR',
-        available: '${json['available'] ?? '0'}',
-        reserved: '${json['reserved'] ?? '0'}',
-        portfolioId: json['portfolioId'] as String? ?? '',
-        portfolioUuid: json['portfolioUuid'] as String? ?? '',
-      );
+    walletId: json['walletId'] as String,
+    kind: json['kind'] as String? ?? 'PAPER',
+    currency: json['currency'] as String? ?? 'INR',
+    available: '${json['available'] ?? '0'}',
+    reserved: '${json['reserved'] ?? '0'}',
+    portfolioId: json['portfolioId'] as String? ?? '',
+    portfolioUuid: json['portfolioUuid'] as String? ?? '',
+  );
 
   factory OmsWallet.fromEnvelope(dynamic raw) =>
       OmsWallet.fromJson(Map<String, dynamic>.from(_envelope(raw) as Map));
@@ -160,10 +160,14 @@ class OmsOrder {
 
   String get qtyDisplayLabel {
     final q = quantityAsDouble;
-    final qStr = q == q.roundToDouble() ? q.toStringAsFixed(0) : q.toStringAsFixed(2);
+    final qStr = q == q.roundToDouble()
+        ? q.toStringAsFixed(0)
+        : q.toStringAsFixed(2);
     if (isWorking || isRejected || isCancelled) {
       final f = filledQuantityAsDouble;
-      final fStr = f == f.roundToDouble() ? f.toStringAsFixed(0) : f.toStringAsFixed(2);
+      final fStr = f == f.roundToDouble()
+          ? f.toStringAsFixed(0)
+          : f.toStringAsFixed(2);
       return '$fStr / $qStr';
     }
     final f = filledQuantityAsDouble > 0 ? filledQuantityAsDouble : q;
@@ -188,10 +192,10 @@ class OmsPosition {
   });
 
   factory OmsPosition.fromJson(Map<String, dynamic> json) => OmsPosition(
-        walletId: json['walletId'] as String? ?? '',
-        symbol: json['symbol'] as String? ?? '',
-        qty: '${json['qty'] ?? '0'}',
-      );
+    walletId: json['walletId'] as String? ?? '',
+    symbol: json['symbol'] as String? ?? '',
+    qty: '${json['qty'] ?? '0'}',
+  );
 
   final String walletId;
   final String symbol;
@@ -288,7 +292,8 @@ String? omsErrorCode(Object error) {
       if (code != null && code.isNotEmpty) return code;
       final detail = data['detail'];
       if (detail is Map) {
-        final nested = (detail['error_code'] ?? detail['errorCode'])?.toString();
+        final nested = (detail['error_code'] ?? detail['errorCode'])
+            ?.toString();
         if (nested != null && nested.isNotEmpty) return nested;
       }
     }

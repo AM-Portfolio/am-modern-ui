@@ -74,8 +74,9 @@ class DashboardLayoutRenderer extends ConsumerWidget {
     if (slots.isEmpty) return const SizedBox.shrink();
 
     final isCompact = MediaQuery.sizeOf(context).width < compactBreakpoint;
-    final newsEnabled =
-        ref.watch(newsUiSurfaceEnabledProvider(NewsUiSurface.dashboard));
+    final newsEnabled = ref.watch(
+      newsUiSurfaceEnabledProvider(NewsUiSurface.dashboard),
+    );
     final renderSlots = isCompact
         ? compactDashboardSlots(slots, newsEnabled: newsEnabled)
         : [
@@ -110,10 +111,7 @@ class DashboardLayoutRenderer extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: _slotGap),
-                Expanded(
-                  flex: 30,
-                  child: _buildSlot(context, ref, next!.id),
-                ),
+                Expanded(flex: 30, child: _buildSlot(context, ref, next!.id)),
               ],
             ),
           ),
@@ -131,10 +129,7 @@ class DashboardLayoutRenderer extends ConsumerWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                flex: 70,
-                child: _buildSlot(context, ref, slot.id),
-              ),
+              Expanded(flex: 70, child: _buildSlot(context, ref, slot.id)),
               const SizedBox(width: _slotGap),
               Expanded(
                 flex: 30,
@@ -163,15 +158,9 @@ class DashboardLayoutRenderer extends ConsumerWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                flex: 70,
-                child: _buildSlot(context, ref, slot.id),
-              ),
+              Expanded(flex: 70, child: _buildSlot(context, ref, slot.id)),
               const SizedBox(width: _slotGap),
-              Expanded(
-                flex: 30,
-                child: _buildSlot(context, ref, next!.id),
-              ),
+              Expanded(flex: 30, child: _buildSlot(context, ref, next!.id)),
             ],
           ),
         );
@@ -189,15 +178,9 @@ class DashboardLayoutRenderer extends ConsumerWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                flex: 30,
-                child: _buildSlot(context, ref, slot.id),
-              ),
+              Expanded(flex: 30, child: _buildSlot(context, ref, slot.id)),
               const SizedBox(width: _slotGap),
-              Expanded(
-                flex: 70,
-                child: _buildSlot(context, ref, next.id),
-              ),
+              Expanded(flex: 70, child: _buildSlot(context, ref, next.id)),
             ],
           ),
         );

@@ -5,7 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final marketApiClientProvider = FutureProvider<ApiClient>((ref) async {
   final config = await ref.watch(appConfigProvider.future);
-  final baseUrl = config.api.marketData?.baseUrl ??
+  final baseUrl =
+      config.api.marketData?.baseUrl ??
       config.api.analysis?.baseUrl ??
       config.api.baseUrl;
   if (baseUrl.isEmpty) {
@@ -14,10 +15,12 @@ final marketApiClientProvider = FutureProvider<ApiClient>((ref) async {
   return ApiClient(baseUrl: baseUrl);
 });
 
-final dashboardOverlayProvider = NotifierProvider.family<
-    DashboardOverlayNotifier, OverlayChartState, String>(
-  DashboardOverlayNotifier.new,
-);
+final dashboardOverlayProvider =
+    NotifierProvider.family<
+      DashboardOverlayNotifier,
+      OverlayChartState,
+      String
+    >(DashboardOverlayNotifier.new);
 
 class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
   DashboardOverlayNotifier(this.userId);
@@ -29,9 +32,8 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
 
   /// When sidebar portfolio changes, prefer that series in the default legend.
   void setPreferredPortfolioId(String? portfolioId) {
-    final next = (portfolioId == null ||
-            portfolioId.isEmpty ||
-            portfolioId == 'all')
+    final next =
+        (portfolioId == null || portfolioId.isEmpty || portfolioId == 'all')
         ? null
         : portfolioId;
     if (_preferredPortfolioId == next) return;
@@ -56,10 +58,9 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
     final selected = List<String>.from(state.selectedIds);
     _generation += 1;
     final gen = _generation;
-    state = OverlayChartState.initial(timeFrame).copyWith(
-      selectedIds: selected,
-      pendingIds: {...selected},
-    );
+    state = OverlayChartState.initial(
+      timeFrame,
+    ).copyWith(selectedIds: selected, pendingIds: {...selected});
     await _loadPortfolios(gen, timeFrame);
     if (gen != _generation) return;
     await _loadIndices(
@@ -118,13 +119,18 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
   }
 
   Future<void> _loadPortfolios(int gen, String timeFrame) async {
-    for (final id in state.selectedIds.where((id) => !OverlayChartIds.isIndex(id))) {
+    for (final id in state.selectedIds.where(
+      (id) => !OverlayChartIds.isIndex(id),
+    )) {
       _markPending(id);
     }
     try {
       final repo = await ref.read(dashboardRepositoryProvider.future);
       final client = await ref.read(portfolioApiClientProvider.future);
-      final history = await repo.getPortfolioHistory(client, timeFrame: timeFrame);
+      final history = await repo.getPortfolioHistory(
+        client,
+        timeFrame: timeFrame,
+      );
       if (gen != _generation) return;
 
       var availableIds = history.portfolios.map((p) => p.id).toList();
@@ -173,8 +179,7 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
             if (!availableIds.contains(ref.id)) {
               availableIds = [...availableIds, ref.id];
             }
-            final raw =
-                single.byPortfolioId[ref.id] ?? const <OverlayPoint>[];
+            final raw = single.byPortfolioId[ref.id] ?? const <OverlayPoint>[];
             final rawFinite = raw
                 .where((p) => p.value.isFinite && p.value > 0)
                 .toList();
@@ -282,8 +287,9 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
       final pending = Set<String>.from(state.pendingIds)
         ..removeWhere((id) => !OverlayChartIds.isIndex(id));
       final failed = Map<String, String>.from(state.failedIds);
-      for (final id
-          in state.selectedIds.where((id) => !OverlayChartIds.isIndex(id))) {
+      for (final id in state.selectedIds.where(
+        (id) => !OverlayChartIds.isIndex(id),
+      )) {
         failed[id] = 'Could not load portfolio';
       }
       state = state.copyWith(pendingIds: pending, failedIds: failed);

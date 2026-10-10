@@ -17,8 +17,7 @@ enum ChartTypeId {
   lineBreak('linebreak', 'Line Break', false),
   footprint('footprint', 'Footprint', false),
   tpo('tpo', 'TPO / Market Profile', false),
-  volumeProfile('vp', 'Volume Profile', false),
-  ;
+  volumeProfile('vp', 'Volume Profile', false);
 
   const ChartTypeId(this.id, this.label, this.isAvailable);
   final String id;

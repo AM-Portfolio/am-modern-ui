@@ -10,8 +10,7 @@ enum ChartTimeframe {
   d1('1D', '1D'),
   w1('1W', '1W'),
   mo1('1MO', '1M'),
-  y1('1Y', '1Y'),
-  ;
+  y1('1Y', '1Y');
 
   const ChartTimeframe(this.code, this.label);
   final String code;

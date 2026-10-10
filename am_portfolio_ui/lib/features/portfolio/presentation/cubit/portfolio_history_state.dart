@@ -16,7 +16,7 @@ class PortfolioHistoryLoaded extends PortfolioHistoryState {
     required this.snapshots,
     required this.availableBrokers,
   });
-  
+
   final List<PortfolioSnapshotDto> snapshots;
   final List<String> availableBrokers;
 
@@ -26,9 +26,9 @@ class PortfolioHistoryLoaded extends PortfolioHistoryState {
 
 class PortfolioHistoryError extends PortfolioHistoryState {
   const PortfolioHistoryError(this.message);
-  
+
   final String message;
-  
+
   @override
   List<Object?> get props => [message];
 }

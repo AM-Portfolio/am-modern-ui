@@ -19,11 +19,12 @@ class AssetTypeSelector extends ConsumerWidget {
         LayoutBuilder(
           builder: (context, constraints) {
             final isDesktop = constraints.maxWidth > 600;
-            
+
             final bondsCard = AssetTypeCard(
               id: 'bonds',
               title: 'Bond',
-              subtitle: 'Government, corporate, or other fixed income securities',
+              subtitle:
+                  'Government, corporate, or other fixed income securities',
               icon: Icons.account_balance,
               iconColor: ModuleColors.portfolio,
               isSelected: selectedType == 'bonds',
@@ -41,7 +42,9 @@ class AssetTypeSelector extends ConsumerWidget {
               iconColor: IntelligenceColors.chartPalette[0],
               isSelected: selectedType == 'commodities',
               onTap: () {
-                ref.read(addAssetClassTypeProvider.notifier).setType('commodities');
+                ref
+                    .read(addAssetClassTypeProvider.notifier)
+                    .setType('commodities');
                 ref.read(addAssetClassHoldingsProvider.notifier).reset();
               },
             );
@@ -73,7 +76,7 @@ class AssetTypeSelector extends ConsumerWidget {
                 ),
               );
             }
-            
+
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [

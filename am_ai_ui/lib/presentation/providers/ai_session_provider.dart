@@ -88,5 +88,5 @@ class AiSessionNotifier extends Notifier<SessionListState> {
   }
 }
 
-final aiSessionProvider =
-    NotifierProvider<AiSessionNotifier, SessionListState>(AiSessionNotifier.new);
+final aiSessionProvider = NotifierProvider<AiSessionNotifier, SessionListState>(
+    AiSessionNotifier.new);

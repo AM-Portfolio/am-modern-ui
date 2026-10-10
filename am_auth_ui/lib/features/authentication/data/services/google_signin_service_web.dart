@@ -104,19 +104,19 @@ class GoogleSignInService {
         );
       }
       print('✅ Popup window opened successfully');
-      
+
       // Listen for the callback from the popup window
       late StreamSubscription<html.MessageEvent> subscription;
       subscription = html.window.onMessage.listen((event) {
         print('🔵 Received message from popup: ${event.data}');
         CommonLogger.info('🔵 Received message from popup: ${event.data}');
-        
+
         try {
           if (event.data != null) {
             // Handle both string and object data
             dynamic data = event.data;
             String? idToken;
-            
+
             // If it's a Map, extract the id_token
             if (data is Map) {
               if (data['type'] == 'google-signin-success') {
@@ -124,14 +124,14 @@ class GoogleSignInService {
                 CommonLogger.info('🔵 Extracted ID token from message');
               }
             }
-            
+
             if (idToken != null && idToken.isNotEmpty) {
               final account = GoogleSignInAccount(
                 email: 'google-user',
                 id: 'google-id',
                 idToken: idToken,
               );
-              
+
               if (_signInCompleter != null && !_signInCompleter!.isCompleted) {
                 CommonLogger.info('✅ Completing sign-in with token');
                 _signInCompleter!.complete(account);
@@ -222,4 +222,3 @@ class GoogleSignInService {
   /// Get currently signed in account
   GoogleSignInAccount? getCurrentAccount() => null;
 }
-

@@ -22,16 +22,15 @@ class PaperWalletPane extends StatelessWidget {
         final available = double.tryParse(w?.available ?? '') ?? 0;
         final reserved = double.tryParse(w?.reserved ?? '') ?? 0;
 
-        Future<void> refresh() =>
-            context.read<PaperOmsCubit>().refreshBooks();
+        Future<void> refresh() => context.read<PaperOmsCubit>().refreshBooks();
 
         Widget cards() {
           if (w == null) {
             return Text(
               'No paper wallet loaded.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: colors.textSecondary,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
             );
           }
           return LayoutBuilder(
@@ -75,16 +74,16 @@ class PaperWalletPane extends StatelessWidget {
           if (!isMobile) ...[
             Text(
               'Paper wallet',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 4),
             Text(
               'Virtual cash for paper trading · not live money',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: colors.textSecondary,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: colors.textSecondary),
             ),
             const SizedBox(height: 16),
           ],
@@ -93,9 +92,9 @@ class PaperWalletPane extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               'Currency ${w.currency} · ${w.kind}',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: colors.textSecondary,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelMedium?.copyWith(color: colors.textSecondary),
             ),
           ],
         ];
@@ -112,10 +111,7 @@ class PaperWalletPane extends StatelessWidget {
           );
         }
 
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: body,
-        );
+        return ListView(padding: const EdgeInsets.all(16), children: body);
       },
     );
   }
@@ -147,17 +143,17 @@ class _WalletCard extends StatelessWidget {
         children: [
           Text(
             label,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: colors.textSecondary,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.labelMedium?.copyWith(color: colors.textSecondary),
           ),
           const SizedBox(height: 8),
           Text(
             value,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: accent,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: accent,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),

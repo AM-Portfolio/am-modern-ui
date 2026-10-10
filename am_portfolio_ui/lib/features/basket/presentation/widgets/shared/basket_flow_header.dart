@@ -24,19 +24,24 @@ class BasketFlowHeader extends StatelessWidget {
     final backWidget = onBack == null
         ? null
         : compactBack
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: onBack,
-                tooltip: 'Back',
-              )
-            : TextButton.icon(
-                onPressed: onBack,
-                icon: const Icon(Icons.arrow_back, size: 18),
-                label: const Text('Back'),
-              );
+        ? IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: onBack,
+            tooltip: 'Back',
+          )
+        : TextButton.icon(
+            onPressed: onBack,
+            icon: const Icon(Icons.arrow_back, size: 18),
+            label: const Text('Back'),
+          );
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.sm, AppSpacing.sm, AppSpacing.lg, AppSpacing.sm),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.sm,
+        AppSpacing.sm,
+        AppSpacing.lg,
+        AppSpacing.sm,
+      ),
       decoration: BoxDecoration(
         color: context.colors.surface,
         border: Border(bottom: BorderSide(color: context.colors.border)),
@@ -54,7 +59,9 @@ class BasketFlowHeader extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -62,7 +69,9 @@ class BasketFlowHeader extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       subtitle!,
-                      style: theme.textTheme.bodySmall?.copyWith(color: context.textSecondary),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: context.textSecondary,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),

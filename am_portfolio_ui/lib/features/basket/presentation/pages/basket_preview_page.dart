@@ -33,12 +33,14 @@ class BasketPreviewPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final opportunityAsync = ref.watch(basketPreviewProvider(
-      etfIsin: etfIsin,
-      userId: userId,
-      portfolioId: portfolioId,
-      seededOpportunity: seededOpportunity,
-    ));
+    final opportunityAsync = ref.watch(
+      basketPreviewProvider(
+        etfIsin: etfIsin,
+        userId: userId,
+        portfolioId: portfolioId,
+        seededOpportunity: seededOpportunity,
+      ),
+    );
 
     final body = opportunityAsync.when(
       data: (opportunity) => LayoutBuilder(
@@ -53,10 +55,7 @@ class BasketPreviewPage extends ConsumerWidget {
           return Column(
             children: [
               const BasketFlowStepper(currentStep: BasketFlowStep.preview),
-              if (bounded)
-                Expanded(child: content)
-              else
-                content,
+              if (bounded) Expanded(child: content) else content,
             ],
           );
         },
@@ -81,21 +80,20 @@ class BasketPreviewPage extends ConsumerWidget {
       error: (err, stack) => AmErrorWidget(
         message: basketApiErrorMessage(err),
         onRetry: () {
-          ref.invalidate(basketPreviewProvider(
-            etfIsin: etfIsin,
-            userId: userId,
-            portfolioId: portfolioId,
-            seededOpportunity: seededOpportunity,
-          ));
+          ref.invalidate(
+            basketPreviewProvider(
+              etfIsin: etfIsin,
+              userId: userId,
+              portfolioId: portfolioId,
+              seededOpportunity: seededOpportunity,
+            ),
+          );
         },
       ),
     );
 
     if (embedded) {
-      return ColoredBox(
-        color: context.colors.scaffoldBackground,
-        child: body,
-      );
+      return ColoredBox(color: context.colors.scaffoldBackground, child: body);
     }
 
     return Scaffold(
@@ -146,9 +144,14 @@ class _BasketContentState extends ConsumerState<_BasketContent> {
   @override
   Widget build(BuildContext context) {
     final available =
-        _opportunity.remainingPortfolioValue ?? _opportunity.totalPortfolioValue ?? 0;
-    final formatter =
-        NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+        _opportunity.remainingPortfolioValue ??
+        _opportunity.totalPortfolioValue ??
+        0;
+    final formatter = NumberFormat.currency(
+      locale: 'en_IN',
+      symbol: '₹',
+      decimalDigits: 0,
+    );
 
     // Page scrolls as a whole; tables are not independently scrollable.
     // Sticky action bar stays pinned at the bottom of the viewport.
@@ -186,8 +189,8 @@ class _BasketContentState extends ConsumerState<_BasketContent> {
           primaryIcon: Icons.arrow_forward,
           onPrimary: () {
             final flow = ref.read(basketFlowControllerProvider);
-            final opportunity = (flow.currentOpportunity?.etfIsin ==
-                    _opportunity.etfIsin)
+            final opportunity =
+                (flow.currentOpportunity?.etfIsin == _opportunity.etfIsin)
                 ? (flow.currentOpportunity ?? _opportunity)
                 : _opportunity;
             BasketNavigation.openCreator(

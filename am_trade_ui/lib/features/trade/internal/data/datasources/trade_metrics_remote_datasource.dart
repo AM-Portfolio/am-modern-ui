@@ -13,8 +13,8 @@ class TradeMetricsRemoteDataSourceImpl implements TradeMetricsRemoteDataSource {
   const TradeMetricsRemoteDataSourceImpl({
     required ApiClient apiClient,
     required TradeApiConfig tradeConfig,
-  }) : _apiClient = apiClient,
-       _tradeConfig = tradeConfig;
+  })  : _apiClient = apiClient,
+        _tradeConfig = tradeConfig;
 
   final ApiClient _apiClient;
   final TradeApiConfig _tradeConfig;
@@ -23,14 +23,13 @@ class TradeMetricsRemoteDataSourceImpl implements TradeMetricsRemoteDataSource {
     final cleanBase = baseUrl.endsWith('/')
         ? baseUrl.substring(0, baseUrl.length - 1)
         : baseUrl;
-    final cleanResource = resource.startsWith('/')
-        ? resource
-        : '/$resource';
+    final cleanResource = resource.startsWith('/') ? resource : '/$resource';
     return '$cleanBase$cleanResource';
   }
 
   @override
-  Future<TradeMetricsResponseDto> getMetrics(MetricsFilterRequestDto filter) async {
+  Future<TradeMetricsResponseDto> getMetrics(
+      MetricsFilterRequestDto filter) async {
     AppLogger.methodEntry(
       'getMetrics',
       tag: 'TradeMetricsRemoteDataSource',
@@ -38,8 +37,8 @@ class TradeMetricsRemoteDataSourceImpl implements TradeMetricsRemoteDataSource {
     );
 
     try {
-      // Assuming endpoint is /v1/metrics/analyze 
-      // or /v1/trades/metrics based on common patterns. 
+      // Assuming endpoint is /v1/metrics/analyze
+      // or /v1/trades/metrics based on common patterns.
       // I will use a hypothetical endpoint consistent with Trade API.
       final fullUri = _buildUri(_tradeConfig.baseUrl, 'v1/metrics');
 
@@ -47,13 +46,15 @@ class TradeMetricsRemoteDataSourceImpl implements TradeMetricsRemoteDataSource {
         fullUri,
         body: filter.toJson(),
         parser: (data) {
-           if (data == null) throw Exception('No data returned for metrics');
-           return TradeMetricsResponseDto.fromJson(data as Map<String, dynamic>);
+          if (data == null) throw Exception('No data returned for metrics');
+          return TradeMetricsResponseDto.fromJson(data as Map<String, dynamic>);
         },
       );
 
-      AppLogger.info('Trade metrics fetched successfully', tag: 'TradeMetricsRemoteDataSource');
-      AppLogger.methodExit('getMetrics', tag: 'TradeMetricsRemoteDataSource', result: 'success');
+      AppLogger.info('Trade metrics fetched successfully',
+          tag: 'TradeMetricsRemoteDataSource');
+      AppLogger.methodExit('getMetrics',
+          tag: 'TradeMetricsRemoteDataSource', result: 'success');
       return response;
     } catch (e) {
       AppLogger.error(
@@ -65,9 +66,11 @@ class TradeMetricsRemoteDataSourceImpl implements TradeMetricsRemoteDataSource {
       rethrow;
     }
   }
+
   @override
   Future<List<String>> getMetricTypes() async {
-    AppLogger.methodEntry('getMetricTypes', tag: 'TradeMetricsRemoteDataSource');
+    AppLogger.methodEntry('getMetricTypes',
+        tag: 'TradeMetricsRemoteDataSource');
 
     try {
       final fullUri = _buildUri(_tradeConfig.baseUrl, 'v1/metrics/types');
@@ -75,13 +78,15 @@ class TradeMetricsRemoteDataSourceImpl implements TradeMetricsRemoteDataSource {
       final response = await _apiClient.get<List<String>>(
         fullUri,
         parser: (data) {
-           if (data == null) return [];
-           return (data as List).map((e) => e.toString()).toList();
+          if (data == null) return [];
+          return (data as List).map((e) => e.toString()).toList();
         },
       );
 
-      AppLogger.info('Metric types fetched successfully', tag: 'TradeMetricsRemoteDataSource');
-      AppLogger.methodExit('getMetricTypes', tag: 'TradeMetricsRemoteDataSource', result: 'success');
+      AppLogger.info('Metric types fetched successfully',
+          tag: 'TradeMetricsRemoteDataSource');
+      AppLogger.methodExit('getMetricTypes',
+          tag: 'TradeMetricsRemoteDataSource', result: 'success');
       return response;
     } catch (e) {
       AppLogger.error(
@@ -95,4 +100,3 @@ class TradeMetricsRemoteDataSourceImpl implements TradeMetricsRemoteDataSource {
     }
   }
 }
-

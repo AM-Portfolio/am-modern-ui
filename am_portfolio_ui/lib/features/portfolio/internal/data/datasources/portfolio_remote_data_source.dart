@@ -24,9 +24,7 @@ abstract class PortfolioRemoteDataSource {
   Future<PortfolioHoldingsDto> getPortfolioHoldings();
 
   /// Get portfolio holdings from remote API for specific portfolio
-  Future<PortfolioHoldingsDto> getPortfolioHoldingsById(
-    String portfolioId,
-  );
+  Future<PortfolioHoldingsDto> getPortfolioHoldingsById(String portfolioId);
 
   /// Get portfolio summary from remote API (legacy - uses default portfolio)
   Future<PortfolioSummaryDto> getPortfolioSummary([String? interval]);
@@ -103,9 +101,7 @@ abstract class PortfolioRemoteDataSource {
   );
 
   /// Get intraday data for 1D chart
-  Future<List<PortfolioIntradayDto>> getPortfolioIntraday(
-    String? portfolioId,
-  );
+  Future<List<PortfolioIntradayDto>> getPortfolioIntraday(String? portfolioId);
 }
 
 /// Concrete implementation of portfolio remote data source
@@ -120,7 +116,6 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
 
   final ApiClient _apiClient;
   final bool _useMockData;
-
 
   // Use localized endpoints
   String get _baseUrl => PortfolioEndpoints.baseUrl;
@@ -216,9 +211,7 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
     CommonLogger.methodEntry(
       'getPortfolioHoldingsById',
       tag: 'PortfolioRemoteDataSource',
-      metadata: {
-        'portfolioId': portfolioId,
-      },
+      metadata: {'portfolioId': portfolioId},
     );
 
     try {
@@ -318,7 +311,9 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
 
       // Construct full URI from portfolio config without userId query parameter
       final baseUri = _buildUri(_baseUrl, PortfolioEndpoints.summary);
-      final fullUri = interval != null ? '$baseUri?interval=$interval' : baseUri;
+      final fullUri = interval != null
+          ? '$baseUri?interval=$interval'
+          : baseUri;
 
       // Use ApiClient for consistent error handling and logging
       final summaryResponse = await _apiClient.get<PortfolioSummaryDto>(
@@ -381,9 +376,7 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
     CommonLogger.methodEntry(
       'getPortfolioSummaryById',
       tag: 'PortfolioRemoteDataSource',
-      metadata: {
-        'portfolioId': portfolioId,
-      },
+      metadata: {'portfolioId': portfolioId},
     );
 
     try {
@@ -702,13 +695,12 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
     if (wire != null && wire.trim().isNotEmpty) {
       params['wire'] = wire.trim();
     }
-    final base = _buildUri(
-      _baseUrl,
-      PortfolioEndpoints.suggest(portfolioId),
-    );
+    final base = _buildUri(_baseUrl, PortfolioEndpoints.suggest(portfolioId));
     final qs = params.entries
-        .map((e) =>
-            '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
+        .map(
+          (e) =>
+              '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}',
+        )
         .join('&');
     final baseUri = '$base?$qs';
     final result = await _apiClient.get<Map<String, dynamic>>(
@@ -719,7 +711,9 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
     if (raw is! List) return const [];
     return raw
         .whereType<Map>()
-        .map((e) => IntelligenceSuggestItem.fromJson(Map<String, dynamic>.from(e)))
+        .map(
+          (e) => IntelligenceSuggestItem.fromJson(Map<String, dynamic>.from(e)),
+        )
         .where((e) => e.label.trim().isNotEmpty)
         .toList();
   }
@@ -794,12 +788,8 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
       if (className != null && className.isNotEmpty) {
         body['className'] = className;
       }
-      
-      await _apiClient.put<void>(
-        baseUri,
-        body: body,
-        parser: (_) {},
-      );
+
+      await _apiClient.put<void>(baseUri, body: body, parser: (_) {});
       CommonLogger.methodExit(
         'replaceAssetClassList',
         tag: 'PortfolioRemoteDataSource',
@@ -1075,8 +1065,10 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
     String? portfolioId,
     String timeFrame,
   ) async {
-    CommonLogger.methodEntry('getPortfolioHistory',
-        tag: 'PortfolioRemoteDataSource');
+    CommonLogger.methodEntry(
+      'getPortfolioHistory',
+      tag: 'PortfolioRemoteDataSource',
+    );
     try {
       final String path = (portfolioId == null || portfolioId == 'all')
           ? '/v1/portfolios/history'
@@ -1098,8 +1090,11 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
       );
       return result;
     } catch (e) {
-      CommonLogger.error('Failed to fetch portfolio history',
-          tag: 'PortfolioRemoteDataSource', error: e);
+      CommonLogger.error(
+        'Failed to fetch portfolio history',
+        tag: 'PortfolioRemoteDataSource',
+        error: e,
+      );
       rethrow;
     }
   }
@@ -1108,8 +1103,10 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
   Future<List<PortfolioIntradayDto>> getPortfolioIntraday(
     String? portfolioId,
   ) async {
-    CommonLogger.methodEntry('getPortfolioIntraday',
-        tag: 'PortfolioRemoteDataSource');
+    CommonLogger.methodEntry(
+      'getPortfolioIntraday',
+      tag: 'PortfolioRemoteDataSource',
+    );
     try {
       final String path = (portfolioId == null || portfolioId == 'all')
           ? '/v1/portfolios/intraday'
@@ -1131,8 +1128,11 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
       );
       return result;
     } catch (e) {
-      CommonLogger.error('Failed to fetch portfolio intraday',
-          tag: 'PortfolioRemoteDataSource', error: e);
+      CommonLogger.error(
+        'Failed to fetch portfolio intraday',
+        tag: 'PortfolioRemoteDataSource',
+        error: e,
+      );
       rethrow;
     }
   }

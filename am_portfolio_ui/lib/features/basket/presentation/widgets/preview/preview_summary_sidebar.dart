@@ -30,9 +30,9 @@ class PreviewSummarySidebar extends StatelessWidget {
         children: [
           Text(
             'Health Summary',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: AppSpacing.lg),
           Center(
@@ -54,7 +54,8 @@ class PreviewSummarySidebar extends StatelessWidget {
                   children: [
                     Text(
                       '${matchScore.toStringAsFixed(0)}%',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: scoreColor,
                           ),
@@ -62,8 +63,8 @@ class PreviewSummarySidebar extends StatelessWidget {
                     Text(
                       'Match Score',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: context.colors.textSecondary,
-                          ),
+                        color: context.colors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -102,9 +103,7 @@ class PreviewSummarySidebar extends StatelessWidget {
                 backgroundColor: ModuleColors.portfolio,
                 foregroundColor: context.colors.actionPrimaryFg,
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                shape: RoundedRectangleBorder(
-                  borderRadius: AppRadii.button,
-                ),
+                shape: RoundedRectangleBorder(borderRadius: AppRadii.button),
               ),
               child: const Text('Customize & Create Portfolio'),
             ),
@@ -115,7 +114,11 @@ class PreviewSummarySidebar extends StatelessWidget {
   }
 
   Widget _buildStatRow(
-      BuildContext context, String label, String value, Color color) {
+    BuildContext context,
+    String label,
+    String value,
+    Color color,
+  ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -124,25 +127,22 @@ class PreviewSummarySidebar extends StatelessWidget {
             Container(
               width: 8,
               height: 8,
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-              ),
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             ),
             const SizedBox(width: AppSpacing.sm),
             Text(
               label,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: context.colors.textSecondary,
-                  ),
+                color: context.colors.textSecondary,
+              ),
             ),
           ],
         ),
         Text(
           value,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
       ],
     );

@@ -17,13 +17,16 @@ abstract class CalendarPeriodData {
   int get winningTrades;
   int get losingTrades;
 
-  double get winRate => totalTrades > 0 ? winningTrades / totalTrades * 100 : 0.0;
+  double get winRate =>
+      totalTrades > 0 ? winningTrades / totalTrades * 100 : 0.0;
   bool get isProfitable => totalPnL > 0;
 }
 
 /// Yearly calendar data model
 @freezed
-abstract class YearlyCalendarData with _$YearlyCalendarData implements CalendarPeriodData {
+abstract class YearlyCalendarData
+    with _$YearlyCalendarData
+    implements CalendarPeriodData {
   const factory YearlyCalendarData({
     required int year,
     required List<MonthSummary> months,
@@ -45,7 +48,8 @@ abstract class YearlyCalendarData with _$YearlyCalendarData implements CalendarP
   DateTime get endDate => DateTime(year, 12, 31);
 
   @override
-  double get winRate => totalTrades > 0 ? winningTrades / totalTrades * 100 : 0.0;
+  double get winRate =>
+      totalTrades > 0 ? winningTrades / totalTrades * 100 : 0.0;
 
   @override
   bool get isProfitable => totalPnL > 0;
@@ -68,7 +72,9 @@ abstract class YearlyCalendarData with _$YearlyCalendarData implements CalendarP
 
 /// Monthly calendar data model
 @freezed
-abstract class MonthlyCalendarData with _$MonthlyCalendarData implements CalendarPeriodData {
+abstract class MonthlyCalendarData
+    with _$MonthlyCalendarData
+    implements CalendarPeriodData {
   const factory MonthlyCalendarData({
     required int year,
     required int month,
@@ -92,7 +98,8 @@ abstract class MonthlyCalendarData with _$MonthlyCalendarData implements Calenda
   DateTime get endDate => DateTime(year, month + 1, 0); // Last day of month
 
   @override
-  double get winRate => totalTrades > 0 ? winningTrades / totalTrades * 100 : 0.0;
+  double get winRate =>
+      totalTrades > 0 ? winningTrades / totalTrades * 100 : 0.0;
 
   @override
   bool get isProfitable => totalPnL > 0;
@@ -118,7 +125,9 @@ abstract class MonthlyCalendarData with _$MonthlyCalendarData implements Calenda
 
 /// Daily calendar data model
 @freezed
-abstract class DailyCalendarData with _$DailyCalendarData implements CalendarPeriodData {
+abstract class DailyCalendarData
+    with _$DailyCalendarData
+    implements CalendarPeriodData {
   const factory DailyCalendarData({
     required DateTime date,
     required List<TradeDetails> trades,
@@ -140,7 +149,8 @@ abstract class DailyCalendarData with _$DailyCalendarData implements CalendarPer
   DateTime get endDate => date;
 
   @override
-  double get winRate => totalTrades > 0 ? winningTrades / totalTrades * 100 : 0.0;
+  double get winRate =>
+      totalTrades > 0 ? winningTrades / totalTrades * 100 : 0.0;
 
   @override
   @override
@@ -156,7 +166,9 @@ abstract class DailyCalendarData with _$DailyCalendarData implements CalendarPer
   /// Get most traded symbol
   String? get mostTradedSymbol {
     if (symbolDistribution.isEmpty) return null;
-    return symbolDistribution.entries.reduce((a, b) => a.value > b.value ? a : b).key;
+    return symbolDistribution.entries
+        .reduce((a, b) => a.value > b.value ? a : b)
+        .key;
   }
 }
 
@@ -175,12 +187,26 @@ abstract class MonthSummary with _$MonthSummary {
 
   const MonthSummary._();
 
-  double get winRate => totalTrades > 0 ? winningTrades / totalTrades * 100 : 0.0;
+  double get winRate =>
+      totalTrades > 0 ? winningTrades / totalTrades * 100 : 0.0;
   bool get isProfitable => totalPnL > 0;
   DateTime get date => DateTime(year, month);
 
   String get monthName {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
     return months[month - 1];
   }
 }
@@ -200,7 +226,8 @@ abstract class DaySummary with _$DaySummary {
 
   const DaySummary._();
 
-  double get winRate => totalTrades > 0 ? winningTrades / totalTrades * 100 : 0.0;
+  double get winRate =>
+      totalTrades > 0 ? winningTrades / totalTrades * 100 : 0.0;
   bool get isProfitable => totalPnL > 0;
   DateTime get date => DateTime(year, month, day);
 
@@ -235,15 +262,19 @@ abstract class CalendarNavigationState with _$CalendarNavigationState {
   }
 
   /// Navigate to monthly view
-  CalendarNavigationState toMonthly(int selectedMonth) => CalendarNavigationState(
-    viewType: CalendarViewType.monthly,
-    year: year,
-    month: selectedMonth,
-    breadcrumbs: [
-      CalendarBreadcrumb(label: '$year', year: year),
-      CalendarBreadcrumb(label: _getMonthName(selectedMonth), year: year, month: selectedMonth),
-    ],
-  );
+  CalendarNavigationState toMonthly(int selectedMonth) =>
+      CalendarNavigationState(
+        viewType: CalendarViewType.monthly,
+        year: year,
+        month: selectedMonth,
+        breadcrumbs: [
+          CalendarBreadcrumb(label: '$year', year: year),
+          CalendarBreadcrumb(
+              label: _getMonthName(selectedMonth),
+              year: year,
+              month: selectedMonth),
+        ],
+      );
 
   /// Navigate to daily view
   CalendarNavigationState toDaily(int selectedDay) {
@@ -257,25 +288,30 @@ abstract class CalendarNavigationState with _$CalendarNavigationState {
       day: selectedDay,
       breadcrumbs: [
         CalendarBreadcrumb(label: '$year', year: year),
-        CalendarBreadcrumb(label: _getMonthName(month!), year: year, month: month),
-        CalendarBreadcrumb(label: '$selectedDay ${_getMonthName(month!)}', year: year, month: month, day: selectedDay),
+        CalendarBreadcrumb(
+            label: _getMonthName(month!), year: year, month: month),
+        CalendarBreadcrumb(
+            label: '$selectedDay ${_getMonthName(month!)}',
+            year: year,
+            month: month,
+            day: selectedDay),
       ],
     );
   }
 
   /// Navigate back to yearly view
   CalendarNavigationState toYearly() => CalendarNavigationState(
-    viewType: CalendarViewType.yearly,
-    year: year,
-    breadcrumbs: [CalendarBreadcrumb(label: '$year', year: year)],
-  );
+        viewType: CalendarViewType.yearly,
+        year: year,
+        breadcrumbs: [CalendarBreadcrumb(label: '$year', year: year)],
+      );
 
   /// Navigate to different year
   CalendarNavigationState changeYear(int newYear) => CalendarNavigationState(
-    viewType: CalendarViewType.yearly,
-    year: newYear,
-    breadcrumbs: [CalendarBreadcrumb(label: '$newYear', year: newYear)],
-  );
+        viewType: CalendarViewType.yearly,
+        year: newYear,
+        breadcrumbs: [CalendarBreadcrumb(label: '$newYear', year: newYear)],
+      );
 
   String _getMonthName(int month) {
     const months = [
@@ -299,6 +335,9 @@ abstract class CalendarNavigationState with _$CalendarNavigationState {
 /// Breadcrumb for navigation
 @freezed
 abstract class CalendarBreadcrumb with _$CalendarBreadcrumb {
-  const factory CalendarBreadcrumb({required String label, required int year, int? month, int? day}) =
-      _CalendarBreadcrumb;
+  const factory CalendarBreadcrumb(
+      {required String label,
+      required int year,
+      int? month,
+      int? day}) = _CalendarBreadcrumb;
 }

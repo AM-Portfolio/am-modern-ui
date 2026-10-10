@@ -22,7 +22,8 @@ class TradeControllerCubit extends Cubit<TradeControllerState> {
         _deleteTrade = deleteTrade,
         _getTradesByPortfolio = getTradesByPortfolio,
         super(const TradeControllerState.initial()) {
-    AppLogger.info('TradeControllerCubit initialized', tag: 'TradeControllerCubit');
+    AppLogger.info('TradeControllerCubit initialized',
+        tag: 'TradeControllerCubit');
   }
 
   final AddTrade _addTrade;
@@ -39,7 +40,11 @@ class TradeControllerCubit extends Cubit<TradeControllerState> {
     AppLogger.methodEntry(
       'loadTrades',
       tag: 'TradeControllerCubit',
-      params: {'portfolioId': portfolioId, 'symbols': symbols, 'showLoading': showLoading},
+      params: {
+        'portfolioId': portfolioId,
+        'symbols': symbols,
+        'showLoading': showLoading
+      },
     );
 
     if (showLoading) {
@@ -128,7 +133,8 @@ class TradeControllerCubit extends Cubit<TradeControllerState> {
       if (isClosed) return;
 
       // Reload trades silently in the background so it doesn't interrupt UI success transitions
-      await loadTrades(portfolioId: createdTrade.portfolioId, showLoading: false);
+      await loadTrades(
+          portfolioId: createdTrade.portfolioId, showLoading: false);
     } catch (e) {
       if (isClosed) return;
       AppLogger.error(
@@ -174,7 +180,8 @@ class TradeControllerCubit extends Cubit<TradeControllerState> {
       if (isClosed) return;
 
       // Reload trades silently in the background so it doesn't interrupt UI success transitions
-      await loadTrades(portfolioId: updatedTrade.portfolioId, showLoading: false);
+      await loadTrades(
+          portfolioId: updatedTrade.portfolioId, showLoading: false);
     } catch (e) {
       if (isClosed) return;
       AppLogger.error(
@@ -273,4 +280,3 @@ class TradeControllerCubit extends Cubit<TradeControllerState> {
     return super.close();
   }
 }
-

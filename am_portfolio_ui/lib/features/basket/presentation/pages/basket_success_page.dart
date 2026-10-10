@@ -76,7 +76,8 @@ class BasketSuccessPage extends StatelessWidget {
                     const SizedBox(height: AppSpacing.xxl),
                     Text(
                       'Your basket is ready',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: context.colors.textPrimary,
                             fontSize: compact ? 22 : null,
@@ -87,8 +88,8 @@ class BasketSuccessPage extends StatelessWidget {
                     Text(
                       basketName,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: context.colors.textSecondary,
-                          ),
+                        color: context.colors.textSecondary,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: AppSpacing.xl),
@@ -107,14 +108,16 @@ class BasketSuccessPage extends StatelessWidget {
                             children: [
                               Text(
                                 'Match Score',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
                                       color: context.colors.textSecondary,
                                     ),
                               ),
                               const SizedBox(width: AppSpacing.md),
                               Text(
                                 '${opportunity.replicaScore.toStringAsFixed(1)}%',
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                style: Theme.of(context).textTheme.titleLarge
+                                    ?.copyWith(
                                       fontWeight: FontWeight.bold,
                                       color: ModuleColors.portfolio,
                                     ),
@@ -137,7 +140,10 @@ class BasketSuccessPage extends StatelessWidget {
                                     ),
                                     Text(
                                       '${customWeightSum.toStringAsFixed(1)}%',
-                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(
                                             fontWeight: FontWeight.bold,
                                           ),
                                     ),
@@ -154,7 +160,10 @@ class BasketSuccessPage extends StatelessWidget {
                                     ),
                                     Text(
                                       '₹${customValue.toStringAsFixed(0)}',
-                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(
                                             fontWeight: FontWeight.bold,
                                           ),
                                     ),
@@ -183,12 +192,15 @@ class BasketSuccessPage extends StatelessWidget {
                                 },
                                 style: FilledButton.styleFrom(
                                   backgroundColor: ModuleColors.portfolio,
-                                  foregroundColor: context.colors.actionPrimaryFg,
+                                  foregroundColor:
+                                      context.colors.actionPrimaryFg,
                                   padding: const EdgeInsets.symmetric(
                                     vertical: AppSpacing.md,
                                   ),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(AppRadii.md),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadii.md,
+                                    ),
                                   ),
                                 ),
                                 child: const Text(
@@ -214,14 +226,17 @@ class BasketSuccessPage extends StatelessWidget {
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: ModuleColors.portfolio,
                                   side: BorderSide(
-                                    color: ModuleColors.portfolio
-                                        .withValues(alpha: 0.55),
+                                    color: ModuleColors.portfolio.withValues(
+                                      alpha: 0.55,
+                                    ),
                                   ),
                                   padding: const EdgeInsets.symmetric(
                                     vertical: AppSpacing.md,
                                   ),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(AppRadii.md),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadii.md,
+                                    ),
                                   ),
                                 ),
                                 child: const Text('View Basket'),

@@ -113,7 +113,8 @@ class JournalDataTable extends StatelessWidget {
                       ),
                       Expanded(
                         flex: 2,
-                        child: Text(entry.setup ?? entry.preTradePlan?.setup ?? '—'),
+                        child: Text(
+                            entry.setup ?? entry.preTradePlan?.setup ?? '—'),
                       ),
                       Expanded(
                         flex: 2,
@@ -124,7 +125,9 @@ class JournalDataTable extends StatelessWidget {
                       ),
                       Expanded(
                         child: Text(
-                          r == null ? '—' : '${r >= 0 ? '+' : ''}${r.toStringAsFixed(2)}R',
+                          r == null
+                              ? '—'
+                              : '${r >= 0 ? '+' : ''}${r.toStringAsFixed(2)}R',
                           style: TextStyle(
                             color: r == null
                                 ? null
@@ -155,7 +158,8 @@ class JournalDataTable extends StatelessWidget {
                           if (value == 'delete') onDelete?.call(entry);
                         },
                         itemBuilder: (_) => const [
-                          PopupMenuItem(value: 'archive', child: Text('Archive')),
+                          PopupMenuItem(
+                              value: 'archive', child: Text('Archive')),
                           PopupMenuItem(value: 'delete', child: Text('Delete')),
                         ],
                       ),

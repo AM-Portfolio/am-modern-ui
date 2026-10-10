@@ -133,7 +133,8 @@ class _TradeJournalListPageState extends ConsumerState<TradeJournalListPage> {
                                 Text(error!),
                                 const SizedBox(height: 12),
                                 FilledButton(
-                                  onPressed: widget.journalCubit.loadJournalEntries,
+                                  onPressed:
+                                      widget.journalCubit.loadJournalEntries,
                                   child: const Text('Retry'),
                                 ),
                               ],
@@ -148,11 +149,12 @@ class _TradeJournalListPageState extends ConsumerState<TradeJournalListPage> {
                                 selectedIds: _selectedIds,
                                 onSelectionChanged: (ids) =>
                                     setState(() => _selectedIds = ids),
-                                onRowTap: (entry) => _openWorkflow(entry: entry),
+                                onRowTap: (entry) =>
+                                    _openWorkflow(entry: entry),
                                 onArchive: (e) =>
                                     widget.journalCubit.bulkArchive([e.id]),
-                                onDelete: (e) =>
-                                    widget.journalCubit.removeJournalEntry(e.id),
+                                onDelete: (e) => widget.journalCubit
+                                    .removeJournalEntry(e.id),
                               ),
               ),
             ],
@@ -238,7 +240,8 @@ class _TradeJournalListPageState extends ConsumerState<TradeJournalListPage> {
                 isDense: true,
                 border: OutlineInputBorder(),
               ),
-              onSubmitted: (q) => widget.journalCubit.setFilters(searchQuery: q),
+              onSubmitted: (q) =>
+                  widget.journalCubit.setFilters(searchQuery: q),
             ),
           ),
           OutlinedButton.icon(

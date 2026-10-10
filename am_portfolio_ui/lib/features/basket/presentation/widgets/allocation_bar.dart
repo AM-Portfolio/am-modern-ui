@@ -28,9 +28,7 @@ class AllocationBar extends StatelessWidget {
               children: segments.map((segment) {
                 return Expanded(
                   flex: (segment.percentage * 100).round(),
-                  child: Container(
-                    color: segment.color,
-                  ),
+                  child: Container(color: segment.color),
                 );
               }).toList(),
             ),
@@ -57,16 +55,16 @@ class AllocationBar extends StatelessWidget {
                 Text(
                   segment.label,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: context.textTertiary,
-                        fontSize: 11,
-                      ),
+                    color: context.textTertiary,
+                    fontSize: 11,
+                  ),
                 ),
                 Text(
                   ' ${(segment.percentage * 100).toStringAsFixed(1)}%',
-                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                         fontSize: 11,
-                      ),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                  ),
                 ),
               ],
             );

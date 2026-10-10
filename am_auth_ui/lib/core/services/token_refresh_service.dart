@@ -82,7 +82,8 @@ class TokenRefreshService {
     }
     final expiry = await _storageService.getTokenExpiry();
     if (expiry == null) return;
-    final refreshLead = Duration(minutes: _featureFlags.tokenRefreshIntervalMin);
+    final refreshLead =
+        Duration(minutes: _featureFlags.tokenRefreshIntervalMin);
     if (DateTime.now().isAfter(expiry.subtract(refreshLead))) {
       await refreshAccessToken();
     }

@@ -11,6 +11,7 @@ class PortfolioMetricCard extends StatelessWidget {
   final String value;
   final String subtitle;
   final Color accentColor;
+
   /// Glow / border / watermark chrome. When null, falls back to [accentColor].
   /// Use module brand (e.g. [ModuleColors.portfolio]) so P&L numbers stay green/red.
   final Color? chromeColor;
@@ -109,8 +110,12 @@ class PortfolioMetricCard extends StatelessWidget {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            cardBase.withValues(alpha: context.isDark ? 0.3 : 0.5),
-                            cardBase.withValues(alpha: context.isDark ? 0.1 : 0.15),
+                            cardBase.withValues(
+                              alpha: context.isDark ? 0.3 : 0.5,
+                            ),
+                            cardBase.withValues(
+                              alpha: context.isDark ? 0.1 : 0.15,
+                            ),
                           ],
                         ),
                   border: Border.all(
@@ -123,22 +128,21 @@ class PortfolioMetricCard extends StatelessWidget {
                   boxShadow: compact
                       ? null
                       : glowBorder
-                          ? [
-                              BoxShadow(
-                                color: chrome.withValues(alpha: 0.22),
-                                blurRadius: 24,
-                                spreadRadius: -2,
-                                offset: const Offset(0, 4),
-                              ),
-                            ]
-                          : [
-                              BoxShadow(
-                                color: context.shadow(
-                                    context.isDark ? 0.3 : 0.06),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
+                      ? [
+                          BoxShadow(
+                            color: chrome.withValues(alpha: 0.22),
+                            blurRadius: 24,
+                            spreadRadius: -2,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : [
+                          BoxShadow(
+                            color: context.shadow(context.isDark ? 0.3 : 0.06),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(18),
@@ -155,7 +159,9 @@ class PortfolioMetricCard extends StatelessWidget {
                               icon,
                               size: compact ? 56 : 76,
                               color: isHighlight
-                                  ? context.colors.actionPrimaryFg.withValues(alpha: 0.14)
+                                  ? context.colors.actionPrimaryFg.withValues(
+                                      alpha: 0.14,
+                                    )
                                   : chrome.withValues(alpha: 0.07),
                             ),
                           ),
@@ -164,7 +170,9 @@ class PortfolioMetricCard extends StatelessWidget {
                       // ── Main Content ──
                       Padding(
                         padding: EdgeInsets.symmetric(
-                            horizontal: hPad, vertical: vPad),
+                          horizontal: hPad,
+                          vertical: vPad,
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
@@ -177,8 +185,12 @@ class PortfolioMetricCard extends StatelessWidget {
                               style: textTheme.bodySmall?.copyWith(
                                 fontSize: compact ? 10 : 11,
                                 color: isHighlight
-                                    ? context.colors.actionPrimaryFg.withValues(alpha: 0.85)
-                                    : context.glassOverlay(context.isDark ? 0.5 : 0.45),
+                                    ? context.colors.actionPrimaryFg.withValues(
+                                        alpha: 0.85,
+                                      )
+                                    : context.glassOverlay(
+                                        context.isDark ? 0.5 : 0.45,
+                                      ),
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: 0.4,
                               ),
@@ -197,14 +209,15 @@ class PortfolioMetricCard extends StatelessWidget {
                                   color: isHighlight
                                       ? context.colors.actionPrimaryFg
                                       : (useAccentValue
-                                          ? accent
-                                          : context.textPrimary),
+                                            ? accent
+                                            : context.textPrimary),
                                   height: 1.1,
                                   shadows: (glowBorder && context.isDark)
                                       ? [
                                           Shadow(
-                                            color: accent
-                                                .withValues(alpha: 0.35),
+                                            color: accent.withValues(
+                                              alpha: 0.35,
+                                            ),
                                             blurRadius: 12,
                                           ),
                                         ]
@@ -225,7 +238,8 @@ class PortfolioMetricCard extends StatelessWidget {
                                         : Icons.arrow_downward_rounded,
                                     size: compact ? 10 : 12,
                                     color: isHighlight
-                                        ? context.colors.actionPrimaryFg.withValues(alpha: 0.9)
+                                        ? context.colors.actionPrimaryFg
+                                              .withValues(alpha: 0.9)
                                         : accent,
                                   ),
                                   const SizedBox(width: 2),
@@ -236,15 +250,15 @@ class PortfolioMetricCard extends StatelessWidget {
                                     style: textTheme.bodySmall?.copyWith(
                                       fontSize: compact ? 9 : 11,
                                       color: isHighlight
-                                          ? context.colors.actionPrimaryFg.withValues(alpha: 0.75)
+                                          ? context.colors.actionPrimaryFg
+                                                .withValues(alpha: 0.75)
                                           : (isPositive != null
-                                              ? accent
-                                                  .withValues(alpha: 0.9)
-                                              : context.glassOverlay(0.4)),
+                                                ? accent.withValues(alpha: 0.9)
+                                                : context.glassOverlay(0.4)),
                                       fontWeight:
                                           (isPositive != null && isPositive!)
-                                              ? FontWeight.w600
-                                              : FontWeight.w400,
+                                          ? FontWeight.w600
+                                          : FontWeight.w400,
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),

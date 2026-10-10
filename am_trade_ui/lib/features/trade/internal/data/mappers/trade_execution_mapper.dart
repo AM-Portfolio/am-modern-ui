@@ -10,7 +10,8 @@ class TradeExecutionMapper {
     return TradeExecutionBasicInfo(
       tradeId: dto.tradeId,
       orderId: dto.orderId,
-      tradeDate: dto.tradeDate != null ? DateTime.tryParse(dto.tradeDate!) : null,
+      tradeDate:
+          dto.tradeDate != null ? DateTime.tryParse(dto.tradeDate!) : null,
       orderExecutionTime: dto.orderExecutionTime != null
           ? DateTime.tryParse(dto.orderExecutionTime!)
           : null,
@@ -19,8 +20,7 @@ class TradeExecutionMapper {
     );
   }
 
-  static TradeExecutionInfo? fromExecutionInfoDto(
-      TradeExecutionInfoDto? dto) {
+  static TradeExecutionInfo? fromExecutionInfoDto(TradeExecutionInfoDto? dto) {
     if (dto == null) return null;
 
     return TradeExecutionInfo(

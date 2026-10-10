@@ -97,9 +97,9 @@ class _PaperWatchlistMobileState extends State<PaperWatchlistMobile> {
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Text(
                 'Quotes unavailable — pull down to refresh',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colors.textSecondary,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: colors.textSecondary),
               ),
             ),
           ],

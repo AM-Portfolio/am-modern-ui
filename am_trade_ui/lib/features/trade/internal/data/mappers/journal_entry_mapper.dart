@@ -65,7 +65,8 @@ class JournalEntryMapper {
       );
 
   /// Convert PreTradePlan to PreTradePlanDto
-  static PreTradePlanDto toPreTradePlanDto(PreTradePlan plan) => PreTradePlanDto(
+  static PreTradePlanDto toPreTradePlanDto(PreTradePlan plan) =>
+      PreTradePlanDto(
         setupDescription: plan.setupDescription,
         entryRationale: plan.entryRationale,
         marketContext: plan.marketContext,
@@ -174,9 +175,10 @@ class JournalEntryMapper {
             : null,
         planAdherenceScore: dto.planAdherenceScore,
         checklistCompletionPct: dto.checklistCompletionPct,
-        behaviorPatternSummaries:
-            dto.behaviorPatternSummaries?.map(fromBehaviorPatternDto).toList() ??
-                [],
+        behaviorPatternSummaries: dto.behaviorPatternSummaries
+                ?.map(fromBehaviorPatternDto)
+                .toList() ??
+            [],
         customFields: dto.customFields ?? {},
         entryDate: DateTime.parse(dto.entryDate),
         imageUrls: dto.imageUrls ?? [],

@@ -32,7 +32,6 @@ part '../customize/customize_basket_logic.dart';
 part '../customize/customize_basket_layouts.dart';
 part '../customize/customize_basket_sidebar.dart';
 
-
 // ---------------------------------------------------------------------------
 // PAGE WIDGET
 // ---------------------------------------------------------------------------
@@ -170,9 +169,7 @@ class _ManualBasketCreatorPageState
       flow.setBasketName(name);
     }
     flow.setHasCalculated(_hasCalculated);
-    flow.updateOpportunity(
-      _currentOpportunity.copyWith(composition: _items),
-    );
+    flow.updateOpportunity(_currentOpportunity.copyWith(composition: _items));
   }
 
   @override
@@ -189,6 +186,7 @@ class _ManualBasketCreatorPageState
     _tabController.dispose();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     final isMobile = BasketResponsive.isMobile(context);
@@ -199,8 +197,10 @@ class _ManualBasketCreatorPageState
 
     final heldCount = CustomizeBasketMetrics.heldCount(displayItems);
     final subCount = CustomizeBasketMetrics.substituteCount(displayItems);
-    final missingCount =
-        CustomizeBasketMetrics.missingCount(displayItems, _excludedItems);
+    final missingCount = CustomizeBasketMetrics.missingCount(
+      displayItems,
+      _excludedItems,
+    );
     final excludedCount = _excludedItems.length;
 
     final heldWeight = _currentOpportunity.heldMatchScore ?? 0.0;
@@ -231,8 +231,10 @@ class _ManualBasketCreatorPageState
                   ),
                 ),
               IconButton(
-                icon: Icon(Icons.donut_large_outlined,
-                    color: ModuleColors.portfolio),
+                icon: Icon(
+                  Icons.donut_large_outlined,
+                  color: ModuleColors.portfolio,
+                ),
                 tooltip: 'Portfolio Summary',
                 onPressed: () => _showMobileSummarySheet(
                   context,
@@ -259,32 +261,64 @@ class _ManualBasketCreatorPageState
             ],
           )
         : isTablet
-            ? IconButton(
-                icon: Icon(Icons.assessment_outlined,
-                    color: ModuleColors.portfolio),
-                tooltip: 'Portfolio Summary',
-                onPressed: () =>
-                    setState(() => _showSummaryDrawer = !_showSummaryDrawer),
-              )
-            : IconButton(
-                icon: Icon(_isSidebarCollapsed
-                    ? Icons.keyboard_double_arrow_left
-                    : Icons.keyboard_double_arrow_right),
-                tooltip: _isSidebarCollapsed ? 'Show Summary' : 'Hide Summary',
-                onPressed: () =>
-                    setState(() => _isSidebarCollapsed = !_isSidebarCollapsed),
-              );
+        ? IconButton(
+            icon: Icon(
+              Icons.assessment_outlined,
+              color: ModuleColors.portfolio,
+            ),
+            tooltip: 'Portfolio Summary',
+            onPressed: () =>
+                setState(() => _showSummaryDrawer = !_showSummaryDrawer),
+          )
+        : IconButton(
+            icon: Icon(
+              _isSidebarCollapsed
+                  ? Icons.keyboard_double_arrow_left
+                  : Icons.keyboard_double_arrow_right,
+            ),
+            tooltip: _isSidebarCollapsed ? 'Show Summary' : 'Hide Summary',
+            onPressed: () =>
+                setState(() => _isSidebarCollapsed = !_isSidebarCollapsed),
+          );
 
     final content = isDesktop
-        ? _buildDesktopLayout(context, displayItems, tabItems, heldCount,
-            subCount, missingCount, excludedCount, heldWeight, subWeight,
-            missingWeight, coverage)
+        ? _buildDesktopLayout(
+            context,
+            displayItems,
+            tabItems,
+            heldCount,
+            subCount,
+            missingCount,
+            excludedCount,
+            heldWeight,
+            subWeight,
+            missingWeight,
+            coverage,
+          )
         : isMobile
-            ? _buildMobileLayout(context, displayItems, tabItems, heldCount,
-                subCount, missingCount, excludedCount, coverage)
-            : _buildTabletLayout(context, displayItems, tabItems, heldCount,
-                subCount, missingCount, excludedCount, heldWeight, subWeight,
-                missingWeight, coverage);
+        ? _buildMobileLayout(
+            context,
+            displayItems,
+            tabItems,
+            heldCount,
+            subCount,
+            missingCount,
+            excludedCount,
+            coverage,
+          )
+        : _buildTabletLayout(
+            context,
+            displayItems,
+            tabItems,
+            heldCount,
+            subCount,
+            missingCount,
+            excludedCount,
+            heldWeight,
+            subWeight,
+            missingWeight,
+            coverage,
+          );
 
     final body = Column(
       children: [
@@ -316,13 +350,13 @@ class _ManualBasketCreatorPageState
             child: Scaffold(
               backgroundColor: context.backgroundColor,
               body: body,
-              bottomNavigationBar: _buildBottomActionBar(coverage, displayItems),
+              bottomNavigationBar: _buildBottomActionBar(
+                coverage,
+                displayItems,
+              ),
             ),
           );
 
-    return Theme(
-      data: BasketPanelStyles.accentTheme(context),
-      child: page,
-    );
+    return Theme(data: BasketPanelStyles.accentTheme(context), child: page);
   }
 }

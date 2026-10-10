@@ -30,12 +30,14 @@ class JournalAttachmentSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SharedAttachmentSection(
-    userId: userId.isNotEmpty ? userId : (imageUrls.isNotEmpty ? 'journal' : ''),
-    imageUrls: imageUrls,
-    onAttachmentsChanged: onAttachmentsChanged,
-    featureName: featureName,
-    isEditMode: isEditMode,
-    label: label ?? 'Supporting Evidence',
-    maxAttachments: maxAttachments,
-  );
+        userId: userId.isNotEmpty
+            ? userId
+            : (imageUrls.isNotEmpty ? 'journal' : ''),
+        imageUrls: imageUrls,
+        onAttachmentsChanged: onAttachmentsChanged,
+        featureName: featureName,
+        isEditMode: isEditMode,
+        label: label ?? 'Supporting Evidence',
+        maxAttachments: maxAttachments,
+      );
 }

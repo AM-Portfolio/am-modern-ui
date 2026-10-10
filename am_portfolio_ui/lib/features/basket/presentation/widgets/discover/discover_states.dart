@@ -49,8 +49,9 @@ class DiscoverEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final title =
-        themeSelected ? 'No baskets for this theme' : 'No baskets matched';
+    final title = themeSelected
+        ? 'No baskets for this theme'
+        : 'No baskets matched';
     final body = themeSelected
         ? 'Holdings data may be unavailable for this ETF theme yet. Try Top picks, another theme, or search by symbol/ISIN.'
         : 'Try Top picks or search for an ETF by name or ISIN.';
@@ -64,13 +65,17 @@ class DiscoverEmptyState extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.shopping_basket_outlined,
-                      size: 48, color: context.textTertiary),
+                  Icon(
+                    Icons.shopping_basket_outlined,
+                    size: 48,
+                    color: context.textTertiary,
+                  ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     title,
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w700),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
@@ -87,11 +92,14 @@ class DiscoverEmptyState extends StatelessWidget {
                     alignment: WrapAlignment.center,
                     children: [
                       OutlinedButton(
-                          onPressed: onReset,
-                          child: const Text('Reset filters')),
+                        onPressed: onReset,
+                        child: const Text('Reset filters'),
+                      ),
                       if (onRetry != null)
                         FilledButton(
-                            onPressed: onRetry, child: const Text('Retry')),
+                          onPressed: onRetry,
+                          child: const Text('Retry'),
+                        ),
                     ],
                   ),
                 ],
@@ -129,12 +137,17 @@ class DiscoverErrorState extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error_outline, size: 44, color: context.statusError),
+                  Icon(
+                    Icons.error_outline,
+                    size: 44,
+                    color: context.statusError,
+                  ),
                   const SizedBox(height: AppSpacing.sm + AppSpacing.xs),
                   Text(
                     title,
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w700),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(

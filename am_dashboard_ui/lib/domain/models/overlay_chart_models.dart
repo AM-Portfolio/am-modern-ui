@@ -49,8 +49,7 @@ class PortfolioOverlayHistory {
   final String? phase;
   final String? startedAt;
 
-  bool get isBuilding =>
-      (historyStatus ?? '').toUpperCase() == 'BUILDING';
+  bool get isBuilding => (historyStatus ?? '').toUpperCase() == 'BUILDING';
 }
 
 class OverlayChartState {
@@ -72,16 +71,10 @@ class OverlayChartState {
   factory OverlayChartState.initial(String timeFrame) {
     return OverlayChartState(
       timeFrame: timeFrame,
-      selectedIds: const [
-        OverlayChartIds.overall,
-        OverlayChartIds.nifty50,
-      ],
+      selectedIds: const [OverlayChartIds.overall, OverlayChartIds.nifty50],
       availablePortfolios: const [],
       series: const {},
-      pendingIds: const {
-        OverlayChartIds.overall,
-        OverlayChartIds.nifty50,
-      },
+      pendingIds: const {OverlayChartIds.overall, OverlayChartIds.nifty50},
       failedIds: const {},
     );
   }
@@ -192,16 +185,25 @@ String normalizeOverlayTimestamp(
   String raw, {
   required bool isIntraday,
   DateTime? referenceDate,
-}) =>
-    MultiSeriesChartTime.normalize(
-      raw,
-      isIntraday: isIntraday,
-      referenceDate: referenceDate,
-    );
+}) => MultiSeriesChartTime.normalize(
+  raw,
+  isIntraday: isIntraday,
+  referenceDate: referenceDate,
+);
 
 const _monthAbbr = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ];
 
 /// Compact X tick: `20 Aug` for daily, `09:15` for intraday timestamps.
@@ -228,8 +230,8 @@ String formatOverlayPercent(double v) {
   final body = abs >= 10
       ? abs.toStringAsFixed(0)
       : abs >= 1
-          ? abs.toStringAsFixed(1)
-          : abs.toStringAsFixed(2);
+      ? abs.toStringAsFixed(1)
+      : abs.toStringAsFixed(2);
   final trimmed = body.contains('.')
       ? body.replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '')
       : body;
@@ -246,7 +248,9 @@ String formatOverlayAxisPercent(double v) {
 
 /// Duplicate names become `Zerodha · 0650` using the first 4 id chars.
 /// Raw UUIDs (including userId) are never shown as the display name.
-Map<String, String> uniquePortfolioLabels(List<OverlayPortfolioRef> portfolios) {
+Map<String, String> uniquePortfolioLabels(
+  List<OverlayPortfolioRef> portfolios,
+) {
   final counts = <String, int>{};
   for (final p in portfolios) {
     final name = _overlayDisplayName(p);
@@ -282,13 +286,11 @@ List<String> defaultOverlaySelectedIds(
   List<String> portfolioIds, {
   String? preferredPortfolioId,
 }) {
-  final selected = <String>[
-    OverlayChartIds.overall,
-    OverlayChartIds.nifty50,
-  ];
+  final selected = <String>[OverlayChartIds.overall, OverlayChartIds.nifty50];
   if (selected.length < OverlayChartIds.defaultVisibleLines &&
       portfolioIds.isNotEmpty) {
-    final preferred = preferredPortfolioId != null &&
+    final preferred =
+        preferredPortfolioId != null &&
             preferredPortfolioId.isNotEmpty &&
             preferredPortfolioId != 'all' &&
             portfolioIds.contains(preferredPortfolioId)
@@ -316,7 +318,10 @@ List<String> mergeOverlaySelection({
       preferredPortfolioId: preferredPortfolioId,
     );
   }
-  final kept = previous.where(isValid).take(OverlayChartIds.maxVisibleLines).toList();
+  final kept = previous
+      .where(isValid)
+      .take(OverlayChartIds.maxVisibleLines)
+      .toList();
   if (kept.isEmpty) {
     return defaultOverlaySelectedIds(
       availablePortfolioIds,

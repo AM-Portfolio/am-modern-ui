@@ -16,7 +16,11 @@ class BdFooterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fmt = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
+    final fmt = NumberFormat.currency(
+      locale: 'en_IN',
+      symbol: '₹',
+      decimalDigits: 2,
+    );
     final hasMarket = BdDashboardMath.basketHasMarketPrices(basket);
     final pnlColor = !hasMarket
         ? context.colors.textSecondary
@@ -24,8 +28,18 @@ class BdFooterBar extends StatelessWidget {
     final timeFmt = DateFormat('MMM dd, yyyy • hh:mm a');
 
     final stats = [
-      _FooterStat('Total Investment', fmt.format(basket.totalInvestedValue), false, null),
-      _FooterStat('Current Value', fmt.format(basket.totalCurrentValue), false, null),
+      _FooterStat(
+        'Total Investment',
+        fmt.format(basket.totalInvestedValue),
+        false,
+        null,
+      ),
+      _FooterStat(
+        'Current Value',
+        fmt.format(basket.totalCurrentValue),
+        false,
+        null,
+      ),
       _FooterStat(
         'Unrealized P&L',
         hasMarket
@@ -66,17 +80,23 @@ class BdFooterBar extends StatelessWidget {
           child: isWide
               ? Row(
                   children: stats
-                      .map((s) => Expanded(child: _StatCell(context: context, stat: s)))
+                      .map(
+                        (s) => Expanded(
+                          child: _StatCell(context: context, stat: s),
+                        ),
+                      )
                       .toList(),
                 )
               : SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: stats
-                        .map((s) => SizedBox(
-                              width: 168,
-                              child: _StatCell(context: context, stat: s),
-                            ))
+                        .map(
+                          (s) => SizedBox(
+                            width: 168,
+                            child: _StatCell(context: context, stat: s),
+                          ),
+                        )
                         .toList(),
                   ),
                 ),
@@ -112,20 +132,21 @@ class _StatCell extends StatelessWidget {
           Text(
             stat.label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: this.context.colors.textSecondary,
-                  letterSpacing: 0.2,
-                ),
+              color: this.context.colors.textSecondary,
+              letterSpacing: 0.2,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
             stat.value,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: stat.valueColor ??
-                      (stat.highlight
-                          ? this.context.statusSuccess
-                          : this.context.colors.textPrimary),
-                ),
+              fontWeight: FontWeight.bold,
+              color:
+                  stat.valueColor ??
+                  (stat.highlight
+                      ? this.context.statusSuccess
+                      : this.context.colors.textPrimary),
+            ),
           ),
         ],
       ),

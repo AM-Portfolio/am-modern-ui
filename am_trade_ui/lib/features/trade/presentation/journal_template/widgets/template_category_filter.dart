@@ -135,18 +135,26 @@ class _TemplateCategoryFilterState extends State<TemplateCategoryFilter> {
       avatar: Icon(
         icon,
         size: 16,
-        color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.primary,
+        color: isSelected
+            ? Theme.of(context).colorScheme.onPrimary
+            : Theme.of(context).colorScheme.primary,
       ),
       label: Text(
         label,
         style: TextStyle(
-          color: isSelected ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface,
+          color: isSelected
+              ? Theme.of(context).colorScheme.onPrimary
+              : Theme.of(context).colorScheme.onSurface,
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
       ),
-      backgroundColor: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surface,
+      backgroundColor: isSelected
+          ? Theme.of(context).colorScheme.primary
+          : Theme.of(context).colorScheme.surface,
       side: BorderSide(
-        color: isSelected ? Colors.transparent : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+        color: isSelected
+            ? Colors.transparent
+            : Theme.of(context).colorScheme.outline.withOpacity(0.3),
       ),
       onPressed: onTap,
     );
@@ -188,7 +196,8 @@ class _TemplateCategoryFilterState extends State<TemplateCategoryFilter> {
               onTap: onTap,
               borderRadius: BorderRadius.circular(12),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Row(
                   children: [
                     Icon(
@@ -196,16 +205,23 @@ class _TemplateCategoryFilterState extends State<TemplateCategoryFilter> {
                       size: 20,
                       color: isSelected
                           ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                          : Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.6),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         label,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
                               color: isSelected
-                                  ? Theme.of(context).colorScheme.onPrimaryContainer
+                                  ? Theme.of(context)
+                                      .colorScheme
+                                      .onPrimaryContainer
                                   : Theme.of(context).colorScheme.onSurface,
                             ),
                       ),

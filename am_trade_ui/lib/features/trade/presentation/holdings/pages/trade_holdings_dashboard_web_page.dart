@@ -62,10 +62,12 @@ class _TradeHoldingsDashboardWebPageState
     if (widget.embedded) return body;
     return Scaffold(body: body);
   }
+
   Widget _buildHoldingsTab() {
     final portfolioId = widget.portfolioId;
     final holdingsAsync = ref.watch(tradeHoldingsStreamProvider(portfolioId));
-    final portfolioHoldingsAsync = ref.watch(portfolioHoldingsProvider(portfolioId));
+    final portfolioHoldingsAsync =
+        ref.watch(portfolioHoldingsProvider(portfolioId));
     final priceFreshnessLabel = portfolioHoldingsAsync.maybeWhen(
       data: (h) => h.priceLabel,
       orElse: () => null,
@@ -87,7 +89,9 @@ class _TradeHoldingsDashboardWebPageState
                         });
                         ScaffoldMessenger.of(
                           context,
-                        ).showSnackBar(const SnackBar(content: Text('Custom filters applied'), duration: Duration(seconds: 2)));
+                        ).showSnackBar(const SnackBar(
+                            content: Text('Custom filters applied'),
+                            duration: Duration(seconds: 2)));
                       },
                       onReset: () {
                         setState(() {
@@ -95,12 +99,16 @@ class _TradeHoldingsDashboardWebPageState
                         });
                         ScaffoldMessenger.of(
                           context,
-                        ).showSnackBar(const SnackBar(content: Text('Filters reset'), duration: Duration(seconds: 1)));
+                        ).showSnackBar(const SnackBar(
+                            content: Text('Filters reset'),
+                            duration: Duration(seconds: 1)));
                       },
                     ),
                   ),
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (error, stack) => Center(child: Text('Error loading filters: $error')),
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (error, stack) =>
+                      Center(child: Text('Error loading filters: $error')),
                 ),
           ),
           const SizedBox(height: 6),
@@ -159,7 +167,8 @@ class _TradeHoldingsDashboardWebPageState
   }
 
   /// Apply filters to holdings list
-  List<TradeHoldingViewModel> _applyFilters(List<TradeHoldingViewModel> holdings, MetricsFilterConfig filter) {
+  List<TradeHoldingViewModel> _applyFilters(
+      List<TradeHoldingViewModel> holdings, MetricsFilterConfig filter) {
     var filtered = holdings;
 
     // Date Range Filter
@@ -187,8 +196,8 @@ class _TradeHoldingsDashboardWebPageState
       if (instrumentFilter.baseSymbols.isNotEmpty) {
         filtered = filtered
             .where(
-              (h) =>
-                  instrumentFilter.baseSymbols.any((symbol) => h.symbol.toUpperCase().contains(symbol.toUpperCase())),
+              (h) => instrumentFilter.baseSymbols.any((symbol) =>
+                  h.symbol.toUpperCase().contains(symbol.toUpperCase())),
             )
             .toList();
       }
@@ -226,7 +235,8 @@ class _TradeHoldingsDashboardWebPageState
       if (tradeFilter.statuses.isNotEmpty) {
         filtered = filtered.where((h) {
           if (h.status == null) return false;
-          return tradeFilter.statuses.any((status) => h.status!.toLowerCase() == status.name.toLowerCase());
+          return tradeFilter.statuses.any(
+              (status) => h.status!.toLowerCase() == status.name.toLowerCase());
         }).toList();
       }
 
@@ -247,7 +257,8 @@ class _TradeHoldingsDashboardWebPageState
       }
 
       // Holding Time
-      if (tradeFilter.minHoldingTimeHours != null || tradeFilter.maxHoldingTimeHours != null) {
+      if (tradeFilter.minHoldingTimeHours != null ||
+          tradeFilter.maxHoldingTimeHours != null) {
         filtered = filtered.where((h) {
           // TODO: Calculate holding time and filter
           return true; // Placeholder
@@ -291,7 +302,8 @@ class _TradeHoldingsDashboardWebPageState
     return filtered;
   }
 
-  void _showHoldingDetails(BuildContext context, TradeHoldingViewModel holding) {
+  void _showHoldingDetails(
+      BuildContext context, TradeHoldingViewModel holding) {
     setState(() {
       _selectedTrade = holding;
     });

@@ -38,16 +38,24 @@ class _HoldingsTableState extends ConsumerState<HoldingsTable> {
     final theme = Theme.of(context);
     final type = ref.watch(addAssetClassTypeProvider);
     final holdings = ref.watch(addAssetClassHoldingsProvider);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Container(
           padding: EdgeInsets.all(widget.isDesktop ? 12 : 0),
           decoration: BoxDecoration(
-            color: widget.isDesktop ? theme.colorScheme.surface : Colors.transparent,
+            color: widget.isDesktop
+                ? theme.colorScheme.surface
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
-            border: widget.isDesktop ? Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3)) : null,
+            border: widget.isDesktop
+                ? Border.all(
+                    color: theme.colorScheme.outlineVariant.withValues(
+                      alpha: 0.3,
+                    ),
+                  )
+                : null,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -68,16 +76,20 @@ class _HoldingsTableState extends ConsumerState<HoldingsTable> {
                   ),
                 );
               }),
-              
+
               const SizedBox(height: AppSpacing.md),
               Align(
                 alignment: Alignment.centerLeft,
                 child: MouseRegion(
                   cursor: SystemMouseCursors.click,
                   child: GestureDetector(
-                    onTap: () => ref.read(addAssetClassHoldingsProvider.notifier).addRow(),
+                    onTap: () => ref
+                        .read(addAssetClassHoldingsProvider.notifier)
+                        .addRow(),
                     child: CustomPaint(
-                      painter: _DashedBorderPainter(color: ModuleColors.portfolio.withValues(alpha: 0.6)),
+                      painter: _DashedBorderPainter(
+                        color: ModuleColors.portfolio.withValues(alpha: 0.6),
+                      ),
                       child: Container(
                         width: double.infinity,
                         height: 44,
@@ -85,11 +97,22 @@ class _HoldingsTableState extends ConsumerState<HoldingsTable> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.add, color: ModuleColors.portfolio, size: 20),
+                            Icon(
+                              Icons.add,
+                              color: ModuleColors.portfolio,
+                              size: 20,
+                            ),
                             const SizedBox(width: 8),
                             Text(
-                              type == 'bonds' ? 'Add Another Bond' : type == 'commodities' ? 'Add Another Commodity' : 'Add Another Cash',
-                              style: TextStyle(color: ModuleColors.portfolio, fontWeight: FontWeight.w600),
+                              type == 'bonds'
+                                  ? 'Add Another Bond'
+                                  : type == 'commodities'
+                                  ? 'Add Another Commodity'
+                                  : 'Add Another Cash',
+                              style: TextStyle(
+                                color: ModuleColors.portfolio,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ],
                         ),
@@ -146,26 +169,32 @@ class _HoldingCardState extends ConsumerState<_HoldingCard> {
 
   void _onNameChanged() {
     if (_nameController.text != widget.holding.name) {
-      ref.read(addAssetClassHoldingsProvider.notifier).updateRow(
-        widget.holding.id,
-        (h) => h.copyWith(name: _nameController.text),
-      );
+      ref
+          .read(addAssetClassHoldingsProvider.notifier)
+          .updateRow(
+            widget.holding.id,
+            (h) => h.copyWith(name: _nameController.text),
+          );
     }
   }
 
   @override
   void didUpdateWidget(_HoldingCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.holding.name != widget.holding.name && _nameController.text != widget.holding.name) {
+    if (oldWidget.holding.name != widget.holding.name &&
+        _nameController.text != widget.holding.name) {
       _nameController.text = widget.holding.name;
     }
-    if (oldWidget.holding.quantity != widget.holding.quantity && _qtyController.text != widget.holding.quantity) {
+    if (oldWidget.holding.quantity != widget.holding.quantity &&
+        _qtyController.text != widget.holding.quantity) {
       _qtyController.text = widget.holding.quantity;
     }
-    if (oldWidget.holding.pricePerUnit != widget.holding.pricePerUnit && _priceController.text != widget.holding.pricePerUnit) {
+    if (oldWidget.holding.pricePerUnit != widget.holding.pricePerUnit &&
+        _priceController.text != widget.holding.pricePerUnit) {
       _priceController.text = widget.holding.pricePerUnit;
     }
-    if (oldWidget.holding.totalValue != widget.holding.totalValue && _totalController.text != widget.holding.totalValue) {
+    if (oldWidget.holding.totalValue != widget.holding.totalValue &&
+        _totalController.text != widget.holding.totalValue) {
       _totalController.text = widget.holding.totalValue;
     }
   }
@@ -188,11 +217,13 @@ class _HoldingCardState extends ConsumerState<_HoldingCard> {
     final type = widget.type;
     final holdingsCount = ref.watch(addAssetClassHoldingsProvider).length;
     final isFlatLayout = MediaQuery.sizeOf(context).width >= 900;
-    
+
     void update(HoldingFormState Function(HoldingFormState) updater) {
-      ref.read(addAssetClassHoldingsProvider.notifier).updateRow(holding.id, updater);
+      ref
+          .read(addAssetClassHoldingsProvider.notifier)
+          .updateRow(holding.id, updater);
     }
-    
+
     Future<List<market.SecurityDocument>> _searchNames(String query) async {
       if (widget.type == 'cash') return const [];
 
@@ -208,7 +239,9 @@ class _HoldingCardState extends ConsumerState<_HoldingCard> {
       _debounceTimer = Timer(const Duration(milliseconds: 300), () async {
         final myId = ++_requestId;
         try {
-          final remote = await ref.read(portfolioRemoteDataSourceProvider.future);
+          final remote = await ref.read(
+            portfolioRemoteDataSourceProvider.future,
+          );
           final rawResults = await searchClassAddNames(
             remote: remote,
             portfolioId: widget.portfolioId,
@@ -219,13 +252,19 @@ class _HoldingCardState extends ConsumerState<_HoldingCard> {
             final seen = <String>{};
             final results = <market.SecurityDocument>[];
             for (final doc in rawResults) {
-              final val = (doc.key?.symbol ?? '').toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+              final val = (doc.key?.symbol ?? '').toLowerCase().replaceAll(
+                RegExp(r'[^a-z0-9]'),
+                '',
+              );
               if (val.isNotEmpty && !seen.contains(val)) {
                 seen.add(val);
                 var cName = doc.metadata?.companyName;
                 market.SecurityDocument finalDoc = doc;
                 if (cName != null && cName.toLowerCase().contains('template')) {
-                  cName = cName.replaceAll(RegExp(r'\s*·\s*Template', caseSensitive: false), '');
+                  cName = cName.replaceAll(
+                    RegExp(r'\s*·\s*Template', caseSensitive: false),
+                    '',
+                  );
                   finalDoc = market.SecurityDocument(
                     key: doc.key,
                     metadata: market.SecurityMetadata(companyName: cName),
@@ -276,7 +315,8 @@ class _HoldingCardState extends ConsumerState<_HoldingCard> {
             Expanded(
               child: SizedBox(
                 height: 38,
-                child: _buildInput(context,
+                child: _buildInput(
+                  context,
                   controller: _nameController,
                   hint: classAddNameHint('cash'),
                   onChanged: (v) => update((h) => h.copyWith(name: v)),
@@ -315,9 +355,13 @@ class _HoldingCardState extends ConsumerState<_HoldingCard> {
       if (type == 'cash') return const SizedBox.shrink();
       return SizedBox(
         height: 38,
-        child: _buildDropdown(context,
-          value: holding.segment ?? (type == 'bonds' ? 'Government' : 'Bullion'),
-          items: type == 'bonds' ? ['Government', 'Corporate', 'PSU'] : ['Bullion', 'Energy', 'Metals', 'Agri'],
+        child: _buildDropdown(
+          context,
+          value:
+              holding.segment ?? (type == 'bonds' ? 'Government' : 'Bullion'),
+          items: type == 'bonds'
+              ? ['Government', 'Corporate', 'PSU']
+              : ['Bullion', 'Energy', 'Metals', 'Agri'],
           onChanged: (v) => update((h) => h.copyWith(segment: v)),
         ),
       );
@@ -327,7 +371,8 @@ class _HoldingCardState extends ConsumerState<_HoldingCard> {
       if (type == 'cash') return const SizedBox.shrink();
       return SizedBox(
         height: 38,
-        child: _buildInput(context,
+        child: _buildInput(
+          context,
           controller: _qtyController,
           hint: '0',
           isNumber: true,
@@ -341,7 +386,8 @@ class _HoldingCardState extends ConsumerState<_HoldingCard> {
       if (type == 'cash') return const SizedBox.shrink();
       return SizedBox(
         height: 38,
-        child: _buildInput(context,
+        child: _buildInput(
+          context,
           controller: _priceController,
           hint: '0.00',
           isNumber: true,
@@ -354,12 +400,14 @@ class _HoldingCardState extends ConsumerState<_HoldingCard> {
     Widget buildTotalField() {
       return SizedBox(
         height: 38,
-        child: _buildInput(context,
+        child: _buildInput(
+          context,
           controller: _totalController,
           hint: '0.00',
           isNumber: true,
           textAlign: TextAlign.right,
-          onChanged: (v) => update((h) => h.updateTotalValue(v.isEmpty ? '' : v)),
+          onChanged: (v) =>
+              update((h) => h.updateTotalValue(v.isEmpty ? '' : v)),
         ),
       );
     }
@@ -373,7 +421,9 @@ class _HoldingCardState extends ConsumerState<_HoldingCard> {
           alignment: Alignment.center,
           child: IconButton(
             tooltip: 'Remove holding',
-            onPressed: () => ref.read(addAssetClassHoldingsProvider.notifier).removeRow(holding.id),
+            onPressed: () => ref
+                .read(addAssetClassHoldingsProvider.notifier)
+                .removeRow(holding.id),
             icon: Icon(
               Icons.delete_outline,
               size: 20,
@@ -442,8 +492,12 @@ class _HoldingCardState extends ConsumerState<_HoldingCard> {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: isFlatLayout ? context.glassOverlay(isDark ? 0.015 : 0.01) : context.glassOverlay(isDark ? 0.03 : 0.02),
-        border: Border(bottom: BorderSide(color: context.glassOverlay(isDark ? 0.07 : 0.05))),
+        color: isFlatLayout
+            ? context.glassOverlay(isDark ? 0.015 : 0.01)
+            : context.glassOverlay(isDark ? 0.03 : 0.02),
+        border: Border(
+          bottom: BorderSide(color: context.glassOverlay(isDark ? 0.07 : 0.05)),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -456,13 +510,21 @@ class _HoldingCardState extends ConsumerState<_HoldingCard> {
                 children: [
                   Text(
                     'Holding ${widget.index + 1}',
-                    style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   if (holdingsCount > 1)
                     IconButton(
                       tooltip: 'Remove holding',
-                      onPressed: () => ref.read(addAssetClassHoldingsProvider.notifier).removeRow(holding.id),
-                      icon: Icon(Icons.delete_outline, size: 20, color: theme.colorScheme.error),
+                      onPressed: () => ref
+                          .read(addAssetClassHoldingsProvider.notifier)
+                          .removeRow(holding.id),
+                      icon: Icon(
+                        Icons.delete_outline,
+                        size: 20,
+                        color: theme.colorScheme.error,
+                      ),
                       visualDensity: VisualDensity.compact,
                     ),
                 ],
@@ -485,10 +547,10 @@ Widget _fieldLabel(BuildContext context, String text) {
     child: Text(
       text,
       style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.2,
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.72),
-          ),
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.2,
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.72),
+      ),
     ),
   );
 }
@@ -521,7 +583,8 @@ InputDecoration _fieldDeco(BuildContext context, {required String hint}) {
   );
 }
 
-Widget _buildInput(BuildContext context, {
+Widget _buildInput(
+  BuildContext context, {
   required TextEditingController controller,
   required String hint,
   bool isNumber = false,
@@ -534,13 +597,16 @@ Widget _buildInput(BuildContext context, {
       controller: controller,
       onChanged: onChanged,
       textAlign: textAlign,
-      keyboardType: isNumber ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
+      keyboardType: isNumber
+          ? const TextInputType.numberWithOptions(decimal: true)
+          : TextInputType.text,
       decoration: _fieldDeco(context, hint: hint),
     ),
   );
 }
 
-Widget _buildDropdown(BuildContext context, {
+Widget _buildDropdown(
+  BuildContext context, {
   required String value,
   required List<String> items,
   required ValueChanged<String?> onChanged,
@@ -553,7 +619,10 @@ Widget _buildDropdown(BuildContext context, {
       isExpanded: true,
       decoration: _fieldDeco(context, hint: ''),
       items: items.map((item) {
-        return DropdownMenuItem(value: item, child: Text(item, style: const TextStyle(fontSize: 14)));
+        return DropdownMenuItem(
+          value: item,
+          child: Text(item, style: const TextStyle(fontSize: 14)),
+        );
       }).toList(),
     ),
   );
@@ -561,7 +630,7 @@ Widget _buildDropdown(BuildContext context, {
 
 class _DashedBorderPainter extends CustomPainter {
   final Color color;
-  
+
   _DashedBorderPainter({required this.color});
 
   @override
@@ -570,7 +639,7 @@ class _DashedBorderPainter extends CustomPainter {
     final bgPaint = Paint()
       ..color = color.withValues(alpha: 0.05)
       ..style = PaintingStyle.fill;
-    
+
     final RRect rrect = RRect.fromRectAndRadius(
       Rect.fromLTWH(0, 0, size.width, size.height),
       const Radius.circular(8),
@@ -585,14 +654,17 @@ class _DashedBorderPainter extends CustomPainter {
 
     final Path path = Path()..addRRect(rrect);
     final metrics = path.computeMetrics();
-    
+
     for (final metric in metrics) {
       double distance = 0;
       bool draw = true;
       while (distance < metric.length) {
         final double len = draw ? 6.0 : 4.0;
         if (draw) {
-          canvas.drawPath(metric.extractPath(distance, distance + len), strokePaint);
+          canvas.drawPath(
+            metric.extractPath(distance, distance + len),
+            strokePaint,
+          );
         }
         distance += len;
         draw = !draw;
@@ -640,7 +712,9 @@ class _TableHeader extends StatelessWidget {
               children: [
                 SizedBox(width: 24, child: headerText('#')),
                 const SizedBox(width: 8),
-                Expanded(child: headerText(type == 'bonds' ? 'Bond Name' : 'Name')),
+                Expanded(
+                  child: headerText(type == 'bonds' ? 'Bond Name' : 'Name'),
+                ),
               ],
             ),
           ),
@@ -648,9 +722,18 @@ class _TableHeader extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(flex: 18, child: headerText('Segment (Optional)')),
             const SizedBox(width: 12),
-            Expanded(flex: 13, child: headerText('Quantity (Optional)', align: TextAlign.right)),
+            Expanded(
+              flex: 13,
+              child: headerText('Quantity (Optional)', align: TextAlign.right),
+            ),
             const SizedBox(width: 12),
-            Expanded(flex: 18, child: headerText('Price per unit (Optional)', align: TextAlign.right)),
+            Expanded(
+              flex: 18,
+              child: headerText(
+                'Price per unit (Optional)',
+                align: TextAlign.right,
+              ),
+            ),
           ] else ...[
             const SizedBox(width: 12),
             const Spacer(flex: 18),
@@ -660,9 +743,15 @@ class _TableHeader extends StatelessWidget {
             const Spacer(flex: 18),
           ],
           const SizedBox(width: 12),
-          Expanded(flex: 16, child: headerText('Total Value (INR)', align: TextAlign.right)),
+          Expanded(
+            flex: 16,
+            child: headerText('Total Value (INR)', align: TextAlign.right),
+          ),
           const SizedBox(width: 8),
-          SizedBox(width: 48, child: headerText('Action', align: TextAlign.center)),
+          SizedBox(
+            width: 48,
+            child: headerText('Action', align: TextAlign.center),
+          ),
         ],
       ),
     );

@@ -94,9 +94,7 @@ class AiMessageFormat {
       spans.add(
         TextSpan(
           text: parts[i],
-          style: i.isOdd
-              ? base.copyWith(fontWeight: FontWeight.w700)
-              : base,
+          style: i.isOdd ? base.copyWith(fontWeight: FontWeight.w700) : base,
         ),
       );
     }

@@ -19,37 +19,40 @@ class DashboardSummaryWidget extends StatelessWidget {
         AmStatCard(
           title: 'Total Portfolio Value',
           value: currencyFormat.format(summary.totalValue),
-          subtitle: '${percentFormat.format(summary.dayChangePercentage / 100)} Today',
+          subtitle:
+              '${percentFormat.format(summary.dayChangePercentage / 100)} Today',
           type: StatType.accent,
           icon: Icons.account_balance_wallet,
           progress: 1.0, // Full bar for main value
         ),
         const SizedBox(height: 16),
-        
+
         // Secondary Metrics Grid
         LayoutBuilder(
           builder: (context, constraints) {
             // Responsive grid calculation
             final crossAxisCount = constraints.maxWidth > 600 ? 3 : 1;
             final gap = 16.0;
-            
+
             if (crossAxisCount == 1) {
               return Column(
                 children: [
-                   _buildInvestedCard(currencyFormat),
-                   SizedBox(height: gap),
-                   _buildReturnCard(currencyFormat, percentFormat),
-                   SizedBox(height: gap),
-                   _buildPortfoliosCard(),
+                  _buildInvestedCard(currencyFormat),
+                  SizedBox(height: gap),
+                  _buildReturnCard(currencyFormat, percentFormat),
+                  SizedBox(height: gap),
+                  _buildPortfoliosCard(),
                 ],
               );
             }
-            
+
             return Row(
               children: [
                 Expanded(child: _buildInvestedCard(currencyFormat)),
                 SizedBox(width: gap),
-                Expanded(child: _buildReturnCard(currencyFormat, percentFormat)),
+                Expanded(
+                  child: _buildReturnCard(currencyFormat, percentFormat),
+                ),
                 SizedBox(width: gap),
                 Expanded(child: _buildPortfoliosCard()),
               ],
@@ -69,7 +72,10 @@ class DashboardSummaryWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildReturnCard(NumberFormat currencyFormat, NumberFormat percentFormat) {
+  Widget _buildReturnCard(
+    NumberFormat currencyFormat,
+    NumberFormat percentFormat,
+  ) {
     final isPositive = summary.totalGainLoss >= 0;
     return AmStatCard(
       title: 'Total Return',
@@ -89,4 +95,3 @@ class DashboardSummaryWidget extends StatelessWidget {
     );
   }
 }
-

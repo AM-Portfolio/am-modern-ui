@@ -54,8 +54,8 @@ class DiscoverViewState {
       final key = (o.categoryLabel?.trim().isNotEmpty == true)
           ? o.categoryLabel!.trim().toLowerCase()
           : (o.etfSymbol?.trim().isNotEmpty == true
-              ? o.etfSymbol!.trim().toUpperCase()
-              : o.etfIsin);
+                ? o.etfSymbol!.trim().toUpperCase()
+                : o.etfIsin);
       final prev = bestBySector[key];
       if (prev == null) {
         bestBySector[key] = o;
@@ -63,8 +63,7 @@ class DiscoverViewState {
       }
       final ar = o.returnForPeriod(period) ?? double.negativeInfinity;
       final br = prev.returnForPeriod(period) ?? double.negativeInfinity;
-      if (ar > br ||
-          (ar == br && o.matchScore > prev.matchScore)) {
+      if (ar > br || (ar == br && o.matchScore > prev.matchScore)) {
         bestBySector[key] = o;
       }
     }
@@ -137,7 +136,9 @@ class DiscoverViewState {
     }
     if (amount >= 1000) {
       final lakh = amount / 100000;
-      final text = lakh >= 10 ? lakh.toStringAsFixed(1) : lakh.toStringAsFixed(2);
+      final text = lakh >= 10
+          ? lakh.toStringAsFixed(1)
+          : lakh.toStringAsFixed(2);
       return '₹${_trimZeros(text)}L';
     }
     return '₹${amount.toStringAsFixed(0)}';

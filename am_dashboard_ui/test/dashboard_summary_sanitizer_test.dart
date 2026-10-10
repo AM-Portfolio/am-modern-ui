@@ -83,7 +83,9 @@ void main() {
         'dayChangePercentage': 0.5,
         'totalPortfolios': 1,
       };
-      final parsed = DashboardSummary.fromJson(DashboardJsonSanitizer.summary(raw));
+      final parsed = DashboardSummary.fromJson(
+        DashboardJsonSanitizer.summary(raw),
+      );
       expect(parsed.totalValue, 10);
       expect(parsed.totalPortfolios, 1);
     });

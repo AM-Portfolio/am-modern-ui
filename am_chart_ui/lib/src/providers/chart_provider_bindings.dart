@@ -16,6 +16,4 @@ final chartFundamentalsProvider = Provider<FundamentalDataProvider>(
   (ref) => MockFundamentalDataProvider(),
 );
 
-final chartNewsProvider = Provider<NewsProvider>(
-  (ref) => MockNewsProvider(),
-);
+final chartNewsProvider = Provider<NewsProvider>((ref) => MockNewsProvider());

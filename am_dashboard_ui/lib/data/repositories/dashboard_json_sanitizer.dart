@@ -12,7 +12,9 @@ class DashboardJsonSanitizer {
   static Map<String, dynamic> summary(dynamic raw) {
     var json = asObject(raw);
     final nested = json['data'];
-    if (nested is Map && json['totalValue'] == null && json['currentValue'] == null) {
+    if (nested is Map &&
+        json['totalValue'] == null &&
+        json['currentValue'] == null) {
       json = asObject(nested);
     }
     final invested = json['totalInvested'] ?? json['investmentValue'];
@@ -20,7 +22,9 @@ class DashboardJsonSanitizer {
     json['totalValue'] = _numOrZero(value);
     json['totalInvested'] = _numOrZero(invested);
     json['totalGainLoss'] = _numOrZero(json['totalGainLoss']);
-    json['totalGainLossPercentage'] = _numOrZero(json['totalGainLossPercentage']);
+    json['totalGainLossPercentage'] = _numOrZero(
+      json['totalGainLossPercentage'],
+    );
     json['dayChange'] = _numOrZero(json['dayChange'] ?? json['todayGainLoss']);
     json['dayChangePercentage'] = _numOrZero(
       json['dayChangePercentage'] ?? json['todayGainLossPercentage'],
@@ -115,7 +119,8 @@ class DashboardJsonSanitizer {
     final m = Map<String, dynamic>.from(json);
     m['id'] = m['id']?.toString() ?? '';
     m['type'] = _coerceType(m['type']);
-    m['title'] = m['title']?.toString() ?? m['symbol']?.toString() ?? 'Activity';
+    m['title'] =
+        m['title']?.toString() ?? m['symbol']?.toString() ?? 'Activity';
     m['description'] ??= '';
     m['timestamp'] = _coerceTimestamp(m['timestamp']);
     for (final key in [

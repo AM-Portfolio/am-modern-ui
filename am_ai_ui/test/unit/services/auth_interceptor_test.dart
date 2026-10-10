@@ -36,7 +36,8 @@ void main() {
             expect(options.headers['Authorization'], 'Bearer tok-123');
             expect(options.headers['Content-Type'], 'application/json');
             handler.resolve(
-              Response(requestOptions: options, statusCode: 200, data: const {}),
+              Response(
+                  requestOptions: options, statusCode: 200, data: const {}),
             );
           },
         ),

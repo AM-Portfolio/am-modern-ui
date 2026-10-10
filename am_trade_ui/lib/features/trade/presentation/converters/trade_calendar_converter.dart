@@ -11,7 +11,8 @@ class TradeCalendarConverter {
 
   /// Main conversion method from TradeCalendar to calendar data format
   /// Transforms trade entities with portfolio trades into calendar-compatible format
-  static Map<String, List<CardData>> convertEntityToCalendarData({required TradeCalendar entity}) {
+  static Map<String, List<CardData>> convertEntityToCalendarData(
+      {required TradeCalendar entity}) {
     AppLogger.methodEntry(
       'convertEntityToCalendarData',
       tag: 'TradeCalendarConverter',
@@ -39,7 +40,8 @@ class TradeCalendarConverter {
 
           // Add this trade's data to the date's card data
           final existingCards = result[dateKey]!;
-          final updatedCards = _addTradeToCardData(existingCards, trade, dateKey);
+          final updatedCards =
+              _addTradeToCardData(existingCards, trade, dateKey);
           result[dateKey] = updatedCards;
         }
       }
@@ -62,13 +64,16 @@ class TradeCalendarConverter {
   }
 
   /// Add a trade to existing card data or create new card data
-  static List<CardData> _addTradeToCardData(List<CardData> existingCards, TradeDetails trade, String dateKey) {
+  static List<CardData> _addTradeToCardData(
+      List<CardData> existingCards, TradeDetails trade, String dateKey) {
     // Check if we already have a trade card for this date
-    final existingTradeCardIndex = existingCards.indexWhere((card) => card is TradeCardData);
+    final existingTradeCardIndex =
+        existingCards.indexWhere((card) => card is TradeCardData);
 
     if (existingTradeCardIndex >= 0) {
       // Update existing trade card
-      final existingCard = existingCards[existingTradeCardIndex] as TradeCardData;
+      final existingCard =
+          existingCards[existingTradeCardIndex] as TradeCardData;
       final updatedCard = _updateTradeCardData(existingCard, trade);
 
       final updatedCards = List<CardData>.from(existingCards);
@@ -82,11 +87,16 @@ class TradeCalendarConverter {
   }
 
   /// Create trade card data for a specific date
-  static TradeCardData _createTradeCardData(String dateKey, List<TradeDetails> trades) {
-    final totalPnL = trades.fold<double>(0.0, (sum, trade) => sum + (trade.metrics?.profitLoss ?? 0.0));
-    final winningTrades = trades.where((trade) => (trade.metrics?.profitLoss ?? 0.0) > 0).length;
-    final losingTrades = trades.where((trade) => (trade.metrics?.profitLoss ?? 0.0) < 0).length;
-    final totalVolume = trades.fold<double>(0.0, (sum, trade) => sum + (trade.entryInfo.quantity?.toDouble() ?? 0.0));
+  static TradeCardData _createTradeCardData(
+      String dateKey, List<TradeDetails> trades) {
+    final totalPnL = trades.fold<double>(
+        0.0, (sum, trade) => sum + (trade.metrics?.profitLoss ?? 0.0));
+    final winningTrades =
+        trades.where((trade) => (trade.metrics?.profitLoss ?? 0.0) > 0).length;
+    final losingTrades =
+        trades.where((trade) => (trade.metrics?.profitLoss ?? 0.0) < 0).length;
+    final totalVolume = trades.fold<double>(0.0,
+        (sum, trade) => sum + (trade.entryInfo.quantity?.toDouble() ?? 0.0));
 
     return TradeCardData(
       dateKey: dateKey,
@@ -109,24 +119,31 @@ class TradeCalendarConverter {
           )
           .toList(),
       metadata: {
-        'totalValue': trades.fold<double>(0.0, (sum, trade) => sum + (trade.entryInfo.totalValue ?? 0.0)),
+        'totalValue': trades.fold<double>(
+            0.0, (sum, trade) => sum + (trade.entryInfo.totalValue ?? 0.0)),
         'avgPnL': trades.isNotEmpty ? totalPnL / trades.length : 0.0,
         'avgHoldingTime': trades.isNotEmpty
-            ? trades.fold<int>(0, (sum, trade) => sum + (trade.metrics?.holdingTimeDays ?? 0)) / trades.length
+            ? trades.fold<int>(
+                    0,
+                    (sum, trade) =>
+                        sum + (trade.metrics?.holdingTimeDays ?? 0)) /
+                trades.length
             : 0,
       },
     );
   }
 
   /// Update existing trade card data with new trade
-  static TradeCardData _updateTradeCardData(TradeCardData existingCard, TradeDetails newTrade) {
+  static TradeCardData _updateTradeCardData(
+      TradeCardData existingCard, TradeDetails newTrade) {
     final isProfitable = (newTrade.metrics?.profitLoss ?? 0.0) > 0;
     final isLoss = (newTrade.metrics?.profitLoss ?? 0.0) < 0;
     final updatedPnL = existingCard.pnl + (newTrade.metrics?.profitLoss ?? 0.0);
     final updatedTradeCount = existingCard.tradeCount + 1;
     final updatedWinCount = existingCard.winCount + (isProfitable ? 1 : 0);
     final updatedLossCount = existingCard.lossCount + (isLoss ? 1 : 0);
-    final updatedTotalVolume = (existingCard.totalVolume ?? 0) + (newTrade.entryInfo.quantity?.toDouble() ?? 0.0);
+    final updatedTotalVolume = (existingCard.totalVolume ?? 0) +
+        (newTrade.entryInfo.quantity?.toDouble() ?? 0.0);
 
     final newTradeData = {
       'symbol': newTrade.instrumentInfo.symbol,
@@ -144,11 +161,13 @@ class TradeCalendarConverter {
       winCount: updatedWinCount,
       lossCount: updatedLossCount,
       totalVolume: updatedTotalVolume,
-      winRate: updatedTradeCount > 0 ? updatedWinCount / updatedTradeCount : 0.0,
+      winRate:
+          updatedTradeCount > 0 ? updatedWinCount / updatedTradeCount : 0.0,
       trades: [...existingCard.trades, newTradeData],
       metadata: {
         ...?existingCard.metadata,
-        'totalValue': (existingCard.metadata?['totalValue'] ?? 0.0) + (newTrade.entryInfo.totalValue ?? 0.0),
+        'totalValue': (existingCard.metadata?['totalValue'] ?? 0.0) +
+            (newTrade.entryInfo.totalValue ?? 0.0),
         'avgPnL': updatedTradeCount > 0 ? updatedPnL / updatedTradeCount : 0.0,
       },
     );
@@ -158,4 +177,3 @@ class TradeCalendarConverter {
   static String _formatDateKey(DateTime date) =>
       '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 }
-

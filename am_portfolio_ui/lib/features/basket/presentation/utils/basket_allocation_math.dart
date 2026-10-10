@@ -26,7 +26,10 @@ class BasketAllocationMath {
   static double _heldQty(BasketItem item) => item.heldQuantity ?? 0;
 
   /// Default units assigned from holdings: use what you have, up to ETF target.
-  static double defaultAllocatedUnits(BasketItem item, double investmentAmount) {
+  static double defaultAllocatedUnits(
+    BasketItem item,
+    double investmentAmount,
+  ) {
     final held = _heldQty(item);
     if (held <= 0) return 0;
     final base = baseTargetQuantity(item, investmentAmount);
@@ -65,7 +68,12 @@ class BasketAllocationMath {
   }) {
     final price = item.lastPrice ?? 0;
     if (price <= 0) return 0;
-    return allocatedUnits(item, investmentAmount, manualOverrideQty: manualOverrideQty) * price;
+    return allocatedUnits(
+          item,
+          investmentAmount,
+          manualOverrideQty: manualOverrideQty,
+        ) *
+        price;
   }
 
   static double? customWeightPercent(
@@ -74,7 +82,11 @@ class BasketAllocationMath {
     int? manualOverrideQty,
   }) {
     if (investmentAmount <= 0) return null;
-    final value = basketLineValue(item, investmentAmount, manualOverrideQty: manualOverrideQty);
+    final value = basketLineValue(
+      item,
+      investmentAmount,
+      manualOverrideQty: manualOverrideQty,
+    );
     if (value <= 0) return null;
     return (value / investmentAmount) * 100.0;
   }
@@ -164,7 +176,11 @@ class BasketAllocationMath {
   }) {
     final held = _heldQty(item);
     if (held <= 0) return false;
-    final allocated = allocatedUnits(item, investmentAmount, manualOverrideQty: manualOverrideQty);
+    final allocated = allocatedUnits(
+      item,
+      investmentAmount,
+      manualOverrideQty: manualOverrideQty,
+    );
     return allocated < held;
   }
 
@@ -173,12 +189,21 @@ class BasketAllocationMath {
     double investmentAmount, {
     int? manualOverrideQty,
   }) {
-    final allocated = allocatedUnits(item, investmentAmount, manualOverrideQty: manualOverrideQty);
+    final allocated = allocatedUnits(
+      item,
+      investmentAmount,
+      manualOverrideQty: manualOverrideQty,
+    );
     return allocated > 0;
   }
 
-  static double targetWeightSum(List<BasketItem> items, Set<String> excludedSymbols) {
-    final active = items.where((i) => !excludedSymbols.contains(i.stockSymbol)).toList();
+  static double targetWeightSum(
+    List<BasketItem> items,
+    Set<String> excludedSymbols,
+  ) {
+    final active = items
+        .where((i) => !excludedSymbols.contains(i.stockSymbol))
+        .toList();
     if (active.isEmpty) return 0;
 
     final hasRebalanced = active.any((i) => i.rebalancedWeight != null);
@@ -202,6 +227,9 @@ class BasketAllocationMath {
     BasketItem item,
     double investmentAmount, {
     int? manualOverrideQty,
-  }) =>
-      allocatedUnits(item, investmentAmount, manualOverrideQty: manualOverrideQty);
+  }) => allocatedUnits(
+    item,
+    investmentAmount,
+    manualOverrideQty: manualOverrideQty,
+  );
 }

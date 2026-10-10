@@ -72,8 +72,8 @@ class _PortfolioHoldingsWidgetState
                 },
                 child: ListView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                  itemCount: sortedHoldings.length +
-                      (widget.showNewsSection ? 1 : 0),
+                  itemCount:
+                      sortedHoldings.length + (widget.showNewsSection ? 1 : 0),
                   itemBuilder: (context, index) {
                     if (index >= sortedHoldings.length) {
                       final focused = _focusedSymbol?.trim() ?? '';
@@ -177,9 +177,7 @@ class _PortfolioHoldingsWidgetState
                             portfolioHoldingsProvider(widget.portfolioId!),
                           );
                         } else {
-                          ref.invalidate(
-                            portfolioHoldingsProvider(''),
-                          );
+                          ref.invalidate(portfolioHoldingsProvider(''));
                         }
                       },
                       child: const Text('Retry'),
@@ -287,7 +285,9 @@ class _PortfolioHoldingsWidgetState
             children: [
               Icon(
                 isPositive ? Icons.trending_up : Icons.trending_down,
-                color: isPositive ? context.marketPositive : context.marketNegative,
+                color: isPositive
+                    ? context.marketPositive
+                    : context.marketNegative,
                 size: 12,
               ),
               const SizedBox(width: 2),
@@ -308,13 +308,17 @@ class _PortfolioHoldingsWidgetState
               ),
             ],
           ),
-          if (widget.portfolioId == 'all' && holding.brokerHoldings.isNotEmpty) ...[
+          if (widget.portfolioId == 'all' &&
+              holding.brokerHoldings.isNotEmpty) ...[
             const SizedBox(height: 6),
             Wrap(
               spacing: 4,
               children: holding.brokerHoldings.map<Widget>((b) {
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: ModuleColors.portfolio.withAlpha(25),
                     borderRadius: BorderRadius.circular(4),
@@ -342,7 +346,9 @@ class _PortfolioHoldingsWidgetState
                 ? '${isPositive ? '+' : ''}₹${changeValue.toStringAsFixed(2)}'
                 : '${isPositive ? '+' : ''}${changePercent.toStringAsFixed(2)}%',
             style: TextStyle(
-              color: isPositive ? context.marketPositive : context.marketNegative,
+              color: isPositive
+                  ? context.marketPositive
+                  : context.marketNegative,
               fontWeight: FontWeight.bold,
               fontSize: 14,
             ),

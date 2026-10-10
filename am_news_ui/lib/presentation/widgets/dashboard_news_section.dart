@@ -44,14 +44,17 @@ class _DashboardNewsSectionState extends ConsumerState<DashboardNewsSection> {
 
   @override
   Widget build(BuildContext context) {
-    final enabled =
-        ref.watch(newsUiSurfaceEnabledProvider(NewsUiSurface.dashboard));
+    final enabled = ref.watch(
+      newsUiSurfaceEnabledProvider(NewsUiSurface.dashboard),
+    );
     ref.listen(newsInsightProvider, (prev, next) {
       final data = next.asData?.value;
       if (data != null) unawaited(_subscribeQuotes(data));
     });
     final insight = ref.watch(newsInsightProvider);
-    final quotes = ref.watch(priceStreamProvider).maybeWhen(
+    final quotes = ref
+        .watch(priceStreamProvider)
+        .maybeWhen(
           data: (value) => value,
           orElse: () => const <String, QuoteChange>{},
         );

@@ -34,26 +34,26 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   @override
   Widget build(BuildContext context) => BlocBuilder<AuthCubit, AuthState>(
-    builder: (context, state) {
-      if (state is AuthLoading || state is AuthInitial) {
-        return const Scaffold(body: Center(child: CircularProgressIndicator()));
-      }
+        builder: (context, state) {
+          if (state is AuthLoading || state is AuthInitial) {
+            return const Scaffold(
+                body: Center(child: CircularProgressIndicator()));
+          }
 
-      if (state is! Authenticated) {
-        return const LoginPage();
-      }
+          if (state is! Authenticated) {
+            return const LoginPage();
+          }
 
-      final userId = state.user.id;
-      if (userId.isEmpty) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          context.read<AuthCubit>().logout();
-        });
-        return const LoginPage();
-      }
+          final userId = state.user.id;
+          if (userId.isEmpty) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              context.read<AuthCubit>().logout();
+            });
+            return const LoginPage();
+          }
 
-      return widget.child;
-    },
-  );
+          return widget.child;
+        },
+      );
 }
-

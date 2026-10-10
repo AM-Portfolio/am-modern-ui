@@ -22,9 +22,10 @@ class AuthTokensEntity extends Equatable {
     String? accessToken,
     String? refreshToken,
     DateTime? expiresAt,
-  }) => AuthTokensEntity(
-    accessToken: accessToken ?? this.accessToken,
-    refreshToken: refreshToken ?? this.refreshToken,
-    expiresAt: expiresAt ?? this.expiresAt,
-  );
+  }) =>
+      AuthTokensEntity(
+        accessToken: accessToken ?? this.accessToken,
+        refreshToken: refreshToken ?? this.refreshToken,
+        expiresAt: expiresAt ?? this.expiresAt,
+      );
 }

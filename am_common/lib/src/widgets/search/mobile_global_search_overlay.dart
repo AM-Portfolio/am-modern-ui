@@ -137,8 +137,8 @@ class _MobileGlobalSearchOverlayState extends State<MobileGlobalSearchOverlay>
     if (live == null) {
       final q = raw.trim().toLowerCase();
       setState(() {
-        _items = (widget.emptySuggestions?.call() ?? widget.seedItems)
-            .where((i) {
+        _items =
+            (widget.emptySuggestions?.call() ?? widget.seedItems).where((i) {
           if (q.isEmpty) return true;
           return i.title.toLowerCase().contains(q) ||
               i.subtitle.toLowerCase().contains(q) ||
@@ -189,9 +189,7 @@ class _MobileGlobalSearchOverlayState extends State<MobileGlobalSearchOverlay>
     final media = MediaQuery.of(context);
     final query = _controller.text.trim();
     final filtered = _filtered;
-    final groups = query.isEmpty
-        ? {'Suggested': filtered}
-        : _grouped(filtered);
+    final groups = query.isEmpty ? {'Suggested': filtered} : _grouped(filtered);
 
     final themeColors = theme.extension<AppColorsTheme>();
     final baseSurface = isDark
@@ -499,7 +497,9 @@ class _MobileGlobalSearchOverlayState extends State<MobileGlobalSearchOverlay>
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Text(
-            query.isEmpty ? 'Start typing to search' : 'No matches for "$query"',
+            query.isEmpty
+                ? 'Start typing to search'
+                : 'No matches for "$query"',
             style: TextStyle(
               color: scheme.onSurface.withValues(alpha: 0.5),
               fontWeight: FontWeight.w500,

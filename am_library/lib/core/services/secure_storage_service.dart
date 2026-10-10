@@ -217,15 +217,15 @@ class SecureStorageService {
     try {
       final parts = token.split('.');
       if (parts.length != 3) return true; // Invalid token format
-      
+
       final payload = parts[1];
       final normalized = base64Url.normalize(payload);
       final decoded = utf8.decode(base64Url.decode(normalized));
       final claims = jsonDecode(decoded) as Map<String, dynamic>;
-      
+
       final exp = claims['exp'] as int?;
       if (exp == null) return false; // No expiry claim, treat as not expired
-      
+
       final expiryTime = DateTime.fromMillisecondsSinceEpoch(exp * 1000);
       return DateTime.now().isAfter(expiryTime);
     } catch (_) {
@@ -239,12 +239,12 @@ class SecureStorageService {
     if (token == null || token.isEmpty) return true;
     if (token == _cookieSessionMarker) return false;
     if (token == 'mock_dev_token') return false;
-    
+
     // Check JWT exp claim first
     if (_isJwtExpired(token)) {
       return true;
     }
-    
+
     final expiry = await getTokenExpiry();
     if (expiry == null) return true;
     return DateTime.now().isAfter(expiry);

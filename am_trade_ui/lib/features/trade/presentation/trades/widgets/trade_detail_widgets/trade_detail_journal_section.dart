@@ -132,34 +132,53 @@ class _TradeDetailJournalSectionState
           ),
           const SizedBox(width: 16),
           Expanded(
-            child: _loading 
+            child: _loading
                 ? const Align(
                     alignment: Alignment.centerLeft,
-                    child: SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                    child: SizedBox(
+                        height: 16,
+                        width: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2)),
                   )
-                : _error != null 
-                    ? Text(_error!, style: TextStyle(color: context.colors.statusError, fontSize: 13))
+                : _error != null
+                    ? Text(_error!,
+                        style: TextStyle(
+                            color: context.colors.statusError, fontSize: 13))
                     : _entries.isEmpty
-                        ? Text('No journal entries linked to this trade.', style: TextStyle(color: context.colors.textSecondary, fontSize: 13))
+                        ? Text('No journal entries linked to this trade.',
+                            style: TextStyle(
+                                color: context.colors.textSecondary,
+                                fontSize: 13))
                         : SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
                             child: Row(
-                              children: _entries.map((e) => Padding(
-                                padding: const EdgeInsets.only(right: 8.0),
-                                child: InkWell(
-                                  onTap: () => _openEntry(e),
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: context.colors.cardSurface,
-                                      borderRadius: BorderRadius.circular(4),
-                                      border: Border.all(color: context.colors.border),
-                                    ),
-                                    child: Text(e.title, style: TextStyle(fontSize: 12, color: context.colors.textPrimary)),
-                                  ),
-                                ),
-                              )).toList(),
+                              children: _entries
+                                  .map((e) => Padding(
+                                        padding:
+                                            const EdgeInsets.only(right: 8.0),
+                                        child: InkWell(
+                                          onTap: () => _openEntry(e),
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 10, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: context.colors.cardSurface,
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                              border: Border.all(
+                                                  color: context.colors.border),
+                                            ),
+                                            child: Text(e.title,
+                                                style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: context
+                                                        .colors.textPrimary)),
+                                          ),
+                                        ),
+                                      ))
+                                  .toList(),
                             ),
                           ),
           ),

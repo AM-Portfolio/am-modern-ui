@@ -139,9 +139,7 @@ class _SubscriptionWebPricingScreenState
   ) {
     final subscription = (state is SubscriptionLoaded)
         ? state.subscription
-        : (state is SubscriptionActionInProgress
-            ? state.subscription
-            : null);
+        : (state is SubscriptionActionInProgress ? state.subscription : null);
 
     if (subscription != null && subscription.planCode == plan.code) return;
 
@@ -172,9 +170,11 @@ class _SubscriptionWebPricingScreenState
     }
 
     if (subscription != null) {
-      context
-          .read<SubscriptionCubit>()
-          .upgrade(subscription.id, plan.code, plan.interval);
+      context.read<SubscriptionCubit>().upgrade(
+        subscription.id,
+        plan.code,
+        plan.interval,
+      );
     } else {
       context.read<SubscriptionCubit>().subscribe(plan.code, plan.interval);
     }
@@ -191,9 +191,9 @@ class _SubscriptionWebPricingScreenState
       appBar: AppBar(
         title: Text(
           'Pricing & Subscriptions',
-          style: context.text.pageTitle(compact: true).copyWith(
-                color: colorScheme.onSurface,
-              ),
+          style: context.text
+              .pageTitle(compact: true)
+              .copyWith(color: colorScheme.onSurface),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -236,8 +236,7 @@ class _SubscriptionWebPricingScreenState
 
           var plans = <Plan>[];
           String? currentPlanCode;
-          final isRefreshing =
-              state is SubscriptionLoaded && state.refreshing;
+          final isRefreshing = state is SubscriptionLoaded && state.refreshing;
 
           if (state is SubscriptionLoaded) {
             plans = state.plans;
@@ -259,8 +258,8 @@ class _SubscriptionWebPricingScreenState
                   Text(
                     'Error loading plans: ${state.message}',
                     style: context.text.body().copyWith(
-                          color: context.colors.statusError,
-                        ),
+                      color: context.colors.statusError,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: AppSpacing.md),
@@ -297,8 +296,10 @@ class _SubscriptionWebPricingScreenState
 
           final freeIsCurrent = isCurrentPlanType(currentPlanCode, 'free');
           final proIsCurrent = isCurrentPlanType(currentPlanCode, 'pro');
-          final premiumIsCurrent =
-              isCurrentPlanType(currentPlanCode, 'premium');
+          final premiumIsCurrent = isCurrentPlanType(
+            currentPlanCode,
+            'premium',
+          );
 
           final cards = <Widget>[
             if (freePlan != null)
@@ -422,16 +423,17 @@ class _SubscriptionWebPricingScreenState
                               cards.length,
                               (index) => AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
-                                margin:
-                                    const EdgeInsets.symmetric(horizontal: 4),
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                ),
                                 width: _currentPage == index ? 24 : 8,
                                 height: 8,
                                 decoration: BoxDecoration(
                                   color: _currentPage == index
                                       ? theme.colorScheme.primary
                                       : (isDark
-                                          ? Colors.white30
-                                          : Colors.black12),
+                                            ? Colors.white30
+                                            : Colors.black12),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                               ),
@@ -441,8 +443,7 @@ class _SubscriptionWebPricingScreenState
                           SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
                             controller: _scrollController,
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 16),
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: ConstrainedBox(
                               constraints: BoxConstraints(
                                 minWidth: screenWidth - 32,

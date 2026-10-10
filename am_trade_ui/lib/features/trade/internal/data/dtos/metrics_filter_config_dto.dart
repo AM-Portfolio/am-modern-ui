@@ -21,7 +21,8 @@ class MetricsFilterConfigDto {
     this.profitLossFilters,
   });
 
-  factory MetricsFilterConfigDto.fromJson(Map<String, dynamic> json) => _$MetricsFilterConfigDtoFromJson(json);
+  factory MetricsFilterConfigDto.fromJson(Map<String, dynamic> json) =>
+      _$MetricsFilterConfigDtoFromJson(json);
 
   final List<String>? portfolioIds;
   final Map<String, dynamic>? dateRange;

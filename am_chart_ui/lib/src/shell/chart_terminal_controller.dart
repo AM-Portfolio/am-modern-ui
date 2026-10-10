@@ -8,8 +8,8 @@ import '../timeframe/chart_timeframe.dart';
 
 final chartTerminalProvider =
     NotifierProvider<ChartTerminalController, ChartTerminalState>(
-  ChartTerminalController.new,
-);
+      ChartTerminalController.new,
+    );
 
 class ChartPaneState {
   const ChartPaneState({
@@ -79,8 +79,10 @@ class ChartTerminalState {
   final int activePaneIndex;
   final List<WatchlistSymbol> searchHits;
   final int bottomTab;
+
   /// Bumped by [ChartTerminalController.requestFit] for the active pane.
   final int fitEpoch;
+
   /// Shared vertical crosshair time across multi-pane layouts (null = clear).
   final DateTime? syncedCrosshairTime;
 
@@ -142,19 +144,16 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
   }
 
   static ChartPaneState _emptyPane(String id, String symbol) => ChartPaneState(
-        id: id,
-        symbol: symbol,
-        exchange: _exchangeFor(symbol),
-        timeframe: ChartTimeframe.y1,
-        chartType: ChartTypeId.candlestick,
-        bars: const [],
-        loading: true,
-      );
+    id: id,
+    symbol: symbol,
+    exchange: _exchangeFor(symbol),
+    timeframe: ChartTimeframe.y1,
+    chartType: ChartTypeId.candlestick,
+    bars: const [],
+    loading: true,
+  );
 
-  Future<void> bootstrap({
-    String? symbol,
-    String? timeframeCode,
-  }) async {
+  Future<void> bootstrap({String? symbol, String? timeframeCode}) async {
     final saved = await _store.load();
     var layout = saved?.layout ?? ChartGridLayout.one;
     final count = layout.paneCount;
@@ -212,9 +211,7 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
       panes: panes,
       activePaneIndex: active,
     );
-    await Future.wait([
-      for (var i = 0; i < panes.length; i++) reloadPane(i),
-    ]);
+    await Future.wait([for (var i = 0; i < panes.length; i++) reloadPane(i)]);
   }
 
   Future<void> setLayout(ChartGridLayout layout) async {
@@ -223,15 +220,17 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
     final active = state.active;
     while (current.length < count) {
       final i = current.length;
-      current.add(ChartPaneState(
-        id: 'p$i',
-        symbol: active.symbol,
-        exchange: active.exchange,
-        timeframe: ChartTimeframe.y1,
-        chartType: active.chartType,
-        bars: const [],
-        loading: true,
-      ));
+      current.add(
+        ChartPaneState(
+          id: 'p$i',
+          symbol: active.symbol,
+          exchange: active.exchange,
+          timeframe: ChartTimeframe.y1,
+          chartType: active.chartType,
+          bars: const [],
+          loading: true,
+        ),
+      );
     }
     if (current.length > count) {
       current.removeRange(count, current.length);
@@ -255,7 +254,11 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
     state = state.copyWith(activePaneIndex: index, searchHits: const []);
   }
 
-  Future<void> selectSymbol(String symbol, {String? exchange, int? paneIndex}) async {
+  Future<void> selectSymbol(
+    String symbol, {
+    String? exchange,
+    int? paneIndex,
+  }) async {
     final i = paneIndex ?? state.activePaneIndex;
     final panes = [...state.panes];
     panes[i] = panes[i].copyWith(
@@ -265,7 +268,11 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
       loading: true,
       clearError: true,
     );
-    state = state.copyWith(panes: panes, activePaneIndex: i, searchHits: const []);
+    state = state.copyWith(
+      panes: panes,
+      activePaneIndex: i,
+      searchHits: const [],
+    );
     await reloadPane(i);
     await _persist();
   }
@@ -289,9 +296,7 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
       for (final p in state.panes) p.copyWith(timeframe: tf, loading: true),
     ];
     state = state.copyWith(panes: panes, clearSyncedCrosshair: true);
-    await Future.wait([
-      for (var i = 0; i < panes.length; i++) reloadPane(i),
-    ]);
+    await Future.wait([for (var i = 0; i < panes.length; i++) reloadPane(i)]);
     await _persist();
   }
 
@@ -310,9 +315,7 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
 
   Future<void> setChartTypeForAll(ChartTypeId type) async {
     if (!type.isAvailable) return;
-    final panes = [
-      for (final p in state.panes) p.copyWith(chartType: type),
-    ];
+    final panes = [for (final p in state.panes) p.copyWith(chartType: type)];
     state = state.copyWith(panes: panes);
     await _persist();
   }
@@ -407,18 +410,20 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
   }
 
   Future<void> _persist() async {
-    await _store.save(WorkspaceSnapshot(
-      layout: state.layout,
-      activePaneIndex: state.activePaneIndex,
-      panes: [
-        for (final p in state.panes)
-          PaneSnapshot(
-            symbol: p.symbol,
-            timeframe: p.timeframe,
-            chartType: p.chartType,
-          ),
-      ],
-    ));
+    await _store.save(
+      WorkspaceSnapshot(
+        layout: state.layout,
+        activePaneIndex: state.activePaneIndex,
+        panes: [
+          for (final p in state.panes)
+            PaneSnapshot(
+              symbol: p.symbol,
+              timeframe: p.timeframe,
+              chartType: p.chartType,
+            ),
+        ],
+      ),
+    );
   }
 
   static String _exchangeFor(String symbol) {

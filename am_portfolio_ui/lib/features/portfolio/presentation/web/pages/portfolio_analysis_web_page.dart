@@ -23,8 +23,7 @@ class PortfolioAnalysisWebPage extends ConsumerStatefulWidget {
   @override
   ConsumerState<PortfolioAnalysisWebPage> createState() =>
       _PortfolioAnalysisWebPageState();
-} 
-
+}
 
 class _PortfolioAnalysisWebPageState
     extends ConsumerState<PortfolioAnalysisWebPage> {
@@ -63,7 +62,7 @@ class _PortfolioAnalysisWebPageState
         ref.invalidate(portfolioHoldingsProvider(activePortfolioId));
       }
     });
-    
+
     final analyticsRequest = PortfolioAnalyticsRequest(
       coreIdentifiers: CoreIdentifiers(portfolioId: activePortfolioId),
       featureToggles: _baseAnalyticsRequest.featureToggles,
@@ -74,10 +73,10 @@ class _PortfolioAnalysisWebPageState
       timeFrame: timeFrameCode,
     );
 
-    final summaryAsync = ref.watch(
-      portfolioSummaryProvider(activePortfolioId),
+    final summaryAsync = ref.watch(portfolioSummaryProvider(activePortfolioId));
+    final analyticsAsync = ref.watch(
+      portfolioAnalyticsProvider(analyticsRequest),
     );
-    final analyticsAsync = ref.watch(portfolioAnalyticsProvider(analyticsRequest));
     final holdingsAsync = ref.watch(
       portfolioHoldingsProvider(activePortfolioId),
     );
@@ -107,10 +106,15 @@ class _PortfolioAnalysisWebPageState
                       // Performance Chart Section
                       Expanded(
                         flex: 2,
-                        child: _buildPerformanceSection(context, summaryAsync, timeFrameCode)
-                            .animate()
-                            .fadeIn(duration: 600.ms, delay: 200.ms)
-                            .slideX(begin: -0.1, end: 0),
+                        child:
+                            _buildPerformanceSection(
+                                  context,
+                                  summaryAsync,
+                                  timeFrameCode,
+                                )
+                                .animate()
+                                .fadeIn(duration: 600.ms, delay: 200.ms)
+                                .slideX(begin: -0.1, end: 0),
                       ),
 
                       // Analytics Grid
@@ -194,9 +198,7 @@ class _PortfolioAnalysisWebPageState
 
       const Spacer(),
 
-      GlobalTimeFrameBar(
-        primaryColor: ModuleColors.portfolio,
-      ),
+      GlobalTimeFrameBar(primaryColor: ModuleColors.portfolio),
 
       const SizedBox(width: 16),
 
@@ -239,7 +241,8 @@ class _PortfolioAnalysisWebPageState
 
           Expanded(
             child: summaryAsync.when(
-              data: (summary) => _buildPerformanceChart(context, summary, timeFrameCode),
+              data: (summary) =>
+                  _buildPerformanceChart(context, summary, timeFrameCode),
               loading: () => _buildPerformanceChartSkeleton(context),
               error: (error, stack) => _buildErrorPlaceholder(
                 context,
@@ -268,28 +271,30 @@ class _PortfolioAnalysisWebPageState
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-          Icon(Icons.bar_chart, size: 64, color: context.statusNeutral),
-          const SizedBox(height: 16),
-          Text(
-            'Interactive Performance Chart',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Total Return: \$${summary.totalGainLoss.toStringAsFixed(2)}',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: summary.totalGainLoss >= 0 ? context.marketPositive : context.marketNegative,
-              fontWeight: FontWeight.bold,
+            Icon(Icons.bar_chart, size: 64, color: context.statusNeutral),
+            const SizedBox(height: 16),
+            Text(
+              'Interactive Performance Chart',
+              style: Theme.of(context).textTheme.titleMedium,
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Time Period: $timeFrameCode',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: context.textSecondary),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              'Total Return: \$${summary.totalGainLoss.toStringAsFixed(2)}',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: summary.totalGainLoss >= 0
+                    ? context.marketPositive
+                    : context.marketNegative,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Time Period: $timeFrameCode',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: context.textSecondary),
+            ),
+          ],
         ),
       ),
     ),
@@ -326,7 +331,11 @@ class _PortfolioAnalysisWebPageState
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error_outline, size: 64, color: context.statusError),
+                  Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: context.statusError,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'Error loading analytics',
@@ -347,7 +356,11 @@ class _PortfolioAnalysisWebPageState
     ),
   );
 
-  Widget _buildAnalyticsCharts(BuildContext context, PortfolioAnalytics analytics, PortfolioHoldings holdings) {
+  Widget _buildAnalyticsCharts(
+    BuildContext context,
+    PortfolioAnalytics analytics,
+    PortfolioHoldings holdings,
+  ) {
     // Extract allocation data
     final sectorAlloc = analytics.analytics?.sectorAllocation;
     final marketCapAlloc = analytics.analytics?.marketCapAllocation;
@@ -452,7 +465,11 @@ class _PortfolioAnalysisWebPageState
         children: [
           Row(
             children: [
-              Icon(Icons.account_balance, color: ModuleColors.portfolio, size: 20),
+              Icon(
+                Icons.account_balance,
+                color: ModuleColors.portfolio,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               const Expanded(
                 child: Text(
@@ -476,7 +493,10 @@ class _PortfolioAnalysisWebPageState
     ),
   );
 
-  Widget _buildTopHoldingsCard(BuildContext context, PortfolioHoldings holdings) {
+  Widget _buildTopHoldingsCard(
+    BuildContext context,
+    PortfolioHoldings holdings,
+  ) {
     final topHoldings = holdings.holdings.take(5).toList();
 
     return Card(
@@ -488,7 +508,11 @@ class _PortfolioAnalysisWebPageState
           children: [
             Row(
               children: [
-                Icon(Icons.trending_up, color: context.marketPositive, size: 20),
+                Icon(
+                  Icons.trending_up,
+                  color: context.marketPositive,
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
                 const Text(
                   'Top Holdings',
@@ -510,7 +534,9 @@ class _PortfolioAnalysisWebPageState
                           width: 32,
                           height: 32,
                           decoration: BoxDecoration(
-                            color: context.marketPositive.withValues(alpha: 0.2),
+                            color: context.marketPositive.withValues(
+                              alpha: 0.2,
+                            ),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           alignment: Alignment.center,
@@ -589,9 +615,17 @@ class _PortfolioAnalysisWebPageState
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _buildRiskMetricRow('Portfolio Beta', '1.15', Colors.orange),
-                _buildRiskMetricRow('Sharpe Ratio', '0.92', context.marketPositive),
+                _buildRiskMetricRow(
+                  'Sharpe Ratio',
+                  '0.92',
+                  context.marketPositive,
+                ),
                 _buildRiskMetricRow('Volatility', '18.5%', Colors.orange),
-                _buildRiskMetricRow('Max Drawdown', '-12.3%', context.marketNegative),
+                _buildRiskMetricRow(
+                  'Max Drawdown',
+                  '-12.3%',
+                  context.marketNegative,
+                ),
               ],
             ),
           ),

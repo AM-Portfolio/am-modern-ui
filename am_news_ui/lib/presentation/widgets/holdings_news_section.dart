@@ -96,7 +96,9 @@ class _HoldingsNewsSectionState extends ConsumerState<HoldingsNewsSection> {
     if (!enabled || key.isEmpty) return const SizedBox.shrink();
 
     final insight = ref.watch(newsInsightForSymbolsProvider(key));
-    final quotes = ref.watch(priceStreamProvider).maybeWhen(
+    final quotes = ref
+        .watch(priceStreamProvider)
+        .maybeWhen(
           data: (value) => value,
           orElse: () => const <String, QuoteChange>{},
         );

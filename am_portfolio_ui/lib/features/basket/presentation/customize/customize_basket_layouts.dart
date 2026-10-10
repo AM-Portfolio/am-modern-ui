@@ -1,10 +1,7 @@
 part of '../pages/manual_basket_creator_page.dart';
 
 extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
-  Widget _buildFlowChrome(
-    BuildContext context, {
-    Widget? trailing,
-  }) {
+  Widget _buildFlowChrome(BuildContext context, {Widget? trailing}) {
     return BasketFlowStepper(
       currentStep: BasketFlowStep.customize,
       trailing: trailing,
@@ -14,7 +11,10 @@ extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
   Widget _buildBottomActionBar(double coverage, List<BasketItem> displayItems) {
     final investAmount = double.tryParse(_amountController.text) ?? 0.0;
     final targetSum = _targetWeightSum(displayItems);
-    final customWeightSum = _totalCustomWeightPercent(displayItems, investAmount);
+    final customWeightSum = _totalCustomWeightPercent(
+      displayItems,
+      investAmount,
+    );
     final customValue = _totalCustomInvestment(displayItems);
     final canSaveDraft = _hasCalculated && !_hasStaleData && !_isCalculating;
 
@@ -48,6 +48,7 @@ extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
       isLoading: _isCalculating,
     );
   }
+
   // ---------------------------------------------------------------------------
   // DESKTOP LAYOUT (>= 1100px)
   // ---------------------------------------------------------------------------
@@ -70,9 +71,18 @@ extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
       children: [
         Expanded(
           flex: 3,
-          child: _buildLeftPanel(context, theme, displayItems, tabItems,
-              heldCount, subCount, missingCount, excludedCount,
-              isMobile: false, isTablet: false),
+          child: _buildLeftPanel(
+            context,
+            theme,
+            displayItems,
+            tabItems,
+            heldCount,
+            subCount,
+            missingCount,
+            excludedCount,
+            isMobile: false,
+            isTablet: false,
+          ),
         ),
         AnimatedContainer(
           duration: const Duration(milliseconds: 300),
@@ -90,7 +100,8 @@ extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
                   heldWeight,
                   subWeight,
                   missingWeight,
-                  coverage),
+                  coverage,
+                ),
         ),
       ],
     );
@@ -115,9 +126,18 @@ extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
     final theme = Theme.of(context);
     return Stack(
       children: [
-        _buildLeftPanel(context, theme, displayItems, tabItems, heldCount,
-            subCount, missingCount, excludedCount,
-            isMobile: false, isTablet: true),
+        _buildLeftPanel(
+          context,
+          theme,
+          displayItems,
+          tabItems,
+          heldCount,
+          subCount,
+          missingCount,
+          excludedCount,
+          isMobile: false,
+          isTablet: true,
+        ),
         // Slide-out summary drawer
         AnimatedPositioned(
           duration: const Duration(milliseconds: 250),
@@ -135,14 +155,17 @@ extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(children: [
-                      Text('Summary', style: theme.textTheme.titleMedium),
-                      const Spacer(),
-                      IconButton(
+                    Row(
+                      children: [
+                        Text('Summary', style: theme.textTheme.titleMedium),
+                        const Spacer(),
+                        IconButton(
                           icon: const Icon(Icons.close),
                           onPressed: () =>
-                              setState(() => _showSummaryDrawer = false)),
-                    ]),
+                              setState(() => _showSummaryDrawer = false),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 12),
                     CustomizeAllocationSummaryCard(
                       heldFraction: heldWeight / 100.0,
@@ -186,9 +209,18 @@ extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
     double coverage,
   ) {
     final theme = Theme.of(context);
-    return _buildLeftPanel(context, theme, displayItems, tabItems, heldCount,
-        subCount, missingCount, excludedCount,
-        isMobile: true, isTablet: false);
+    return _buildLeftPanel(
+      context,
+      theme,
+      displayItems,
+      tabItems,
+      heldCount,
+      subCount,
+      missingCount,
+      excludedCount,
+      isMobile: true,
+      isTablet: false,
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -217,24 +249,37 @@ extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
               // Stale data banner
               if (_hasStaleData)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   color: context.statusWarning.withValues(alpha: 0.12),
-                  child: Row(children: [
-                    Icon(Icons.warning_amber_rounded,
-                        color: context.statusWarning, size: 16),
-                    const SizedBox(width: 8),
-                    Expanded(
-                        child: Text('Calculation failed. Showing previous data.',
-                            style: TextStyle(
-                                color: context.statusWarning, fontSize: 12))),
-                    TextButton(
-                      onPressed: () {
-                        setState(() => _hasStaleData = false);
-                _scheduleRecalculate(immediate: true);
-                      },
-                      child: const Text('Retry'),
-                    ),
-                  ]),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        color: context.statusWarning,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Calculation failed. Showing previous data.',
+                          style: TextStyle(
+                            color: context.statusWarning,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          setState(() => _hasStaleData = false);
+                          _scheduleRecalculate(immediate: true);
+                        },
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
                 ),
 
               // Tab bar
@@ -264,8 +309,14 @@ extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
           ),
         ),
         // Constituent list
-        _buildConstituentList(context, theme, tabItems, displayItems,
-            isMobile: isMobile, isTablet: isTablet),
+        _buildConstituentList(
+          context,
+          theme,
+          tabItems,
+          displayItems,
+          isMobile: isMobile,
+          isTablet: isTablet,
+        ),
       ],
     );
   }
@@ -273,8 +324,11 @@ extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
   // ---------------------------------------------------------------------------
   // INVESTMENT CONTROLS
   // ---------------------------------------------------------------------------
-  Widget _buildInvestmentControls(BuildContext context, ThemeData theme,
-      {required bool isMobile}) {
+  Widget _buildInvestmentControls(
+    BuildContext context,
+    ThemeData theme, {
+    required bool isMobile,
+  }) {
     final presets = [25000, 50000, 100000, 200000, 500000];
     final chips = <Widget>[
       for (final preset in presets)
@@ -282,8 +336,8 @@ extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
           padding: const EdgeInsets.only(right: 6),
           child: AmToggleChip(
             label: CustomizeBasketFormatters.formatPreset(preset),
-            selected: !_isCustomAmount &&
-                _amountController.text == preset.toString(),
+            selected:
+                !_isCustomAmount && _amountController.text == preset.toString(),
             compact: true,
             accentColor: ModuleColors.portfolio,
             onTap: () => _setFixedAmount(preset),
@@ -301,79 +355,92 @@ extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
     return Container(
       padding: const EdgeInsets.all(12),
       color: context.cardColor,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Amount input — label lives inside the field as hint.
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            border: Border.all(color: context.borderColor),
-            borderRadius: AppRadii.button,
-          ),
-          child: Row(children: [
-            Text('₹',
-                style: theme.textTheme.bodyMedium
-                    ?.copyWith(color: context.textSecondary)),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _isCustomAmount
-                  ? TextField(
-                      controller: _amountController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration.collapsed(
-                        hintText: 'Investment Amount',
-                        hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                          color: context.textTertiary,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Amount input — label lives inside the field as hint.
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              border: Border.all(color: context.borderColor),
+              borderRadius: AppRadii.button,
+            ),
+            child: Row(
+              children: [
+                Text(
+                  '₹',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: context.textSecondary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _isCustomAmount
+                      ? TextField(
+                          controller: _amountController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration.collapsed(
+                            hintText: 'Investment Amount',
+                            hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                              color: context.textTertiary,
+                            ),
+                          ),
+                          onChanged: (_) => _scheduleRecalculate(),
+                          onSubmitted: (_) =>
+                              _scheduleRecalculate(immediate: true),
+                        )
+                      : Text(
+                          _amountController.text.isEmpty
+                              ? 'Investment Amount'
+                              : _amountController.text,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            fontWeight: _amountController.text.isEmpty
+                                ? FontWeight.w400
+                                : FontWeight.bold,
+                            color: _amountController.text.isEmpty
+                                ? context.textTertiary
+                                : null,
+                          ),
                         ),
-                      ),
-                      onChanged: (_) => _scheduleRecalculate(),
-                      onSubmitted: (_) =>
-                          _scheduleRecalculate(immediate: true),
-                    )
-                  : Text(
-                      _amountController.text.isEmpty
-                          ? 'Investment Amount'
-                          : _amountController.text,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        fontWeight: _amountController.text.isEmpty
-                            ? FontWeight.w400
-                            : FontWeight.bold,
-                        color: _amountController.text.isEmpty
-                            ? context.textTertiary
-                            : null,
-                      ),
-                    ),
+                ),
+                GestureDetector(
+                  onTap: () => setState(() => _isCustomAmount = true),
+                  child: Icon(
+                    Icons.edit,
+                    size: 16,
+                    color: context.textSecondary,
+                  ),
+                ),
+              ],
             ),
-            GestureDetector(
-              onTap: () => setState(() => _isCustomAmount = true),
-              child: Icon(Icons.edit, size: 16, color: context.textSecondary),
-            ),
-          ]),
-        ),
-        const SizedBox(height: 10),
-        // Chips
-        if (isMobile)
-          SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(children: chips))
-        else
-          Wrap(spacing: 6, runSpacing: 6, children: chips),
-        const SizedBox(height: 8),
-        if (_actualCost != null && _budgetVariance != null)
-          CustomizeActualCostBanner(
-            actualCost: _actualCost!,
-            variance: _budgetVariance!,
-            investmentAmount: double.tryParse(_amountController.text) ?? 0.0,
-            residualCash: _computeResidualCash(),
-            heldCoverage: _heldCoverageValue(),
-            formatCurrency: CustomizeBasketFormatters.formatRupee,
           ),
-        MinimumInvestmentWarningWidget(
-          minimumInvestmentAmount:
-              widget.opportunity.minimumInvestmentAmount ?? 50000.0,
-          currentInvestmentAmount:
-              double.tryParse(_amountController.text) ?? 0.0,
-        ),
-      ]),
+          const SizedBox(height: 10),
+          // Chips
+          if (isMobile)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(children: chips),
+            )
+          else
+            Wrap(spacing: 6, runSpacing: 6, children: chips),
+          const SizedBox(height: 8),
+          if (_actualCost != null && _budgetVariance != null)
+            CustomizeActualCostBanner(
+              actualCost: _actualCost!,
+              variance: _budgetVariance!,
+              investmentAmount: double.tryParse(_amountController.text) ?? 0.0,
+              residualCash: _computeResidualCash(),
+              heldCoverage: _heldCoverageValue(),
+              formatCurrency: CustomizeBasketFormatters.formatRupee,
+            ),
+          MinimumInvestmentWarningWidget(
+            minimumInvestmentAmount:
+                widget.opportunity.minimumInvestmentAmount ?? 50000.0,
+            currentInvestmentAmount:
+                double.tryParse(_amountController.text) ?? 0.0,
+          ),
+        ],
+      ),
     );
   }
 
@@ -384,8 +451,7 @@ extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
   // DESKTOP TABLE HEADER
   // ---------------------------------------------------------------------------
   Widget _buildDesktopTableHeader(BuildContext context, ThemeData theme) {
-    Widget cell(String label, int flex,
-            {TextAlign align = TextAlign.left}) =>
+    Widget cell(String label, int flex, {TextAlign align = TextAlign.left}) =>
         Expanded(
           flex: flex,
           child: Padding(
@@ -393,8 +459,9 @@ extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
             child: Text(
               label,
               style: theme.textTheme.labelSmall?.copyWith(
-                  color: context.textSecondary,
-                  fontWeight: FontWeight.bold),
+                color: context.textSecondary,
+                fontWeight: FontWeight.bold,
+              ),
               textAlign: align,
             ),
           ),
@@ -403,18 +470,21 @@ extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
     return Container(
       height: 48,
       color: context.backgroundColor,
-      child: Row(children: [
-        cell('Asset', 22),
-        Tooltip(
-          message: 'Allocation % = value from your holdings in this basket ÷ budget',
-          child: cell('Allocation\n(Target | of budget)', 10),
-        ),
-        cell('Your Holding\n(Units | Value)', 16),
-        cell('In Basket\n(Units)', 16),
-        cell('Gap vs ETF\n(Units)', 8, align: TextAlign.center),
-        cell('Basket\nValue', 13, align: TextAlign.right),
-        cell('Action', 9, align: TextAlign.center),
-      ]),
+      child: Row(
+        children: [
+          cell('Asset', 22),
+          Tooltip(
+            message:
+                'Allocation % = value from your holdings in this basket ÷ budget',
+            child: cell('Allocation\n(Target | of budget)', 10),
+          ),
+          cell('Your Holding\n(Units | Value)', 16),
+          cell('In Basket\n(Units)', 16),
+          cell('Gap vs ETF\n(Units)', 8, align: TextAlign.center),
+          cell('Basket\nValue', 13, align: TextAlign.right),
+          cell('Action', 9, align: TextAlign.center),
+        ],
+      ),
     );
   }
 
@@ -431,18 +501,23 @@ extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
   }) {
     // Build grouped items (group headers + rows)
     final directItems = tabItems
-        .where((i) =>
-            i.status == ItemStatus.held ||
-            (i.buyQuantity != null &&
-                i.status != ItemStatus.substitute &&
-                i.status != ItemStatus.missing))
+        .where(
+          (i) =>
+              i.status == ItemStatus.held ||
+              (i.buyQuantity != null &&
+                  i.status != ItemStatus.substitute &&
+                  i.status != ItemStatus.missing),
+        )
         .toList();
-    final subItems =
-        tabItems.where((i) => i.status == ItemStatus.substitute).toList();
+    final subItems = tabItems
+        .where((i) => i.status == ItemStatus.substitute)
+        .toList();
     final missingItems = tabItems
-        .where((i) =>
-            i.status == ItemStatus.missing &&
-            !_excludedItems.contains(i.stockSymbol))
+        .where(
+          (i) =>
+              i.status == ItemStatus.missing &&
+              !_excludedItems.contains(i.stockSymbol),
+        )
         .toList();
     final excludedItems = tabItems
         .where((i) => _excludedItems.contains(i.stockSymbol))
@@ -452,55 +527,84 @@ extension _ManualBasketCreatorPageLayouts on _ManualBasketCreatorPageState {
 
     void addGroup(String label, Color color, List<BasketItem> items) {
       if (items.isEmpty) return;
-      rows.add(BasketGroupHeader(label: '$label (${items.length})', color: color));
+      rows.add(
+        BasketGroupHeader(label: '$label (${items.length})', color: color),
+      );
       for (final item in items) {
         final originalIdx = displayItems.indexOf(item);
         if (originalIdx == -1) continue;
         final investAmount = double.tryParse(_amountController.text) ?? 0.0;
         final allocated = _allocatedUnits(item, investAmount);
         final priceOk = item.lastPrice != null && item.lastPrice! > 0;
-        rows.add(BasketConstituentRow(
-          item: item,
-          hasCalculated: _hasCalculated,
-          isExcluded: _excludedItems.contains(item.stockSymbol),
-          investmentAmount: investAmount,
-          customWeightPercent: _customWeightFor(item, investAmount),
-          allocatedUnits: allocated,
-          baseTargetQuantity: BasketAllocationMath.baseTargetQuantity(item, investAmount),
-          gapVsEtf: BasketAllocationMath.gapUnitsVsEtf(
-            item,
-            investAmount,
-            manualOverrideQty: _manualQtyOverrides[item.stockSymbol],
+        rows.add(
+          BasketConstituentRow(
+            item: item,
+            hasCalculated: _hasCalculated,
+            isExcluded: _excludedItems.contains(item.stockSymbol),
+            investmentAmount: investAmount,
+            customWeightPercent: _customWeightFor(item, investAmount),
+            allocatedUnits: allocated,
+            baseTargetQuantity: BasketAllocationMath.baseTargetQuantity(
+              item,
+              investAmount,
+            ),
+            gapVsEtf: BasketAllocationMath.gapUnitsVsEtf(
+              item,
+              investAmount,
+              manualOverrideQty: _manualQtyOverrides[item.stockSymbol],
+            ),
+            canIncrease:
+                priceOk &&
+                BasketAllocationMath.canIncreaseAllocation(
+                  item,
+                  investAmount,
+                  manualOverrideQty: _manualQtyOverrides[item.stockSymbol],
+                ),
+            canDecrease:
+                priceOk &&
+                BasketAllocationMath.canDecreaseAllocation(
+                  item,
+                  investAmount,
+                  manualOverrideQty: _manualQtyOverrides[item.stockSymbol],
+                ),
+            originalIdx: originalIdx,
+            onRemove: () => _removeItem(originalIdx),
+            onAdd: () => _addItem(originalIdx),
+            onAddGap: () =>
+                _openSubstituteSelectorFor(originalIdx, isGapFill: true),
+            onSubstitute: () => _openSubstituteSelectorFor(originalIdx),
+            onQtyChanged: (v) => _updateQuantity(originalIdx, v),
+            onTargetQtyChanged: (delta) =>
+                _updateTargetQuantity(originalIdx, delta),
+            onDirectTargetQtySet: (qty) =>
+                _setDirectTargetQuantity(originalIdx, qty),
+            onDirectTargetQtyChanged: (qty) =>
+                _setDirectTargetQuantity(originalIdx, qty),
           ),
-          canIncrease: priceOk &&
-              BasketAllocationMath.canIncreaseAllocation(
-            item,
-            investAmount,
-            manualOverrideQty: _manualQtyOverrides[item.stockSymbol],
-          ),
-          canDecrease: priceOk &&
-              BasketAllocationMath.canDecreaseAllocation(
-            item,
-            investAmount,
-            manualOverrideQty: _manualQtyOverrides[item.stockSymbol],
-          ),
-          originalIdx: originalIdx,
-          onRemove: () => _removeItem(originalIdx),
-          onAdd: () => _addItem(originalIdx),
-          onAddGap: () => _openSubstituteSelectorFor(originalIdx, isGapFill: true),
-          onSubstitute: () => _openSubstituteSelectorFor(originalIdx),
-          onQtyChanged: (v) => _updateQuantity(originalIdx, v),
-          onTargetQtyChanged: (delta) => _updateTargetQuantity(originalIdx, delta),
-          onDirectTargetQtySet: (qty) => _setDirectTargetQuantity(originalIdx, qty),
-          onDirectTargetQtyChanged: (qty) => _setDirectTargetQuantity(originalIdx, qty),
-        ));
+        );
       }
     }
 
-    addGroup('Direct Match', BasketItemStatusTheme.heldGroupColor(context), directItems);
-    addGroup('Substituted', BasketItemStatusTheme.substituteGroupColor(context), subItems);
-    addGroup('Missing / Swap', BasketItemStatusTheme.missingGroupColor(context), missingItems);
-    addGroup('Excluded', BasketItemStatusTheme.excludedGroupColor(context), excludedItems);
+    addGroup(
+      'Direct Match',
+      BasketItemStatusTheme.heldGroupColor(context),
+      directItems,
+    );
+    addGroup(
+      'Substituted',
+      BasketItemStatusTheme.substituteGroupColor(context),
+      subItems,
+    );
+    addGroup(
+      'Missing / Swap',
+      BasketItemStatusTheme.missingGroupColor(context),
+      missingItems,
+    );
+    addGroup(
+      'Excluded',
+      BasketItemStatusTheme.excludedGroupColor(context),
+      excludedItems,
+    );
 
     return SliverPadding(
       padding: EdgeInsets.only(

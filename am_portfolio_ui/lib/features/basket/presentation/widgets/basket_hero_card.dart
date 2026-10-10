@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'dart:ui';
@@ -36,10 +35,7 @@ class BasketHeroCard extends StatelessWidget {
                 ],
               ),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: context.glassOverlay(0.2),
-                width: 1,
-              ),
+              border: Border.all(color: context.glassOverlay(0.2), width: 1),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -51,40 +47,44 @@ class BasketHeroCard extends StatelessWidget {
                   fillColor: _getColorForScore(context, matchScore),
                 ),
                 const SizedBox(height: 24),
-                
+
                 // ETF Name
                 Text(
                   etfName,
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: context.textPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: context.textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
-                
+
                 // Gap Summary
                 if (missingStockCount != null && missingStockCount! > 0)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.orange.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Colors.orange.withOpacity(0.4),
-                      ),
+                      border: Border.all(color: Colors.orange.withOpacity(0.4)),
                     ),
                     child: Text(
                       'You are $missingStockCount stock${missingStockCount! > 1 ? 's' : ''} away from completing this basket',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.orange[200],
-                          ),
+                        color: Colors.orange[200],
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   )
                 else
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: ModuleColors.portfolio.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
@@ -95,8 +95,8 @@ class BasketHeroCard extends StatelessWidget {
                     child: Text(
                       'Perfect Match! You hold all required stocks.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: ModuleColors.portfolio,
-                          ),
+                        color: ModuleColors.portfolio,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ),

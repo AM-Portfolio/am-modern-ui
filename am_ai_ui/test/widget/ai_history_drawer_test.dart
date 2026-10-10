@@ -42,8 +42,7 @@ void main() {
       overrides: [
         aiSessionProvider.overrideWith(
           () => _StubSessionNotifier(
-            state ??
-                SessionListState(sessions: [sample], isLoading: false),
+            state ?? SessionListState(sessions: [sample], isLoading: false),
           ),
         ),
       ],

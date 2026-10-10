@@ -92,7 +92,8 @@ class _PortfolioHistoryChartWidgetState
     super.didUpdateWidget(oldWidget);
     if (oldWidget.portfolioId != widget.portfolioId ||
         oldWidget.timeFrame != widget.timeFrame) {
-      if (oldWidget.timeFrame == TimeFrame.oneDay && widget.timeFrame != TimeFrame.oneDay) {
+      if (oldWidget.timeFrame == TimeFrame.oneDay &&
+          widget.timeFrame != TimeFrame.oneDay) {
         context.read<PortfolioIntradayCubit>().stop();
       }
       if (oldWidget.portfolioId != widget.portfolioId) {
@@ -129,10 +130,7 @@ class _PortfolioHistoryChartWidgetState
     if (widget.timeFrame == TimeFrame.oneDay) {
       context.read<PortfolioIntradayCubit>().startLiveUpdates(id);
     } else {
-      context.read<PortfolioHistoryCubit>().loadHistory(
-        id,
-        widget.timeFrame,
-      );
+      context.read<PortfolioHistoryCubit>().loadHistory(id, widget.timeFrame);
     }
   }
 
@@ -172,7 +170,8 @@ class _PortfolioHistoryChartWidgetState
         if (state is PortfolioIntradayLoading) return _buildShimmer();
         if (state is PortfolioIntradayError) return _buildError(state.message);
         if (state is PortfolioIntradayEmpty) return _buildMarketClosedView();
-        if (state is PortfolioIntradayLoaded) return _buildIntradayChart(state.data);
+        if (state is PortfolioIntradayLoaded)
+          return _buildIntradayChart(state.data);
         return _buildShimmer();
       },
     );
@@ -197,7 +196,8 @@ class _PortfolioHistoryChartWidgetState
       builder: (ctx) {
         return BlocBuilder<PortfolioCubit, PortfolioState>(
           buildWhen: (prev, curr) =>
-              prev.portfolioList != curr.portfolioList || curr is PortfolioLoaded,
+              prev.portfolioList != curr.portfolioList ||
+              curr is PortfolioLoaded,
           builder: (bCtx, state) {
             final portfolios = state.portfolioList?.portfolios ?? [];
             if (portfolios.isEmpty) return const SizedBox.shrink();
@@ -216,7 +216,8 @@ class _PortfolioHistoryChartWidgetState
 
             final items = <PortfolioItem>[allItem, ...uniqueItems.values];
 
-            final currentId = _localSelectedId ??
+            final currentId =
+                _localSelectedId ??
                 ctx.selectedPortfolioId ??
                 widget.portfolioId ??
                 'all';
@@ -235,10 +236,8 @@ class _PortfolioHistoryChartWidgetState
                 borderRadius: 10,
                 menuMaxHeight: 148,
                 primaryColor: ModuleColors.portfolio,
-                backgroundColor:
-                    isDark ? context.glassOverlay(0.06) : null,
-                borderColor:
-                    isDark ? context.glassOverlay(0.1) : null,
+                backgroundColor: isDark ? context.glassOverlay(0.06) : null,
+                borderColor: isDark ? context.glassOverlay(0.1) : null,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                 items: items
                     .map(
@@ -285,7 +284,11 @@ class _PortfolioHistoryChartWidgetState
 
   Widget _buildChart(PortfolioHistoryLoaded state) {
     final bool isAllPortfolios =
-        (_localSelectedId ?? context.selectedPortfolioId ?? widget.portfolioId ?? 'all') == 'all';
+        (_localSelectedId ??
+            context.selectedPortfolioId ??
+            widget.portfolioId ??
+            'all') ==
+        'all';
 
     // ── Calculate Period Stats from raw data ──────────────────────────────
     if (state.snapshots.isNotEmpty) {
@@ -295,7 +298,9 @@ class _PortfolioHistoryChartWidgetState
       for (final snap in state.snapshots) {
         final rawWealth = isAllPortfolios
             ? snap.totalUserWealth
-            : (snap.portfolios.isNotEmpty ? snap.portfolios.first.close : snap.totalUserWealth);
+            : (snap.portfolios.isNotEmpty
+                  ? snap.portfolios.first.close
+                  : snap.totalUserWealth);
 
         if (rawWealth != null && !rawWealth.isNaN && rawWealth > 0) {
           startWealth ??= rawWealth;
@@ -303,8 +308,7 @@ class _PortfolioHistoryChartWidgetState
         }
       }
 
-      if (startWealth != null && endWealth != null && startWealth > 0) {
-      }
+      if (startWealth != null && endWealth != null && startWealth > 0) {}
     }
 
     // ── Candle mode (daily history, single series) ─────────────────────────
@@ -347,18 +351,27 @@ class _PortfolioHistoryChartWidgetState
         x++;
         continue;
       }
-      final label = _getXLabel(snap.snapshotDate, widget.timeFrame.code, lastPeriodUnit);
+      final label = _getXLabel(
+        snap.snapshotDate,
+        widget.timeFrame.code,
+        lastPeriodUnit,
+      );
       if (label.isNotEmpty) {
-        lastPeriodUnit = _getPeriodUnit(snap.snapshotDate, widget.timeFrame.code);
+        lastPeriodUnit = _getPeriodUnit(
+          snap.snapshotDate,
+          widget.timeFrame.code,
+        );
       }
-      candles.add(CommonCandlePoint(
-        x: x.toDouble(),
-        open: derived.open,
-        high: derived.high,
-        low: derived.low,
-        close: derived.close,
-        xLabel: label,
-      ));
+      candles.add(
+        CommonCandlePoint(
+          x: x.toDouble(),
+          open: derived.open,
+          high: derived.high,
+          low: derived.low,
+          close: derived.close,
+          xLabel: label,
+        ),
+      );
       previousClose = derived.close;
       x++;
     }
@@ -430,7 +443,8 @@ class _PortfolioHistoryChartWidgetState
         } else if (value <= 0.0) {
           value = lastValidMap[broker] ?? 0.0;
           if (value <= 0.0) {
-            value = double.nan; // Still keep point as a gap if no previous valid value
+            value = double
+                .nan; // Still keep point as a gap if no previous valid value
           }
         } else {
           lastValidMap[broker] = value;
@@ -440,20 +454,28 @@ class _PortfolioHistoryChartWidgetState
           firstValidMap[broker] ??= value;
         }
         final firstVal = firstValidMap[broker] ?? 0.0;
-        final pct = (firstVal > 0 && !value.isNaN) ? ((value - firstVal) / firstVal) * 100 : 0.0;
+        final pct = (firstVal > 0 && !value.isNaN)
+            ? ((value - firstVal) / firstVal) * 100
+            : 0.0;
 
-        primaryMap[broker]!.add(CommonChartDataPoint(
-          x: plotIndex.toDouble(),
-          y: value,
-          xLabel: label,
-          yLabel: value.isNaN ? '' : '₹${_formatNum(value)}',
-        ));
-        secondaryMap[broker]!.add(CommonChartDataPoint(
-          x: plotIndex.toDouble(),
-          y: value.isNaN ? double.nan : pct,
-          xLabel: label,
-          yLabel: value.isNaN ? '' : '${pct >= 0 ? '+' : ''}${pct.toStringAsFixed(2)}%',
-        ));
+        primaryMap[broker]!.add(
+          CommonChartDataPoint(
+            x: plotIndex.toDouble(),
+            y: value,
+            xLabel: label,
+            yLabel: value.isNaN ? '' : '₹${_formatNum(value)}',
+          ),
+        );
+        secondaryMap[broker]!.add(
+          CommonChartDataPoint(
+            x: plotIndex.toDouble(),
+            y: value.isNaN ? double.nan : pct,
+            xLabel: label,
+            yLabel: value.isNaN
+                ? ''
+                : '${pct >= 0 ? '+' : ''}${pct.toStringAsFixed(2)}%',
+          ),
+        );
         anyValid = true;
       }
       if (anyValid) plotIndex++;
@@ -467,14 +489,26 @@ class _PortfolioHistoryChartWidgetState
       if (primaryMap[broker]!.isEmpty) continue;
       final color = _brokerPalette[i % _brokerPalette.length];
       // Capitalise broker label
-      final label = broker.substring(0, 1).toUpperCase() + broker.substring(1).toLowerCase();
-      primaryLines.add(ChartLineData(label: label, points: primaryMap[broker]!, color: color));
-      secondaryLines.add(ChartLineData(label: label, points: secondaryMap[broker]!, color: color));
+      final label =
+          broker.substring(0, 1).toUpperCase() +
+          broker.substring(1).toLowerCase();
+      primaryLines.add(
+        ChartLineData(label: label, points: primaryMap[broker]!, color: color),
+      );
+      secondaryLines.add(
+        ChartLineData(
+          label: label,
+          points: secondaryMap[broker]!,
+          color: color,
+        ),
+      );
     }
 
     if (primaryLines.isEmpty) return _buildEmpty();
 
-    final activeLines = _activeFormat == ChartFormat.secondary ? secondaryLines : primaryLines;
+    final activeLines = _activeFormat == ChartFormat.secondary
+        ? secondaryLines
+        : primaryLines;
 
     return _buildChartContainer(
       activeLines: activeLines,
@@ -494,10 +528,14 @@ class _PortfolioHistoryChartWidgetState
     int plotIndex = 0;
 
     final bool isAllPortfolios =
-        (_localSelectedId ?? context.selectedPortfolioId ?? widget.portfolioId ?? 'all') == 'all';
+        (_localSelectedId ??
+            context.selectedPortfolioId ??
+            widget.portfolioId ??
+            'all') ==
+        'all';
 
     final String tfCode = widget.timeFrame.code;
-    
+
     // 1. Pad data to stretch X-axis for young portfolios
     final paddedSnapshots = _padSnapshots(state.snapshots, widget.timeFrame);
     final thinnedSnapshots = _thinSnapshots(paddedSnapshots, tfCode);
@@ -520,20 +558,25 @@ class _PortfolioHistoryChartWidgetState
       if (value.isNaN) {
         // It's a padding point, keep the gap but increment index
         final label = _getXLabel(snap.snapshotDate, tfCode, lastPeriodUnit);
-        if (label.isNotEmpty) lastPeriodUnit = _getPeriodUnit(snap.snapshotDate, tfCode);
-        
-        primaryPoints.add(CommonChartDataPoint(
-          x: plotIndex.toDouble(),
-          y: double.nan,
-          xLabel: label,
-          yLabel: '',
-        ));
-        secondaryPoints.add(CommonChartDataPoint(
-          x: plotIndex.toDouble(),
-          y: double.nan,
-          xLabel: label,
-          yLabel: '',
-        ));
+        if (label.isNotEmpty)
+          lastPeriodUnit = _getPeriodUnit(snap.snapshotDate, tfCode);
+
+        primaryPoints.add(
+          CommonChartDataPoint(
+            x: plotIndex.toDouble(),
+            y: double.nan,
+            xLabel: label,
+            yLabel: '',
+          ),
+        );
+        secondaryPoints.add(
+          CommonChartDataPoint(
+            x: plotIndex.toDouble(),
+            y: double.nan,
+            xLabel: label,
+            yLabel: '',
+          ),
+        );
         plotIndex++;
         continue;
       }
@@ -552,43 +595,49 @@ class _PortfolioHistoryChartWidgetState
       if (!value.isNaN) {
         firstValidValue ??= value;
       }
-      
-      final pct = (firstValidValue != null && firstValidValue! > 0 && !value.isNaN)
+
+      final pct =
+          (firstValidValue != null && firstValidValue! > 0 && !value.isNaN)
           ? ((value - firstValidValue!) / firstValidValue!) * 100
           : 0.0;
-          
+
       final label = _getXLabel(snap.snapshotDate, tfCode, lastPeriodUnit);
       if (label.isNotEmpty) {
         lastPeriodUnit = _getPeriodUnit(snap.snapshotDate, tfCode);
       }
 
-      primaryPoints.add(CommonChartDataPoint(
-        x: plotIndex.toDouble(),
-        y: value,
-        xLabel: label,
-        yLabel: value.isNaN ? '' : '₹${_formatNum(value)}',
-      ));
-      secondaryPoints.add(CommonChartDataPoint(
-        x: plotIndex.toDouble(),
-        y: value.isNaN ? double.nan : pct,
-        xLabel: label,
-        yLabel: value.isNaN ? '' : '${pct >= 0 ? '+' : ''}${pct.toStringAsFixed(2)}%',
-      ));
+      primaryPoints.add(
+        CommonChartDataPoint(
+          x: plotIndex.toDouble(),
+          y: value,
+          xLabel: label,
+          yLabel: value.isNaN ? '' : '₹${_formatNum(value)}',
+        ),
+      );
+      secondaryPoints.add(
+        CommonChartDataPoint(
+          x: plotIndex.toDouble(),
+          y: value.isNaN ? double.nan : pct,
+          xLabel: label,
+          yLabel: value.isNaN
+              ? ''
+              : '${pct >= 0 ? '+' : ''}${pct.toStringAsFixed(2)}%',
+        ),
+      );
       plotIndex++;
     }
 
     if (primaryPoints.isEmpty) return _buildEmpty();
 
-    final activeData = _activeFormat == ChartFormat.secondary ? secondaryPoints : primaryPoints;
+    final activeData = _activeFormat == ChartFormat.secondary
+        ? secondaryPoints
+        : primaryPoints;
 
     if (primaryPoints.isNotEmpty) {
       // Stats already calculated and dispatched in _buildChart
     }
 
-    return _buildChartContainer(
-      singleData: activeData,
-      isMultiLine: false,
-    );
+    return _buildChartContainer(singleData: activeData, isMultiLine: false);
   }
 
   Widget _buildIntradayChart(List<PortfolioIntradayDto> data) {
@@ -609,35 +658,40 @@ class _PortfolioHistoryChartWidgetState
     }
 
     int idx = 0;
-    final primaryPoints = uniqueData.map((d) => CommonChartDataPoint(
-      x: (idx++).toDouble(),
-      y: d.totalWealth,
-      // Show label every 40 minutes (every 8th 5-min candle)
-      xLabel: (idx % 8 == 1) ? d.timestamp : '',
-      yLabel: '₹${_formatNum(d.totalWealth)}',
-    )).toList();
+    final primaryPoints = uniqueData
+        .map(
+          (d) => CommonChartDataPoint(
+            x: (idx++).toDouble(),
+            y: d.totalWealth,
+            // Show label every 40 minutes (every 8th 5-min candle)
+            xLabel: (idx % 8 == 1) ? d.timestamp : '',
+            yLabel: '₹${_formatNum(d.totalWealth)}',
+          ),
+        )
+        .toList();
 
     idx = 0;
-    final secondaryPoints = uniqueData.map((d) => CommonChartDataPoint(
-      x: (idx++).toDouble(),
-      y: d.changeFromOpenPct,
-      xLabel: (idx % 8 == 1) ? d.timestamp : '',
-      yLabel: '${d.changeFromOpenPct >= 0 ? "+" : ""}${d.changeFromOpenPct.toStringAsFixed(2)}%',
-    )).toList();
+    final secondaryPoints = uniqueData
+        .map(
+          (d) => CommonChartDataPoint(
+            x: (idx++).toDouble(),
+            y: d.changeFromOpenPct,
+            xLabel: (idx % 8 == 1) ? d.timestamp : '',
+            yLabel:
+                '${d.changeFromOpenPct >= 0 ? "+" : ""}${d.changeFromOpenPct.toStringAsFixed(2)}%',
+          ),
+        )
+        .toList();
 
     final startWealth = data.first.totalWealth;
     final endWealth = data.last.totalWealth;
-    if (startWealth > 0) {
-    }
+    if (startWealth > 0) {}
 
     final activeData = _activeFormat == ChartFormat.secondary
         ? secondaryPoints
         : primaryPoints;
 
-    return _buildChartContainer(
-      singleData: activeData,
-      isMultiLine: false,
-    );
+    return _buildChartContainer(singleData: activeData, isMultiLine: false);
   }
 
   /// Shared chart container (glassmorphism card + controls + chart area).
@@ -653,219 +707,244 @@ class _PortfolioHistoryChartWidgetState
     final isDark = theme.brightness == Brightness.dark;
     final isDesktop = MediaQuery.of(context).size.width >= 1100;
     final showCandles = candles != null;
-    final Color cardBase = isDark ? const Color(0xFF0D1B2A) : const Color(0xFFFFFFFF);
+    final Color cardBase = isDark
+        ? const Color(0xFF0D1B2A)
+        : const Color(0xFFFFFFFF);
 
     final inner = Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // ── Top Control Row ────────────────────────────────────────
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // ── Top Control Row ────────────────────────────────────────
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            if (widget.showPortfolioDropdown) _buildPortfolioTabs(),
+            const Spacer(),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (widget.showCandleToggle &&
+                    widget.timeFrame != TimeFrame.oneDay) ...[
+                  AppSegmentedControl<_HistoryChartKind>(
+                    selectedValue: _chartKind,
+                    children: const {
+                      _HistoryChartKind.line: 'Line',
+                      _HistoryChartKind.candle: 'Candle',
+                    },
+                    onValueChanged: (val) {
+                      setState(() => _chartKind = val);
+                    },
+                  ),
+                  if (!showCandles) const SizedBox(width: 8),
+                ],
+                if (widget.showFormatToggle && !showCandles)
+                  AppSegmentedControl<ChartFormat>(
+                    selectedValue: _activeFormat,
+                    children: const {
+                      ChartFormat.primary: '₹',
+                      ChartFormat.secondary: '%',
+                    },
+                    onValueChanged: (val) {
+                      setState(() {
+                        _activeFormat = val;
+                      });
+                    },
+                  ),
+                if (isDesktop) ...[
+                  const SizedBox(width: 16),
+                  _buildZoomButton(Icons.remove, () => _handleZoomAdjust(-0.2)),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${(_zoomScale * 100).toInt()}%',
+                    style: TextStyle(fontSize: 12, color: theme.hintColor),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildZoomButton(Icons.add, () => _handleZoomAdjust(0.2)),
+                ],
+              ],
+            ),
+          ],
+        ),
+        if (isMultiLine && activeLines != null) ...[
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 12,
+            runSpacing: 6,
+            children: activeLines.map((line) {
+              return Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (widget.showPortfolioDropdown) _buildPortfolioTabs(),
-                  const Spacer(),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (widget.showCandleToggle &&
-                          widget.timeFrame != TimeFrame.oneDay) ...[
-                        AppSegmentedControl<_HistoryChartKind>(
-                          selectedValue: _chartKind,
-                          children: const {
-                            _HistoryChartKind.line: 'Line',
-                            _HistoryChartKind.candle: 'Candle',
-                          },
-                          onValueChanged: (val) {
-                            setState(() => _chartKind = val);
-                          },
-                        ),
-                        if (!showCandles) const SizedBox(width: 8),
-                      ],
-                      if (widget.showFormatToggle && !showCandles)
-                        AppSegmentedControl<ChartFormat>(
-                          selectedValue: _activeFormat,
-                          children: const {
-                            ChartFormat.primary: '₹',
-                            ChartFormat.secondary: '%',
-                          },
-                          onValueChanged: (val) {
-                            setState(() {
-                              _activeFormat = val;
-                            });
-                          },
-                        ),
-                      if (isDesktop) ...[
-                        const SizedBox(width: 16),
-                        _buildZoomButton(Icons.remove, () => _handleZoomAdjust(-0.2)),
-                        const SizedBox(width: 8),
-                        Text('${(_zoomScale * 100).toInt()}%',
-                            style: TextStyle(fontSize: 12, color: theme.hintColor)),
-                        const SizedBox(width: 8),
-                        _buildZoomButton(Icons.add, () => _handleZoomAdjust(0.2)),
-                      ],
-                    ],
+                  Container(
+                    width: 24,
+                    height: 3,
+                    decoration: BoxDecoration(
+                      color: line.color,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    line.label,
+                    style: TextStyle(fontSize: 11, color: theme.hintColor),
                   ),
                 ],
-              ),
-              if (isMultiLine && activeLines != null) ...[
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 6,
-                  children: activeLines.map((line) {
-                    return Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 24,
-                          height: 3,
-                          decoration: BoxDecoration(
-                            color: line.color,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          line.label,
-                          style: TextStyle(fontSize: 11, color: theme.hintColor),
-                        ),
-                      ],
-                    );
-                  }).toList(),
-                ),
-              ],
-              const SizedBox(height: 16),
-              // ── Chart Area ─────────────────────────────────────────────
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  // The chart should naturally compress to fit the max width without scrolling
-                  final double baseWidth = constraints.maxWidth;
-                  final double calculatedWidth = (baseWidth * _zoomScale).clamp(constraints.maxWidth, double.infinity);
-                  final bool needsScroll = calculatedWidth > constraints.maxWidth;
-                  final double chartWidth = needsScroll ? calculatedWidth : constraints.maxWidth;
+              );
+            }).toList(),
+          ),
+        ],
+        const SizedBox(height: 16),
+        // ── Chart Area ─────────────────────────────────────────────
+        LayoutBuilder(
+          builder: (context, constraints) {
+            // The chart should naturally compress to fit the max width without scrolling
+            final double baseWidth = constraints.maxWidth;
+            final double calculatedWidth = (baseWidth * _zoomScale).clamp(
+              constraints.maxWidth,
+              double.infinity,
+            );
+            final bool needsScroll = calculatedWidth > constraints.maxWidth;
+            final double chartWidth = needsScroll
+                ? calculatedWidth
+                : constraints.maxWidth;
 
-                  final List<ChartLineData>? resolvedLines = isMultiLine
-                      ? (_activeFormat == ChartFormat.secondary ? allSecondaryLines : allPrimaryLines)
-                      : null;
+            final List<ChartLineData>? resolvedLines = isMultiLine
+                ? (_activeFormat == ChartFormat.secondary
+                      ? allSecondaryLines
+                      : allPrimaryLines)
+                : null;
 
-                  ChartAxisScale? rupeeAxis;
-                  if (_activeFormat != ChartFormat.secondary) {
-                    final ys = <double>[];
-                    if (candles != null) {
-                      for (final c in candles) {
-                        ys.addAll([c.open, c.high, c.low, c.close]);
-                      }
-                    } else if (resolvedLines != null) {
-                      for (final line in resolvedLines) {
-                        for (final p in line.points) {
-                          if (p.y.isFinite) ys.add(p.y);
-                        }
-                      }
-                    } else if (singleData != null) {
-                      for (final p in singleData) {
-                        if (p.y.isFinite) ys.add(p.y);
-                      }
-                    }
-                    if (ys.isNotEmpty) rupeeAxis = ChartAxisScale.fromValues(ys);
+            ChartAxisScale? rupeeAxis;
+            if (_activeFormat != ChartFormat.secondary) {
+              final ys = <double>[];
+              if (candles != null) {
+                for (final c in candles) {
+                  ys.addAll([c.open, c.high, c.low, c.close]);
+                }
+              } else if (resolvedLines != null) {
+                for (final line in resolvedLines) {
+                  for (final p in line.points) {
+                    if (p.y.isFinite) ys.add(p.y);
                   }
-                  String formatY(double val) {
-                    if (_activeFormat == ChartFormat.secondary && !showCandles) {
-                      return '${val.toStringAsFixed(2)}%';
-                    }
-                    return rupeeAxis?.format(val) ?? ChartAxisScale.compactRupee(val);
-                  }
+                }
+              } else if (singleData != null) {
+                for (final p in singleData) {
+                  if (p.y.isFinite) ys.add(p.y);
+                }
+              }
+              if (ys.isNotEmpty) rupeeAxis = ChartAxisScale.fromValues(ys);
+            }
+            String formatY(double val) {
+              if (_activeFormat == ChartFormat.secondary && !showCandles) {
+                return '${val.toStringAsFixed(2)}%';
+              }
+              return rupeeAxis?.format(val) ?? ChartAxisScale.compactRupee(val);
+            }
 
-                  Widget chartWidget = SizedBox(
-                    width: chartWidth,
-                    height: widget.height,
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        if (showCandles)
-                          ChartFactory.candle(
-                            candles: candles,
-                            config: CommonChartConfig(
-                              xInterval: 1,
-                              enableZoom: false,
-                              lockTooltipToTop: false,
-                              showGrid: true,
-                              showTitles: true,
-                              showTooltips: true,
-                              minY: rupeeAxis?.minY,
-                              maxY: rupeeAxis?.maxY,
-                              yInterval: rupeeAxis?.step,
-                              formatYLabel: formatY,
-                            ),
-                          )
-                        else
-                        ChartFactory.area(
-                          data: singleData ?? const [],
-                          lines: resolvedLines,
-                          color: ModuleColors.portfolio,
-                          config: CommonChartConfig(
-                            xInterval: 1, // Evaluate every index so our sparse labels are shown
-                            enableZoom: false,
-                            lockTooltipToTop: false,
-                            showGrid: true,
-                            showTitles: true,
-                            showTooltips: true,
-                            minY: rupeeAxis?.minY,
-                            maxY: rupeeAxis?.maxY,
-                            yInterval: rupeeAxis?.step,
-                            formatYLabel: formatY,
-                            onZoomChanged: (scale, adjust) {
-                              if (_zoomScale != scale || _adjustZoom != adjust) {
-                                WidgetsBinding.instance.addPostFrameCallback((_) {
-                                  if (mounted) setState(() { _zoomScale = scale; _adjustZoom = adjust; });
+            Widget chartWidget = SizedBox(
+              width: chartWidth,
+              height: widget.height,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  if (showCandles)
+                    ChartFactory.candle(
+                      candles: candles,
+                      config: CommonChartConfig(
+                        xInterval: 1,
+                        enableZoom: false,
+                        lockTooltipToTop: false,
+                        showGrid: true,
+                        showTitles: true,
+                        showTooltips: true,
+                        minY: rupeeAxis?.minY,
+                        maxY: rupeeAxis?.maxY,
+                        yInterval: rupeeAxis?.step,
+                        formatYLabel: formatY,
+                      ),
+                    )
+                  else
+                    ChartFactory.area(
+                      data: singleData ?? const [],
+                      lines: resolvedLines,
+                      color: ModuleColors.portfolio,
+                      config: CommonChartConfig(
+                        xInterval:
+                            1, // Evaluate every index so our sparse labels are shown
+                        enableZoom: false,
+                        lockTooltipToTop: false,
+                        showGrid: true,
+                        showTitles: true,
+                        showTooltips: true,
+                        minY: rupeeAxis?.minY,
+                        maxY: rupeeAxis?.maxY,
+                        yInterval: rupeeAxis?.step,
+                        formatYLabel: formatY,
+                        onZoomChanged: (scale, adjust) {
+                          if (_zoomScale != scale || _adjustZoom != adjust) {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (mounted)
+                                setState(() {
+                                  _zoomScale = scale;
+                                  _adjustZoom = adjust;
                                 });
-                              }
-                            },
-                          ),
-                          onMinMaxCalculated: (min, max) {
-                            if (_chartMinY != min || _chartMaxY != max) {
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                if (mounted) setState(() { _chartMinY = min; _chartMaxY = max; });
+                            });
+                          }
+                        },
+                      ),
+                      onMinMaxCalculated: (min, max) {
+                        if (_chartMinY != min || _chartMaxY != max) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (mounted)
+                              setState(() {
+                                _chartMinY = min;
+                                _chartMaxY = max;
                               });
-                            }
-                          },
-                        ),
-                        // End-of-line badges (line chart only)
-                        if (!showCandles && _chartMinY != null && _chartMaxY != null) ...[
-                          if (isMultiLine && resolvedLines != null)
-                            // One badge per broker line, stacked with slight vertical offset if they overlap
-                            ...resolvedLines.asMap().entries.map((entry) {
-                              return _EndOfLineBadge(
-                                lastPoint: entry.value.points.last,
-                                minY: _chartMinY!,
-                                maxY: _chartMaxY!,
-                                chartHeight: widget.height,
-                                isSecondary: _activeFormat == ChartFormat.secondary,
-                                color: entry.value.color,
-                                stackIndex: entry.key,
-                              );
-                            })
-                          else if (singleData != null && singleData.isNotEmpty)
-                            _EndOfLineBadge(
-                              lastPoint: singleData.last,
-                              minY: _chartMinY!,
-                              maxY: _chartMaxY!,
-                              chartHeight: widget.height,
-                              isSecondary: _activeFormat == ChartFormat.secondary,
-                            ),
-                        ],
-                      ],
+                          });
+                        }
+                      },
                     ),
-                  );
-
-                  if (needsScroll) {
-                    return SingleChildScrollView(scrollDirection: Axis.horizontal, child: chartWidget);
-                  }
-                  return chartWidget;
-                },
+                  // End-of-line badges (line chart only)
+                  if (!showCandles &&
+                      _chartMinY != null &&
+                      _chartMaxY != null) ...[
+                    if (isMultiLine && resolvedLines != null)
+                      // One badge per broker line, stacked with slight vertical offset if they overlap
+                      ...resolvedLines.asMap().entries.map((entry) {
+                        return _EndOfLineBadge(
+                          lastPoint: entry.value.points.last,
+                          minY: _chartMinY!,
+                          maxY: _chartMaxY!,
+                          chartHeight: widget.height,
+                          isSecondary: _activeFormat == ChartFormat.secondary,
+                          color: entry.value.color,
+                          stackIndex: entry.key,
+                        );
+                      })
+                    else if (singleData != null && singleData.isNotEmpty)
+                      _EndOfLineBadge(
+                        lastPoint: singleData.last,
+                        minY: _chartMinY!,
+                        maxY: _chartMaxY!,
+                        chartHeight: widget.height,
+                        isSecondary: _activeFormat == ChartFormat.secondary,
+                      ),
+                  ],
+                ],
               ),
-            ],
-          );
+            );
+
+            if (needsScroll) {
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: chartWidget,
+              );
+            }
+            return chartWidget;
+          },
+        ),
+      ],
+    );
 
     if (widget.embedMode) {
       return inner;
@@ -887,10 +966,13 @@ class _PortfolioHistoryChartWidgetState
               ],
             ),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-                color: context.glassOverlay(0.07)),
+            border: Border.all(color: context.glassOverlay(0.07)),
             boxShadow: [
-              BoxShadow(color: context.shadow(0.08), blurRadius: 24, offset: const Offset(0, 8)),
+              BoxShadow(
+                color: context.shadow(0.08),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
             ],
           ),
           child: inner,
@@ -898,7 +980,6 @@ class _PortfolioHistoryChartWidgetState
       ),
     );
   }
-
 
   Widget _buildZoomButton(IconData icon, VoidCallback onTap) {
     return GestureDetector(
@@ -927,7 +1008,10 @@ class _PortfolioHistoryChartWidgetState
     return woy;
   }
 
-  List<PortfolioSnapshotDto> _keepLastPerGroup<T extends PortfolioSnapshotDto>(List<T> raw, String Function(T) groupBy) {
+  List<PortfolioSnapshotDto> _keepLastPerGroup<T extends PortfolioSnapshotDto>(
+    List<T> raw,
+    String Function(T) groupBy,
+  ) {
     if (raw.isEmpty) return raw;
     final map = <String, PortfolioSnapshotDto>{};
     for (final item in raw) {
@@ -946,26 +1030,36 @@ class _PortfolioHistoryChartWidgetState
 
   /// Pads the start of the snapshots list with dummy points so the X-axis
   /// perfectly reflects the selected timeframe, even if the portfolio is brand new.
-  List<PortfolioSnapshotDto> _padSnapshots(List<PortfolioSnapshotDto> raw, TimeFrame tf) {
-    if (raw.isEmpty || tf == TimeFrame.all || tf == TimeFrame.oneDay) return raw;
+  List<PortfolioSnapshotDto> _padSnapshots(
+    List<PortfolioSnapshotDto> raw,
+    TimeFrame tf,
+  ) {
+    if (raw.isEmpty || tf == TimeFrame.all || tf == TimeFrame.oneDay)
+      return raw;
     final startDate = tf.dateRange.start;
     final firstRealDate = DateTime.tryParse(raw.first.snapshotDate ?? '');
-    
+
     if (firstRealDate != null && firstRealDate.isAfter(startDate)) {
       final startDay = DateTime(startDate.year, startDate.month, startDate.day);
-      final firstDay = DateTime(firstRealDate.year, firstRealDate.month, firstRealDate.day);
+      final firstDay = DateTime(
+        firstRealDate.year,
+        firstRealDate.month,
+        firstRealDate.day,
+      );
       final daysToPad = firstDay.difference(startDay).inDays;
-      
+
       if (daysToPad > 0) {
         final padding = <PortfolioSnapshotDto>[];
         for (int i = 0; i < daysToPad; i++) {
           final d = startDate.add(Duration(days: i));
-          padding.add(PortfolioSnapshotDto(
-            snapshotDate: d.toIso8601String(),
-            // Gaps, not cloned OHLC — otherwise 1M looks like 1W plus fake flat candles.
-            totalUserWealth: double.nan,
-            portfolios: const [],
-          ));
+          padding.add(
+            PortfolioSnapshotDto(
+              snapshotDate: d.toIso8601String(),
+              // Gaps, not cloned OHLC — otherwise 1M looks like 1W plus fake flat candles.
+              totalUserWealth: double.nan,
+              portfolios: const [],
+            ),
+          );
         }
         return [...padding, ...raw];
       }
@@ -973,7 +1067,10 @@ class _PortfolioHistoryChartWidgetState
     return raw;
   }
 
-  List<PortfolioSnapshotDto> _thinSnapshots(List<PortfolioSnapshotDto> raw, String code) {
+  List<PortfolioSnapshotDto> _thinSnapshots(
+    List<PortfolioSnapshotDto> raw,
+    String code,
+  ) {
     if (raw.length < 30) return raw;
 
     switch (code) {
@@ -1054,21 +1151,21 @@ class _PortfolioHistoryChartWidgetState
 
       switch (tfCode) {
         case '1D':
-          return DateFormat('h a').format(dt);        // "9 AM"
+          return DateFormat('h a').format(dt); // "9 AM"
         case '1W':
-          return DateFormat('EEE d').format(dt);      // "Mon 7"
+          return DateFormat('EEE d').format(dt); // "Mon 7"
         case '1M':
-          return DateFormat('MMM d').format(dt);      // "Jun 27"
+          return DateFormat('MMM d').format(dt); // "Jun 27"
         case '3M':
         case '6M':
         case 'YTD':
-          return DateFormat('MMM').format(dt);        // "Jun"
+          return DateFormat('MMM').format(dt); // "Jun"
         case '1Y':
-          return DateFormat("MMM ''yy").format(dt);   // "Jun '26"
+          return DateFormat("MMM ''yy").format(dt); // "Jun '26"
         case '3Y':
         case '5Y':
         case 'All':
-          return DateFormat('yyyy').format(dt);       // "2026"
+          return DateFormat('yyyy').format(dt); // "2026"
         default:
           return DateFormat('MMM d').format(dt);
       }
@@ -1091,41 +1188,38 @@ class _PortfolioHistoryChartWidgetState
   // ── Loading / Error / Empty States ───────────────────────────────────────
 
   Widget _buildShimmer() => SizedBox(
-        height: widget.height + 50,
-        child: const Center(child: CircularProgressIndicator()),
-      );
+    height: widget.height + 50,
+    child: const Center(child: CircularProgressIndicator()),
+  );
 
   Widget _buildError(String msg) => SizedBox(
-        height: widget.height,
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.bar_chart_rounded, size: 40, color: context.statusNeutral),
-              const SizedBox(height: 8),
-              Text(
-                'Could not load history',
-                style: TextStyle(color: context.textSecondary),
-              ),
-              TextButton(
-                onPressed: _load,
-                child: const Text('Retry'),
-              ),
-            ],
+    height: widget.height,
+    child: Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.bar_chart_rounded, size: 40, color: context.statusNeutral),
+          const SizedBox(height: 8),
+          Text(
+            'Could not load history',
+            style: TextStyle(color: context.textSecondary),
           ),
-        ),
-      );
+          TextButton(onPressed: _load, child: const Text('Retry')),
+        ],
+      ),
+    ),
+  );
 
   Widget _buildEmpty() => SizedBox(
-        height: widget.height,
-        child: Center(
-          child: Text(
-            'No history yet.\nCheck back after market close.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: context.textTertiary),
-          ),
-        ),
-      );
+    height: widget.height,
+    child: Center(
+      child: Text(
+        'No history yet.\nCheck back after market close.',
+        textAlign: TextAlign.center,
+        style: TextStyle(color: context.textTertiary),
+      ),
+    ),
+  );
 
   Widget _buildMarketClosedView() => SizedBox(
     height: widget.height,
@@ -1133,7 +1227,11 @@ class _PortfolioHistoryChartWidgetState
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.access_time_rounded, size: 40, color: context.statusNeutral),
+          Icon(
+            Icons.access_time_rounded,
+            size: 40,
+            color: context.statusNeutral,
+          ),
           const SizedBox(height: 12),
           Text(
             'Market Closed',
@@ -1161,8 +1259,10 @@ class _EndOfLineBadge extends StatelessWidget {
   final double maxY;
   final double chartHeight;
   final bool isSecondary;
+
   /// When set (multi-line mode), this colour overrides the default logic.
   final Color? color;
+
   /// Used to nudge overlapping badges apart (0 = no offset).
   final int stackIndex;
 
@@ -1184,16 +1284,21 @@ class _EndOfLineBadge extends StatelessWidget {
     final double drawingHeight = chartHeight - 30;
 
     final double range = maxY - minY;
-    final double percentFromBottom = range == 0 ? 0.5 : (lastPoint.y - minY) / range;
+    final double percentFromBottom = range == 0
+        ? 0.5
+        : (lastPoint.y - minY) / range;
     final double topPixels = 16 + (drawingHeight * (1 - percentFromBottom));
 
     // Nudge stacked badges apart by ~22px each so they don't sit directly on top
     final double nudge = stackIndex * 22.0;
 
     // Resolve badge color
-    final Color badgeColor = color ??
+    final Color badgeColor =
+        color ??
         (isSecondary
-            ? (lastPoint.y < 0 ? const Color(0xFF4A89FF) : const Color(0xFF00E676))
+            ? (lastPoint.y < 0
+                  ? const Color(0xFF4A89FF)
+                  : const Color(0xFF00E676))
             : ModuleColors.portfolio);
 
     return Positioned(
@@ -1205,7 +1310,11 @@ class _EndOfLineBadge extends StatelessWidget {
           color: badgeColor,
           borderRadius: BorderRadius.circular(4),
           boxShadow: [
-            BoxShadow(color: badgeColor.withOpacity(0.4), blurRadius: 4, offset: const Offset(0, 2)),
+            BoxShadow(
+              color: badgeColor.withOpacity(0.4),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
           ],
         ),
         child: Text(

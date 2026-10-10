@@ -39,10 +39,27 @@ class PortfolioMobileScreen extends ConsumerStatefulWidget {
   final VoidCallback? onBack;
   final String? initialTab;
   final ValueChanged<String>? onTabChanged;
-  final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
-  final Widget Function(String portfolioId, String? portfolioName, VoidCallback onCancel)? uploadPortfolioBuilder;
+  final Widget Function(
+    BuildContext context,
+    String portfolioId,
+    String? portfolioName,
+    VoidCallback onComplete,
+  )?
+  addTradeBuilder;
+  final Widget Function(
+    String portfolioId,
+    String? portfolioName,
+    VoidCallback onCancel,
+  )?
+  uploadPortfolioBuilder;
   final VoidCallback? onOpenDocIntel;
-  final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addAssetClassBuilder;
+  final Widget Function(
+    BuildContext context,
+    String portfolioId,
+    String? portfolioName,
+    VoidCallback onComplete,
+  )?
+  addAssetClassBuilder;
 
   @override
   ConsumerState<PortfolioMobileScreen> createState() =>
@@ -145,10 +162,27 @@ class PortfolioMobileView extends StatefulWidget {
   final VoidCallback? onBack;
   final String? initialTab;
   final ValueChanged<String>? onTabChanged;
-  final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addTradeBuilder;
-  final Widget Function(String portfolioId, String? portfolioName, VoidCallback onCancel)? uploadPortfolioBuilder;
+  final Widget Function(
+    BuildContext context,
+    String portfolioId,
+    String? portfolioName,
+    VoidCallback onComplete,
+  )?
+  addTradeBuilder;
+  final Widget Function(
+    String portfolioId,
+    String? portfolioName,
+    VoidCallback onCancel,
+  )?
+  uploadPortfolioBuilder;
   final VoidCallback? onOpenDocIntel;
-  final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addAssetClassBuilder;
+  final Widget Function(
+    BuildContext context,
+    String portfolioId,
+    String? portfolioName,
+    VoidCallback onComplete,
+  )?
+  addAssetClassBuilder;
 
   @override
   State<PortfolioMobileView> createState() => _PortfolioMobileViewState();
@@ -215,7 +249,11 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     final initialIndex = _tabIndexFromSlug(widget.initialTab);
     _isAddingTrade = _isAddTradeSlug(widget.initialTab);
     _wasOnBasketsTab = _isBasketsTab(widget.initialTab);
-    _tabController = TabController(length: 4, vsync: this, initialIndex: initialIndex);
+    _tabController = TabController(
+      length: 4,
+      vsync: this,
+      initialIndex: initialIndex,
+    );
     _tabController.addListener(() {
       if (mounted && !_tabController.indexIsChanging) {
         setState(() {});
@@ -343,9 +381,9 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
           currency: 'INR',
         );
         await context.read<PortfolioCubit>().updatePortfolio(
-              portfolio.portfolioId,
-              request,
-            );
+          portfolio.portfolioId,
+          request,
+        );
       },
     );
   }
@@ -373,7 +411,9 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     );
 
     if (confirm == true && mounted) {
-      await context.read<PortfolioCubit>().deletePortfolio(portfolio.portfolioId);
+      await context.read<PortfolioCubit>().deletePortfolio(
+        portfolio.portfolioId,
+      );
     }
   }
 
@@ -485,29 +525,45 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
           SecondarySidebarItem(
             title: 'Overview',
             icon: Icons.dashboard_outlined,
-            isSelected: _tabController.index == 0 && !_isAddingTrade && !_isUploadingPortfolio,
+            isSelected:
+                _tabController.index == 0 &&
+                !_isAddingTrade &&
+                !_isUploadingPortfolio,
             onTap: () => _selectTab(0),
           ),
           SecondarySidebarItem(
             title: 'Holdings',
             icon: Icons.wallet,
-            isSelected: _tabController.index == 1 && !_isAddingTrade && !_isUploadingPortfolio && !_isAddingAssetClass,
+            isSelected:
+                _tabController.index == 1 &&
+                !_isAddingTrade &&
+                !_isUploadingPortfolio &&
+                !_isAddingAssetClass,
             onTap: () => _selectTab(1),
           ),
           SecondarySidebarItem(
             title: 'Heatmap',
             icon: Icons.grid_view,
-            isSelected: _tabController.index == 2 && !_isAddingTrade && !_isUploadingPortfolio && !_isAddingAssetClass,
+            isSelected:
+                _tabController.index == 2 &&
+                !_isAddingTrade &&
+                !_isUploadingPortfolio &&
+                !_isAddingAssetClass,
             onTap: () => _selectTab(2),
           ),
           SecondarySidebarItem(
             title: 'Baskets',
             icon: Icons.shopping_basket_outlined,
-            isSelected: _tabController.index == 3 && !_isAddingTrade && !_isUploadingPortfolio && !_isAddingAssetClass,
+            isSelected:
+                _tabController.index == 3 &&
+                !_isAddingTrade &&
+                !_isUploadingPortfolio &&
+                !_isAddingAssetClass,
             onTap: () => _selectTab(3),
           ),
         ],
-        body: (_isAddingTrade &&
+        body:
+            (_isAddingTrade &&
                 widget.addTradeBuilder != null &&
                 _currentPortfolioId != null)
             ? widget.addTradeBuilder!(
@@ -521,49 +577,57 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
                 },
               )
             : (_isAddingAssetClass && _currentPortfolioId != null)
-                ? (widget.addAssetClassBuilder != null
-                    ? widget.addAssetClassBuilder!(
-                        context,
-                        _currentPortfolioId!,
-                        currentName,
-                        () { setState(() { _isAddingAssetClass = false; }); },
-                      )
-                    : AddAssetClassWorkspace(
-                        portfolioId: _currentPortfolioId!,
-                        portfolioName: currentName,
-                        onOpenDocIntel: widget.onOpenDocIntel,
-                        onComplete: () { setState(() { _isAddingAssetClass = false; }); },
-                      ))
-                : (_isUploadingPortfolio &&
-                widget.uploadPortfolioBuilder != null &&
-                _currentPortfolioId != null)
-                ? widget.uploadPortfolioBuilder!(
-                    _currentPortfolioId!,
-                    currentName,
-                    () {
-                      setState(() {
-                        _isUploadingPortfolio = false;
-                      });
-                    },
-                  )
-                : Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (widget.portfolios != null &&
-                        widget.portfolios!.any((p) => p.isDummy))
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-                        // Upload lives under Sync sheet — no second Upload here.
-                        child: const DemoAccountInlineBanner(),
-                      ),
-                    Expanded(
-                      child: PortfolioTabContentWidget(
-                        tabController: _tabController,
-                        currentPortfolioId: _currentPortfolioId!,
-                      ),
+            ? (widget.addAssetClassBuilder != null
+                  ? widget.addAssetClassBuilder!(
+                      context,
+                      _currentPortfolioId!,
+                      currentName,
+                      () {
+                        setState(() {
+                          _isAddingAssetClass = false;
+                        });
+                      },
+                    )
+                  : AddAssetClassWorkspace(
+                      portfolioId: _currentPortfolioId!,
+                      portfolioName: currentName,
+                      onOpenDocIntel: widget.onOpenDocIntel,
+                      onComplete: () {
+                        setState(() {
+                          _isAddingAssetClass = false;
+                        });
+                      },
+                    ))
+            : (_isUploadingPortfolio &&
+                  widget.uploadPortfolioBuilder != null &&
+                  _currentPortfolioId != null)
+            ? widget.uploadPortfolioBuilder!(
+                _currentPortfolioId!,
+                currentName,
+                () {
+                  setState(() {
+                    _isUploadingPortfolio = false;
+                  });
+                },
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (widget.portfolios != null &&
+                      widget.portfolios!.any((p) => p.isDummy))
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                      // Upload lives under Sync sheet — no second Upload here.
+                      child: const DemoAccountInlineBanner(),
                     ),
-                  ],
-                ),
+                  Expanded(
+                    child: PortfolioTabContentWidget(
+                      tabController: _tabController,
+                      currentPortfolioId: _currentPortfolioId!,
+                    ),
+                  ),
+                ],
+              ),
         floatingActionButton: null,
       ),
     );
@@ -760,7 +824,10 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
             children: [
               Icon(Icons.delete, size: 18, color: context.statusError),
               const SizedBox(width: 8),
-              Text('Delete Portfolio', style: TextStyle(color: context.statusError)),
+              Text(
+                'Delete Portfolio',
+                style: TextStyle(color: context.statusError),
+              ),
             ],
           ),
         ),

@@ -30,10 +30,7 @@ String _holdingsIdentity(PortfolioLoaded state) =>
 
 /// Portfolio overview widget showing summary and key metrics
 class PortfolioOverviewWidget extends ConsumerStatefulWidget {
-  const PortfolioOverviewWidget({
-    this.portfolioId,
-    super.key,
-  });
+  const PortfolioOverviewWidget({this.portfolioId, super.key});
   final String? portfolioId;
 
   @override
@@ -41,7 +38,8 @@ class PortfolioOverviewWidget extends ConsumerStatefulWidget {
       _PortfolioOverviewWidgetState();
 }
 
-class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidget> {
+class _PortfolioOverviewWidgetState
+    extends ConsumerState<PortfolioOverviewWidget> {
   // Variables for period values removed as backend handles this
 
   void _reloadAnalytics(ds.TimeFrame timeFrame) {
@@ -82,9 +80,9 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
           if (widget.portfolioId != null) {
             try {
               context.read<PortfolioAnalyticsCubit>().loadAnalytics(
-                    widget.portfolioId!,
-                    timeFrame: ref.read(appTimeFrameProvider),
-                  );
+                widget.portfolioId!,
+                timeFrame: ref.read(appTimeFrameProvider),
+              );
             } catch (_) {
               // Cubit may not be in tree, safe to ignore
             }
@@ -125,20 +123,19 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
       }
     });
     final selectedTimeFrame = ref.watch(appTimeFrameProvider);
-    
+
     ds.CommonLogger.debug(
-        '[PortfolioOverview] Building with portfolioId=$portfolioId',
-        tag: 'PortfolioUI');
+      '[PortfolioOverview] Building with portfolioId=$portfolioId',
+      tag: 'PortfolioUI',
+    );
 
     return BlocConsumer<PortfolioCubit, PortfolioState>(
       listenWhen: (previous, current) {
         if (portfolioId == null) return false;
-        if (current is PortfolioLoaded &&
-            current.portfolioId == portfolioId) {
+        if (current is PortfolioLoaded && current.portfolioId == portfolioId) {
           return false;
         }
-        if (current is PortfolioLoaded &&
-            current.portfolioId != portfolioId) {
+        if (current is PortfolioLoaded && current.portfolioId != portfolioId) {
           return false;
         }
         return current is PortfolioListLoaded ||
@@ -149,8 +146,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         if (portfolioId == null) return;
         final cubit = context.read<PortfolioCubit>();
         final current = cubit.state;
-        if (current is PortfolioLoaded &&
-            current.portfolioId == portfolioId) {
+        if (current is PortfolioLoaded && current.portfolioId == portfolioId) {
           return;
         }
         if (portfolioId == 'all') {
@@ -170,8 +166,9 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
       },
       builder: (context, state) {
         ds.CommonLogger.debug(
-            '[PortfolioOverview] State change: ${state.runtimeType}',
-            tag: 'PortfolioUI');
+          '[PortfolioOverview] State change: ${state.runtimeType}',
+          tag: 'PortfolioUI',
+        );
 
         // ── No portfolio selected ──
         if (portfolioId == null) {
@@ -179,8 +176,11 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.account_balance_wallet_outlined,
-                    size: 64, color: Theme.of(context).disabledColor),
+                Icon(
+                  Icons.account_balance_wallet_outlined,
+                  size: 64,
+                  color: Theme.of(context).disabledColor,
+                ),
                 const SizedBox(height: 16),
                 Text(
                   'Select a portfolio to view overview',
@@ -202,7 +202,11 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error_outline, size: 64, color: context.statusError),
+                  Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: context.statusError,
+                  ),
                   const SizedBox(height: 24),
                   Text(
                     'Something went wrong',
@@ -213,8 +217,8 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                     message,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
                   const SizedBox(height: 32),
                   ElevatedButton.icon(
@@ -230,7 +234,9 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                     label: const Text('Try Again'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 32, vertical: 16),
+                        horizontal: 32,
+                        vertical: 16,
+                      ),
                     ),
                   ),
                 ],
@@ -257,18 +263,21 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                 final isWeb = width >= 1100;
 
                 final isAggregate = portfolioId == 'all';
-                final masterOn =
-                    ref.watch(portfolioIntelligenceOverviewEnabledProvider);
-                final showHealth =
-                    ref.watch(portfolioIntelHealthEnabledProvider);
+                final masterOn = ref.watch(
+                  portfolioIntelligenceOverviewEnabledProvider,
+                );
+                final showHealth = ref.watch(
+                  portfolioIntelHealthEnabledProvider,
+                );
                 final showRisk = ref.watch(portfolioIntelRiskEnabledProvider);
                 final showXray = ref.watch(portfolioIntelXrayEnabledProvider);
-                final showStress =
-                    ref.watch(portfolioIntelStressEnabledProvider);
-                final showWhatIf =
-                    ref.watch(portfolioIntelWhatIfEnabledProvider);
-                final showAllocation =
-                    isAggregate || (!masterOn || !showXray);
+                final showStress = ref.watch(
+                  portfolioIntelStressEnabledProvider,
+                );
+                final showWhatIf = ref.watch(
+                  portfolioIntelWhatIfEnabledProvider,
+                );
+                final showAllocation = isAggregate || (!masterOn || !showXray);
 
                 return Stack(
                   children: [
@@ -410,8 +419,9 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                                               child: cards[1]
                                                   .animate()
                                                   .fadeIn(
-                                                      duration: 400.ms,
-                                                      delay: 100.ms)
+                                                    duration: 400.ms,
+                                                    delay: 100.ms,
+                                                  )
                                                   .slideY(begin: 0.2, end: 0),
                                             ),
                                           ],
@@ -422,8 +432,9 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                                               child: cards[2]
                                                   .animate()
                                                   .fadeIn(
-                                                      duration: 400.ms,
-                                                      delay: 200.ms)
+                                                    duration: 400.ms,
+                                                    delay: 200.ms,
+                                                  )
                                                   .slideY(begin: 0.2, end: 0),
                                             ),
                                             const SizedBox(width: 12),
@@ -431,8 +442,9 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                                               child: cards[3]
                                                   .animate()
                                                   .fadeIn(
-                                                      duration: 400.ms,
-                                                      delay: 300.ms)
+                                                    duration: 400.ms,
+                                                    delay: 300.ms,
+                                                  )
                                                   .slideY(begin: 0.2, end: 0),
                                             ),
                                           ],
@@ -519,10 +531,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
           showTimeFrameSelector: false,
         ),
         const SizedBox(height: 16),
-        SizedBox(
-          height: isPhone ? 650 : 700,
-          child: _AllocationPanelHost(),
-        ),
+        SizedBox(height: isPhone ? 650 : 700, child: _AllocationPanelHost()),
       ];
     }
 
@@ -556,9 +565,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
     const peerPadding = EdgeInsets.all(14);
 
     // Chart|Health peer: sized for 6 factors (Volatility may arrive after refresh).
-    final peerTopH = showHealth
-        ? (isTablet ? 440.0 : 460.0)
-        : chartH;
+    final peerTopH = showHealth ? (isTablet ? 440.0 : 460.0) : chartH;
     final chart = PortfolioComparisonChartSection(
       key: ValueKey('compare_${portfolioId}_${selectedTimeFrame.code}'),
       height: isPhone ? chartH : peerTopH,
@@ -570,12 +577,12 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
     final useThreeColBottom = isWeb || width >= 900;
     final fillBottom = useThreeColBottom;
     final movers = PortfolioTopMoversPanel(
-            portfolioId: portfolioId,
-            timeFrame: selectedTimeFrame,
-            showTimeFrameSelector: false,
-            compact: true,
-            fillHeight: fillBottom,
-          );
+      portfolioId: portfolioId,
+      timeFrame: selectedTimeFrame,
+      showTimeFrameSelector: false,
+      compact: true,
+      fillHeight: fillBottom,
+    );
     final health = showHealth
         ? PortfolioHealthCard(
             key: ValueKey('health_$portfolioId'),
@@ -727,8 +734,9 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
     // dimensions") and blanks Overview mid-rows on web.
     final canStretch = stretch && forceHeight != null;
     final row = Row(
-      crossAxisAlignment:
-          canStretch ? CrossAxisAlignment.stretch : CrossAxisAlignment.start,
+      crossAxisAlignment: canStretch
+          ? CrossAxisAlignment.stretch
+          : CrossAxisAlignment.start,
       children: [
         Expanded(flex: leftFlex, child: left),
         const SizedBox(width: 16),
@@ -750,9 +758,15 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
     final summaryToUse = state.summary;
     final selectedTimeFrame = ref.read(appTimeFrameProvider);
 
-    final double periodReturn = selectedTimeFrame.code == '1d' ? summaryToUse.todayChange : summaryToUse.totalGainLoss;
-    final double periodReturnPct = selectedTimeFrame.code == '1d' ? summaryToUse.todayChangePercentage : summaryToUse.totalGainLossPercentage;
-    final String periodLabel = selectedTimeFrame.code == 'all' ? 'total' : selectedTimeFrame.displayName;
+    final double periodReturn = selectedTimeFrame.code == '1d'
+        ? summaryToUse.todayChange
+        : summaryToUse.totalGainLoss;
+    final double periodReturnPct = selectedTimeFrame.code == '1d'
+        ? summaryToUse.todayChangePercentage
+        : summaryToUse.totalGainLossPercentage;
+    final String periodLabel = selectedTimeFrame.code == 'all'
+        ? 'total'
+        : selectedTimeFrame.displayName;
 
     final modulePink = ds.ModuleColors.portfolio;
 
@@ -765,18 +779,18 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         accentColor: periodReturn == 0
             ? context.statusNeutral
             : (periodReturn > 0
-                ? context.marketPositive
-                : context.marketNegative),
+                  ? context.marketPositive
+                  : context.marketNegative),
         chromeColor: modulePink,
         icon: periodReturn >= 0
             ? Icons.trending_up_rounded
             : Icons.trending_down_rounded,
-        isPositive: periodReturn == 0
-            ? null
-            : periodReturn > 0,
+        isPositive: periodReturn == 0 ? null : periodReturn > 0,
         compact: compact,
         glowBorder: glowBorder,
-        tooltip: selectedTimeFrame.code != 'all' ? 'Unrealized profit or loss in $periodLabel' : 'Total unrealized profit or loss across all holdings',
+        tooltip: selectedTimeFrame.code != 'all'
+            ? 'Unrealized profit or loss in $periodLabel'
+            : 'Total unrealized profit or loss across all holdings',
       ),
       PortfolioMetricCard(
         title: "Today's P&L",
@@ -786,8 +800,8 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         accentColor: summaryToUse.todayChange == 0
             ? context.statusNeutral
             : (summaryToUse.todayChange > 0
-                ? context.marketPositive
-                : context.marketNegative),
+                  ? context.marketPositive
+                  : context.marketNegative),
         chromeColor: modulePink,
         icon: summaryToUse.todayChange >= 0
             ? Icons.keyboard_double_arrow_up_rounded
@@ -809,8 +823,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         isPositive: null,
         compact: compact,
         glowBorder: false,
-        tooltip:
-            'Total value of all holdings based on current market price',
+        tooltip: 'Total value of all holdings based on current market price',
       ),
       PortfolioMetricCard(
         title: 'Invested Amount',
@@ -846,13 +859,14 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
     final highlightColor = resolved.highlight;
     final masterOn = ref.watch(portfolioIntelligenceOverviewEnabledProvider);
 
-    Widget block(double h, {int delayMs = 400}) => Container(
-          height: h,
-          decoration: BoxDecoration(
-            color: baseColor,
-            borderRadius: BorderRadius.circular(18),
-          ),
-        )
+    Widget block(double h, {int delayMs = 400}) =>
+        Container(
+              height: h,
+              decoration: BoxDecoration(
+                color: baseColor,
+                borderRadius: BorderRadius.circular(18),
+              ),
+            )
             .animate(onPlay: (c) => c.repeat())
             .shimmer(
               duration: 1200.ms,
@@ -882,11 +896,11 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                 crossAxisSpacing: 12,
                 children: List.generate(4, (index) {
                   return Container(
-                    decoration: BoxDecoration(
-                      color: baseColor,
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                  )
+                        decoration: BoxDecoration(
+                          color: baseColor,
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                      )
                       .animate(onPlay: (controller) => controller.repeat())
                       .shimmer(
                         duration: 1200.ms,
@@ -1002,26 +1016,30 @@ class _AllocationPanelHost extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<PortfolioCubit, PortfolioState>(
       builder: (context, portfolioState) {
-        final holdings =
-            portfolioState is PortfolioLoaded ? portfolioState.holdings : null;
-        final portfolioId =
-            portfolioState is PortfolioLoaded ? portfolioState.portfolioId : null;
+        final holdings = portfolioState is PortfolioLoaded
+            ? portfolioState.holdings
+            : null;
+        final portfolioId = portfolioState is PortfolioLoaded
+            ? portfolioState.portfolioId
+            : null;
         return BlocBuilder<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
           builder: (context, state) {
             void retry() {
               if (portfolioId == null || portfolioId.isEmpty) return;
-              context
-                  .read<PortfolioAnalyticsCubit>()
-                  .loadAnalytics(portfolioId);
+              context.read<PortfolioAnalyticsCubit>().loadAnalytics(
+                portfolioId,
+              );
             }
 
             if (state is PortfolioAnalyticsLoading) {
               return const AllocationPanelWidget(isLoading: true);
             } else if (state is PortfolioAnalyticsLoaded) {
-              final isLoading =
-                  state.isLoadingType(AnalyticsDataType.sectorAllocation);
-              final error =
-                  state.getErrorForType(AnalyticsDataType.sectorAllocation);
+              final isLoading = state.isLoadingType(
+                AnalyticsDataType.sectorAllocation,
+              );
+              final error = state.getErrorForType(
+                AnalyticsDataType.sectorAllocation,
+              );
               return AllocationPanelWidget(
                 sectorAllocation: state.sectorAllocation,
                 marketCapAllocation: state.marketCapAllocation,
@@ -1082,10 +1100,7 @@ class _ChartMoversAllocationRow extends StatelessWidget {
         const SizedBox(width: 16),
         const Expanded(
           flex: 1,
-          child: SizedBox(
-            height: 720,
-            child: _AllocationPanelHost(),
-          ),
+          child: SizedBox(height: 720, child: _AllocationPanelHost()),
         ),
       ],
     );

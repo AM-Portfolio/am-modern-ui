@@ -56,9 +56,9 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
         ? 1
         : (priorPriced * 0.5).ceil().clamp(1, priorPriced);
     final thinByCount = candidatePriced < minSectors && candidatePriced < 3;
-    final thinByValue =
-        priorValue > 0 && candidateValue < priorValue * 0.5;
-    final thinByOverview = overviewTotal != null &&
+    final thinByValue = priorValue > 0 && candidateValue < priorValue * 0.5;
+    final thinByOverview =
+        overviewTotal != null &&
         overviewTotal > 0 &&
         candidateValue < overviewTotal * 0.5;
 
@@ -170,7 +170,11 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
     };
 
     if (state is PortfolioAnalyticsLoaded) {
-      emit((state as PortfolioAnalyticsLoaded).copyWith(loadingTypes: loadingTypes));
+      emit(
+        (state as PortfolioAnalyticsLoaded).copyWith(
+          loadingTypes: loadingTypes,
+        ),
+      );
     } else {
       emit(PortfolioAnalyticsLoading(loadingTypes: loadingTypes));
     }
@@ -180,39 +184,44 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
     final sw = Stopwatch()..start();
 
     // Start full analytics fetch (takes ~58s due to live market data for Movers/Heatmap)
-    final fullAnalyticsFuture = _analyticsService.getPortfolioAnalyticsWithDefaults(
-      portfolioId, 
-      timeFrame: timeFrame,
-      featureToggles: featureToggles,
-    );
+    final fullAnalyticsFuture = _analyticsService
+        .getPortfolioAnalyticsWithDefaults(
+          portfolioId,
+          timeFrame: timeFrame,
+          featureToggles: featureToggles,
+        );
 
     // Fast fetch for allocations (uses MongoDB / fast current market data, ~100ms)
     try {
-      final allocations = await _analyticsService.getPortfolioAllocations(portfolioId);
+      final allocations = await _analyticsService.getPortfolioAllocations(
+        portfolioId,
+      );
       fastSectorAllocation = allocations.sectorAllocation;
       fastMarketCapAllocation = allocations.marketCapAllocation;
-      
+
       if (!isClosed && gen == _loadGeneration) {
         CommonLogger.debug(
           '🔍 Fast allocations loaded, emitting partial state',
           tag: 'PortfolioAnalyticsCubit',
         );
         if (state is PortfolioAnalyticsLoaded) {
-          emit((state as PortfolioAnalyticsLoaded).copyWith(
-            sectorAllocation: fastSectorAllocation,
-            marketCapAllocation: fastMarketCapAllocation,
-            loadingTypes: const {
-              AnalyticsDataType.heatmap, 
-              AnalyticsDataType.movers,
-            },
-          ));
+          emit(
+            (state as PortfolioAnalyticsLoaded).copyWith(
+              sectorAllocation: fastSectorAllocation,
+              marketCapAllocation: fastMarketCapAllocation,
+              loadingTypes: const {
+                AnalyticsDataType.heatmap,
+                AnalyticsDataType.movers,
+              },
+            ),
+          );
         } else {
           emit(
             PortfolioAnalyticsLoaded(
               sectorAllocation: fastSectorAllocation,
               marketCapAllocation: fastMarketCapAllocation,
               loadingTypes: const {
-                AnalyticsDataType.heatmap, 
+                AnalyticsDataType.heatmap,
                 AnalyticsDataType.movers,
               },
             ),
@@ -235,7 +244,8 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
 
       final analytics = await fullAnalyticsFuture.timeout(
         const Duration(seconds: 90),
-        onTimeout: () => throw TimeoutException('Full analytics timed out after 90s'),
+        onTimeout: () =>
+            throw TimeoutException('Full analytics timed out after 90s'),
       );
 
       CommonLogger.debug(
@@ -263,13 +273,12 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
       );
       final sectorEmpty =
           preferNonEmptyAllocation(
-                analytics.analytics.sectorAllocation,
-                fastSectorAllocation,
-              )
-              ?.sectorWeights
-              .isEmpty ??
+            analytics.analytics.sectorAllocation,
+            fastSectorAllocation,
+          )?.sectorWeights.isEmpty ??
           true;
-      final moversEmpty = analytics.analytics.movers == null ||
+      final moversEmpty =
+          analytics.analytics.movers == null ||
           (analytics.analytics.movers!.topGainers.isEmpty &&
               analytics.analytics.movers!.topLosers.isEmpty);
       if (sectorEmpty) {
@@ -318,7 +327,8 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
             analytics.analytics.sectorAllocation,
             fastSectorAllocation,
           ),
-          marketCapAllocation: analytics.analytics.marketCapAllocation ??
+          marketCapAllocation:
+              analytics.analytics.marketCapAllocation ??
               fastMarketCapAllocation,
           heatmap: mergedHeatmap,
           movers: resolvedMovers,
@@ -481,9 +491,9 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
       try {
         final analytics = await _analyticsService
             .getPortfolioAnalyticsWithDefaults(
-          portfolioId,
-          timeFrame: _lastLoadedTimeFrame,
-        );
+              portfolioId,
+              timeFrame: _lastLoadedTimeFrame,
+            );
 
         if (isClosed) return;
         emit(
@@ -492,7 +502,8 @@ class PortfolioAnalyticsCubit extends Cubit<PortfolioAnalyticsState> {
               analytics.analytics.sectorAllocation,
               currentState.sectorAllocation,
             ),
-            marketCapAllocation: analytics.analytics.marketCapAllocation ??
+            marketCapAllocation:
+                analytics.analytics.marketCapAllocation ??
                 currentState.marketCapAllocation,
             heatmap: preferNonEmptyHeatmap(
               analytics.analytics.heatmap,

@@ -65,8 +65,9 @@ class DiscoverOpportunityCard extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: DiscoverLayout.avatarRadius,
-                      backgroundColor:
-                          ModuleColors.portfolio.withValues(alpha: 0.15),
+                      backgroundColor: ModuleColors.portfolio.withValues(
+                        alpha: 0.15,
+                      ),
                       child: Text(
                         initial,
                         style: theme.textTheme.labelLarge?.copyWith(
@@ -379,10 +380,7 @@ class DiscoverOpportunityCard extends StatelessWidget {
 }
 
 class _CategoryPill extends StatelessWidget {
-  const _CategoryPill({
-    required this.label,
-    required this.accent,
-  });
+  const _CategoryPill({required this.label, required this.accent});
 
   final String label;
   final Color accent;
@@ -402,10 +400,10 @@ class _CategoryPill extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: accent,
-              fontWeight: FontWeight.w700,
-              height: 1.1,
-            ),
+          color: accent,
+          fontWeight: FontWeight.w700,
+          height: 1.1,
+        ),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
@@ -447,9 +445,9 @@ class _DiscoverCtaButton extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: onPrimary,
-            ),
+          fontWeight: FontWeight.w700,
+          color: onPrimary,
+        ),
       ),
     );
   }

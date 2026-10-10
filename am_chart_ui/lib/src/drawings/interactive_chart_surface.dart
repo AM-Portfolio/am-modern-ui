@@ -29,10 +29,13 @@ class InteractiveChartSurface extends StatefulWidget {
   final VoidCallback? onNeedOlderHistory;
   final int viewEpoch;
   final void Function(ChartBar? bar)? onCrosshair;
+
   /// Synced multi-pane crosshair time from another pane.
   final DateTime? externalCrosshairTime;
+
   /// Active tool from the shared workspace draw rail (none = pan/zoom).
   final ChartDrawTool drawTool;
+
   /// Bump to clear this pane's drawings (active pane clear-all).
   final int clearDrawingsEpoch;
   final ValueChanged<int>? onDrawingsCountChanged;
@@ -139,11 +142,9 @@ class _InteractiveChartSurfaceState extends State<InteractiveChartSurface> {
 
     if (_tool == ChartDrawTool.hLine || _tool == ChartDrawTool.vLine) {
       setState(() {
-        _drawings.add(ChartDrawing(
-          id: 'd${_idSeq++}',
-          tool: _tool,
-          points: [p],
-        ));
+        _drawings.add(
+          ChartDrawing(id: 'd${_idSeq++}', tool: _tool, points: [p]),
+        );
       });
       _notifyCount();
       return;
@@ -154,11 +155,13 @@ class _InteractiveChartSurfaceState extends State<InteractiveChartSurface> {
         setState(() => _pendingPoint = p);
       } else {
         setState(() {
-          _drawings.add(ChartDrawing(
-            id: 'd${_idSeq++}',
-            tool: _tool,
-            points: [_pendingPoint!, p],
-          ));
+          _drawings.add(
+            ChartDrawing(
+              id: 'd${_idSeq++}',
+              tool: _tool,
+              points: [_pendingPoint!, p],
+            ),
+          );
           _pendingPoint = null;
         });
         _notifyCount();
@@ -201,7 +204,9 @@ class _InteractiveChartSurfaceState extends State<InteractiveChartSurface> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, ctrl.text),
             child: const Text('Add'),
@@ -211,12 +216,14 @@ class _InteractiveChartSurfaceState extends State<InteractiveChartSurface> {
     );
     if (text == null || text.trim().isEmpty) return;
     setState(() {
-      _drawings.add(ChartDrawing(
-        id: 'd${_idSeq++}',
-        tool: ChartDrawTool.note,
-        points: [p],
-        text: text.trim(),
-      ));
+      _drawings.add(
+        ChartDrawing(
+          id: 'd${_idSeq++}',
+          tool: ChartDrawTool.note,
+          points: [p],
+          text: text.trim(),
+        ),
+      );
     });
     _notifyCount();
   }
@@ -247,8 +254,10 @@ class _ToolHint extends StatelessWidget {
       borderRadius: BorderRadius.circular(4),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Text(msg,
-            style: const TextStyle(fontSize: 11, color: Colors.white)),
+        child: Text(
+          msg,
+          style: const TextStyle(fontSize: 11, color: Colors.white),
+        ),
       ),
     );
   }
@@ -279,10 +288,8 @@ class _DrawingsPainter extends CustomPainter {
     );
     if (plot.width <= 0 || plot.height <= 0) return;
 
-    Offset map(Offset n) => Offset(
-          plot.left + n.dx * plot.width,
-          plot.top + n.dy * plot.height,
-        );
+    Offset map(Offset n) =>
+        Offset(plot.left + n.dx * plot.width, plot.top + n.dy * plot.height);
 
     for (final d in drawings) {
       _paintOne(canvas, plot, d, map);
@@ -308,14 +315,12 @@ class _DrawingsPainter extends CustomPainter {
       case ChartDrawTool.hLine:
         if (d.points.isEmpty) return;
         final y = map(d.points.first).dy;
-        canvas.drawLine(
-            Offset(plot.left, y), Offset(plot.right, y), paint);
+        canvas.drawLine(Offset(plot.left, y), Offset(plot.right, y), paint);
         break;
       case ChartDrawTool.vLine:
         if (d.points.isEmpty) return;
         final x = map(d.points.first).dx;
-        canvas.drawLine(
-            Offset(x, plot.top), Offset(x, plot.bottom), paint);
+        canvas.drawLine(Offset(x, plot.top), Offset(x, plot.bottom), paint);
         break;
       case ChartDrawTool.trendLine:
       case ChartDrawTool.measure:

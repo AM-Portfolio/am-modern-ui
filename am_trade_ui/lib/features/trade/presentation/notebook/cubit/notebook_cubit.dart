@@ -43,7 +43,9 @@ class NotebookCubit extends Cubit<NotebookState> {
         final items = await getNotebookItemsUseCase(
           parentId: parentId ?? currentState.currentParentId,
         );
-        emit(currentState.copyWith(items: items, currentParentId: parentId ?? currentState.currentParentId));
+        emit(currentState.copyWith(
+            items: items,
+            currentParentId: parentId ?? currentState.currentParentId));
       } catch (e) {
         emit(NotebookError(e.toString()));
       }

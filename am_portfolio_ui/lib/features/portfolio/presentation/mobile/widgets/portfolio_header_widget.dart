@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../internal/domain/entities/portfolio_list.dart';
 import 'package:am_common/am_common.dart';
 
-
 /// Widget that displays the portfolio selector and tab bar
 class PortfolioHeaderWidget extends StatelessWidget {
   const PortfolioHeaderWidget({
@@ -170,15 +169,28 @@ class PortfolioHeaderWidget extends StatelessWidget {
                       if (p.isBasket)
                         Container(
                           margin: const EdgeInsets.only(left: 8),
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            color: ModuleColors.portfolio.withValues(alpha: 0.1),
+                            color: ModuleColors.portfolio.withValues(
+                              alpha: 0.1,
+                            ),
                             borderRadius: BorderRadius.circular(4),
-                            border: Border.all(color: ModuleColors.portfolio.withValues(alpha: 0.3)),
+                            border: Border.all(
+                              color: ModuleColors.portfolio.withValues(
+                                alpha: 0.3,
+                              ),
+                            ),
                           ),
                           child: Text(
                             'BASKET',
-                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: ModuleColors.portfolio),
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: ModuleColors.portfolio,
+                            ),
                           ),
                         ),
                     ],
@@ -198,7 +210,10 @@ class PortfolioHeaderWidget extends StatelessWidget {
 
             ListTile(
               leading: Icon(Icons.logout, color: context.statusError),
-              title: Text('Logout', style: TextStyle(color: context.statusError)),
+              title: Text(
+                'Logout',
+                style: TextStyle(color: context.statusError),
+              ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 24),
               onTap: () {
                 Navigator.pop(context);
@@ -228,7 +243,10 @@ class PortfolioHeaderWidget extends StatelessWidget {
       Tab(icon: Icon(Icons.dashboard_outlined, size: 20), text: 'Overview'),
       Tab(icon: Icon(Icons.wallet, size: 20), text: 'Holdings'),
       Tab(icon: Icon(Icons.grid_view, size: 20), text: 'Heatmap'),
-      Tab(icon: Icon(Icons.shopping_basket_outlined, size: 20), text: 'Baskets'),
+      Tab(
+        icon: Icon(Icons.shopping_basket_outlined, size: 20),
+        text: 'Baskets',
+      ),
     ],
   );
 

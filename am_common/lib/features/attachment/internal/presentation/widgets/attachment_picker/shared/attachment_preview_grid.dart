@@ -70,9 +70,8 @@ class AttachmentPreviewGrid extends StatelessWidget {
           : null,
       behavior: HitTestBehavior.opaque,
       child: MouseRegion(
-        cursor: canViewImage
-            ? SystemMouseCursors.click
-            : SystemMouseCursors.basic,
+        cursor:
+            canViewImage ? SystemMouseCursors.click : SystemMouseCursors.basic,
         child: Stack(
           children: [
             Container(
@@ -233,7 +232,7 @@ class AttachmentPreviewGrid extends StatelessWidget {
                       child: CircularProgressIndicator(
                         value: loadingProgress.expectedTotalBytes != null
                             ? loadingProgress.cumulativeBytesLoaded /
-                                  loadingProgress.expectedTotalBytes!
+                                loadingProgress.expectedTotalBytes!
                             : null,
                       ),
                     );
@@ -351,4 +350,3 @@ class AttachmentPreviewGrid extends StatelessWidget {
     return Icons.insert_drive_file;
   }
 }
-

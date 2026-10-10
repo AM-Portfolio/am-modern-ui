@@ -97,16 +97,18 @@ class _AddFolderDialogState extends State<AddFolderDialog> {
                       children: [
                         Text(
                           'Create New Folder',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Organize your journal entries',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: context.textSecondary,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: context.textSecondary,
+                                  ),
                         ),
                       ],
                     ),

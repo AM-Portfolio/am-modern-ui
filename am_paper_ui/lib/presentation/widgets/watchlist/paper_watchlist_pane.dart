@@ -47,9 +47,7 @@ class _PaperWatchlistPaneState extends State<PaperWatchlistPane> {
   @override
   void initState() {
     super.initState();
-    _controller = WatchlistController(
-      onSelectSymbol: widget.onSelectSymbol,
-    );
+    _controller = WatchlistController(onSelectSymbol: widget.onSelectSymbol);
     _controller.bootstrap();
   }
 

@@ -22,6 +22,7 @@ class ChartPaneCard extends ConsumerStatefulWidget {
   final int paneIndex;
   final ChartPaneState pane;
   final bool isActive;
+
   /// Thin symbol label for 2/4 layouts (no TF/Fit).
   final bool showIdentityStrip;
   final ChartDrawTool drawTool;
@@ -44,9 +45,7 @@ class _ChartPaneCardState extends ConsumerState<ChartPaneCard> {
       chartTerminalProvider.select((s) => s.isMultiLayout),
     );
     final syncedTime = multi
-        ? ref.watch(
-            chartTerminalProvider.select((s) => s.syncedCrosshairTime),
-          )
+        ? ref.watch(chartTerminalProvider.select((s) => s.syncedCrosshairTime))
         : null;
 
     ref.listen(chartTerminalProvider.select((s) => s.fitEpoch), (prev, next) {
@@ -70,41 +69,40 @@ class _ChartPaneCardState extends ConsumerState<ChartPaneCard> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (widget.showIdentityStrip)
-              _IdentityStrip(
-                symbol: pane.symbol,
-                exchange: pane.exchange,
-              ),
+              _IdentityStrip(symbol: pane.symbol, exchange: pane.exchange),
             Expanded(
               child: pane.loading
                   ? const Center(child: CircularProgressIndicator())
                   : pane.error != null && pane.bars.isEmpty
-                      ? Center(
-                          child: Text(pane.error!,
-                              style: const TextStyle(fontSize: 12)))
-                      : InteractiveChartSurface(
-                          bars: pane.bars,
-                          chartType: pane.chartType,
-                          isMock: pane.isMock,
-                          viewEpoch: _viewEpoch,
-                          drawTool: widget.isActive
-                              ? widget.drawTool
-                              : ChartDrawTool.none,
-                          clearDrawingsEpoch: widget.isActive
-                              ? widget.clearDrawingsEpoch
-                              : 0,
-                          onDrawingsCountChanged: widget.isActive
-                              ? widget.onDrawingsCountChanged
-                              : null,
-                          onNeedOlderHistory: () {
-                            ctrl.setActivePane(widget.paneIndex);
-                            ctrl.widenHistoryForActivePane();
-                          },
-                          onCrosshair: multi
-                              ? (bar) =>
-                                  ctrl.setSyncedCrosshairTime(bar?.time)
-                              : null,
-                          externalCrosshairTime: syncedTime,
-                        ),
+                  ? Center(
+                      child: Text(
+                        pane.error!,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    )
+                  : InteractiveChartSurface(
+                      bars: pane.bars,
+                      chartType: pane.chartType,
+                      isMock: pane.isMock,
+                      viewEpoch: _viewEpoch,
+                      drawTool: widget.isActive
+                          ? widget.drawTool
+                          : ChartDrawTool.none,
+                      clearDrawingsEpoch: widget.isActive
+                          ? widget.clearDrawingsEpoch
+                          : 0,
+                      onDrawingsCountChanged: widget.isActive
+                          ? widget.onDrawingsCountChanged
+                          : null,
+                      onNeedOlderHistory: () {
+                        ctrl.setActivePane(widget.paneIndex);
+                        ctrl.widenHistoryForActivePane();
+                      },
+                      onCrosshair: multi
+                          ? (bar) => ctrl.setSyncedCrosshairTime(bar?.time)
+                          : null,
+                      externalCrosshairTime: syncedTime,
+                    ),
             ),
           ],
         ),
@@ -114,10 +112,7 @@ class _ChartPaneCardState extends ConsumerState<ChartPaneCard> {
 }
 
 class _IdentityStrip extends StatelessWidget {
-  const _IdentityStrip({
-    required this.symbol,
-    required this.exchange,
-  });
+  const _IdentityStrip({required this.symbol, required this.exchange});
 
   final String symbol;
   final String exchange;

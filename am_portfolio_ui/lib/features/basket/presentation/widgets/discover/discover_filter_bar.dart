@@ -31,11 +31,11 @@ class DiscoverFilterBar extends StatelessWidget {
   final VoidCallback onClearAll;
 
   static String periodShort(DiscoverPerformancePeriod p) => switch (p) {
-        DiscoverPerformancePeriod.oneY => '1Y',
-        DiscoverPerformancePeriod.threeY => '3Y',
-        DiscoverPerformancePeriod.fiveY => '5Y',
-        DiscoverPerformancePeriod.all => 'All',
-      };
+    DiscoverPerformancePeriod.oneY => '1Y',
+    DiscoverPerformancePeriod.threeY => '3Y',
+    DiscoverPerformancePeriod.fiveY => '5Y',
+    DiscoverPerformancePeriod.all => 'All',
+  };
 
   /// Trailing cluster width estimate for period chips + sort + clear.
   static const double _periodChipsTrailing = 268;
@@ -53,7 +53,7 @@ class DiscoverFilterBar extends StatelessWidget {
         builder: (context, constraints) {
           final showPeriodChips =
               constraints.maxWidth >= AmBreakpoints.mobile + 80 &&
-                  constraints.maxWidth >= _periodChipsTrailing + 180;
+              constraints.maxWidth >= _periodChipsTrailing + 180;
 
           return Row(
             children: [
@@ -150,15 +150,11 @@ class _PeriodMenu extends StatelessWidget {
           Text(
             periodLabel,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: ModuleColors.portfolio,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: ModuleColors.portfolio,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-          Icon(
-            Icons.arrow_drop_down,
-            color: ModuleColors.portfolio,
-            size: 18,
-          ),
+          Icon(Icons.arrow_drop_down, color: ModuleColors.portfolio, size: 18),
         ],
       ),
     );
@@ -205,9 +201,9 @@ class _SortMenu extends StatelessWidget {
             Text(
               discoverState.sortMenuLabel,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: ModuleColors.portfolio,
-                    fontWeight: FontWeight.w600,
-                  ),
+                color: ModuleColors.portfolio,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
           Icon(Icons.arrow_drop_down, color: ModuleColors.portfolio, size: 18),
@@ -234,9 +230,9 @@ class _ClearButton extends StatelessWidget {
       child: Text(
         'Clear',
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: context.colors.textSecondary,
-              fontWeight: FontWeight.w600,
-            ),
+          color: context.colors.textSecondary,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -272,8 +268,10 @@ class _ThemeOverflowRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final budget =
-            (constraints.maxWidth - trailingReserve).clamp(80.0, 9999.0);
+        final budget = (constraints.maxWidth - trailingReserve).clamp(
+          80.0,
+          9999.0,
+        );
         final moreWidth = _chipWidth('More ▾') + AppSpacing.sm;
         final topPicksWidth = _chipWidth('Top picks') + AppSpacing.sm;
         var used = topPicksWidth;
@@ -295,8 +293,9 @@ class _ThemeOverflowRow extends StatelessWidget {
         }
 
         if (selectedThemeId != null) {
-          final inOverflow =
-              overflow.indexWhere((t) => t.id == selectedThemeId);
+          final inOverflow = overflow.indexWhere(
+            (t) => t.id == selectedThemeId,
+          );
           if (inOverflow >= 0 && visible.isNotEmpty) {
             final selected = overflow.removeAt(inOverflow);
             overflow.insert(0, visible.removeLast());
@@ -328,8 +327,7 @@ class _ThemeOverflowRow extends StatelessWidget {
               chip(
                 label: 'Top picks',
                 selected: selectedThemeId == null,
-                onTap: () =>
-                    onThemeSelect(query: defaultQuery, themeId: null),
+                onTap: () => onThemeSelect(query: defaultQuery, themeId: null),
               ),
               for (final t in visible)
                 chip(
@@ -370,8 +368,7 @@ class _ThemeOverflowRow extends StatelessWidget {
                     child: IgnorePointer(
                       child: AmToggleChip(
                         label: 'More ▾',
-                        selected:
-                            overflow.any((t) => t.id == selectedThemeId),
+                        selected: overflow.any((t) => t.id == selectedThemeId),
                         compact: true,
                         accentColor: ModuleColors.portfolio,
                         onTap: () {},

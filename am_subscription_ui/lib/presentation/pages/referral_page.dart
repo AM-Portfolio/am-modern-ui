@@ -205,11 +205,7 @@ class _ReferralPageState extends State<ReferralPage> {
     );
   }
 
-  Widget _buildBody(
-    BuildContext context,
-    AppColorsTheme colors,
-    bool isDark,
-  ) {
+  Widget _buildBody(BuildContext context, AppColorsTheme colors, bool isDark) {
     if (_loading) {
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -399,10 +395,7 @@ class _HeroCardState extends State<_HeroCard>
                 animation: _pulse,
                 builder: (context, child) {
                   final t = Curves.easeInOut.transform(_pulse.value);
-                  return Transform.scale(
-                    scale: 1 + (t * 0.04),
-                    child: child,
-                  );
+                  return Transform.scale(scale: 1 + (t * 0.04), child: child);
                 },
                 child: Container(
                   padding: const EdgeInsets.all(12),
@@ -451,9 +444,7 @@ class _HeroCardState extends State<_HeroCard>
               Expanded(
                 child: _StatChip(
                   label: 'You earned',
-                  value: earnedDays == 0
-                      ? '0 days'
-                      : '$earnedDays days',
+                  value: earnedDays == 0 ? '0 days' : '$earnedDays days',
                   hint: earnedDays == 0
                       ? 'Start inviting'
                       : '~${_monthsLabel(earnedDays)}',
@@ -465,7 +456,8 @@ class _HeroCardState extends State<_HeroCard>
                 child: _StatChip(
                   label: 'Toward goal',
                   value: '$kReferralMaxMonthsAdvertised mo',
-                  hint: '${summary.qualifiedCount}/${summary.lifetimeCap} invites',
+                  hint:
+                      '${summary.qualifiedCount}/${summary.lifetimeCap} invites',
                   isDark: widget.isDark,
                   emphasize: true,
                 ),
@@ -522,13 +514,12 @@ class _HeroCardState extends State<_HeroCard>
             isDark: widget.isDark,
             onTap: _onMilestoneTap,
             remainingToSixMonths: () {
-              final needDays =
-                  (kReferralMaxMonthsAdvertised * 30) - earnedDays;
+              final needDays = (kReferralMaxMonthsAdvertised * 30) - earnedDays;
               if (needDays <= 0) {
                 return 'You are at the full ~$kReferralMaxMonthsAdvertised months reward.';
               }
-              final invitesNeeded =
-                  (needDays / kReferralRewardDaysPerInvite).ceil();
+              final invitesNeeded = (needDays / kReferralRewardDaysPerInvite)
+                  .ceil();
               return 'About $invitesNeeded more successful invite'
                   '${invitesNeeded == 1 ? '' : 's'} to reach ~$kReferralMaxMonthsAdvertised months.';
             }(),
@@ -568,7 +559,7 @@ class _SubscriptionTimerBanner extends StatelessWidget {
     final endLabel = end == null
         ? null
         : '${end.day.toString().padLeft(2, '0')}/'
-            '${end.month.toString().padLeft(2, '0')}/${end.year}';
+              '${end.month.toString().padLeft(2, '0')}/${end.year}';
 
     return Container(
       width: double.infinity,
@@ -582,11 +573,7 @@ class _SubscriptionTimerBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.timer_outlined,
-            color: Color(0xFFFFB300),
-            size: 22,
-          ),
+          const Icon(Icons.timer_outlined, color: Color(0xFFFFB300), size: 22),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -605,7 +592,7 @@ class _SubscriptionTimerBanner extends StatelessWidget {
                   remaining == null
                       ? 'Subscription active — end date unavailable'
                       : 'Timer $countdown'
-                          '${endLabel != null ? ' · ends $endLabel' : ''}',
+                            '${endLabel != null ? ' · ends $endLabel' : ''}',
                   style: context.text.caption().copyWith(
                     color: colors.textSecondary,
                     fontWeight: FontWeight.w600,
@@ -646,8 +633,8 @@ class _StatChip extends StatelessWidget {
         color: emphasize
             ? ModuleColors.portfolio.withValues(alpha: isDark ? 0.22 : 0.12)
             : (isDark
-                ? Colors.white.withValues(alpha: 0.06)
-                : Colors.black.withValues(alpha: 0.04)),
+                  ? Colors.white.withValues(alpha: 0.06)
+                  : Colors.black.withValues(alpha: 0.04)),
         border: Border.all(
           color: emphasize
               ? ModuleColors.portfolio.withValues(alpha: 0.45)
@@ -680,9 +667,7 @@ class _StatChip extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: context.text.caption().copyWith(
-              color: emphasize
-                  ? ModuleColors.portfolio
-                  : colors.textSecondary,
+              color: emphasize ? ModuleColors.portfolio : colors.textSecondary,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -755,8 +740,11 @@ class _MilestoneTrack extends StatelessWidget {
                     ),
                     for (final m in _milestones)
                       Positioned(
-                        left: (w * (m / kReferralMaxMonthsAdvertised))
-                                .clamp(10.0, w - 10) -
+                        left:
+                            (w * (m / kReferralMaxMonthsAdvertised)).clamp(
+                              10.0,
+                              w - 10,
+                            ) -
                             10,
                         top: -4,
                         child: _MilestoneDot(
@@ -765,7 +753,8 @@ class _MilestoneTrack extends StatelessWidget {
                           selected: selectedMonths == m,
                           onTap: () {
                             final tips = {
-                              1: '1 month ≈ ${30 ~/ kReferralRewardDaysPerInvite} successful invites '
+                              1:
+                                  '1 month ≈ ${30 ~/ kReferralRewardDaysPerInvite} successful invites '
                                   '(${kReferralRewardDaysPerInvite} days each).',
                               3: '3 months ≈ ${(90 / kReferralRewardDaysPerInvite).ceil()} invites — keep sharing!',
                               6: remainingToSixMonths,
@@ -987,10 +976,7 @@ class _InviteCodeCard extends StatelessWidget {
 }
 
 class _HowItWorksCard extends StatelessWidget {
-  const _HowItWorksCard({
-    required this.lifetimeCap,
-    required this.isDark,
-  });
+  const _HowItWorksCard({required this.lifetimeCap, required this.isDark});
 
   final int lifetimeCap;
   final bool isDark;
@@ -1091,10 +1077,7 @@ class _HowItWorksCard extends StatelessWidget {
 }
 
 class _HistorySection extends StatelessWidget {
-  const _HistorySection({
-    required this.history,
-    required this.isDark,
-  });
+  const _HistorySection({required this.history, required this.isDark});
 
   final List<ReferralHistoryItem> history;
   final bool isDark;
@@ -1154,8 +1137,8 @@ class _HistoryRow extends StatelessWidget {
     final dateLabel = when == null
         ? '—'
         : '${when.toLocal().year}-'
-            '${when.toLocal().month.toString().padLeft(2, '0')}-'
-            '${when.toLocal().day.toString().padLeft(2, '0')}';
+              '${when.toLocal().month.toString().padLeft(2, '0')}-'
+              '${when.toLocal().day.toString().padLeft(2, '0')}';
     final status = item.status.trim().isEmpty ? 'pending' : item.status.trim();
     final statusColor = _statusColor(status, colors);
 

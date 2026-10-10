@@ -73,6 +73,7 @@ class ConfigService {
   static FeatureFlagConfig _growthbook = FeatureFlagConfig.disabled;
 
   static FeatureFlagConfig get growthbook => _growthbook;
+
   /// Cluster: browser host (am-dev / am-preprod / am.asrax.in). Localhost → empty.
   /// Native (Android/iOS): [Uri.base] is `file:///` — no host.
   static String _bootstrapDomain() {
@@ -248,8 +249,7 @@ class ConfigService {
     if (_googleClientId.isEmpty && _googleClientIdFromDefine.isNotEmpty) {
       _googleClientId = _googleClientIdFromDefine;
     }
-    if (_googleIosClientId.isEmpty &&
-        _googleIosClientIdFromDefine.isNotEmpty) {
+    if (_googleIosClientId.isEmpty && _googleIosClientIdFromDefine.isNotEmpty) {
       _googleIosClientId = _googleIosClientIdFromDefine;
     }
 

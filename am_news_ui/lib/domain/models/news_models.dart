@@ -15,7 +15,8 @@ class NewsCard {
       thumbnail: json['thumbnail'] as String?,
       articleLink: json['article_link'] as String? ?? '',
       publishedAt: json['published_at'] as String?,
-      symbols: (json['symbols'] as List?)?.map((e) => e.toString()).toList() ??
+      symbols:
+          (json['symbols'] as List?)?.map((e) => e.toString()).toList() ??
           const [],
     );
   }
@@ -31,19 +32,16 @@ class NewsCard {
 }
 
 class InsightNews {
-  const InsightNews({
-    this.currentAffairs = const [],
-    this.holdings = const [],
-  });
+  const InsightNews({this.currentAffairs = const [], this.holdings = const []});
 
   factory InsightNews.fromJson(Map<String, dynamic> json) {
     List<NewsCard> parse(String key) {
       final raw = json[key];
       if (raw is! List) return const [];
       return sortNewsNewestFirst(
-        raw
-            .whereType<Map>()
-            .map((e) => NewsCard.fromJson(Map<String, dynamic>.from(e))),
+        raw.whereType<Map>().map(
+          (e) => NewsCard.fromJson(Map<String, dynamic>.from(e)),
+        ),
       );
     }
 
@@ -111,10 +109,8 @@ List<NewsCard> filterHoldingsNewsForSymbols(
   InsightNews news,
   Iterable<String> symbols,
 ) {
-  final allowed = {
-    for (final raw in symbols)
-      raw.trim().toUpperCase(),
-  }..removeWhere((s) => s.isEmpty);
+  final allowed = {for (final raw in symbols) raw.trim().toUpperCase()}
+    ..removeWhere((s) => s.isEmpty);
   if (allowed.isEmpty) return const [];
   return news.holdings.where((card) {
     for (final raw in card.symbols) {
