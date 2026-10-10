@@ -223,10 +223,13 @@ class IpoKpiStatsBar extends ConsumerWidget {
                 Text(
                   label,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: isSelected ? context.textPrimary : context.textSecondary,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    fontSize: 12,
-                  ),
+                        color: isSelected
+                            ? context.textPrimary
+                            : context.textSecondary,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.w500,
+                        fontSize: 12,
+                      ),
                 ),
               ],
             ),

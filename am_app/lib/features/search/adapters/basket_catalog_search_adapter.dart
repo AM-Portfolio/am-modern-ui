@@ -68,9 +68,8 @@ class BasketCatalogSearchAdapter {
   Future<List<BasketThemeHit>> _load() async {
     try {
       final loader = _catalogLoader;
-      final themes = loader != null
-          ? await loader()
-          : await _fetchFromNetwork();
+      final themes =
+          loader != null ? await loader() : await _fetchFromNetwork();
       _cache = themes;
       return themes;
     } catch (e, st) {

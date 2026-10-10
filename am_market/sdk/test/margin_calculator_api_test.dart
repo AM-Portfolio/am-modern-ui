@@ -11,7 +11,6 @@
 import 'package:am_market_client/api.dart';
 import 'package:test/test.dart';
 
-
 /// tests for MarginCalculatorApi
 void main() {
   // final instance = MarginCalculatorApi();
@@ -34,6 +33,5 @@ void main() {
     test('test calculateMarginAsync', () async {
       // TODO
     });
-
   });
 }

@@ -22,7 +22,10 @@ class SectorPerformanceView extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -52,9 +55,9 @@ class SectorPerformanceView extends StatelessWidget {
                 final sectorName = sector['sector'] ?? 'Unknown';
                 final change = (sector['change'] ?? 0.0).toDouble();
                 final stockCount = sector['stockCount'] ?? 0;
-                
+
                 final color = change >= 0 ? Colors.green : Colors.red;
-                
+
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Row(
@@ -63,7 +66,10 @@ class SectorPerformanceView extends StatelessWidget {
                         flex: 2,
                         child: Text(
                           sectorName,
-                          style: const TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                              color: Colors.black87,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -95,7 +101,8 @@ class SectorPerformanceView extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         '($stockCount)',
-                        style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+                        style: TextStyle(
+                            color: Colors.grey.shade500, fontSize: 11),
                       ),
                     ],
                   ),

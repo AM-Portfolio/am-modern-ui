@@ -95,18 +95,19 @@ class CalendarCardConfig {
     bool? isInteractive,
     Map<String, Color>? customColors,
     Map<String, dynamic>? metadata,
-  }) => CalendarCardConfig(
-    type: type ?? this.type,
-    title: title ?? this.title,
-    size: size ?? this.size,
-    layout: layout ?? this.layout,
-    theme: theme ?? this.theme,
-    showHeader: showHeader ?? this.showHeader,
-    showFooter: showFooter ?? this.showFooter,
-    isInteractive: isInteractive ?? this.isInteractive,
-    customColors: customColors ?? this.customColors,
-    metadata: metadata ?? this.metadata,
-  );
+  }) =>
+      CalendarCardConfig(
+        type: type ?? this.type,
+        title: title ?? this.title,
+        size: size ?? this.size,
+        layout: layout ?? this.layout,
+        theme: theme ?? this.theme,
+        showHeader: showHeader ?? this.showHeader,
+        showFooter: showFooter ?? this.showFooter,
+        isInteractive: isInteractive ?? this.isInteractive,
+        customColors: customColors ?? this.customColors,
+        metadata: metadata ?? this.metadata,
+      );
 }
 
 /// Data model for card content

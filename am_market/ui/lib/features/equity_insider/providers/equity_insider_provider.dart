@@ -20,7 +20,7 @@ final equityInsiderActiveSymbolProvider =
   EquityInsiderActiveSymbolNotifier.new,
 );
 
-/// In-session recently viewed stocks (max 5). 
+/// In-session recently viewed stocks (max 5).
 /// Reset when browser refreshes or new session begins.
 final recentlyViewedStocksProvider =
     NotifierProvider<RecentlyViewedStocksNotifier, List<String>>(
@@ -60,7 +60,8 @@ class RecentlyViewedStocksNotifier extends Notifier<List<String>> {
 }
 
 /// Fetches dynamic stock recommendations from security search API.
-final dynamicStockRecommendationsProvider = FutureProvider<List<String>>((ref) async {
+final dynamicStockRecommendationsProvider =
+    FutureProvider<List<String>>((ref) async {
   final sdkService = MarketDataSdkService();
   try {
     final results = await sdkService.securityApi.search(
@@ -70,7 +71,11 @@ final dynamicStockRecommendationsProvider = FutureProvider<List<String>>((ref) a
       limit: 8,
     );
     if (results != null && results.isNotEmpty) {
-      final symbols = results.map((d) => d.key?.symbol).whereType<String>().where((s) => s.isNotEmpty).toList();
+      final symbols = results
+          .map((d) => d.key?.symbol)
+          .whereType<String>()
+          .where((s) => s.isNotEmpty)
+          .toList();
       if (symbols.isNotEmpty) return symbols;
     }
   } catch (_) {}
@@ -110,7 +115,8 @@ class EquityFundamentalQuery {
           exchange.toUpperCase() == other.exchange.toUpperCase();
 
   @override
-  int get hashCode => symbol.toUpperCase().hashCode ^ exchange.toUpperCase().hashCode;
+  int get hashCode =>
+      symbol.toUpperCase().hashCode ^ exchange.toUpperCase().hashCode;
 }
 
 class EquityChartQuery {
@@ -141,7 +147,8 @@ class EquityChartQuery {
 }
 
 final equityStockChartDataProvider =
-    FutureProvider.family<MultiSeriesChartData, EquityChartQuery>((ref, query) async {
+    FutureProvider.family<MultiSeriesChartData, EquityChartQuery>(
+        (ref, query) async {
   final sdkService = MarketDataSdkService();
   try {
     if (GetIt.I.isRegistered<SecureStorageService>()) {
@@ -153,9 +160,10 @@ final equityStockChartDataProvider =
   } catch (_) {}
 
   try {
-    final chartSymbol = (query.exchange.toUpperCase() == 'BSE' && !query.symbol.contains(':'))
-        ? 'BSE:${query.symbol}'
-        : query.symbol;
+    final chartSymbol =
+        (query.exchange.toUpperCase() == 'BSE' && !query.symbol.contains(':'))
+            ? 'BSE:${query.symbol}'
+            : query.symbol;
     final response = await sdkService.analyticsApi.getHistoricalCharts(
       chartSymbol,
       range: query.timeframe,
@@ -166,7 +174,9 @@ final equityStockChartDataProvider =
 
     if (response != null && response.data.isNotEmpty) {
       final symKey = response.data.keys.firstWhere(
-        (k) => k.toUpperCase() == chartSymbol.toUpperCase() || k.toUpperCase() == query.symbol.toUpperCase(),
+        (k) =>
+            k.toUpperCase() == chartSymbol.toUpperCase() ||
+            k.toUpperCase() == query.symbol.toUpperCase(),
         orElse: () => response.data.keys.first,
       );
       final historical = response.data[symKey];
@@ -185,7 +195,9 @@ final equityStockChartDataProvider =
         );
         if (mResponse != null && mResponse.data.isNotEmpty) {
           final symKey = mResponse.data.keys.firstWhere(
-            (k) => k.toUpperCase() == chartSymbol.toUpperCase() || k.toUpperCase() == query.symbol.toUpperCase(),
+            (k) =>
+                k.toUpperCase() == chartSymbol.toUpperCase() ||
+                k.toUpperCase() == query.symbol.toUpperCase(),
             orElse: () => mResponse.data.keys.first,
           );
           final mHist = mResponse.data[symKey];
@@ -205,10 +217,14 @@ final equityStockChartDataProvider =
           chartSymbol,
           isIndexSymbol: false,
         );
-        if (ltpRes != null && ltpRes.containsKey('data') && ltpRes['data'] is Map) {
+        if (ltpRes != null &&
+            ltpRes.containsKey('data') &&
+            ltpRes['data'] is Map) {
           final dataMap = ltpRes['data'] as Map;
           final symKey = dataMap.keys.firstWhere(
-            (k) => k.toString().toUpperCase() == chartSymbol.toUpperCase() || k.toString().toUpperCase() == query.symbol.toUpperCase(),
+            (k) =>
+                k.toString().toUpperCase() == chartSymbol.toUpperCase() ||
+                k.toString().toUpperCase() == query.symbol.toUpperCase(),
             orElse: () => null,
           );
           if (symKey != null) {
@@ -274,12 +290,14 @@ final equityStockChartDataProvider =
       isIntraday: isIntraday,
     );
   } catch (e) {
-    throw Exception('Failed to load chart data for ${query.symbol} (${query.timeframe}): $e');
+    throw Exception(
+        'Failed to load chart data for ${query.symbol} (${query.timeframe}): $e');
   }
 });
 
 final fundamentalProfileProvider =
-    FutureProvider.family<FundamentalRatiosResponse?, EquityFundamentalQuery>((ref, query) async {
+    FutureProvider.family<FundamentalRatiosResponse?, EquityFundamentalQuery>(
+        (ref, query) async {
   final sdkService = MarketDataSdkService();
   try {
     if (GetIt.I.isRegistered<SecureStorageService>()) {
@@ -290,14 +308,16 @@ final fundamentalProfileProvider =
     }
   } catch (_) {}
   try {
-    return await sdkService.fundamentalApi.getProfile(query.symbol, exchange: query.exchange);
+    return await sdkService.fundamentalApi
+        .getProfile(query.symbol, exchange: query.exchange);
   } catch (e) {
     throw Exception('Failed to load profile for ${query.symbol}: $e');
   }
 });
 
 final fundamentalRatiosProvider =
-    FutureProvider.family<FundamentalRatiosResponse?, EquityFundamentalQuery>((ref, query) async {
+    FutureProvider.family<FundamentalRatiosResponse?, EquityFundamentalQuery>(
+        (ref, query) async {
   final sdkService = MarketDataSdkService();
   try {
     if (GetIt.I.isRegistered<SecureStorageService>()) {
@@ -308,14 +328,16 @@ final fundamentalRatiosProvider =
     }
   } catch (_) {}
   try {
-    return await sdkService.fundamentalApi.getRatios(query.symbol, exchange: query.exchange);
+    return await sdkService.fundamentalApi
+        .getRatios(query.symbol, exchange: query.exchange);
   } catch (e) {
     throw Exception('Failed to load ratios for ${query.symbol}: $e');
   }
 });
 
 final fundamentalUnifiedProvider =
-    FutureProvider.family<FundamentalRatiosResponse?, EquityFundamentalQuery>((ref, query) async {
+    FutureProvider.family<FundamentalRatiosResponse?, EquityFundamentalQuery>(
+        (ref, query) async {
   final sdkService = MarketDataSdkService();
   try {
     if (GetIt.I.isRegistered<SecureStorageService>()) {
@@ -326,14 +348,16 @@ final fundamentalUnifiedProvider =
     }
   } catch (_) {}
   try {
-    return await sdkService.fundamentalApi.getFundamentals(query.symbol, exchange: query.exchange);
+    return await sdkService.fundamentalApi
+        .getFundamentals(query.symbol, exchange: query.exchange);
   } catch (e) {
     throw Exception('Failed to load fundamentals for ${query.symbol}: $e');
   }
 });
 
 final fundamentalFinancialsProvider =
-    FutureProvider.family<FundamentalRatiosResponse?, String>((ref, symbol) async {
+    FutureProvider.family<FundamentalRatiosResponse?, String>(
+        (ref, symbol) async {
   final sdkService = MarketDataSdkService();
   try {
     if (GetIt.I.isRegistered<SecureStorageService>()) {
@@ -369,7 +393,8 @@ final fundamentalShareholdingProvider =
 });
 
 final fundamentalPeersProvider =
-    FutureProvider.family<List<CompetitorPeer>?, EquityFundamentalQuery>((ref, query) async {
+    FutureProvider.family<List<CompetitorPeer>?, EquityFundamentalQuery>(
+        (ref, query) async {
   final sdkService = MarketDataSdkService();
   try {
     if (GetIt.I.isRegistered<SecureStorageService>()) {
@@ -381,34 +406,43 @@ final fundamentalPeersProvider =
   } catch (_) {}
 
   try {
-    final peers = await sdkService.fundamentalApi.getPeers(query.symbol, exchange: query.exchange);
+    final peers = await sdkService.fundamentalApi
+        .getPeers(query.symbol, exchange: query.exchange);
 
     if (peers != null && peers.isNotEmpty) {
       final symbolsToFetch = <String>{};
       symbolsToFetch.add(query.symbol); // main symbol
       for (final p in peers) {
-        if (p.symbol != null && p.symbol!.isNotEmpty) symbolsToFetch.add(p.symbol!);
+        if (p.symbol != null && p.symbol!.isNotEmpty)
+          symbolsToFetch.add(p.symbol!);
       }
 
       if (symbolsToFetch.isNotEmpty) {
         try {
           final prefix = query.exchange.toUpperCase() == 'BSE' ? 'BSE:' : '';
-          final qualifiedSymbols = symbolsToFetch.map((s) => s.contains(':') ? s : prefix + s).join(',');
+          final qualifiedSymbols = symbolsToFetch
+              .map((s) => s.contains(':') ? s : prefix + s)
+              .join(',');
           // Fetch accurate live LTP and day change percentages from /v1/market-data/live-ltp
           final ltpRes = await sdkService.marketDataApi.getLiveLTP(
             qualifiedSymbols,
             isIndexSymbol: false,
           );
 
-          if (ltpRes != null && ltpRes.containsKey('data') && ltpRes['data'] is Map) {
+          if (ltpRes != null &&
+              ltpRes.containsKey('data') &&
+              ltpRes['data'] is Map) {
             final dataMap = ltpRes['data'] as Map;
 
             for (final p in peers) {
               final sym = p.symbol?.toUpperCase();
               final qualSym = (prefix + (sym ?? '')).toUpperCase();
-              final itemKey = dataMap.containsKey(qualSym) ? qualSym : (dataMap.containsKey(sym) ? sym : null);
+              final itemKey = dataMap.containsKey(qualSym)
+                  ? qualSym
+                  : (dataMap.containsKey(sym) ? sym : null);
               if (itemKey != null) {
-                final item = dataMap[itemKey] is Map ? dataMap[itemKey] as Map : null;
+                final item =
+                    dataMap[itemKey] is Map ? dataMap[itemKey] as Map : null;
                 if (item != null) {
                   if (item['lastPrice'] != null) {
                     final lp = (item['lastPrice'] as num).toDouble();
@@ -418,7 +452,8 @@ final fundamentalPeersProvider =
                     p.dayChange = (item['change'] as num).toDouble();
                   }
                   if (item['changePercent'] != null) {
-                    p.dayChangePercent = (item['changePercent'] as num).toDouble();
+                    p.dayChangePercent =
+                        (item['changePercent'] as num).toDouble();
                   }
                 }
               }

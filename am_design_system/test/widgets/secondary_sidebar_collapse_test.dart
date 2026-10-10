@@ -52,7 +52,8 @@ void main() {
     expect(find.text('BODY'), findsOneWidget);
   });
 
-  testWidgets('sidebar collapse keeps body stable mid-animation', (tester) async {
+  testWidgets('sidebar collapse keeps body stable mid-animation',
+      (tester) async {
     await setDesktop(tester);
     var bodyBuilds = 0;
     await tester.pumpWidget(

@@ -234,8 +234,7 @@ class _MobileIndicesStripState extends State<_MobileIndicesStrip>
                 const SizedBox(width: PinnedIndicesGrid.mobileSeparator),
             itemBuilder: (context, index) {
               final data = display[index];
-              final isSelected =
-                  data.indexSymbol == widget.selectedIndexSymbol;
+              final isSelected = data.indexSymbol == widget.selectedIndexSymbol;
               return SizedBox(
                 key: ValueKey('idx-$index-${data.indexSymbol}'),
                 width: PinnedIndicesGrid.mobileCardWidth,

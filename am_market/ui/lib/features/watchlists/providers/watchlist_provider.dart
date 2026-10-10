@@ -7,7 +7,8 @@ final watchlistApiClientProvider = Provider<WatchlistApiClient>((ref) {
   return WatchlistApiClient();
 });
 
-final watchlistsProvider = AsyncNotifierProvider<WatchlistsNotifier, List<Watchlist>>(
+final watchlistsProvider =
+    AsyncNotifierProvider<WatchlistsNotifier, List<Watchlist>>(
   WatchlistsNotifier.new,
 );
 
@@ -73,7 +74,8 @@ class WatchlistsNotifier extends AsyncNotifier<List<Watchlist>> {
     await refresh();
   }
 
-  Future<void> moveStock(String sourceWatchlistId, String targetWatchlistId, String symbol) async {
+  Future<void> moveStock(
+      String sourceWatchlistId, String targetWatchlistId, String symbol) async {
     final client = ref.read(watchlistApiClientProvider);
     await client.removeStock(sourceWatchlistId, symbol);
     await client.addStock(targetWatchlistId, symbol);
@@ -81,12 +83,16 @@ class WatchlistsNotifier extends AsyncNotifier<List<Watchlist>> {
   }
 }
 
-final watchlistCheckStatusProvider = FutureProvider.family<List<WatchlistCheckStatus>, String>((ref, symbol) async {
+final watchlistCheckStatusProvider =
+    FutureProvider.family<List<WatchlistCheckStatus>, String>(
+        (ref, symbol) async {
   final client = ref.watch(watchlistApiClientProvider);
   return await client.checkStockInWatchlists(symbol);
 });
 
-final watchlistQuotesProvider = FutureProvider.family<Map<String, WatchlistStockQuote>, String>((ref, symbolsKey) async {
+final watchlistQuotesProvider =
+    FutureProvider.family<Map<String, WatchlistStockQuote>, String>(
+        (ref, symbolsKey) async {
   if (symbolsKey.isEmpty) return {};
   final symbols = symbolsKey.split(',').where((s) => s.isNotEmpty).toList();
   if (symbols.isEmpty) return {};
@@ -113,17 +119,27 @@ final watchlistQuotesProvider = FutureProvider.family<Map<String, WatchlistStock
     double changePercent = 0.0;
 
     if (ltpData != null) {
-      final lp = ltpData['lastPrice'] ?? ltpData['ltp'] ?? ltpData['price'] ?? ltpData['currentPrice'];
+      final lp = ltpData['lastPrice'] ??
+          ltpData['ltp'] ??
+          ltpData['price'] ??
+          ltpData['currentPrice'];
       if (lp != null) {
         lastPrice = (lp as num).toDouble();
       }
 
-      final chg = ltpData['change'] ?? ltpData['dayChange'] ?? ltpData['netChange'] ?? ltpData['chg'];
+      final chg = ltpData['change'] ??
+          ltpData['dayChange'] ??
+          ltpData['netChange'] ??
+          ltpData['chg'];
       if (chg != null) {
         change = (chg as num).toDouble();
       }
 
-      final pct = ltpData['changePercent'] ?? ltpData['dayChangePercent'] ?? ltpData['pChange'] ?? ltpData['percentChange'] ?? ltpData['pctChange'];
+      final pct = ltpData['changePercent'] ??
+          ltpData['dayChangePercent'] ??
+          ltpData['pChange'] ??
+          ltpData['percentChange'] ??
+          ltpData['pctChange'];
       if (pct != null) {
         changePercent = (pct as num).toDouble();
       }
@@ -131,11 +147,17 @@ final watchlistQuotesProvider = FutureProvider.family<Map<String, WatchlistStock
 
     // If change data is missing or zero, or lastPrice is 0, or companyName is unpopulated,
     // enrich from fundamentalProfileProvider
-    if (lastPrice == 0.0 || (change == 0.0 && changePercent == 0.0) || companyName == symUpper) {
+    if (lastPrice == 0.0 ||
+        (change == 0.0 && changePercent == 0.0) ||
+        companyName == symUpper) {
       try {
-        final profile = await ref.watch(fundamentalProfileProvider(EquityFundamentalQuery(symbol: symUpper)).future);
+        final profile = await ref.watch(
+            fundamentalProfileProvider(EquityFundamentalQuery(symbol: symUpper))
+                .future);
         if (profile != null) {
-          if (lastPrice == 0.0 && profile.currentPrice != null && profile.currentPrice! > 0) {
+          if (lastPrice == 0.0 &&
+              profile.currentPrice != null &&
+              profile.currentPrice! > 0) {
             lastPrice = profile.currentPrice!;
           }
           if (change == 0.0 && profile.dayChange != null) {
@@ -144,7 +166,9 @@ final watchlistQuotesProvider = FutureProvider.family<Map<String, WatchlistStock
           if (changePercent == 0.0 && profile.dayChangePercent != null) {
             changePercent = profile.dayChangePercent!;
           }
-          if (companyName == symUpper && profile.companyName != null && profile.companyName!.isNotEmpty) {
+          if (companyName == symUpper &&
+              profile.companyName != null &&
+              profile.companyName!.isNotEmpty) {
             companyName = profile.companyName!;
           }
         }
@@ -162,6 +186,3 @@ final watchlistQuotesProvider = FutureProvider.family<Map<String, WatchlistStock
 
   return quotes;
 });
-
-
-

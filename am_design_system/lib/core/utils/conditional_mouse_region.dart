@@ -29,7 +29,7 @@ class ConditionalMouseRegion extends StatelessWidget {
   Widget build(BuildContext context) {
     // On web, MouseRegion works fine in modern Flutter versions.
     // Proceed to use MouseRegion.
-    
+
     return MouseRegion(
       onEnter: onEnter,
       onExit: onExit,

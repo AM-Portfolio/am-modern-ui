@@ -60,10 +60,13 @@ class SmartSearchAnchor extends StatefulWidget {
   final ValueChanged<String>? onRemoveRecent;
   final VoidCallback? onClearRecent;
   final Color? accentColor;
+
   /// When true (default), selection/submit uppercases the value (stock symbols).
   final bool forceUppercase;
+
   /// Overlay pill next to each result; null hides the badge (e.g. sectors).
   final String? resultBadge;
+
   /// Stress/What-If footers often sit near the viewport bottom — use [above] or [auto].
   final SmartSearchOverlayPlacement overlayPlacement;
 
@@ -219,7 +222,8 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
           _isLoading = false;
         });
 
-        if ((_recommendations.isNotEmpty || widget.recentSearches.isNotEmpty) && _focusNode.hasFocus) {
+        if ((_recommendations.isNotEmpty || widget.recentSearches.isNotEmpty) &&
+            _focusNode.hasFocus) {
           _showOverlay();
         } else {
           _removeOverlay();
@@ -251,7 +255,8 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
 
     _overlayEntry = OverlayEntry(
       builder: (context) {
-        final effectiveAccentColor = widget.accentColor ?? context.colors.actionPrimaryBg;
+        final effectiveAccentColor =
+            widget.accentColor ?? context.colors.actionPrimaryBg;
         final sectorMode = widget.resultBadge == null;
         return Positioned(
           width: overlayWidth,
@@ -259,261 +264,287 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
             link: _layerLink,
             showWhenUnlinked: false,
             targetAnchor: openAbove ? Alignment.topLeft : Alignment.bottomLeft,
-            followerAnchor: openAbove ? Alignment.bottomLeft : Alignment.topLeft,
+            followerAnchor:
+                openAbove ? Alignment.bottomLeft : Alignment.topLeft,
             offset: Offset(0, openAbove ? -6 : 6),
             child: Material(
               elevation: 8,
               borderRadius: BorderRadius.circular(12),
               color: context.colors.cardSurface,
               child: Container(
-              decoration: BoxDecoration(
-                color: context.colors.cardSurface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: context.colors.border, width: 1),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.35),
-                    blurRadius: 12,
-                    offset: Offset(0, openAbove ? -6 : 6),
-                  ),
-                ],
-              ),
-              constraints: const BoxConstraints(maxHeight: 280),
-              child: isQueryEmpty
-                  ? Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(14, 8, 8, 4),
-                          child: Row(
-                            children: [
-                              Icon(Icons.history_rounded, size: 14, color: context.colors.textTertiary),
-                              const SizedBox(width: 6),
-                              Text(
-                                'RECENTLY VIEWED',
-                                style: TextStyle(
-                                  color: context.colors.textTertiary,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              const Spacer(),
-                              if (widget.onClearRecent != null)
-                                InkWell(
-                                  onTap: () {
-                                    widget.onClearRecent!();
-                                  },
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    child: Text(
-                                      'Clear',
-                                      style: TextStyle(
-                                        color: context.colors.textTertiary,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
+                decoration: BoxDecoration(
+                  color: context.colors.cardSurface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: context.colors.border, width: 1),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      blurRadius: 12,
+                      offset: Offset(0, openAbove ? -6 : 6),
+                    ),
+                  ],
+                ),
+                constraints: const BoxConstraints(maxHeight: 280),
+                child: isQueryEmpty
+                    ? Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(14, 8, 8, 4),
+                            child: Row(
+                              children: [
+                                Icon(Icons.history_rounded,
+                                    size: 14,
+                                    color: context.colors.textTertiary),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'RECENTLY VIEWED',
+                                  style: TextStyle(
+                                    color: context.colors.textTertiary,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.5,
                                   ),
                                 ),
-                            ],
-                          ),
-                        ),
-                        Divider(color: context.colors.divider, height: 1),
-                        ListView.separated(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          shrinkWrap: true,
-                          itemCount: widget.recentSearches.length,
-                          separatorBuilder: (context, index) => Divider(
-                            color: context.colors.divider,
-                            height: 1,
-                            indent: 48,
-                          ),
-                          itemBuilder: (context, index) {
-                            final sym = widget.recentSearches[index];
-                            final initial = sym.isNotEmpty ? sym[0] : '?';
-                            return InkWell(
-                              borderRadius: BorderRadius.circular(8),
-                              onTap: () => _handleSelection(sym),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 28,
-                                      height: 28,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: context.colors.surface,
-                                        border: Border.all(color: context.colors.border, width: 1),
-                                      ),
-                                      alignment: Alignment.center,
+                                const Spacer(),
+                                if (widget.onClearRecent != null)
+                                  InkWell(
+                                    onTap: () {
+                                      widget.onClearRecent!();
+                                    },
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
                                       child: Text(
-                                        initial,
+                                        'Clear',
                                         style: TextStyle(
-                                          color: effectiveAccentColor,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12,
+                                          color: context.colors.textTertiary,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(
-                                        sym,
+                                  ),
+                              ],
+                            ),
+                          ),
+                          Divider(color: context.colors.divider, height: 1),
+                          ListView.separated(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            shrinkWrap: true,
+                            itemCount: widget.recentSearches.length,
+                            separatorBuilder: (context, index) => Divider(
+                              color: context.colors.divider,
+                              height: 1,
+                              indent: 48,
+                            ),
+                            itemBuilder: (context, index) {
+                              final sym = widget.recentSearches[index];
+                              final initial = sym.isNotEmpty ? sym[0] : '?';
+                              return InkWell(
+                                borderRadius: BorderRadius.circular(8),
+                                onTap: () => _handleSelection(sym),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 28,
+                                        height: 28,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: context.colors.surface,
+                                          border: Border.all(
+                                              color: context.colors.border,
+                                              width: 1),
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          initial,
+                                          style: TextStyle(
+                                            color: effectiveAccentColor,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          sym,
+                                          style: TextStyle(
+                                            color: context.colors.textPrimary,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                      if (widget.onRemoveRecent != null)
+                                        IconButton(
+                                          icon: Icon(
+                                            Icons.close_rounded,
+                                            size: 14,
+                                            color: context.colors.textTertiary,
+                                          ),
+                                          splashRadius: 14,
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(
+                                              minWidth: 24, minHeight: 24),
+                                          tooltip: 'Remove $sym',
+                                          onPressed: () {
+                                            widget.onRemoveRecent!(sym);
+                                          },
+                                        )
+                                      else
+                                        Icon(Icons.north_west_rounded,
+                                            size: 14,
+                                            color: context.colors.textTertiary),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        shrinkWrap: true,
+                        itemCount: _recommendations.length,
+                        separatorBuilder: (context, index) => Divider(
+                          color: context.colors.divider,
+                          height: 1,
+                          indent: sectorMode ? 12 : 48,
+                        ),
+                        itemBuilder: (context, index) {
+                          final item = _recommendations[index];
+                          final symbol = item.key?.symbol ?? '';
+                          final name = item.metadata?.companyName ?? symbol;
+                          final initial = (name.isNotEmpty
+                                  ? name[0]
+                                  : (symbol.isNotEmpty ? symbol[0] : '?'))
+                              .toUpperCase();
+
+                          return GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTapDown: (_) => _handleSelection(symbol),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(8),
+                              onTap: () => _handleSelection(symbol),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 9),
+                                child: sectorMode
+                                    ? Text(
+                                        name.isNotEmpty ? name : symbol,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
                                           color: context.colors.textPrimary,
                                           fontSize: 13,
                                           fontWeight: FontWeight.w600,
                                         ),
-                                      ),
-                                    ),
-                                    if (widget.onRemoveRecent != null)
-                                      IconButton(
-                                        icon: Icon(
-                                          Icons.close_rounded,
-                                          size: 14,
-                                          color: context.colors.textTertiary,
-                                        ),
-                                        splashRadius: 14,
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                                        tooltip: 'Remove $sym',
-                                        onPressed: () {
-                                          widget.onRemoveRecent!(sym);
-                                        },
                                       )
-                                    else
-                                      Icon(Icons.north_west_rounded, size: 14, color: context.colors.textTertiary),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    )
-                  : ListView.separated(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                shrinkWrap: true,
-                itemCount: _recommendations.length,
-                separatorBuilder: (context, index) => Divider(
-                  color: context.colors.divider,
-                  height: 1,
-                  indent: sectorMode ? 12 : 48,
-                ),
-                itemBuilder: (context, index) {
-                  final item = _recommendations[index];
-                  final symbol = item.key?.symbol ?? '';
-                  final name = item.metadata?.companyName ?? symbol;
-                  final initial = (name.isNotEmpty ? name[0] : (symbol.isNotEmpty ? symbol[0] : '?')).toUpperCase();
-
-                  return GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTapDown: (_) => _handleSelection(symbol),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(8),
-                      onTap: () => _handleSelection(symbol),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-                        child: sectorMode
-                            ? Text(
-                                name.isNotEmpty ? name : symbol,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: context.colors.textPrimary,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              )
-                            : Row(
-                          children: [
-                            Container(
-                              width: 30,
-                              height: 30,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: context.colors.surface,
-                                border: Border.all(
-                                  color: context.colors.border,
-                                  width: 1,
-                                ),
-                              ),
-                              alignment: Alignment.center,
-                              child: Text(
-                                initial,
-                                style: TextStyle(
-                                  color: effectiveAccentColor,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    name,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: context.colors.textPrimary,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    symbol,
-                                    style: TextStyle(
-                                      color: context.colors.textSecondary,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                ],
+                                    : Row(
+                                        children: [
+                                          Container(
+                                            width: 30,
+                                            height: 30,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: context.colors.surface,
+                                              border: Border.all(
+                                                color: context.colors.border,
+                                                width: 1,
+                                              ),
+                                            ),
+                                            alignment: Alignment.center,
+                                            child: Text(
+                                              initial,
+                                              style: TextStyle(
+                                                color: effectiveAccentColor,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  name,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: TextStyle(
+                                                    color: context
+                                                        .colors.textPrimary,
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  symbol,
+                                                  style: TextStyle(
+                                                    color: context
+                                                        .colors.textSecondary,
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w600,
+                                                    letterSpacing: 0.5,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          if (widget.resultBadge != null) ...[
+                                            const SizedBox(width: 8),
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 6,
+                                                      vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: context.colors.surface,
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                                border: Border.all(
+                                                    color:
+                                                        context.colors.border,
+                                                    width: 0.5),
+                                              ),
+                                              child: Text(
+                                                widget.resultBadge!,
+                                                style: TextStyle(
+                                                  color: context
+                                                      .colors.textTertiary,
+                                                  fontSize: 9,
+                                                  fontWeight: FontWeight.bold,
+                                                  letterSpacing: 0.5,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
                               ),
                             ),
-                            if (widget.resultBadge != null) ...[
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: context.colors.surface,
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(color: context.colors.border, width: 0.5),
-                                ),
-                                child: Text(
-                                  widget.resultBadge!,
-                                  style: TextStyle(
-                                    color: context.colors.textTertiary,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
+                          );
+                        },
                       ),
-                    ),
-                  );
-                },
               ),
             ),
           ),
-        ),
-      );
-    },
-  );
+        );
+      },
+    );
 
     overlay.insert(_overlayEntry!);
   }
@@ -549,7 +580,8 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveAccentColor = widget.accentColor ?? context.colors.actionPrimaryBg;
+    final effectiveAccentColor =
+        widget.accentColor ?? context.colors.actionPrimaryBg;
 
     return CompositedTransformTarget(
       link: _layerLink,
@@ -576,16 +608,20 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
         decoration: InputDecoration(
           hintText: _typewriterController != null
               ? _currentAnimatedHint
-              : (widget.hintText ?? (widget.compact ? 'Symbol…' : 'e.g. HDFC, TCS, RELIANCE')),
+              : (widget.hintText ??
+                  (widget.compact ? 'Symbol…' : 'e.g. HDFC, TCS, RELIANCE')),
           hintStyle: TextStyle(
             color: context.colors.textTertiary,
             fontSize: widget.compact ? 13 : null,
-            fontStyle: _typewriterController != null ? FontStyle.italic : FontStyle.normal,
+            fontStyle: _typewriterController != null
+                ? FontStyle.italic
+                : FontStyle.normal,
           ),
           isDense: widget.compact,
           filled: true,
           fillColor: context.colors.scaffoldBackground,
-          prefixIcon: Icon(Icons.search, color: effectiveAccentColor, size: widget.compact ? 16 : 22),
+          prefixIcon: Icon(Icons.search,
+              color: effectiveAccentColor, size: widget.compact ? 16 : 22),
           prefixIconConstraints: widget.compact
               ? const BoxConstraints(minWidth: 34, minHeight: 32)
               : null,
@@ -608,7 +644,9 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
                       constraints: widget.compact
                           ? const BoxConstraints(minWidth: 28, minHeight: 28)
                           : null,
-                      icon: Icon(Icons.clear, color: context.colors.textTertiary, size: widget.compact ? 16 : 18),
+                      icon: Icon(Icons.clear,
+                          color: context.colors.textTertiary,
+                          size: widget.compact ? 16 : 18),
                       onPressed: () {
                         _controller.clear();
                         _removeOverlay();

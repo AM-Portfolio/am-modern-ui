@@ -103,7 +103,8 @@ class _AmSessionStatusViewState extends State<AmSessionStatusView>
     final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
     final accent = _accent(isDark);
-    final titleColor = isDark ? const Color(0xFFE2E8F0) : const Color(0xFF0F172A);
+    final titleColor =
+        isDark ? const Color(0xFFE2E8F0) : const Color(0xFF0F172A);
     final subtitleColor =
         isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
     // Full lockup is wider than tall; ring wraps a light card so logo stays readable on dark.

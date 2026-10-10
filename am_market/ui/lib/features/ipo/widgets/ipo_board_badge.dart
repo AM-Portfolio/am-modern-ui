@@ -13,7 +13,8 @@ class IpoBoardBadge extends StatelessWidget {
     final label = isSme ? 'SME' : 'Mainboard';
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final baseColor = isSme ? ModuleColors.market : context.colors.statusSuccess;
+    final baseColor =
+        isSme ? ModuleColors.market : context.colors.statusSuccess;
     final bgColor = baseColor.withValues(alpha: isDark ? 0.2 : 0.12);
     final textColor = isDark ? baseColor : baseColor;
     final borderColor = baseColor.withValues(alpha: isDark ? 0.4 : 0.3);

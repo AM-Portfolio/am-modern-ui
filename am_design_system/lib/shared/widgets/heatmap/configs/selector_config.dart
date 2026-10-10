@@ -35,13 +35,14 @@ class SelectorConfig {
     List<TimeFrame>? timeFrames,
     List<MetricType>? metrics,
     SelectorLayoutType? selectorLayout,
-  }) => SelectorConfig(
-    showSectorSelector: true,
-    showMarketCapSelector: true,
-    selectorLayout: selectorLayout ?? SelectorLayoutType.compact,
-    availableTimeFrames: timeFrames ?? TimeFrame.mobileTimeFrames,
-    availableMetrics: metrics ?? MetricType.mobileMetrics,
-  );
+  }) =>
+      SelectorConfig(
+        showSectorSelector: true,
+        showMarketCapSelector: true,
+        selectorLayout: selectorLayout ?? SelectorLayoutType.compact,
+        availableTimeFrames: timeFrames ?? TimeFrame.mobileTimeFrames,
+        availableMetrics: metrics ?? MetricType.mobileMetrics,
+      );
 
   /// Web-optimized selector configuration
   factory SelectorConfig.web({
@@ -52,47 +53,49 @@ class SelectorConfig {
     List<HeatmapLayoutType>? layouts,
     SelectorLayoutType? selectorLayout,
     bool showLayoutSelector = true,
-  }) => SelectorConfig(
-    showLayoutSelector: showLayoutSelector,
-    selectorLayout: selectorLayout ?? SelectorLayoutType.expanded,
-    availableTimeFrames: timeFrames ?? TimeFrame.webTimeFrames,
-    availableMetrics: metrics ?? MetricType.webMetrics,
-    availableSectors: sectors ?? SectorType.allSectors,
-    availableMarketCaps: marketCaps ?? MarketCapType.allMarketCaps,
-    availableLayouts:
-        layouts ??
-        [
-          HeatmapLayoutType.treemap,
-          HeatmapLayoutType.grid,
-          HeatmapLayoutType.list,
-        ],
-  );
+  }) =>
+      SelectorConfig(
+        showLayoutSelector: showLayoutSelector,
+        selectorLayout: selectorLayout ?? SelectorLayoutType.expanded,
+        availableTimeFrames: timeFrames ?? TimeFrame.webTimeFrames,
+        availableMetrics: metrics ?? MetricType.webMetrics,
+        availableSectors: sectors ?? SectorType.allSectors,
+        availableMarketCaps: marketCaps ?? MarketCapType.allMarketCaps,
+        availableLayouts: layouts ??
+            [
+              HeatmapLayoutType.treemap,
+              HeatmapLayoutType.grid,
+              HeatmapLayoutType.list,
+            ],
+      );
 
   /// Minimal selector configuration (for widgets, previews)
   factory SelectorConfig.minimal({
     bool showSelectors = false,
     SelectorLayoutType? selectorLayout,
-  }) => SelectorConfig(
-    showTimeFrameSelector: showSelectors,
-    showMetricSelector: showSelectors,
-    showSectorSelector: false,
-    showMarketCapSelector: false,
-    selectorLayout: selectorLayout ?? SelectorLayoutType.pills,
-  );
+  }) =>
+      SelectorConfig(
+        showTimeFrameSelector: showSelectors,
+        showMetricSelector: showSelectors,
+        showSectorSelector: false,
+        showMarketCapSelector: false,
+        selectorLayout: selectorLayout ?? SelectorLayoutType.pills,
+      );
 
   /// Dashboard selector configuration
   factory SelectorConfig.dashboard({
     SelectorLayoutType? selectorLayout,
     bool showLayoutSelector = true,
-  }) => SelectorConfig(
-    showMetricSelector: false,
-    showSectorSelector: false,
-    showMarketCapSelector: false,
-    showLayoutSelector: showLayoutSelector,
-    selectorLayout: selectorLayout ?? SelectorLayoutType.compact,
-    availableTimeFrames: TimeFrame.dashboardTimeFrames,
-    availableLayouts: [HeatmapLayoutType.treemap, HeatmapLayoutType.grid],
-  );
+  }) =>
+      SelectorConfig(
+        showMetricSelector: false,
+        showSectorSelector: false,
+        showMarketCapSelector: false,
+        showLayoutSelector: showLayoutSelector,
+        selectorLayout: selectorLayout ?? SelectorLayoutType.compact,
+        availableTimeFrames: TimeFrame.dashboardTimeFrames,
+        availableLayouts: [HeatmapLayoutType.treemap, HeatmapLayoutType.grid],
+      );
 
   /// Portfolio-specific selector configuration
   factory SelectorConfig.portfolio({SelectorLayoutType? selectorLayout}) =>
@@ -153,19 +156,22 @@ class SelectorConfig {
     List<SectorType>? availableSectors,
     List<MarketCapType>? availableMarketCaps,
     List<HeatmapLayoutType>? availableLayouts,
-  }) => SelectorConfig(
-    showTimeFrameSelector: showTimeFrameSelector ?? this.showTimeFrameSelector,
-    showMetricSelector: showMetricSelector ?? this.showMetricSelector,
-    showSectorSelector: showSectorSelector ?? this.showSectorSelector,
-    showMarketCapSelector: showMarketCapSelector ?? this.showMarketCapSelector,
-    showLayoutSelector: showLayoutSelector ?? this.showLayoutSelector,
-    selectorLayout: selectorLayout ?? this.selectorLayout,
-    availableTimeFrames: availableTimeFrames ?? this.availableTimeFrames,
-    availableMetrics: availableMetrics ?? this.availableMetrics,
-    availableSectors: availableSectors ?? this.availableSectors,
-    availableMarketCaps: availableMarketCaps ?? this.availableMarketCaps,
-    availableLayouts: availableLayouts ?? this.availableLayouts,
-  );
+  }) =>
+      SelectorConfig(
+        showTimeFrameSelector:
+            showTimeFrameSelector ?? this.showTimeFrameSelector,
+        showMetricSelector: showMetricSelector ?? this.showMetricSelector,
+        showSectorSelector: showSectorSelector ?? this.showSectorSelector,
+        showMarketCapSelector:
+            showMarketCapSelector ?? this.showMarketCapSelector,
+        showLayoutSelector: showLayoutSelector ?? this.showLayoutSelector,
+        selectorLayout: selectorLayout ?? this.selectorLayout,
+        availableTimeFrames: availableTimeFrames ?? this.availableTimeFrames,
+        availableMetrics: availableMetrics ?? this.availableMetrics,
+        availableSectors: availableSectors ?? this.availableSectors,
+        availableMarketCaps: availableMarketCaps ?? this.availableMarketCaps,
+        availableLayouts: availableLayouts ?? this.availableLayouts,
+      );
 
   /// Check if any selectors should be shown
   bool get hasSelectors =>

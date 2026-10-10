@@ -105,8 +105,11 @@ void main() {
           'detectionConfidence': 0,
           'detectionDecision': 'NEEDS_INPUT',
           'detectionWarnings': ['Scanned or image-only PDF'],
-          'detectionEvidenceSummary': ['PdfTextBrokerDetectionStrategy:pdfText=empty'],
-          'errorMessage': 'Scanned or image-only PDF — set broker and document type',
+          'detectionEvidenceSummary': [
+            'PdfTextBrokerDetectionStrategy:pdfText=empty'
+          ],
+          'errorMessage':
+              'Scanned or image-only PDF — set broker and document type',
         },
       ],
     });

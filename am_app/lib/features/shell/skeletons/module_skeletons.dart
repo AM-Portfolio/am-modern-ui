@@ -18,8 +18,8 @@ class _SkeletonBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final resolved = skeletonShimmerColors(context, accentColor: accent);
-    final borderAccent = (accent ?? context.colors.actionPrimaryBg)
-        .withValues(alpha: 0.22);
+    final borderAccent =
+        (accent ?? context.colors.actionPrimaryBg).withValues(alpha: 0.22);
 
     return Container(
       width: width,

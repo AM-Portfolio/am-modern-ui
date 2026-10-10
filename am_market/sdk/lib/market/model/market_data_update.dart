@@ -24,14 +24,15 @@ class MarketDataUpdate {
   Map<String, QuoteChange> quotes;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is MarketDataUpdate &&
-    other.timestamp == timestamp &&
-    _deepEquality.equals(other.quotes, quotes);
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MarketDataUpdate &&
+          other.timestamp == timestamp &&
+          _deepEquality.equals(other.quotes, quotes);
 
   @override
   int get hashCode =>
-    (timestamp == null ? 0 : timestamp!.hashCode) +
-    (quotes.hashCode);
+      (timestamp == null ? 0 : timestamp!.hashCode) + (quotes.hashCode);
 
   @override
   String toString() => 'MarketDataUpdate[timestamp=$timestamp, quotes=$quotes]';
@@ -43,7 +44,7 @@ class MarketDataUpdate {
     } else {
       json[r'timestamp'] = null;
     }
-      json[r'quotes'] = this.quotes;
+    json[r'quotes'] = this.quotes;
     return json;
   }
 
@@ -58,8 +59,10 @@ class MarketDataUpdate {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "MarketDataUpdate[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "MarketDataUpdate[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "MarketDataUpdate[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "MarketDataUpdate[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -72,7 +75,10 @@ class MarketDataUpdate {
     return null;
   }
 
-  static List<MarketDataUpdate> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<MarketDataUpdate> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <MarketDataUpdate>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -88,7 +94,7 @@ class MarketDataUpdate {
   static Map<String, MarketDataUpdate> mapFromJson(dynamic json) {
     final map = <String, MarketDataUpdate>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); 
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
         final value = MarketDataUpdate.fromJson(entry.value);
         if (value != null) {
@@ -100,19 +106,23 @@ class MarketDataUpdate {
   }
 
   // maps a json object with a list of MarketDataUpdate-objects as value to a dart map
-  static Map<String, List<MarketDataUpdate>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<MarketDataUpdate>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<MarketDataUpdate>>{};
     if (json is Map && json.isNotEmpty) {
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = MarketDataUpdate.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = MarketDataUpdate.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

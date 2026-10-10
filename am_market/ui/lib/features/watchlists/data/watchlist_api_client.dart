@@ -6,12 +6,14 @@ import 'package:get_it/get_it.dart';
 class WatchlistApiClient {
   final Dio _dio;
 
-  WatchlistApiClient({Dio? dio}) : _dio = dio ?? Dio(BaseOptions(baseUrl: EnvDomains.market)) {
+  WatchlistApiClient({Dio? dio})
+      : _dio = dio ?? Dio(BaseOptions(baseUrl: EnvDomains.market)) {
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
         try {
           if (GetIt.I.isRegistered<SecureStorageService>()) {
-            final token = await GetIt.I<SecureStorageService>().getAccessToken();
+            final token =
+                await GetIt.I<SecureStorageService>().getAccessToken();
             if (token != null && token.isNotEmpty) {
               options.headers['Authorization'] = 'Bearer $token';
             }
@@ -25,7 +27,9 @@ class WatchlistApiClient {
   Future<List<Watchlist>> getWatchlists() async {
     final response = await _dio.get('/v1/watchlists');
     final data = response.data as List;
-    return data.map((json) => Watchlist.fromJson(json as Map<String, dynamic>)).toList();
+    return data
+        .map((json) => Watchlist.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
 
   Future<Watchlist> createWatchlist(String name) async {
@@ -45,11 +49,14 @@ class WatchlistApiClient {
   Future<List<WatchlistItem>> getWatchlistItems(String id) async {
     final response = await _dio.get('/v1/watchlists/$id/items');
     final data = response.data as List;
-    return data.map((json) => WatchlistItem.fromJson(json as Map<String, dynamic>)).toList();
+    return data
+        .map((json) => WatchlistItem.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
 
   Future<WatchlistItem> addStock(String id, String symbol) async {
-    final response = await _dio.post('/v1/watchlists/$id/items', data: {'symbol': symbol});
+    final response =
+        await _dio.post('/v1/watchlists/$id/items', data: {'symbol': symbol});
     return WatchlistItem.fromJson(response.data as Map<String, dynamic>);
   }
 
@@ -57,13 +64,18 @@ class WatchlistApiClient {
     await _dio.delete('/v1/watchlists/$id/items/$symbol');
   }
 
-  Future<List<WatchlistCheckStatus>> checkStockInWatchlists(String symbol) async {
+  Future<List<WatchlistCheckStatus>> checkStockInWatchlists(
+      String symbol) async {
     final response = await _dio.get('/v1/watchlists/check/$symbol');
     final data = response.data as List;
-    return data.map((json) => WatchlistCheckStatus.fromJson(json as Map<String, dynamic>)).toList();
+    return data
+        .map((json) =>
+            WatchlistCheckStatus.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
 
-  Future<Map<String, Map<String, dynamic>>> getLiveLTP(List<String> symbols) async {
+  Future<Map<String, Map<String, dynamic>>> getLiveLTP(
+      List<String> symbols) async {
     if (symbols.isEmpty) return {};
     try {
       final response = await _dio.get(
@@ -77,7 +89,8 @@ class WatchlistApiClient {
       );
       if (response.data is Map && response.data['data'] is Map) {
         final dataMap = response.data['data'] as Map;
-        return dataMap.map((key, val) => MapEntry(key.toString().toUpperCase(), (val as Map).cast<String, dynamic>()));
+        return dataMap.map((key, val) => MapEntry(key.toString().toUpperCase(),
+            (val as Map).cast<String, dynamic>()));
       }
     } catch (e) {
       // ignore
@@ -96,8 +109,11 @@ class WatchlistApiClient {
         final res = <String, String>{};
         for (final item in response.data as List) {
           if (item is Map) {
-            final sym = item['trading_symbol'] ?? item['tradingSymbol'] ?? item['symbol'];
-            final name = item['name'] ?? item['company_name'] ?? item['companyName'];
+            final sym = item['trading_symbol'] ??
+                item['tradingSymbol'] ??
+                item['symbol'];
+            final name =
+                item['name'] ?? item['company_name'] ?? item['companyName'];
             if (sym != null && name != null) {
               res[sym.toString().toUpperCase()] = name.toString();
             }
@@ -109,4 +125,3 @@ class WatchlistApiClient {
     return {};
   }
 }
-

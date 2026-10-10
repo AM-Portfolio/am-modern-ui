@@ -38,7 +38,8 @@ class MarketRegionToggle extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
                   color: selected
-                      ? MarketColors.borderSelected(context).withValues(alpha: 0.18)
+                      ? MarketColors.borderSelected(context)
+                          .withValues(alpha: 0.18)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(6),
                   border: selected

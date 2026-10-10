@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/router/app_routes.dart';
-import 'browser_back_stub.dart'
-    if (dart.library.html) 'browser_back_web.dart';
+import 'browser_back_stub.dart' if (dart.library.html) 'browser_back_web.dart';
 
 /// Full-route miss (go_router [errorBuilder]) — Bull & Bear 404 art + CTAs.
 class NotFoundPage extends StatelessWidget {

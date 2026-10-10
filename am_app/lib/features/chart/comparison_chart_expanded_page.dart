@@ -46,8 +46,8 @@ class _ComparisonChartExpandedPageState
       _error = null;
     });
     try {
-      final data =
-          await _apiService.fetchHistoryBatch(widget.series, widget.timeFrameCode);
+      final data = await _apiService.fetchHistoryBatch(
+          widget.series, widget.timeFrameCode);
       if (!mounted) return;
       setState(() {
         _marketHistorical = data;
@@ -68,7 +68,8 @@ class _ComparisonChartExpandedPageState
 
     if (widget.chartContext == 'dashboard') {
       final state = ref.watch(dashboardOverlayProvider(widget.userId));
-      final overlay = ref.read(dashboardOverlayProvider(widget.userId).notifier);
+      final overlay =
+          ref.read(dashboardOverlayProvider(widget.userId).notifier);
       return Scaffold(
         appBar: AppBar(title: const Text('Full overview')),
         body: Padding(

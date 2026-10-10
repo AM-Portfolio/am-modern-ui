@@ -95,77 +95,77 @@ class _HeatmapLayoutSelectorState extends State<HeatmapLayoutSelector> {
   }
 
   Widget _buildStandardSelector() => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      if (widget.showLabel)
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8.0),
-          child: Row(
-            children: [
-              Icon(
-                Icons.view_comfy_outlined,
-                size: 16,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (widget.showLabel)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.view_comfy_outlined,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Layout',
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                        ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Text(
-                'Layout',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w500,
-                ),
+            ),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
               ),
-            ],
-          ),
-        ),
-      Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: widget.availableLayouts.map((layout) {
-            final isSelected = layout == widget.selectedLayout;
-            return _buildLayoutOption(layout, isSelected);
-          }).toList(),
-        ),
-      ),
-    ],
-  );
-
-  Widget _buildCompactSelector() => DropdownButton<HeatmapLayoutType>(
-    value: widget.selectedLayout,
-    onChanged: (newLayout) {
-      if (newLayout != null) {
-        _handleLayoutChange(newLayout);
-      }
-    },
-    items: widget.availableLayouts
-        .map(
-          (layout) => DropdownMenuItem<HeatmapLayoutType>(
-            value: layout,
+            ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(layout.icon, size: 16),
-                const SizedBox(width: 8),
-                Text(layout.displayName),
-              ],
+              children: widget.availableLayouts.map((layout) {
+                final isSelected = layout == widget.selectedLayout;
+                return _buildLayoutOption(layout, isSelected);
+              }).toList(),
             ),
           ),
-        )
-        .toList(),
-    icon: Icon(
-      Icons.keyboard_arrow_down,
-      size: 16,
-      color: Theme.of(context).colorScheme.onSurfaceVariant,
-    ),
-    underline: Container(),
-    isDense: true,
-  );
+        ],
+      );
+
+  Widget _buildCompactSelector() => DropdownButton<HeatmapLayoutType>(
+        value: widget.selectedLayout,
+        onChanged: (newLayout) {
+          if (newLayout != null) {
+            _handleLayoutChange(newLayout);
+          }
+        },
+        items: widget.availableLayouts
+            .map(
+              (layout) => DropdownMenuItem<HeatmapLayoutType>(
+                value: layout,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(layout.icon, size: 16),
+                    const SizedBox(width: 8),
+                    Text(layout.displayName),
+                  ],
+                ),
+              ),
+            )
+            .toList(),
+        icon: Icon(
+          Icons.keyboard_arrow_down,
+          size: 16,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        underline: Container(),
+        isDense: true,
+      );
 
   Widget _buildLayoutOption(HeatmapLayoutType layout, bool isSelected) =>
       GestureDetector(

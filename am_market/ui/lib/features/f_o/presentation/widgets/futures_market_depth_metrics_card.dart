@@ -35,14 +35,20 @@ class FuturesMarketDepthMetricsCard extends ConsumerWidget {
     final ltp = (activeContract?['ltp'] as num?)?.toDouble() ?? 2203.50;
     final rawVolume = (activeContract?['volume'] as num?)?.toInt() ?? 1872300;
     final rawOi = (activeContract?['oi'] as num?)?.toInt() ?? 5131200;
-    final openPrice = (activeContract?['open'] as num?)?.toDouble() ?? (ltp > 0 ? ltp * 1.003 : 2210.00);
-    final highPrice = (activeContract?['high'] as num?)?.toDouble() ?? (ltp > 0 ? ltp * 1.012 : 2232.60);
-    final lowPrice = (activeContract?['low'] as num?)?.toDouble() ?? (ltp > 0 ? ltp * 0.992 : 2185.50);
+    final openPrice = (activeContract?['open'] as num?)?.toDouble() ??
+        (ltp > 0 ? ltp * 1.003 : 2210.00);
+    final highPrice = (activeContract?['high'] as num?)?.toDouble() ??
+        (ltp > 0 ? ltp * 1.012 : 2232.60);
+    final lowPrice = (activeContract?['low'] as num?)?.toDouble() ??
+        (ltp > 0 ? ltp * 0.992 : 2185.50);
     final closePrice = (activeContract?['close'] as num?)?.toDouble() ?? ltp;
 
-    final avgPrice = (activeContract?['avgPrice'] as num?)?.toDouble() ?? ((highPrice + lowPrice) / 2);
-    final lowerCircuit = (activeContract?['lowerCircuit'] as num?)?.toDouble() ?? (ltp * 0.90);
-    final upperCircuit = (activeContract?['upperCircuit'] as num?)?.toDouble() ?? (ltp * 1.10);
+    final avgPrice = (activeContract?['avgPrice'] as num?)?.toDouble() ??
+        ((highPrice + lowPrice) / 2);
+    final lowerCircuit =
+        (activeContract?['lowerCircuit'] as num?)?.toDouble() ?? (ltp * 0.90);
+    final upperCircuit =
+        (activeContract?['upperCircuit'] as num?)?.toDouble() ?? (ltp * 1.10);
     final lotSize = (activeContract?['lot_size'] as num?)?.toInt() ?? 65;
 
     final rawDepth = activeContract?['depth'] as Map?;
@@ -141,7 +147,11 @@ class FuturesMarketDepthMetricsCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Market Depth (5 Levels)', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
+          Text('Market Depth (5 Levels)',
+              style: TextStyle(
+                  color: colors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16)),
           const SizedBox(height: 12),
 
           // Side-by-side Buy & Sell Order Tables
@@ -156,13 +166,18 @@ class FuturesMarketDepthMetricsCard extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       color: marketTheme.positive.withValues(alpha: 0.15),
                       child: Center(
-                        child: Text('Buy Orders', style: TextStyle(color: marketTheme.positive, fontWeight: FontWeight.bold, fontSize: 11)),
+                        child: Text('Buy Orders',
+                            style: TextStyle(
+                                color: marketTheme.positive,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11)),
                       ),
                     ),
                     const SizedBox(height: 6),
                     _buildDepthHeader('Price (₹)', 'Qty', 'Orders', colors),
                     const Divider(height: 8),
-                    ...buyOrders.map((o) => _buildDepthRow(o['price']!, o['qty']!, o['orders']!, marketTheme.positive, colors)),
+                    ...buyOrders.map((o) => _buildDepthRow(o['price']!,
+                        o['qty']!, o['orders']!, marketTheme.positive, colors)),
                   ],
                 ),
               ),
@@ -175,13 +190,18 @@ class FuturesMarketDepthMetricsCard extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       color: marketTheme.negative.withValues(alpha: 0.15),
                       child: Center(
-                        child: Text('Sell Orders', style: TextStyle(color: marketTheme.negative, fontWeight: FontWeight.bold, fontSize: 11)),
+                        child: Text('Sell Orders',
+                            style: TextStyle(
+                                color: marketTheme.negative,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11)),
                       ),
                     ),
                     const SizedBox(height: 6),
                     _buildDepthHeader('Price (₹)', 'Qty', 'Orders', colors),
                     const Divider(height: 8),
-                    ...sellOrders.map((o) => _buildDepthRow(o['price']!, o['qty']!, o['orders']!, marketTheme.negative, colors)),
+                    ...sellOrders.map((o) => _buildDepthRow(o['price']!,
+                        o['qty']!, o['orders']!, marketTheme.negative, colors)),
                   ],
                 ),
               ),
@@ -193,8 +213,16 @@ class FuturesMarketDepthMetricsCard extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Total Buy: ${_formatNum(totalBuyQty)}', style: TextStyle(color: marketTheme.positive, fontWeight: FontWeight.bold, fontSize: 10)),
-              Text('Total Sell: ${_formatNum(totalSellQty)}', style: TextStyle(color: marketTheme.negative, fontWeight: FontWeight.bold, fontSize: 10)),
+              Text('Total Buy: ${_formatNum(totalBuyQty)}',
+                  style: TextStyle(
+                      color: marketTheme.positive,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10)),
+              Text('Total Sell: ${_formatNum(totalSellQty)}',
+                  style: TextStyle(
+                      color: marketTheme.negative,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10)),
             ],
           ),
           const Divider(height: 20, thickness: 0.5),
@@ -202,11 +230,17 @@ class FuturesMarketDepthMetricsCard extends ConsumerWidget {
           // Key Metrics Horizontal Header
           Row(
             children: [
-              Text('Key Metrics', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14)),
+              Text('Key Metrics',
+                  style: TextStyle(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14)),
               const SizedBox(width: 6),
               Tooltip(
-                message: 'Trading metrics for $activeSymbol futures including high/low boundaries, circuit limits, and average traded price.',
-                child: Icon(Icons.info_outline_rounded, color: colors.textSecondary, size: 14),
+                message:
+                    'Trading metrics for $activeSymbol futures including high/low boundaries, circuit limits, and average traded price.',
+                child: Icon(Icons.info_outline_rounded,
+                    color: colors.textSecondary, size: 14),
               ),
             ],
           ),
@@ -216,10 +250,12 @@ class FuturesMarketDepthMetricsCard extends ConsumerWidget {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: metrics.map((m) => Padding(
-                padding: const EdgeInsets.only(right: 8.0),
-                child: _buildMetricItem(m['label']!, m['val']!, colors),
-              )).toList(),
+              children: metrics
+                  .map((m) => Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: _buildMetricItem(m['label']!, m['val']!, colors),
+                      ))
+                  .toList(),
             ),
           ),
         ],
@@ -227,26 +263,56 @@ class FuturesMarketDepthMetricsCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildDepthHeader(String col1, String col2, String col3, AppColorsTheme colors) {
+  Widget _buildDepthHeader(
+      String col1, String col2, String col3, AppColorsTheme colors) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Expanded(child: Text(col1, style: TextStyle(color: colors.textSecondary, fontSize: 9, fontWeight: FontWeight.w600))),
-        Expanded(child: Text(col2, style: TextStyle(color: colors.textSecondary, fontSize: 9, fontWeight: FontWeight.w600), textAlign: TextAlign.center)),
-        Expanded(child: Text(col3, style: TextStyle(color: colors.textSecondary, fontSize: 9, fontWeight: FontWeight.w600), textAlign: TextAlign.right)),
+        Expanded(
+            child: Text(col1,
+                style: TextStyle(
+                    color: colors.textSecondary,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600))),
+        Expanded(
+            child: Text(col2,
+                style: TextStyle(
+                    color: colors.textSecondary,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600),
+                textAlign: TextAlign.center)),
+        Expanded(
+            child: Text(col3,
+                style: TextStyle(
+                    color: colors.textSecondary,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600),
+                textAlign: TextAlign.right)),
       ],
     );
   }
 
-  Widget _buildDepthRow(String price, String qty, String orders, Color priceColor, AppColorsTheme colors) {
+  Widget _buildDepthRow(String price, String qty, String orders,
+      Color priceColor, AppColorsTheme colors) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(child: Text(price, style: TextStyle(color: priceColor, fontWeight: FontWeight.bold, fontSize: 10))),
-          Expanded(child: Text(qty, style: TextStyle(color: colors.textPrimary, fontSize: 10), textAlign: TextAlign.center)),
-          Expanded(child: Text(orders, style: TextStyle(color: colors.textSecondary, fontSize: 10), textAlign: TextAlign.right)),
+          Expanded(
+              child: Text(price,
+                  style: TextStyle(
+                      color: priceColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10))),
+          Expanded(
+              child: Text(qty,
+                  style: TextStyle(color: colors.textPrimary, fontSize: 10),
+                  textAlign: TextAlign.center)),
+          Expanded(
+              child: Text(orders,
+                  style: TextStyle(color: colors.textSecondary, fontSize: 10),
+                  textAlign: TextAlign.right)),
         ],
       ),
     );
@@ -263,9 +329,16 @@ class FuturesMarketDepthMetricsCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(label, style: TextStyle(color: colors.textSecondary, fontSize: 9), overflow: TextOverflow.ellipsis),
+          Text(label,
+              style: TextStyle(color: colors.textSecondary, fontSize: 9),
+              overflow: TextOverflow.ellipsis),
           const SizedBox(height: 2),
-          Text(val, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 10), overflow: TextOverflow.ellipsis),
+          Text(val,
+              style: TextStyle(
+                  color: colors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 10),
+              overflow: TextOverflow.ellipsis),
         ],
       ),
     );

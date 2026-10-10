@@ -14,10 +14,7 @@ class DeveloperDashboard extends StatelessWidget {
       ),
       body: SingleChildScrollView(
         child: Column(
-          children: const [
-            SchedulerControlWidget(),
-            MarketDataTesterWidget(),
-          ],
+          children: const [SchedulerControlWidget(), MarketDataTesterWidget()],
         ),
       ),
     );

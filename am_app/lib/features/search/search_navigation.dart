@@ -41,8 +41,7 @@ class SearchNavigationHandler {
   }
 
   void openEtfOrBasket(EtfSearchResult result) {
-    final portfolioId =
-        ShareUrlBuilder.portfolioIdFromLocation(
+    final portfolioId = ShareUrlBuilder.portfolioIdFromLocation(
           GoRouterState.of(context).matchedLocation,
         ) ??
         'all';
@@ -52,7 +51,8 @@ class SearchNavigationHandler {
       path: base,
       queryParameters: {
         if (result.symbol.isNotEmpty) 'q': result.symbol,
-        if (result.isin != null && result.isin!.isNotEmpty) 'isin': result.isin!,
+        if (result.isin != null && result.isin!.isNotEmpty)
+          'isin': result.isin!,
       },
     );
     context.go(uri.toString());
@@ -77,8 +77,7 @@ class SearchNavigationHandler {
   }
 
   void openCreateBasket() {
-    final portfolioId =
-        ShareUrlBuilder.portfolioIdFromLocation(
+    final portfolioId = ShareUrlBuilder.portfolioIdFromLocation(
           GoRouterState.of(context).matchedLocation,
         ) ??
         'all';

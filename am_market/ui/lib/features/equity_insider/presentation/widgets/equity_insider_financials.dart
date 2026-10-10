@@ -360,43 +360,43 @@ class _EquityInsiderFinancialsState
     required List<Map<String, dynamic>> balanceSheets,
   }) {
     return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildControlBar(context),
+        const SizedBox(height: 12),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 650;
+            if (isMobile) {
+              return Column(
+                children: [
+                  _buildRevenueChart(context, statements),
+                  const SizedBox(height: 12),
+                  _buildBalanceSheetChart(context, data),
+                ],
+              );
+            }
+            return Row(
               children: [
-                _buildControlBar(context),
-                const SizedBox(height: 12),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final isMobile = constraints.maxWidth < 650;
-                    if (isMobile) {
-                      return Column(
-                        children: [
-                          _buildRevenueChart(context, statements),
-                          const SizedBox(height: 12),
-                          _buildBalanceSheetChart(context, data),
-                        ],
-                      );
-                    }
-                    return Row(
-                      children: [
-                        Expanded(child: _buildRevenueChart(context, statements)),
-                        const SizedBox(width: 12),
-                        Expanded(child: _buildBalanceSheetChart(context, data)),
-                      ],
-                    );
-                  },
-                ),
-                const SizedBox(height: 14),
-                FinancialComparisonSection(
-                  statements: statements,
-                  balanceSheets: balanceSheets,
-                  isQuarterly: _isQuarterly,
-                  periodCount: _periodCount,
-                  showRevenue: _showRevenue,
-                  showPAT: _showPAT,
-                  showPatMargin: _showPatMargin,
-                ),
+                Expanded(child: _buildRevenueChart(context, statements)),
+                const SizedBox(width: 12),
+                Expanded(child: _buildBalanceSheetChart(context, data)),
               ],
             );
+          },
+        ),
+        const SizedBox(height: 14),
+        FinancialComparisonSection(
+          statements: statements,
+          balanceSheets: balanceSheets,
+          isQuarterly: _isQuarterly,
+          periodCount: _periodCount,
+          showRevenue: _showRevenue,
+          showPAT: _showPAT,
+          showPatMargin: _showPatMargin,
+        ),
+      ],
+    );
   }
 
   Widget _buildControlBar(BuildContext context) {
@@ -459,7 +459,9 @@ class _EquityInsiderFinancialsState
             decoration: BoxDecoration(
               color: isActive ? ModuleColors.market : Colors.transparent,
               border: Border.all(
-                color: isActive ? ModuleColors.market : context.textSecondary.withValues(alpha: 0.5),
+                color: isActive
+                    ? ModuleColors.market
+                    : context.textSecondary.withValues(alpha: 0.5),
                 width: 1.5,
               ),
               borderRadius: BorderRadius.circular(3),
@@ -509,7 +511,8 @@ class _EquityInsiderFinancialsState
     );
   }
 
-  Widget _buildRevenueChart(BuildContext context, List<Map<String, dynamic>> statements) {
+  Widget _buildRevenueChart(
+      BuildContext context, List<Map<String, dynamic>> statements) {
     final recent = statements.take(_periodCount).toList().reversed.toList();
     final Color revColor = ModuleColors.market;
     final Color patColor = context.marketTheme.positive;
@@ -590,7 +593,8 @@ class _EquityInsiderFinancialsState
                 const SizedBox(height: 10),
                 FinancialChartLegend(
                   items: [
-                    FinancialLegendItem(color: assetsColor, label: 'Total Assets'),
+                    FinancialLegendItem(
+                        color: assetsColor, label: 'Total Assets'),
                     FinancialLegendItem(color: equityColor, label: 'Equity'),
                   ],
                 ),
@@ -644,12 +648,8 @@ class _EquityInsiderFinancialsState
     required bool isSelected,
     required VoidCallback onTap,
   }) {
-    final color = isSelected
-        ? Colors.white
-        : context.textSecondary;
-    final bgColor = isSelected
-        ? ModuleColors.market
-        : Colors.transparent;
+    final color = isSelected ? Colors.white : context.textSecondary;
+    final bgColor = isSelected ? ModuleColors.market : Colors.transparent;
 
     return GestureDetector(
       onTap: onTap,

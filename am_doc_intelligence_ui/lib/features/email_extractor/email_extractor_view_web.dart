@@ -18,19 +18,19 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
   bool _loading = true;
   String _status = '';
   Map<String, dynamic>? _gmailStatus;
-  
+
   // Health
   bool? _isServiceConnected;
   bool _checkingHealth = true;
   String? _activeExtractingBrokerId;
-  
+
   Timer? _statusPollTimer;
 
   @override
   void initState() {
     super.initState();
     _checkHealthAndLoad();
-    
+
     // Periodically poll Gmail status to see if OAuth succeeded in the other window
     _statusPollTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (_isServiceConnected == true) {
@@ -104,15 +104,17 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
         _gmailStatus = status;
       });
     } catch (e) {
-       debugPrint('Gmail check error: $e');
+      debugPrint('Gmail check error: $e');
     }
   }
 
   Future<void> _handleGmailConnectionToggle(bool isConnected) async {
     setState(() {
-      _status = isConnected ? 'Disconnecting Gmail account...' : 'Initiating Google OAuth connection...';
+      _status = isConnected
+          ? 'Disconnecting Gmail account...'
+          : 'Initiating Google OAuth connection...';
     });
-    
+
     try {
       if (isConnected) {
         final result = await apiProvider.disconnectGmail();
@@ -134,7 +136,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
           // Open OAuth in new tab
           html.window.open(authUrl, '_blank');
           setState(() {
-            _status = 'Please complete the Google OAuth sign-in in the newly opened tab.';
+            _status =
+                'Please complete the Google OAuth sign-in in the newly opened tab.';
           });
         }
       }
@@ -149,7 +152,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
   Future<void> _extract(String brokerId) async {
     setState(() {
       _activeExtractingBrokerId = brokerId;
-      _status = 'Fetching latest email from ${brokerId.toUpperCase()} & scanning for statements...';
+      _status =
+          'Fetching latest email from ${brokerId.toUpperCase()} & scanning for statements...';
     });
 
     final sw = Stopwatch()..start();
@@ -169,7 +173,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
       );
       if (!mounted) return;
       setState(() {
-        _status = 'Extraction successful!\n- Parsed ${result['count']} holdings\n- Saved Portfolio ID: ${result['db_id']}';
+        _status =
+            'Extraction successful!\n- Parsed ${result['count']} holdings\n- Saved Portfolio ID: ${result['db_id']}';
         _activeExtractingBrokerId = null;
       });
     } catch (e) {
@@ -226,7 +231,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
               else if (_isServiceConnected == false)
                 _buildConnectionError()
               else ...[
-                _buildGmailStatusCard(isConnected, email, contentWidth: contentWidth),
+                _buildGmailStatusCard(isConnected, email,
+                    contentWidth: contentWidth),
                 const SizedBox(height: 32),
                 Row(
                   children: [
@@ -528,9 +534,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
                   ? 'Disconnect Access'
                   : 'Authenticate Google Mail',
               onPressed: () => _handleGmailConnectionToggle(isConnected),
-              type: isConnected
-                  ? AppButtonType.secondary
-                  : AppButtonType.primary,
+              type:
+                  isConnected ? AppButtonType.secondary : AppButtonType.primary,
             ),
           ],
         ),
@@ -543,11 +548,9 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
 
     Widget buildBrokerCard(Map<String, dynamic> broker) {
       final String brokerId = broker['id']?.toString() ?? '';
-      final String brokerName =
-          broker['name']?.toString() ?? 'Unknown Broker';
+      final String brokerName = broker['name']?.toString() ?? 'Unknown Broker';
       final String format = broker['format']?.toString() ?? 'N/A';
-      final bool isCurrentlyExtracting =
-          _activeExtractingBrokerId == brokerId;
+      final bool isCurrentlyExtracting = _activeExtractingBrokerId == brokerId;
 
       // Custom colors/icons per broker
       Color brokerColor = Theme.of(context).colorScheme.primary;
@@ -669,9 +672,11 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
 
   Widget _buildStatusLog() {
     if (_status.isEmpty) return const SizedBox.shrink();
-    
-    bool isError = _status.toLowerCase().contains('failed') || _status.toLowerCase().contains('error');
-    Color statusColor = isError ? Colors.red : Theme.of(context).colorScheme.primary;
+
+    bool isError = _status.toLowerCase().contains('failed') ||
+        _status.toLowerCase().contains('error');
+    Color statusColor =
+        isError ? Colors.red : Theme.of(context).colorScheme.primary;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -686,29 +691,25 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
         children: [
           Row(
             children: [
-              Icon(isError ? Icons.error_outline : Icons.terminal_outlined, color: statusColor, size: 20),
+              Icon(isError ? Icons.error_outline : Icons.terminal_outlined,
+                  color: statusColor, size: 20),
               const SizedBox(width: 12),
-              Text(
-                'EXTRACTION AUDIT LOG', 
-                style: TextStyle(
-                  fontWeight: FontWeight.bold, 
-                  fontSize: 11, 
-                  letterSpacing: 0.8, 
-                  color: statusColor
-                )
-              ),
+              Text('EXTRACTION AUDIT LOG',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                      letterSpacing: 0.8,
+                      color: statusColor)),
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            _status, 
-            style: TextStyle(
-              color: isError ? Colors.red : Colors.black87, 
-              fontFamily: 'monospace', 
-              fontSize: 12,
-              height: 1.4,
-            )
-          ),
+          Text(_status,
+              style: TextStyle(
+                color: isError ? Colors.red : Colors.black87,
+                fontFamily: 'monospace',
+                fontSize: 12,
+                height: 1.4,
+              )),
         ],
       ),
     );

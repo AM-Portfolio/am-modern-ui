@@ -55,8 +55,5 @@ void main() {
     test('to test the property `industry`', () async {
       // TODO
     });
-
-
   });
-
 }

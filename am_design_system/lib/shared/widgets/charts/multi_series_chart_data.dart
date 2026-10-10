@@ -153,10 +153,8 @@ class MultiSeriesChartData extends Equatable {
     final points = <MultiSeriesPoint>[];
     for (final row in rows) {
       final time = row['time']?.toString();
-      final raw = row['close'] ??
-          row['price'] ??
-          row['lastPrice'] ??
-          row['value'];
+      final raw =
+          row['close'] ?? row['price'] ?? row['lastPrice'] ?? row['value'];
       if (time == null || time.isEmpty) continue;
       if (raw is! num) continue;
       final value = raw.toDouble();

@@ -30,14 +30,16 @@ class Audit {
   int? version;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is Audit &&
-    other.createdAt == createdAt &&
-    other.version == version;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Audit &&
+          other.createdAt == createdAt &&
+          other.version == version;
 
   @override
   int get hashCode =>
-    (createdAt == null ? 0 : createdAt!.hashCode) +
-    (version == null ? 0 : version!.hashCode);
+      (createdAt == null ? 0 : createdAt!.hashCode) +
+      (version == null ? 0 : version!.hashCode);
 
   @override
   String toString() => 'Audit[createdAt=$createdAt, version=$version]';
@@ -68,8 +70,10 @@ class Audit {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "Audit[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "Audit[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "Audit[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "Audit[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -82,7 +86,10 @@ class Audit {
     return null;
   }
 
-  static List<Audit> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<Audit> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <Audit>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -98,7 +105,7 @@ class Audit {
   static Map<String, Audit> mapFromJson(dynamic json) {
     final map = <String, Audit>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); 
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
         final value = Audit.fromJson(entry.value);
         if (value != null) {
@@ -110,19 +117,23 @@ class Audit {
   }
 
   // maps a json object with a list of Audit-objects as value to a dart map
-  static Map<String, List<Audit>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<Audit>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<Audit>>{};
     if (json is Map && json.isNotEmpty) {
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = Audit.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = Audit.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

@@ -22,7 +22,8 @@ class FoHeaderCard extends ConsumerWidget {
     final marketTheme = context.marketTheme;
 
     final openAsync = ref.watch(marketIsOpenProvider);
-    final isMarketOpen = openAsync.maybeWhen(data: (v) => v, orElse: () => false);
+    final isMarketOpen =
+        openAsync.maybeWhen(data: (v) => v, orElse: () => false);
     final statusObj = ref.watch(marketStatusProvider);
     final statusReason = statusObj?.reason ?? '';
     final statusText = isMarketOpen
@@ -30,7 +31,8 @@ class FoHeaderCard extends ConsumerWidget {
         : (statusReason.isNotEmpty && statusReason != 'UNKNOWN'
             ? 'Closed · $statusReason'
             : 'Closed');
-    final statusColor = isMarketOpen ? marketTheme.positive : marketTheme.negative;
+    final statusColor =
+        isMarketOpen ? marketTheme.positive : marketTheme.negative;
 
     final chainAsync = ref.watch(optionChainProvider);
     final chainData = chainAsync.maybeWhen(data: (d) => d, orElse: () => null);
@@ -46,8 +48,10 @@ class FoHeaderCard extends ConsumerWidget {
     final activeContract = selectedContract ?? firstContract;
 
     final contractLtp = (activeContract?['ltp'] as num?)?.toDouble() ?? 0.0;
-    final contractChange = (activeContract?['change'] as num?)?.toDouble() ?? 0.0;
-    final contractPChange = (activeContract?['pChange'] as num?)?.toDouble() ?? 0.0;
+    final contractChange =
+        (activeContract?['change'] as num?)?.toDouble() ?? 0.0;
+    final contractPChange =
+        (activeContract?['pChange'] as num?)?.toDouble() ?? 0.0;
 
     final chainLtp = (chainData?['underlyingLtp'] as num?)?.toDouble() ?? 0.0;
     final chainChange =
@@ -60,10 +64,12 @@ class FoHeaderCard extends ConsumerWidget {
             0.0;
 
     final ltp = chainLtp > 0 ? chainLtp : (contractLtp > 0 ? contractLtp : 0.0);
-    final change =
-        chainChange != 0.0 ? chainChange : (contractChange != 0.0 ? contractChange : 0.0);
-    final pChange =
-        chainPChange != 0.0 ? chainPChange : (contractPChange != 0.0 ? contractPChange : 0.0);
+    final change = chainChange != 0.0
+        ? chainChange
+        : (contractChange != 0.0 ? contractChange : 0.0);
+    final pChange = chainPChange != 0.0
+        ? chainPChange
+        : (contractPChange != 0.0 ? contractPChange : 0.0);
 
     final isPositive = change >= 0;
     final deltaColor = isPositive ? marketTheme.positive : marketTheme.negative;
@@ -80,9 +86,9 @@ class FoHeaderCard extends ConsumerWidget {
         final put = s['put'] as Map<String, dynamic>?;
         if (call != null) {
           totalCallOi += (call['oi'] as num?)?.toDouble() ?? 0.0;
-          final iv =
-              ((call['greeks'] as Map<String, dynamic>?)?['iv'] as num?)?.toDouble() ??
-                  0.0;
+          final iv = ((call['greeks'] as Map<String, dynamic>?)?['iv'] as num?)
+                  ?.toDouble() ??
+              0.0;
           if (iv > 0) {
             totalIv += iv;
             ivCount++;
@@ -90,9 +96,9 @@ class FoHeaderCard extends ConsumerWidget {
         }
         if (put != null) {
           totalPutOi += (put['oi'] as num?)?.toDouble() ?? 0.0;
-          final iv =
-              ((put['greeks'] as Map<String, dynamic>?)?['iv'] as num?)?.toDouble() ??
-                  0.0;
+          final iv = ((put['greeks'] as Map<String, dynamic>?)?['iv'] as num?)
+                  ?.toDouble() ??
+              0.0;
           if (iv > 0) {
             totalIv += iv;
             ivCount++;
@@ -101,17 +107,19 @@ class FoHeaderCard extends ConsumerWidget {
       }
     }
 
-    final pcr =
-        totalCallOi > 0 ? (totalPutOi / totalCallOi).toStringAsFixed(2) : '0.54';
+    final pcr = totalCallOi > 0
+        ? (totalPutOi / totalCallOi).toStringAsFixed(2)
+        : '0.54';
     final avgIv =
         ivCount > 0 ? '${(totalIv / ivCount).toStringAsFixed(1)}%' : '493.4%';
     final apiLotSize = (chainData?['lotSize'] as num?)?.toInt() ??
         (activeContract?['lot_size'] as num?)?.toInt();
-    final firstStrikeLot = strikes.isNotEmpty && strikes.first is Map<String, dynamic>
-        ? ((strikes.first['call']?['lotSize'] ?? strikes.first['put']?['lotSize'])
-                as num?)
-            ?.toInt()
-        : null;
+    final firstStrikeLot =
+        strikes.isNotEmpty && strikes.first is Map<String, dynamic>
+            ? ((strikes.first['call']?['lotSize'] ??
+                    strikes.first['put']?['lotSize']) as num?)
+                ?.toInt()
+            : null;
     final lotSizeStr = (apiLotSize != null && apiLotSize > 0)
         ? '$apiLotSize'
         : ((firstStrikeLot != null && firstStrikeLot > 0)

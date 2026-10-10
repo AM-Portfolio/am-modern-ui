@@ -83,132 +83,132 @@ class _HeatmapSelectorWebState extends State<HeatmapSelectorWeb> {
   }
 
   Widget _buildCompactLayout(BuildContext context) => Container(
-    constraints: const BoxConstraints(minHeight: 60),
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surface,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(
-        color: (widget.primaryColor ?? Theme.of(context).primaryColor)
-            .withOpacity(0.1),
-      ),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.03),
-          blurRadius: 8,
-          offset: const Offset(0, 2),
+        constraints: const BoxConstraints(minHeight: 60),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: (widget.primaryColor ?? Theme.of(context).primaryColor)
+                .withOpacity(0.1),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-      ],
-    ),
-    child: Row(
-      children: [
-        if (widget.showTimeFrame) ...[
-          Expanded(flex: 3, child: _buildTimeFramePills(context)),
-          const SizedBox(width: 12),
-        ],
-        if (widget.showMetric) ...[
-          Expanded(flex: 2, child: _buildMetricDropdown(context)),
-          const SizedBox(width: 12),
-        ],
-        if (widget.showSector) ...[
-          Expanded(flex: 2, child: _buildSectorDropdown(context)),
-          const SizedBox(width: 12),
-        ],
-        if (widget.showMarketCap) ...[
-          Expanded(flex: 2, child: _buildMarketCapDropdown(context)),
-          const SizedBox(width: 12),
-        ],
-        if (widget.showLayout) ...[
-          Expanded(flex: 2, child: _buildLayoutDropdown(context)),
-          const SizedBox(width: 12),
-        ],
-        if (widget.showResetButton) _buildResetButton(context),
-      ],
-    ),
-  );
+        child: Row(
+          children: [
+            if (widget.showTimeFrame) ...[
+              Expanded(flex: 3, child: _buildTimeFramePills(context)),
+              const SizedBox(width: 12),
+            ],
+            if (widget.showMetric) ...[
+              Expanded(flex: 2, child: _buildMetricDropdown(context)),
+              const SizedBox(width: 12),
+            ],
+            if (widget.showSector) ...[
+              Expanded(flex: 2, child: _buildSectorDropdown(context)),
+              const SizedBox(width: 12),
+            ],
+            if (widget.showMarketCap) ...[
+              Expanded(flex: 2, child: _buildMarketCapDropdown(context)),
+              const SizedBox(width: 12),
+            ],
+            if (widget.showLayout) ...[
+              Expanded(flex: 2, child: _buildLayoutDropdown(context)),
+              const SizedBox(width: 12),
+            ],
+            if (widget.showResetButton) _buildResetButton(context),
+          ],
+        ),
+      );
 
   Widget _buildExpandedLayout(BuildContext context) => Card(
-    elevation: 2,
-    margin: const EdgeInsets.all(8),
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (widget.title != null) ...[
-            Text(
-              widget.title!,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: widget.primaryColor,
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-          _buildExpandedSelectors(context),
-          if (widget.showResetButton) ...[
-            const SizedBox(height: 16),
-            _buildExpandedResetButton(context),
-          ],
-        ],
-      ),
-    ),
-  );
+        elevation: 2,
+        margin: const EdgeInsets.all(8),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (widget.title != null) ...[
+                Text(
+                  widget.title!,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: widget.primaryColor,
+                      ),
+                ),
+                const SizedBox(height: 16),
+              ],
+              _buildExpandedSelectors(context),
+              if (widget.showResetButton) ...[
+                const SizedBox(height: 16),
+                _buildExpandedResetButton(context),
+              ],
+            ],
+          ),
+        ),
+      );
 
   Widget _buildPillsLayout(BuildContext context) => Container(
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surface,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: Colors.grey.shade300),
-    ),
-    child: SelectorContainerConfigs.responsiveGrid(
-      children: [
-        if (widget.showTimeFrame) _buildTimeFramePills(context),
-        if (widget.showMetric) _buildMetricPills(context),
-        if (widget.showSector) _buildSectorPills(context),
-        if (widget.showMarketCap) _buildMarketCapPills(context),
-        if (widget.showLayout) _buildLayoutPills(context),
-      ],
-    ),
-  );
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: SelectorContainerConfigs.responsiveGrid(
+          children: [
+            if (widget.showTimeFrame) _buildTimeFramePills(context),
+            if (widget.showMetric) _buildMetricPills(context),
+            if (widget.showSector) _buildSectorPills(context),
+            if (widget.showMarketCap) _buildMarketCapPills(context),
+            if (widget.showLayout) _buildLayoutPills(context),
+          ],
+        ),
+      );
 
   Widget _buildDropdownLayout(BuildContext context) => Container(
-    padding: const EdgeInsets.all(8),
-    child: Row(
-      children: [
-        if (widget.showTimeFrame) ...[
-          Expanded(child: _buildTimeFrameDropdown(context)),
-          const SizedBox(width: 8),
-        ],
-        if (widget.showMetric) ...[
-          Expanded(child: _buildMetricDropdown(context)),
-          const SizedBox(width: 8),
-        ],
-        if (widget.showSector) ...[
-          Expanded(child: _buildSectorDropdown(context)),
-          const SizedBox(width: 8),
-        ],
-        if (widget.showMarketCap) ...[
-          Expanded(child: _buildMarketCapDropdown(context)),
-          const SizedBox(width: 8),
-        ],
-        if (widget.showLayout) ...[
-          Expanded(child: _buildLayoutDropdown(context)),
-          const SizedBox(width: 8),
-        ],
-        if (widget.showResetButton) _buildIconResetButton(context),
-      ],
-    ),
-  );
+        padding: const EdgeInsets.all(8),
+        child: Row(
+          children: [
+            if (widget.showTimeFrame) ...[
+              Expanded(child: _buildTimeFrameDropdown(context)),
+              const SizedBox(width: 8),
+            ],
+            if (widget.showMetric) ...[
+              Expanded(child: _buildMetricDropdown(context)),
+              const SizedBox(width: 8),
+            ],
+            if (widget.showSector) ...[
+              Expanded(child: _buildSectorDropdown(context)),
+              const SizedBox(width: 8),
+            ],
+            if (widget.showMarketCap) ...[
+              Expanded(child: _buildMarketCapDropdown(context)),
+              const SizedBox(width: 8),
+            ],
+            if (widget.showLayout) ...[
+              Expanded(child: _buildLayoutDropdown(context)),
+              const SizedBox(width: 8),
+            ],
+            if (widget.showResetButton) _buildIconResetButton(context),
+          ],
+        ),
+      );
 
   Widget _buildTimeFramePills(BuildContext context) => PillSelector<TimeFrame>(
-    items: widget.core.timeFrameOptions,
-    selectedItem: widget.core.selectedTimeFrame,
-    onSelectionChanged: widget.core.updateTimeFrame,
-    itemDisplayText: (timeFrame) => timeFrame.displayName,
-    primaryColor: widget.primaryColor,
-  );
+        items: widget.core.timeFrameOptions,
+        selectedItem: widget.core.selectedTimeFrame,
+        onSelectionChanged: widget.core.updateTimeFrame,
+        itemDisplayText: (timeFrame) => timeFrame.displayName,
+        primaryColor: widget.primaryColor,
+      );
 
   Widget _buildMetricDropdown(BuildContext context) =>
       CustomDropdown<MetricType>(
@@ -232,117 +232,117 @@ class _HeatmapSelectorWebState extends State<HeatmapSelectorWeb> {
       );
 
   Widget _buildResetButton(BuildContext context) => ResetButton(
-    onPressed: widget.core.resetFilters,
-    style: ResetButtonStyle.compact,
-    primaryColor: widget.primaryColor,
-  );
+        onPressed: widget.core.resetFilters,
+        style: ResetButtonStyle.compact,
+        primaryColor: widget.primaryColor,
+      );
 
   Widget _buildExpandedSelectors(BuildContext context) => Column(
-    children: [
-      Row(
         children: [
-          if (widget.showTimeFrame) ...[
-            Expanded(
-              child: TimeFrameSelector.heatmap(
-                selectedTimeFrame: widget.core.selectedTimeFrame,
-                onTimeFrameChanged: widget.core.updateTimeFrame,
-                primaryColor: widget.primaryColor,
-                title: 'Time Frame',
-              ),
-            ),
-            const SizedBox(width: 16),
-          ],
-          if (widget.showMetric)
-            Expanded(
-              child: MetricSelector.heatmap(
-                selectedMetric: widget.core.selectedMetric,
-                onMetricChanged: widget.core.updateMetric,
-                primaryColor: widget.primaryColor,
-                title: 'Metric',
-              ),
-            ),
-        ],
-      ),
-      if (widget.showSector || widget.showMarketCap) ...[
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            if (widget.showSector) ...[
-              Expanded(
-                child: SectorSelector.heatmap(
-                  selectedSector: widget.core.selectedSector,
-                  onSectorChanged: widget.core.updateSector,
-                  primaryColor: widget.primaryColor,
-                  title: 'Sector',
-                ),
-              ),
-              const SizedBox(width: 16),
-            ],
-            if (widget.showMarketCap)
-              Expanded(
-                child: MarketCapSelector.heatmap(
-                  selectedMarketCap: widget.core.selectedMarketCap,
-                  onMarketCapChanged: widget.core.updateMarketCap,
-                  primaryColor: widget.primaryColor,
-                  title: 'Market Cap',
-                ),
-              ),
-          ],
-        ),
-      ],
-      if (widget.showLayout) ...[
-        const SizedBox(height: 16),
-        // Layout selector for expanded view
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
             children: [
-              Text(
-                'Layout',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: widget.primaryColor,
+              if (widget.showTimeFrame) ...[
+                Expanded(
+                  child: TimeFrameSelector.heatmap(
+                    selectedTimeFrame: widget.core.selectedTimeFrame,
+                    onTimeFrameChanged: widget.core.updateTimeFrame,
+                    primaryColor: widget.primaryColor,
+                    title: 'Time Frame',
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              _buildLayoutPills(context),
+                const SizedBox(width: 16),
+              ],
+              if (widget.showMetric)
+                Expanded(
+                  child: MetricSelector.heatmap(
+                    selectedMetric: widget.core.selectedMetric,
+                    onMetricChanged: widget.core.updateMetric,
+                    primaryColor: widget.primaryColor,
+                    title: 'Metric',
+                  ),
+                ),
             ],
           ),
-        ),
-      ],
-    ],
-  );
+          if (widget.showSector || widget.showMarketCap) ...[
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                if (widget.showSector) ...[
+                  Expanded(
+                    child: SectorSelector.heatmap(
+                      selectedSector: widget.core.selectedSector,
+                      onSectorChanged: widget.core.updateSector,
+                      primaryColor: widget.primaryColor,
+                      title: 'Sector',
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                ],
+                if (widget.showMarketCap)
+                  Expanded(
+                    child: MarketCapSelector.heatmap(
+                      selectedMarketCap: widget.core.selectedMarketCap,
+                      onMarketCapChanged: widget.core.updateMarketCap,
+                      primaryColor: widget.primaryColor,
+                      title: 'Market Cap',
+                    ),
+                  ),
+              ],
+            ),
+          ],
+          if (widget.showLayout) ...[
+            const SizedBox(height: 16),
+            // Layout selector for expanded view
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Layout',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: widget.primaryColor,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildLayoutPills(context),
+                ],
+              ),
+            ),
+          ],
+        ],
+      );
 
   Widget _buildExpandedResetButton(BuildContext context) => Align(
-    alignment: Alignment.centerRight,
-    child: ResetButton(
-      onPressed: widget.core.resetFilters,
-      style: ResetButtonStyle.outlined,
-      primaryColor: widget.primaryColor,
-    ),
-  );
+        alignment: Alignment.centerRight,
+        child: ResetButton(
+          onPressed: widget.core.resetFilters,
+          style: ResetButtonStyle.outlined,
+          primaryColor: widget.primaryColor,
+        ),
+      );
 
   // Additional pill and dropdown builders for other selectors
   Widget _buildMetricPills(BuildContext context) => PillSelector<MetricType>(
-    items: widget.core.metricOptions,
-    selectedItem: widget.core.selectedMetric,
-    onSelectionChanged: widget.core.updateMetric,
-    itemDisplayText: (metric) => metric.shortName,
-    primaryColor: widget.primaryColor,
-  );
+        items: widget.core.metricOptions,
+        selectedItem: widget.core.selectedMetric,
+        onSelectionChanged: widget.core.updateMetric,
+        itemDisplayText: (metric) => metric.shortName,
+        primaryColor: widget.primaryColor,
+      );
 
   Widget _buildSectorPills(BuildContext context) => PillSelector<SectorType>(
-    items: widget.core.sectorOptions,
-    selectedItem: widget.core.selectedSector,
-    onSelectionChanged: widget.core.updateSector,
-    itemDisplayText: (sector) => sector.displayName,
-    primaryColor: widget.primaryColor,
-  );
+        items: widget.core.sectorOptions,
+        selectedItem: widget.core.selectedSector,
+        onSelectionChanged: widget.core.updateSector,
+        itemDisplayText: (sector) => sector.displayName,
+        primaryColor: widget.primaryColor,
+      );
 
   Widget _buildMarketCapPills(BuildContext context) =>
       PillSelector<MarketCapType>(
@@ -422,9 +422,9 @@ class _HeatmapSelectorWebState extends State<HeatmapSelectorWeb> {
       );
 
   Widget _buildIconResetButton(BuildContext context) => ResetButton(
-    onPressed: widget.core.resetFilters,
-    primaryColor: widget.primaryColor,
-  );
+        onPressed: widget.core.resetFilters,
+        primaryColor: widget.primaryColor,
+      );
 
   Widget _buildLayoutDropdown(BuildContext context) =>
       CustomDropdown<HeatmapLayoutType>(

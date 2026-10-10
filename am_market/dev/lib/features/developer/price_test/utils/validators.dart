@@ -3,9 +3,9 @@ class SymbolDetector {
   /// Determine if a symbol is an index based on common keywords
   static bool isIndexSymbol(String symbol) {
     final upperSymbol = symbol.toUpperCase();
-    return upperSymbol.contains('NIFTY') || 
-           upperSymbol.contains('SENSEX') ||
-           upperSymbol.contains('INDEX');
+    return upperSymbol.contains('NIFTY') ||
+        upperSymbol.contains('SENSEX') ||
+        upperSymbol.contains('INDEX');
   }
 
   /// Validate if a symbol string is not empty

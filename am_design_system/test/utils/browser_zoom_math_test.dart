@@ -54,7 +54,8 @@ void main() {
       expect(chrome, closeTo(1.0, 0.02));
     });
 
-    test('OS 125% + Chrome 110% uses dpr ratio when outer/inner is in 100% band',
+    test(
+        'OS 125% + Chrome 110% uses dpr ratio when outer/inner is in 100% band',
         () {
       final chrome = BrowserZoomMath.detectChromeZoom(
         innerWidth: 1920,
@@ -84,7 +85,8 @@ void main() {
       );
     });
 
-    test('pageLayoutSize at 80% is larger so FittedBox can shrink the whole page',
+    test(
+        'pageLayoutSize at 80% is larger so FittedBox can shrink the whole page',
         () {
       final layout = BrowserZoomMath.pageLayoutSize(const Size(1280, 720), 0.8);
       expect(layout.width, closeTo(1600, 0.5));

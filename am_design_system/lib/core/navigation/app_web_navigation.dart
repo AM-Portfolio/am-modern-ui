@@ -22,11 +22,13 @@ class AppWebNavigation {
     if (!kIsWeb) return;
     final uri = Uri.parse(path);
     final base = Uri.base;
-    final full = base.replace(
-      path: uri.path.isEmpty ? path : uri.path,
-      query: uri.hasQuery ? uri.query : '',
-      fragment: '',
-    ).toString();
+    final full = base
+        .replace(
+          path: uri.path.isEmpty ? path : uri.path,
+          query: uri.hasQuery ? uri.query : '',
+          fragment: '',
+        )
+        .toString();
     // Prefer preserving query from relative path like /app/chart/workspace?symbol=...
     final withQuery = path.contains('?')
         ? '${base.origin}${path.startsWith('/') ? path : '/$path'}'

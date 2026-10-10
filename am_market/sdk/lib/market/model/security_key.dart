@@ -30,14 +30,14 @@ class SecurityKey {
   String? isin;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is SecurityKey &&
-    other.symbol == symbol &&
-    other.isin == isin;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SecurityKey && other.symbol == symbol && other.isin == isin;
 
   @override
   int get hashCode =>
-    (symbol == null ? 0 : symbol!.hashCode) +
-    (isin == null ? 0 : isin!.hashCode);
+      (symbol == null ? 0 : symbol!.hashCode) +
+      (isin == null ? 0 : isin!.hashCode);
 
   @override
   String toString() => 'SecurityKey[symbol=$symbol, isin=$isin]';
@@ -68,8 +68,10 @@ class SecurityKey {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "SecurityKey[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "SecurityKey[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "SecurityKey[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "SecurityKey[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -82,7 +84,10 @@ class SecurityKey {
     return null;
   }
 
-  static List<SecurityKey> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<SecurityKey> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <SecurityKey>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -98,7 +103,7 @@ class SecurityKey {
   static Map<String, SecurityKey> mapFromJson(dynamic json) {
     final map = <String, SecurityKey>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); 
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
         final value = SecurityKey.fromJson(entry.value);
         if (value != null) {
@@ -110,19 +115,23 @@ class SecurityKey {
   }
 
   // maps a json object with a list of SecurityKey-objects as value to a dart map
-  static Map<String, List<SecurityKey>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<SecurityKey>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<SecurityKey>>{};
     if (json is Map && json.isNotEmpty) {
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = SecurityKey.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = SecurityKey.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

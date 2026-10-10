@@ -139,16 +139,7 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
             stops: const [0.0, 0.5, 1.0],
           ),
         ),
-<<<<<<< ours
         child: body,
-=======
-        child: SafeArea(
-          top: false,
-          child: _submittedSymbol == null
-              ? _buildEmptySearch()
-              : _buildDataView(_submittedSymbol!),
-        ),
->>>>>>> theirs
       ),
     );
   }
@@ -190,13 +181,8 @@ class _FundamentalsBody extends ConsumerStatefulWidget {
 }
 
 class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
-<<<<<<< ours
   static const double _stickyHeroExtent = 120;
   static const double _stickyHeroExtentCompact = 72;
-=======
-  static const double _stickyHeroExtentDesktop = 120;
-  static const double _stickyHeroExtentMobile = 60;
->>>>>>> theirs
   static const double _stickyNavExtent = 52;
   static const double _stickyNavExtentCompact = 40;
 
@@ -248,12 +234,8 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
     final heroExtent =
         width < 800 ? _stickyHeroExtentMobile : _stickyHeroExtentDesktop;
     // Activate when a section top crosses under the pinned hero + nav.
-<<<<<<< ours
     final threshold =
         _heroExtent + _navExtent + (widget.compactEmbed ? 80 : 180);
-=======
-    final threshold = heroExtent + _stickyNavExtent + 180;
->>>>>>> theirs
 
     for (int i = _sectionKeys.length - 1; i >= 0; i--) {
       final key = _sectionKeys[i];
@@ -328,7 +310,6 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                 SliverPersistentHeader(
                   pinned: true,
                   delegate: _StickySectionNavDelegate(
-<<<<<<< ours
                     extent: _heroExtent,
                     backgroundColor: context.colors.scaffoldBackground,
                     child: Padding(
@@ -337,16 +318,6 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                         isMobile ? 8 : (widget.compactEmbed ? 6 : 16),
                         isMobile ? 8 : (widget.compactEmbed ? 8 : 16),
                         widget.compactEmbed ? 4 : 8,
-=======
-                    extent: stickyHeroExtent,
-                    backgroundColor: context.colors.scaffoldBackground,
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        isMobile ? 12 : 16,
-                        isMobile ? 4 : 16,
-                        isMobile ? 12 : 16,
-                        isMobile ? 4 : 8,
->>>>>>> theirs
                       ),
                       child: KeyedSubtree(
                         key: _sectionKeys[0],
@@ -390,17 +361,10 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(
-<<<<<<< ours
                       isMobile ? 8 : (widget.compactEmbed ? 8 : 16),
                       widget.compactEmbed ? 8 : 14,
                       isMobile ? 8 : (widget.compactEmbed ? 8 : 16),
                       widget.compactEmbed ? 12 : 32,
-=======
-                      isMobile ? 12 : 16,
-                      14,
-                      isMobile ? 12 : 16,
-                      bottomPad,
->>>>>>> theirs
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -527,7 +491,6 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
               ],
             );
           },
-<<<<<<< ours
         ),
 
         // Full Screen Search Overlay with Soft Backdrop Blur
@@ -606,8 +569,6 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
             ),
           ),
       ],
-=======
->>>>>>> theirs
     );
   }
 }

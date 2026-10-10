@@ -102,35 +102,38 @@ class HistoricalDataRequest {
   bool? isIndexSymbol;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is HistoricalDataRequest &&
-    other.symbols == symbols &&
-    other.from == from &&
-    other.to == to &&
-    other.interval == interval &&
-    other.continuous == continuous &&
-    other.instrumentType == instrumentType &&
-    other.forceRefresh == forceRefresh &&
-    other.filterType == filterType &&
-    other.filterFrequency == filterFrequency &&
-    _deepEquality.equals(other.additionalParams, additionalParams) &&
-    other.isIndexSymbol == isIndexSymbol;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is HistoricalDataRequest &&
+          other.symbols == symbols &&
+          other.from == from &&
+          other.to == to &&
+          other.interval == interval &&
+          other.continuous == continuous &&
+          other.instrumentType == instrumentType &&
+          other.forceRefresh == forceRefresh &&
+          other.filterType == filterType &&
+          other.filterFrequency == filterFrequency &&
+          _deepEquality.equals(other.additionalParams, additionalParams) &&
+          other.isIndexSymbol == isIndexSymbol;
 
   @override
   int get hashCode =>
-    (symbols == null ? 0 : symbols!.hashCode) +
-    (from == null ? 0 : from!.hashCode) +
-    (to == null ? 0 : to!.hashCode) +
-    (interval == null ? 0 : interval!.hashCode) +
-    (continuous == null ? 0 : continuous!.hashCode) +
-    (instrumentType == null ? 0 : instrumentType!.hashCode) +
-    (forceRefresh == null ? 0 : forceRefresh!.hashCode) +
-    (filterType == null ? 0 : filterType!.hashCode) +
-    (filterFrequency == null ? 0 : filterFrequency!.hashCode) +
-    (additionalParams.hashCode) +
-    (isIndexSymbol == null ? 0 : isIndexSymbol!.hashCode);
+      (symbols == null ? 0 : symbols!.hashCode) +
+      (from == null ? 0 : from!.hashCode) +
+      (to == null ? 0 : to!.hashCode) +
+      (interval == null ? 0 : interval!.hashCode) +
+      (continuous == null ? 0 : continuous!.hashCode) +
+      (instrumentType == null ? 0 : instrumentType!.hashCode) +
+      (forceRefresh == null ? 0 : forceRefresh!.hashCode) +
+      (filterType == null ? 0 : filterType!.hashCode) +
+      (filterFrequency == null ? 0 : filterFrequency!.hashCode) +
+      (additionalParams.hashCode) +
+      (isIndexSymbol == null ? 0 : isIndexSymbol!.hashCode);
 
   @override
-  String toString() => 'HistoricalDataRequest[symbols=$symbols, from=$from, to=$to, interval=$interval, continuous=$continuous, instrumentType=$instrumentType, forceRefresh=$forceRefresh, filterType=$filterType, filterFrequency=$filterFrequency, additionalParams=$additionalParams, isIndexSymbol=$isIndexSymbol]';
+  String toString() =>
+      'HistoricalDataRequest[symbols=$symbols, from=$from, to=$to, interval=$interval, continuous=$continuous, instrumentType=$instrumentType, forceRefresh=$forceRefresh, filterType=$filterType, filterFrequency=$filterFrequency, additionalParams=$additionalParams, isIndexSymbol=$isIndexSymbol]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -179,7 +182,7 @@ class HistoricalDataRequest {
     } else {
       json[r'filterFrequency'] = null;
     }
-      json[r'additionalParams'] = this.additionalParams;
+    json[r'additionalParams'] = this.additionalParams;
     if (this.isIndexSymbol != null) {
       json[r'isIndexSymbol'] = this.isIndexSymbol;
     } else {
@@ -199,8 +202,10 @@ class HistoricalDataRequest {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "HistoricalDataRequest[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "HistoricalDataRequest[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "HistoricalDataRequest[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "HistoricalDataRequest[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -215,14 +220,19 @@ class HistoricalDataRequest {
         forceRefresh: mapValueOfType<bool>(json, r'forceRefresh'),
         filterType: mapValueOfType<String>(json, r'filterType'),
         filterFrequency: mapValueOfType<int>(json, r'filterFrequency'),
-        additionalParams: mapCastOfType<String, Object>(json, r'additionalParams') ?? const {},
+        additionalParams:
+            mapCastOfType<String, Object>(json, r'additionalParams') ??
+                const {},
         isIndexSymbol: mapValueOfType<bool>(json, r'isIndexSymbol'),
       );
     }
     return null;
   }
 
-  static List<HistoricalDataRequest> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<HistoricalDataRequest> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <HistoricalDataRequest>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -238,7 +248,7 @@ class HistoricalDataRequest {
   static Map<String, HistoricalDataRequest> mapFromJson(dynamic json) {
     final map = <String, HistoricalDataRequest>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); 
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
         final value = HistoricalDataRequest.fromJson(entry.value);
         if (value != null) {
@@ -250,22 +260,26 @@ class HistoricalDataRequest {
   }
 
   // maps a json object with a list of HistoricalDataRequest-objects as value to a dart map
-  static Map<String, List<HistoricalDataRequest>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<HistoricalDataRequest>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<HistoricalDataRequest>>{};
     if (json is Map && json.isNotEmpty) {
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = HistoricalDataRequest.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = HistoricalDataRequest.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-
 
 class HistoricalDataRequestIntervalEnum {
   /// Instantiate a new enum with the provided [value].
@@ -280,11 +294,15 @@ class HistoricalDataRequestIntervalEnum {
   String toJson() => value;
 
   static const MINUTE = HistoricalDataRequestIntervalEnum._(r'MINUTE');
-  static const THREE_MINUTE = HistoricalDataRequestIntervalEnum._(r'THREE_MINUTE');
-  static const FIVE_MINUTE = HistoricalDataRequestIntervalEnum._(r'FIVE_MINUTE');
+  static const THREE_MINUTE =
+      HistoricalDataRequestIntervalEnum._(r'THREE_MINUTE');
+  static const FIVE_MINUTE =
+      HistoricalDataRequestIntervalEnum._(r'FIVE_MINUTE');
   static const TEN_MINUTE = HistoricalDataRequestIntervalEnum._(r'TEN_MINUTE');
-  static const FIFTEEN_MINUTE = HistoricalDataRequestIntervalEnum._(r'FIFTEEN_MINUTE');
-  static const THIRTY_MINUTE = HistoricalDataRequestIntervalEnum._(r'THIRTY_MINUTE');
+  static const FIFTEEN_MINUTE =
+      HistoricalDataRequestIntervalEnum._(r'FIFTEEN_MINUTE');
+  static const THIRTY_MINUTE =
+      HistoricalDataRequestIntervalEnum._(r'THIRTY_MINUTE');
   static const HOUR = HistoricalDataRequestIntervalEnum._(r'HOUR');
   static const FOUR_HOUR = HistoricalDataRequestIntervalEnum._(r'FOUR_HOUR');
   static const DAY = HistoricalDataRequestIntervalEnum._(r'DAY');
@@ -308,9 +326,13 @@ class HistoricalDataRequestIntervalEnum {
     YEAR,
   ];
 
-  static HistoricalDataRequestIntervalEnum? fromJson(dynamic value) => HistoricalDataRequestIntervalEnumTypeTransformer().decode(value);
+  static HistoricalDataRequestIntervalEnum? fromJson(dynamic value) =>
+      HistoricalDataRequestIntervalEnumTypeTransformer().decode(value);
 
-  static List<HistoricalDataRequestIntervalEnum> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<HistoricalDataRequestIntervalEnum> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <HistoricalDataRequestIntervalEnum>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -327,7 +349,8 @@ class HistoricalDataRequestIntervalEnum {
 /// Transformation class that can [encode] an instance of [HistoricalDataRequestIntervalEnum] to String,
 /// and [decode] dynamic data back to [HistoricalDataRequestIntervalEnum].
 class HistoricalDataRequestIntervalEnumTypeTransformer {
-  factory HistoricalDataRequestIntervalEnumTypeTransformer() => _instance ??= const HistoricalDataRequestIntervalEnumTypeTransformer._();
+  factory HistoricalDataRequestIntervalEnumTypeTransformer() =>
+      _instance ??= const HistoricalDataRequestIntervalEnumTypeTransformer._();
 
   const HistoricalDataRequestIntervalEnumTypeTransformer._();
 
@@ -341,21 +364,34 @@ class HistoricalDataRequestIntervalEnumTypeTransformer {
   ///
   /// The [allowNull] is very handy when an API changes and a new enum value is added or removed,
   /// and users are still using an old app with the old code.
-  HistoricalDataRequestIntervalEnum? decode(dynamic data, {bool allowNull = true}) {
+  HistoricalDataRequestIntervalEnum? decode(dynamic data,
+      {bool allowNull = true}) {
     if (data != null) {
       switch (data as Object?) {
-        case r'MINUTE': return HistoricalDataRequestIntervalEnum.MINUTE;
-        case r'THREE_MINUTE': return HistoricalDataRequestIntervalEnum.THREE_MINUTE;
-        case r'FIVE_MINUTE': return HistoricalDataRequestIntervalEnum.FIVE_MINUTE;
-        case r'TEN_MINUTE': return HistoricalDataRequestIntervalEnum.TEN_MINUTE;
-        case r'FIFTEEN_MINUTE': return HistoricalDataRequestIntervalEnum.FIFTEEN_MINUTE;
-        case r'THIRTY_MINUTE': return HistoricalDataRequestIntervalEnum.THIRTY_MINUTE;
-        case r'HOUR': return HistoricalDataRequestIntervalEnum.HOUR;
-        case r'FOUR_HOUR': return HistoricalDataRequestIntervalEnum.FOUR_HOUR;
-        case r'DAY': return HistoricalDataRequestIntervalEnum.DAY;
-        case r'WEEK': return HistoricalDataRequestIntervalEnum.WEEK;
-        case r'MONTH': return HistoricalDataRequestIntervalEnum.MONTH;
-        case r'YEAR': return HistoricalDataRequestIntervalEnum.YEAR;
+        case r'MINUTE':
+          return HistoricalDataRequestIntervalEnum.MINUTE;
+        case r'THREE_MINUTE':
+          return HistoricalDataRequestIntervalEnum.THREE_MINUTE;
+        case r'FIVE_MINUTE':
+          return HistoricalDataRequestIntervalEnum.FIVE_MINUTE;
+        case r'TEN_MINUTE':
+          return HistoricalDataRequestIntervalEnum.TEN_MINUTE;
+        case r'FIFTEEN_MINUTE':
+          return HistoricalDataRequestIntervalEnum.FIFTEEN_MINUTE;
+        case r'THIRTY_MINUTE':
+          return HistoricalDataRequestIntervalEnum.THIRTY_MINUTE;
+        case r'HOUR':
+          return HistoricalDataRequestIntervalEnum.HOUR;
+        case r'FOUR_HOUR':
+          return HistoricalDataRequestIntervalEnum.FOUR_HOUR;
+        case r'DAY':
+          return HistoricalDataRequestIntervalEnum.DAY;
+        case r'WEEK':
+          return HistoricalDataRequestIntervalEnum.WEEK;
+        case r'MONTH':
+          return HistoricalDataRequestIntervalEnum.MONTH;
+        case r'YEAR':
+          return HistoricalDataRequestIntervalEnum.YEAR;
         default:
           if (!allowNull) {
             throw ArgumentError('Unknown enum value to decode: $data');
@@ -368,5 +404,3 @@ class HistoricalDataRequestIntervalEnumTypeTransformer {
   /// Singleton [HistoricalDataRequestIntervalEnumTypeTransformer] instance.
   static HistoricalDataRequestIntervalEnumTypeTransformer? _instance;
 }
-
-

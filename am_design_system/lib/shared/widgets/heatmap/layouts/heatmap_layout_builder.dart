@@ -23,12 +23,12 @@ abstract class HeatmapLayoutBuilder {
 
   /// Gets the display tiles from the heatmap data
   List<HeatmapTileData> getUiTiles(HeatmapData data) => data.tiles.map((tile) {
-    if (tile is HeatmapTileData) {
-      return tile;
-    } else {
-      return HeatmapTileData.fromEntity(tile);
-    }
-  }).toList();
+        if (tile is HeatmapTileData) {
+          return tile;
+        } else {
+          return HeatmapTileData.fromEntity(tile);
+        }
+      }).toList();
 
   /// Builds a single heatmap tile with consistent styling
   Widget buildHeatmapTile(
@@ -81,7 +81,8 @@ abstract class HeatmapLayoutBuilder {
           ],
         ),
         child: Padding(
-          padding: config.tilePadding ?? const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          padding: config.tilePadding ??
+              const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
           child: buildTileContent(
             context,
             tile,
@@ -301,9 +302,8 @@ abstract class HeatmapLayoutBuilder {
     } else {
       // Show matching parent sector tile(s) with children nested (no flatten).
       final sectorName = selectedSector.displayName;
-      resultTiles = rootTiles
-          .where((tile) => matchesSector(tile, sectorName))
-          .toList();
+      resultTiles =
+          rootTiles.where((tile) => matchesSector(tile, sectorName)).toList();
     }
 
     // Apply centralized sorting based on configuration
@@ -361,7 +361,8 @@ abstract class HeatmapLayoutBuilder {
     if (needle.isEmpty || needle == 'all') return true;
     final hay = '${tile.displayName} ${tile.name}'.toLowerCase();
     // Prefer whole-name / compacted equality over naive contains (avoids Tech vs Health Tech).
-    if (hay == needle || hay.replaceAll(' ', '') == needle.replaceAll(' ', '')) {
+    if (hay == needle ||
+        hay.replaceAll(' ', '') == needle.replaceAll(' ', '')) {
       return true;
     }
     return tile.displayName.toLowerCase().contains(needle) ||
@@ -390,10 +391,8 @@ abstract class HeatmapLayoutBuilder {
   Color getPerformanceColor(BuildContext context, double changePercent) {
     final intensity = (changePercent.abs() / 5.0).clamp(0.0, 1.0);
     final colors = Theme.of(context).extension<AppColorsTheme>();
-    final positive =
-        colors?.marketPositiveIndicator ?? const Color(0xFF00C896);
-    final negative =
-        colors?.marketNegativeIndicator ?? const Color(0xFFF87171);
+    final positive = colors?.marketPositiveIndicator ?? const Color(0xFF00C896);
+    final negative = colors?.marketNegativeIndicator ?? const Color(0xFFF87171);
     final neutral = colors?.statusNeutral ?? const Color(0xFF6B7280);
 
     if (changePercent > 0.05) {
@@ -489,9 +488,8 @@ abstract class HeatmapLayoutBuilder {
 
     return Container(
       decoration: BoxDecoration(
-        border: hierarchyLevel > 0
-            ? Border.all(color: Colors.grey.shade400)
-            : null,
+        border:
+            hierarchyLevel > 0 ? Border.all(color: Colors.grey.shade400) : null,
         borderRadius: BorderRadius.circular(4),
       ),
       child: Stack(
@@ -583,13 +581,13 @@ abstract class HeatmapLayoutBuilder {
     final titleSize = effectiveW < 100
         ? 9.0
         : effectiveW < 180
-        ? 11.0
-        : 13.0;
+            ? 11.0
+            : 13.0;
     final perfSize = effectiveW < 100
         ? 13.0
         : effectiveW < 180
-        ? 18.0
-        : 24.0;
+            ? 18.0
+            : 24.0;
     final weightSize = effectiveW < 100 ? 8.0 : 10.0;
     final trendIcon = isPositive ? Icons.trending_up : Icons.trending_down;
 
@@ -772,7 +770,8 @@ abstract class HeatmapLayoutBuilder {
           ),
 
           // Trailing section - Performance and value metrics
-          if (config.showPerformance || (config.showValue && tile.value != null)) ...[
+          if (config.showPerformance ||
+              (config.showValue && tile.value != null)) ...[
             // Performance
             if (config.showPerformance)
               Expanded(
@@ -838,20 +837,20 @@ abstract class HeatmapLayoutBuilder {
 
   /// Builds a hierarchy indicator badge
   Widget _buildHierarchyIndicator(int hierarchyLevel) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-    decoration: BoxDecoration(
-      color: Colors.white.withOpacity(0.8),
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: Text(
-      'L${hierarchyLevel + 1}',
-      style: TextStyle(
-        fontSize: 8,
-        fontWeight: FontWeight.bold,
-        color: Colors.grey.shade600,
-      ),
-    ),
-  );
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.8),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          'L${hierarchyLevel + 1}',
+          style: TextStyle(
+            fontSize: 8,
+            fontWeight: FontWeight.bold,
+            color: Colors.grey.shade600,
+          ),
+        ),
+      );
 
   /// Calculates the hierarchy level of a tile (0 for root, 1+ for children)
   int _calculateHierarchyLevel(HeatmapTileData targetTile, HeatmapData data) {

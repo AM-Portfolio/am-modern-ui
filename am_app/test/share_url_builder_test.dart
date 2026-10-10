@@ -48,7 +48,8 @@ void main() {
     });
 
     test('trade discovery is not a deep trade link', () {
-      expect(ShareUrlBuilder.isDeepTradeLink(AppRoutes.tradeDiscovery), isFalse);
+      expect(
+          ShareUrlBuilder.isDeepTradeLink(AppRoutes.tradeDiscovery), isFalse);
       expect(
         ShareUrlBuilder.tradeTabFromLocation(AppRoutes.tradeDiscovery),
         'portfolios',
@@ -204,7 +205,8 @@ void main() {
         );
       });
 
-      test('external return without redirect goes to profile not dashboard', () {
+      test('external return without redirect goes to profile not dashboard',
+          () {
         final target = AuthRedirect.postLoginLocation(
           Uri.parse(
             '/login?return_to=http%3A%2F%2F127.0.0.1%3A18787%2Fcallback&state=s1',
@@ -213,7 +215,8 @@ void main() {
         final uri = Uri.parse(target);
         expect(uri.path, '/app/profile');
         expect(uri.path, isNot(AuthRedirect.productHomePath));
-        expect(uri.queryParameters['return_to'], 'http://127.0.0.1:18787/callback');
+        expect(uri.queryParameters['return_to'],
+            'http://127.0.0.1:18787/callback');
         expect(uri.queryParameters['state'], 's1');
       });
 

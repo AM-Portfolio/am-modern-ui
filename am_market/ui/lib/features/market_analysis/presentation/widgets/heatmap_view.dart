@@ -72,9 +72,8 @@ class _HeatmapViewState extends State<HeatmapView> {
       return pB.compareTo(pA);
     });
 
-    final indexLabel = data.indexName?.isNotEmpty == true
-        ? data.indexName!
-        : data.indexSymbol;
+    final indexLabel =
+        data.indexName?.isNotEmpty == true ? data.indexName! : data.indexSymbol;
 
     return Column(
       children: [

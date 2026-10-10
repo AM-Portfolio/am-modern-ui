@@ -81,9 +81,8 @@ class ApiService {
   Future<List<String>> getSupportedDocumentTypes() async {
     final url = '$_docBase/documents/types';
     debugPrint('[ApiService] GET $url');
-    final apiClient = GetIt.I.isRegistered<ApiClient>() 
-        ? GetIt.I<ApiClient>() 
-        : ApiClient();
+    final apiClient =
+        GetIt.I.isRegistered<ApiClient>() ? GetIt.I<ApiClient>() : ApiClient();
 
     return apiClient.get<List<String>>(
       url,
@@ -111,7 +110,7 @@ class ApiService {
       apiBrokerType = 'GROW';
     }
     request.fields['brokerType'] = apiBrokerType;
-    
+
     // Map custom UI document types to backend-supported document types
     String apiDocType = docType;
     if (docType == 'PORTFOLIO_EQUITY' || docType == 'PORTFOLIO_ETF') {
@@ -123,8 +122,8 @@ class ApiService {
       request.fields['portfolioId'] = trimmedPortfolio;
     }
 
-    request.files
-        .add(http.MultipartFile.fromBytes('file', fileBytes, filename: filename));
+    request.files.add(
+        http.MultipartFile.fromBytes('file', fileBytes, filename: filename));
 
     final client = _makeClient();
     try {
@@ -315,8 +314,8 @@ class ApiService {
     debugPrint('[ApiService] Health -> GET $url');
     try {
       final client = _makeClient();
-      final response = await client.get(Uri.parse(url))
-          .timeout(const Duration(seconds: 5));
+      final response =
+          await client.get(Uri.parse(url)).timeout(const Duration(seconds: 5));
       client.close();
       debugPrint('[ApiService] Health status: ${response.statusCode}');
       return response.statusCode >= 200 && response.statusCode < 300;
@@ -330,10 +329,10 @@ class ApiService {
     final url = '$_emailBase/health';
     debugPrint('[ApiService] Email health -> GET $url');
     try {
-      final apiClient = GetIt.I.isRegistered<ApiClient>() 
-          ? GetIt.I<ApiClient>() 
+      final apiClient = GetIt.I.isRegistered<ApiClient>()
+          ? GetIt.I<ApiClient>()
           : ApiClient();
-          
+
       await apiClient.get<dynamic>(
         url,
         parser: (data) => data,
@@ -352,10 +351,10 @@ class ApiService {
     final url = '$_emailBase/gmail/status';
     debugPrint('[ApiService] GET $url');
     try {
-      final apiClient = GetIt.I.isRegistered<ApiClient>() 
-          ? GetIt.I<ApiClient>() 
+      final apiClient = GetIt.I.isRegistered<ApiClient>()
+          ? GetIt.I<ApiClient>()
           : ApiClient();
-          
+
       final headers = await _getHeaders();
       return await apiClient.get<Map<String, dynamic>>(
         url,
@@ -371,10 +370,9 @@ class ApiService {
   Future<Map<String, dynamic>> getBrokers() async {
     final url = '$_emailBase/brokers';
     debugPrint('[ApiService] GET $url');
-    final apiClient = GetIt.I.isRegistered<ApiClient>() 
-        ? GetIt.I<ApiClient>() 
-        : ApiClient();
-        
+    final apiClient =
+        GetIt.I.isRegistered<ApiClient>() ? GetIt.I<ApiClient>() : ApiClient();
+
     final headers = await _getHeaders();
     return apiClient.get<Map<String, dynamic>>(
       url,
@@ -386,10 +384,9 @@ class ApiService {
   Future<Map<String, dynamic>> extractFromGmail(String broker) async {
     final url = '$_emailBase/extract/gmail/$broker?pan=PANK1234F';
     debugPrint('[ApiService] GET $url');
-    final apiClient = GetIt.I.isRegistered<ApiClient>() 
-        ? GetIt.I<ApiClient>() 
-        : ApiClient();
-        
+    final apiClient =
+        GetIt.I.isRegistered<ApiClient>() ? GetIt.I<ApiClient>() : ApiClient();
+
     final headers = await _getHeaders();
     return apiClient.get<Map<String, dynamic>>(
       url,
@@ -401,10 +398,9 @@ class ApiService {
   Future<Map<String, dynamic>> connectGmail() async {
     final url = '$_emailBase/gmail/connect';
     debugPrint('[ApiService] GET $url');
-    final apiClient = GetIt.I.isRegistered<ApiClient>() 
-        ? GetIt.I<ApiClient>() 
-        : ApiClient();
-        
+    final apiClient =
+        GetIt.I.isRegistered<ApiClient>() ? GetIt.I<ApiClient>() : ApiClient();
+
     final headers = await _getHeaders();
     return apiClient.get<Map<String, dynamic>>(
       url,
@@ -416,10 +412,9 @@ class ApiService {
   Future<Map<String, dynamic>> disconnectGmail() async {
     final url = '$_emailBase/gmail/disconnect';
     debugPrint('[ApiService] DELETE $url');
-    final apiClient = GetIt.I.isRegistered<ApiClient>() 
-        ? GetIt.I<ApiClient>() 
-        : ApiClient();
-        
+    final apiClient =
+        GetIt.I.isRegistered<ApiClient>() ? GetIt.I<ApiClient>() : ApiClient();
+
     final headers = await _getHeaders();
     return apiClient.delete<Map<String, dynamic>>(
       url,

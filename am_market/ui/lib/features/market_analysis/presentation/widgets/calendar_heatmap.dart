@@ -34,7 +34,8 @@ class CalendarHeatmap extends StatelessWidget {
                 final monthIndex = index + 1;
                 final monthName = _getMonthName(monthIndex);
                 final monthData = data[monthName] ?? {};
-                return _buildMonthGrid(context, monthIndex, monthName, monthData);
+                return _buildMonthGrid(
+                    context, monthIndex, monthName, monthData);
               }),
             ),
           ),
@@ -45,19 +46,31 @@ class CalendarHeatmap extends StatelessWidget {
 
   String _getMonthName(int index) {
     const months = [
-      'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
-      'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'
+      'JANUARY',
+      'FEBRUARY',
+      'MARCH',
+      'APRIL',
+      'MAY',
+      'JUNE',
+      'JULY',
+      'AUGUST',
+      'SEPTEMBER',
+      'OCTOBER',
+      'NOVEMBER',
+      'DECEMBER'
     ];
     return months[index - 1];
   }
 
-  Widget _buildMonthGrid(BuildContext context, int monthIndex, String monthName, Map<int, double> monthData) {
+  Widget _buildMonthGrid(BuildContext context, int monthIndex, String monthName,
+      Map<int, double> monthData) {
     final daysInMonth = DateUtils.getDaysInMonth(year, monthIndex);
-    final firstDayWeekday = DateTime(year, monthIndex, 1).weekday; // 1 = Mon, 7 = Sun
-    
+    final firstDayWeekday =
+        DateTime(year, monthIndex, 1).weekday; // 1 = Mon, 7 = Sun
+
     // Grid: 7 columns (Mon-Sun). Rows depends on days.
     // Padding cells for start of month.
-    
+
     return SizedBox(
       width: 300,
       height: 320,
@@ -104,7 +117,10 @@ class CalendarHeatmap extends StatelessWidget {
     const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: days.map((d) => Text(d, style: const TextStyle(fontSize: 10, color: Colors.grey))).toList(),
+      children: days
+          .map((d) =>
+              Text(d, style: const TextStyle(fontSize: 10, color: Colors.grey)))
+          .toList(),
     );
   }
 
@@ -112,7 +128,8 @@ class CalendarHeatmap extends StatelessWidget {
     Color color = Colors.grey.shade200;
     if (value != null) {
       if (value > 0) {
-        color = Colors.green.withOpacity((value / 5).clamp(0.2, 1.0)); // Cap at 5% for max opacity
+        color = Colors.green.withOpacity(
+            (value / 5).clamp(0.2, 1.0)); // Cap at 5% for max opacity
       } else if (value < 0) {
         color = Colors.red.withOpacity((value.abs() / 5).clamp(0.2, 1.0));
       } else {
@@ -121,7 +138,8 @@ class CalendarHeatmap extends StatelessWidget {
     }
 
     return Tooltip(
-      message: value != null ? 'Day $day: ${value.toStringAsFixed(2)}%' : 'Day $day',
+      message:
+          value != null ? 'Day $day: ${value.toStringAsFixed(2)}%' : 'Day $day',
       child: Container(
         decoration: BoxDecoration(
           color: color,

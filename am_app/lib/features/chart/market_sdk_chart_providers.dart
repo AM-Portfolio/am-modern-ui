@@ -70,7 +70,8 @@ class MarketSdkHistoricalProvider implements HistoricalDataProvider {
     }
 
     if (points.isEmpty && range == '1W') {
-      return getBars(symbol: symbol, timeframe: '1D', from: from, to: to, limit: limit);
+      return getBars(
+          symbol: symbol, timeframe: '1D', from: from, to: to, limit: limit);
     }
 
     if (limit != null && points.length > limit) {
@@ -81,7 +82,8 @@ class MarketSdkHistoricalProvider implements HistoricalDataProvider {
 
   static String _chartSymbol(String symbol) {
     final s = symbol.trim();
-    if (s.toUpperCase().startsWith('BSE:') || s.toUpperCase().startsWith('NSE:')) {
+    if (s.toUpperCase().startsWith('BSE:') ||
+        s.toUpperCase().startsWith('NSE:')) {
       return s;
     }
     return s;

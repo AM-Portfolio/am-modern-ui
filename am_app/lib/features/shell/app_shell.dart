@@ -40,8 +40,7 @@ class AppShell extends StatefulWidget {
   State<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell>
-    with SingleTickerProviderStateMixin {
+class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin {
   bool _sessionRestored = false;
   bool _shellMarked = false;
   bool _portfolioSeeded = false;
@@ -96,8 +95,7 @@ class _AppShellState extends State<AppShell>
       curve: Curves.easeOutCubic,
       reverseCurve: Curves.easeInCubic,
     );
-    _bottomNavFactor =
-        Tween<double>(begin: 0.0, end: 1.0).animate(bottomNavCurve);
+    _bottomNavFactor = Tween<double>(begin: 0.0, end: 1.0).animate(bottomNavCurve);
     // Drive overlay consumers with the linear controller value so layout
     // lift stays in sync with show/hide (curved factor overshoots).
     _bottomNavController.addListener(() {
@@ -152,14 +150,9 @@ class _AppShellState extends State<AppShell>
 
   void _listenToFeatureFlagChanges() {
     if (!GetIt.instance.isRegistered<common.FeatureFlagService>()) return;
-<<<<<<< HEAD
-    _featureFlagServiceSub ??=
-        GetIt.instance<common.FeatureFlagService>().changes.listen((_) {
-=======
     _featureFlagServiceSub ??= GetIt.instance<common.FeatureFlagService>()
         .changes
         .listen((_) {
->>>>>>> origin/develop
       if (!mounted) return;
       if (!_isSecurityAlertBannerEnabled) {
         _securityAlertHideTimer?.cancel();
@@ -418,14 +411,18 @@ class _AppShellState extends State<AppShell>
   }
 
   List<SidebarItem> _sidebarItemsFor({required bool isAdmin}) => [
-        const SidebarItem(title: 'Dashboard', icon: Icons.dashboard_rounded),
         const SidebarItem(
-            title: 'Portfolio', icon: Icons.account_balance_wallet_rounded),
+            title: 'Dashboard', icon: Icons.dashboard_rounded),
+        const SidebarItem(
+            title: 'Portfolio',
+            icon: Icons.account_balance_wallet_rounded),
         const SidebarItem(title: 'Trade', icon: Icons.swap_horiz_rounded),
         const SidebarItem(title: 'Market', icon: Icons.show_chart_rounded),
-        const SidebarItem(title: 'AI Chat', icon: Icons.auto_awesome_rounded),
+        const SidebarItem(
+            title: 'AI Chat', icon: Icons.auto_awesome_rounded),
         if (isAdmin)
-          const SidebarItem(title: 'Analysis', icon: Icons.analytics_outlined),
+          const SidebarItem(
+              title: 'Analysis', icon: Icons.analytics_outlined),
       ];
 
   Future<void> _seedPortfolioSelectionFromSession() async {
@@ -559,24 +556,16 @@ class _AppShellState extends State<AppShell>
         subtitle: 'Fundamental analysis',
         category: 'Action',
         icon: Icons.insights,
-<<<<<<< HEAD
-        onSelected: () => context.go(AppRoutes.marketPath('equity-insider')),
-=======
         onSelected: () =>
             context.go(AppRoutes.marketPath('equity-insider')),
->>>>>>> origin/develop
       ),
       common.CommandItem(
         title: 'Futures & Options',
         subtitle: 'Option chain and derivatives',
         category: 'Action',
         icon: Icons.candlestick_chart,
-<<<<<<< HEAD
-        onSelected: () => context.go(AppRoutes.marketPath('futures-options')),
-=======
         onSelected: () =>
             context.go(AppRoutes.marketPath('futures-options')),
->>>>>>> origin/develop
       ),
       common.CommandItem(
         title: 'Baskets',
@@ -730,33 +719,6 @@ class _AppShellState extends State<AppShell>
   }
 
   void _onGlobalNavigate(String title, String userId) {
-    final auth = context.read<AuthCubit>().state;
-    final isGuest = auth is! Authenticated;
-
-    // Guests may browse Market only; other modules open Login / Cancel.
-    if (isGuest) {
-      if (title == 'Market') {
-        ProductTelemetry.instance.featureAction(
-          'global_nav',
-          tag: 'shell',
-          metadata: {'title': title, 'guest': true},
-        );
-        _showBottomNavWithIdleHide();
-        context.go(AppRoutes.publicMarketLanding);
-        return;
-      }
-      final path = AppRoutes.pathForNavTitle(title) ?? AppRoutes.dashboard;
-      unawaited(
-        showLoginRequiredDialog(
-          context,
-          redirectPath: path,
-          title: 'Sign in required',
-          message: 'Sign in to open $title.',
-        ),
-      );
-      return;
-    }
-
     final path = AppRoutes.pathForNavTitle(title);
     if (path == null) return;
 
@@ -774,23 +736,14 @@ class _AppShellState extends State<AppShell>
     );
   }
 
-  void _onGuestSignIn() {
-    final loc = GoRouterState.of(context).uri;
-    final path = loc.path.isEmpty ? AppRoutes.publicMarketLanding : loc.path;
-    context.go(
-      AuthRedirect.loginLocation(
-        appPath: path,
-        companionQuery: loc.queryParameters,
-      ),
-    );
-  }
-
   String? _resolveSwipePortfolioId() {
-    final fromUrl = ShareUrlBuilder.portfolioIdFromLocation(_currentLocation);
+    final fromUrl =
+        ShareUrlBuilder.portfolioIdFromLocation(_currentLocation);
     if (fromUrl != null && fromUrl.isNotEmpty) return fromUrl;
-    final cached =
-        common.SessionPersistenceService.instance.cached?.portfolioId;
-    if (cached != null && cached.isNotEmpty && !_isDevMockPortfolioId(cached)) {
+    final cached = common.SessionPersistenceService.instance.cached?.portfolioId;
+    if (cached != null &&
+        cached.isNotEmpty &&
+        !_isDevMockPortfolioId(cached)) {
       return cached;
     }
     return null;
@@ -841,8 +794,7 @@ class _AppShellState extends State<AppShell>
       final stompCubit = context.read<common.StompConnectionCubit>();
 
       stompCubit.onConnected = (userId) {
-        common.AppLogger.info(
-            'AppShell (Initial): STOMP Connected for $userId');
+        common.AppLogger.info('AppShell (Initial): STOMP Connected for $userId');
         if (mounted) _applyStreamingTabCoordinator(_activeNavItem);
       };
 
@@ -859,8 +811,7 @@ class _AppShellState extends State<AppShell>
       }
       if (mounted) {
         stompCubit.updateToken(token, userId: authState.user.id);
-        unawaited(
-            common.UserAvatarStore.instance.loadForUser(authState.user.id));
+        unawaited(common.UserAvatarStore.instance.loadForUser(authState.user.id));
         unawaited(_startMarketStreamingGate());
         unawaited(_syncFeatureFlagAttributes(authState.user.id));
         unawaited(
@@ -897,8 +848,7 @@ class _AppShellState extends State<AppShell>
                 }
               };
 
-              final secureStorage =
-                  GetIt.instance<common.SecureStorageService>();
+              final secureStorage = GetIt.instance<common.SecureStorageService>();
               final token = await secureStorage.getAccessToken();
               if (token == null || token.isEmpty) {
                 if (context.mounted) {
@@ -957,33 +907,26 @@ class _AppShellState extends State<AppShell>
               authState is AuthLoading ||
               authState is AuthRestoreFailed;
 
-          final isGuest = authState is Unauthenticated;
-          // Guests may use the shell on public Market; other unauth states
-          // (still restoring) keep the pending overlay path below.
-          if (authState is! Authenticated && !authPending && !isGuest) {
+          if (authState is! Authenticated && !authPending) {
             return const SizedBox.shrink();
           }
 
-          if (!_shellMarked && (authState is Authenticated || isGuest)) {
+          if (!_shellMarked && authState is Authenticated) {
             _shellMarked = true;
             common.BootTrace.instance.mark('shell_visible');
           }
-          final userId = authState is Authenticated ? authState.user.id : '';
-          final isAdmin = authState is Authenticated && authState.user.isAdmin;
+final userId =
+              authState is Authenticated ? authState.user.id : '';
+          final isAdmin =
+              authState is Authenticated && authState.user.isAdmin;
           final isDark = Theme.of(context).brightness == Brightness.dark;
 
           final currentLocation = GoRouterState.of(context).matchedLocation;
           _updateHistory(currentLocation);
 
           // AI chat + soft keyboard: keep floating nav hidden for the session.
-<<<<<<< HEAD
-          final aiChatKeyboardOpen =
-              currentLocation.startsWith(AppRoutes.aiChat) &&
-                  MediaQuery.viewInsetsOf(context).bottom > 0;
-=======
           final aiChatKeyboardOpen = currentLocation.startsWith(AppRoutes.aiChat) &&
               MediaQuery.viewInsetsOf(context).bottom > 0;
->>>>>>> origin/develop
           if (aiChatKeyboardOpen && _wantBottomNav) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (!mounted) return;
@@ -1003,18 +946,16 @@ class _AppShellState extends State<AppShell>
                   if (_history.length > 1) {
                     _history.removeLast(); // Remove current location
                     final previousLocation = _history.last;
-
-                    final previousTitle =
-                        AppRoutes.activeNavTitleForLocation(previousLocation);
+                    
+                    final previousTitle = AppRoutes.activeNavTitleForLocation(previousLocation);
                     _applyStreamingTabCoordinator(previousTitle);
-
+                    
                     context.go(previousLocation);
-
+                    
                     common.SessionPersistenceService.instance.patch(
                       userId,
                       (s) => s.copyWith(
-                        globalNav:
-                            previousTitle.isEmpty ? 'Dashboard' : previousTitle,
+                        globalNav: previousTitle.isEmpty ? 'Dashboard' : previousTitle,
                       ),
                     );
                   }
@@ -1031,108 +972,6 @@ class _AppShellState extends State<AppShell>
                       .bannerSubtitle,
                   emptySuggestions: _emptySearchSuggestions,
                   child: common.OfflineShell(
-<<<<<<< HEAD
-                    child: Shortcuts(
-                      shortcuts: {
-                        LogicalKeySet(
-                            !kIsWeb && Platform.isMacOS
-                                ? LogicalKeyboardKey.meta
-                                : LogicalKeyboardKey.control,
-                            LogicalKeyboardKey.keyK): SearchIntent(),
-                      },
-                      child: Actions(
-                        actions: {
-                          SearchIntent: CallbackAction<SearchIntent>(
-                            onInvoke: (intent) {
-                              _showSearch();
-                              return null;
-                            },
-                          ),
-                        },
-                        child: Scaffold(
-                          // Body draws under the floating overlay nav — no reserved slot.
-                          extendBody: !isDesktop,
-                          resizeToAvoidBottomInset: false,
-                          body: Stack(
-                            children: [
-                              Row(
-                                children: [
-                                  if (isDesktop &&
-                                      (authState is Authenticated || isGuest))
-                                    GlobalSidebar(
-                                      activeNavItem: _activeNavItem,
-                                      isDarkMode: isDark,
-                                      userName: authState is Authenticated
-                                          ? authState.user.displayName
-                                          : null,
-                                      userEmail: authState is Authenticated
-                                          ? authState.user.email
-                                          : null,
-                                      userAvatarUrl: authState is Authenticated
-                                          ? authState.user.photoUrl
-                                          : null,
-                                      userAvatar: authState is Authenticated
-                                          ? _buildSidebarAvatar(
-                                              displayName:
-                                                  authState.user.displayName ??
-                                                      authState.user.email,
-                                              photoUrl: authState.user.photoUrl,
-                                            )
-                                          : null,
-                                      moduleShareUrls:
-                                          AppRoutes.navTitleToDefaultPath,
-                                      onSearchTap: _showSearch,
-                                      highlightSearch: _highlightSearchHint,
-                                      searchHighlightColor:
-                                          _moduleAccentFor(_activeNavItem),
-                                      onThemeToggle: () {
-                                        try {
-                                          final cubit =
-                                              context.read<ThemeCubit>();
-                                          showThemeModePickerDialog(
-                                            context: context,
-                                            currentMode: cubit.state.mode,
-                                            onSelected: (mode) {
-                                              cubit.setTheme(mode);
-                                            },
-                                          );
-                                        } catch (e) {
-                                          debugPrint('Theme picker error: $e');
-                                        }
-                                      },
-                                      onLogout: authState is Authenticated
-                                          ? () async {
-                                              final uid = authState.user.id;
-                                              if (GetIt.I.isRegistered<
-                                                      common
-                                                      .OfflineSyncEngine>() &&
-                                                  uid.isNotEmpty) {
-                                                await GetIt.I<
-                                                        common
-                                                        .OfflineSyncEngine>()
-                                                    .clearUser(uid);
-                                              }
-                                              if (GetIt.I.isRegistered<
-                                                  am_sub.SubscriptionCubit>()) {
-                                                await GetIt.I<
-                                                        am_sub
-                                                        .SubscriptionCubit>()
-                                                    .invalidateCache();
-                                              }
-                                              if (context.mounted) {
-                                                await context
-                                                    .read<AuthCubit>()
-                                                    .logout();
-                                              }
-                                            }
-                                          : null,
-                                      onProfileTap: authState is Authenticated
-                                          ? () => context.go(AppRoutes.profile)
-                                          : _onGuestSignIn,
-                                      onNavigate: (title) =>
-                                          _onGlobalNavigate(title, userId),
-                                      items: _sidebarItemsFor(isAdmin: isAdmin),
-=======
                                     child: Shortcuts(
                     shortcuts: {
                       LogicalKeySet(
@@ -1307,235 +1146,41 @@ class _AppShellState extends State<AppShell>
                                     const SidebarItem(
                                       title: 'Dashboard',
                                       icon: Icons.dashboard_rounded,
->>>>>>> origin/develop
                                     ),
-                                  Expanded(
-                                    child: isDesktop
-                                        ? (authState is Authenticated
-                                            ? common.CrossSectionNavScope(
-                                                controller: common
-                                                    .CrossSectionNavController(
-                                                  goNextModule: () =>
-                                                      _onCrossSectionNext(
-                                                          userId),
-                                                  goPreviousModule: () =>
-                                                      _onCrossSectionPrevious(
-                                                          userId),
-                                                ),
-                                                child: common
-                                                    .PortfolioSelectionScope(
-                                                  child: widget.child,
-                                                ),
-                                              )
-                                            : widget.child)
-                                        : Listener(
-                                            behavior:
-                                                HitTestBehavior.translucent,
-                                            onPointerDown: _onChromePointerDown,
-                                            onPointerMove: _onChromePointerMove,
-                                            onPointerUp: _onChromePointerUp,
-                                            onPointerCancel:
-                                                _onChromePointerCancel,
-                                            child: NotificationListener<
-                                                ScrollNotification>(
-                                              onNotification:
-                                                  _handleBottomNavScroll,
-                                              child: authState is Authenticated
-                                                  ? common.CrossSectionNavScope(
-                                                      controller: common
-                                                          .CrossSectionNavController(
-                                                        goNextModule: () =>
-                                                            _onCrossSectionNext(
-                                                                userId),
-                                                        goPreviousModule: () =>
-                                                            _onCrossSectionPrevious(
-                                                                userId),
-                                                      ),
-                                                      child: common
-                                                          .PortfolioSelectionScope(
-                                                        child:
-                                                            CrossSectionSwipeHost(
-                                                          onNext: () =>
-                                                              _onCrossSectionNext(
-                                                                  userId),
-                                                          onPrevious: () =>
-                                                              _onCrossSectionPrevious(
-                                                                  userId),
-                                                          child: widget.child,
-                                                        ),
-                                                      ),
-                                                    )
-                                                  : widget.child,
-                                            ),
-                                          ),
-                                  ),
-                                ],
-                              ),
-                              if (isGuest)
-                                Positioned(
-                                  top: MediaQuery.paddingOf(context).top + 8,
-                                  right: 12,
-                                  child: FilledButton.tonal(
-                                    onPressed: _onGuestSignIn,
-                                    child: const Text('Sign in'),
-                                  ),
-                                ),
-                              if (!isDesktop &&
-                                  (authState is Authenticated || isGuest))
-                                Positioned(
-                                  left: 0,
-                                  right: 0,
-                                  bottom: 0,
-                                  child: ValueListenableBuilder<bool>(
-                                    valueListenable: _mobileSearchOpen,
-                                    builder: (context, searchOpen, child) {
-                                      if (searchOpen) {
-                                        return const SizedBox.shrink();
-                                      }
-                                      return child!;
-                                    },
-                                    child: AnimatedBuilder(
-                                      animation: _bottomNavController,
-                                      builder: (context, child) {
-                                        final visible =
-                                            _bottomNavController.value > 0.01;
-                                        return IgnorePointer(
-                                          ignoring: !visible,
-                                          child: child,
-                                        );
-                                      },
-                                      child: SlideTransition(
-                                        position: Tween<Offset>(
-                                          begin: const Offset(0, 1.15),
-                                          end: Offset.zero,
-                                        ).animate(_bottomNavFactor),
-                                        child: FadeTransition(
-                                          opacity: _bottomNavFactor,
-                                          child: GlobalBottomNavigation(
-                                            activeNavItem: _activeNavItem,
-                                            isDarkMode: isDark,
-                                            accentColor: _moduleAccentFor(
-                                                _activeNavItem),
-                                            userName: authState is Authenticated
-                                                ? authState.user.displayName
-                                                : null,
-                                            visibleCount: 5,
-                                            moduleShareUrls:
-                                                AppRoutes.navTitleToDefaultPath,
-                                            onSearchTap: _showSearch,
-                                            onNavigate: (title) =>
-                                                _onGlobalNavigate(
-                                                    title, userId),
-                                            items: [
-                                              const SidebarItem(
-                                                title: 'Dashboard',
-                                                icon: Icons.dashboard_rounded,
-                                              ),
-                                              const SidebarItem(
-                                                title: 'Portfolio',
-                                                icon: Icons
-                                                    .account_balance_wallet_rounded,
-                                              ),
-                                              const SidebarItem(
-                                                title: 'Trade',
-                                                icon: Icons.swap_horiz_rounded,
-                                              ),
-                                              const SidebarItem(
-                                                title: 'Market',
-                                                icon: Icons.show_chart_rounded,
-                                              ),
-                                              const SidebarItem(
-                                                title: 'AI Chat',
-                                                icon:
-                                                    Icons.auto_awesome_rounded,
-                                              ),
-                                              const SidebarItem(
-                                                title: 'Profile',
-                                                icon: Icons.person_rounded,
-                                              ),
-                                              if (isAdmin) ...[
-                                                const SidebarItem(
-                                                  title: 'Analysis',
-                                                  icon:
-                                                      Icons.analytics_outlined,
-                                                ),
-                                              ],
-                                            ],
-                                          ),
-                                        ),
+                                    const SidebarItem(
+                                      title: 'Portfolio',
+                                      icon: Icons
+                                          .account_balance_wallet_rounded,
+                                    ),
+                                    const SidebarItem(
+                                      title: 'Trade',
+                                      icon: Icons.swap_horiz_rounded,
+                                    ),
+                                    const SidebarItem(
+                                      title: 'Market',
+                                      icon: Icons.show_chart_rounded,
+                                    ),
+                                    const SidebarItem(
+                                      title: 'AI Chat',
+                                      icon: Icons.auto_awesome_rounded,
+                                    ),
+                                    const SidebarItem(
+                                      title: 'Profile',
+                                      icon: Icons.person_rounded,
+                                    ),
+                                    if (isAdmin) ...[
+                                      const SidebarItem(
+                                        title: 'Analysis',
+                                        icon: Icons.analytics_outlined,
                                       ),
-                                    ),
-                                  ),
+                                    ],
+                                  ],
                                 ),
-                              if (!isDesktop && authState is Authenticated)
-                                Positioned.fill(
-                                  child: ValueListenableBuilder<bool>(
-                                    valueListenable: _mobileSearchOpen,
-                                    builder: (context, searchOpen, _) {
-                                      if (!searchOpen) {
-                                        return const SizedBox.shrink();
-                                      }
-                                      final copy =
-                                          SearchContextRegistry.copyFor(
-                                        _searchContext,
-                                      );
-                                      final nav = _activeNavItem;
-                                      final accent = _moduleAccentFor(nav);
-                                      return ModuleColorProvider(
-                                        module: _moduleTypeFor(nav),
-                                        child: common.MobileGlobalSearchOverlay(
-                                          key: ValueKey(
-                                            'global-search-${_searchContext.name}-$nav',
-                                          ),
-                                          accent: accent,
-                                          hintText:
-                                              SearchContextRegistry.hintFor(
-                                            _searchContext,
-                                          ),
-                                          bannerTitle: copy.bannerTitle,
-                                          bannerSubtitle: copy.bannerSubtitle,
-                                          liveSearch: _liveSearchQuery,
-                                          emptySuggestions:
-                                              _emptySearchSuggestions,
-                                          seedItems: _seedActionItems(context),
-                                          onClose: () {
-                                            if (_mobileSearchOpen.value) {
-                                              _mobileSearchOpen.value = false;
-                                            }
-                                            if (mounted) setState(() {});
-                                          },
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              if (kIsWeb &&
-                                  _isSecurityAlertBannerEnabled &&
-                                  _securityAlert != null)
-                                Positioned(
-                                  top: 0,
-                                  left: 0,
-                                  right: 0,
-                                  child: SecurityAlertBanner(
-                                    event: _securityAlert!,
-                                    onAcknowledge: () async {
-                                      await _acknowledgeSecurityAlert();
-                                    },
-                                    onReviewSessions: () {
-                                      context.go(AppRoutes.activeSessions);
-                                    },
-                                  ),
-                                ),
-                            ],
+                              ),
+                            ),
                           ),
                           ),
                         ),
-<<<<<<< HEAD
-                      ),
-                    ),
-                  ),
-                ),
-=======
                       if (!isDesktop && authState is Authenticated)
                         Positioned.fill(
                           child: ValueListenableBuilder<bool>(
@@ -1597,7 +1242,6 @@ class _AppShellState extends State<AppShell>
               ),
               ),
               ),
->>>>>>> origin/develop
               );
             },
           );
@@ -1632,8 +1276,6 @@ class _AppShellState extends State<AppShell>
       ),
     );
   }
-<<<<<<< HEAD
-=======
 
   Widget _buildSidebarAvatar({
     required String displayName,
@@ -1685,55 +1327,4 @@ class _AppShellState extends State<AppShell>
     );
   }
 }
->>>>>>> origin/develop
 
-  Widget _buildSidebarAvatar({
-    required String displayName,
-    String? photoUrl,
-  }) {
-    final isPaid = GetIt.I.isRegistered<am_sub.SubscriptionCubit>() &&
-        GetIt.I<am_sub.SubscriptionCubit>().isPaidSubscription;
-    final avatar = common.UserAvatar(
-      radius: 20,
-      displayName: displayName,
-      remotePhotoUrl: photoUrl,
-    );
-    if (!isPaid) return avatar;
-    return Stack(
-      clipBehavior: Clip.none,
-      alignment: Alignment.center,
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: const Color(0xFFFFD700).withValues(alpha: 0.9),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFFFD700).withValues(alpha: 0.35),
-                blurRadius: 8,
-              ),
-            ],
-          ),
-          child: avatar,
-        ),
-        Positioned(
-          top: -4,
-          child: Icon(
-            Icons.workspace_premium_rounded,
-            size: 14,
-            color: const Color(0xFFFFB300),
-            shadows: [
-              Shadow(
-                color: const Color(0xFFFFD700).withValues(alpha: 0.8),
-                blurRadius: 6,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}

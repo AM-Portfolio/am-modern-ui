@@ -29,7 +29,8 @@ class SidebarFloatingActionMenu extends StatefulWidget {
   final bool compact;
 
   @override
-  State<SidebarFloatingActionMenu> createState() => _SidebarFloatingActionMenuState();
+  State<SidebarFloatingActionMenu> createState() =>
+      _SidebarFloatingActionMenuState();
 }
 
 class _SidebarFloatingActionMenuState extends State<SidebarFloatingActionMenu>
@@ -75,7 +76,8 @@ class _SidebarFloatingActionMenuState extends State<SidebarFloatingActionMenu>
   }
 
   Widget _buildOverlay(BuildContext context) {
-    final colors = Theme.of(context).extension<AppColorsTheme>() ?? AppColorsTheme.dark;
+    final colors =
+        Theme.of(context).extension<AppColorsTheme>() ?? AppColorsTheme.dark;
     final isUp = widget.direction == AxisDirection.up;
 
     return Stack(
@@ -86,7 +88,8 @@ class _SidebarFloatingActionMenuState extends State<SidebarFloatingActionMenu>
             if (_expanded) _toggle();
           },
           behavior: HitTestBehavior.opaque,
-          child: const SizedBox(width: double.infinity, height: double.infinity),
+          child:
+              const SizedBox(width: double.infinity, height: double.infinity),
         ),
         CompositedTransformFollower(
           link: _layerLink,
@@ -113,7 +116,8 @@ class _SidebarFloatingActionMenuState extends State<SidebarFloatingActionMenu>
                       height: 12,
                       width: 1.5,
                       color: colors.border.withValues(alpha: 0.4),
-                      margin: EdgeInsets.only(bottom: 6.0, right: _isActuallyCompact ? 19.0 : 0.0),
+                      margin: EdgeInsets.only(
+                          bottom: 6.0, right: _isActuallyCompact ? 19.0 : 0.0),
                     ),
                   ),
 
@@ -157,7 +161,8 @@ class _SidebarFloatingActionMenuState extends State<SidebarFloatingActionMenu>
                       height: 12,
                       width: 1.5,
                       color: colors.border.withValues(alpha: 0.4),
-                      margin: EdgeInsets.only(top: 6.0, left: _isActuallyCompact ? 19.0 : 0.0),
+                      margin: EdgeInsets.only(
+                          top: 6.0, left: _isActuallyCompact ? 19.0 : 0.0),
                     ),
                   ),
               ],
@@ -178,7 +183,9 @@ class _SidebarFloatingActionMenuState extends State<SidebarFloatingActionMenu>
           child: OverlayPortal(
             controller: _overlayController,
             overlayChildBuilder: _buildOverlay,
-            child: _isActuallyCompact ? _buildCompactTrigger() : _buildFullPillTrigger(),
+            child: _isActuallyCompact
+                ? _buildCompactTrigger()
+                : _buildFullPillTrigger(),
           ),
         );
       },
@@ -202,7 +209,8 @@ class _SidebarFloatingActionMenuState extends State<SidebarFloatingActionMenu>
                 : widget.triggerColor,
             boxShadow: [
               BoxShadow(
-                color: widget.triggerColor.withValues(alpha: _expanded ? 0.55 : 0.35),
+                color: widget.triggerColor
+                    .withValues(alpha: _expanded ? 0.55 : 0.35),
                 blurRadius: _expanded ? 18 : 10,
                 spreadRadius: _expanded ? 2 : 0,
               ),
@@ -213,7 +221,8 @@ class _SidebarFloatingActionMenuState extends State<SidebarFloatingActionMenu>
               turns: _expanded ? 0.125 : 0,
               duration: const Duration(milliseconds: 280),
               curve: Curves.easeInOutCubic,
-              child: const Icon(Icons.add_rounded, color: Colors.white, size: 22),
+              child:
+                  const Icon(Icons.add_rounded, color: Colors.white, size: 22),
             ),
           ),
         ),
@@ -257,7 +266,8 @@ class _SidebarFloatingActionMenuState extends State<SidebarFloatingActionMenu>
                 AnimatedRotation(
                   turns: _expanded ? 0.125 : 0,
                   duration: const Duration(milliseconds: 280),
-                  child: const Icon(Icons.add_rounded, color: Colors.white, size: 22),
+                  child: const Icon(Icons.add_rounded,
+                      color: Colors.white, size: 22),
                 ),
                 AnimatedSize(
                   duration: const Duration(milliseconds: 280),
@@ -343,7 +353,8 @@ class _FloatingMenuPill extends StatelessWidget {
                           action.iconColor.withValues(alpha: 0.35),
                         ]),
                       ),
-                      child: Icon(action.icon, color: colors.actionPrimaryFg, size: 20),
+                      child: Icon(action.icon,
+                          color: colors.actionPrimaryFg, size: 20),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -380,5 +391,3 @@ class _FloatingMenuPill extends StatelessWidget {
     );
   }
 }
-
-

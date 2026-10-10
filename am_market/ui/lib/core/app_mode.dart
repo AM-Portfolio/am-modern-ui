@@ -2,7 +2,7 @@
 enum AppMode {
   /// Developer mode - Direct SDK access for testing and integration
   developer,
-  
+
   /// User mode - SDK wrapped with abstraction layer and mapped models
   user,
 }
@@ -32,6 +32,6 @@ extension AppModeExtension on AppMode {
   /// Whether developer features should be visible
   bool get isDeveloperMode => this == AppMode.developer;
 
-  /// Whether user features should be visible  
+  /// Whether user features should be visible
   bool get isUserMode => this == AppMode.user;
 }

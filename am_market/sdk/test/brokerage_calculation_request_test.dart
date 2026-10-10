@@ -70,8 +70,5 @@ void main() {
     test('to test the property `stateCode`', () async {
       // TODO
     });
-
-
   });
-
 }

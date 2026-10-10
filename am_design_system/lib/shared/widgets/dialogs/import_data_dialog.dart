@@ -1,4 +1,3 @@
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -6,7 +5,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/import_data/import_data_models.dart';
 import '../import_data_widgets.dart';
-
 
 /// Dialog for importing data into portfolio
 class ImportDataDialog extends ConsumerStatefulWidget {
@@ -68,106 +66,108 @@ class _ImportDataDialogState extends ConsumerState<ImportDataDialog>
 
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
-    animation: _animationController,
-    builder: (context, child) => FadeTransition(
-      opacity: _fadeAnimation,
-      child: ScaleTransition(
-        scale: _scaleAnimation,
-        child: Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final screenHeight = MediaQuery.of(context).size.height;
-              final screenWidth = MediaQuery.of(context).size.width;
+        animation: _animationController,
+        builder: (context, child) => FadeTransition(
+          opacity: _fadeAnimation,
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final screenHeight = MediaQuery.of(context).size.height;
+                  final screenWidth = MediaQuery.of(context).size.width;
 
-              // Better responsive sizing
-              final dialogWidth = screenWidth < 600
-                  ? screenWidth * 0.95
-                  : screenWidth < 1200
-                  ? screenWidth * 0.8
-                  : 800.0;
+                  // Better responsive sizing
+                  final dialogWidth = screenWidth < 600
+                      ? screenWidth * 0.95
+                      : screenWidth < 1200
+                          ? screenWidth * 0.8
+                          : 800.0;
 
-              return Container(
-                width: dialogWidth,
-                constraints: BoxConstraints(
-                  maxWidth: dialogWidth,
-                  minWidth: 280,
-                  maxHeight: screenHeight * 0.9,
-                  minHeight: 400,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Fixed header section with better padding
-                    Padding(
-                      padding: EdgeInsets.all(screenWidth < 600 ? 16.0 : 24.0),
-                      child: Column(
-                        children: [
-                          DialogHeader(
-                            icon: Icons.upload_file,
-                            title: 'Import Data',
-                            subtitle: _getStepTitle(),
-                            onClose: () => Navigator.pop(context),
-                          ),
-                          SizedBox(height: screenWidth < 600 ? 12 : 16),
-                          StepIndicator(
-                            currentStep: _currentStep,
-                            stepLabels: _stepLabels,
-                          ),
-                        ],
-                      ),
+                  return Container(
+                    width: dialogWidth,
+                    constraints: BoxConstraints(
+                      maxWidth: dialogWidth,
+                      minWidth: 280,
+                      maxHeight: screenHeight * 0.9,
+                      minHeight: 400,
                     ),
-
-                    // Scrollable content section
-                    Expanded(
-                      child: SingleChildScrollView(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: screenWidth < 600 ? 16.0 : 24.0,
-                        ),
-                        child: Column(
-                          children: [
-                            const SizedBox(height: 8),
-                            ConstrainedBox(
-                              constraints: BoxConstraints(
-                                minHeight: screenHeight * 0.25,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Fixed header section with better padding
+                        Padding(
+                          padding:
+                              EdgeInsets.all(screenWidth < 600 ? 16.0 : 24.0),
+                          child: Column(
+                            children: [
+                              DialogHeader(
+                                icon: Icons.upload_file,
+                                title: 'Import Data',
+                                subtitle: _getStepTitle(),
+                                onClose: () => Navigator.pop(context),
                               ),
-                              child: _buildStepContent(),
-                            ),
-                            const SizedBox(height: 16),
-                          ],
+                              SizedBox(height: screenWidth < 600 ? 12 : 16),
+                              StepIndicator(
+                                currentStep: _currentStep,
+                                stepLabels: _stepLabels,
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ),
 
-                    // Fixed actions section with better padding
-                    Padding(
-                      padding: EdgeInsets.all(screenWidth < 600 ? 16.0 : 24.0),
-                      child: WizardNavigation(
-                        currentStep: _currentStep,
-                        totalSteps: _stepLabels.length,
-                        canProceed: _canProceed(),
-                        onBack: _currentStep > 0
-                            ? () => setState(() => _currentStep--)
-                            : null,
-                        onNext: _handleNext,
-                        onCancel: () => Navigator.pop(context),
-                        nextButtonText:
-                            _currentStep == 2 && _selectedBroker != null
-                            ? 'Import'
-                            : null,
-                      ),
+                        // Scrollable content section
+                        Expanded(
+                          child: SingleChildScrollView(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: screenWidth < 600 ? 16.0 : 24.0,
+                            ),
+                            child: Column(
+                              children: [
+                                const SizedBox(height: 8),
+                                ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    minHeight: screenHeight * 0.25,
+                                  ),
+                                  child: _buildStepContent(),
+                                ),
+                                const SizedBox(height: 16),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        // Fixed actions section with better padding
+                        Padding(
+                          padding:
+                              EdgeInsets.all(screenWidth < 600 ? 16.0 : 24.0),
+                          child: WizardNavigation(
+                            currentStep: _currentStep,
+                            totalSteps: _stepLabels.length,
+                            canProceed: _canProceed(),
+                            onBack: _currentStep > 0
+                                ? () => setState(() => _currentStep--)
+                                : null,
+                            onNext: _handleNext,
+                            onCancel: () => Navigator.pop(context),
+                            nextButtonText:
+                                _currentStep == 2 && _selectedBroker != null
+                                    ? 'Import'
+                                    : null,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              );
-            },
+                  );
+                },
+              ),
+            ),
           ),
         ),
-      ),
-    ),
-  );
+      );
 
   Widget _buildStepContent() {
     switch (_currentStep) {
@@ -183,64 +183,64 @@ class _ImportDataDialogState extends ConsumerState<ImportDataDialog>
   }
 
   Widget _buildMethodSelection() => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      ImportMethodSelector(
-        selectedOption: _selectedOption,
-        onOptionSelected: (option) {
-          setState(() {
-            _selectedOption = option;
-            // Clear selected files when changing methods
-            if (option != ImportDataOption.excel) {
-              _selectedFiles = null;
-            }
-          });
-        },
-      ),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ImportMethodSelector(
+            selectedOption: _selectedOption,
+            onOptionSelected: (option) {
+              setState(() {
+                _selectedOption = option;
+                // Clear selected files when changing methods
+                if (option != ImportDataOption.excel) {
+                  _selectedFiles = null;
+                }
+              });
+            },
+          ),
 
-      // Show file upload area if Excel/CSV is selected
-      if (_selectedOption == ImportDataOption.excel) ...[
-        const SizedBox(height: 20),
-        FileUploadWidget(
-          onFilesSelected: (files) {
-            setState(() {
-              _selectedFiles = files;
-            });
-          },
-          onUploadFiles: (files) async {
-            // Just store files for now, actual upload happens when broker is selected
-            setState(() {
-              _selectedFiles = files;
-            });
-            _showSuccessSnackBar(
-              'Files selected successfully! Complete the remaining steps to upload.',
-            );
-          },
-          onShowError: _showErrorSnackBar,
-          onShowSuccess: _showSuccessSnackBar,
-        ),
-      ],
-    ],
-  );
+          // Show file upload area if Excel/CSV is selected
+          if (_selectedOption == ImportDataOption.excel) ...[
+            const SizedBox(height: 20),
+            FileUploadWidget(
+              onFilesSelected: (files) {
+                setState(() {
+                  _selectedFiles = files;
+                });
+              },
+              onUploadFiles: (files) async {
+                // Just store files for now, actual upload happens when broker is selected
+                setState(() {
+                  _selectedFiles = files;
+                });
+                _showSuccessSnackBar(
+                  'Files selected successfully! Complete the remaining steps to upload.',
+                );
+              },
+              onShowError: _showErrorSnackBar,
+              onShowSuccess: _showSuccessSnackBar,
+            ),
+          ],
+        ],
+      );
 
   Widget _buildDocumentTypeSelection() => DocumentTypeSelector(
-    selectedDocumentType: _selectedDocumentType,
-    onDocumentTypeSelected: (docType) {
-      setState(() {
-        _selectedDocumentType = docType;
-      });
-    },
-  );
+        selectedDocumentType: _selectedDocumentType,
+        onDocumentTypeSelected: (docType) {
+          setState(() {
+            _selectedDocumentType = docType;
+          });
+        },
+      );
 
   Widget _buildBrokerSelection() => BrokerSelector(
-    selectedBroker: _selectedBroker,
-    onBrokerSelected: (broker) {
-      setState(() {
-        _selectedBroker = broker;
-      });
-    },
-  );
+        selectedBroker: _selectedBroker,
+        onBrokerSelected: (broker) {
+          setState(() {
+            _selectedBroker = broker;
+          });
+        },
+      );
 
   String _getStepTitle() {
     switch (_currentStep) {

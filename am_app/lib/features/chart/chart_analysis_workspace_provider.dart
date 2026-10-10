@@ -146,7 +146,8 @@ class ChartAnalysisWorkspaceNotifier
   }
 
   Future<void> setCardMode(String id, ChartCardMode mode) async {
-    _updateCard(id, (c) => c.copyWith(mode: mode, loading: true, clearError: true));
+    _updateCard(
+        id, (c) => c.copyWith(mode: mode, loading: true, clearError: true));
     await reloadCard(id);
   }
 
@@ -160,15 +161,15 @@ class ChartAnalysisWorkspaceNotifier
       await reloadAll();
       return;
     }
-    _updateCard(
-        id, (c) => c.copyWith(timeFrameCode: tf, loading: true, clearError: true));
+    _updateCard(id,
+        (c) => c.copyWith(timeFrameCode: tf, loading: true, clearError: true));
     await reloadCard(id);
   }
 
   Future<void> setCardSymbols(String id, List<String> symbols) async {
     if (symbols.isEmpty) return;
-    _updateCard(
-        id, (c) => c.copyWith(symbols: symbols, loading: true, clearError: true));
+    _updateCard(id,
+        (c) => c.copyWith(symbols: symbols, loading: true, clearError: true));
     await reloadCard(id);
   }
 
@@ -218,7 +219,8 @@ class ChartAnalysisWorkspaceNotifier
   ) {
     state = state.copyWith(
       cards: [
-        for (final c in state.cards) if (c.id == id) fn(c) else c,
+        for (final c in state.cards)
+          if (c.id == id) fn(c) else c,
       ],
     );
   }
@@ -269,7 +271,8 @@ class ChartAnalysisWorkspaceNotifier
         .where((s) => !_looksLikePortfolioUuid(s))
         .toList();
     final portfolioIds = card.symbols
-        .where((s) => OverlayChartIds.isOverall(s) || _looksLikePortfolioUuid(s))
+        .where(
+            (s) => OverlayChartIds.isOverall(s) || _looksLikePortfolioUuid(s))
         .toList();
 
     if (indexSymbols.isNotEmpty) {
@@ -278,12 +281,10 @@ class ChartAnalysisWorkspaceNotifier
       batch.forEach((sym, rows) {
         final points = <MultiSeriesPoint>[];
         for (final row in rows) {
-          final time = (row['time'] ?? row['date'] ?? row['timestamp'])
-              ?.toString();
-          final raw = row['close'] ??
-              row['price'] ??
-              row['lastPrice'] ??
-              row['value'];
+          final time =
+              (row['time'] ?? row['date'] ?? row['timestamp'])?.toString();
+          final raw =
+              row['close'] ?? row['price'] ?? row['lastPrice'] ?? row['value'];
           if (time == null || raw == null) continue;
           final v = (raw as num).toDouble();
           if (!v.isFinite) continue;
@@ -347,7 +348,8 @@ class ChartAnalysisWorkspaceNotifier
   Future<List<CommonCandlePoint>> _loadCandles(ChartCardState card) async {
     final symbol = card.primarySymbol;
     final range = _rangeForTf(card.timeFrameCode);
-    final interval = card.timeFrameCode.toUpperCase() == '1D' ? '5minute' : '1D';
+    final interval =
+        card.timeFrameCode.toUpperCase() == '1D' ? '5minute' : '1D';
     final isIndex = OverlayChartIds.isIndex(symbol) ||
         symbol.toUpperCase().contains('NIFTY') ||
         symbol.toUpperCase().contains('SENSEX');
@@ -404,10 +406,10 @@ class ChartAnalysisWorkspaceNotifier
       final close = (closeRaw as num).toDouble();
       if (!close.isFinite) continue;
       final open = (row['open'] as num?)?.toDouble() ?? prevClose ?? close;
-      final high = (row['high'] as num?)?.toDouble() ??
-          (open > close ? open : close);
-      final low = (row['low'] as num?)?.toDouble() ??
-          (open < close ? open : close);
+      final high =
+          (row['high'] as num?)?.toDouble() ?? (open > close ? open : close);
+      final low =
+          (row['low'] as num?)?.toDouble() ?? (open < close ? open : close);
       final time =
           (row['time'] ?? row['date'] ?? row['timestamp'])?.toString() ?? '';
       candles.add(CommonCandlePoint(

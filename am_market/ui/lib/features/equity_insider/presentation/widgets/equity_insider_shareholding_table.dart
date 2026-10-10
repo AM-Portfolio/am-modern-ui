@@ -132,9 +132,7 @@ class ShareholdingTrendTable extends StatelessWidget {
                             final num? val = item[cat.key] as num?;
                             return _dataCell(
                               context,
-                              val != null
-                                  ? '${val.toStringAsFixed(1)}%'
-                                  : '—',
+                              val != null ? '${val.toStringAsFixed(1)}%' : '—',
                               height: rowH,
                               highlighted: highlighted,
                             );
@@ -183,9 +181,7 @@ class ShareholdingTrendTable extends StatelessWidget {
       height: height,
       alignment: isFirst ? Alignment.centerLeft : Alignment.center,
       decoration: BoxDecoration(
-        color: highlighted
-            ? ModuleColors.market.withValues(alpha: 0.08)
-            : null,
+        color: highlighted ? ModuleColors.market.withValues(alpha: 0.08) : null,
         border: Border(bottom: BorderSide(color: context.borderColor)),
       ),
       child: Text(
@@ -246,9 +242,7 @@ class ShareholdingTrendTable extends StatelessWidget {
     return Container(
       height: height,
       alignment: Alignment.center,
-      color: highlighted
-          ? ModuleColors.market.withValues(alpha: 0.06)
-          : null,
+      color: highlighted ? ModuleColors.market.withValues(alpha: 0.06) : null,
       child: Text(
         text,
         style: TextStyle(

@@ -119,7 +119,8 @@ class GlobalSidebar extends StatelessWidget {
                             ? null
                             : () => copyShareLink(
                                   context,
-                                  _fullShareUrl(context, moduleShareUrls![item.title]!),
+                                  _fullShareUrl(
+                                      context, moduleShareUrls![item.title]!),
                                 ),
                         longPressTooltip: 'Copy link to ${item.title}',
                       ),
@@ -199,23 +200,24 @@ class GlobalSidebar extends StatelessWidget {
         child: GestureDetector(
           onTap: onTap,
           child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.transparent,
-                border: Border.all(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isDarkMode
+                  ? Colors.white.withOpacity(0.05)
+                  : Colors.transparent,
+              border: Border.all(
                   color: isDarkMode
                       ? Colors.white.withOpacity(0.1)
-                      : AppColors.primary.withOpacity(0.2)
-                ),
-              ),
-              child: Icon(
-                icon,
-                color: color,
-                size: 20,
-              ),
+                      : AppColors.primary.withOpacity(0.2)),
             ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 20,
+            ),
+          ),
         ),
       ),
     );
@@ -435,43 +437,43 @@ class _GlobalSidebarItemState extends State<_GlobalSidebarItem> {
           },
           onLongPress: widget.onLongPress,
           child: ConditionalMouseRegion(
-          cursor: SystemMouseCursors.click,
-          onEnter: (_) => setState(() => _isHovered = true),
-          onExit: (_) => setState(() => _isHovered = false),
-          child: SidebarFinDashTile(
-            isActive: isSelected,
-            isDark: widget.isDark,
-            accentColor: widget.accentColor,
-            size: SidebarLayoutMetrics.navTileSize,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  widget.item.icon,
-                  color: (isSelected || _isHovered)
-                      ? widget.accentColor
-                      : (widget.isDark ? Colors.white54 : Colors.black87),
-                  size: 24,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  widget.item.title,
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight:
-                        isSelected ? FontWeight.w600 : FontWeight.normal,
+            cursor: SystemMouseCursors.click,
+            onEnter: (_) => setState(() => _isHovered = true),
+            onExit: (_) => setState(() => _isHovered = false),
+            child: SidebarFinDashTile(
+              isActive: isSelected,
+              isDark: widget.isDark,
+              accentColor: widget.accentColor,
+              size: SidebarLayoutMetrics.navTileSize,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    widget.item.icon,
                     color: (isSelected || _isHovered)
                         ? widget.accentColor
                         : (widget.isDark ? Colors.white54 : Colors.black87),
+                    size: 24,
                   ),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.visible,
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  Text(
+                    widget.item.title,
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.normal,
+                      color: (isSelected || _isHovered)
+                          ? widget.accentColor
+                          : (widget.isDark ? Colors.white54 : Colors.black87),
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.visible,
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
         ),
       ),
     );
@@ -515,4 +517,3 @@ class _SearchIconButton extends StatelessWidget {
     );
   }
 }
-

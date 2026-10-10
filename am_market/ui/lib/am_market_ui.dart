@@ -4,7 +4,8 @@ library am_market_ui;
 /// Export widgets and pages available for external use
 
 // Export core pages
-export 'features/dashboard/presentation/pages/dashboard_page.dart' show MarketPage;
+export 'features/dashboard/presentation/pages/dashboard_page.dart'
+    show MarketPage;
 export 'features/equity_insider/presentation/pages/equity_insider_page.dart';
 export 'features/equity_insider/presentation/widgets/equity_insider_kpis.dart';
 export 'features/equity_insider/presentation/widgets/equity_insider_chart.dart';

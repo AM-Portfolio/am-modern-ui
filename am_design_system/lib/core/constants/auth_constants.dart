@@ -1,4 +1,3 @@
-
 import 'package:am_common/am_common.dart';
 
 /// Authentication-related constants
@@ -48,4 +47,3 @@ class AuthConstants {
   static const String authMethodGoogle = 'google';
   static const String authMethodDemo = 'demo';
 }
-

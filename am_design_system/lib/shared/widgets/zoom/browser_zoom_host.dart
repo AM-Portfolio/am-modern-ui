@@ -136,9 +136,8 @@ class _BrowserZoomHostState extends State<BrowserZoomHost>
 
     if (metrics != null) {
       if (_baselineDpr <= 0) {
-        _baselineDpr = metrics.devicePixelRatio <= 0
-            ? 1.0
-            : metrics.devicePixelRatio;
+        _baselineDpr =
+            metrics.devicePixelRatio <= 0 ? 1.0 : metrics.devicePixelRatio;
       }
       chrome = BrowserZoomMath.detectChromeZoom(
         innerWidth: metrics.innerWidth,

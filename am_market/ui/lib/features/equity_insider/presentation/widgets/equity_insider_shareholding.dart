@@ -177,17 +177,15 @@ class _EquityInsiderShareholdingState
                   color: isSelected ? ModuleColors.market : Colors.transparent,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: isSelected
-                        ? ModuleColors.market
-                        : context.borderColor,
+                    color:
+                        isSelected ? ModuleColors.market : context.borderColor,
                   ),
                 ),
                 child: Text(
                   p.toString(),
                   style: TextStyle(
                     color: isSelected ? Colors.white : context.textSecondary,
-                    fontWeight:
-                        isSelected ? FontWeight.w600 : FontWeight.w500,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                     fontSize: 10,
                   ),
                 ),
@@ -245,7 +243,8 @@ class _EquityInsiderShareholdingState
     add('Promoters', 'promotersPercent', context.marketTheme.positive);
     add('FII / Foreign', 'fiiPercent', ModuleColors.market);
     add('Mutual Funds', 'mutualFundsPercent', context.marketTheme.chartPurple);
-    add('Retail / Public', 'retailAndOtherPercent', context.marketTheme.textMuted);
+    add('Retail / Public', 'retailAndOtherPercent',
+        context.marketTheme.textMuted);
     add('DII / Others', 'diiPercent', context.marketTheme.textSecondary);
 
     list.sort((a, b) => b.value.compareTo(a.value));
@@ -265,8 +264,7 @@ class _EquityInsiderShareholdingState
                     pieTouchResponse.touchedSection == null) {
                   return;
                 }
-                _onClick(
-                    pieTouchResponse.touchedSection!.touchedSectionIndex);
+                _onClick(pieTouchResponse.touchedSection!.touchedSectionIndex);
               },
             ),
             borderData: FlBorderData(show: false),

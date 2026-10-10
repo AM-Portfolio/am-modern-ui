@@ -8,7 +8,10 @@ class FoActiveSymbolNotifier extends Notifier<String?> {
   @override
   set state(String? value) => super.state = value;
 }
-final foActiveSymbolProvider = NotifierProvider<FoActiveSymbolNotifier, String?>(FoActiveSymbolNotifier.new);
+
+final foActiveSymbolProvider =
+    NotifierProvider<FoActiveSymbolNotifier, String?>(
+        FoActiveSymbolNotifier.new);
 
 // State for the currently selected F&O expiry date
 class FoSelectedExpiryNotifier extends Notifier<String?> {
@@ -17,7 +20,10 @@ class FoSelectedExpiryNotifier extends Notifier<String?> {
   @override
   set state(String? value) => super.state = value;
 }
-final foSelectedExpiryProvider = NotifierProvider<FoSelectedExpiryNotifier, String?>(FoSelectedExpiryNotifier.new);
+
+final foSelectedExpiryProvider =
+    NotifierProvider<FoSelectedExpiryNotifier, String?>(
+        FoSelectedExpiryNotifier.new);
 
 // State for recent F&O searches (in a real app, this should be persisted)
 class RecentlyViewedFoSymbolsNotifier extends Notifier<List<String>> {
@@ -45,7 +51,8 @@ final recentlyViewedFoSymbolsProvider =
 );
 
 /// Fetches dynamic major index/F&O recommendations from security search API.
-final dynamicFoRecommendationsProvider = FutureProvider<List<String>>((ref) async {
+final dynamicFoRecommendationsProvider =
+    FutureProvider<List<String>>((ref) async {
   final sdkService = MarketDataSdkService();
   try {
     final results = await sdkService.securityApi.search(
@@ -55,10 +62,13 @@ final dynamicFoRecommendationsProvider = FutureProvider<List<String>>((ref) asyn
       limit: 8,
     );
     if (results != null && results.isNotEmpty) {
-      final symbols = results.map((d) => d.key?.symbol).whereType<String>().where((s) => s.isNotEmpty).toList();
+      final symbols = results
+          .map((d) => d.key?.symbol)
+          .whereType<String>()
+          .where((s) => s.isNotEmpty)
+          .toList();
       if (symbols.isNotEmpty) return symbols;
     }
   } catch (_) {}
   return const [];
 });
-

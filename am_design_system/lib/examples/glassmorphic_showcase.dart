@@ -41,7 +41,8 @@ class GlassmorphicShowcase extends StatelessWidget {
                 icon: Icons.settings,
                 onTap: () {},
                 trailing: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: AppColors.error.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),
@@ -154,7 +155,8 @@ class GlassmorphicShowcase extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text(
                                     'Glass Card Example',

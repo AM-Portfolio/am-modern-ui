@@ -33,6 +33,7 @@ class AdvancedHoldingRow {
   final String? industry;
   final String? exchange;
   final String? brokerLabel;
+
   /// EQUITY / BONDS / CASH / … — chip when non-equity class rows.
   final String? assetClass;
   final double quantity;

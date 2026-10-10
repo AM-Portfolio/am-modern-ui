@@ -11,13 +11,13 @@ import '../theme/app_animations.dart';
 abstract class DesignSystemConfig {
   /// Primary brand color
   Color get primaryColor;
-  
+
   /// Secondary/Accent brand color
   Color get accentColor;
-  
+
   /// Background color for scafold
   Color get scaffoldBackgroundColor;
-  
+
   /// Surface color for cards/panels
   Color get surfaceColor;
 
@@ -26,16 +26,16 @@ abstract class DesignSystemConfig {
   Color get warningColor;
   Color get errorColor;
   Color get infoColor;
-  
+
   /// Standard animation duration
   Duration get animationDuration;
-  
+
   /// Default border radius for cards/buttons
   double get defaultRadius;
-  
+
   /// Font family to use (e.g. 'Inter')
   String get fontFamily;
-  
+
   /// Whether to use glassmorphism by default
   bool get useGlassmorphism;
 }

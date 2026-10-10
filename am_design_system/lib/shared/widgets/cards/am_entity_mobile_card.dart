@@ -281,7 +281,8 @@ class _AmEntityMobileCardState extends State<AmEntityMobileCard> {
   @override
   void didUpdateWidget(covariant AmEntityMobileCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.initiallyExpanded != oldWidget.initiallyExpanded && widget.initiallyExpanded) {
+    if (widget.initiallyExpanded != oldWidget.initiallyExpanded &&
+        widget.initiallyExpanded) {
       _isExpanded = true;
     }
   }
@@ -307,7 +308,8 @@ class _AmEntityMobileCardState extends State<AmEntityMobileCard> {
     final isExpandable = widget.expandableMetrics && hasAdditional;
 
     final headerTap = widget.onHeaderTap ?? widget.onTap;
-    final metricsTap = widget.onMetricsTap ?? (isExpandable ? _toggleExpanded : widget.onTap);
+    final metricsTap =
+        widget.onMetricsTap ?? (isExpandable ? _toggleExpanded : widget.onTap);
 
     return Container(
       decoration: BoxDecoration(
@@ -337,7 +339,10 @@ class _AmEntityMobileCardState extends State<AmEntityMobileCard> {
               color: Colors.transparent,
               child: InkWell(
                 onTap: headerTap,
-                borderRadius: hasMetrics ? const BorderRadius.vertical(top: Radius.circular(AppRadii.lg)) : AppRadii.card,
+                borderRadius: hasMetrics
+                    ? const BorderRadius.vertical(
+                        top: Radius.circular(AppRadii.lg))
+                    : AppRadii.card,
                 child: Padding(
                   padding: const EdgeInsets.all(AppSpacing.sm + 4),
                   child: Row(
@@ -361,7 +366,8 @@ class _AmEntityMobileCardState extends State<AmEntityMobileCard> {
                                 ],
                               ],
                             ),
-                            if (widget.subtitle != null && widget.subtitle!.isNotEmpty) ...[
+                            if (widget.subtitle != null &&
+                                widget.subtitle!.isNotEmpty) ...[
                               const SizedBox(height: AppSpacing.xxs + 1),
                               Text(
                                 widget.subtitle!,
@@ -376,12 +382,14 @@ class _AmEntityMobileCardState extends State<AmEntityMobileCard> {
                           ],
                         ),
                       ),
-                      if (widget.primaryMetric != null || widget.secondaryMetric != null) ...[
+                      if (widget.primaryMetric != null ||
+                          widget.secondaryMetric != null) ...[
                         const SizedBox(width: AppSpacing.sm),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            if (widget.primaryMetric != null) widget.primaryMetric!,
+                            if (widget.primaryMetric != null)
+                              widget.primaryMetric!,
                             if (widget.secondaryMetric != null) ...[
                               const SizedBox(height: AppSpacing.xxs + 2),
                               widget.secondaryMetric!,
@@ -398,7 +406,8 @@ class _AmEntityMobileCardState extends State<AmEntityMobileCard> {
             // Metrics Section (Body)
             if (hasMetrics || hasAdditional) ...[
               Container(
-                margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm + 4),
+                margin:
+                    const EdgeInsets.symmetric(horizontal: AppSpacing.sm + 4),
                 height: 1,
                 color: colors.border.withValues(alpha: 0.35),
               ),
@@ -406,7 +415,8 @@ class _AmEntityMobileCardState extends State<AmEntityMobileCard> {
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: metricsTap,
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(AppRadii.lg)),
+                  borderRadius: const BorderRadius.vertical(
+                      bottom: Radius.circular(AppRadii.lg)),
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(
                       AppSpacing.sm + 4,
@@ -419,7 +429,8 @@ class _AmEntityMobileCardState extends State<AmEntityMobileCard> {
                       children: [
                         // Primary Metrics Grid
                         if (hasMetrics)
-                          _buildMetricsGrid(context, effectiveAccent, widget.metrics),
+                          _buildMetricsGrid(
+                              context, effectiveAccent, widget.metrics),
 
                         // If collapsed, show "View more ratios" button
                         if (isExpandable && !_isExpanded) ...[
@@ -429,7 +440,8 @@ class _AmEntityMobileCardState extends State<AmEntityMobileCard> {
                               onTap: _toggleExpanded,
                               borderRadius: BorderRadius.circular(AppRadii.xs),
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 4, horizontal: 8),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -461,34 +473,43 @@ class _AmEntityMobileCardState extends State<AmEntityMobileCard> {
                             firstCurve: Curves.easeOutCubic,
                             secondCurve: Curves.easeInCubic,
                             sizeCurve: Curves.easeOutCubic,
-                            crossFadeState: _isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-                            firstChild: const SizedBox(width: double.infinity, height: 0),
+                            crossFadeState: _isExpanded
+                                ? CrossFadeState.showSecond
+                                : CrossFadeState.showFirst,
+                            firstChild: const SizedBox(
+                                width: double.infinity, height: 0),
                             secondChild: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 if (widget.additionalMetricsTitle != null &&
-                                    widget.additionalMetricsTitle!.isNotEmpty) ...[
+                                    widget.additionalMetricsTitle!
+                                        .isNotEmpty) ...[
                                   Padding(
-                                    padding: const EdgeInsets.only(top: 8, bottom: 6),
+                                    padding: const EdgeInsets.only(
+                                        top: 8, bottom: 6),
                                     child: Text(
                                       widget.additionalMetricsTitle!,
                                       style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
                                         letterSpacing: 0.3,
-                                        color: colors.textSecondary.withValues(alpha: 0.8),
+                                        color: colors.textSecondary
+                                            .withValues(alpha: 0.8),
                                       ),
                                     ),
                                   ),
                                 ],
-                                _buildMetricsGrid(context, effectiveAccent, widget.additionalMetrics),
+                                _buildMetricsGrid(context, effectiveAccent,
+                                    widget.additionalMetrics),
                                 const SizedBox(height: 6),
                                 Center(
                                   child: InkWell(
                                     onTap: _toggleExpanded,
-                                    borderRadius: BorderRadius.circular(AppRadii.xs),
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadii.xs),
                                     child: Padding(
-                                      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 4, horizontal: 8),
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
@@ -526,7 +547,8 @@ class _AmEntityMobileCardState extends State<AmEntityMobileCard> {
     );
   }
 
-  Widget _buildMetricsGrid(BuildContext context, Color accent, List<AmCardMetricItem> itemsList) {
+  Widget _buildMetricsGrid(
+      BuildContext context, Color accent, List<AmCardMetricItem> itemsList) {
     final colors = context.colors;
     final int cols = widget.metricsColumns.clamp(1, 4);
     final List<Widget> rows = [];
@@ -550,12 +572,12 @@ class _AmEntityMobileCardState extends State<AmEntityMobileCard> {
                 vertical: AppSpacing.xxs + 2,
               ),
               decoration: BoxDecoration(
-                color: isHi
-                    ? accent.withValues(alpha: 0.12)
-                    : Colors.transparent,
+                color:
+                    isHi ? accent.withValues(alpha: 0.12) : Colors.transparent,
                 borderRadius: BorderRadius.circular(AppRadii.xs),
                 border: isHi
-                    ? Border.all(color: accent.withValues(alpha: 0.45), width: 1)
+                    ? Border.all(
+                        color: accent.withValues(alpha: 0.45), width: 1)
                     : null,
               ),
               child: Column(

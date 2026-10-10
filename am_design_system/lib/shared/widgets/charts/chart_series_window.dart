@@ -27,7 +27,8 @@ void rebasePreNormalizedPercent(
 }
 
 /// Whether this TF uses daily (not intraday) padding to today.
-bool shouldPadDailyTimelineToToday(String? timeFrameCode, {required bool isIntraday}) {
+bool shouldPadDailyTimelineToToday(String? timeFrameCode,
+    {required bool isIntraday}) {
   if (isIntraday) return false;
   final code = timeFrameCode?.toUpperCase();
   if (code == null || code.isEmpty) return true;
@@ -60,8 +61,7 @@ List<Map<String, dynamic>> padCombinedTimelineToToday({
   if (!lastDate.isBefore(todayDate)) return combined;
 
   final point = <String, dynamic>{
-    'time':
-        '${todayDate.year.toString().padLeft(4, '0')}-'
+    'time': '${todayDate.year.toString().padLeft(4, '0')}-'
         '${todayDate.month.toString().padLeft(2, '0')}-'
         '${todayDate.day.toString().padLeft(2, '0')}',
   };

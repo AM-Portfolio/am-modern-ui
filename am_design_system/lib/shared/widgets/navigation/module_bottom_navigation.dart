@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:am_design_system/core/module/module_config.dart';
 
@@ -61,14 +60,14 @@ class ModuleBottomNavigation extends StatelessWidget {
                   ),
 
                 // Map items, but skip the middle index if FAB is present
-                 ...items.asMap().entries.map((entry) {
+                ...items.asMap().entries.map((entry) {
                   final index = entry.key;
                   final item = entry.value;
-                  
+
                   // Simple logic: If we have a FAB, we might want to split items around it.
                   // For now, let's just render them.
                   // If we want accurate styling like the image (FAB in center), we need to ensure space.
-                  
+
                   return _buildNavItem(
                     icon: (item.icon as Icon).icon!,
                     label: item.label ?? '',
@@ -80,7 +79,7 @@ class ModuleBottomNavigation extends StatelessWidget {
                 }).toList(),
               ],
             ),
-            
+
             // FAB (Floating Center)
             if (fabIcon != null)
               Positioned(
@@ -133,7 +132,9 @@ class ModuleBottomNavigation extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: isSelected ? activeColor : (isDark ? Colors.white54 : Colors.grey),
+              color: isSelected
+                  ? activeColor
+                  : (isDark ? Colors.white54 : Colors.grey),
               size: 24,
             ),
             const SizedBox(height: 4),
@@ -141,7 +142,9 @@ class ModuleBottomNavigation extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 10,
-                color: isSelected ? activeColor : (isDark ? Colors.white54 : Colors.grey),
+                color: isSelected
+                    ? activeColor
+                    : (isDark ? Colors.white54 : Colors.grey),
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               ),
               maxLines: 1,

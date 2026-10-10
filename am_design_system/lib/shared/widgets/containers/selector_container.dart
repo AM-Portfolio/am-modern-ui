@@ -75,9 +75,8 @@ class SelectorContainer extends StatelessWidget {
       margin: margin,
       padding: padding,
       decoration: decoration,
-      constraints: maxWidth != null
-          ? BoxConstraints(maxWidth: maxWidth!)
-          : null,
+      constraints:
+          maxWidth != null ? BoxConstraints(maxWidth: maxWidth!) : null,
       child: content,
     );
   }
@@ -118,13 +117,13 @@ class SelectorContainer extends StatelessWidget {
   }
 
   Widget _buildWrapLayout() => Wrap(
-    direction: direction,
-    alignment: _getWrapAlignment(),
-    crossAxisAlignment: _getWrapCrossAlignment(),
-    spacing: spacing,
-    runSpacing: runSpacing,
-    children: children,
-  );
+        direction: direction,
+        alignment: _getWrapAlignment(),
+        crossAxisAlignment: _getWrapCrossAlignment(),
+        spacing: spacing,
+        runSpacing: runSpacing,
+        children: children,
+      );
 
   List<Widget> _addSpacingToChildren() {
     if (children.isEmpty) return [];
@@ -227,13 +226,14 @@ extension SelectorContainerConfigs on SelectorContainer {
     ),
     bool scrollable = true,
     bool showDividers = false,
-  }) => SelectorContainer(
-    padding: padding,
-    scrollable: scrollable,
-    showDividers: showDividers,
-    spacing: 12.0,
-    children: children,
-  );
+  }) =>
+      SelectorContainer(
+        padding: padding,
+        scrollable: scrollable,
+        showDividers: showDividers,
+        spacing: 12.0,
+        children: children,
+      );
 
   /// Vertical selector stack layout
   static SelectorContainer verticalStack({
@@ -241,13 +241,14 @@ extension SelectorContainerConfigs on SelectorContainer {
     EdgeInsetsGeometry padding = const EdgeInsets.all(16.0),
     MainAxisAlignment alignment = MainAxisAlignment.start,
     double spacing = 12.0,
-  }) => SelectorContainer(
-    direction: Axis.vertical,
-    padding: padding,
-    mainAxisAlignment: alignment,
-    spacing: spacing,
-    children: children,
-  );
+  }) =>
+      SelectorContainer(
+        direction: Axis.vertical,
+        padding: padding,
+        mainAxisAlignment: alignment,
+        spacing: spacing,
+        children: children,
+      );
 
   /// Responsive grid layout that wraps on smaller screens
   static SelectorContainer responsiveGrid({
@@ -255,12 +256,13 @@ extension SelectorContainerConfigs on SelectorContainer {
     EdgeInsetsGeometry padding = const EdgeInsets.all(16.0),
     double spacing = 8.0,
     double runSpacing = 8.0,
-  }) => SelectorContainer(
-    padding: padding,
-    spacing: spacing,
-    runSpacing: runSpacing,
-    children: children,
-  );
+  }) =>
+      SelectorContainer(
+        padding: padding,
+        spacing: spacing,
+        runSpacing: runSpacing,
+        children: children,
+      );
 
   /// Compact layout for sidebar or drawer usage
   static SelectorContainer compact({
@@ -268,10 +270,11 @@ extension SelectorContainerConfigs on SelectorContainer {
     Axis direction = Axis.vertical,
     EdgeInsetsGeometry padding = const EdgeInsets.all(8.0),
     double spacing = 6.0,
-  }) => SelectorContainer(
-    direction: direction,
-    padding: padding,
-    spacing: spacing,
-    children: children,
-  );
+  }) =>
+      SelectorContainer(
+        direction: direction,
+        padding: padding,
+        spacing: spacing,
+        children: children,
+      );
 }

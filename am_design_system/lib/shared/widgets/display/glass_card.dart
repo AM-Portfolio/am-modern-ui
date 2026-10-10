@@ -1,15 +1,9 @@
-
 import 'package:flutter/material.dart';
 
 import 'package:am_design_system/core/config/design_system_provider.dart';
 import 'package:am_design_system/core/theme/app_glassmorphism.dart';
 import 'package:am_design_system/core/theme/app_glassmorphism_v2.dart';
 import 'package:am_design_system/core/utils/conditional_mouse_region.dart';
-
-
-
-
-
 
 /// Glassmorphic card component with shadow and border
 class GlassCard extends StatelessWidget {
@@ -48,7 +42,7 @@ class GlassCard extends StatelessWidget {
     // Determine decoration based on props
     BoxDecoration decoration;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     if (colorScheme != null) {
       // Use V2 Style
       decoration = AppGlassmorphismV2.colorCodedGlassCard(
@@ -136,7 +130,8 @@ class MetricCard extends StatefulWidget {
   State<MetricCard> createState() => _MetricCardState();
 }
 
-class _MetricCardState extends State<MetricCard> with SingleTickerProviderStateMixin {
+class _MetricCardState extends State<MetricCard>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   bool _isHovered = false;
@@ -165,7 +160,7 @@ class _MetricCardState extends State<MetricCard> with SingleTickerProviderStateM
     Color effectiveColor;
     List<Color> borderColors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     if (widget.colorScheme != null) {
       borderColors = AppGlassmorphismV2.colorSchemes[widget.colorScheme!]!;
       effectiveColor = borderColors.first;
@@ -212,7 +207,7 @@ class _MetricCardState extends State<MetricCard> with SingleTickerProviderStateM
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                   Row(
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(

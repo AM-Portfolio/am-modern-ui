@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-
 import 'package:am_design_system/core/utils/conditional_mouse_region.dart';
+
 /// An animated list item that provides smooth hover and selection animations
 class AnimatedListItem extends StatefulWidget {
   final Widget child;
@@ -81,8 +81,10 @@ class _AnimatedListItemState extends State<AnimatedListItem>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final selectedColor = widget.selectedColor ?? theme.colorScheme.primary.withOpacity(0.1);
-    final hoverColor = widget.hoverColor ?? theme.colorScheme.primary.withOpacity(0.05);
+    final selectedColor =
+        widget.selectedColor ?? theme.colorScheme.primary.withOpacity(0.1);
+    final hoverColor =
+        widget.hoverColor ?? theme.colorScheme.primary.withOpacity(0.05);
 
     return ConditionalMouseRegion(
       onEnter: (_) => _handleHover(true),
@@ -117,7 +119,8 @@ class _AnimatedListItemState extends State<AnimatedListItem>
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: widget.onTap,
-                  borderRadius: widget.borderRadius ?? BorderRadius.circular(12),
+                  borderRadius:
+                      widget.borderRadius ?? BorderRadius.circular(12),
                   child: Padding(
                     padding: widget.padding ?? const EdgeInsets.all(12.0),
                     child: widget.child,

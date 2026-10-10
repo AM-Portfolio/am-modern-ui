@@ -13,23 +13,23 @@ class DisplayConfig {
 
   /// Mobile-optimized display configuration
   factory DisplayConfig.mobile() => const DisplayConfig(
-    showSubCards: false,
-    showValue: false,
-    showLegend: false,
-    showRefreshButton: false,
-  );
+        showSubCards: false,
+        showValue: false,
+        showLegend: false,
+        showRefreshButton: false,
+      );
 
   /// Web-optimized display configuration
   factory DisplayConfig.web() => const DisplayConfig();
 
   /// Minimal display configuration (for widgets, previews)
   factory DisplayConfig.minimal() => const DisplayConfig(
-    showSubCards: false,
-    showWeightage: false,
-    showValue: false,
-    showLegend: false,
-    showRefreshButton: false,
-  );
+        showSubCards: false,
+        showWeightage: false,
+        showValue: false,
+        showLegend: false,
+        showRefreshButton: false,
+      );
 
   /// Dashboard display configuration
   factory DisplayConfig.dashboard() =>
@@ -40,13 +40,13 @@ class DisplayConfig {
 
   /// Index fund display configuration
   factory DisplayConfig.index() => const DisplayConfig(
-    showValue: false, // Index components might not show individual values
-  );
+        showValue: false, // Index components might not show individual values
+      );
 
   /// Mutual funds display configuration
   factory DisplayConfig.mutualFunds() => const DisplayConfig(
-    showWeightage: false, // Mutual funds don't typically show weightage
-  );
+        showWeightage: false, // Mutual funds don't typically show weightage
+      );
 
   /// ETF display configuration
   factory DisplayConfig.etf() => const DisplayConfig();
@@ -69,15 +69,16 @@ class DisplayConfig {
     bool? showLegend,
     bool? showHeader,
     bool? showRefreshButton,
-  }) => DisplayConfig(
-    showSubCards: showSubCards ?? this.showSubCards,
-    showPerformance: showPerformance ?? this.showPerformance,
-    showWeightage: showWeightage ?? this.showWeightage,
-    showValue: showValue ?? this.showValue,
-    showLegend: showLegend ?? this.showLegend,
-    showHeader: showHeader ?? this.showHeader,
-    showRefreshButton: showRefreshButton ?? this.showRefreshButton,
-  );
+  }) =>
+      DisplayConfig(
+        showSubCards: showSubCards ?? this.showSubCards,
+        showPerformance: showPerformance ?? this.showPerformance,
+        showWeightage: showWeightage ?? this.showWeightage,
+        showValue: showValue ?? this.showValue,
+        showLegend: showLegend ?? this.showLegend,
+        showHeader: showHeader ?? this.showHeader,
+        showRefreshButton: showRefreshButton ?? this.showRefreshButton,
+      );
 
   /// Check if this is a minimal display configuration
   bool get isMinimal => !showSubCards && !showLegend && !showRefreshButton;

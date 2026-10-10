@@ -34,8 +34,10 @@ class FuturesContractsTableWidget extends ConsumerWidget {
 
     // Sort active contracts chronologically by expiry date (near-month Sep 2026 first)
     validContracts.sort((a, b) {
-      final mapA = a is Map ? Map<String, dynamic>.from(a) : <String, dynamic>{};
-      final mapB = b is Map ? Map<String, dynamic>.from(b) : <String, dynamic>{};
+      final mapA =
+          a is Map ? Map<String, dynamic>.from(a) : <String, dynamic>{};
+      final mapB =
+          b is Map ? Map<String, dynamic>.from(b) : <String, dynamic>{};
       final expA = mapA['expiry'] is num ? (mapA['expiry'] as num).toInt() : 0;
       final expB = mapB['expiry'] is num ? (mapB['expiry'] as num).toInt() : 0;
       return expA.compareTo(expB);
@@ -51,7 +53,8 @@ class FuturesContractsTableWidget extends ConsumerWidget {
     }
 
     final filters = ['All', ...dynamicExpiries];
-    final activeFilter = filters.contains(selectedFilter) ? selectedFilter : 'All';
+    final activeFilter =
+        filters.contains(selectedFilter) ? selectedFilter : 'All';
 
     // Active filtering based on dynamic expiry filter
     final filteredContracts = validContracts.where((c) {
@@ -80,12 +83,17 @@ class FuturesContractsTableWidget extends ConsumerWidget {
             children: [
               Text(
                 'Futures Contracts',
-                style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16),
               ),
               const SizedBox(width: 6),
               Tooltip(
-                message: 'All available futures contracts for the selected symbol sorted by expiry.',
-                child: Icon(Icons.info_outline_rounded, color: colors.textSecondary, size: 16),
+                message:
+                    'All available futures contracts for the selected symbol sorted by expiry.',
+                child: Icon(Icons.info_outline_rounded,
+                    color: colors.textSecondary, size: 16),
               ),
             ],
           ),
@@ -107,32 +115,66 @@ class FuturesContractsTableWidget extends ConsumerWidget {
             builder: (context, constraints) {
               const minTableWidth = 720.0;
               final isScrollable = constraints.maxWidth < minTableWidth;
-              final tableWidth = isScrollable ? minTableWidth : constraints.maxWidth;
+              final tableWidth =
+                  isScrollable ? minTableWidth : constraints.maxWidth;
 
               return SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                physics: isScrollable ? const ClampingScrollPhysics() : const NeverScrollableScrollPhysics(),
+                physics: isScrollable
+                    ? const ClampingScrollPhysics()
+                    : const NeverScrollableScrollPhysics(),
                 child: SizedBox(
                   width: tableWidth,
                   child: Column(
                     children: [
                       // Header Row
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
                           color: colors.surface,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
                           children: [
-                            Expanded(flex: 3, child: Text('Contract', style: _headerStyle(colors))),
-                            Expanded(flex: 2, child: Text('Expiry', style: _headerStyle(colors))),
-                            Expanded(flex: 2, child: Text('LTP (₹)', style: _headerStyle(colors), textAlign: TextAlign.right)),
-                            Expanded(flex: 2, child: Text('Change', style: _headerStyle(colors), textAlign: TextAlign.right)),
-                            Expanded(flex: 2, child: Text('Change %', style: _headerStyle(colors), textAlign: TextAlign.right)),
-                            Expanded(flex: 2, child: Text('OI', style: _headerStyle(colors), textAlign: TextAlign.right)),
-                            Expanded(flex: 2, child: Text('Volume', style: _headerStyle(colors), textAlign: TextAlign.right)),
-                            Expanded(flex: 1, child: Text('Lot', style: _headerStyle(colors), textAlign: TextAlign.right)),
+                            Expanded(
+                                flex: 3,
+                                child: Text('Contract',
+                                    style: _headerStyle(colors))),
+                            Expanded(
+                                flex: 2,
+                                child: Text('Expiry',
+                                    style: _headerStyle(colors))),
+                            Expanded(
+                                flex: 2,
+                                child: Text('LTP (₹)',
+                                    style: _headerStyle(colors),
+                                    textAlign: TextAlign.right)),
+                            Expanded(
+                                flex: 2,
+                                child: Text('Change',
+                                    style: _headerStyle(colors),
+                                    textAlign: TextAlign.right)),
+                            Expanded(
+                                flex: 2,
+                                child: Text('Change %',
+                                    style: _headerStyle(colors),
+                                    textAlign: TextAlign.right)),
+                            Expanded(
+                                flex: 2,
+                                child: Text('OI',
+                                    style: _headerStyle(colors),
+                                    textAlign: TextAlign.right)),
+                            Expanded(
+                                flex: 2,
+                                child: Text('Volume',
+                                    style: _headerStyle(colors),
+                                    textAlign: TextAlign.right)),
+                            Expanded(
+                                flex: 1,
+                                child: Text('Lot',
+                                    style: _headerStyle(colors),
+                                    textAlign: TextAlign.right)),
                           ],
                         ),
                       ),
@@ -145,7 +187,8 @@ class FuturesContractsTableWidget extends ConsumerWidget {
                           child: Center(
                             child: Text(
                               'No futures contracts found for $activeFilter',
-                              style: TextStyle(color: colors.textSecondary, fontSize: 13),
+                              style: TextStyle(
+                                  color: colors.textSecondary, fontSize: 13),
                             ),
                           ),
                         )
@@ -153,8 +196,14 @@ class FuturesContractsTableWidget extends ConsumerWidget {
                         ...filteredContracts.asMap().entries.map((entry) {
                           final idx = entry.key;
                           final contract = entry.value;
-                          final map = contract is Map ? Map<String, dynamic>.from(contract) : <String, dynamic>{};
-                          final tradingSymbol = (map['trading_symbol'] ?? map['tradingSymbol'] ?? map['name'] ?? 'FUT').toString();
+                          final map = contract is Map
+                              ? Map<String, dynamic>.from(contract)
+                              : <String, dynamic>{};
+                          final tradingSymbol = (map['trading_symbol'] ??
+                                  map['tradingSymbol'] ??
+                                  map['name'] ??
+                                  'FUT')
+                              .toString();
 
                           final metrics = _deriveContractMetrics(map, idx);
                           final ltp = metrics['ltp'] as double;
@@ -167,16 +216,22 @@ class FuturesContractsTableWidget extends ConsumerWidget {
                           final rawExpiry = map['expiry'];
                           String expiryStr = '24 Sep 2026';
                           if (rawExpiry is num && rawExpiry > 0) {
-                            final dt = DateTime.fromMillisecondsSinceEpoch(rawExpiry.toInt());
+                            final dt = DateTime.fromMillisecondsSinceEpoch(
+                                rawExpiry.toInt());
                             expiryStr = DateFormat('d MMM yyyy').format(dt);
-                          } else if (rawExpiry != null && rawExpiry.toString().isNotEmpty) {
+                          } else if (rawExpiry != null &&
+                              rawExpiry.toString().isNotEmpty) {
                             expiryStr = rawExpiry.toString();
                           }
 
                           final isSelected = selectedContract != null &&
-                              (selectedContract['trading_symbol'] ?? selectedContract['tradingSymbol']) == tradingSymbol;
+                              (selectedContract['trading_symbol'] ??
+                                      selectedContract['tradingSymbol']) ==
+                                  tradingSymbol;
 
-                          final deltaColor = change >= 0 ? marketTheme.positive : marketTheme.negative;
+                          final deltaColor = change >= 0
+                              ? marketTheme.positive
+                              : marketTheme.negative;
 
                           // Ensure selecting row updates selectedFutureContractProvider with enriched metrics
                           final enrichedContractMap = {
@@ -195,18 +250,23 @@ class FuturesContractsTableWidget extends ConsumerWidget {
                             padding: const EdgeInsets.only(bottom: 4.0),
                             child: InkWell(
                               borderRadius: BorderRadius.circular(8),
-                              onTap: () => ref.read(selectedFutureContractProvider.notifier).state = enrichedContractMap,
+                              onTap: () => ref
+                                  .read(selectedFutureContractProvider.notifier)
+                                  .state = enrichedContractMap,
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 150),
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 10),
                                 decoration: BoxDecoration(
                                   color: isSelected
-                                      ? ModuleColors.market.withValues(alpha: 0.12)
+                                      ? ModuleColors.market
+                                          .withValues(alpha: 0.12)
                                       : colors.surface.withValues(alpha: 0.3),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
                                     color: isSelected
-                                        ? ModuleColors.market.withValues(alpha: 0.4)
+                                        ? ModuleColors.market
+                                            .withValues(alpha: 0.4)
                                         : Colors.transparent,
                                   ),
                                 ),
@@ -228,14 +288,19 @@ class FuturesContractsTableWidget extends ConsumerWidget {
                                       flex: 2,
                                       child: Text(
                                         expiryStr,
-                                        style: TextStyle(color: colors.textSecondary, fontSize: 12),
+                                        style: TextStyle(
+                                            color: colors.textSecondary,
+                                            fontSize: 12),
                                       ),
                                     ),
                                     Expanded(
                                       flex: 2,
                                       child: Text(
                                         '₹${ltp.toStringAsFixed(2)}',
-                                        style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 13),
+                                        style: TextStyle(
+                                            color: colors.textPrimary,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 13),
                                         textAlign: TextAlign.right,
                                       ),
                                     ),
@@ -243,7 +308,8 @@ class FuturesContractsTableWidget extends ConsumerWidget {
                                       flex: 2,
                                       child: Text(
                                         '${change >= 0 ? '+' : ''}${change.toStringAsFixed(2)}',
-                                        style: TextStyle(color: deltaColor, fontSize: 12),
+                                        style: TextStyle(
+                                            color: deltaColor, fontSize: 12),
                                         textAlign: TextAlign.right,
                                       ),
                                     ),
@@ -251,7 +317,10 @@ class FuturesContractsTableWidget extends ConsumerWidget {
                                       flex: 2,
                                       child: Text(
                                         '${pChange >= 0 ? '+' : ''}${pChange.toStringAsFixed(2)}%',
-                                        style: TextStyle(color: deltaColor, fontWeight: FontWeight.bold, fontSize: 12),
+                                        style: TextStyle(
+                                            color: deltaColor,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12),
                                         textAlign: TextAlign.right,
                                       ),
                                     ),
@@ -259,7 +328,9 @@ class FuturesContractsTableWidget extends ConsumerWidget {
                                       flex: 2,
                                       child: Text(
                                         _formatNum(oi),
-                                        style: TextStyle(color: colors.textPrimary, fontSize: 12),
+                                        style: TextStyle(
+                                            color: colors.textPrimary,
+                                            fontSize: 12),
                                         textAlign: TextAlign.right,
                                       ),
                                     ),
@@ -267,7 +338,9 @@ class FuturesContractsTableWidget extends ConsumerWidget {
                                       flex: 2,
                                       child: Text(
                                         _formatNum(volume),
-                                        style: TextStyle(color: colors.textPrimary, fontSize: 12),
+                                        style: TextStyle(
+                                            color: colors.textPrimary,
+                                            fontSize: 12),
                                         textAlign: TextAlign.right,
                                       ),
                                     ),
@@ -275,7 +348,9 @@ class FuturesContractsTableWidget extends ConsumerWidget {
                                       flex: 1,
                                       child: Text(
                                         lotSizeStr,
-                                        style: TextStyle(color: colors.textSecondary, fontSize: 12),
+                                        style: TextStyle(
+                                            color: colors.textSecondary,
+                                            fontSize: 12),
                                         textAlign: TextAlign.right,
                                       ),
                                     ),
@@ -296,9 +371,14 @@ class FuturesContractsTableWidget extends ConsumerWidget {
     );
   }
 
-  static Map<String, dynamic> _deriveContractMetrics(Map<String, dynamic> map, int index) {
-    final rawLotSize = map['lot_size'] ?? map['lotSize'] ?? map['minimum_lot_size'] ?? map['lot_multiplier'];
-    final lotSize = (rawLotSize is num && rawLotSize > 0) ? rawLotSize.toInt() : 1;
+  static Map<String, dynamic> _deriveContractMetrics(
+      Map<String, dynamic> map, int index) {
+    final rawLotSize = map['lot_size'] ??
+        map['lotSize'] ??
+        map['minimum_lot_size'] ??
+        map['lot_multiplier'];
+    final lotSize =
+        (rawLotSize is num && rawLotSize > 0) ? rawLotSize.toInt() : 1;
 
     final rawLtp = map['ltp'];
     final ltp = (rawLtp is num) ? rawLtp.toDouble() : 0.0;
@@ -326,7 +406,8 @@ class FuturesContractsTableWidget extends ConsumerWidget {
   }
 
   TextStyle _headerStyle(AppColorsTheme colors) {
-    return TextStyle(color: colors.textSecondary, fontWeight: FontWeight.w600, fontSize: 12);
+    return TextStyle(
+        color: colors.textSecondary, fontWeight: FontWeight.w600, fontSize: 12);
   }
 
   static String _extractExpiryMonthYear(Map<String, dynamic> map) {
@@ -342,8 +423,10 @@ class FuturesContractsTableWidget extends ConsumerWidget {
       }
       return str;
     }
-    final symbol = (map['trading_symbol'] ?? map['tradingSymbol'] ?? '').toString();
-    final match = RegExp(r'(\d{1,2})\s+([A-Z]{3})\s+(\d{2})').firstMatch(symbol);
+    final symbol =
+        (map['trading_symbol'] ?? map['tradingSymbol'] ?? '').toString();
+    final match =
+        RegExp(r'(\d{1,2})\s+([A-Z]{3})\s+(\d{2})').firstMatch(symbol);
     if (match != null) {
       final mStr = match.group(2)!;
       final yStr = '20${match.group(3)!}';
@@ -353,7 +436,8 @@ class FuturesContractsTableWidget extends ConsumerWidget {
   }
 
   static String _formatNum(int num) {
-    return num.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
+    return num.toString().replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
   }
 }
 

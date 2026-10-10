@@ -28,12 +28,12 @@ class PortfolioFilterWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => GenericFilterWidget<dynamic>(
-    items: holdings,
-    filterProvider: PortfolioFilterProvider(),
-    onFiltersApplied: onFiltersApplied,
-    onFiltersReset: onFiltersReset,
-    initiallyExpanded: initiallyExpanded,
-    title: 'Portfolio Filters',
-    icon: Icons.business_center_outlined,
-  );
+        items: holdings,
+        filterProvider: PortfolioFilterProvider(),
+        onFiltersApplied: onFiltersApplied,
+        onFiltersReset: onFiltersReset,
+        initiallyExpanded: initiallyExpanded,
+        title: 'Portfolio Filters',
+        icon: Icons.business_center_outlined,
+      );
 }

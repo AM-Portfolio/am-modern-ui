@@ -40,8 +40,12 @@ class IpoApiClient {
     );
     if (response.statusCode >= 200 && response.statusCode < 300) {
       final jsonResponse = json.decode(response.body);
-      final List data = (jsonResponse is List) ? jsonResponse : (jsonResponse['data'] as List? ?? []);
-      return data.map((e) => AsraxIpoSummaryDto.fromJson(e as Map<String, dynamic>)).toList();
+      final List data = (jsonResponse is List)
+          ? jsonResponse
+          : (jsonResponse['data'] as List? ?? []);
+      return data
+          .map((e) => AsraxIpoSummaryDto.fromJson(e as Map<String, dynamic>))
+          .toList();
     } else {
       throw Exception('Failed to load IPOs: ${response.statusCode}');
     }

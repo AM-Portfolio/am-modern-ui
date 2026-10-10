@@ -82,8 +82,8 @@ class UnifiedSearchEngine {
     _timer?.cancel();
     final query = rawQuery.trim();
     final id = ++_requestId;
-    final wantBaskets = context == SearchContext.baskets ||
-        context == SearchContext.portfolio;
+    final wantBaskets =
+        context == SearchContext.baskets || context == SearchContext.portfolio;
 
     if (query.isEmpty) {
       onResult(
@@ -171,8 +171,7 @@ class UnifiedSearchEngine {
       try {
         final securitiesFuture = () async {
           try {
-            final hits =
-                await _securities.search(query, category: secCategory);
+            final hits = await _securities.search(query, category: secCategory);
             securitiesItems = hits
                 .map(
                   (h) => CommandItem(
@@ -229,9 +228,8 @@ class UnifiedSearchEngine {
                       .map(
                         (h) => CommandItem(
                           title: h.title,
-                          subtitle: h.subtitle.isEmpty
-                              ? 'ETF / Basket'
-                              : h.subtitle,
+                          subtitle:
+                              h.subtitle.isEmpty ? 'ETF / Basket' : h.subtitle,
                           icon: Icons.pie_chart_outline,
                           category: 'Baskets',
                           onSelected: () => nav.openEtfOrBasket(h.result),

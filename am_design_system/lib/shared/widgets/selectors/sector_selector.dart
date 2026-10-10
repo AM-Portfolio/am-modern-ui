@@ -9,28 +9,44 @@ extension SectorTypeUIExtension on SectorType {
   /// Representative icon
   IconData get icon {
     switch (this) {
-      case SectorType.all: return Icons.dashboard;
-      case SectorType.technology: return Icons.computer;
-      case SectorType.healthcare: return Icons.medical_services;
-      case SectorType.finance: return Icons.account_balance;
-      case SectorType.consumer: return Icons.shopping_cart;
-      case SectorType.telecom: return Icons.phone;
-      case SectorType.noGroup: return Icons.view_list;
-      default: return Icons.business;
+      case SectorType.all:
+        return Icons.dashboard;
+      case SectorType.technology:
+        return Icons.computer;
+      case SectorType.healthcare:
+        return Icons.medical_services;
+      case SectorType.finance:
+        return Icons.account_balance;
+      case SectorType.consumer:
+        return Icons.shopping_cart;
+      case SectorType.telecom:
+        return Icons.phone;
+      case SectorType.noGroup:
+        return Icons.view_list;
+      default:
+        return Icons.business;
     }
   }
 
   /// Short name for compact display
   String get shortName {
     switch (this) {
-      case SectorType.all: return 'All';
-      case SectorType.technology: return 'Tech';
-      case SectorType.healthcare: return 'Health';
-      case SectorType.finance: return 'Finance';
-      case SectorType.consumer: return 'Consumer';
-      case SectorType.telecom: return 'Telecom';
-      case SectorType.noGroup: return 'No Group';
-      default: return name;
+      case SectorType.all:
+        return 'All';
+      case SectorType.technology:
+        return 'Tech';
+      case SectorType.healthcare:
+        return 'Health';
+      case SectorType.finance:
+        return 'Finance';
+      case SectorType.consumer:
+        return 'Consumer';
+      case SectorType.telecom:
+        return 'Telecom';
+      case SectorType.noGroup:
+        return 'No Group';
+      default:
+        return name;
     }
   }
 }
@@ -73,17 +89,18 @@ class SectorSelector extends StatelessWidget {
     Color? primaryColor,
     bool showIcons = true,
     String? title,
-  }) => SectorSelector(
-    key: key,
-    selectedSector: selectedSector,
-    onSectorChanged: onSectorChanged,
-    availableSectors: SectorType.portfolioSectors,
-    compact: compact,
-    primaryColor: primaryColor,
-    showIcons: showIcons,
-    title: title,
-    asDropdown: false,
-  );
+  }) =>
+      SectorSelector(
+        key: key,
+        selectedSector: selectedSector,
+        onSectorChanged: onSectorChanged,
+        availableSectors: SectorType.portfolioSectors,
+        compact: compact,
+        primaryColor: primaryColor,
+        showIcons: showIcons,
+        title: title,
+        asDropdown: false,
+      );
 
   /// Factory constructor for heatmap context
   factory SectorSelector.heatmap({
@@ -93,16 +110,17 @@ class SectorSelector extends StatelessWidget {
     bool asDropdown = true,
     Color? primaryColor,
     String? title,
-  }) => SectorSelector(
-    key: key,
-    selectedSector: selectedSector,
-    onSectorChanged: onSectorChanged,
-    availableSectors: SectorType.allSectors,
-    asDropdown: asDropdown,
-    primaryColor: primaryColor,
-    showIcons: true,
-    title: title,
-  );
+  }) =>
+      SectorSelector(
+        key: key,
+        selectedSector: selectedSector,
+        onSectorChanged: onSectorChanged,
+        availableSectors: SectorType.allSectors,
+        asDropdown: asDropdown,
+        primaryColor: primaryColor,
+        showIcons: true,
+        title: title,
+      );
 
   /// Currently selected sector
   final SectorType selectedSector;
@@ -189,110 +207,119 @@ class SectorSelector extends StatelessWidget {
   Widget _buildCompactSelector(
     BuildContext context,
     List<SectorType> sectors,
-  ) => Wrap(
-    spacing: 8,
-    runSpacing: 8,
-    children: sectors.map((sector) {
-      final isSelected = sector == selectedSector;
+  ) =>
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: sectors.map((sector) {
+          final isSelected = sector == selectedSector;
 
-      return Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => onSectorChanged(sector),
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            constraints: const BoxConstraints(
-              minHeight: 40,
-            ), // Better touch target
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? (primaryColor ?? Theme.of(context).primaryColor)
-                  : Theme.of(context).colorScheme.surface,
+          return Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => onSectorChanged(sector),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isSelected
-                    ? (primaryColor ?? Theme.of(context).primaryColor)
-                    : Theme.of(context).colorScheme.outline.withOpacity(0.3),
-                width: 1.5,
-              ),
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: (primaryColor ?? Theme.of(context).primaryColor)
-                            .withOpacity(0.2),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (showIcons) ...[
-                  Icon(
-                    sector.icon,
-                    size: 16,
+              child: Container(
+                constraints: const BoxConstraints(
+                  minHeight: 40,
+                ), // Better touch target
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? (primaryColor ?? Theme.of(context).primaryColor)
+                      : Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
                     color: isSelected
-                        ? Colors.white
-                        : Theme.of(context).colorScheme.onSurface,
+                        ? (primaryColor ?? Theme.of(context).primaryColor)
+                        : Theme.of(context)
+                            .colorScheme
+                            .outline
+                            .withOpacity(0.3),
+                    width: 1.5,
                   ),
-                  const SizedBox(width: 8),
-                ],
-                Text(
-                  useDisplayNames ? sector.displayName : sector.shortName,
-                  style: TextStyle(
-                    color: isSelected
-                        ? Colors.white
-                        : Theme.of(context).colorScheme.onSurface,
-                    fontSize: 14,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    letterSpacing: 0.2,
-                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color:
+                                (primaryColor ?? Theme.of(context).primaryColor)
+                                    .withOpacity(0.2),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
                 ),
-              ],
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (showIcons) ...[
+                      Icon(
+                        sector.icon,
+                        size: 16,
+                        color: isSelected
+                            ? Colors.white
+                            : Theme.of(context).colorScheme.onSurface,
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Text(
+                      useDisplayNames ? sector.displayName : sector.shortName,
+                      style: TextStyle(
+                        color: isSelected
+                            ? Colors.white
+                            : Theme.of(context).colorScheme.onSurface,
+                        fontSize: 14,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.w500,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ),
+          );
+        }).toList(),
       );
-    }).toList(),
-  );
 
   Widget _buildDropdownSelector(
     BuildContext context,
     List<SectorType> sectors,
-  ) => DropdownButtonFormField<SectorType>(
-    value: selectedSector,
-    decoration: InputDecoration(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-      isDense: true,
-    ),
-    items: sectors
-        .map(
-          (sector) => DropdownMenuItem<SectorType>(
-            value: sector,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (showIcons) ...[
-                  Icon(sector.icon, size: 16),
-                  const SizedBox(width: 8),
-                ],
-                Text(
-                  useDisplayNames ? sector.displayName : sector.shortName,
-                  style: const TextStyle(fontSize: 14),
+  ) =>
+      DropdownButtonFormField<SectorType>(
+        value: selectedSector,
+        decoration: InputDecoration(
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          isDense: true,
+        ),
+        items: sectors
+            .map(
+              (sector) => DropdownMenuItem<SectorType>(
+                value: sector,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (showIcons) ...[
+                      Icon(sector.icon, size: 16),
+                      const SizedBox(width: 8),
+                    ],
+                    Text(
+                      useDisplayNames ? sector.displayName : sector.shortName,
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-        )
-        .toList(),
-    onChanged: (sector) {
-      if (sector != null) {
-        onSectorChanged(sector);
-      }
-    },
-  );
+              ),
+            )
+            .toList(),
+        onChanged: (sector) {
+          if (sector != null) {
+            onSectorChanged(sector);
+          }
+        },
+      );
 }

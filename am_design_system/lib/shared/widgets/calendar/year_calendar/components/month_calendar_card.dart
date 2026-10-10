@@ -46,9 +46,8 @@ class MonthCalendarCard extends StatelessWidget {
 
     // Flat surface + light tint — avoid Card elevation (looks muddy/faded).
     final surface = theme.colorScheme.surface;
-    final backgroundColor = hasActivity
-        ? Color.alphaBlend(tint, surface)
-        : surface;
+    final backgroundColor =
+        hasActivity ? Color.alphaBlend(tint, surface) : surface;
     final borderColor = hasActivity
         ? service.getMonthBorderColor(stats)
         : theme.colorScheme.outline.withValues(alpha: isDark ? 0.22 : 0.14);
@@ -100,27 +99,27 @@ class MonthCalendarCard extends StatelessWidget {
 
   /// Build weekday headers
   Widget _buildWeekdayHeaders(BuildContext context) => Row(
-    children: ['M', 'T', 'W', 'T', 'F', 'S', 'S']
-        .map(
-          (day) => Expanded(
-            child: Center(
-              child: Text(
-                day,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontSize: compactMode ? 10 : 11,
-                  fontWeight: FontWeight.w700,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.75),
-                  letterSpacing: 0.4,
+        children: ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+            .map(
+              (day) => Expanded(
+                child: Center(
+                  child: Text(
+                    day,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontSize: compactMode ? 10 : 11,
+                          fontWeight: FontWeight.w700,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.75),
+                          letterSpacing: 0.4,
+                        ),
+                  ),
                 ),
               ),
-            ),
-          ),
-        )
-        .toList(),
-  );
+            )
+            .toList(),
+      );
 
   /// Build month calendar grid
   Widget _buildMonthGrid(
@@ -171,7 +170,12 @@ class MonthCalendarCard extends StatelessWidget {
   /// Calculate month statistics including trade days
   Map<String, dynamic> _calculateMonthStats(CalendarMonthData? monthData) {
     if (monthData == null) {
-      return {'totalTrades': 0, 'winRate': 0.0, 'totalPnL': 0.0, 'tradeDays': 0};
+      return {
+        'totalTrades': 0,
+        'winRate': 0.0,
+        'totalPnL': 0.0,
+        'tradeDays': 0
+      };
     }
 
     var totalTrades = 0;
@@ -192,6 +196,11 @@ class MonthCalendarCard extends StatelessWidget {
 
     final winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0.0;
 
-    return {'totalTrades': totalTrades, 'winRate': winRate, 'totalPnL': totalPnL, 'tradeDays': tradeDays};
+    return {
+      'totalTrades': totalTrades,
+      'winRate': winRate,
+      'totalPnL': totalPnL,
+      'tradeDays': tradeDays
+    };
   }
 }

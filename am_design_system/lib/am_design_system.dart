@@ -35,7 +35,7 @@ export 'core/contracts/design_contract.dart';
 export 'core/utils/common_logger.dart';
 export 'core/utils/device_utils.dart';
 export 'core/utils/string_utils.dart';
-export 'core/utils/validators.dart'; 
+export 'core/utils/validators.dart';
 export 'core/utils/conditional_mouse_region.dart';
 export 'core/utils/browser_zoom.dart';
 export 'core/utils/browser_zoom_platform.dart';
@@ -194,7 +194,7 @@ export 'shared/widgets/feedback/animated_login_elements.dart';
 // --- Global Models ---
 export 'shared/models/user.dart';
 export 'shared/models/holding.dart';
-export 'shared/models/am_mover_item.dart';  // Generic mover tile data model
+export 'shared/models/am_mover_item.dart'; // Generic mover tile data model
 export 'shared/widgets/holdings/universal_holdings.dart';
 export 'shared/widgets/holdings/advanced/advanced_holding_row.dart';
 export 'shared/widgets/holdings/advanced/advanced_holdings_template.dart';
@@ -212,4 +212,3 @@ export 'shared/widgets/search/typewriter_hint_controller.dart';
 
 // --- Dialogs ---
 export 'shared/widgets/dialogs/confirmation_dialog.dart';
-

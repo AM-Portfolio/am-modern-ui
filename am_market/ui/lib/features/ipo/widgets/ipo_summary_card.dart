@@ -28,7 +28,8 @@ class IpoSummaryCard extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: context.colors.textPrimary.withValues(alpha: isDark ? 0.25 : 0.04),
+              color: context.colors.textPrimary
+                  .withValues(alpha: isDark ? 0.25 : 0.04),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -253,10 +254,10 @@ class IpoSummaryCard extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: context.textTertiary,
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-          ),
+                color: context.textTertiary,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -286,10 +287,10 @@ class IpoSummaryCard extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: context.textTertiary,
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-          ),
+                color: context.textTertiary,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
         ),
         const SizedBox(height: 3),
         Row(
@@ -315,8 +316,11 @@ class IpoSummaryCard extends StatelessWidget {
   }
 
   String _getInitials(String name) {
-    final clean = name.replaceAll(RegExp(r'(IPO|Limited|Ltd|\.)', caseSensitive: false), '').trim();
-    final parts = clean.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    final clean = name
+        .replaceAll(RegExp(r'(IPO|Limited|Ltd|\.)', caseSensitive: false), '')
+        .trim();
+    final parts =
+        clean.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
     if (parts.isEmpty) return 'IP';
     if (parts.length == 1) {
       return parts[0].substring(0, parts[0].length.clamp(1, 2)).toUpperCase();
@@ -359,7 +363,20 @@ class IpoSummaryCard extends StatelessWidget {
     if (dateStr == null || dateStr.isEmpty) return 'TBA';
     try {
       final date = DateTime.parse(dateStr);
-      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      final months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
+      ];
       return '${months[date.month - 1]} ${date.day}, ${date.year}';
     } catch (_) {
       return dateStr;

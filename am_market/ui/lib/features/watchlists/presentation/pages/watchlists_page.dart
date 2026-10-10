@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
-import 'package:am_auth_ui/am_auth_ui.dart';
-import 'package:am_news_ui/am_news_ui.dart';
 import '../../providers/watchlist_provider.dart';
 import '../../data/models/watchlist_model.dart';
 import '../widgets/watchlist_management_view.dart';
@@ -44,8 +41,7 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
           gradient: LinearGradient(
             colors: [
               colors.scaffoldBackground,
-              Color.alphaBlend(ModuleColors.market.withValues(alpha: 0.05),
-                  colors.scaffoldBackground),
+              Color.alphaBlend(ModuleColors.market.withValues(alpha: 0.05), colors.scaffoldBackground),
               colors.surface,
             ],
             begin: Alignment.topLeft,
@@ -57,40 +53,13 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
           child: watchlistsAsync.when(
             data: (watchlists) {
               if (watchlists.isEmpty) {
-                final isGuest =
-                    context.read<AuthCubit>().state is! Authenticated;
-                if (isGuest) {
-                  return Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text('Sign in to sync your watchlists.'),
-                        const SizedBox(height: 16),
-                        FilledButton(
-                          onPressed: () {
-                            showLoginRequiredDialog(
-                              context,
-                              redirectPath: '/app/market/watch-list',
-                              title: 'Sign in to sync Watch List',
-                              message:
-                                  'Sign in to create and sync watchlists. Cancel to keep browsing Market.',
-                            );
-                          },
-                          child: const Text('Sign in'),
-                        ),
-                      ],
-                    ),
-                  );
-                }
                 return const Center(child: Text('No watchlists available.'));
               }
 
               final filteredWatchlists = watchlists;
 
               // For Desktop: select first if none selected
-              if (!isMobile &&
-                  (_selectedWatchlistId == null ||
-                      !watchlists.any((w) => w.id == _selectedWatchlistId))) {
+              if (!isMobile && (_selectedWatchlistId == null || !watchlists.any((w) => w.id == _selectedWatchlistId))) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted) {
                     setState(() => _selectedWatchlistId = watchlists.first.id);
@@ -122,17 +91,14 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                 }
 
                 // Mobile Master List View (Matching Screenshot 1 Left)
-                return _buildMobileMasterList(
-                    context, watchlists, filteredWatchlists);
+                return _buildMobileMasterList(context, watchlists, filteredWatchlists);
               }
 
               // Desktop View: Two-pane layout
-              return _buildDesktopLayout(
-                  context, watchlists, selectedWatchlist);
+              return _buildDesktopLayout(context, watchlists, selectedWatchlist);
             },
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, st) =>
-                Center(child: Text('Error loading watchlists: $e')),
+            error: (e, st) => Center(child: Text('Error loading watchlists: $e')),
           ),
         ),
       ),
@@ -164,8 +130,7 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: ModuleColors.market.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
@@ -204,10 +169,8 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: ModuleColors.market,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 elevation: 0,
               ),
             ),
@@ -237,14 +200,11 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                       },
                       borderRadius: BorderRadius.circular(14),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 14),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                         decoration: BoxDecoration(
                           color: colors.surface.withValues(alpha: 0.7),
                           border: Border.all(
-                            color: isDefault
-                                ? ModuleColors.market.withValues(alpha: 0.5)
-                                : colors.border.withValues(alpha: 0.4),
+                            color: isDefault ? ModuleColors.market.withValues(alpha: 0.5) : colors.border.withValues(alpha: 0.4),
                             width: isDefault ? 1.2 : 1,
                           ),
                           borderRadius: BorderRadius.circular(14),
@@ -256,17 +216,12 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                               width: 38,
                               height: 38,
                               decoration: BoxDecoration(
-                                color: colors.scaffoldBackground
-                                    .withValues(alpha: 0.6),
+                                color: colors.scaffoldBackground.withValues(alpha: 0.6),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Icon(
-                                isDefault
-                                    ? Icons.star_rounded
-                                    : _getIconForIndex(index),
-                                color: isDefault
-                                    ? ModuleColors.market
-                                    : colors.textSecondary,
+                                isDefault ? Icons.star_rounded : _getIconForIndex(index),
+                                color: isDefault ? ModuleColors.market : colors.textSecondary,
                                 size: 22,
                               ),
                             ),
@@ -291,13 +246,10 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                                       if (isDefault) ...[
                                         const SizedBox(width: 8),
                                         Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 6, vertical: 2),
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                           decoration: BoxDecoration(
-                                            color: ModuleColors.market
-                                                .withValues(alpha: 0.15),
-                                            borderRadius:
-                                                BorderRadius.circular(6),
+                                            color: ModuleColors.market.withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(6),
                                           ),
                                           child: Text(
                                             'Default',
@@ -314,9 +266,7 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                                   const SizedBox(height: 3),
                                   Text(
                                     '${list.items.length} stocks',
-                                    style: TextStyle(
-                                        fontSize: 12,
-                                        color: colors.textSecondary),
+                                    style: TextStyle(fontSize: 12, color: colors.textSecondary),
                                   ),
                                 ],
                               ),
@@ -325,35 +275,28 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                             if (!isDefault)
                               PopupMenuButton<String>(
                                 padding: EdgeInsets.zero,
-                                icon: Icon(Icons.more_vert,
-                                    size: 18, color: colors.textSecondary),
+                                icon: Icon(Icons.more_vert, size: 18, color: colors.textSecondary),
                                 onSelected: (action) async {
                                   if (action == 'edit') {
                                     EditWatchlistDialog.show(
                                       context,
                                       currentName: list.name,
                                       onSaved: (newName) {
-                                        ref
-                                            .read(watchlistsProvider.notifier)
-                                            .updateWatchlist(list.id, newName);
+                                        ref.read(watchlistsProvider.notifier).updateWatchlist(list.id, newName);
                                       },
                                     );
                                   } else if (action == 'delete') {
-                                    final confirm =
-                                        await ConfirmationDialog.show(
+                                    final confirm = await ConfirmationDialog.show(
                                       context: context,
                                       title: 'Delete Watchlist',
                                       subtitle: 'This action cannot be undone',
-                                      message:
-                                          'Are you sure you want to delete "${list.name}"?',
+                                      message: 'Are you sure you want to delete "${list.name}"?',
                                       icon: Icons.warning_amber_rounded,
                                       confirmText: 'Delete',
                                       isDestructive: true,
                                     );
                                     if (confirm) {
-                                      ref
-                                          .read(watchlistsProvider.notifier)
-                                          .deleteWatchlist(list.id);
+                                      ref.read(watchlistsProvider.notifier).deleteWatchlist(list.id);
                                     }
                                   }
                                 },
@@ -372,13 +315,9 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                                     value: 'delete',
                                     child: Row(
                                       children: [
-                                        Icon(Icons.delete_outline,
-                                            color: colors.statusError,
-                                            size: 18),
+                                        Icon(Icons.delete_outline, color: colors.statusError, size: 18),
                                         const SizedBox(width: 8),
-                                        Text('Delete',
-                                            style: TextStyle(
-                                                color: colors.statusError)),
+                                        Text('Delete', style: TextStyle(color: colors.statusError)),
                                       ],
                                     ),
                                   ),
@@ -421,8 +360,7 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                 ),
                 const SizedBox(width: 10),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: ModuleColors.market.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
@@ -461,10 +399,8 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: ModuleColors.market,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 elevation: 0,
               ),
             ),
@@ -491,19 +427,14 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                           final isSelected = list.id == _selectedWatchlistId;
 
                           return InkWell(
-                            onTap: () =>
-                                setState(() => _selectedWatchlistId = list.id),
+                            onTap: () => setState(() => _selectedWatchlistId = list.id),
                             borderRadius: BorderRadius.circular(12),
                             child: Container(
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
-                                color: isSelected
-                                    ? ModuleColors.market.withValues(alpha: 0.1)
-                                    : colors.surface,
+                                color: isSelected ? ModuleColors.market.withValues(alpha: 0.1) : colors.surface,
                                 border: Border.all(
-                                  color: isSelected
-                                      ? ModuleColors.market
-                                      : colors.border,
+                                  color: isSelected ? ModuleColors.market : colors.border,
                                   width: isSelected ? 1.5 : 1,
                                 ),
                                 borderRadius: BorderRadius.circular(12),
@@ -511,54 +442,37 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
                               child: Row(
                                 children: [
                                   Icon(
-                                    list.isDefault
-                                        ? Icons.star_rounded
-                                        : Icons.list_alt_rounded,
-                                    color: isSelected
-                                        ? ModuleColors.market
-                                        : colors.textSecondary,
+                                    list.isDefault ? Icons.star_rounded : Icons.list_alt_rounded,
+                                    color: isSelected ? ModuleColors.market : colors.textSecondary,
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           list.name,
                                           style: TextStyle(
-                                            fontWeight: isSelected
-                                                ? FontWeight.bold
-                                                : FontWeight.normal,
-                                            color: isSelected
-                                                ? context.textPrimary
-                                                : colors.textSecondary,
+                                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                            color: isSelected ? context.textPrimary : colors.textSecondary,
                                           ),
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
                                           '${list.items.length} stocks',
-                                          style: TextStyle(
-                                              fontSize: 12,
-                                              color: colors.textSecondary),
+                                          style: TextStyle(fontSize: 12, color: colors.textSecondary),
                                         ),
                                       ],
                                     ),
                                   ),
                                   if (list.isDefault)
                                     Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 8, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: ModuleColors.market
-                                            .withValues(alpha: 0.15),
+                                        color: ModuleColors.market.withValues(alpha: 0.15),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      child: Text('Default',
-                                          style: TextStyle(
-                                              fontSize: 10,
-                                              color: ModuleColors.market,
-                                              fontWeight: FontWeight.bold)),
+                                      child: Text('Default', style: TextStyle(fontSize: 10, color: ModuleColors.market, fontWeight: FontWeight.bold)),
                                     ),
                                 ],
                               ),

@@ -85,7 +85,7 @@ class AppTextField extends PlatformWidget<CupertinoTextField, TextField> {
   @override
   TextField buildMaterialWidget(BuildContext context) {
     final config = DesignSystemProvider.of(context);
-    
+
     return TextField(
       controller: controller,
       decoration: InputDecoration(

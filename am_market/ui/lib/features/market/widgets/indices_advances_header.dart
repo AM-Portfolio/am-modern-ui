@@ -47,9 +47,7 @@ class IndicesListFilterToggle extends StatelessWidget {
                       ? accent.withValues(alpha: 0.18)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(6),
-                  border: selected
-                      ? Border.all(color: accent, width: 1)
-                      : null,
+                  border: selected ? Border.all(color: accent, width: 1) : null,
                 ),
                 alignment: Alignment.center,
                 child: Text(
@@ -57,9 +55,7 @@ class IndicesListFilterToggle extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                    color: selected
-                        ? accent
-                        : MarketColors.textMuted(context),
+                    color: selected ? accent : MarketColors.textMuted(context),
                   ),
                 ),
               ),

@@ -81,12 +81,12 @@ class _AnimatedMarketCapChartState extends State<AnimatedMarketCapChart>
                               _touchedIndex = -1;
                               return;
                             }
-                            _touchedIndex =
-                                pieTouchResponse.touchedSection!.touchedSectionIndex;
+                            _touchedIndex = pieTouchResponse
+                                .touchedSection!.touchedSectionIndex;
 
                             if (event is FlTapUpEvent && _touchedIndex >= 0) {
-                              widget.onSectionTapped
-                                  ?.call(widget.allocations[_touchedIndex].label);
+                              widget.onSectionTapped?.call(
+                                  widget.allocations[_touchedIndex].label);
                             }
                           });
                         },
@@ -112,10 +112,10 @@ class _AnimatedMarketCapChartState extends State<AnimatedMarketCapChart>
       final item = entry.value;
       final isTouched = index == _touchedIndex;
       final color = _getMarketCapColor(item.label);
-      
+
       // Animate from 0 to actual value
       final animatedValue = item.value * _animation.value;
-      
+
       // Highlight touched section
       final radius = isTouched ? 70.0 : 60.0;
       final fontSize = isTouched ? 16.0 : 14.0;
@@ -160,8 +160,8 @@ class _AnimatedMarketCapChartState extends State<AnimatedMarketCapChart>
           Text(
             'Market Cap',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+                  fontWeight: FontWeight.bold,
+                ),
           ),
           const SizedBox(height: 8),
           Expanded(
@@ -184,7 +184,9 @@ class _AnimatedMarketCapChartState extends State<AnimatedMarketCapChart>
                     margin: const EdgeInsets.symmetric(vertical: 4),
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: isTouched ? color.withOpacity(0.1) : Colors.transparent,
+                      color: isTouched
+                          ? color.withOpacity(0.1)
+                          : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: isTouched ? color : Colors.transparent,
@@ -220,7 +222,9 @@ class _AnimatedMarketCapChartState extends State<AnimatedMarketCapChart>
                                 item.label,
                                 style: TextStyle(
                                   fontSize: isTouched ? 13 : 12,
-                                  fontWeight: isTouched ? FontWeight.bold : FontWeight.w500,
+                                  fontWeight: isTouched
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,

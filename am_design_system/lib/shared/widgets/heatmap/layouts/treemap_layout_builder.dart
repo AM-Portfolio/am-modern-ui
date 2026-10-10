@@ -1,4 +1,3 @@
-
 import 'dart:math';
 import 'dart:ui';
 
@@ -367,14 +366,16 @@ class _HoverTileState extends State<_HoverTile>
     );
   }
 
-  Widget _buildTileCard(BuildContext context, Color tileColor, Color textColor) {
+  Widget _buildTileCard(
+      BuildContext context, Color tileColor, Color textColor) {
     final w = widget.width;
     final h = widget.height;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     // Perfect Glassmorphism: 25% opacity in light mode, 45% in dark mode
     final bgOpacity = isDark ? 0.45 : 0.25;
-    final borderOpacity = isDark ? 0.35 : 0.60; // Slightly stronger border for vibrant light mode
+    final borderOpacity =
+        isDark ? 0.35 : 0.60; // Slightly stronger border for vibrant light mode
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
@@ -409,11 +410,11 @@ class _HoverTileState extends State<_HoverTile>
             )
         ],
       ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: _buildInnerContent(w, h, textColor, isDark),
-        ),
-      );
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: _buildInnerContent(w, h, textColor, isDark),
+      ),
+    );
   }
 
   Widget _buildInnerContent(double w, double h, Color textColor, bool isDark) {
@@ -433,71 +434,73 @@ class _HoverTileState extends State<_HoverTile>
       ),
       child: FittedBox(
         fit: BoxFit.scaleDown,
-        child: (w < 40 || h < 30) 
-          ? const SizedBox() // Hide text if tile is extremely small
-          : Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Sector / tile name
-                Text(
-                          widget.tile.name,
-                          style: TextStyle(
-                            color: textColor,
-                            fontSize: nameFontSize,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.2,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: nameMaxLines,
-                        ),
-
-                        // Primary metric: performance %
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Text(
-                            '${widget.tile.performance >= 0 ? '+' : ''}${widget.tile.performance.toStringAsFixed(2)}%',
-                            style: TextStyle(
-                              color: textColor.withValues(alpha: 0.95),
-                              fontSize: primaryFontSize,
-                              fontWeight: FontWeight.w800,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-
-                        // Secondary: weight
-                        if (showSecondary)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              '${widget.tile.weightage.toStringAsFixed(1)}% Weight',
-                              style: TextStyle(
-                                color: textColor.withValues(alpha: isDark ? 0.80 : 0.90),
-                                fontSize: secondaryFontSize,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-
-                        // Tertiary: market value if available
-                        if (showTertiary && widget.tile.value != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 1),
-                            child: Text(
-                              StringUtils.formatCurrencyExact(widget.tile.value!),
-                              style: TextStyle(
-                                color: textColor.withValues(alpha: isDark ? 0.65 : 0.80),
-                                fontSize: secondaryFontSize,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                      ],
+        child: (w < 40 || h < 30)
+            ? const SizedBox() // Hide text if tile is extremely small
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Sector / tile name
+                  Text(
+                    widget.tile.name,
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: nameFontSize,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.2,
                     ),
+                    textAlign: TextAlign.center,
+                    maxLines: nameMaxLines,
+                  ),
+
+                  // Primary metric: performance %
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      '${widget.tile.performance >= 0 ? '+' : ''}${widget.tile.performance.toStringAsFixed(2)}%',
+                      style: TextStyle(
+                        color: textColor.withValues(alpha: 0.95),
+                        fontSize: primaryFontSize,
+                        fontWeight: FontWeight.w800,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+
+                  // Secondary: weight
+                  if (showSecondary)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        '${widget.tile.weightage.toStringAsFixed(1)}% Weight',
+                        style: TextStyle(
+                          color:
+                              textColor.withValues(alpha: isDark ? 0.80 : 0.90),
+                          fontSize: secondaryFontSize,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+
+                  // Tertiary: market value if available
+                  if (showTertiary && widget.tile.value != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 1),
+                      child: Text(
+                        StringUtils.formatCurrencyExact(widget.tile.value!),
+                        style: TextStyle(
+                          color:
+                              textColor.withValues(alpha: isDark ? 0.65 : 0.80),
+                          fontSize: secondaryFontSize,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                ],
               ),
+      ),
     );
 
     // Glassmorphism requires BackdropFilter for both themes

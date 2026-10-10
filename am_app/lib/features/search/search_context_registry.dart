@@ -74,7 +74,12 @@ class SearchContextRegistry {
         return const SearchContextCopy(
           bannerTitle: 'Searching in AM',
           bannerSubtitle: 'Results across markets, portfolios and tools.',
-          categoryBoost: {'Action': 50, 'Market': 40, 'Portfolio': 40, 'Trade': 30},
+          categoryBoost: {
+            'Action': 50,
+            'Market': 40,
+            'Portfolio': 40,
+            'Trade': 30
+          },
         );
     }
   }

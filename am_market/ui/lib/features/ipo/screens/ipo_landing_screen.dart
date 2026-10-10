@@ -27,7 +27,8 @@ class IpoLandingScreen extends ConsumerWidget {
         ref.invalidate(allIposProvider);
       },
       child: CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics()),
         slivers: [
           // 1. Header Section
           SliverToBoxAdapter(
@@ -83,150 +84,152 @@ class IpoLandingScreen extends ConsumerWidget {
             ),
           ),
 
-              // 2. KPI Summary Metrics Bar
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: countsAsync.when(
-                    data: (counts) => IpoKpiStatsBar(counts: counts),
-                    loading: () => const _KpiSkeleton(),
-                    error: (_, __) => IpoKpiStatsBar(counts: AsraxIpoCountsDto()),
-                  ),
-                ),
+          // 2. KPI Summary Metrics Bar
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: countsAsync.when(
+                data: (counts) => IpoKpiStatsBar(counts: counts),
+                loading: () => const _KpiSkeleton(),
+                error: (_, __) => IpoKpiStatsBar(counts: AsraxIpoCountsDto()),
               ),
+            ),
+          ),
 
-              const SliverToBoxAdapter(child: SizedBox(height: 18)),
+          const SliverToBoxAdapter(child: SizedBox(height: 18)),
 
-              // 3. Filter & Search Toolbar
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: countsAsync.when(
-                    data: (counts) => IpoFilterToolbar(counts: counts),
-                    loading: () => const SizedBox(height: 40),
-                    error: (_, __) => IpoFilterToolbar(counts: AsraxIpoCountsDto()),
-                  ),
-                ),
+          // 3. Filter & Search Toolbar
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: countsAsync.when(
+                data: (counts) => IpoFilterToolbar(counts: counts),
+                loading: () => const SizedBox(height: 40),
+                error: (_, __) => IpoFilterToolbar(counts: AsraxIpoCountsDto()),
               ),
+            ),
+          ),
 
-              const SliverToBoxAdapter(child: SizedBox(height: 18)),
+          const SliverToBoxAdapter(child: SizedBox(height: 18)),
 
-              // 4. Responsive Card Grid
-              filteredIposAsync.when(
-                data: (ipos) {
-                  if (ipos.isEmpty) {
-                    return SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.search_off_rounded, size: 48, color: context.textTertiary),
-                            const SizedBox(height: 12),
-                            Text(
-                              'No IPOs match your criteria',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: context.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Try clearing filters or search query',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: context.textSecondary,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            TextButton.icon(
-                              onPressed: () {
-                                ref.read(ipoFilterStateProvider.notifier).reset();
-                              },
-                              icon: const Icon(Icons.refresh_rounded, size: 16),
-                              label: const Text('Reset Filters'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }
-
-                  return SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                    sliver: SliverLayoutBuilder(
-                      builder: (context, constraints) {
-                        int crossAxisCount = 1;
-                        if (constraints.crossAxisExtent >= 1150) {
-                          crossAxisCount = 3;
-                        } else if (constraints.crossAxisExtent >= 720) {
-                          crossAxisCount = 2;
-                        }
-
-                        if (crossAxisCount == 1) {
-                          return SliverList(
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) => Padding(
-                                padding: const EdgeInsets.only(bottom: 14),
-                                child: IpoSummaryCard(ipo: ipos[index]),
-                              ),
-                              childCount: ipos.length,
-                            ),
-                          );
-                        }
-
-                        return SliverGrid(
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: crossAxisCount,
-                            mainAxisSpacing: 16,
-                            crossAxisSpacing: 16,
-                            mainAxisExtent: 268,
-                          ),
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) => IpoSummaryCard(ipo: ipos[index]),
-                            childCount: ipos.length,
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                },
-                loading: () => const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-                error: (err, _) => SliverFillRemaining(
+          // 4. Responsive Card Grid
+          filteredIposAsync.when(
+            data: (ipos) {
+              if (ipos.isEmpty) {
+                return SliverFillRemaining(
                   hasScrollBody: false,
                   child: Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.error_outline_rounded, size: 42, color: context.statusError),
+                        Icon(Icons.search_off_rounded,
+                            size: 48, color: context.textTertiary),
                         const SizedBox(height: 12),
                         Text(
-                          'Failed to load IPO data',
+                          'No IPOs match your criteria',
                           style: TextStyle(
-                            fontSize: 15,
+                            fontSize: 16,
                             fontWeight: FontWeight.w600,
                             color: context.textPrimary,
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        FilledButton(
+                        const SizedBox(height: 6),
+                        Text(
+                          'Try clearing filters or search query',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: context.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextButton.icon(
                           onPressed: () {
-                            ref.invalidate(allIposProvider);
-                            ref.invalidate(ipoCountsProvider);
+                            ref.read(ipoFilterStateProvider.notifier).reset();
                           },
-                          child: const Text('Retry'),
+                          icon: const Icon(Icons.refresh_rounded, size: 16),
+                          label: const Text('Reset Filters'),
                         ),
                       ],
                     ),
                   ),
+                );
+              }
+
+              return SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                sliver: SliverLayoutBuilder(
+                  builder: (context, constraints) {
+                    int crossAxisCount = 1;
+                    if (constraints.crossAxisExtent >= 1150) {
+                      crossAxisCount = 3;
+                    } else if (constraints.crossAxisExtent >= 720) {
+                      crossAxisCount = 2;
+                    }
+
+                    if (crossAxisCount == 1) {
+                      return SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) => Padding(
+                            padding: const EdgeInsets.only(bottom: 14),
+                            child: IpoSummaryCard(ipo: ipos[index]),
+                          ),
+                          childCount: ipos.length,
+                        ),
+                      );
+                    }
+
+                    return SliverGrid(
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
+                        mainAxisSpacing: 16,
+                        crossAxisSpacing: 16,
+                        mainAxisExtent: 268,
+                      ),
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) => IpoSummaryCard(ipo: ipos[index]),
+                        childCount: ipos.length,
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+            loading: () => const SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (err, _) => SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline_rounded,
+                        size: 42, color: context.statusError),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Failed to load IPO data',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: context.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    FilledButton(
+                      onPressed: () {
+                        ref.invalidate(allIposProvider);
+                        ref.invalidate(ipoCountsProvider);
+                      },
+                      child: const Text('Retry'),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
+        ],
+      ),
     );
 
     if (embedded) {
@@ -259,7 +262,8 @@ class IpoLandingScreen extends ConsumerWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.calendar_month_outlined, size: 16, color: context.textPrimary),
+          Icon(Icons.calendar_month_outlined,
+              size: 16, color: context.textPrimary),
           const SizedBox(width: 8),
           Text(
             'IPO Calendar',
@@ -270,7 +274,8 @@ class IpoLandingScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: 4),
-          Icon(Icons.chevron_right_rounded, size: 16, color: context.textTertiary),
+          Icon(Icons.chevron_right_rounded,
+              size: 16, color: context.textTertiary),
         ],
       ),
     );

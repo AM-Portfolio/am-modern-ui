@@ -3,6 +3,7 @@ class AvailableIndices {
   final List<String> sectoralIndices;
   final List<String> thematicIndices;
   final List<String> strategyIndices;
+
   /// Symbols from GET /v1/indices/global/available (kept separate from NSE lists).
   final List<String> globalIndices;
 
@@ -16,11 +17,16 @@ class AvailableIndices {
 
   factory AvailableIndices.fromJson(Map<String, dynamic> json) {
     return AvailableIndices(
-      broadMarketIndices: List<String>.from(json['broad'] ?? json['broadMarketIndices'] ?? []),
-      sectoralIndices: List<String>.from(json['sector'] ?? json['sectoralIndices'] ?? []),
-      thematicIndices: List<String>.from(json['thematic'] ?? json['thematicIndices'] ?? []),
-      strategyIndices: List<String>.from(json['strategy'] ?? json['strategyIndices'] ?? []),
-      globalIndices: List<String>.from(json['global'] ?? json['globalIndices'] ?? []),
+      broadMarketIndices:
+          List<String>.from(json['broad'] ?? json['broadMarketIndices'] ?? []),
+      sectoralIndices:
+          List<String>.from(json['sector'] ?? json['sectoralIndices'] ?? []),
+      thematicIndices:
+          List<String>.from(json['thematic'] ?? json['thematicIndices'] ?? []),
+      strategyIndices:
+          List<String>.from(json['strategy'] ?? json['strategyIndices'] ?? []),
+      globalIndices:
+          List<String>.from(json['global'] ?? json['globalIndices'] ?? []),
     );
   }
 

@@ -16,16 +16,15 @@ class ChartSelectedPortfolio {
   final bool isPaper;
 }
 
-class ChartSelectedPortfolioNotifier
-    extends Notifier<ChartSelectedPortfolio?> {
+class ChartSelectedPortfolioNotifier extends Notifier<ChartSelectedPortfolio?> {
   @override
   ChartSelectedPortfolio? build() => null;
 
   void select(ChartSelectedPortfolio? value) => state = value;
 }
 
-final chartSelectedPortfolioProvider = NotifierProvider<
-    ChartSelectedPortfolioNotifier, ChartSelectedPortfolio?>(
+final chartSelectedPortfolioProvider =
+    NotifierProvider<ChartSelectedPortfolioNotifier, ChartSelectedPortfolio?>(
   ChartSelectedPortfolioNotifier.new,
 );
 
@@ -98,10 +97,10 @@ class _ChartPortfolioSidebarState extends ConsumerState<ChartPortfolioSidebar> {
       final map = Map<String, dynamic>.from(item);
       final kind = (map['kind'] as String?)?.toUpperCase() ?? '';
       if (kind == 'DELETED') continue;
-      final id = (map['portfolioId'] as String?) ?? (map['id'] as String?) ?? '';
-      final name = (map['portfolioName'] as String?) ??
-          (map['name'] as String?) ??
-          '';
+      final id =
+          (map['portfolioId'] as String?) ?? (map['id'] as String?) ?? '';
+      final name =
+          (map['portfolioName'] as String?) ?? (map['name'] as String?) ?? '';
       if (id.isEmpty || name.isEmpty) continue;
       final isBasket = kind == 'BASKET' || map['isBasket'] == true;
       final isDummy = kind == 'DUMMY' ||
@@ -230,13 +229,10 @@ class _ChartPortfolioSidebarState extends ConsumerState<ChartPortfolioSidebar> {
                         ),
                       ),
                       Icon(
-                        isSel
-                            ? Icons.check_circle
-                            : Icons.chevron_right,
+                        isSel ? Icons.check_circle : Icons.chevron_right,
                         size: 18,
-                        color: isSel
-                            ? theme.colorScheme.primary
-                            : theme.hintColor,
+                        color:
+                            isSel ? theme.colorScheme.primary : theme.hintColor,
                       ),
                     ],
                   ),

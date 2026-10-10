@@ -11,7 +11,8 @@ class EditWatchlistDialog extends StatefulWidget {
     required this.onSaved,
   });
 
-  static Future<void> show(BuildContext context, {
+  static Future<void> show(
+    BuildContext context, {
     required String currentName,
     required ValueChanged<String> onSaved,
   }) {
@@ -99,9 +100,11 @@ class _EditWatchlistDialogState extends State<EditWatchlistDialog> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: ModuleColors.market, width: 1.5),
+                    borderSide:
+                        BorderSide(color: ModuleColors.market, width: 1.5),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 ),
                 onSubmitted: (_) => _handleSave(),
               ),
@@ -111,7 +114,8 @@ class _EditWatchlistDialogState extends State<EditWatchlistDialog> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: Text('Cancel', style: TextStyle(color: colors.textSecondary)),
+                    child: Text('Cancel',
+                        style: TextStyle(color: colors.textSecondary)),
                   ),
                   const SizedBox(width: 12),
                   ElevatedButton(
@@ -119,7 +123,8 @@ class _EditWatchlistDialogState extends State<EditWatchlistDialog> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: ModuleColors.market,
                       foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -130,7 +135,8 @@ class _EditWatchlistDialogState extends State<EditWatchlistDialog> {
                             height: 16,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Save', style: TextStyle(fontWeight: FontWeight.bold)),
+                        : const Text('Save',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),

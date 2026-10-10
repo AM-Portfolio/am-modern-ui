@@ -119,7 +119,7 @@ class HeatmapData extends HeatmapDataEntity {
                 'hasChildren': tile.hasChildren,
                 'childrenCount': tile.children?.length ?? 0,
                 // Simplified recursive serialization to avoid deep nesting issues in simple export
-                'childParams': tile.children?.length, 
+                'childParams': tile.children?.length,
                 'metadata': tile.metadata ?? {},
               },
             )
@@ -164,16 +164,17 @@ class HeatmapData extends HeatmapDataEntity {
     Widget? customFooter,
     VoidCallback? onRefresh,
     Function(HeatmapTileData)? onTileInteraction,
-  }) => HeatmapData(
-    id: id ?? this.id,
-    title: title ?? this.title,
-    subtitle: subtitle ?? this.subtitle,
-    tiles: tiles?.map(HeatmapTileData.fromEntity).toList() ?? uiTiles,
-    metadata: metadata ?? this.metadata,
-    configuration: configuration ?? this.configuration,
-    customHeader: customHeader ?? this.customHeader,
-    customFooter: customFooter ?? this.customFooter,
-    onRefresh: onRefresh ?? this.onRefresh,
-    onTileInteraction: onTileInteraction ?? this.onTileInteraction,
-  );
+  }) =>
+      HeatmapData(
+        id: id ?? this.id,
+        title: title ?? this.title,
+        subtitle: subtitle ?? this.subtitle,
+        tiles: tiles?.map(HeatmapTileData.fromEntity).toList() ?? uiTiles,
+        metadata: metadata ?? this.metadata,
+        configuration: configuration ?? this.configuration,
+        customHeader: customHeader ?? this.customHeader,
+        customFooter: customFooter ?? this.customFooter,
+        onRefresh: onRefresh ?? this.onRefresh,
+        onTileInteraction: onTileInteraction ?? this.onTileInteraction,
+      );
 }

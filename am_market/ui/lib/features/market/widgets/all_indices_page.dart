@@ -128,8 +128,7 @@ class _AllIndicesPageState extends ConsumerState<AllIndicesPage> {
   ) {
     final active = List<StockIndicesMarketData>.from(_active(provider))
       ..sort(
-        (a, b) => _displayPChange(b)
-            .compareTo(_displayPChange(a)),
+        (a, b) => _displayPChange(b).compareTo(_displayPChange(a)),
       );
 
     return ColoredBox(

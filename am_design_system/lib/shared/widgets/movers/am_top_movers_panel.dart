@@ -274,9 +274,8 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
             const SizedBox(height: 4),
             Text(
               widget.error!,
-              style: TextStyle(
-                  color: context.colors.textTertiary,
-                  fontSize: 12),
+              style:
+                  TextStyle(color: context.colors.textTertiary, fontSize: 12),
               textAlign: TextAlign.center,
             ),
           ],
@@ -308,7 +307,8 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
       );
     }
 
-    final isMobile = MediaQuery.of(context).size.width < widget.mobileBreakpoint;
+    final isMobile =
+        MediaQuery.of(context).size.width < widget.mobileBreakpoint;
 
     if (isMobile) {
       return _buildMobileLayout(context, isDark);
@@ -329,7 +329,8 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
         Container(
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: context.colors.surface.withValues(alpha: isDark ? 0.55 : 0.85),
+            color:
+                context.colors.surface.withValues(alpha: isDark ? 0.55 : 0.85),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: context.colors.border),
           ),
@@ -353,9 +354,8 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
                         'Gainers (${widget.gainers.length})',
                         style: TextStyle(
                           fontSize: 13,
-                          fontWeight: _showGainers
-                              ? FontWeight.bold
-                              : FontWeight.w500,
+                          fontWeight:
+                              _showGainers ? FontWeight.bold : FontWeight.w500,
                           color: _showGainers ? posColor : mutedColor,
                         ),
                       ),
@@ -381,9 +381,8 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
                         'Losers (${widget.losers.length})',
                         style: TextStyle(
                           fontSize: 13,
-                          fontWeight: !_showGainers
-                              ? FontWeight.bold
-                              : FontWeight.w500,
+                          fontWeight:
+                              !_showGainers ? FontWeight.bold : FontWeight.w500,
                           color: !_showGainers ? negColor : mutedColor,
                         ),
                       ),
@@ -400,11 +399,9 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
             child: _showGainers
-                ? _buildColumn(
-                    context, 'Gainers', widget.gainers, true, isDark,
+                ? _buildColumn(context, 'Gainers', widget.gainers, true, isDark,
                     key: const ValueKey('gainers'))
-                : _buildColumn(
-                    context, 'Losers', widget.losers, false, isDark,
+                : _buildColumn(context, 'Losers', widget.losers, false, isDark,
                     key: const ValueKey('losers')),
           )
         else

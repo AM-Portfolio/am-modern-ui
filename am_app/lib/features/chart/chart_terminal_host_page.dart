@@ -250,8 +250,7 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
   Widget build(BuildContext context) {
     final tags = _tags;
     final selectedPortfolio = ref.watch(chartSelectedPortfolioProvider);
-    if (_section == _ChartBottomSection.holdings &&
-        selectedPortfolio == null) {
+    if (_section == _ChartBottomSection.holdings && selectedPortfolio == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           setState(() => _section = _ChartBottomSection.overview);
@@ -429,8 +428,9 @@ class _ChartBottomSectionBar extends StatelessWidget {
                               label,
                               style: TextStyle(
                                 fontSize: 12.5,
-                                fontWeight:
-                                    isActive ? FontWeight.w700 : FontWeight.w500,
+                                fontWeight: isActive
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
                                 color: isActive
                                     ? theme.colorScheme.onSurface
                                     : muted,

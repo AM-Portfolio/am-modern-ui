@@ -1,9 +1,6 @@
-
 import 'package:flutter/material.dart';
 import 'package:am_design_system/core/config/design_system_provider.dart';
 import 'package:am_design_system/core/utils/conditional_mouse_region.dart';
-
-
 
 /// A premium text field with glassmorphic styling, hover effects, and animations.
 class GlassTextField extends StatefulWidget {
@@ -113,9 +110,7 @@ class _GlassTextFieldState extends State<GlassTextField> {
             ),
             prefixIcon: Icon(
               widget.prefixIcon,
-              color: _isFocused
-                  ? primaryColor
-                  : Colors.black54,
+              color: _isFocused ? primaryColor : Colors.black54,
             ),
             suffixIcon: widget.suffixIcon,
             border: InputBorder.none,

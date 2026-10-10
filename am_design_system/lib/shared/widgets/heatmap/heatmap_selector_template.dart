@@ -92,8 +92,7 @@ class HeatmapSelectorTemplate extends StatefulWidget {
     SectorType? sector,
     MarketCapType? marketCap,
     HeatmapLayoutType? layout,
-  })?
-  onFiltersChanged;
+  })? onFiltersChanged;
   final bool showTimeFrame;
   final bool showMetric;
   final bool showSector;
@@ -272,18 +271,19 @@ class _HeatmapSelectorTemplateState extends State<HeatmapSelectorTemplate> {
   Widget _buildMobileSelector(
     SelectorConfig config,
     SelectorLayoutType layout,
-  ) => HeatmapSelectorMobile(
-    core: _effectiveCore,
-    showTimeFrame: config.showTimeFrameSelector,
-    showMetric: config.showMetricSelector,
-    showSector: config.showSectorSelector,
-    showMarketCap: config.showMarketCapSelector,
-    showLayout: config.showLayoutSelector,
-    primaryColor: widget.primaryColor,
-    title: widget.title,
-    showResetButton: widget.showResetButton,
-    compactMode: layout == SelectorLayoutType.compact,
-  );
+  ) =>
+      HeatmapSelectorMobile(
+        core: _effectiveCore,
+        showTimeFrame: config.showTimeFrameSelector,
+        showMetric: config.showMetricSelector,
+        showSector: config.showSectorSelector,
+        showMarketCap: config.showMarketCapSelector,
+        showLayout: config.showLayoutSelector,
+        primaryColor: widget.primaryColor,
+        title: widget.title,
+        showResetButton: widget.showResetButton,
+        compactMode: layout == SelectorLayoutType.compact,
+      );
 
   Widget _buildWebSelector(SelectorConfig config, SelectorLayoutType layout) =>
       HeatmapSelectorWeb(
@@ -312,15 +312,16 @@ extension HeatmapSelectorTemplateExtensions on HeatmapSelectorTemplate {
     Color? primaryColor,
     bool showResetButton = true,
     SelectorConfig? config,
-  }) => HeatmapSelectorTemplate(
-    core: core,
-    title: title,
-    primaryColor: primaryColor,
-    showResetButton: showResetButton,
-    config: config ?? SelectorConfig.mobile(),
-    enableAdaptiveLayout: false,
-    forceLayout: SelectorLayoutType.compact,
-  );
+  }) =>
+      HeatmapSelectorTemplate(
+        core: core,
+        title: title,
+        primaryColor: primaryColor,
+        showResetButton: showResetButton,
+        config: config ?? SelectorConfig.mobile(),
+        enableAdaptiveLayout: false,
+        forceLayout: SelectorLayoutType.compact,
+      );
 
   /// Create a web-optimized template
   static HeatmapSelectorTemplate web({
@@ -330,15 +331,16 @@ extension HeatmapSelectorTemplateExtensions on HeatmapSelectorTemplate {
     bool showResetButton = true,
     SelectorConfig? config,
     SelectorLayoutType layout = SelectorLayoutType.expanded,
-  }) => HeatmapSelectorTemplate(
-    core: core,
-    title: title,
-    primaryColor: primaryColor,
-    showResetButton: showResetButton,
-    config: config ?? SelectorConfig.web(),
-    enableAdaptiveLayout: false,
-    forceLayout: layout,
-  );
+  }) =>
+      HeatmapSelectorTemplate(
+        core: core,
+        title: title,
+        primaryColor: primaryColor,
+        showResetButton: showResetButton,
+        config: config ?? SelectorConfig.web(),
+        enableAdaptiveLayout: false,
+        forceLayout: layout,
+      );
 
   /// Create a fully adaptive template that switches based on screen size
   static HeatmapSelectorTemplate adaptive({
@@ -349,13 +351,14 @@ extension HeatmapSelectorTemplateExtensions on HeatmapSelectorTemplate {
     double mobileBreakpoint = 768.0,
     double tabletBreakpoint = 1024.0,
     ValueChanged<SelectorLayoutType>? onLayoutChanged,
-  }) => HeatmapSelectorTemplate(
-    core: core,
-    title: title,
-    primaryColor: primaryColor,
-    showResetButton: showResetButton,
-    mobileBreakpoint: mobileBreakpoint,
-    tabletBreakpoint: tabletBreakpoint,
-    onLayoutChanged: onLayoutChanged,
-  );
+  }) =>
+      HeatmapSelectorTemplate(
+        core: core,
+        title: title,
+        primaryColor: primaryColor,
+        showResetButton: showResetButton,
+        mobileBreakpoint: mobileBreakpoint,
+        tabletBreakpoint: tabletBreakpoint,
+        onLayoutChanged: onLayoutChanged,
+      );
 }

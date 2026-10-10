@@ -1,9 +1,7 @@
-
 import 'package:flutter/material.dart';
 
 import 'package:am_design_system/core/theme/app_colors.dart';
 import 'package:am_design_system/core/theme/app_glassmorphism.dart';
-
 
 /// Glossy gradient button - SIMPLIFIED (no MouseRegion)
 class GlossyButton extends StatelessWidget {
@@ -37,13 +35,14 @@ class GlossyButton extends StatelessWidget {
     // Determine colors
     List<Color> effectiveColors;
     if (colorScheme != null) {
-      effectiveColors = AppGlassmorphism.colorSchemes[colorScheme!] ?? 
-                       AppGlassmorphism.colorSchemes['primary']!;
+      effectiveColors = AppGlassmorphism.colorSchemes[colorScheme!] ??
+          AppGlassmorphism.colorSchemes['primary']!;
     } else {
-      effectiveColors = gradientColors ?? [
-        AppColors.primary,
-        AppColors.primaryLight,
-      ];
+      effectiveColors = gradientColors ??
+          [
+            AppColors.primary,
+            AppColors.primaryLight,
+          ];
     }
 
     return Container(
@@ -74,7 +73,8 @@ class GlossyButton extends StatelessWidget {
         child: GestureDetector(
           onTap: onPressed,
           child: Container(
-            padding: padding ?? const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            padding: padding ??
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             child: isLoading
                 ? const Center(
                     child: SizedBox(
@@ -152,7 +152,8 @@ class GlassButton extends StatelessWidget {
         child: GestureDetector(
           onTap: onPressed,
           child: Container(
-            padding: padding ?? const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            padding: padding ??
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,

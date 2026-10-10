@@ -29,11 +29,15 @@ class IpoDetailsScreen extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.error_outline_rounded, size: 48, color: context.statusError),
+                Icon(Icons.error_outline_rounded,
+                    size: 48, color: context.statusError),
                 const SizedBox(height: 12),
                 Text(
                   'Failed to load IPO details',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: context.textPrimary),
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: context.textPrimary),
                 ),
                 const SizedBox(height: 12),
                 FilledButton(
@@ -102,7 +106,8 @@ class IpoDetailsScreen extends ConsumerWidget {
                         Expanded(
                           child: IpoSubscriptionStatusCard(
                             totalSubscription: ipo.totalSubscription,
-                            eligibleInvestors: ipo.eligibleInvestors ?? const [],
+                            eligibleInvestors:
+                                ipo.eligibleInvestors ?? const [],
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -168,7 +173,8 @@ class IpoDetailsScreen extends ConsumerWidget {
           ),
         ),
         const SizedBox(width: 6),
-        Icon(Icons.chevron_right_rounded, size: 16, color: context.textTertiary),
+        Icon(Icons.chevron_right_rounded,
+            size: 16, color: context.textTertiary),
         const SizedBox(width: 6),
         InkWell(
           onTap: () => Navigator.of(context).pop(),
@@ -182,7 +188,8 @@ class IpoDetailsScreen extends ConsumerWidget {
           ),
         ),
         const SizedBox(width: 6),
-        Icon(Icons.chevron_right_rounded, size: 16, color: context.textTertiary),
+        Icon(Icons.chevron_right_rounded,
+            size: 16, color: context.textTertiary),
         const SizedBox(width: 6),
         Flexible(
           child: Text(

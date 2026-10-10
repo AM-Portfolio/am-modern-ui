@@ -25,12 +25,13 @@ class InvestmentCardConfig {
     List<Widget>? additionalWidgets,
     Widget? customBottomWidget,
     String? currencySymbol,
-  }) => InvestmentCardConfig(
-    onTap: onTap ?? this.onTap,
-    leadingIcon: leadingIcon ?? this.leadingIcon,
-    trailingWidget: trailingWidget ?? this.trailingWidget,
-    additionalWidgets: additionalWidgets ?? this.additionalWidgets,
-    customBottomWidget: customBottomWidget ?? this.customBottomWidget,
-    currencySymbol: currencySymbol ?? this.currencySymbol,
-  );
+  }) =>
+      InvestmentCardConfig(
+        onTap: onTap ?? this.onTap,
+        leadingIcon: leadingIcon ?? this.leadingIcon,
+        trailingWidget: trailingWidget ?? this.trailingWidget,
+        additionalWidgets: additionalWidgets ?? this.additionalWidgets,
+        customBottomWidget: customBottomWidget ?? this.customBottomWidget,
+        currencySymbol: currencySymbol ?? this.currencySymbol,
+      );
 }

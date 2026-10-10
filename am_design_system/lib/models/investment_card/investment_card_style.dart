@@ -37,12 +37,13 @@ class InvestmentCardStyle {
     Color? cardColor,
     CrossAxisAlignment? leftAlignment,
     CrossAxisAlignment? rightAlignment,
-  }) => InvestmentCardStyle(
-    padding: padding ?? this.padding,
-    margin: margin ?? this.margin,
-    borderRadius: borderRadius ?? this.borderRadius,
-    cardColor: cardColor ?? this.cardColor,
-    leftAlignment: leftAlignment ?? this.leftAlignment,
-    rightAlignment: rightAlignment ?? this.rightAlignment,
-  );
+  }) =>
+      InvestmentCardStyle(
+        padding: padding ?? this.padding,
+        margin: margin ?? this.margin,
+        borderRadius: borderRadius ?? this.borderRadius,
+        cardColor: cardColor ?? this.cardColor,
+        leftAlignment: leftAlignment ?? this.leftAlignment,
+        rightAlignment: rightAlignment ?? this.rightAlignment,
+      );
 }

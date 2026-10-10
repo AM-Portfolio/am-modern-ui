@@ -1,13 +1,8 @@
-
 import 'package:flutter/material.dart';
 
 import 'package:am_design_system/core/theme/app_glassmorphism.dart';
 import 'package:am_design_system/core/theme/app_glassmorphism_v2.dart';
 import 'package:am_design_system/core/utils/conditional_mouse_region.dart';
-
-
-
-
 
 /// Premium architecture card matching reference image style
 class ArchitectureCard extends StatefulWidget {
@@ -32,7 +27,8 @@ class ArchitectureCard extends StatefulWidget {
   State<ArchitectureCard> createState() => _ArchitectureCardState();
 }
 
-class _ArchitectureCardState extends State<ArchitectureCard> with SingleTickerProviderStateMixin {
+class _ArchitectureCardState extends State<ArchitectureCard>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _glowAnimation;
@@ -60,8 +56,8 @@ class _ArchitectureCardState extends State<ArchitectureCard> with SingleTickerPr
   }
 
   Color get _accentColor {
-    final colors = AppGlassmorphismV2.colorSchemes[widget.colorScheme] ?? 
-                   AppGlassmorphismV2.colorSchemes['primary']!;
+    final colors = AppGlassmorphismV2.colorSchemes[widget.colorScheme] ??
+        AppGlassmorphismV2.colorSchemes['primary']!;
     return colors[0];
   }
 
@@ -94,7 +90,8 @@ class _ArchitectureCardState extends State<ArchitectureCard> with SingleTickerPr
                 child: Container(
                   padding: const EdgeInsets.all(20),
                   decoration: AppGlassmorphismV2.gradientBorderCard(
-                    borderColors: AppGlassmorphismV2.colorSchemes[widget.colorScheme]!,
+                    borderColors:
+                        AppGlassmorphismV2.colorSchemes[widget.colorScheme]!,
                     borderRadius: 20,
                     isGlowing: true,
                     isDark: isDark,
@@ -138,40 +135,50 @@ class _ArchitectureCardState extends State<ArchitectureCard> with SingleTickerPr
                       const SizedBox(height: 20),
 
                       // Features list
-                      ...widget.features.map((feature) => Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05),
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.check_circle_outline,
-                                color: _accentColor.withOpacity(0.7),
-                                size: 16,
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  feature,
-                                  style: TextStyle(
-                                    color: isDark ? Colors.white.withOpacity(0.9) : Colors.black87.withOpacity(0.8),
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
+                      ...widget.features
+                          .map((feature) => Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 14, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? Colors.white.withOpacity(0.05)
+                                        : Colors.black.withOpacity(0.03),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: isDark
+                                          ? Colors.white.withOpacity(0.1)
+                                          : Colors.black.withOpacity(0.05),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.check_circle_outline,
+                                        color: _accentColor.withOpacity(0.7),
+                                        size: 16,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          feature,
+                                          style: TextStyle(
+                                            color: isDark
+                                                ? Colors.white.withOpacity(0.9)
+                                                : Colors.black87
+                                                    .withOpacity(0.8),
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )).toList(),
+                              ))
+                          .toList(),
 
                       // Badge (like "220 lines" in reference)
                       if (widget.badge != null) ...[
@@ -179,7 +186,8 @@ class _ArchitectureCardState extends State<ArchitectureCard> with SingleTickerPr
                         Align(
                           alignment: Alignment.centerRight,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 6),
                             decoration: AppGlassmorphismV2.glassPill(
                               color: _accentColor,
                               isDark: isDark,
@@ -226,7 +234,7 @@ class InfoLayerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppGlassmorphismV2.colorSchemes[colorScheme]!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return CustomPaint(
       painter: GradientBorderPainter(
         colors: colors,
@@ -268,7 +276,9 @@ class InfoLayerCard extends StatelessWidget {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: isDark ? Colors.white.withOpacity(0.7) : Colors.black54,
+                      color: isDark
+                          ? Colors.white.withOpacity(0.7)
+                          : Colors.black54,
                       fontSize: 13,
                     ),
                   ),

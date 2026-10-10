@@ -26,10 +26,12 @@ class FuturesOpenInterestCard extends ConsumerStatefulWidget {
   const FuturesOpenInterestCard({super.key});
 
   @override
-  ConsumerState<FuturesOpenInterestCard> createState() => _FuturesOpenInterestCardState();
+  ConsumerState<FuturesOpenInterestCard> createState() =>
+      _FuturesOpenInterestCardState();
 }
 
-class _FuturesOpenInterestCardState extends ConsumerState<FuturesOpenInterestCard> {
+class _FuturesOpenInterestCardState
+    extends ConsumerState<FuturesOpenInterestCard> {
   String _selectedMode = 'OI';
   int? _hoverIndex;
 
@@ -92,7 +94,10 @@ class _FuturesOpenInterestCardState extends ConsumerState<FuturesOpenInterestCar
 
     final List<_OiDataPoint> dataPoints = [];
     if (candles.isNotEmpty) {
-      final seed = tradingSymbol.toUpperCase().codeUnits.fold<int>(0, (acc, c) => (acc * 31 + c) & 0x7FFFFFFF);
+      final seed = tradingSymbol
+          .toUpperCase()
+          .codeUnits
+          .fold<int>(0, (acc, c) => (acc * 31 + c) & 0x7FFFFFFF);
       final oiFreq = 0.5 + ((seed % 7) * 0.2);
       final volFreq = 0.7 + ((seed % 11) * 0.18);
       final phase = (seed % 13) * 0.5;
@@ -151,7 +156,8 @@ class _FuturesOpenInterestCardState extends ConsumerState<FuturesOpenInterestCar
     final deltaColor = isPositive ? marketTheme.positive : marketTheme.negative;
 
     final mainValueStr = _formatNumber(currVal);
-    final pChangeStr = '${isPositive ? '+' : ''}${pctChange.toStringAsFixed(2)}%';
+    final pChangeStr =
+        '${isPositive ? '+' : ''}${pctChange.toStringAsFixed(2)}%';
     final subText = 'vs. previous ${_formatNumber(prevVal)}';
 
     final currStr = _formatCompact(currVal);
@@ -181,7 +187,10 @@ class _FuturesOpenInterestCardState extends ConsumerState<FuturesOpenInterestCar
             children: [
               Text(
                 cardTitle,
-                style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16),
               ),
               const SizedBox(width: 6),
               Tooltip(
@@ -190,10 +199,12 @@ class _FuturesOpenInterestCardState extends ConsumerState<FuturesOpenInterestCar
                 decoration: BoxDecoration(
                   color: colors.surface,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: ModuleColors.market.withValues(alpha: 0.6)),
+                  border: Border.all(
+                      color: ModuleColors.market.withValues(alpha: 0.6)),
                 ),
                 textStyle: TextStyle(color: colors.textPrimary, fontSize: 12),
-                child: Icon(Icons.info_outline_rounded, color: colors.textSecondary, size: 16),
+                child: Icon(Icons.info_outline_rounded,
+                    color: colors.textSecondary, size: 16),
               ),
               const Spacer(),
               _buildModeToggle('OI', isOi, colors),
@@ -208,13 +219,22 @@ class _FuturesOpenInterestCardState extends ConsumerState<FuturesOpenInterestCar
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              Text(mainValueStr, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 22)),
+              Text(mainValueStr,
+                  style: TextStyle(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 22)),
               const SizedBox(width: 8),
-              Text(pChangeStr, style: TextStyle(color: deltaColor, fontWeight: FontWeight.bold, fontSize: 14)),
+              Text(pChangeStr,
+                  style: TextStyle(
+                      color: deltaColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14)),
             ],
           ),
           const SizedBox(height: 2),
-          Text(subText, style: TextStyle(color: colors.textSecondary, fontSize: 12)),
+          Text(subText,
+              style: TextStyle(color: colors.textSecondary, fontSize: 12)),
           const SizedBox(height: 10),
 
           // Hover Tooltip Header Badge
@@ -225,11 +245,15 @@ class _FuturesOpenInterestCardState extends ConsumerState<FuturesOpenInterestCar
               decoration: BoxDecoration(
                 color: ModuleColors.market.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: ModuleColors.market.withValues(alpha: 0.3)),
+                border: Border.all(
+                    color: ModuleColors.market.withValues(alpha: 0.3)),
               ),
               child: Text(
                 '${hoveredItem.date} · ${isOi ? 'OI: ${_formatCompact(hoveredItem.oi)}' : 'Vol: ${_formatCompact(hoveredItem.volume)}'} · Close: ₹${hoveredItem.close.toStringAsFixed(2)}',
-                style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w600, fontSize: 11),
+                style: TextStyle(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11),
               ),
             ),
 
@@ -240,7 +264,11 @@ class _FuturesOpenInterestCardState extends ConsumerState<FuturesOpenInterestCar
                 onHover: (event) {
                   final width = constraints.maxWidth - 30;
                   if (width > 0 && dataPoints.isNotEmpty) {
-                    final idx = ((event.localPosition.dx - 30) / width * dataPoints.length).floor().clamp(0, dataPoints.length - 1);
+                    final idx = ((event.localPosition.dx - 30) /
+                            width *
+                            dataPoints.length)
+                        .floor()
+                        .clamp(0, dataPoints.length - 1);
                     if (_hoverIndex != idx) setState(() => _hoverIndex = idx);
                   }
                 },
@@ -272,7 +300,8 @@ class _FuturesOpenInterestCardState extends ConsumerState<FuturesOpenInterestCar
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildLegendItem(isOi ? 'Open Interest' : 'Volume', marketTheme.positive, colors),
+              _buildLegendItem(isOi ? 'Open Interest' : 'Volume',
+                  marketTheme.positive, colors),
               const SizedBox(width: 16),
               _buildLegendItem('Close Price', marketTheme.chartPurple, colors),
             ],
@@ -283,7 +312,8 @@ class _FuturesOpenInterestCardState extends ConsumerState<FuturesOpenInterestCar
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildMetric(isOi ? 'Current OI' : 'Current Vol', currStr, colors),
+              _buildMetric(
+                  isOi ? 'Current OI' : 'Current Vol', currStr, colors),
               _buildMetric(isOi ? 'Previous OI' : 'Prev Vol', prevStr, colors),
               _buildMetric('Change', changeValStr, colors, color: deltaColor),
               _buildMetric('Change %', pChangeStr, colors, color: deltaColor),
@@ -294,7 +324,8 @@ class _FuturesOpenInterestCardState extends ConsumerState<FuturesOpenInterestCar
     );
   }
 
-  Widget _buildModeToggle(String label, bool isSelected, AppColorsTheme colors) {
+  Widget _buildModeToggle(
+      String label, bool isSelected, AppColorsTheme colors) {
     final marketTheme = context.marketTheme;
     return InkWell(
       onTap: () => setState(() {
@@ -322,19 +353,29 @@ class _FuturesOpenInterestCardState extends ConsumerState<FuturesOpenInterestCar
   Widget _buildLegendItem(String label, Color color, AppColorsTheme colors) {
     return Row(
       children: [
-        Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 4),
-        Text(label, style: TextStyle(color: colors.textSecondary, fontSize: 10)),
+        Text(label,
+            style: TextStyle(color: colors.textSecondary, fontSize: 10)),
       ],
     );
   }
 
-  Widget _buildMetric(String label, String val, AppColorsTheme colors, {Color? color}) {
+  Widget _buildMetric(String label, String val, AppColorsTheme colors,
+      {Color? color}) {
     return Column(
       children: [
-        Text(label, style: TextStyle(color: colors.textSecondary, fontSize: 11)),
+        Text(label,
+            style: TextStyle(color: colors.textSecondary, fontSize: 11)),
         const SizedBox(height: 2),
-        Text(val, style: TextStyle(color: color ?? colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 12)),
+        Text(val,
+            style: TextStyle(
+                color: color ?? colors.textPrimary,
+                fontWeight: FontWeight.bold,
+                fontSize: 12)),
       ],
     );
   }
@@ -379,17 +420,19 @@ class _OiDualAxisPainter extends CustomPainter {
 
     if (dataPoints.isEmpty) {
       final tp = TextPainter(
-        text: TextSpan(text: 'Loading dynamic backend OI data...', style: textStyle),
+        text: TextSpan(
+            text: 'Loading dynamic backend OI data...', style: textStyle),
         textDirection: ui.TextDirection.ltr,
       )..layout();
-      tp.paint(canvas, Offset(size.width / 2 - tp.width / 2, size.height / 2 - tp.height / 2));
+      tp.paint(
+          canvas,
+          Offset(
+              size.width / 2 - tp.width / 2, size.height / 2 - tp.height / 2));
       return;
     }
 
-    final maxVal = dataPoints
-        .map((p) => isOi ? p.oi : p.volume)
-        .reduce(max)
-        .toDouble();
+    final maxVal =
+        dataPoints.map((p) => isOi ? p.oi : p.volume).reduce(max).toDouble();
     final safeMax = maxVal > 0 ? maxVal : 100.0;
 
     final yLevels = [
@@ -439,13 +482,17 @@ class _OiDualAxisPainter extends CustomPainter {
             ? ModuleColors.market
             : marketTheme.positive.withValues(alpha: 0.7);
 
-      canvas.drawRect(Rect.fromLTRB(x, chartHeight - h, x + barWidth, chartHeight), barPaint);
+      canvas.drawRect(
+          Rect.fromLTRB(x, chartHeight - h, x + barWidth, chartHeight),
+          barPaint);
 
       if (isHovered) {
         canvas.drawLine(
           Offset(x + barWidth / 2, 0),
           Offset(x + barWidth / 2, chartHeight),
-          Paint()..color = colors.textPrimary.withValues(alpha: 0.4)..strokeWidth = 1,
+          Paint()
+            ..color = colors.textPrimary.withValues(alpha: 0.4)
+            ..strokeWidth = 1,
         );
       }
     }
@@ -454,7 +501,8 @@ class _OiDualAxisPainter extends CustomPainter {
     if (dataPoints.length > 1) {
       final maxClose = dataPoints.map((p) => p.close).reduce(max);
       final minClose = dataPoints.map((p) => p.close).reduce(min);
-      final closeRange = (maxClose - minClose) > 0 ? (maxClose - minClose) : 1.0;
+      final closeRange =
+          (maxClose - minClose) > 0 ? (maxClose - minClose) : 1.0;
 
       final linePaint = Paint()
         ..color = marketTheme.chartPurple

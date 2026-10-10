@@ -27,7 +27,8 @@ class IpoRegistrarCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.people_alt_outlined, size: 18, color: ModuleColors.market),
+              Icon(Icons.people_alt_outlined,
+                  size: 18, color: ModuleColors.market),
               const SizedBox(width: 8),
               Text(
                 'Registrar Details',
@@ -40,52 +41,54 @@ class IpoRegistrarCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 18),
-
           _buildRow(
             context,
             label: 'Name',
             value: registrar?.name ?? 'N/A',
           ),
           const SizedBox(height: 12),
-
           _buildRow(
             context,
             label: 'Contact Person',
             value: registrar?.contactName ?? 'N/A',
           ),
           const SizedBox(height: 12),
-
           _buildClickableRow(
             context,
             label: 'Email',
             value: registrar?.email ?? 'N/A',
             icon: Icons.mail_outline_rounded,
-            onTap: registrar?.email != null ? () => _launch('mailto:${registrar!.email}') : null,
+            onTap: registrar?.email != null
+                ? () => _launch('mailto:${registrar!.email}')
+                : null,
           ),
           const SizedBox(height: 12),
-
           _buildClickableRow(
             context,
             label: 'Contact Number',
             value: registrar?.phone ?? 'N/A',
             icon: Icons.phone_outlined,
-            onTap: registrar?.phone != null ? () => _launch('tel:${registrar!.phone}') : null,
+            onTap: registrar?.phone != null
+                ? () => _launch('tel:${registrar!.phone}')
+                : null,
           ),
           const SizedBox(height: 12),
-
           _buildClickableRow(
             context,
             label: 'Website',
             value: registrar?.websiteUrl ?? 'N/A',
             icon: Icons.open_in_new_rounded,
-            onTap: registrar?.websiteUrl != null ? () => _launch(registrar!.websiteUrl!) : null,
+            onTap: registrar?.websiteUrl != null
+                ? () => _launch(registrar!.websiteUrl!)
+                : null,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildRow(BuildContext context, {required String label, required String value}) {
+  Widget _buildRow(BuildContext context,
+      {required String label, required String value}) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -156,7 +159,9 @@ class IpoRegistrarCard extends StatelessWidget {
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: isLink ? accentColor : context.textPrimary,
-                      decoration: isLink ? TextDecoration.underline : TextDecoration.none,
+                      decoration: isLink
+                          ? TextDecoration.underline
+                          : TextDecoration.none,
                       decorationColor: accentColor,
                     ),
                     maxLines: 1,

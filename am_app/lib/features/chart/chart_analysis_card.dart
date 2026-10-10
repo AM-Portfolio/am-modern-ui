@@ -105,8 +105,8 @@ class _ChartAnalysisCardState extends ConsumerState<ChartAnalysisCard> {
                     style: const TextStyle(fontSize: 12),
                     decoration: InputDecoration(
                       isDense: true,
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 8),
                       hintText: card.mode == ChartCardMode.candle
                           ? 'Symbol…'
                           : 'Add symbol…',
@@ -117,7 +117,8 @@ class _ChartAnalysisCardState extends ConsumerState<ChartAnalysisCard> {
                               child: SizedBox(
                                 width: 12,
                                 height: 12,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
                               ),
                             )
                           : null,
@@ -154,8 +155,7 @@ class _ChartAnalysisCardState extends ConsumerState<ChartAnalysisCard> {
                     ),
                   ],
                   selected: {card.mode},
-                  onSelectionChanged: (s) =>
-                      _ws.setCardMode(card.id, s.first),
+                  onSelectionChanged: (s) => _ws.setCardMode(card.id, s.first),
                 ),
                 if (card.mode == ChartCardMode.candle)
                   PopupMenuButton<ChartIndicatorId>(
@@ -278,8 +278,7 @@ class _ChartAnalysisCardState extends ConsumerState<ChartAnalysisCard> {
             showExpandButton: false,
             showEndValuePills: false,
             preNormalizedPercent: false,
-            onRemoveSeries: (label) =>
-                _ws.removeSymbolFromCard(card.id, label),
+            onRemoveSeries: (label) => _ws.removeSymbolFromCard(card.id, label),
           ),
         ),
       );

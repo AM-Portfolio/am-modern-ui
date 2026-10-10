@@ -14,14 +14,15 @@ class UniversalHeatmapConfigManager {
   static ui_config.HeatmapConfig getBasicConfig({
     String? title,
     bool compactMode = false,
-  }) => ui_config.HeatmapConfig(
-    display: const DisplayConfig(),
-    layout: layout_config.LayoutConfig(
-      compactView: compactMode,
-      customTitle: title,
-    ),
-    selectors: const SelectorConfig(),
-  );
+  }) =>
+      ui_config.HeatmapConfig(
+        display: const DisplayConfig(),
+        layout: layout_config.LayoutConfig(
+          compactView: compactMode,
+          customTitle: title,
+        ),
+        selectors: const SelectorConfig(),
+      );
 
   // Basic initial values for selectors
   static TimeFrame getInitialTimeFrame(InvestmentType investmentType) =>

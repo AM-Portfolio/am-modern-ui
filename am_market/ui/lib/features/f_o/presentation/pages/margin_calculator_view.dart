@@ -9,12 +9,15 @@ class MarginCalculatorView extends ConsumerStatefulWidget {
   const MarginCalculatorView({super.key});
 
   @override
-  ConsumerState<MarginCalculatorView> createState() => _MarginCalculatorViewState();
+  ConsumerState<MarginCalculatorView> createState() =>
+      _MarginCalculatorViewState();
 }
 
 class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
-  final TextEditingController _quantityController = TextEditingController(text: '50');
-  final TextEditingController _priceController = TextEditingController(text: '2203.50');
+  final TextEditingController _quantityController =
+      TextEditingController(text: '50');
+  final TextEditingController _priceController =
+      TextEditingController(text: '2203.50');
   String _selectedType = 'Buy';
   String _selectedProduct = 'NRML';
 
@@ -54,7 +57,8 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
         children: [
           Row(
             children: [
-              Icon(Icons.calculate_rounded, color: ModuleColors.market, size: 20),
+              Icon(Icons.calculate_rounded,
+                  color: ModuleColors.market, size: 20),
               const SizedBox(width: 8),
               Text(
                 'Margin Calculator',
@@ -127,7 +131,8 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              Icon(Icons.arrow_drop_down, color: colors.textSecondary),
+                              Icon(Icons.arrow_drop_down,
+                                  color: colors.textSecondary),
                             ],
                           ),
                         ),
@@ -318,7 +323,8 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(label, style: TextStyle(color: colors.textSecondary, fontSize: 12)),
+        Text(label,
+            style: TextStyle(color: colors.textSecondary, fontSize: 12)),
         const SizedBox(height: 6),
         child,
       ],
@@ -338,9 +344,12 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
         alignment: Alignment.center,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? activeColor.withValues(alpha: 0.2) : Colors.transparent,
+          color: isSelected
+              ? activeColor.withValues(alpha: 0.2)
+              : Colors.transparent,
           border: Border.all(
-            color: isSelected ? activeColor : Colors.grey.withValues(alpha: 0.3),
+            color:
+                isSelected ? activeColor : Colors.grey.withValues(alpha: 0.3),
           ),
           borderRadius: BorderRadius.circular(8),
         ),
@@ -370,14 +379,17 @@ class _MarginCalculatorViewState extends ConsumerState<MarginCalculatorView> {
             ? ModuleColors.market.withValues(alpha: 0.15)
             : colors.surface.withValues(alpha: 0.5),
         border: Border.all(
-          color: isHighlight ? ModuleColors.market : colors.border.withValues(alpha: 0.5),
+          color: isHighlight
+              ? ModuleColors.market
+              : colors.border.withValues(alpha: 0.5),
         ),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(color: colors.textSecondary, fontSize: 12)),
+          Text(label,
+              style: TextStyle(color: colors.textSecondary, fontSize: 12)),
           const SizedBox(height: 8),
           FittedBox(
             fit: BoxFit.scaleDown,

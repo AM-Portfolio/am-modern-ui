@@ -27,7 +27,8 @@ Future<Map<String, dynamic>?> _fetchAndCacheOptionChain(
     String symbol, String? expiryDate, String cacheKey) async {
   try {
     final sdkService = MarketDataSdkService();
-    final result = await sdkService.marketDataApi.getOptionChain(symbol, expiryDate: expiryDate);
+    final result = await sdkService.marketDataApi
+        .getOptionChain(symbol, expiryDate: expiryDate);
     if (result != null && result.isNotEmpty) {
       final cleanSym = symbol.toUpperCase().trim();
       _optionChainCache[cacheKey] = result;
@@ -42,4 +43,3 @@ Future<Map<String, dynamic>?> _fetchAndCacheOptionChain(
     return _optionChainCache[cacheKey];
   }
 }
-

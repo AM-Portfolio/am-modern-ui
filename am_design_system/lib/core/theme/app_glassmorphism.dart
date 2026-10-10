@@ -6,15 +6,19 @@ class AppGlassmorphism {
   // --- Centralized Glassmorphism Tuning (Single Source of Truth) ---
   /// Base surface color for dark mode glassmorphism (deep slate surface).
   static const Color darkGlassBaseColor = Color(0xFF161922);
+
   /// Starting opacity for dark mode glass gradient (solid enough to obscure raw text behind, but frosted).
   static double darkGlassOpacityStart = 0.88;
+
   /// Ending opacity for dark mode glass gradient.
   static double darkGlassOpacityEnd = 0.82;
 
   /// Base surface color for light mode glassmorphism.
   static const Color lightGlassBaseColor = Colors.white;
+
   /// Starting opacity for light mode glass gradient.
   static double lightGlassOpacityStart = 0.92;
+
   /// Ending opacity for light mode glass gradient.
   static double lightGlassOpacityEnd = 0.85;
 
@@ -41,19 +45,25 @@ class AppGlassmorphism {
   }) {
     return BoxDecoration(
       gradient: LinearGradient(
-        colors: gradientColors ?? (isDark ? [
-          darkGlassBaseColor.withOpacity(darkGlassOpacityStart),
-          darkGlassBaseColor.withOpacity(darkGlassOpacityEnd),
-        ] : [
-          lightGlassBaseColor.withOpacity(lightGlassOpacityStart),
-          lightGlassBaseColor.withOpacity(lightGlassOpacityEnd),
-        ]),
+        colors: gradientColors ??
+            (isDark
+                ? [
+                    darkGlassBaseColor.withOpacity(darkGlassOpacityStart),
+                    darkGlassBaseColor.withOpacity(darkGlassOpacityEnd),
+                  ]
+                : [
+                    lightGlassBaseColor.withOpacity(lightGlassOpacityStart),
+                    lightGlassBaseColor.withOpacity(lightGlassOpacityEnd),
+                  ]),
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
       borderRadius: BorderRadius.circular(borderRadius),
       border: Border.all(
-        color: borderColor ?? (isDark ? Colors.white.withOpacity(0.12) : Colors.black.withOpacity(0.08)),
+        color: borderColor ??
+            (isDark
+                ? Colors.white.withOpacity(0.12)
+                : Colors.black.withOpacity(0.08)),
         width: borderWidth,
       ),
       boxShadow: [
@@ -80,7 +90,7 @@ class AppGlassmorphism {
     bool isGlowing = true,
   }) {
     final colors = colorSchemes[colorScheme] ?? colorSchemes['primary']!;
-    
+
     return BoxDecoration(
       gradient: LinearGradient(
         colors: [
@@ -278,11 +288,12 @@ class AppGlassmorphism {
     AlignmentGeometry? end,
   }) {
     return LinearGradient(
-      colors: colors ?? [
-        const Color(0xFF6C5DD3),
-        const Color(0xFFFF9F43),
-        const Color(0xFF00D2D3),
-      ],
+      colors: colors ??
+          [
+            const Color(0xFF6C5DD3),
+            const Color(0xFFFF9F43),
+            const Color(0xFF00D2D3),
+          ],
       begin: begin ?? Alignment.topLeft,
       end: end ?? Alignment.bottomRight,
       stops: const [0.0, 0.5, 1.0],
@@ -317,6 +328,7 @@ class AppGlassmorphism {
       ],
     );
   }
+
   // Dropdown decoration with glass effect
   static BoxDecoration dropdownDecoration(BuildContext context) {
     return BoxDecoration(

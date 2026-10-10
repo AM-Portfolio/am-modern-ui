@@ -93,7 +93,7 @@ class _IndicatorCandleChartState extends State<IndicatorCandleChart> {
               series: {
                 'rsi': panes['rsi']!,
               },
-              colors: { 'rsi': theme.colorScheme.primary },
+              colors: {'rsi': theme.colorScheme.primary},
               fixedMin: 0,
               fixedMax: 100,
               guideLines: const [30, 70],
@@ -269,8 +269,7 @@ class _CandleWithOverlayPainter extends CustomPainter {
         text: TextSpan(text: label, style: tpStyle),
         textDirection: TextDirection.ltr,
       )..layout(maxWidth: leftPad - 4);
-      tp.paint(
-          canvas, Offset(leftPad - 4 - tp.width, yFor(v) - tp.height / 2));
+      tp.paint(canvas, Offset(leftPad - 4 - tp.width, yFor(v) - tp.height / 2));
     }
 
     final n = candles.length;

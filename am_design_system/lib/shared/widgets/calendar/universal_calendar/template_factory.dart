@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 import 'package:am_design_system/core/utils/common_logger.dart';
 import '../year_calendar/calendar_types.dart';
 import 'config.dart';
@@ -17,11 +16,12 @@ class UniversalCalendarTemplateFactory {
     required CalendarConfig config,
     required DateSelection currentSelection,
     required Function(DateSelection) onSelectionChanged,
-  }) => CalendarFilterTemplate(
-    config: config.filterConfig,
-    currentSelection: currentSelection,
-    onSelectionChanged: onSelectionChanged,
-  );
+  }) =>
+      CalendarFilterTemplate(
+        config: config.filterConfig,
+        currentSelection: currentSelection,
+        onSelectionChanged: onSelectionChanged,
+      );
 
   /// Create display template for visual presentation
   static Widget createDisplayTemplate({
@@ -69,7 +69,9 @@ class UniversalCalendarTemplateFactory {
 
     // If showing year calendar, return it directly without layout wrapper
     if (showYearCalendar && yearCalendarData != null && currentYear != null) {
-      CommonLogger.info('Returning year calendar view directly (no layout wrapper)', tag: 'TemplateFactory');
+      CommonLogger.info(
+          'Returning year calendar view directly (no layout wrapper)',
+          tag: 'TemplateFactory');
       return createDisplayTemplate(
         config: config,
         currentSelection: currentSelection,
@@ -82,7 +84,8 @@ class UniversalCalendarTemplateFactory {
     // Create display template based on configuration
     final Widget displayTemplate;
 
-    CommonLogger.info('Using filter template view with layout wrapper', tag: 'TemplateFactory');
+    CommonLogger.info('Using filter template view with layout wrapper',
+        tag: 'TemplateFactory');
     // Create filter template for traditional date selection
     final filterTemplate = createFilterTemplate(
       config: config,
@@ -119,11 +122,16 @@ class UniversalCalendarTemplateFactory {
     int? currentYear,
     bool showYearCalendar = false,
   }) {
-    CommonLogger.debug('Creating calendar widget - showYearCalendar: $showYearCalendar', tag: 'TemplateFactory');
+    CommonLogger.debug(
+        'Creating calendar widget - showYearCalendar: $showYearCalendar',
+        tag: 'TemplateFactory');
 
-    final currentSelection =
-        initialSelection ??
-        const DateSelection(startDate: null, endDate: null, description: 'All Time', filterType: DateFilterMode.quick);
+    final currentSelection = initialSelection ??
+        const DateSelection(
+            startDate: null,
+            endDate: null,
+            description: 'All Time',
+            filterType: DateFilterMode.quick);
 
     return createLayoutTemplate(
       context: context,
@@ -139,7 +147,8 @@ class UniversalCalendarTemplateFactory {
   }
 
   /// Helper method to get template type based on screen size and config
-  static CalendarTemplateType getAdaptiveTemplateType(BuildContext context, CalendarConfig config) {
+  static CalendarTemplateType getAdaptiveTemplateType(
+      BuildContext context, CalendarConfig config) {
     final screenWidth = MediaQuery.of(context).size.width;
 
     // If explicitly set, use that
@@ -149,7 +158,9 @@ class UniversalCalendarTemplateFactory {
 
     // Adaptive logic
     if (screenWidth < 600) {
-      return config.displayConfig.compactMode ? CalendarTemplateType.minimal : CalendarTemplateType.compact;
+      return config.displayConfig.compactMode
+          ? CalendarTemplateType.minimal
+          : CalendarTemplateType.compact;
     } else if (screenWidth < 900) {
       return CalendarTemplateType.compact;
     } else {

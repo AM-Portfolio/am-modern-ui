@@ -15,13 +15,19 @@ class IndicesLoadingSkeleton extends StatelessWidget {
           return Card(
             margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
             child: ListTile(
-              leading: SkeletonBox(width: 40, height: 40, borderRadius: BorderRadius.circular(8)),
+              leading: SkeletonBox(
+                  width: 40,
+                  height: 40,
+                  borderRadius: BorderRadius.circular(8)),
               title: const SkeletonLine(width: double.infinity, height: 16),
               subtitle: const Padding(
                 padding: EdgeInsets.only(top: 8),
                 child: SkeletonLine(width: 100, height: 12),
               ),
-              trailing: SkeletonBox(width: 60, height: 20, borderRadius: BorderRadius.circular(4)),
+              trailing: SkeletonBox(
+                  width: 60,
+                  height: 20,
+                  borderRadius: BorderRadius.circular(4)),
             ),
           );
         },

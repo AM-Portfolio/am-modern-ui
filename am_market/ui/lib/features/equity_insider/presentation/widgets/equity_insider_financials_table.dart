@@ -32,8 +32,10 @@ class FinancialComparisonSection extends StatelessWidget {
   final bool tableOnly;
   final bool balanceOnly;
   final bool takeawaysOnly;
+
   /// Chart-bottom strip: tighter padding + readable column widths.
   final bool dense;
+
   /// When set, only these balance-sheet row labels are shown.
   final Set<String>? balanceVisibleLabels;
 
@@ -113,7 +115,9 @@ class FinancialComparisonSection extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  dense ? 'Performance Summary' : 'Financial Performance Summary',
+                  dense
+                      ? 'Performance Summary'
+                      : 'Financial Performance Summary',
                   style: TextStyle(
                     fontSize: dense ? 11 : 12,
                     fontWeight: FontWeight.w600,
@@ -165,14 +169,17 @@ class FinancialComparisonSection extends StatelessWidget {
               _tableHeaderCell(context, 'Metric', isFirst: true),
               if (showRevenue) ...[
                 _tableMetricCell(context, 'Revenue'),
-                _tableMetricCell(context, isQuarterly ? 'QoQ Rev %' : 'YoY Rev %', isSub: true),
+                _tableMetricCell(
+                    context, isQuarterly ? 'QoQ Rev %' : 'YoY Rev %',
+                    isSub: true),
               ],
               if (showPAT) ...[
                 _tableMetricCell(context, 'PAT'),
-                _tableMetricCell(context, isQuarterly ? 'QoQ PAT %' : 'YoY PAT %', isSub: true),
+                _tableMetricCell(
+                    context, isQuarterly ? 'QoQ PAT %' : 'YoY PAT %',
+                    isSub: true),
               ],
-              if (showPatMargin)
-                _tableMetricCell(context, 'PAT Margin %'),
+              if (showPatMargin) _tableMetricCell(context, 'PAT Margin %'),
               _tableMetricCell(context, 'Operating Profit'),
             ],
           ),
@@ -193,8 +200,9 @@ class FinancialComparisonSection extends StatelessWidget {
                   : null;
 
               final pat = _num(curr, 'profitAfterTax', 'netIncome');
-              final prevPat =
-                  prev != null ? _num(prev, 'profitAfterTax', 'netIncome') : null;
+              final prevPat = prev != null
+                  ? _num(prev, 'profitAfterTax', 'netIncome')
+                  : null;
               final patGrowth = prevPat != null && prevPat != 0 && pat != null
                   ? ((pat - prevPat) / prevPat.abs()) * 100
                   : null;
@@ -263,8 +271,9 @@ class FinancialComparisonSection extends StatelessWidget {
       );
     }
 
-    final periods =
-        recent.map((s) => _formatPeriod((s['period'] ?? '').toString())).toList();
+    final periods = recent
+        .map((s) => _formatPeriod((s['period'] ?? '').toString()))
+        .toList();
 
     const rows = <(String label, List<String> keys)>[
       ('Total Assets', ['totalAssets']),
@@ -450,7 +459,8 @@ class FinancialComparisonSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.auto_awesome_rounded, size: 14, color: ModuleColors.market),
+              Icon(Icons.auto_awesome_rounded,
+                  size: 14, color: ModuleColors.market),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
@@ -509,7 +519,8 @@ class FinancialComparisonSection extends StatelessWidget {
           final chunk = metrics.skip(i).take(cols).toList();
           rows.add(
             Padding(
-              padding: EdgeInsets.only(bottom: i + cols < metrics.length ? 8 : 0),
+              padding:
+                  EdgeInsets.only(bottom: i + cols < metrics.length ? 8 : 0),
               child: Row(
                 children: [
                   for (var j = 0; j < chunk.length; j++) ...[
@@ -687,7 +698,8 @@ class FinancialComparisonSection extends StatelessWidget {
     // 1. Revenue
     if (recent.isNotEmpty) {
       final currRev = _num(recent[0], 'revenue', 'totalRevenue');
-      final prevRev = recent.length > 1 ? _num(recent[1], 'revenue', 'totalRevenue') : null;
+      final prevRev =
+          recent.length > 1 ? _num(recent[1], 'revenue', 'totalRevenue') : null;
       if (currRev != null) {
         double? delta;
         if (prevRev != null && prevRev != 0) {
@@ -697,15 +709,20 @@ class FinancialComparisonSection extends StatelessWidget {
           icon: Icons.account_balance_wallet_rounded,
           iconColor: context.marketTheme.positive,
           label: 'Revenue',
-          valueText: '₹ ${NumberFormat('#,##,##0', 'en_IN').format(currRev.toInt())} Cr',
-          deltaText: delta != null ? '${delta.abs().toStringAsFixed(1)}% $periodTag' : null,
+          valueText:
+              '₹ ${NumberFormat('#,##,##0', 'en_IN').format(currRev.toInt())} Cr',
+          deltaText: delta != null
+              ? '${delta.abs().toStringAsFixed(1)}% $periodTag'
+              : null,
           isPositive: (delta ?? 0) >= 0,
         ));
       }
 
       // 2. PAT
       final currPat = _num(recent[0], 'profitAfterTax', 'netIncome');
-      final prevPat = recent.length > 1 ? _num(recent[1], 'profitAfterTax', 'netIncome') : null;
+      final prevPat = recent.length > 1
+          ? _num(recent[1], 'profitAfterTax', 'netIncome')
+          : null;
       if (currPat != null) {
         double? delta;
         if (prevPat != null && prevPat != 0) {
@@ -715,8 +732,11 @@ class FinancialComparisonSection extends StatelessWidget {
           icon: Icons.payments_rounded,
           iconColor: ModuleColors.market,
           label: 'PAT',
-          valueText: '₹ ${NumberFormat('#,##,##0', 'en_IN').format(currPat.toInt())} Cr',
-          deltaText: delta != null ? '${delta.abs().toStringAsFixed(1)}% $periodTag' : null,
+          valueText:
+              '₹ ${NumberFormat('#,##,##0', 'en_IN').format(currPat.toInt())} Cr',
+          deltaText: delta != null
+              ? '${delta.abs().toStringAsFixed(1)}% $periodTag'
+              : null,
           isPositive: (delta ?? 0) >= 0,
         ));
 
@@ -733,7 +753,9 @@ class FinancialComparisonSection extends StatelessWidget {
             iconColor: context.marketTheme.chartPurple,
             label: 'PAT Margin',
             valueText: '${currMargin.toStringAsFixed(1)}%',
-            deltaText: marginPp != null ? '${marginPp.abs().toStringAsFixed(1)} pp $periodTag' : null,
+            deltaText: marginPp != null
+                ? '${marginPp.abs().toStringAsFixed(1)} pp $periodTag'
+                : null,
             isPositive: (marginPp ?? 0) >= 0,
           ));
         }
@@ -744,7 +766,8 @@ class FinancialComparisonSection extends StatelessWidget {
     final recentBal = balanceSheets.take(2).toList();
     if (recentBal.isNotEmpty) {
       final currAssets = _num(recentBal[0], 'totalAssets');
-      final prevAssets = recentBal.length > 1 ? _num(recentBal[1], 'totalAssets') : null;
+      final prevAssets =
+          recentBal.length > 1 ? _num(recentBal[1], 'totalAssets') : null;
       if (currAssets != null) {
         double? assetDelta;
         if (prevAssets != null && prevAssets != 0) {
@@ -754,14 +777,19 @@ class FinancialComparisonSection extends StatelessWidget {
           icon: Icons.domain_rounded,
           iconColor: Colors.indigoAccent,
           label: 'Total Assets',
-          valueText: '₹ ${NumberFormat('#,##,##0', 'en_IN').format(currAssets.toInt())} Cr',
-          deltaText: assetDelta != null ? '${assetDelta.abs().toStringAsFixed(1)}% YoY' : null,
+          valueText:
+              '₹ ${NumberFormat('#,##,##0', 'en_IN').format(currAssets.toInt())} Cr',
+          deltaText: assetDelta != null
+              ? '${assetDelta.abs().toStringAsFixed(1)}% YoY'
+              : null,
           isPositive: (assetDelta ?? 0) >= 0,
         ));
       }
 
       final currEquity = _num(recentBal[0], 'equityCapital', 'totalEquity');
-      final prevEquity = recentBal.length > 1 ? _num(recentBal[1], 'equityCapital', 'totalEquity') : null;
+      final prevEquity = recentBal.length > 1
+          ? _num(recentBal[1], 'equityCapital', 'totalEquity')
+          : null;
       if (currEquity != null) {
         double? equityDelta;
         if (prevEquity != null && prevEquity != 0) {
@@ -771,8 +799,11 @@ class FinancialComparisonSection extends StatelessWidget {
           icon: Icons.layers_rounded,
           iconColor: Colors.cyanAccent,
           label: 'Equity',
-          valueText: '₹ ${NumberFormat('#,##,##0', 'en_IN').format(currEquity.toInt())} Cr',
-          deltaText: equityDelta != null ? '${equityDelta.abs().toStringAsFixed(1)}% YoY' : null,
+          valueText:
+              '₹ ${NumberFormat('#,##,##0', 'en_IN').format(currEquity.toInt())} Cr',
+          deltaText: equityDelta != null
+              ? '${equityDelta.abs().toStringAsFixed(1)}% YoY'
+              : null,
           isPositive: (equityDelta ?? 0) >= 0,
         ));
       }
@@ -781,7 +812,8 @@ class FinancialComparisonSection extends StatelessWidget {
     return list;
   }
 
-  Widget _tableHeaderCell(BuildContext context, String text, {bool isFirst = false}) {
+  Widget _tableHeaderCell(BuildContext context, String text,
+      {bool isFirst = false}) {
     return Container(
       height: 28,
       alignment: isFirst ? Alignment.centerLeft : Alignment.center,
@@ -799,7 +831,8 @@ class FinancialComparisonSection extends StatelessWidget {
     );
   }
 
-  Widget _tableMetricCell(BuildContext context, String text, {bool isSub = false}) {
+  Widget _tableMetricCell(BuildContext context, String text,
+      {bool isSub = false}) {
     return Container(
       height: 26,
       alignment: Alignment.centerLeft,
@@ -836,7 +869,8 @@ class FinancialComparisonSection extends StatelessWidget {
       return _tableDataCell(context, '---');
     }
     final isPos = growth >= 0;
-    final color = isPos ? context.marketTheme.positive : context.marketTheme.negative;
+    final color =
+        isPos ? context.marketTheme.positive : context.marketTheme.negative;
     final text = '${isPos ? '+' : ''}${growth.toStringAsFixed(1)}%';
 
     return Container(
@@ -861,9 +895,13 @@ class FinancialComparisonSection extends StatelessWidget {
       if (v == null) {
         // Match common Title Case variations
         for (final entry in lineItems.entries) {
-          final k = entry.key.toString().replaceAll(RegExp(r'[\s_-]'), '').toLowerCase();
+          final k = entry.key
+              .toString()
+              .replaceAll(RegExp(r'[\s_-]'), '')
+              .toLowerCase();
           final target1 = key.replaceAll(RegExp(r'[\s_-]'), '').toLowerCase();
-          final target2 = fallback?.replaceAll(RegExp(r'[\s_-]'), '').toLowerCase();
+          final target2 =
+              fallback?.replaceAll(RegExp(r'[\s_-]'), '').toLowerCase();
           if (k == target1 || (target2 != null && k == target2)) {
             v = entry.value;
             break;

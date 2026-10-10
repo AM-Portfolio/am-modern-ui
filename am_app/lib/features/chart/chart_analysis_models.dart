@@ -31,8 +31,7 @@ class ChartCardState {
   final MultiSeriesChartData compareData;
   final List<CommonCandlePoint> candles;
 
-  String get primarySymbol =>
-      symbols.isEmpty ? 'NIFTY 50' : symbols.first;
+  String get primarySymbol => symbols.isEmpty ? 'NIFTY 50' : symbols.first;
 
   ChartCardState copyWith({
     ChartCardMode? mode,

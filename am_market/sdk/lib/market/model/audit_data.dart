@@ -48,21 +48,24 @@ class AuditData {
   String? updatedBy;
 
   @override
-  bool operator ==(Object other) => identical(this, other) || other is AuditData &&
-    other.updatedAt == updatedAt &&
-    other.createdAt == createdAt &&
-    other.createdBy == createdBy &&
-    other.updatedBy == updatedBy;
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AuditData &&
+          other.updatedAt == updatedAt &&
+          other.createdAt == createdAt &&
+          other.createdBy == createdBy &&
+          other.updatedBy == updatedBy;
 
   @override
   int get hashCode =>
-    (updatedAt == null ? 0 : updatedAt!.hashCode) +
-    (createdAt == null ? 0 : createdAt!.hashCode) +
-    (createdBy == null ? 0 : createdBy!.hashCode) +
-    (updatedBy == null ? 0 : updatedBy!.hashCode);
+      (updatedAt == null ? 0 : updatedAt!.hashCode) +
+      (createdAt == null ? 0 : createdAt!.hashCode) +
+      (createdBy == null ? 0 : createdBy!.hashCode) +
+      (updatedBy == null ? 0 : updatedBy!.hashCode);
 
   @override
-  String toString() => 'AuditData[updatedAt=$updatedAt, createdAt=$createdAt, createdBy=$createdBy, updatedBy=$updatedBy]';
+  String toString() =>
+      'AuditData[updatedAt=$updatedAt, createdAt=$createdAt, createdBy=$createdBy, updatedBy=$updatedBy]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -100,8 +103,10 @@ class AuditData {
       // Note 2: this code is stripped in release mode!
       assert(() {
         requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "AuditData[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "AuditData[$key]" has a null value in JSON.');
+          assert(json.containsKey(key),
+              'Required key "AuditData[$key]" is missing from JSON.');
+          assert(json[key] != null,
+              'Required key "AuditData[$key]" has a null value in JSON.');
         });
         return true;
       }());
@@ -116,7 +121,10 @@ class AuditData {
     return null;
   }
 
-  static List<AuditData> listFromJson(dynamic json, {bool growable = false,}) {
+  static List<AuditData> listFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final result = <AuditData>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -132,7 +140,7 @@ class AuditData {
   static Map<String, AuditData> mapFromJson(dynamic json) {
     final map = <String, AuditData>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); 
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
         final value = AuditData.fromJson(entry.value);
         if (value != null) {
@@ -144,19 +152,23 @@ class AuditData {
   }
 
   // maps a json object with a list of AuditData-objects as value to a dart map
-  static Map<String, List<AuditData>> mapListFromJson(dynamic json, {bool growable = false,}) {
+  static Map<String, List<AuditData>> mapListFromJson(
+    dynamic json, {
+    bool growable = false,
+  }) {
     final map = <String, List<AuditData>>{};
     if (json is Map && json.isNotEmpty) {
       json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        map[entry.key] = AuditData.listFromJson(entry.value, growable: growable,);
+        map[entry.key] = AuditData.listFromJson(
+          entry.value,
+          growable: growable,
+        );
       }
     }
     return map;
   }
 
   /// The list of required keys that must be present in a JSON.
-  static const requiredKeys = <String>{
-  };
+  static const requiredKeys = <String>{};
 }
-

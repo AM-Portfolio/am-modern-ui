@@ -66,7 +66,8 @@ class IpoOverviewHeaderCard extends StatelessWidget {
                             if (ipo.symbol != null && ipo.symbol!.isNotEmpty)
                               _buildTag(context, ipo.symbol!),
                             IpoBoardBadge(issueType: ipo.issueType),
-                            if (ipo.industry != null && ipo.industry!.isNotEmpty)
+                            if (ipo.industry != null &&
+                                ipo.industry!.isNotEmpty)
                               _buildTag(context, ipo.industry!),
                           ],
                         ),
@@ -146,13 +147,17 @@ class IpoOverviewHeaderCard extends StatelessWidget {
                   context,
                   icon: Icons.lock_outline_rounded,
                   label: 'Cut-off Price',
-                  value: ipo.cutOffPrice != null ? '₹${ipo.cutOffPrice!.toStringAsFixed(0)}' : '₹--',
+                  value: ipo.cutOffPrice != null
+                      ? '₹${ipo.cutOffPrice!.toStringAsFixed(0)}'
+                      : '₹--',
                 ),
                 _buildParamItem(
                   context,
                   icon: Icons.currency_rupee_rounded,
                   label: 'Face Value',
-                  value: ipo.faceValue != null ? '₹${ipo.faceValue!.toStringAsFixed(0)}' : '₹--',
+                  value: ipo.faceValue != null
+                      ? '₹${ipo.faceValue!.toStringAsFixed(0)}'
+                      : '₹--',
                 ),
                 _buildParamItem(
                   context,
@@ -166,7 +171,8 @@ class IpoOverviewHeaderCard extends StatelessWidget {
                 return Wrap(
                   spacing: 16,
                   runSpacing: 14,
-                  children: items.map((w) => SizedBox(width: 140, child: w)).toList(),
+                  children:
+                      items.map((w) => SizedBox(width: 140, child: w)).toList(),
                 );
               }
 
@@ -242,10 +248,12 @@ class IpoOverviewHeaderCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: context.colors.statusSuccess.withValues(alpha: isDark ? 0.18 : 0.12),
+            color: context.colors.statusSuccess
+                .withValues(alpha: isDark ? 0.18 : 0.12),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: context.colors.statusSuccess.withValues(alpha: isDark ? 0.45 : 0.35),
+              color: context.colors.statusSuccess
+                  .withValues(alpha: isDark ? 0.45 : 0.35),
               width: 1,
             ),
           ),
@@ -334,15 +342,19 @@ class IpoOverviewHeaderCard extends StatelessWidget {
 
   String _getLegalName(String? name) {
     if (name == null || name.isEmpty) return 'Company Limited';
-    if (!name.toLowerCase().contains('limited') && !name.toLowerCase().contains('ltd')) {
+    if (!name.toLowerCase().contains('limited') &&
+        !name.toLowerCase().contains('ltd')) {
       return '$name Limited';
     }
     return name;
   }
 
   String _getInitials(String name) {
-    final clean = name.replaceAll(RegExp(r'(IPO|Limited|Ltd|\.)', caseSensitive: false), '').trim();
-    final parts = clean.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    final clean = name
+        .replaceAll(RegExp(r'(IPO|Limited|Ltd|\.)', caseSensitive: false), '')
+        .trim();
+    final parts =
+        clean.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
     if (parts.isEmpty) return 'IP';
     if (parts.length == 1) {
       return parts[0].substring(0, parts[0].length.clamp(1, 3)).toUpperCase();
@@ -386,7 +398,8 @@ class IpoOverviewHeaderCard extends StatelessWidget {
     try {
       final end = DateTime.parse(dateStr);
       final now = DateTime.now();
-      final diff = end.difference(DateTime(now.year, now.month, now.day)).inDays;
+      final diff =
+          end.difference(DateTime(now.year, now.month, now.day)).inDays;
       if (diff < 0) return 'Closed';
       if (diff == 0) return 'Today';
       if (diff == 1) return '1 day';
@@ -399,7 +412,20 @@ class IpoOverviewHeaderCard extends StatelessWidget {
   String _formatShortDate(String dateStr) {
     try {
       final date = DateTime.parse(dateStr);
-      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      final months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
+      ];
       return '${date.day} ${months[date.month - 1]} ${date.year}';
     } catch (_) {
       return dateStr;

@@ -114,9 +114,8 @@ class HoldingsDisplayTemplate extends StatelessWidget {
     // Filter holdings by sector if specified
     var filteredHoldings = holdings;
     if (sectorFilter != null && sectorFilter != 'All') {
-      filteredHoldings = holdings
-          .where((holding) => holding.sector == sectorFilter)
-          .toList();
+      filteredHoldings =
+          holdings.where((holding) => holding.sector == sectorFilter).toList();
     }
 
     return LayoutBuilder(
