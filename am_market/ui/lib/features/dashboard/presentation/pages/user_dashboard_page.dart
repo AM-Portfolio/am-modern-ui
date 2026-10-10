@@ -1558,14 +1558,6 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                         ],
                       ),
                     ),
-                    right: SizedBox(
-                      height: isMobile ? 320 : 360,
-                      child: TopMoversWidgetV2(
-                        gainers: topGainers,
-                        losers: topLosers,
-                        isLoading: isLoadingMovers,
-                        error: moversError,
-                      ),
                       right: SizedBox(
                         height: isMobile ? 320 : 360,
                         child: TopMoversWidgetV2(
