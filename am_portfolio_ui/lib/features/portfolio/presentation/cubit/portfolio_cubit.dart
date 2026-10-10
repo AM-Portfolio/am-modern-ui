@@ -959,8 +959,10 @@ class PortfolioCubit extends Cubit<PortfolioState> {
           investmentValue: dto.investmentValue,
           totalGainLoss: newTotalGainLoss,
           totalGainLossPercentage: newTotalGainLossPercentage,
-          todayChange: dto.todayGainLoss,
-          todayChangePercentage: dto.todayGainLossPercentage,
+          // Preserve prior day P&L when socket omits unavailable baselines.
+          todayChange: dto.todayGainLoss ?? currentState.summary.todayChange,
+          todayChangePercentage:
+              dto.todayGainLossPercentage ?? currentState.summary.todayChangePercentage,
           lastUpdated: DateTime.now(),
         );
 

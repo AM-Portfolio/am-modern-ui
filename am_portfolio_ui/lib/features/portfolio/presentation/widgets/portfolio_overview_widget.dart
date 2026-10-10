@@ -748,28 +748,39 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
     final summaryToUse = state.summary;
     final selectedTimeFrame = ref.read(appTimeFrameProvider);
 
-    final double periodReturn = selectedTimeFrame.code == '1d' ? summaryToUse.todayChange : summaryToUse.totalGainLoss;
-    final double periodReturnPct = selectedTimeFrame.code == '1d' ? summaryToUse.todayChangePercentage : summaryToUse.totalGainLossPercentage;
+    final bool isOneDay = selectedTimeFrame == ds.TimeFrame.oneDay
+        || selectedTimeFrame.code.toUpperCase() == '1D';
+    final double? periodReturn = isOneDay
+        ? summaryToUse.todayChange
+        : summaryToUse.totalGainLoss;
+    final double? periodReturnPct = isOneDay
+        ? summaryToUse.todayChangePercentage
+        : summaryToUse.totalGainLossPercentage;
     final String periodLabel = selectedTimeFrame.code == 'all' ? 'total' : selectedTimeFrame.displayName;
+    final bool periodUnavailable = periodReturn == null;
+    final bool todayUnavailable = !summaryToUse.hasTodayChange;
+    final double todayChange = summaryToUse.todayChange ?? 0;
+    final double todayChangePct = summaryToUse.todayChangePercentage ?? 0;
 
     final modulePink = ds.ModuleColors.portfolio;
 
     return [
       PortfolioMetricCard(
         title: 'Total Return',
-        value: _formatCurrency(periodReturn),
-        subtitle:
-            '${periodReturnPct >= 0 ? "+" : ""}${periodReturnPct.toStringAsFixed(2)}% in $periodLabel',
-        accentColor: periodReturn == 0
+        value: periodUnavailable ? '—' : _formatCurrency(periodReturn),
+        subtitle: periodUnavailable
+            ? 'Unavailable in $periodLabel'
+            : '${periodReturnPct! >= 0 ? "+" : ""}${periodReturnPct.toStringAsFixed(2)}% in $periodLabel',
+        accentColor: periodUnavailable || periodReturn == 0
             ? context.statusNeutral
             : (periodReturn > 0
                 ? context.marketPositive
                 : context.marketNegative),
         chromeColor: modulePink,
-        icon: periodReturn >= 0
+        icon: periodUnavailable || periodReturn >= 0
             ? Icons.trending_up_rounded
             : Icons.trending_down_rounded,
-        isPositive: periodReturn == 0
+        isPositive: periodUnavailable || periodReturn == 0
             ? null
             : periodReturn > 0,
         compact: compact,
@@ -778,24 +789,27 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
       ),
       PortfolioMetricCard(
         title: "Today's P&L",
-        value: _formatCurrency(summaryToUse.todayChange),
-        subtitle:
-            '${summaryToUse.todayChangePercentage >= 0 ? "+" : ""}${summaryToUse.todayChangePercentage.toStringAsFixed(2)}% today',
-        accentColor: summaryToUse.todayChange == 0
+        value: todayUnavailable ? '—' : _formatCurrency(todayChange),
+        subtitle: todayUnavailable
+            ? 'Unavailable · ${summaryToUse.todayAsOfLabel}'
+            : '${todayChangePct >= 0 ? "+" : ""}${todayChangePct.toStringAsFixed(2)}% ${summaryToUse.todayAsOfLabel}',
+        accentColor: todayUnavailable || todayChange == 0
             ? context.statusNeutral
-            : (summaryToUse.todayChange > 0
+            : (todayChange > 0
                 ? context.marketPositive
                 : context.marketNegative),
         chromeColor: modulePink,
-        icon: summaryToUse.todayChange >= 0
+        icon: todayUnavailable || todayChange >= 0
             ? Icons.keyboard_double_arrow_up_rounded
             : Icons.keyboard_double_arrow_down_rounded,
-        isPositive: summaryToUse.todayChange == 0
+        isPositive: todayUnavailable || todayChange == 0
             ? null
-            : summaryToUse.todayChange > 0,
+            : todayChange > 0,
         compact: compact,
         glowBorder: glowBorder,
-        tooltip: "Unrealized profit or loss for today",
+        tooltip: todayUnavailable
+            ? 'Day P&L unavailable (missing prior session close)'
+            : "Unrealized profit or loss for the last cash session",
       ),
       PortfolioMetricCard(
         title: 'Total Balance',

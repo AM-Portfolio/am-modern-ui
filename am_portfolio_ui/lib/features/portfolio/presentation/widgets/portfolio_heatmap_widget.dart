@@ -529,9 +529,15 @@ class _PortfolioHeatmapWidgetState
         if (portfolioState is PortfolioLoaded) {
           final summary = portfolioState.summary;
           totalValue = StringUtils.formatCurrencyExact(summary.totalValue);
-          todayChange = StringUtils.formatCurrencyExact(summary.todayChange);
-          todayChangePct = summary.todayChangePercentage;
-          isTodayPositive = summary.isTodayPositive;
+          if (summary.hasTodayChange) {
+            todayChange = StringUtils.formatCurrencyExact(summary.todayChange!);
+            todayChangePct = summary.todayChangePercentage ?? 0;
+            isTodayPositive = summary.isTodayPositive;
+          } else {
+            todayChange = '—';
+            todayChangePct = 0;
+            isTodayPositive = true;
+          }
         }
 
         // Top/Weakest from visible filtered heatmap tiles
@@ -569,14 +575,18 @@ class _PortfolioHeatmapWidgetState
                   PortfolioMetricCard(
                     title: changeCardTitle,
                     value: todayChange,
-                    subtitle: todayChangePct.abs() < 0.005
-                        ? '0.00%'
-                        : '${isTodayPositive ? '+' : ''}${todayChangePct.toStringAsFixed(2)}%',
-                    accentColor: isTodayPositive
-                        ? context.marketPositive
-                        : context.marketNegative,
+                    subtitle: todayChange == '—'
+                        ? 'Unavailable'
+                        : (todayChangePct.abs() < 0.005
+                            ? '0.00%'
+                            : '${isTodayPositive ? '+' : ''}${todayChangePct.toStringAsFixed(2)}%'),
+                    accentColor: todayChange == '—'
+                        ? context.statusNeutral
+                        : (isTodayPositive
+                            ? context.marketPositive
+                            : context.marketNegative),
                     chromeColor: ModuleColors.portfolio,
-                    isPositive: isTodayPositive,
+                    isPositive: todayChange == '—' ? null : isTodayPositive,
                     compact: isSmallMobile,
                     glowBorder: true,
                   ),

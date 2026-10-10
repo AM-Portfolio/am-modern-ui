@@ -12,9 +12,10 @@ abstract class PortfolioSummary with _$PortfolioSummary {
     required double investmentValue,
     required double totalGainLoss,
     required double totalGainLossPercentage,
-    required double todayChange,
-    required double todayChangePercentage,
-    required double todayGainLossPercentage,
+    /// Null when day P&L baseline is unavailable (do not treat as ₹0).
+    double? todayChange,
+    double? todayChangePercentage,
+    double? todayGainLossPercentage,
     required int totalHoldings,
     required int totalAssets,
     required int todayGainersCount,
@@ -40,9 +41,9 @@ abstract class PortfolioSummary with _$PortfolioSummary {
     investmentValue: 0.0,
     totalGainLoss: 0.0,
     totalGainLossPercentage: 0.0,
-    todayChange: 0.0,
-    todayChangePercentage: 0.0,
-    todayGainLossPercentage: 0.0,
+    todayChange: null,
+    todayChangePercentage: null,
+    todayGainLossPercentage: null,
     totalHoldings: 0,
     totalAssets: 0,
     todayGainersCount: 0,
@@ -71,8 +72,11 @@ abstract class PortfolioSummary with _$PortfolioSummary {
   /// Check if portfolio is profitable
   bool get isProfitable => totalGainLoss >= 0;
 
+  /// Whether day P&L has a usable baseline (vs unavailable after hours).
+  bool get hasTodayChange => todayChange != null;
+
   /// Check if today's performance is positive
-  bool get isTodayPositive => todayChange >= 0;
+  bool get isTodayPositive => (todayChange ?? 0) >= 0;
 
   /// Get formatted total value
   String get formattedTotalValue => _formatCurrency(totalValue);
@@ -81,7 +85,17 @@ abstract class PortfolioSummary with _$PortfolioSummary {
   String get formattedGainLoss => _formatCurrency(totalGainLoss);
 
   /// Get formatted today's change
-  String get formattedTodayChange => _formatCurrency(todayChange);
+  String get formattedTodayChange =>
+      todayChange == null ? '—' : _formatCurrency(todayChange!);
+
+  /// Short as-of label for closed-market day P&L.
+  String get todayAsOfLabel {
+    if (isLivePrices) return 'today';
+    if (sessionDate != null && sessionDate!.isNotEmpty) {
+      return 'as of $sessionDate';
+    }
+    return 'as of last session';
+  }
 
   String _formatCurrency(double amount) {
     if (amount.abs() >= 10000000) {
