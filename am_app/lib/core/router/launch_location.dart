@@ -19,13 +19,59 @@ String resolveLaunchLocation({Uri? launchUri}) {
   }
 
   final path = AppRoutes.normalizePath(uri.path.isEmpty ? '/' : uri.path);
-  if (path != '/' && AppRoutes.isAuthenticatedAppRoute(path)) {
+  if (path == '/' || path.isEmpty) {
+    return AppRoutes.publicMarketLanding;
+  }
+  if (AppRoutes.isPublicBrowseRoute(path)) {
+    return uri.hasQuery ? '$path?${uri.query}' : path;
+  }
+  if (AppRoutes.isAuthenticatedAppRoute(path)) {
     return uri.hasQuery ? '$path?${uri.query}' : path;
   }
   if (AppRoutes.isPublicAuthRoute(path)) {
     return uri.hasQuery ? '$path?${uri.query}' : path;
   }
-  return AppRoutes.login;
+  return AppRoutes.publicMarketLanding;
+}
+
+/// Native has no browser URI. Prefer last UI session path so auth restore can
+/// stay on `/app/*`; fall back to dashboard (not login).
+String _nativeColdStartLocation() {
+  final session = common.SessionPersistenceService.instance.cached;
+  if (session == null) return AppRoutes.dashboard;
+
+  final path = _pathFromCachedSession(session);
+  if (path != null && AppRoutes.isAuthenticatedAppRoute(path)) {
+    return path;
+  }
+  return AppRoutes.dashboard;
+}
+
+String? _pathFromCachedSession(common.AppSessionState session) {
+  var savedPath = AppRoutes.pathForNavTitle(session.globalNav);
+  if (savedPath == null) return null;
+
+  // Match AppShell session restore conventions.
+  if (session.globalNav == 'Doc Intel') {
+    return AppRoutes.dashboard;
+  }
+  if (session.globalNav == 'Paper') {
+    return AppRoutes.marketPath('paper');
+  }
+
+  final portfolioId = session.portfolioId;
+  if (portfolioId != null && portfolioId.isNotEmpty) {
+    if (session.globalNav == 'Portfolio') {
+      return AppRoutes.portfolioPath(
+        portfolioId,
+        AppRoutes.portfolioTab(session.portfolioTabIndex),
+      );
+    }
+    if (session.globalNav == 'Trade') {
+      return AppRoutes.tradePath(portfolioId, 'portfolios');
+    }
+  }
+  return savedPath;
 }
 
 /// Native has no browser URI. Prefer last UI session path so auth restore can

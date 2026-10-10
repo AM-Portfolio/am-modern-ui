@@ -65,6 +65,9 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
       enableMobileSearch: true,
       icon: Icons.psychology_outlined,
       accentColor: ModuleColors.analytics,
+      // Keep global + secondary chrome open so users can jump to other sections.
+      preferExpanded: true,
+      showModuleBottomNavigation: false,
       items: [
         SecondarySidebarItem(
           title: 'Document Processor',
