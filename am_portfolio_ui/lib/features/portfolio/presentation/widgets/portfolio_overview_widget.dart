@@ -750,11 +750,12 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
 
     final bool isOneDay = selectedTimeFrame == ds.TimeFrame.oneDay
         || selectedTimeFrame.code.toUpperCase() == '1D';
+    // 1D prefers day P&L; if unavailable (null), fall back to period totalGainLoss from snapshots.
     final double? periodReturn = isOneDay
-        ? summaryToUse.todayChange
+        ? (summaryToUse.todayChange ?? summaryToUse.totalGainLoss)
         : summaryToUse.totalGainLoss;
     final double? periodReturnPct = isOneDay
-        ? summaryToUse.todayChangePercentage
+        ? (summaryToUse.todayChangePercentage ?? summaryToUse.totalGainLossPercentage)
         : summaryToUse.totalGainLossPercentage;
     final String periodLabel = selectedTimeFrame.code == 'all' ? 'total' : selectedTimeFrame.displayName;
     final bool periodUnavailable = periodReturn == null;
