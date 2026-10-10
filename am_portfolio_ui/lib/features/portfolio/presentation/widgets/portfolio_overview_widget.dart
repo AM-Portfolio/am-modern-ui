@@ -750,18 +750,33 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
 
     final bool isOneDay = selectedTimeFrame == ds.TimeFrame.oneDay
         || selectedTimeFrame.code.toUpperCase() == '1D';
-    // 1D prefers day P&L; if unavailable (null), fall back to period totalGainLoss from snapshots.
+    // Cost-basis (value − invested) must not masquerade as 1D session return when day P&L is null.
+    final double costBasisGl =
+        summaryToUse.totalValue - summaryToUse.investmentValue;
+    final bool totalLooksLikeCostBasis = summaryToUse.todayChange == null &&
+        (summaryToUse.totalGainLoss - costBasisGl).abs() < 0.05;
+    // 1D prefers day P&L; else snapshot period — never silent cost-basis.
     final double? periodReturn = isOneDay
-        ? (summaryToUse.todayChange ?? summaryToUse.totalGainLoss)
+        ? (summaryToUse.todayChange ??
+            (totalLooksLikeCostBasis ? null : summaryToUse.totalGainLoss))
         : summaryToUse.totalGainLoss;
     final double? periodReturnPct = isOneDay
-        ? (summaryToUse.todayChangePercentage ?? summaryToUse.totalGainLossPercentage)
+        ? (summaryToUse.todayChangePercentage ??
+            (totalLooksLikeCostBasis
+                ? null
+                : summaryToUse.totalGainLossPercentage))
         : summaryToUse.totalGainLossPercentage;
     final String periodLabel = selectedTimeFrame.code == 'all' ? 'total' : selectedTimeFrame.displayName;
     final bool periodUnavailable = periodReturn == null;
-    final bool todayUnavailable = !summaryToUse.hasTodayChange;
-    final double todayChange = summaryToUse.todayChange ?? 0;
-    final double todayChangePct = summaryToUse.todayChangePercentage ?? 0;
+    final double? effectiveToday = summaryToUse.todayChange ??
+        (isOneDay && !totalLooksLikeCostBasis ? summaryToUse.totalGainLoss : null);
+    final double? effectiveTodayPct = summaryToUse.todayChangePercentage ??
+        (isOneDay && !totalLooksLikeCostBasis
+            ? summaryToUse.totalGainLossPercentage
+            : null);
+    final bool todayUnavailable = effectiveToday == null;
+    final double todayChange = effectiveToday ?? 0;
+    final double todayChangePct = effectiveTodayPct ?? 0;
 
     final modulePink = ds.ModuleColors.portfolio;
 

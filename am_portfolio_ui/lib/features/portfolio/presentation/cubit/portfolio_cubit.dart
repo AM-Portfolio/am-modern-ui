@@ -62,7 +62,13 @@ class PortfolioCubit extends Cubit<PortfolioState> {
           currentState.portfolioId,
           _currentTimeFrame,
         );
-        emit(currentState.copyWith(summary: summary, isRefreshing: false));
+        // Day P&L is session-scoped — keep last good value when a longer interval omits it.
+        final merged = summary.copyWith(
+          todayChange: summary.todayChange ?? currentState.summary.todayChange,
+          todayChangePercentage: summary.todayChangePercentage ??
+              currentState.summary.todayChangePercentage,
+        );
+        emit(currentState.copyWith(summary: merged, isRefreshing: false));
       } catch (e) {
         CommonLogger.error('Failed to refresh summary for timeframe $_currentTimeFrame', error: e, tag: 'PortfolioCubit');
         emit(currentState.copyWith(isRefreshing: false));
