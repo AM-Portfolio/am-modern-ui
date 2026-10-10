@@ -92,8 +92,9 @@ Environments (Settings → Environments):
 |--------|---------|
 | `APP_STORE_CONNECT_API_KEY_*` | ASC upload **and** Codemagic-parity signing fetch when p12/profile unset |
 | `IOS_CERTIFICATE_*` / `IOS_PROVISIONING_PROFILE_BASE64` / `IOS_KEYCHAIN_PASSWORD` | Optional explicit Distribution signing |
+| `CERTIFICATE_PRIVATE_KEY` | PEM RSA private key for ASC `fetch-signing-files` (required when Apple already has a Distribution cert CI did not create) |
 
-On `main`, TestFlight always runs and **requires a signed IPA**. Feature-branch green runs often only **Build** (TestFlight skipped). Prefer ASC keys (already used by Codemagic); or seed p12+profile via `scripts/ci/set-mobile-secrets.sh`.
+On `main`, TestFlight always runs and **requires a signed IPA**. Feature-branch green runs often only **Build** (TestFlight skipped) — signing soft-fails to unsigned. Prefer ASC keys + `CERTIFICATE_PRIVATE_KEY`; or seed p12+profile via `scripts/ci/set-mobile-secrets.sh`.
 
 ### Codemagic fallback
 | Secret | Purpose |
