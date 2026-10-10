@@ -49,6 +49,7 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
       _symbolHistory.clear();
     });
   }
+
   final List<String> _symbolHistory = [];
   String? _submittedSymbol;
 
@@ -67,12 +68,13 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
     super.didUpdateWidget(oldWidget);
     final next = widget.initialSymbol?.trim().toUpperCase();
     final prev = oldWidget.initialSymbol?.trim().toUpperCase();
-    if (next != null && next.isNotEmpty && next != prev && next != _submittedSymbol) {
+    if (next != null &&
+        next.isNotEmpty &&
+        next != prev &&
+        next != _submittedSymbol) {
       navigateToSymbol(next);
     }
   }
-
-
 
   void navigateToSymbol(String newSymbol) {
     final text = newSymbol.trim().toUpperCase();
@@ -148,11 +150,7 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
 
   Widget _buildEmptySearch() {
     return EquityInsiderEmptyView(
-      controller: _controller,
-      sdkService: _sdkService,
-      typewriterHints: const [],
       onSelectSymbol: navigateToSymbol,
-      onSearch: _search,
     );
   }
 
@@ -229,7 +227,9 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
     if (widget.symbol != oldWidget.symbol) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          ref.read(recentlyViewedStocksProvider.notifier).recordView(widget.symbol);
+          ref
+              .read(recentlyViewedStocksProvider.notifier)
+              .recordView(widget.symbol);
         }
       });
     }
@@ -245,7 +245,8 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
     if (_isManualScrolling) return;
 
     // Activate when a section top crosses under the pinned hero + nav.
-    final threshold = _heroExtent + _navExtent + (widget.compactEmbed ? 80 : 180);
+    final threshold =
+        _heroExtent + _navExtent + (widget.compactEmbed ? 80 : 180);
 
     for (int i = _sectionKeys.length - 1; i >= 0; i--) {
       final key = _sectionKeys[i];
@@ -345,9 +346,6 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                         key: _sectionKeys[0],
                         child: EquityInsiderHeroBar(
                           symbol: widget.symbol,
-                          onSearchTap: widget.compactEmbed
-                              ? null
-                              : _openSearchOverlay,
                         ),
                       ),
                     ),
@@ -371,9 +369,8 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                     backgroundColor: context.colors.scaffoldBackground,
                     child: Padding(
                       padding: EdgeInsets.symmetric(
-                        horizontal: isMobile
-                            ? 8
-                            : (widget.compactEmbed ? 8 : 16),
+                        horizontal:
+                            isMobile ? 8 : (widget.compactEmbed ? 8 : 16),
                       ),
                       child: EquityInsiderSectionNavBar(
                         activeIndex: _activeIndex,
@@ -418,7 +415,8 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                                 child: _buildSectionCard(
                                   context: context,
                                   isMobile: false,
-                                  child: EquityInsiderKpis(symbol: widget.symbol),
+                                  child:
+                                      EquityInsiderKpis(symbol: widget.symbol),
                                 ),
                               ),
                               const SizedBox(width: 14),
@@ -428,7 +426,8 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                                   sectionKey: _sectionKeys[1],
                                   context: context,
                                   isMobile: false,
-                                  child: EquityInsiderChart(symbol: widget.symbol),
+                                  child:
+                                      EquityInsiderChart(symbol: widget.symbol),
                                 ),
                               ),
                             ],
@@ -452,7 +451,8 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                             sectionKey: _sectionKeys[3],
                             context: context,
                             isMobile: isMobile,
-                            child: EquityInsiderShareholding(symbol: widget.symbol),
+                            child: EquityInsiderShareholding(
+                                symbol: widget.symbol),
                           ),
                         ] else ...[
                           Row(
@@ -477,7 +477,8 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                                   sectionKey: _sectionKeys[3],
                                   context: context,
                                   isMobile: false,
-                                  child: EquityInsiderShareholding(symbol: widget.symbol),
+                                  child: EquityInsiderShareholding(
+                                      symbol: widget.symbol),
                                 ),
                               ),
                             ],
@@ -531,7 +532,8 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                     right: 20,
                   ),
                   child: GestureDetector(
-                    onTap: () {}, // Prevent backdrop tap from dismissing when tapping dialog
+                    onTap:
+                        () {}, // Prevent backdrop tap from dismissing when tapping dialog
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 580),
                       child: Column(
@@ -555,13 +557,18 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                             controller: widget.controller,
                             recentSearches: recent,
                             onRemoveRecent: (sym) {
-                              ref.read(recentlyViewedStocksProvider.notifier).removeView(sym);
+                              ref
+                                  .read(recentlyViewedStocksProvider.notifier)
+                                  .removeView(sym);
                             },
                             onClearRecent: () {
-                              ref.read(recentlyViewedStocksProvider.notifier).clear();
+                              ref
+                                  .read(recentlyViewedStocksProvider.notifier)
+                                  .clear();
                             },
                             accentColor: ModuleColors.market,
-                            searchHandler: (q) => widget.sdkService.securityApi.search(
+                            searchHandler: (q) =>
+                                widget.sdkService.securityApi.search(
                               q,
                               smartRecommendations: true,
                               category: 'STOCKS',
@@ -634,4 +641,3 @@ class _StickySectionNavDelegate extends SliverPersistentHeaderDelegate {
         oldDelegate.extent != extent;
   }
 }
-

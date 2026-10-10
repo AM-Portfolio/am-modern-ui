@@ -13,7 +13,6 @@ class AllIndicesBottomSheet extends StatefulWidget {
   final AvailableIndices? availableIndices;
   final String selectedIndexSymbol;
   final ValueChanged<StockIndicesMarketData> onIndexSelected;
-  final Map<String, Map<String, double>> allTimeframeBasePrices;
   final VoidCallback? onNeedGlobal;
 
   const AllIndicesBottomSheet({
@@ -23,7 +22,6 @@ class AllIndicesBottomSheet extends StatefulWidget {
     required this.globalIndices,
     required this.selectedIndexSymbol,
     required this.onIndexSelected,
-    required this.allTimeframeBasePrices,
     this.availableIndices,
     this.onNeedGlobal,
     super.key,
@@ -38,9 +36,6 @@ class _AllIndicesBottomSheetState extends State<AllIndicesBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final basePrices =
-        widget.allTimeframeBasePrices[widget.initialTimeframe] ?? {};
-
     return Container(
       decoration: BoxDecoration(
         color: MarketColors.drawerBg(context),
@@ -115,7 +110,6 @@ class _AllIndicesBottomSheetState extends State<AllIndicesBottomSheet> {
               timeframe: widget.initialTimeframe,
               indian: widget.indices,
               global: widget.globalIndices,
-              basePrices: basePrices,
               availableIndices: widget.availableIndices,
               selectedSymbol: widget.selectedIndexSymbol,
               onIndexSelected: widget.onIndexSelected,

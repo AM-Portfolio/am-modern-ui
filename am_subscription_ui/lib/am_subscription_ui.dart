@@ -12,3 +12,4 @@ export 'data/subscription_browser_cache.dart';
 export 'domain/entities/plan.dart';
 export 'domain/entities/referral.dart';
 export 'domain/entities/subscription.dart';
+export 'domain/plan_matching.dart';

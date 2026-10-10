@@ -33,8 +33,6 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
     'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'
   ];
   
-  late TextEditingController _searchController;
-
   // Heatmap State
   String _heatmapTimeframe = '1D';
   bool _showingIndices = true; // Use separate state for Heatmap section drill-down
@@ -50,7 +48,6 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
   @override
   void initState() {
     super.initState();
-    _searchController = TextEditingController(text: _selectedSymbol);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchData();
     });
@@ -58,7 +55,6 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
   
   @override
   void dispose() {
-    _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -121,19 +117,11 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
         bottom: false,
         child: Column(
           children: [
-            // Global timeframe (1D / 1W / …) — same control as Dashboard
+            // Global timeframe only — tab name is already in the top pill strip.
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
               child: Row(
                 children: [
-                  Text(
-                    'Market Analysis',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: context.colors.textPrimary,
-                    ),
-                  ),
                   const Spacer(),
                   GlobalTimeFrameBar(primaryColor: ModuleColors.market),
                 ],
@@ -141,7 +129,7 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
             ),
             // 1. Header & Search
             Container(
-              margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
               padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: isDark
@@ -162,122 +150,21 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Search & Controls Row
-              Row(
-                children: [
-                   // Expanded Search Field
-                   Expanded(
-                     child: Container(
-                       height: 42,
-                       decoration: BoxDecoration(
-                         color: isDark ? Colors.black.withOpacity(0.2) : Colors.black.withOpacity(0.03),
-                         borderRadius: BorderRadius.circular(12),
-                         border: Border.all(color: context.colors.border.withValues(alpha: isDark ? 0.25 : 0.4)),
-                       ),
-                       child: TextField(
-                         controller: _searchController,
-                         style: TextStyle(color: context.colors.textPrimary, fontSize: 14),
-                         decoration: InputDecoration(
-                           hintText: 'Search Symbol (e.g. RELIANCE, NIFTY 50)',
-                           hintStyle: TextStyle(color: context.colors.textSecondary.withValues(alpha: 0.6), fontSize: 13),
-                           prefixIcon: Icon(Icons.search, color: context.colors.textSecondary, size: 20),
-                           border: InputBorder.none,
-                           contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                         ),
-                         onSubmitted: (value) {
-                           if (value.isNotEmpty) {
-                             setState(() {
-                               _selectedSymbol = value.toUpperCase();
-                             });
-                             _fetchData();
-                           }
-                         },
-                       ),
-                     ),
-                   ),
-                   const SizedBox(width: 10),
-                   
-                   // Go Button
-                   GestureDetector(
-                     onTap: () {
-                        if (_searchController.text.isNotEmpty) {
-                           setState(() {
-                             _selectedSymbol = _searchController.text.toUpperCase();
-                           });
-                           _fetchData();
-                        }
-                     },
-                     child: Container(
-                       height: 42,
-                       padding: const EdgeInsets.symmetric(horizontal: 18),
-                       decoration: BoxDecoration(
-                         color: isDark
-                             ? ModuleColors.market.withValues(alpha: 0.2)
-                             : ModuleColors.market,
-                         borderRadius: BorderRadius.circular(12),
-                         border: Border.all(
-                           color: isDark
-                               ? ModuleColors.market.withValues(alpha: 0.45)
-                               : ModuleColors.market,
-                         ),
-                         boxShadow: isDark
-                             ? []
-                             : [
-                                 BoxShadow(
-                                   color: ModuleColors.market.withValues(alpha: 0.18),
-                                   blurRadius: 6,
-                                   offset: const Offset(0, 2),
-                                 ),
-                               ],
-                       ),
-                        child: Center(
-                          child: provider_pkg.Selector<MarketProvider, bool>(
-                            selector: (_, p) => p.isLoading,
-                            builder: (context, isLoading, child) {
-                              final labelColor = isDark
-                                  ? ModuleColors.market
-                                  : Colors.white;
-                              return isLoading 
-                                  ? SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        color: labelColor,
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : Text(
-                                      'GO',
-                                      style: TextStyle(
-                                        color: labelColor,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
-                                    );
-                            },
-                          ),
-                        ),
-                     ),
-                   ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              
-                  // Quick Suggestions
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        _buildQuickActionChip(provider, "NIFTY BANK", "NIFTY BANK"),
-                        _buildQuickActionChip(provider, "NIFTY IT", "NIFTY IT"),
-                        _buildQuickActionChip(provider, "MIDCAP", "NIFTY MIDCAP 50"),
-                        _buildQuickActionChip(provider, "INDIA VIX", "INDIA VIX"),
-                        _buildQuickActionChip(provider, "NIFTY 50", "NIFTY 50"),
-                        // Note: Using "NIFTY SMLCAP 50" to match database index symbol
-                        _buildQuickActionChip(provider, "SMALL CAP", "NIFTY SMLCAP 50"),
-                      ],
-                    ),
-                  )
+              // Quick index chips (symbol discovery via top Global Search)
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildQuickActionChip(provider, "NIFTY BANK", "NIFTY BANK"),
+                    _buildQuickActionChip(provider, "NIFTY IT", "NIFTY IT"),
+                    _buildQuickActionChip(provider, "MIDCAP", "NIFTY MIDCAP 50"),
+                    _buildQuickActionChip(provider, "INDIA VIX", "INDIA VIX"),
+                    _buildQuickActionChip(provider, "NIFTY 50", "NIFTY 50"),
+                    // Note: Using "NIFTY SMLCAP 50" to match database index symbol
+                    _buildQuickActionChip(provider, "SMALL CAP", "NIFTY SMLCAP 50"),
+                  ],
+                ),
+              )
             ],
           ),
         ),
@@ -812,8 +699,7 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
   void _onBackToIndices() {
       setState(() {
           _showingIndices = true;
-          _selectedSymbol = ""; 
-          _searchController.clear();
+          _selectedSymbol = "";
           _isHeatmapExpanded = true; // Reset expansion when going back
       });
       _fetchData();
@@ -899,7 +785,6 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
         setState(() {
           _showingIndices = false; // Drill down into this index
           _selectedSymbol = symbol;
-          _searchController.text = symbol;
         });
         _fetchData();
       },

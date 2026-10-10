@@ -4,11 +4,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:am_auth_ui/am_auth_ui.dart';
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import '../providers/ai_chat_provider.dart';
 import '../providers/ai_session_provider.dart';
 import '../providers/ai_usage_provider.dart';
 import '../theme/ai_chat_theme.dart';
+import '../utils/greeting_first_name.dart';
 import '../widgets/ai_history_drawer.dart';
 import '../widgets/ai_message_format.dart';
 import '../widgets/ai_widget_factory.dart';
@@ -34,6 +36,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   final TextEditingController _input = TextEditingController();
   final ScrollController _scroll = ScrollController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  bool _searchOpen = false;
 
   @override
   void initState() {
@@ -120,35 +123,20 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     }
   }
 
-  String _resolveDisplayName(BuildContext context) {
-    final passed = widget.displayName?.trim();
-    if (passed != null && passed.isNotEmpty) return passed;
+  String _firstName(BuildContext context) {
+    String? displayName = widget.displayName?.trim();
+    String? email;
     try {
       final authState = context.read<AuthCubit>().state;
       if (authState is Authenticated) {
+        email = authState.user.email;
         final dn = authState.user.displayName?.trim();
-        if (dn != null && dn.isNotEmpty) return dn;
-        return _nameFromEmail(authState.user.email);
+        if (displayName == null || displayName.isEmpty) {
+          displayName = dn;
+        }
       }
     } catch (_) {}
-    return '';
-  }
-
-  String _nameFromEmail(String email) {
-    if (!email.contains('@')) return '';
-    final local = email.split('@').first.replaceAll(RegExp(r'[._-]+'), ' ').trim();
-    if (local.isEmpty) return '';
-    return local
-        .split(RegExp(r'\s+'))
-        .where((part) => part.isNotEmpty)
-        .map((part) => part[0].toUpperCase() + part.substring(1).toLowerCase())
-        .join(' ');
-  }
-
-  String _firstName(BuildContext context) {
-    final name = _resolveDisplayName(context);
-    if (name.isEmpty) return 'there';
-    return name.split(RegExp(r'\s+')).first;
+    return greetingFirstName(displayName: displayName, email: email);
   }
 
   @override
@@ -178,68 +166,96 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
         activeSessionId: chatState.sessionId,
         onSelectSession: _resumeSession,
       ),
-      appBar: _ChatAppBar(
-        activeTool: chatState.activeTool,
-        onHistory: _openHistory,
-        onNewChat: () => ref.read(aiChatProvider.notifier).clearChat(),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: chatState.messages.isEmpty
-                ? _EmptyState(
-                    firstName: firstName,
-                    onSuggestion: _send,
-                  )
-                : LayoutBuilder(
-                    builder: (context, constraints) {
-                      const maxContentWidth = 920.0;
-                      final horizontalPad = (constraints.maxWidth - maxContentWidth)
-                              .clamp(0.0, double.infinity) /
-                          2;
-                      final pad = EdgeInsets.fromLTRB(
-                        20 + horizontalPad,
-                        8,
-                        20 + horizontalPad,
-                        16,
-                      );
-                      return ListView.builder(
-                        controller: _scroll,
-                        padding: pad,
-                        itemCount: chatState.messages.length + 1,
-                        itemBuilder: (context, index) {
-                          if (index == 0) {
-                            return _WelcomeHeader(
-                              firstName: firstName,
-                              compact: true,
+      appBar: _searchOpen
+          ? null
+          : _ChatAppBar(
+              activeTool: chatState.activeTool,
+              onHistory: _openHistory,
+              onNewChat: () => ref.read(aiChatProvider.notifier).clearChat(),
+              onSearch: () {
+                if (MobileSearchScope.tryOpenGlobalSearch(context)) return;
+                MobileSearchScope.setOpen(context, true);
+                setState(() => _searchOpen = true);
+              },
+            ),
+      body: _searchOpen
+          ? SafeArea(
+              child: MobileInlineSearchField(
+                items: MobileSearchScope.itemsOf(context),
+                onClose: () {
+                  MobileSearchScope.setOpen(context, false);
+                  setState(() => _searchOpen = false);
+                },
+              ),
+            )
+          : Column(
+              children: [
+                Expanded(
+                  child: chatState.messages.isEmpty
+                      ? _EmptyState(
+                          firstName: firstName,
+                          onSuggestion: _send,
+                        )
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            const maxContentWidth = 920.0;
+                            final horizontalPad =
+                                (constraints.maxWidth - maxContentWidth)
+                                        .clamp(0.0, double.infinity) /
+                                    2;
+                            final navReserve =
+                                PlatformConstants.globalBottomNavReserve(
+                                    context);
+                            return ValueListenableBuilder<double>(
+                              valueListenable: GlobalBottomNavVisibility.factor,
+                              builder: (context, navFactor, _) {
+                                final bottomPad = 16.0 +
+                                    (navReserve * navFactor.clamp(0.0, 1.0));
+                                final pad = EdgeInsets.fromLTRB(
+                                  20 + horizontalPad,
+                                  8,
+                                  20 + horizontalPad,
+                                  bottomPad,
+                                );
+                                return ListView.builder(
+                                  controller: _scroll,
+                                  padding: pad,
+                                  itemCount: chatState.messages.length + 1,
+                                  itemBuilder: (context, index) {
+                                    if (index == 0) {
+                                      return _WelcomeHeader(
+                                        firstName: firstName,
+                                        compact: true,
+                                      );
+                                    }
+                                    final msgIndex = index - 1;
+                                    final msg = chatState.messages[msgIndex];
+                                    return _MessageBubble(
+                                      message: msg,
+                                      index: msgIndex,
+                                      onRate: (rating) => ref
+                                          .read(aiChatProvider.notifier)
+                                          .rateMessage(
+                                            messageIndex: msgIndex,
+                                            rating: rating,
+                                          ),
+                                    );
+                                  },
+                                );
+                              },
                             );
-                          }
-                          final msgIndex = index - 1;
-                          final msg = chatState.messages[msgIndex];
-                          return _MessageBubble(
-                            message: msg,
-                            index: msgIndex,
-                            onRate: (rating) => ref
-                                .read(aiChatProvider.notifier)
-                                .rateMessage(
-                                  messageIndex: msgIndex,
-                                  rating: rating,
-                                ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-          ),
-          _InputBar(
-            controller: _input,
-            isLoading: chatState.isLoading,
-            usage: usage,
-            onSend: () => _send(),
-            onStop: _stop,
-          ),
-        ],
-      ),
+                          },
+                        ),
+                ),
+                _InputBar(
+                  controller: _input,
+                  isLoading: chatState.isLoading,
+                  usage: usage,
+                  onSend: () => _send(),
+                  onStop: _stop,
+                ),
+              ],
+            ),
     );
   }
 }
@@ -251,10 +267,13 @@ class _ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onHistory;
   final VoidCallback onNewChat;
 
+  final VoidCallback onSearch;
+
   const _ChatAppBar({
     required this.activeTool,
     required this.onHistory,
     required this.onNewChat,
+    required this.onSearch,
   });
 
   @override
@@ -268,23 +287,14 @@ class _ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
       surfaceTintColor: Colors.transparent,
       title: Row(
         children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              gradient: context.aiPrimaryGradient,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: context.aiPrimary.withValues(alpha: 0.35),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Icon(Icons.auto_awesome, color: context.aiOnPrimary, size: 18),
+          IconButton(
+            tooltip: 'Search',
+            onPressed: onSearch,
+            icon: Icon(Icons.search_rounded, color: context.textPrimary, size: 22),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1054,6 +1064,27 @@ class _InputBar extends ConsumerStatefulWidget {
 
 class _InputBarState extends ConsumerState<_InputBar> {
   bool _usagePanelOpen = false;
+  late final FocusNode _composerFocus;
+
+  @override
+  void initState() {
+    super.initState();
+    _composerFocus = FocusNode(debugLabel: 'aiComposer');
+    _composerFocus.addListener(_onComposerFocusChanged);
+  }
+
+  void _onComposerFocusChanged() {
+    if (_composerFocus.hasFocus) {
+      GlobalBottomNavVisibility.requestHide();
+    }
+  }
+
+  @override
+  void dispose() {
+    _composerFocus.removeListener(_onComposerFocusChanged);
+    _composerFocus.dispose();
+    super.dispose();
+  }
 
   Future<void> _toggleUsagePanel() async {
     // Always refresh when opening so the ring reflects post-chat metering.
@@ -1072,150 +1103,209 @@ class _InputBarState extends ConsumerState<_InputBar> {
   Widget build(BuildContext context) {
     final usage = ref.watch(aiUsageProvider);
 
+    final navReserveFull = PlatformConstants.globalBottomNavReserve(context);
+
     return LayoutBuilder(
       builder: (context, constraints) {
         const maxContentWidth = 920.0;
         final horizontalPad =
             (constraints.maxWidth - maxContentWidth).clamp(0.0, double.infinity) /
                 2;
-        return Container(
-          padding: EdgeInsets.fromLTRB(
-            20 + horizontalPad,
-            10,
-            20 + horizontalPad,
-            16,
-          ),
-          decoration: BoxDecoration(
-            color: context.surfaceColor,
-            border: Border(top: BorderSide(color: context.dividerColor)),
-          ),
-          child: Column(
+
+        // Popover sits above the composer as its own card — do not expand the
+        // opaque footer surface (that reads as a modal "background"/scrim).
+        Widget buildBar({required double bottomPad}) {
+          return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ClipRect(
-                child: AnimatedAlign(
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeOutCubic,
-                  heightFactor: _usagePanelOpen ? 1 : 0,
-                  alignment: Alignment.bottomCenter,
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 180),
-                    opacity: _usagePanelOpen ? 1 : 0,
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: _TokenUsagePopover(
-                        usage: usage,
-                        onClose: _closeUsagePanel,
-                      ),
-                    ),
-                  ),
-                ),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                alignment: Alignment.bottomCenter,
+                child: _usagePanelOpen
+                    ? Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          20 + horizontalPad,
+                          0,
+                          20 + horizontalPad,
+                          8,
+                        ),
+                        child: AnimatedOpacity(
+                          duration: const Duration(milliseconds: 180),
+                          opacity: 1,
+                          child: _TokenUsagePopover(
+                            usage: usage,
+                            onClose: _closeUsagePanel,
+                          ),
+                        ),
+                      )
+                    : const SizedBox(width: double.infinity),
               ),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: context.cardColor,
-                        borderRadius: BorderRadius.circular(28),
-                        border: Border.all(color: context.borderColor),
-                        boxShadow: [
-                          BoxShadow(
-                            color: context.shadow(context.isDark ? 0.2 : 0.04),
-                            blurRadius: 12,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: TextField(
-                        controller: widget.controller,
-                        style: TextStyle(
-                          color: context.textPrimary,
-                          fontSize: 14,
-                        ),
-                        maxLines: 4,
-                        minLines: 1,
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: (_) => widget.onSend(),
-                        decoration: InputDecoration(
-                          hintText: 'Ask about your portfolio…',
-                          hintStyle: TextStyle(
-                            color: context.textSecondary,
-                            fontSize: 14,
-                          ),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 14,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  _TokenUsageRingButton(
-                    usage: usage,
-                    isActive: _usagePanelOpen,
-                    onTap: _toggleUsagePanel,
-                  ),
-                  const SizedBox(width: 8),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: widget.isLoading
-                        ? InkWell(
-                            key: const ValueKey('stop'),
-                            onTap: widget.onStop,
-                            borderRadius: BorderRadius.circular(24),
+              Container(
+                padding: EdgeInsets.fromLTRB(
+                  20 + horizontalPad,
+                  10,
+                  20 + horizontalPad,
+                  bottomPad,
+                ),
+                decoration: BoxDecoration(
+                  color: context.surfaceColor,
+                  border: Border(top: BorderSide(color: context.dividerColor)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Listener(
+                      behavior: HitTestBehavior.opaque,
+                      onPointerDown: (_) {
+                        GlobalBottomNavVisibility.suppressChromeTapReveal =
+                            true;
+                        GlobalBottomNavVisibility.requestHide();
+                      },
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Expanded(
                             child: Container(
-                              width: 48,
-                              height: 48,
                               decoration: BoxDecoration(
-                                color: context.statusError.withValues(alpha: 0.15),
-                                shape: BoxShape.circle,
-                                border: Border.all(color: context.statusError),
-                              ),
-                              child: Icon(Icons.stop_rounded,
-                                  color: context.statusError, size: 22),
-                            ),
-                          )
-                        : InkWell(
-                            key: const ValueKey('send'),
-                            onTap: widget.onSend,
-                            borderRadius: BorderRadius.circular(24),
-                            child: Container(
-                              width: 48,
-                              height: 48,
-                              decoration: BoxDecoration(
-                                gradient: context.aiPrimaryGradient,
-                                borderRadius: BorderRadius.circular(24),
+                                color: context.surfaceColor,
+                                borderRadius: BorderRadius.circular(28),
+                                border:
+                                    Border.all(color: context.borderColor),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: context.aiPrimary
-                                        .withValues(alpha: 0.35),
+                                    color: context.shadow(
+                                        context.isDark ? 0.2 : 0.04),
                                     blurRadius: 12,
-                                    offset: const Offset(0, 4),
+                                    offset: const Offset(0, 3),
                                   ),
                                 ],
                               ),
-                              child: Icon(Icons.send_rounded,
-                                  color: context.aiOnPrimary, size: 18),
+                              child: TextField(
+                                controller: widget.controller,
+                                focusNode: _composerFocus,
+                                style: TextStyle(
+                                  color: context.textPrimary,
+                                  fontSize: 14,
+                                ),
+                                maxLines: 4,
+                                minLines: 1,
+                                textInputAction: TextInputAction.send,
+                                onSubmitted: (_) => widget.onSend(),
+                                decoration: InputDecoration(
+                                  hintText: 'Ask about your portfolio…',
+                                  hintStyle: TextStyle(
+                                    color: context.textSecondary,
+                                    fontSize: 14,
+                                  ),
+                                  filled: false,
+                                  isDense: true,
+                                  border: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                  disabledBorder: InputBorder.none,
+                                  errorBorder: InputBorder.none,
+                                  focusedErrorBorder: InputBorder.none,
+                                  contentPadding:
+                                      const EdgeInsets.symmetric(
+                                    horizontal: 18,
+                                    vertical: 14,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'AM Finance AI can make mistakes. Verify important information.',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: context.textSecondary.withValues(alpha: 0.6),
+                          const SizedBox(width: 10),
+                          _TokenUsageRingButton(
+                            usage: usage,
+                            isActive: _usagePanelOpen,
+                            onTap: _toggleUsagePanel,
+                          ),
+                          const SizedBox(width: 8),
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 200),
+                            child: widget.isLoading
+                                ? InkWell(
+                                    key: const ValueKey('stop'),
+                                    onTap: widget.onStop,
+                                    borderRadius: BorderRadius.circular(24),
+                                    child: Container(
+                                      width: 48,
+                                      height: 48,
+                                      decoration: BoxDecoration(
+                                        color: context.statusError
+                                            .withValues(alpha: 0.15),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                            color: context.statusError),
+                                      ),
+                                      child: Icon(Icons.stop_rounded,
+                                          color: context.statusError,
+                                          size: 22),
+                                    ),
+                                  )
+                                : InkWell(
+                                    key: const ValueKey('send'),
+                                    onTap: widget.onSend,
+                                    borderRadius: BorderRadius.circular(24),
+                                    child: Container(
+                                      width: 48,
+                                      height: 48,
+                                      decoration: BoxDecoration(
+                                        gradient: context.aiPrimaryGradient,
+                                        borderRadius:
+                                            BorderRadius.circular(24),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: context.aiPrimary
+                                                .withValues(alpha: 0.35),
+                                            blurRadius: 12,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Icon(Icons.send_rounded,
+                                          color: context.aiOnPrimary,
+                                          size: 18),
+                                    ),
+                                  ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (navReserveFull <= 0) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'AM Finance AI can make mistakes. Verify important information.',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: context.textSecondary.withValues(alpha: 0.6),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ],
                 ),
-                textAlign: TextAlign.center,
               ),
             ],
-          ),
+          );
+        }
+
+        final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+        if (navReserveFull <= 0) {
+          return buildBar(bottomPad: 16 + keyboardInset);
+        }
+
+        return ValueListenableBuilder<double>(
+          valueListenable: GlobalBottomNavVisibility.factor,
+          builder: (context, navFactor, _) {
+            final t = navFactor.clamp(0.0, 1.0);
+            // Keyboard open: pad for keyboard only — nav stays hidden on AI chat.
+            final bottomPad = keyboardInset > 0
+                ? 16.0 + keyboardInset
+                : 16.0 + (navReserveFull * t);
+            return buildBar(bottomPad: bottomPad);
+          },
         );
       },
     );

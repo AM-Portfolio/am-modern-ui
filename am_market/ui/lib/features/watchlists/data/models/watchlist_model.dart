@@ -24,7 +24,7 @@ class Watchlist {
       id: json['id'] as String? ?? '',
       userId: json['userId'] as String? ?? '',
       name: json['name'] as String? ?? '',
-      isDefault: json['isDefault'] as bool? ?? false,
+      isDefault: json['isDefault'] == true || json['isDefault'] == 1 || json['isDefault'] == 'true',
       displayOrder: json['displayOrder'] as int? ?? 0,
       createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt'] as String) : null,
       updatedAt: json['updatedAt'] != null ? DateTime.tryParse(json['updatedAt'] as String) : null,
@@ -128,7 +128,7 @@ class WatchlistCheckStatus {
     return WatchlistCheckStatus(
       watchlistId: json['watchlistId'] as String? ?? '',
       name: json['name'] as String? ?? '',
-      containsSymbol: json['containsSymbol'] as bool? ?? false,
+      containsSymbol: json['containsSymbol'] == true || json['containsSymbol'] == 1 || json['containsSymbol'] == 'true',
       itemCount: json['itemCount'] as int? ?? 0,
     );
   }

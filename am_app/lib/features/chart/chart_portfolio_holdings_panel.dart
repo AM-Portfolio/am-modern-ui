@@ -1,13 +1,11 @@
-import 'package:am_common/am_common.dart';
 import 'package:am_paper_ui/am_paper_ui.dart';
-import 'package:am_portfolio_ui/am_portfolio_ui.dart';
 import 'package:am_trade_ui/features/trade/presentation/holdings/pages/trade_holdings_dashboard_web_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'chart_portfolio_sidebar.dart';
 
-/// Chart bottom Holdings: 1Y wealth chart + quick filters + holdings table.
+/// Chart bottom Holdings: filters + holdings table (no empty history chart).
 /// Row/symbol tap loads the symbol into the main terminal chart.
 class ChartPortfolioHoldingsPanel extends ConsumerWidget {
   const ChartPortfolioHoldingsPanel({
@@ -54,26 +52,13 @@ class ChartPortfolioHoldingsPanel extends ConsumerWidget {
       );
     }
 
-    return Column(
+    // Chart bottom strip is already under the main price chart — skip the
+    // empty portfolio-history block so holdings use the full panel height.
+    return TradeHoldingsDashboardWebPage(
       key: ValueKey('holdings-${selected.id}'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        PortfolioChartSection(
-          portfolioId: selected.id,
-          height: 180,
-          embedMode: true,
-          showPortfolioDropdown: false,
-          timeFrame: TimeFrame.oneYear,
-        ),
-        const Divider(height: 1),
-        Expanded(
-          child: TradeHoldingsDashboardWebPage(
-            portfolioId: selected.id,
-            embedded: true,
-            onNavigateToChart: onSelectSymbol,
-          ),
-        ),
-      ],
+      portfolioId: selected.id,
+      embedded: true,
+      onNavigateToChart: onSelectSymbol,
     );
   }
 }

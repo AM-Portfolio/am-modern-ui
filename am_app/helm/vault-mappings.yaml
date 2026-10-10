@@ -1,0 +1,6 @@
+vault:
+  secretPaths:
+    am-identity:
+      path: am-core-services/data/am-identity
+      mappings:
+        GOOGLE_CLIENT_ID: "GOOGLE_CLIENT_ID"

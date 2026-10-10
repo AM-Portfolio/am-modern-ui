@@ -177,22 +177,29 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
   /// required to enable Multi-Label Y-Axis scaling. This requires Absolute Mode to be active, at least 2
   /// compared indices, the line chart view active, and non-infinite Y-bounds.
   bool get _useMultiYAxis =>
-      _showAbsoluteValues &&
-      _activeIndices.length >= 2 &&
-      !widget.isBarChart;
+      _showAbsoluteValues && _activeIndices.length >= 2 && !widget.isBarChart;
+
+  bool _isCompact(BuildContext context) =>
+      MediaQuery.sizeOf(context).width < 700;
 
   /// Dynamic left gutter width so values like "2,255.50" or "2255" fit cleanly without truncating.
   double _leftAxisReserve(BuildContext context) {
-    final compact = MediaQuery.sizeOf(context).width < 700;
+    final compact = _isCompact(context);
     if (compact) {
-      if (_useMultiYAxis) return 46.0;
-      return _showAbsoluteValues ? 54.0 : 42.0;
+      if (_useMultiYAxis) return 38.0;
+      return _showAbsoluteValues ? 42.0 : 32.0;
     }
     if (!_useMultiYAxis) {
       return _showAbsoluteValues ? 58.0 : 48.0;
     }
     return 54.0;
   }
+
+  double _bottomAxisReserve(BuildContext context) =>
+      _isCompact(context) ? 22.0 : 30.0;
+
+  double _bottomAxisLabelFont(BuildContext context) =>
+      _isCompact(context) ? 8.0 : 10.0;
 
   Widget _leftAxisTitle(TitleMeta meta, Widget child) {
     return SideTitleWidget(
@@ -234,7 +241,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     required Map<String, double> cleanMax,
   }) {
     final theme = Theme.of(context);
-    final compact = MediaQuery.sizeOf(context).width < 700;
+    final compact = _isCompact(context);
 
     if (_useMultiYAxis && _activeIndices.isNotEmpty) {
       final String firstSymbol = _activeIndices.first;
@@ -245,7 +252,8 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
       for (int i = 0; i < _activeIndices.length; i++) {
         final String symbol = _activeIndices[i];
         double tickVal = value;
-        final double rangeI = (cleanMax[symbol] ?? 100) - (cleanMin[symbol] ?? 0);
+        final double rangeI =
+            (cleanMax[symbol] ?? 100) - (cleanMin[symbol] ?? 0);
         if (i > 0) {
           final double denI = cleanMax[symbol]! - cleanMin[symbol]!;
           tickVal = denominator0.abs() < 0.01
@@ -260,7 +268,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
             textAlign: TextAlign.right,
             style: TextStyle(
               color: color,
-              fontSize: compact ? 8.5 : 9.5,
+              fontSize: compact ? 7.5 : 9.5,
               fontWeight: FontWeight.w600,
               height: 1.15,
             ),
@@ -278,8 +286,10 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
       );
     }
 
-    final String firstSymbol = _activeIndices.isNotEmpty ? _activeIndices.first : '';
-    final double range0 = (cleanMax[firstSymbol] ?? 10000.0) - (cleanMin[firstSymbol] ?? 0.0);
+    final String firstSymbol =
+        _activeIndices.isNotEmpty ? _activeIndices.first : '';
+    final double range0 =
+        (cleanMax[firstSymbol] ?? 10000.0) - (cleanMin[firstSymbol] ?? 0.0);
 
     return _leftAxisTitle(
       meta,
@@ -288,7 +298,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
         textAlign: TextAlign.right,
         style: TextStyle(
           color: theme.textTheme.bodySmall?.color,
-          fontSize: compact ? 9 : 10,
+          fontSize: compact ? 8 : 10,
           fontWeight: FontWeight.w500,
           height: 1.1,
         ),
@@ -302,7 +312,8 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
   bool get _isViewingRecentData {
     if (!_scrollController.hasClients) return true;
     final pos = _scrollController.position;
-    if (pos.maxScrollExtent < 1.0) return true; // chart fits entirely in viewport
+    if (pos.maxScrollExtent < 1.0)
+      return true; // chart fits entirely in viewport
     return (pos.maxScrollExtent - pos.pixels) < 40.0;
   }
 
@@ -528,7 +539,8 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
       for (final symbol in _activeIndices) {
         final data = widget._resolvedHistoricalData[symbol];
         if (data != null &&
-            (widget.preNormalizedPercent || baselinePrices.containsKey(symbol))) {
+            (widget.preNormalizedPercent ||
+                baselinePrices.containsKey(symbol))) {
           final matchingPoint = data.firstWhere(
             (p) {
               final pTime = p['time'] as String?;
@@ -643,8 +655,8 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
       return;
     }
     // spacing = 30 * scale; chartWidth = n * spacing. Fit width with small padding.
-    final fit = ((vw - 8) / (n * 30.0))
-        .clamp(kChartFitZoomFloor, kChartFitZoomCeil);
+    final fit =
+        ((vw - 8) / (n * 30.0)).clamp(kChartFitZoomFloor, kChartFitZoomCeil);
     _zoomScale = fit;
   }
 
@@ -715,17 +727,17 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     // Snap to clean ticks with a light margin (~½ interval) so the series
     // fills the plot instead of floating in the vertical middle.
     final double pad = interval * 0.5;
-    final double minY =
-        (minVal / interval).floorToDouble() * interval - pad;
-    final double maxY =
-        (maxVal / interval).ceilToDouble() * interval + pad;
+    final double minY = (minVal / interval).floorToDouble() * interval - pad;
+    final double maxY = (maxVal / interval).ceilToDouble() * interval + pad;
 
     return {'minY': minY, 'maxY': maxY, 'interval': interval};
   }
 
   // Viewport calculations are now performed inline during build for absolute consistency.
   Map<String, dynamic> _calculateVisibleViewport(
-      List<Map<String, dynamic>> chartData, double spacing, double viewportWidth) {
+      List<Map<String, dynamic>> chartData,
+      double spacing,
+      double viewportWidth) {
     double scrollOffset = 0.0;
     if (_scrollController.hasClients) {
       scrollOffset = _scrollController.offset;
@@ -920,10 +932,11 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
         _zoom(_zoomScale + zoomChange, viewportWidth);
       } else {
         if (_scrollController.hasClients) {
-          // Inverted DY so that scrolling down moves the timeline left, 
+          // Inverted DY so that scrolling down moves the timeline left,
           // and added DX for trackpad horizontal support.
-          final double newOffset =
-              _scrollController.offset - event.scrollDelta.dy + event.scrollDelta.dx;
+          final double newOffset = _scrollController.offset -
+              event.scrollDelta.dy +
+              event.scrollDelta.dx;
           final maxScroll = _scrollController.position.maxScrollExtent;
           _scrollController.jumpTo(newOffset.clamp(0.0, maxScroll));
         }
@@ -983,7 +996,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     }
 
     final theme = Theme.of(context);
-    final isCompact = MediaQuery.sizeOf(context).width < 700;
+    final isCompact = _isCompact(context);
 
     final chartColumn = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -998,31 +1011,34 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
           ),
           const SizedBox(height: 4),
         ],
-        SizedBox(
-          height: kComparisonChartHeaderRowHeight,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(child: _buildLegend(context)),
-              if (widget.legendTrailing != null) ...[
+        if (isCompact)
+          _buildCompactToolbar(context)
+        else
+          SizedBox(
+            height: kComparisonChartHeaderRowHeight,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(child: _buildLegend(context)),
+                if (widget.legendTrailing != null) ...[
+                  const SizedBox(width: 8),
+                  widget.legendTrailing!,
+                ],
                 const SizedBox(width: 8),
-                widget.legendTrailing!,
+                _buildUnitToggle(context),
+                if (!widget.isBarChart) ...[
+                  const SizedBox(width: 8),
+                  _buildZoomControls(theme),
+                ],
+                if (widget.showExpandButton &&
+                    (widget.onOpenExpanded != null ||
+                        widget.expandedChartPath != null)) ...[
+                  _buildExpandButton(context),
+                ],
               ],
-              const SizedBox(width: 8),
-              _buildUnitToggle(context),
-              if (!widget.isBarChart) ...[
-                const SizedBox(width: 8),
-                _buildZoomControls(theme),
-              ],
-              if (widget.showExpandButton &&
-                  (widget.onOpenExpanded != null ||
-                      widget.expandedChartPath != null)) ...[
-                _buildExpandButton(context),
-              ],
-            ],
+            ),
           ),
-        ),
-        SizedBox(height: isCompact ? 8 : 12),
+        SizedBox(height: isCompact ? 6 : 12),
         Expanded(
           child: widget.isBarChart
               ? _buildBarChart(context, _chartData)
@@ -1057,7 +1073,41 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     );
   }
 
-  Widget _buildUnitToggle(BuildContext context) {
+  /// Compact phones: legend on its own scroll row; controls below (no discrete zoom).
+  Widget _buildCompactToolbar(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          height: 28,
+          child: _buildLegend(context, scrollable: true),
+        ),
+        const SizedBox(height: 4),
+        SizedBox(
+          height: 36,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _buildUnitToggle(context, compact: true),
+              if (widget.legendTrailing != null) ...[
+                const SizedBox(width: 6),
+                widget.legendTrailing!,
+              ],
+              if (widget.showExpandButton &&
+                  (widget.onOpenExpanded != null ||
+                      widget.expandedChartPath != null)) ...[
+                const SizedBox(width: 2),
+                _buildExpandButton(context, compact: true),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUnitToggle(BuildContext context, {bool compact = false}) {
     if (widget.preNormalizedPercent) {
       return const SizedBox.shrink();
     }
@@ -1075,6 +1125,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
           _buildToggleSegment(
             label: '%',
             isSelected: !_showAbsoluteValues,
+            compact: compact,
             onTap: () {
               setState(() {
                 _showAbsoluteValues = false;
@@ -1086,6 +1137,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
             label: '123',
             isSelected: _showAbsoluteValues,
             isEnabled: !widget.isBarChart,
+            compact: compact,
             onTap: () {
               setState(() {
                 _showAbsoluteValues = true;
@@ -1098,14 +1150,16 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     );
   }
 
-  Widget _buildExpandButton(BuildContext context) {
+  Widget _buildExpandButton(BuildContext context, {bool compact = false}) {
     final path = widget.expandedChartPath;
+    final min = compact ? 36.0 : 32.0;
     return IconButton(
       visualDensity: VisualDensity.compact,
       padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-      tooltip: kIsWeb ? 'Open advanced chart in new tab' : 'Open advanced chart',
-      icon: const Icon(Icons.open_in_new, size: 20),
+      constraints: BoxConstraints(minWidth: min, minHeight: min),
+      tooltip:
+          kIsWeb ? 'Open advanced chart in new tab' : 'Open advanced chart',
+      icon: Icon(Icons.open_in_new, size: compact ? 18 : 20),
       onPressed: () {
         if (path != null && kIsWeb) {
           // Advanced chart always opens in a new browser tab on web.
@@ -1174,17 +1228,17 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     required bool isSelected,
     required VoidCallback onTap,
     bool isEnabled = true,
+    bool compact = false,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final activeAccent = widget.accentColor ?? ModuleColors.market;
     final color = isSelected
         ? activeAccent
-        : (isEnabled 
-            ? (isDark ? Colors.white70 : Colors.black87) 
+        : (isEnabled
+            ? (isDark ? Colors.white70 : Colors.black87)
             : (isDark ? Colors.white24 : Colors.black26));
-    final bgColor = isSelected
-        ? activeAccent.withValues(alpha: 0.15)
-        : Colors.transparent;
+    final bgColor =
+        isSelected ? activeAccent.withValues(alpha: 0.15) : Colors.transparent;
 
     return IgnorePointer(
       ignoring: !isEnabled,
@@ -1197,7 +1251,10 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
           child: GestureDetector(
             onTap: onTap,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: EdgeInsets.symmetric(
+                horizontal: compact ? 6 : 10,
+                vertical: compact ? 4 : 6,
+              ),
               decoration: BoxDecoration(
                 color: bgColor,
                 borderRadius: BorderRadius.circular(6),
@@ -1206,7 +1263,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                 label,
                 style: TextStyle(
                   color: color,
-                  fontSize: 11,
+                  fontSize: compact ? 10 : 11,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -1217,81 +1274,93 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     );
   }
 
-  Widget _buildLegend(BuildContext context) {
+  Widget _buildLegend(BuildContext context, {bool scrollable = false}) {
     final theme = Theme.of(context);
-    final isCompact = MediaQuery.sizeOf(context).width < 700;
+    final isCompact = _isCompact(context);
+    final chips = _activeIndices.asMap().entries.map((entry) {
+      final index = entry.key;
+      final symbol = entry.value;
+      final color = widget.colorForSeriesIndex(index);
+      final isHidden = _hiddenIndices.contains(symbol);
+
+      return AmClickCapsule(
+        triggerOnHover: true,
+        popupContent: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: Icon(
+                isHidden ? Icons.visibility_off : Icons.visibility,
+                color: Colors.white,
+                size: 18,
+              ),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: () {
+                setState(() {
+                  if (isHidden) {
+                    _hiddenIndices.remove(symbol);
+                  } else {
+                    _hiddenIndices.add(symbol);
+                  }
+                });
+              },
+            ),
+            const SizedBox(width: 12),
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.white, size: 18),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: () {
+                if (widget.onRemoveIndex != null) {
+                  widget.onRemoveIndex!(symbol);
+                }
+              },
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: isCompact ? 12 : 16,
+              height: 3,
+              decoration: BoxDecoration(
+                color: isHidden ? Colors.grey : color,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              symbol,
+              style: TextStyle(
+                color: isHidden
+                    ? Colors.grey
+                    : theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
+                decoration: isHidden ? TextDecoration.lineThrough : null,
+                fontSize: isCompact ? 9.5 : 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }).toList();
+
+    if (scrollable) {
+      return ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: chips.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (_, i) => chips[i],
+      );
+    }
+
     return Wrap(
       spacing: isCompact ? 12 : 24,
       runSpacing: 8,
-      children: _activeIndices.asMap().entries.map((entry) {
-        final index = entry.key;
-        final symbol = entry.value;
-        final color = widget.colorForSeriesIndex(index);
-        final isHidden = _hiddenIndices.contains(symbol);
-
-        return AmClickCapsule(
-          triggerOnHover: true,
-          popupContent: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                icon: Icon(
-                  isHidden ? Icons.visibility_off : Icons.visibility,
-                  color: Colors.white,
-                  size: 18,
-                ),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                onPressed: () {
-                  setState(() {
-                    if (isHidden) {
-                      _hiddenIndices.remove(symbol);
-                    } else {
-                      _hiddenIndices.add(symbol);
-                    }
-                  });
-                },
-              ),
-              const SizedBox(width: 12),
-              IconButton(
-                icon: const Icon(Icons.close, color: Colors.white, size: 18),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                onPressed: () {
-                  if (widget.onRemoveIndex != null) {
-                    widget.onRemoveIndex!(symbol);
-                  }
-                },
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: isCompact ? 12 : 16,
-                height: 3,
-                decoration: BoxDecoration(
-                  color: isHidden ? Colors.grey : color,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                symbol,
-                style: TextStyle(
-                  color: isHidden
-                      ? Colors.grey
-                      : theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
-                  decoration: isHidden ? TextDecoration.lineThrough : null,
-                  fontSize: isCompact ? 11 : 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
+      children: chips,
     );
   }
 
@@ -1302,15 +1371,19 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
       builder: (context, constraints) {
         final double spacing = (_activeIndices.length * 10.0 + 20.0);
         final double chartWidth = chartData.length * spacing;
-        final double viewportWidth = constraints.maxWidth - _leftAxisReserve(context);
+        final double viewportWidth =
+            constraints.maxWidth - _leftAxisReserve(context);
 
-        final viewportInfo = _calculateVisibleViewport(chartData, spacing, viewportWidth);
-        final List<Map<String, dynamic>> visibleData = viewportInfo['visibleData'];
+        final viewportInfo =
+            _calculateVisibleViewport(chartData, spacing, viewportWidth);
+        final List<Map<String, dynamic>> visibleData =
+            viewportInfo['visibleData'];
         final int startIndex = viewportInfo['startIndex'];
         final Map<String, double> cleanMin = viewportInfo['cleanMin'];
         final Map<String, double> cleanMax = viewportInfo['cleanMax'];
 
-        final String firstSymbol = _activeIndices.isNotEmpty ? _activeIndices.first : '';
+        final String firstSymbol =
+            _activeIndices.isNotEmpty ? _activeIndices.first : '';
         final double targetMin = cleanMin[firstSymbol] ?? -5.0;
         final double targetMax = cleanMax[firstSymbol] ?? 5.0;
 
@@ -1328,189 +1401,200 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                 builder: (context, range, child) {
                   final double chartMinY = range.minY;
                   final double chartMaxY = range.maxY;
-                  final double chartInterval = _calculateCleanBounds(chartMinY, chartMaxY)['interval']!;
+                  final double chartInterval =
+                      _calculateCleanBounds(chartMinY, chartMaxY)['interval']!;
 
                   return _wrapChartGestures(
-                    viewportWidth: constraints.maxWidth - _leftAxisReserve(context),
+                    viewportWidth:
+                        constraints.maxWidth - _leftAxisReserve(context),
                     child: BarChart(
-                        key: ValueKey(
-                            '${_activeIndices.join('-')}_bar_${visibleData.length}'),
-                        BarChartData(
-                          gridData: FlGridData(
-                            show: true,
-                            drawVerticalLine: false,
-                            drawHorizontalLine: true,
-                            horizontalInterval: chartInterval,
-                            getDrawingHorizontalLine: (value) {
-                              return FlLine(
-                                color: theme.dividerColor.withOpacity(0.15),
-                                strokeWidth: 1,
-                                dashArray: [4, 4],
-                              );
-                            },
-                          ),
-                          titlesData: FlTitlesData(
-                            show: true,
-                            rightTitles: AxisTitles(
-                                sideTitles: SideTitles(showTitles: false)),
-                            topTitles: AxisTitles(
-                                sideTitles: SideTitles(showTitles: false)),
-                            bottomTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                reservedSize: 30,
-                                getTitlesWidget: (value, meta) {
-                                  final index = value.toInt();
-                                  final originalIndex = startIndex + index;
-                                  if (originalIndex >= 0 && originalIndex < chartData.length) {
-                                    if (chartData.length > 20 &&
-                                        originalIndex % (chartData.length ~/ 10) != 0) {
-                                      return const SizedBox.shrink();
-                                    }
-
-                                    final dateStr =
-                                        chartData[originalIndex]['time'] as String;
-                                    try {
-                                      final date = DateTime.parse(dateStr);
-                                      final fmt = _getDateFormat(chartData);
-
-                                      final interval = (chartData.length > 20)
-                                          ? (chartData.length ~/ 10)
-                                          : 1;
-                                      final prevIndex =
-                                          ((originalIndex - 1) ~/ interval) * interval;
-                                      if (prevIndex >= 0) {
-                                        try {
-                                          final prevDate = DateTime.parse(
-                                              chartData[prevIndex]['time']
-                                                  as String);
-                                          if (fmt.format(prevDate) ==
-                                              fmt.format(date)) {
-                                            return const SizedBox.shrink();
-                                          }
-                                        } catch (_) {}
-                                      }
-
-                                      return SideTitleWidget(
-                                        meta: meta,
-                                        space: 8.0,
-                                        child: Text(
-                                          fmt.format(date),
-                                          style: TextStyle(
-                                            color: theme
-                                                .textTheme.bodySmall?.color
-                                                ?.withOpacity(0.6),
-                                            fontSize: 10,
-                                          ),
-                                        ),
-                                      );
-                                    } catch (e) {
-                                      return const SizedBox.shrink();
-                                    }
-                                  }
-                                  return const SizedBox.shrink();
-                                },
-                              ),
-                            ),
-                            leftTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                reservedSize: _leftAxisReserve(context),
-                                interval: chartInterval,
-                                getTitlesWidget: (value, meta) {
-                                  return _buildLeftAxisLabel(
-                                    context: context,
-                                    meta: meta,
-                                    value: value,
-                                    cleanMin: cleanMin,
-                                    cleanMax: cleanMax,
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                          borderData: FlBorderData(
-                            show: true,
-                            border: Border(
-                              bottom: BorderSide(
-                                  color: theme.dividerColor.withOpacity(0.5),
-                                  width: 1),
-                              left: BorderSide(
-                                  color: theme.dividerColor.withOpacity(0.5),
-                                  width: 1),
-                              top: BorderSide.none,
-                              right: BorderSide.none,
-                            ),
-                          ),
-                          minY: chartMinY,
-                          maxY: chartMaxY,
-                          barGroups: visibleData.asMap().entries.map((entry) {
-                            final index = entry.key;
-                            final point = entry.value;
-
-                            return BarChartGroupData(
-                              x: index,
-                              barsSpace: 4,
-                              barRods: _activeIndices
-                                  .asMap()
-                                  .entries
-                                  .where((entry) => !_hiddenIndices.contains(entry.value))
-                                  .map((idxEntry) {
-                                final idx = idxEntry.key;
-                                final symbol = idxEntry.value;
-                                final val =
-                                    (point[symbol] as num?)?.toDouble() ?? 0.0;
-                                final isNegative = val < 0;
-                                final color = isNegative
-                                    ? const Color(0xFFEF4444)
-                                    : widget.colorForSeriesIndex(idx);
-
-                                return BarChartRodData(
-                                  toY: val,
-                                  color: color,
-                                  width: 14,
-                                  borderRadius: val > 0
-                                      ? const BorderRadius.only(
-                                          topLeft: Radius.circular(2),
-                                          topRight: Radius.circular(2))
-                                      : const BorderRadius.only(
-                                          bottomLeft: Radius.circular(2),
-                                          bottomRight: Radius.circular(2)),
-                                  backDrawRodData: BackgroundBarChartRodData(
-                                      show: true,
-                                      toY: 0,
-                                      color: Colors.transparent),
-                                );
-                              }).toList(),
+                      key: ValueKey(
+                          '${_activeIndices.join('-')}_bar_${visibleData.length}'),
+                      BarChartData(
+                        gridData: FlGridData(
+                          show: true,
+                          drawVerticalLine: false,
+                          drawHorizontalLine: true,
+                          horizontalInterval: chartInterval,
+                          getDrawingHorizontalLine: (value) {
+                            return FlLine(
+                              color: theme.dividerColor.withOpacity(0.15),
+                              strokeWidth: 1,
+                              dashArray: [4, 4],
                             );
-                          }).toList(),
-                          barTouchData: BarTouchData(
-                            touchTooltipData: BarTouchTooltipData(
-                              fitInsideHorizontally: true,
-                              fitInsideVertically: true,
-                              getTooltipColor: (_) =>
-                                  theme.cardColor.withOpacity(0.6),
-                              getTooltipItem:
-                                  (group, groupIndex, rod, rodIndex) {
-                                final originalIndex = startIndex + group.x;
-                                final dateStr =
-                                    chartData[originalIndex]['time'] as String;
-                                final date = DateTime.parse(dateStr);
-                                final visibleIndices = _activeIndices.where((s) => !_hiddenIndices.contains(s)).toList();
-                                final symbol = visibleIndices[rodIndex];
-                                return BarTooltipItem(
-                                  '${_getTooltipDateFormat(chartData).format(date)}\n$symbol\n${_showAbsoluteValues ? rod.toY.toStringAsFixed(2) : '${rod.toY >= 0 ? '+' : ''}${rod.toY.toStringAsFixed(2)}%'}',
-                                  const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
+                          },
+                        ),
+                        titlesData: FlTitlesData(
+                          show: true,
+                          rightTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false)),
+                          topTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false)),
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: _bottomAxisReserve(context),
+                              getTitlesWidget: (value, meta) {
+                                final index = value.toInt();
+                                final originalIndex = startIndex + index;
+                                final compact = _isCompact(context);
+                                final tickDiv = compact ? 5 : 10;
+                                if (originalIndex >= 0 &&
+                                    originalIndex < chartData.length) {
+                                  if (chartData.length > 20 &&
+                                      originalIndex %
+                                              (chartData.length ~/ tickDiv) !=
+                                          0) {
+                                    return const SizedBox.shrink();
+                                  }
+
+                                  final dateStr = chartData[originalIndex]
+                                      ['time'] as String;
+                                  try {
+                                    final date = DateTime.parse(dateStr);
+                                    final fmt = _getDateFormat(chartData);
+
+                                    final interval = (chartData.length > 20)
+                                        ? (chartData.length ~/ tickDiv)
+                                        : 1;
+                                    final prevIndex =
+                                        ((originalIndex - 1) ~/ interval) *
+                                            interval;
+                                    if (prevIndex >= 0) {
+                                      try {
+                                        final prevDate = DateTime.parse(
+                                            chartData[prevIndex]['time']
+                                                as String);
+                                        if (fmt.format(prevDate) ==
+                                            fmt.format(date)) {
+                                          return const SizedBox.shrink();
+                                        }
+                                      } catch (_) {}
+                                    }
+
+                                    return SideTitleWidget(
+                                      meta: meta,
+                                      space: compact ? 4.0 : 8.0,
+                                      child: Text(
+                                        fmt.format(date),
+                                        style: TextStyle(
+                                          color: theme
+                                              .textTheme.bodySmall?.color
+                                              ?.withOpacity(0.6),
+                                          fontSize:
+                                              _bottomAxisLabelFont(context),
+                                        ),
+                                      ),
+                                    );
+                                  } catch (e) {
+                                    return const SizedBox.shrink();
+                                  }
+                                }
+                                return const SizedBox.shrink();
+                              },
+                            ),
+                          ),
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: _leftAxisReserve(context),
+                              interval: chartInterval,
+                              getTitlesWidget: (value, meta) {
+                                return _buildLeftAxisLabel(
+                                  context: context,
+                                  meta: meta,
+                                  value: value,
+                                  cleanMin: cleanMin,
+                                  cleanMax: cleanMax,
                                 );
                               },
                             ),
                           ),
                         ),
+                        borderData: FlBorderData(
+                          show: true,
+                          border: Border(
+                            bottom: BorderSide(
+                                color: theme.dividerColor.withOpacity(0.5),
+                                width: 1),
+                            left: BorderSide(
+                                color: theme.dividerColor.withOpacity(0.5),
+                                width: 1),
+                            top: BorderSide.none,
+                            right: BorderSide.none,
+                          ),
+                        ),
+                        minY: chartMinY,
+                        maxY: chartMaxY,
+                        barGroups: visibleData.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final point = entry.value;
+
+                          return BarChartGroupData(
+                            x: index,
+                            barsSpace: 4,
+                            barRods: _activeIndices
+                                .asMap()
+                                .entries
+                                .where((entry) =>
+                                    !_hiddenIndices.contains(entry.value))
+                                .map((idxEntry) {
+                              final idx = idxEntry.key;
+                              final symbol = idxEntry.value;
+                              final val =
+                                  (point[symbol] as num?)?.toDouble() ?? 0.0;
+                              final isNegative = val < 0;
+                              final color = isNegative
+                                  ? const Color(0xFFEF4444)
+                                  : widget.colorForSeriesIndex(idx);
+
+                              return BarChartRodData(
+                                toY: val,
+                                color: color,
+                                width: 14,
+                                borderRadius: val > 0
+                                    ? const BorderRadius.only(
+                                        topLeft: Radius.circular(2),
+                                        topRight: Radius.circular(2))
+                                    : const BorderRadius.only(
+                                        bottomLeft: Radius.circular(2),
+                                        bottomRight: Radius.circular(2)),
+                                backDrawRodData: BackgroundBarChartRodData(
+                                    show: true,
+                                    toY: 0,
+                                    color: Colors.transparent),
+                              );
+                            }).toList(),
+                          );
+                        }).toList(),
+                        barTouchData: BarTouchData(
+                          touchTooltipData: BarTouchTooltipData(
+                            fitInsideHorizontally: true,
+                            fitInsideVertically: true,
+                            getTooltipColor: (_) =>
+                                theme.cardColor.withOpacity(0.6),
+                            getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                              final originalIndex = startIndex + group.x;
+                              final dateStr =
+                                  chartData[originalIndex]['time'] as String;
+                              final date = DateTime.parse(dateStr);
+                              final visibleIndices = _activeIndices
+                                  .where((s) => !_hiddenIndices.contains(s))
+                                  .toList();
+                              final symbol = visibleIndices[rodIndex];
+                              return BarTooltipItem(
+                                '${_getTooltipDateFormat(chartData).format(date)}\n$symbol\n${_showAbsoluteValues ? rod.toY.toStringAsFixed(2) : '${rod.toY >= 0 ? '+' : ''}${rod.toY.toStringAsFixed(2)}%'}',
+                                const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
                       ),
+                    ),
                   );
                 },
               ),
@@ -1549,13 +1633,15 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
 
         final viewportInfo =
             _calculateVisibleViewport(chartData, spacing, viewportWidth);
-        final List<Map<String, dynamic>> visibleData = viewportInfo['visibleData'];
+        final List<Map<String, dynamic>> visibleData =
+            viewportInfo['visibleData'];
         final int startIndex = viewportInfo['startIndex'];
         final int endIndex = viewportInfo['endIndex'];
         final Map<String, double> cleanMin = viewportInfo['cleanMin'];
         final Map<String, double> cleanMax = viewportInfo['cleanMax'];
 
-        final String firstSymbol = _activeIndices.isNotEmpty ? _activeIndices.first : '';
+        final String firstSymbol =
+            _activeIndices.isNotEmpty ? _activeIndices.first : '';
         final double targetMin = cleanMin[firstSymbol] ?? -5.0;
         final double targetMax = cleanMax[firstSymbol] ?? 5.0;
 
@@ -1573,322 +1659,336 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                 builder: (context, range, child) {
                   final double chartMinY = range.minY;
                   final double chartMaxY = range.maxY;
-                  final double chartInterval = _calculateCleanBounds(chartMinY, chartMaxY)['interval']!;
+                  final double chartInterval =
+                      _calculateCleanBounds(chartMinY, chartMaxY)['interval']!;
 
                   return _wrapChartGestures(
                     viewportWidth:
                         constraints.maxWidth - _leftAxisReserve(context),
                     child: LineChart(
-                        key: ValueKey(
-                            '${_activeIndices.join('-')}_line_${visibleData.length}'),
-                        LineChartData(
-                          gridData: FlGridData(
-                            show: true,
-                            drawVerticalLine: false,
-                            drawHorizontalLine: true,
-                            horizontalInterval: chartInterval,
-                            getDrawingHorizontalLine: (value) {
-                              return FlLine(
-                                color: theme.dividerColor.withOpacity(0.15),
-                                strokeWidth: 1,
-                                dashArray: [4, 4],
-                              );
-                            },
-                          ),
-                          titlesData: FlTitlesData(
-                            show: true,
-                            rightTitles: AxisTitles(
-                                sideTitles: SideTitles(showTitles: false)),
-                            topTitles: AxisTitles(
-                                sideTitles: SideTitles(showTitles: false)),
-                            bottomTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                reservedSize: 30,
-                                interval: xAxisLabelInterval(
-                                  visibleCount: visibleData.length,
-                                  timeFrameCode: widget.timeFrameCode,
-                                ).toDouble(),
-                                    getTitlesWidget: (value, meta) {
-                                  final index = value.toInt();
-                                  final originalIndex = startIndex + index;
-                                  if (originalIndex >= 0 && originalIndex < chartData.length) {
-                                    final interval = xAxisLabelInterval(
-                                      visibleCount: visibleData.length,
-                                      timeFrameCode: widget.timeFrameCode,
-                                    );
-                                    final isFirst = index == 0;
-                                    final isLast = index == visibleData.length - 1;
-                                    if (!isFirst &&
-                                        !isLast &&
-                                        interval > 1 &&
-                                        index % interval != 0) {
+                      key: ValueKey(
+                          '${_activeIndices.join('-')}_line_${visibleData.length}'),
+                      LineChartData(
+                        gridData: FlGridData(
+                          show: true,
+                          drawVerticalLine: false,
+                          drawHorizontalLine: true,
+                          horizontalInterval: chartInterval,
+                          getDrawingHorizontalLine: (value) {
+                            return FlLine(
+                              color: theme.dividerColor.withOpacity(0.15),
+                              strokeWidth: 1,
+                              dashArray: [4, 4],
+                            );
+                          },
+                        ),
+                        titlesData: FlTitlesData(
+                          show: true,
+                          rightTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false)),
+                          topTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false)),
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: _bottomAxisReserve(context),
+                              interval: xAxisLabelInterval(
+                                visibleCount: visibleData.length,
+                                timeFrameCode: widget.timeFrameCode,
+                              ).toDouble(),
+                              getTitlesWidget: (value, meta) {
+                                final index = value.toInt();
+                                final originalIndex = startIndex + index;
+                                final compact = _isCompact(context);
+                                if (originalIndex >= 0 &&
+                                    originalIndex < chartData.length) {
+                                  final interval = xAxisLabelInterval(
+                                    visibleCount: visibleData.length,
+                                    timeFrameCode: widget.timeFrameCode,
+                                  );
+                                  final isFirst = index == 0;
+                                  final isLast =
+                                      index == visibleData.length - 1;
+                                  if (!isFirst &&
+                                      !isLast &&
+                                      interval > 1 &&
+                                      index % interval != 0) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  if (isLast && interval > 1) {
+                                    final lastIntervalTick =
+                                        ((visibleData.length - 1) ~/ interval) *
+                                            interval;
+                                    if (visibleData.length - 1 !=
+                                            lastIntervalTick &&
+                                        visibleData.length -
+                                                1 -
+                                                lastIntervalTick <
+                                            interval / 2) {
                                       return const SizedBox.shrink();
                                     }
+                                  }
 
-                                    final dateStr =
-                                        chartData[originalIndex]['time'] as String;
-                                    try {
-                                      final date = DateTime.parse(dateStr);
-                                      final fmt = _getDateFormat(chartData);
+                                  final dateStr = chartData[originalIndex]
+                                      ['time'] as String;
+                                  try {
+                                    final date = DateTime.parse(dateStr);
+                                    final fmt = _getDateFormat(chartData);
 
-                                      final prevIndex =
-                                          ((originalIndex - 1) ~/ interval) * interval;
-                                      if (prevIndex >= 0 && !isFirst && !isLast) {
-                                        try {
-                                          final prevDate = DateTime.parse(
-                                              chartData[prevIndex]['time']
-                                                  as String);
-                                          if (fmt.format(prevDate) ==
-                                              fmt.format(date)) {
-                                            return const SizedBox.shrink();
-                                          }
-                                        } catch (_) {}
-                                      }
+                                    final prevIndex =
+                                        ((originalIndex - 1) ~/ interval) *
+                                            interval;
+                                    if (prevIndex >= 0 && !isFirst && !isLast) {
+                                      try {
+                                        final prevDate = DateTime.parse(
+                                            chartData[prevIndex]['time']
+                                                as String);
+                                        if (fmt.format(prevDate) ==
+                                            fmt.format(date)) {
+                                          return const SizedBox.shrink();
+                                        }
+                                      } catch (_) {}
+                                    }
 
-                                      return SideTitleWidget(
-                                        meta: meta,
-                                        space: 8.0,
-                                        child: Text(
-                                          fmt.format(date),
-                                          style: TextStyle(
-                                            color: theme
-                                                .textTheme.bodySmall?.color
-                                                ?.withOpacity(0.6),
-                                            fontSize: 10,
-                                          ),
+                                    return SideTitleWidget(
+                                      meta: meta,
+                                      space: compact ? 4.0 : 8.0,
+                                      child: Text(
+                                        fmt.format(date),
+                                        style: TextStyle(
+                                          color: theme
+                                              .textTheme.bodySmall?.color
+                                              ?.withOpacity(0.6),
+                                          fontSize:
+                                              _bottomAxisLabelFont(context),
                                         ),
-                                      );
-                                    } catch (e) {
-                                      return const SizedBox.shrink();
-                                    }
-                                  }
-                                  return const SizedBox.shrink();
-                                },
-                              ),
-                            ),
-                            leftTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                reservedSize: _leftAxisReserve(context),
-                                interval: chartInterval,
-                                getTitlesWidget: (value, meta) {
-                                  return _buildLeftAxisLabel(
-                                    context: context,
-                                    meta: meta,
-                                    value: value,
-                                    cleanMin: cleanMin,
-                                    cleanMax: cleanMax,
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                          borderData: FlBorderData(
-                            show: true,
-                            border: Border(
-                              bottom: BorderSide(
-                                  color: theme.dividerColor.withOpacity(0.5),
-                                  width: 1),
-                              left: BorderSide(
-                                  color: theme.dividerColor.withOpacity(0.5),
-                                  width: 1),
-                              top: BorderSide.none,
-                              right: BorderSide.none,
-                            ),
-                          ),
-                          minX: 0,
-                          maxX: visibleData.length.toDouble() - 1,
-                          minY: chartMinY,
-                          maxY: chartMaxY,
-                          extraLinesData: ExtraLinesData(
-                            horizontalLines: [
-                              if (widget.showEndValuePills &&
-                                  !_showAbsoluteValues)
-                                HorizontalLine(
-                                  y: 0.0,
-                                  color: theme.colorScheme.primary
-                                      .withOpacity(0.35),
-                                  strokeWidth: 1.5,
-                                  dashArray: [4, 4],
-                                  label: HorizontalLineLabel(
-                                    show: true,
-                                    alignment: Alignment.topRight,
-                                    style: TextStyle(
-                                      color: theme.colorScheme.primary
-                                          .withOpacity(0.8),
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              if (widget.showEndValuePills)
-                                ..._activeIndices
-                                    .asMap()
-                                    .entries
-                                    .where((e) =>
-                                        !_hiddenIndices.contains(e.value))
-                                    .map((entry) {
-                                  final index = entry.key;
-                                  final symbol = entry.value;
-                                  final val = visibleData.last[symbol];
-                                  if (val == null) {
-                                    return HorizontalLine(
-                                        y: 0, strokeWidth: 0);
-                                  }
-
-                                  final double originalY = val as double;
-                                  final Color color =
-                                      widget.colorForSeriesIndex(index);
-
-                                  double drawY = originalY;
-                                  if (_useMultiYAxis &&
-                                      index > 0 &&
-                                      index < _activeIndices.length) {
-                                    final String firstSymbol =
-                                        _activeIndices.first;
-                                    final double denom =
-                                        cleanMax[symbol]! - cleanMin[symbol]!;
-                                    final double range0 =
-                                        cleanMax[firstSymbol]! -
-                                            cleanMin[firstSymbol]!;
-                                    drawY = denom.abs() < 0.01
-                                        ? cleanMin[firstSymbol]!
-                                        : cleanMin[firstSymbol]! +
-                                            (originalY - cleanMin[symbol]!) /
-                                                denom *
-                                                range0;
-                                  }
-
-                                  return HorizontalLine(
-                                    y: drawY,
-                                    color: color.withOpacity(0.35),
-                                    strokeWidth: 1,
-                                    dashArray: [3, 3],
-                                  );
-                                }),
-                            ],
-                          ),
-                          lineBarsData: _buildLineBars(visibleData, cleanMin, cleanMax),
-                          lineTouchData: LineTouchData(
-                            enabled: true,
-                            handleBuiltInTouches: true,
-                            touchTooltipData: LineTouchTooltipData(
-                              fitInsideHorizontally: true,
-                              fitInsideVertically: true,
-                              getTooltipColor: (touchedSpot) =>
-                                  theme.cardColor.withOpacity(0.6),
-                              getTooltipItems: (touchedSpots) {
-                                if (touchedSpots.isEmpty) {
-                                  return [];
-                                }
-
-                                // Stable order by series, shared timestamp once at top.
-                                final spots = List<LineBarSpot>.from(touchedSpots)
-                                  ..sort((a, b) =>
-                                      a.barIndex.compareTo(b.barIndex));
-
-                                final firstSpot = spots.first;
-                                final originalIndex =
-                                    startIndex + firstSpot.x.toInt();
-                                if (originalIndex < 0 ||
-                                    originalIndex >= chartData.length) {
-                                  return [];
-                                }
-
-                                final dateStr =
-                                    chartData[originalIndex]['time'] as String;
-                                final date = DateTime.parse(dateStr);
-                                final dateLabel = _getTooltipDateFormat(
-                                  chartData,
-                                ).format(date);
-                                final visibleIndices = _activeIndices
-                                    .where((s) => !_hiddenIndices.contains(s))
-                                    .toList();
-                                final muted = theme
-                                        .textTheme.bodySmall?.color
-                                        ?.withOpacity(0.75) ??
-                                    Colors.grey;
-
-                                return spots.asMap().entries.map((entry) {
-                                  final i = entry.key;
-                                  final spot = entry.value;
-                                  if (spot.barIndex < 0 ||
-                                      spot.barIndex >=
-                                          visibleIndices.length) {
-                                    return LineTooltipItem(
-                                      '',
-                                      const TextStyle(fontSize: 0),
-                                    );
-                                  }
-                                  final symbol =
-                                      visibleIndices[spot.barIndex];
-
-                                  double displayVal = spot.y;
-                                  final int barIdx = spot.barIndex;
-                                  if (_useMultiYAxis &&
-                                      barIdx > 0 &&
-                                      barIdx < _activeIndices.length) {
-                                    final String firstSymbol =
-                                        _activeIndices.first;
-                                    final String currentSymbol =
-                                        _activeIndices[barIdx];
-                                    final double denominator0 =
-                                        cleanMax[firstSymbol]! -
-                                            cleanMin[firstSymbol]!;
-                                    final double denIdx =
-                                        cleanMax[currentSymbol]! -
-                                            cleanMin[currentSymbol]!;
-                                    displayVal = denominator0.abs() < 0.01
-                                        ? cleanMin[currentSymbol]!
-                                        : cleanMin[currentSymbol]! +
-                                            (spot.y -
-                                                    cleanMin[firstSymbol]!) /
-                                                denominator0 *
-                                                denIdx;
-                                  }
-
-                                  final valueText = _showAbsoluteValues
-                                      ? displayVal.toStringAsFixed(2)
-                                      : '${displayVal >= 0 ? '+' : ''}${displayVal.toStringAsFixed(2)}%';
-                                  final seriesColor =
-                                      widget.colorForSeriesIndex(spot.barIndex);
-
-                                  if (i == 0) {
-                                    return LineTooltipItem(
-                                      '$dateLabel\n',
-                                      TextStyle(
-                                        color: muted,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 11,
                                       ),
-                                      children: [
-                                        TextSpan(
-                                          text: '$symbol  $valueText',
-                                          style: TextStyle(
-                                            color: seriesColor,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
                                     );
+                                  } catch (e) {
+                                    return const SizedBox.shrink();
                                   }
-
-                                  return LineTooltipItem(
-                                    '$symbol  $valueText',
-                                    TextStyle(
-                                      color: seriesColor,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                    ),
-                                  );
-                                }).toList();
+                                }
+                                return const SizedBox.shrink();
+                              },
+                            ),
+                          ),
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: _leftAxisReserve(context),
+                              interval: chartInterval,
+                              getTitlesWidget: (value, meta) {
+                                return _buildLeftAxisLabel(
+                                  context: context,
+                                  meta: meta,
+                                  value: value,
+                                  cleanMin: cleanMin,
+                                  cleanMax: cleanMax,
+                                );
                               },
                             ),
                           ),
                         ),
+                        borderData: FlBorderData(
+                          show: true,
+                          border: Border(
+                            bottom: BorderSide(
+                                color: theme.dividerColor.withOpacity(0.5),
+                                width: 1),
+                            left: BorderSide(
+                                color: theme.dividerColor.withOpacity(0.5),
+                                width: 1),
+                            top: BorderSide.none,
+                            right: BorderSide.none,
+                          ),
+                        ),
+                        minX: 0,
+                        maxX: visibleData.length.toDouble() - 1,
+                        minY: chartMinY,
+                        maxY: chartMaxY,
+                        extraLinesData: ExtraLinesData(
+                          horizontalLines: [
+                            if (widget.showEndValuePills &&
+                                !_showAbsoluteValues)
+                              HorizontalLine(
+                                y: 0.0,
+                                color:
+                                    theme.colorScheme.primary.withOpacity(0.35),
+                                strokeWidth: 1.5,
+                                dashArray: [4, 4],
+                                label: HorizontalLineLabel(
+                                  show: true,
+                                  alignment: Alignment.topRight,
+                                  style: TextStyle(
+                                    color: theme.colorScheme.primary
+                                        .withOpacity(0.8),
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            if (widget.showEndValuePills)
+                              ..._activeIndices
+                                  .asMap()
+                                  .entries
+                                  .where(
+                                      (e) => !_hiddenIndices.contains(e.value))
+                                  .map((entry) {
+                                final index = entry.key;
+                                final symbol = entry.value;
+                                final val = visibleData.last[symbol];
+                                if (val == null) {
+                                  return HorizontalLine(y: 0, strokeWidth: 0);
+                                }
+
+                                final double originalY = val as double;
+                                final Color color =
+                                    widget.colorForSeriesIndex(index);
+
+                                double drawY = originalY;
+                                if (_useMultiYAxis &&
+                                    index > 0 &&
+                                    index < _activeIndices.length) {
+                                  final String firstSymbol =
+                                      _activeIndices.first;
+                                  final double denom =
+                                      cleanMax[symbol]! - cleanMin[symbol]!;
+                                  final double range0 = cleanMax[firstSymbol]! -
+                                      cleanMin[firstSymbol]!;
+                                  drawY = denom.abs() < 0.01
+                                      ? cleanMin[firstSymbol]!
+                                      : cleanMin[firstSymbol]! +
+                                          (originalY - cleanMin[symbol]!) /
+                                              denom *
+                                              range0;
+                                }
+
+                                return HorizontalLine(
+                                  y: drawY,
+                                  color: color.withOpacity(0.35),
+                                  strokeWidth: 1,
+                                  dashArray: [3, 3],
+                                );
+                              }),
+                          ],
+                        ),
+                        lineBarsData:
+                            _buildLineBars(visibleData, cleanMin, cleanMax),
+                        lineTouchData: LineTouchData(
+                          enabled: true,
+                          handleBuiltInTouches: true,
+                          touchTooltipData: LineTouchTooltipData(
+                            fitInsideHorizontally: true,
+                            fitInsideVertically: true,
+                            getTooltipColor: (touchedSpot) =>
+                                theme.cardColor.withOpacity(0.6),
+                            getTooltipItems: (touchedSpots) {
+                              if (touchedSpots.isEmpty) {
+                                return [];
+                              }
+
+                              // Stable order by series, shared timestamp once at top.
+                              final spots = List<LineBarSpot>.from(touchedSpots)
+                                ..sort(
+                                    (a, b) => a.barIndex.compareTo(b.barIndex));
+
+                              final firstSpot = spots.first;
+                              final originalIndex =
+                                  startIndex + firstSpot.x.toInt();
+                              if (originalIndex < 0 ||
+                                  originalIndex >= chartData.length) {
+                                return [];
+                              }
+
+                              final dateStr =
+                                  chartData[originalIndex]['time'] as String;
+                              final date = DateTime.parse(dateStr);
+                              final dateLabel = _getTooltipDateFormat(
+                                chartData,
+                              ).format(date);
+                              final visibleIndices = _activeIndices
+                                  .where((s) => !_hiddenIndices.contains(s))
+                                  .toList();
+                              final muted = theme.textTheme.bodySmall?.color
+                                      ?.withOpacity(0.75) ??
+                                  Colors.grey;
+
+                              return spots.asMap().entries.map((entry) {
+                                final i = entry.key;
+                                final spot = entry.value;
+                                if (spot.barIndex < 0 ||
+                                    spot.barIndex >= visibleIndices.length) {
+                                  return LineTooltipItem(
+                                    '',
+                                    const TextStyle(fontSize: 0),
+                                  );
+                                }
+                                final symbol = visibleIndices[spot.barIndex];
+
+                                double displayVal = spot.y;
+                                final int barIdx = spot.barIndex;
+                                if (_useMultiYAxis &&
+                                    barIdx > 0 &&
+                                    barIdx < _activeIndices.length) {
+                                  final String firstSymbol =
+                                      _activeIndices.first;
+                                  final String currentSymbol =
+                                      _activeIndices[barIdx];
+                                  final double denominator0 =
+                                      cleanMax[firstSymbol]! -
+                                          cleanMin[firstSymbol]!;
+                                  final double denIdx =
+                                      cleanMax[currentSymbol]! -
+                                          cleanMin[currentSymbol]!;
+                                  displayVal = denominator0.abs() < 0.01
+                                      ? cleanMin[currentSymbol]!
+                                      : cleanMin[currentSymbol]! +
+                                          (spot.y - cleanMin[firstSymbol]!) /
+                                              denominator0 *
+                                              denIdx;
+                                }
+
+                                final valueText = _showAbsoluteValues
+                                    ? displayVal.toStringAsFixed(2)
+                                    : '${displayVal >= 0 ? '+' : ''}${displayVal.toStringAsFixed(2)}%';
+                                final seriesColor =
+                                    widget.colorForSeriesIndex(spot.barIndex);
+
+                                if (i == 0) {
+                                  return LineTooltipItem(
+                                    '$dateLabel\n',
+                                    TextStyle(
+                                      color: muted,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 11,
+                                    ),
+                                    children: [
+                                      TextSpan(
+                                        text: '$symbol  $valueText',
+                                        style: TextStyle(
+                                          color: seriesColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                }
+
+                                return LineTooltipItem(
+                                  '$symbol  $valueText',
+                                  TextStyle(
+                                    color: seriesColor,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                );
+                              }).toList();
+                            },
+                          ),
+                        ),
                       ),
+                    ),
                   );
                 },
               ),
@@ -1908,8 +2008,13 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     );
   }
 
-  List<LineChartBarData> _buildLineBars(List<Map<String, dynamic>> visibleData, Map<String, double> cleanMin, Map<String, double> cleanMax) {
-    return _activeIndices.asMap().entries.where((entry) => !_hiddenIndices.contains(entry.value)).map((entry) {
+  List<LineChartBarData> _buildLineBars(List<Map<String, dynamic>> visibleData,
+      Map<String, double> cleanMin, Map<String, double> cleanMax) {
+    return _activeIndices
+        .asMap()
+        .entries
+        .where((entry) => !_hiddenIndices.contains(entry.value))
+        .map((entry) {
       final index = entry.key;
       final symbol = entry.value;
       final color = widget.colorForSeriesIndex(index);
@@ -1923,7 +2028,8 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
           if (_useMultiYAxis && index > 0 && index < _activeIndices.length) {
             final String firstSymbol = _activeIndices.first;
             final double denominator = cleanMax[symbol]! - cleanMin[symbol]!;
-            final double range0 = cleanMax[firstSymbol]! - cleanMin[firstSymbol]!;
+            final double range0 =
+                cleanMax[firstSymbol]! - cleanMin[firstSymbol]!;
             final double scaledY = denominator.abs() < 0.01
                 ? cleanMin[firstSymbol]!
                 : cleanMin[firstSymbol]! +
@@ -1936,8 +2042,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
         }
       }
 
-      final bool fillArea =
-          widget.accentColor == null || index == 0;
+      final bool fillArea = widget.accentColor == null || index == 0;
 
       return LineChartBarData(
         spots: spots,
@@ -1975,9 +2080,10 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     bool showPills,
   ) {
     if (!showPills) return const SizedBox.shrink();
-    if (chartData.isEmpty || _activeIndices.isEmpty) return const SizedBox.shrink();
+    if (chartData.isEmpty || _activeIndices.isEmpty)
+      return const SizedBox.shrink();
 
-    const double bottomReserved = 30.0;
+    final double bottomReserved = _bottomAxisReserve(context);
     final double plotHeight = constraints.maxHeight - bottomReserved;
     final List<Map<String, dynamic>> pillData = [];
 
@@ -1996,16 +2102,19 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
         final double range0 = cleanMax[firstSymbol]! - cleanMin[firstSymbol]!;
         drawY = denom.abs() < 0.01
             ? cleanMin[firstSymbol]!
-            : cleanMin[firstSymbol]! + (originalY - cleanMin[symbol]!) / denom * range0;
+            : cleanMin[firstSymbol]! +
+                (originalY - cleanMin[symbol]!) / denom * range0;
       }
 
-      final String firstSymbol = _activeIndices.isNotEmpty ? _activeIndices.first : '';
+      final String firstSymbol =
+          _activeIndices.isNotEmpty ? _activeIndices.first : '';
       final double minY = cleanMin[firstSymbol] ?? -5.0;
       final double maxY = cleanMax[firstSymbol] ?? 5.0;
       final double yRange = maxY - minY;
       final double topFraction =
           yRange.abs() < 0.01 ? 0.5 : (maxY - drawY) / yRange;
-      final double topOffset = (topFraction * plotHeight).clamp(2.0, plotHeight - 22.0);
+      final double topOffset =
+          (topFraction * plotHeight).clamp(2.0, plotHeight - 22.0);
 
       final String labelText = _showAbsoluteValues
           ? originalY.toStringAsFixed(2)
@@ -2020,14 +2129,16 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
 
     if (pillData.isEmpty) return const SizedBox.shrink();
 
-    pillData.sort(
-        (a, b) => (a['topOffset'] as double).compareTo(b['topOffset'] as double));
-    const double minPillGap = 24.0;
+    pillData.sort((a, b) =>
+        (a['topOffset'] as double).compareTo(b['topOffset'] as double));
+    final compact = _isCompact(context);
+    final double minPillGap = compact ? 20.0 : 24.0;
     for (int i = 1; i < pillData.length; i++) {
       final double prev = pillData[i - 1]['topOffset'] as double;
       final double curr = pillData[i]['topOffset'] as double;
       if (curr - prev < minPillGap) {
-        pillData[i]['topOffset'] = (prev + minPillGap).clamp(2.0, plotHeight - 22.0);
+        pillData[i]['topOffset'] =
+            (prev + minPillGap).clamp(2.0, plotHeight - 22.0);
       }
     }
 
@@ -2041,23 +2152,26 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
           right: 0,
           top: top,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? 5 : 8,
+              vertical: compact ? 2 : 3,
+            ),
             decoration: BoxDecoration(
               color: color,
               borderRadius: BorderRadius.circular(4),
               boxShadow: [
                 BoxShadow(
                   color: color.withOpacity(0.55),
-                  blurRadius: 10,
+                  blurRadius: compact ? 6 : 10,
                   spreadRadius: 1,
                 ),
               ],
             ),
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
-                fontSize: 11,
+                fontSize: compact ? 9 : 11,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.3,
               ),
@@ -2097,7 +2211,8 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     }
     if (chartData.isEmpty) return DateFormat('MMM yy');
     try {
-      final firstDate = _parseFlexibleDateTime(chartData.first['time'] as String);
+      final firstDate =
+          _parseFlexibleDateTime(chartData.first['time'] as String);
       final lastDate = _parseFlexibleDateTime(chartData.last['time'] as String);
       if (firstDate == null || lastDate == null) return DateFormat('MMM yy');
       final difference = lastDate.difference(firstDate);
@@ -2119,7 +2234,8 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
   DateFormat _getTooltipDateFormat(List<Map<String, dynamic>> chartData) {
     if (chartData.isEmpty) return DateFormat('dd MMM yy');
     try {
-      final firstDate = _parseFlexibleDateTime(chartData.first['time'] as String);
+      final firstDate =
+          _parseFlexibleDateTime(chartData.first['time'] as String);
       final lastDate = _parseFlexibleDateTime(chartData.last['time'] as String);
       if (firstDate == null || lastDate == null) return DateFormat('dd MMM yy');
       final difference = lastDate.difference(firstDate);

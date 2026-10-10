@@ -32,6 +32,10 @@ class FinancialComparisonSection extends StatelessWidget {
   final bool tableOnly;
   final bool balanceOnly;
   final bool takeawaysOnly;
+  /// Chart-bottom strip: tighter padding + readable column widths.
+  final bool dense;
+  /// When set, only these balance-sheet row labels are shown.
+  final Set<String>? balanceVisibleLabels;
 
   const FinancialComparisonSection({
     super.key,
@@ -45,6 +49,8 @@ class FinancialComparisonSection extends StatelessWidget {
     this.tableOnly = false,
     this.balanceOnly = false,
     this.takeawaysOnly = false,
+    this.dense = false,
+    this.balanceVisibleLabels,
   });
 
   @override
@@ -53,7 +59,7 @@ class FinancialComparisonSection extends StatelessWidget {
       return _buildTakeawaysCard(context);
     }
     if (balanceOnly) {
-      return _buildTableCard(context);
+      return _buildBalanceSheetCard(context);
     }
     if (tableOnly) {
       return _buildTableCard(context);
@@ -92,24 +98,27 @@ class FinancialComparisonSection extends StatelessWidget {
 
   Widget _buildTableCard(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      width: double.infinity,
+      padding: EdgeInsets.all(dense ? 8 : 12),
       decoration: BoxDecoration(
         color: context.cardColor,
         border: Border.all(color: context.borderColor),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Financial Performance Summary',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: context.textPrimary,
+              Expanded(
+                child: Text(
+                  dense ? 'Performance Summary' : 'Financial Performance Summary',
+                  style: TextStyle(
+                    fontSize: dense ? 11 : 12,
+                    fontWeight: FontWeight.w600,
+                    color: context.textPrimary,
+                  ),
                 ),
               ),
               Text(
@@ -121,7 +130,7 @@ class FinancialComparisonSection extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: dense ? 6 : 10),
           _buildComparisonTable(context),
         ],
       ),
@@ -168,60 +177,253 @@ class FinancialComparisonSection extends StatelessWidget {
             ],
           ),
         ),
-        // Horizontally Scrollable Period Columns
+        // Period columns always expand evenly — no right-side dead space.
         Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: List.generate(recent.length, (colIdx) {
-                final curr = recent[colIdx];
-                final prev = colIdx + 1 < recent.length ? recent[colIdx + 1] : null;
+          child: Row(
+            children: List.generate(recent.length, (colIdx) {
+              final curr = recent[colIdx];
+              final prev =
+                  colIdx + 1 < recent.length ? recent[colIdx + 1] : null;
 
-                final rev = _num(curr, 'revenue', 'totalRevenue');
-                final prevRev = prev != null ? _num(prev, 'revenue', 'totalRevenue') : null;
-                final revGrowth = prevRev != null && prevRev != 0 && rev != null
-                    ? ((rev - prevRev) / prevRev.abs()) * 100
-                    : null;
+              final rev = _num(curr, 'revenue', 'totalRevenue');
+              final prevRev =
+                  prev != null ? _num(prev, 'revenue', 'totalRevenue') : null;
+              final revGrowth = prevRev != null && prevRev != 0 && rev != null
+                  ? ((rev - prevRev) / prevRev.abs()) * 100
+                  : null;
 
-                final pat = _num(curr, 'profitAfterTax', 'netIncome');
-                final prevPat = prev != null ? _num(prev, 'profitAfterTax', 'netIncome') : null;
-                final patGrowth = prevPat != null && prevPat != 0 && pat != null
-                    ? ((pat - prevPat) / prevPat.abs()) * 100
-                    : null;
+              final pat = _num(curr, 'profitAfterTax', 'netIncome');
+              final prevPat =
+                  prev != null ? _num(prev, 'profitAfterTax', 'netIncome') : null;
+              final patGrowth = prevPat != null && prevPat != 0 && pat != null
+                  ? ((pat - prevPat) / prevPat.abs()) * 100
+                  : null;
 
-                final patMargin = rev != null && rev != 0 && pat != null
-                    ? (pat / rev) * 100
-                    : null;
+              final patMargin = rev != null && rev != 0 && pat != null
+                  ? (pat / rev) * 100
+                  : null;
 
-                final opProfit = _num(curr, 'operatingProfit', 'ebit') ??
-                    _num(curr, 'operatingIncome') ??
-                    (rev != null && _num(curr, 'totalExpenses') != null ? (rev - _num(curr, 'totalExpenses')!) : null);
+              final opProfit = _num(curr, 'operatingProfit', 'ebit') ??
+                  _num(curr, 'operatingIncome') ??
+                  (rev != null && _num(curr, 'totalExpenses') != null
+                      ? (rev - _num(curr, 'totalExpenses')!)
+                      : null);
 
-                return SizedBox(
-                  width: 90,
-                  child: Column(
-                    children: [
-                      _tableHeaderCell(context, _formatPeriod(periods[colIdx])),
-                      if (showRevenue) ...[
-                        _tableDataCell(context, rev != null ? '₹${rev.toInt()}' : '---'),
-                        _tableDeltaCell(context, revGrowth),
-                      ],
-                      if (showPAT) ...[
-                        _tableDataCell(context, pat != null ? '₹${pat.toInt()}' : '---'),
-                        _tableDeltaCell(context, patGrowth),
-                      ],
-                      if (showPatMargin)
-                        _tableDataCell(context, patMargin != null ? '${patMargin.toStringAsFixed(1)}%' : '---'),
-                      _tableDataCell(context, opProfit != null ? '₹${opProfit.toInt()}' : '---'),
+              return Expanded(
+                child: Column(
+                  children: [
+                    _tableHeaderCell(context, _formatPeriod(periods[colIdx])),
+                    if (showRevenue) ...[
+                      _tableDataCell(
+                          context, rev != null ? '₹${rev.toInt()}' : '---'),
+                      _tableDeltaCell(context, revGrowth),
                     ],
-                  ),
-                );
-              }),
-            ),
+                    if (showPAT) ...[
+                      _tableDataCell(
+                          context, pat != null ? '₹${pat.toInt()}' : '---'),
+                      _tableDeltaCell(context, patGrowth),
+                    ],
+                    if (showPatMargin)
+                      _tableDataCell(
+                        context,
+                        patMargin != null
+                            ? '${patMargin.toStringAsFixed(1)}%'
+                            : '---',
+                      ),
+                    _tableDataCell(
+                      context,
+                      opProfit != null ? '₹${opProfit.toInt()}' : '---',
+                    ),
+                  ],
+                ),
+              );
+            }),
           ),
         ),
       ],
     );
+  }
+
+  /// Balance sheet periods × key line items (not income statement leftovers).
+  Widget _buildBalanceSheetCard(BuildContext context) {
+    final recent = balanceSheets.take(periodCount).toList();
+    if (recent.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: context.cardColor,
+          border: Border.all(color: context.borderColor),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Text(
+          'No balance sheet data available',
+          style: TextStyle(color: context.textTertiary, fontSize: 12),
+        ),
+      );
+    }
+
+    final periods =
+        recent.map((s) => _formatPeriod((s['period'] ?? '').toString())).toList();
+
+    const rows = <(String label, List<String> keys)>[
+      ('Total Assets', ['totalAssets']),
+      ('Equity', ['equityCapital', 'totalEquity', 'shareholdersEquity']),
+      ('Total Liabilities', ['totalLiabilities', 'totalLiab']),
+      ('Total Debt', ['totalDebt', 'borrowings', 'longTermDebt']),
+      ('Current Assets', ['currentAssets']),
+      ('Current Liabilities', ['currentLiabilities']),
+      ('Cash', ['cashAndEquivalents', 'cash', 'cashAndBank']),
+    ];
+
+    final visibleRows = rows.where((row) {
+      if (balanceVisibleLabels != null &&
+          !balanceVisibleLabels!.contains(row.$1)) {
+        return false;
+      }
+      return recent.any((sheet) {
+        for (final k in row.$2) {
+          if (_num(sheet, k) != null) return true;
+        }
+        return false;
+      });
+    }).toList();
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(dense ? 8 : 12),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        border: Border.all(color: context.borderColor),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  dense ? 'Balance Sheet' : 'Balance Sheet Summary',
+                  style: TextStyle(
+                    fontSize: dense ? 11 : 12,
+                    fontWeight: FontWeight.w600,
+                    color: context.textPrimary,
+                  ),
+                ),
+              ),
+              Text(
+                isQuarterly ? 'Quarterly (₹ Cr)' : 'Annual (₹ Cr)',
+                style: TextStyle(fontSize: 10, color: context.textTertiary),
+              ),
+            ],
+          ),
+          SizedBox(height: dense ? 6 : 10),
+          if (visibleRows.isEmpty)
+            Text(
+              'No populated balance sheet metrics',
+              style: TextStyle(color: context.textTertiary, fontSize: 12),
+            )
+          else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: dense ? 120 : 130,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _tableHeaderCell(context, 'Metric', isFirst: true),
+                      ...visibleRows.map(
+                        (r) => _tableMetricCell(context, r.$1),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Row(
+                    children: List.generate(recent.length, (colIdx) {
+                      final sheet = recent[colIdx];
+                      final prev = colIdx + 1 < recent.length
+                          ? recent[colIdx + 1]
+                          : null;
+                      return Expanded(
+                        child: Column(
+                          children: [
+                            _tableHeaderCell(context, periods[colIdx]),
+                            ...visibleRows.map((row) {
+                              final val = _numFromKeys(sheet, row.$2);
+                              final prevVal = prev != null
+                                  ? _numFromKeys(prev, row.$2)
+                                  : null;
+                              if (val == null) {
+                                return _tableDataCell(context, '—');
+                              }
+                              double? growth;
+                              if (prevVal != null && prevVal != 0) {
+                                growth =
+                                    ((val - prevVal) / prevVal.abs()) * 100;
+                              }
+                              if (growth == null) {
+                                return _tableDataCell(
+                                  context,
+                                  '₹${val.toInt()}',
+                                );
+                              }
+                              final isPos = growth >= 0;
+                              return Container(
+                                height: 26,
+                                alignment: Alignment.center,
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text.rich(
+                                    TextSpan(
+                                      children: [
+                                        TextSpan(
+                                          text: '₹${val.toInt()} ',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: context.textPrimary,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text:
+                                              '${isPos ? '+' : ''}${growth.toStringAsFixed(0)}%',
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w700,
+                                            color: isPos
+                                                ? context.marketTheme.positive
+                                                : context.marketTheme.negative,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ],
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  double? _numFromKeys(Map<String, dynamic> map, List<String> keys) {
+    for (final k in keys) {
+      final v = _num(map, k);
+      if (v != null) return v;
+    }
+    return null;
   }
 
   Widget _buildTakeawaysCard(BuildContext context) {
@@ -232,30 +434,38 @@ class FinancialComparisonSection extends StatelessWidget {
     final metrics = _computeKeyTakeawayMetrics(context);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        horizontal: dense ? 10 : 14,
+        vertical: dense ? 8 : 12,
+      ),
       decoration: BoxDecoration(
         color: context.cardColor,
         border: Border.all(color: context.borderColor),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
               Icon(Icons.auto_awesome_rounded, size: 14, color: ModuleColors.market),
               const SizedBox(width: 6),
-              Text(
-                'Key Takeaways ($periodLabel)',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: context.textPrimary,
+              Expanded(
+                child: Text(
+                  'Key Takeaways ($periodLabel)',
+                  style: TextStyle(
+                    fontSize: dense ? 11 : 12,
+                    fontWeight: FontWeight.w700,
+                    color: context.textPrimary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: dense ? 8 : 12),
           if (metrics.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -264,8 +474,135 @@ class FinancialComparisonSection extends StatelessWidget {
                 style: TextStyle(color: context.textSecondary, fontSize: 11),
               ),
             )
+          else if (dense)
+            _buildTakeawayGrid(context, metrics)
           else
             ...metrics.map((m) => _buildTakeawayRow(context, m)),
+        ],
+      ),
+    );
+  }
+
+  /// Dense takeaways: equal-width cards that fill every row (no orphan gaps).
+  Widget _buildTakeawayGrid(
+    BuildContext context,
+    List<_TakeawayMetric> metrics,
+  ) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        // Prefer even grids so the last row is never half-empty.
+        int cols;
+        if (width < 340) {
+          cols = 1;
+        } else if (width < 640) {
+          cols = 2;
+        } else if (metrics.length <= 4) {
+          cols = metrics.length; // one full row
+        } else {
+          cols = 4;
+        }
+        cols = cols.clamp(1, metrics.isEmpty ? 1 : metrics.length);
+
+        final rows = <Widget>[];
+        for (var i = 0; i < metrics.length; i += cols) {
+          final chunk = metrics.skip(i).take(cols).toList();
+          rows.add(
+            Padding(
+              padding: EdgeInsets.only(bottom: i + cols < metrics.length ? 8 : 0),
+              child: Row(
+                children: [
+                  for (var j = 0; j < chunk.length; j++) ...[
+                    if (j > 0) const SizedBox(width: 8),
+                    Expanded(
+                      child: SizedBox(
+                        height: 78,
+                        child: _buildTakeawayTile(context, chunk[j]),
+                      ),
+                    ),
+                  ],
+                  // Pad incomplete last row so columns stay aligned.
+                  for (var j = chunk.length; j < cols; j++) ...[
+                    const SizedBox(width: 8),
+                    const Expanded(child: SizedBox(height: 78)),
+                  ],
+                ],
+              ),
+            ),
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: rows,
+        );
+      },
+    );
+  }
+
+  Widget _buildTakeawayTile(BuildContext context, _TakeawayMetric metric) {
+    final deltaColor = metric.isPositive
+        ? context.marketTheme.positive
+        : context.marketTheme.negative;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+      decoration: BoxDecoration(
+        color: context.textPrimary.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: context.borderColor.withValues(alpha: 0.7)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: metric.iconColor.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(metric.icon, size: 12, color: metric.iconColor),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  metric.label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: context.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const Spacer(),
+          Text(
+            metric.valueText,
+            style: TextStyle(
+              fontSize: 13,
+              color: context.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (metric.deltaText != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              metric.deltaText!,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: deltaColor,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ],
       ),
     );
@@ -287,34 +624,27 @@ class FinancialComparisonSection extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 45,
-                  child: Text(
-                    metric.label,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: context.textSecondary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Expanded(
-                  flex: 55,
-                  child: Text(
-                    metric.valueText,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: context.textPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    textAlign: TextAlign.right,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
+            child: Text(
+              metric.label,
+              style: TextStyle(
+                fontSize: 11,
+                color: context.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              metric.valueText,
+              style: TextStyle(
+                fontSize: 11,
+                color: context.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.right,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           if (metric.deltaText != null) ...[
@@ -323,16 +653,22 @@ class FinancialComparisonSection extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  metric.isPositive ? Icons.arrow_drop_up_rounded : Icons.arrow_drop_down_rounded,
+                  metric.isPositive
+                      ? Icons.arrow_drop_up_rounded
+                      : Icons.arrow_drop_down_rounded,
                   size: 14,
-                  color: metric.isPositive ? context.marketTheme.positive : context.marketTheme.negative,
+                  color: metric.isPositive
+                      ? context.marketTheme.positive
+                      : context.marketTheme.negative,
                 ),
                 Text(
                   metric.deltaText!,
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
-                    color: metric.isPositive ? context.marketTheme.positive : context.marketTheme.negative,
+                    color: metric.isPositive
+                        ? context.marketTheme.positive
+                        : context.marketTheme.negative,
                   ),
                 ),
               ],

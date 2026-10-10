@@ -10,6 +10,7 @@ export 'core/theme/am_chart_theme.dart';
 export 'core/theme/app_colors.dart';
 export 'core/theme/app_colors_theme.dart';
 export 'core/theme/intelligence_colors.dart';
+export 'core/theme/ipo_colors.dart';
 export 'core/theme/app_spacing.dart';
 export 'core/theme/app_radii.dart';
 export 'core/theme/app_type_scale.dart';
@@ -25,6 +26,7 @@ export 'core/theme/theme_repository.dart';
 export 'core/config/design_system_config.dart';
 export 'core/config/design_system_provider.dart';
 export 'core/config/brand_config.dart';
+export 'core/config/feature_flags.dart';
 
 // Contracts
 export 'core/contracts/design_contract.dart';
@@ -70,6 +72,7 @@ export 'core/module/module_color_provider.dart';
 export 'shared/widgets/navigation/global_sidebar.dart';
 export 'shared/widgets/navigation/global_bottom_navigation.dart';
 export 'shared/widgets/navigation/global_bottom_nav_visibility.dart';
+export 'shared/widgets/navigation/navigation_chrome.dart';
 export 'shared/widgets/share/share_link_button.dart';
 export 'shared/widgets/navigation/module_bottom_navigation.dart';
 export 'shared/widgets/navigation/secondary_sidebar.dart';

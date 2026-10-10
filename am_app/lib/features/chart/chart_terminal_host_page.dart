@@ -192,9 +192,26 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
     }
 
     if (!scrollable) return body;
+
+    // Financials / Shareholding fill the bottom panel height (no dead scroll gap).
+    final fillPanel = _section == _ChartBottomSection.financials ||
+        _section == _ChartBottomSection.shareholding;
+    if (fillPanel) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+        child: body,
+      );
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(8),
-      child: body,
+      child: Align(
+        alignment: Alignment.topLeft,
+        child: SizedBox(
+          width: double.infinity,
+          child: body,
+        ),
+      ),
     );
   }
 

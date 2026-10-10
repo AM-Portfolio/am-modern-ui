@@ -216,62 +216,41 @@ class EquityInsiderKpis extends ConsumerWidget {
 
             return LayoutBuilder(
               builder: (context, constraints) {
-                final double totalWidth = constraints.maxWidth;
+                final totalWidth = constraints.maxWidth;
+                // Left-aligned grid so incomplete last rows stay flush with the title.
+                final int cols;
                 if (totalWidth < 420) {
-                  return GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
-                      mainAxisExtent: 96,
-                    ),
-                    itemCount: validMetrics.length,
-                    itemBuilder: (context, i) {
-                      final metric = validMetrics[i];
-                      return _buildKpi(
-                        context,
-                        label: metric.label,
-                        value: metric.value!,
-                        subtitle: metric.subtitle,
-                        isPositive: metric.isPositive,
-                        isNegative: metric.isNegative,
-                      );
-                    },
-                  );
-                }
-
-                int cols = 5;
-                if (totalWidth < 480) {
                   cols = 2;
                 } else if (totalWidth < 700) {
                   cols = 3;
                 } else if (totalWidth < 950) {
                   cols = 4;
+                } else {
+                  cols = 5;
                 }
 
-                const double spacing = 8.0;
-                final double itemWidth = (totalWidth - (spacing * (cols - 1))) / cols;
-
-                return Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: spacing,
-                  runSpacing: spacing,
-                  children: validMetrics.take(15).map((metric) {
-                    return SizedBox(
-                      width: itemWidth.clamp(100.0, 200.0),
-                      height: 90,
-                      child: _buildKpi(
-                        context,
-                        label: metric.label,
-                        value: metric.value!,
-                        subtitle: metric.subtitle,
-                        isPositive: metric.isPositive,
-                        isNegative: metric.isNegative,
-                      ),
+                final metrics = validMetrics.take(15).toList();
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: cols,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                    mainAxisExtent: totalWidth < 420 ? 96 : 90,
+                  ),
+                  itemCount: metrics.length,
+                  itemBuilder: (context, i) {
+                    final metric = metrics[i];
+                    return _buildKpi(
+                      context,
+                      label: metric.label,
+                      value: metric.value!,
+                      subtitle: metric.subtitle,
+                      isPositive: metric.isPositive,
+                      isNegative: metric.isNegative,
                     );
-                  }).toList(),
+                  },
                 );
               },
             );

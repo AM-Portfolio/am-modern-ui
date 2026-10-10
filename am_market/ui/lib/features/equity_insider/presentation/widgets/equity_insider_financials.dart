@@ -24,126 +24,342 @@ class EquityInsiderFinancials extends ConsumerStatefulWidget {
 }
 
 class _EquityInsiderFinancialsState
-    extends ConsumerState<EquityInsiderFinancials>
-    with SingleTickerProviderStateMixin {
+    extends ConsumerState<EquityInsiderFinancials> {
   bool _isQuarterly = false;
   final int _periodCount = 4;
+
+  // Income section sub-filters
   bool _showRevenue = true;
   bool _showPAT = true;
   bool _showPatMargin = false;
-  late final TabController _compactTabs;
 
-  @override
-  void initState() {
-    super.initState();
-    _compactTabs = TabController(length: 3, vsync: this);
-  }
+  // Balance section sub-filters
+  bool _balAssets = true;
+  bool _balEquity = true;
+  bool _balLiabilities = true;
+  bool _balDebt = true;
+  bool _balCurrent = false;
+  bool _balCash = false;
 
-  @override
-  void dispose() {
-    _compactTabs.dispose();
-    super.dispose();
+  Set<String> get _balanceVisibleLabels {
+    final labels = <String>{};
+    if (_balAssets) labels.add('Total Assets');
+    if (_balEquity) labels.add('Equity');
+    if (_balLiabilities) labels.add('Total Liabilities');
+    if (_balDebt) labels.add('Total Debt');
+    if (_balCurrent) {
+      labels.add('Current Assets');
+      labels.add('Current Liabilities');
+    }
+    if (_balCash) labels.add('Cash');
+    return labels;
   }
 
   @override
   Widget build(BuildContext context) {
     final asyncData = ref.watch(fundamentalFinancialsProvider(widget.symbol));
 
+    if (widget.compact) {
+      return asyncData.when(
+        data: (data) {
+          if (data == null) {
+            return const Align(
+              alignment: Alignment.topLeft,
+              child: Text('No financials data available'),
+            );
+          }
+          final annualStatements = _maps(data.incomeStatement);
+          final quarterlyStatements = _maps(data.quarterlyIncomeStatement);
+          final statements = _isQuarterly && quarterlyStatements.isNotEmpty
+              ? quarterlyStatements
+              : annualStatements;
+          final balanceSheets = _maps(data.balanceSheet);
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildGlobalFilterBar(context),
+              const SizedBox(height: 6),
+              Expanded(
+                child: _buildCompactAllSectionsPage(
+                  statements: statements,
+                  balanceSheets: balanceSheets,
+                ),
+              ),
+            ],
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, st) => Text(
+          'Error loading financials: $e',
+          style: TextStyle(color: Theme.of(context).colorScheme.error),
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (!widget.compact) _buildSectionHeader(context, 'Financial performance'),
-        if (widget.compact)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: Text(
-              'Financials',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: context.textPrimary,
-              ),
-            ),
-          ),
+        _buildSectionHeader(context, 'Financial performance'),
         asyncData.when(
           data: (data) {
             if (data == null) return const Text('No financials data available');
-
             final annualStatements = _maps(data.incomeStatement);
             final quarterlyStatements = _maps(data.quarterlyIncomeStatement);
             final statements = _isQuarterly && quarterlyStatements.isNotEmpty
                 ? quarterlyStatements
                 : annualStatements;
             final balanceSheets = _maps(data.balanceSheet);
+            return _buildFullFinancials(
+              context,
+              data: data,
+              statements: statements,
+              balanceSheets: balanceSheets,
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, st) => Text(
+            'Error loading financials: $e',
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          ),
+        ),
+      ],
+    );
+  }
 
-            if (widget.compact) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildControlBar(context),
-                  const SizedBox(height: 6),
-                  TabBar(
-                    controller: _compactTabs,
-                    isScrollable: true,
-                    tabAlignment: TabAlignment.start,
-                    labelStyle: const TextStyle(
-                        fontSize: 11, fontWeight: FontWeight.w600),
-                    tabs: const [
-                      Tab(text: 'Income', height: 32),
-                      Tab(text: 'Balance', height: 32),
-                      Tab(text: 'Takeaways', height: 32),
+  /// Global: Annual / Quarterly only.
+  Widget _buildGlobalFilterBar(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          'Period',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: context.textSecondary,
+          ),
+        ),
+        const SizedBox(width: 10),
+        _buildToggleCapsule(
+          context: context,
+          firstLabel: 'Annual',
+          secondLabel: 'Quarterly',
+          isSecondSelected: _isQuarterly,
+          onFirstTap: () {
+            if (_isQuarterly) setState(() => _isQuarterly = false);
+          },
+          onSecondTap: () {
+            if (!_isQuarterly) setState(() => _isQuarterly = true);
+          },
+        ),
+        const Spacer(),
+        Text(
+          _isQuarterly ? 'Showing quarterly' : 'Showing annual',
+          style: TextStyle(fontSize: 10, color: context.textTertiary),
+        ),
+      ],
+    );
+  }
+
+  /// One page: Income + Balance + Takeaways, each with its own sub-filters.
+  Widget _buildCompactAllSectionsPage({
+    required List<Map<String, dynamic>> statements,
+    required List<Map<String, dynamic>> balanceSheets,
+  }) {
+    final income = FinancialComparisonSection(
+      statements: statements,
+      balanceSheets: const [],
+      isQuarterly: _isQuarterly,
+      periodCount: _periodCount,
+      showRevenue: _showRevenue,
+      showPAT: _showPAT,
+      showPatMargin: _showPatMargin,
+      tableOnly: true,
+      dense: true,
+    );
+    final balance = FinancialComparisonSection(
+      statements: statements,
+      balanceSheets: balanceSheets,
+      isQuarterly: _isQuarterly,
+      periodCount: _periodCount,
+      showRevenue: false,
+      showPAT: false,
+      showPatMargin: false,
+      balanceOnly: true,
+      dense: true,
+      balanceVisibleLabels: _balanceVisibleLabels,
+    );
+    final takeaways = FinancialComparisonSection(
+      statements: statements,
+      balanceSheets: balanceSheets,
+      isQuarterly: _isQuarterly,
+      periodCount: _periodCount,
+      showRevenue: _showRevenue,
+      showPAT: _showPAT,
+      showPatMargin: true,
+      takeawaysOnly: true,
+      dense: true,
+    );
+
+    final incomeBlock = _buildSectionBlock(
+      context,
+      title: 'Income',
+      subFilters: [
+        _buildMetricToggle(
+          context: context,
+          label: 'Rev',
+          isActive: _showRevenue,
+          onTap: () => setState(() => _showRevenue = !_showRevenue),
+        ),
+        _buildMetricToggle(
+          context: context,
+          label: 'PAT',
+          isActive: _showPAT,
+          onTap: () => setState(() => _showPAT = !_showPAT),
+        ),
+        _buildMetricToggle(
+          context: context,
+          label: 'Margin %',
+          isActive: _showPatMargin,
+          onTap: () => setState(() => _showPatMargin = !_showPatMargin),
+        ),
+      ],
+      child: income,
+    );
+
+    final balanceBlock = _buildSectionBlock(
+      context,
+      title: 'Balance',
+      subFilters: [
+        _buildMetricToggle(
+          context: context,
+          label: 'Assets',
+          isActive: _balAssets,
+          onTap: () => setState(() => _balAssets = !_balAssets),
+        ),
+        _buildMetricToggle(
+          context: context,
+          label: 'Equity',
+          isActive: _balEquity,
+          onTap: () => setState(() => _balEquity = !_balEquity),
+        ),
+        _buildMetricToggle(
+          context: context,
+          label: 'Liab',
+          isActive: _balLiabilities,
+          onTap: () => setState(() => _balLiabilities = !_balLiabilities),
+        ),
+        _buildMetricToggle(
+          context: context,
+          label: 'Debt',
+          isActive: _balDebt,
+          onTap: () => setState(() => _balDebt = !_balDebt),
+        ),
+        _buildMetricToggle(
+          context: context,
+          label: 'Current',
+          isActive: _balCurrent,
+          onTap: () => setState(() => _balCurrent = !_balCurrent),
+        ),
+        _buildMetricToggle(
+          context: context,
+          label: 'Cash',
+          isActive: _balCash,
+          onTap: () => setState(() => _balCash = !_balCash),
+        ),
+      ],
+      child: balance,
+    );
+
+    final takeawaysBlock = _buildSectionBlock(
+      context,
+      title: 'Takeaways',
+      subFilters: const [],
+      child: takeaways,
+    );
+
+    // Avoid IntrinsicHeight — it collapses dense tables/grids to blank.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final wide = constraints.maxWidth >= 720;
+        return SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (wide)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: incomeBlock),
+                    const SizedBox(width: 10),
+                    Expanded(child: balanceBlock),
+                  ],
+                )
+              else ...[
+                incomeBlock,
+                const SizedBox(height: 10),
+                balanceBlock,
+              ],
+              const SizedBox(height: 10),
+              takeawaysBlock,
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSectionBlock(
+    BuildContext context, {
+    required String title,
+    required List<Widget> subFilters,
+    required Widget child,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: context.textPrimary,
+              ),
+            ),
+            if (subFilters.isNotEmpty) ...[
+              const SizedBox(width: 10),
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      for (var i = 0; i < subFilters.length; i++) ...[
+                        if (i > 0) const SizedBox(width: 8),
+                        subFilters[i],
+                      ],
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  SizedBox(
-                    height: 200,
-                    child: TabBarView(
-                      controller: _compactTabs,
-                      children: [
-                        SingleChildScrollView(
-                          child: FinancialComparisonSection(
-                            statements: statements,
-                            balanceSheets: const [],
-                            isQuarterly: _isQuarterly,
-                            periodCount: _periodCount,
-                            showRevenue: _showRevenue,
-                            showPAT: _showPAT,
-                            showPatMargin: _showPatMargin,
-                            tableOnly: true,
-                          ),
-                        ),
-                        SingleChildScrollView(
-                          child: FinancialComparisonSection(
-                            statements: statements,
-                            balanceSheets: balanceSheets,
-                            isQuarterly: _isQuarterly,
-                            periodCount: _periodCount,
-                            showRevenue: false,
-                            showPAT: false,
-                            showPatMargin: false,
-                            takeawaysOnly: true,
-                          ),
-                        ),
-                        SingleChildScrollView(
-                          child: FinancialComparisonSection(
-                            statements: statements,
-                            balanceSheets: balanceSheets,
-                            isQuarterly: _isQuarterly,
-                            periodCount: _periodCount,
-                            showRevenue: _showRevenue,
-                            showPAT: _showPAT,
-                            showPatMargin: _showPatMargin,
-                            takeawaysOnly: true,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            }
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 6),
+        child,
+      ],
+    );
+  }
 
-            return Column(
+  Widget _buildFullFinancials(
+    BuildContext context, {
+    required FundamentalRatiosResponse data,
+    required List<Map<String, dynamic>> statements,
+    required List<Map<String, dynamic>> balanceSheets,
+  }) {
+    return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildControlBar(context),
@@ -181,15 +397,6 @@ class _EquityInsiderFinancialsState
                 ),
               ],
             );
-          },
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, st) => Text(
-            'Error loading financials: $e',
-            style: TextStyle(color: Theme.of(context).colorScheme.error),
-          ),
-        ),
-      ],
-    );
   }
 
   Widget _buildControlBar(BuildContext context) {

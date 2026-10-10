@@ -7,13 +7,12 @@ import '../router/share_url_builder.dart';
 class CrossModuleSectionSequence {
   CrossModuleSectionSequence._();
 
-  /// Portfolio tabs that participate in mobile swipe (plus add-trade).
+  /// Portfolio tabs that participate in mobile swipe.
   static const portfolioSwipeTabs = [
     'overview',
     'holdings',
     'heatmap',
     'baskets',
-    'add-trade',
   ];
 
   /// Trade mobile swipe tabs (URL-backed where possible).
@@ -26,12 +25,16 @@ class CrossModuleSectionSequence {
     'templates',
   ];
 
-  /// Market user-mode pages in swipe order.
+  /// Market user-mode pages in swipe order (matches dashboard_page user nav).
   static const marketSwipeTabs = [
     'all-indices',
     'paper',
     'dashboard',
     'market-analysis',
+    'equity-insider',
+    'futures-options',
+    'ipo-center',
+    'watch-list',
   ];
 
   /// Build a full deep link for a portfolio tab, falling back to legacy 2-segment.
@@ -122,6 +125,9 @@ class CrossModuleSectionSequence {
       if (i >= 0) return i;
       return steps.indexWhere((s) => s.startsWith(AppRoutes.market));
     }
+    if (normalized.startsWith(AppRoutes.aiChat)) {
+      return steps.indexWhere((s) => s == AppRoutes.aiChat);
+    }
     // Doc Intel is reached from Dashboard/Portfolio shortcuts — treat as Dashboard.
     if (normalized.startsWith(AppRoutes.docIntel)) {
       return steps.indexWhere((s) => s == AppRoutes.dashboard);
@@ -142,6 +148,7 @@ class CrossModuleSectionSequence {
           portfolioStepPath(portfolioId, tab),
         for (final tab in tradeSwipeTabs) tradeStepPath(portfolioId, tab),
         for (final tab in marketSwipeTabs) marketStepPath(tab),
+        AppRoutes.aiChat,
         AppRoutes.profile,
       ];
 

@@ -11,6 +11,7 @@ import 'url_strategy_noop.dart'
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 
+
 import 'core/di/injection.dart';
 import 'app.dart';
 import 'features/chart/market_sdk_chart_providers.dart';

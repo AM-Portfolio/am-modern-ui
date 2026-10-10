@@ -8,7 +8,9 @@ data:
       "domain": {{ .Values.appConfig.domain | quote }},
       "env": {{ .Values.environment | default "dev" | quote }},
       "google": {
-        "webClientId": {{ .Values.appConfig.googleWebClientId | default "" | quote }}
+        "webClientId": {{ .Values.appConfig.googleWebClientId | default "" | quote }},
+        "iosClientId": {{ .Values.appConfig.googleIosClientId | default "" | quote }},
+        "androidClientId": {{ .Values.appConfig.googleAndroidClientId | default "" | quote }}
       },
       "growthbook": {
         "enabled": {{ .Values.appConfig.growthbook.enabled | default false }},

@@ -21,6 +21,10 @@ class FeatureFlags {
   /// Web OTP SMS channel. Default off until SMS delivery is available.
   bool enableSmsOtp = false;
 
+  /// Web security alert banner ("New sign-in detected").
+  /// Default false: hidden.
+  bool enableSecurityAlertBanner = false;
+
   // Development Features
   bool enableMockDelays = true;
   bool enableErrorSimulation = false;
@@ -50,6 +54,7 @@ class FeatureFlags {
     enableQrWebLogin = true;
     enableWebOtp = true;
     enableSmsOtp = false;
+    enableSecurityAlertBanner = false;
     enableMockDelays = true;
     enableErrorSimulation = false;
     enableDebugLogging = true;
@@ -72,6 +77,7 @@ class FeatureFlags {
     'enableQrWebLogin': enableQrWebLogin,
     'enableWebOtp': enableWebOtp,
     'enableSmsOtp': enableSmsOtp,
+    'enableSecurityAlertBanner': enableSecurityAlertBanner,
     'enableMockDelays': enableMockDelays,
     'enableErrorSimulation': enableErrorSimulation,
     'enableDebugLogging': enableDebugLogging,
@@ -94,6 +100,7 @@ class FeatureFlags {
     enableQrWebLogin = json['enableQrWebLogin'] ?? true;
     enableWebOtp = json['enableWebOtp'] ?? true;
     enableSmsOtp = json['enableSmsOtp'] ?? false;
+    enableSecurityAlertBanner = json['enableSecurityAlertBanner'] ?? false;
     enableMockDelays = json['enableMockDelays'] ?? true;
     enableErrorSimulation = json['enableErrorSimulation'] ?? false;
     enableDebugLogging = json['enableDebugLogging'] ?? true;

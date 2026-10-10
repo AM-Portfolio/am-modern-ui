@@ -7,14 +7,12 @@ class DrawerIndexCard extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
   final String timeframe;
-  final double? basePrice;
 
   const DrawerIndexCard({
     required this.data,
     required this.isSelected,
     required this.onTap,
     required this.timeframe,
-    this.basePrice,
     super.key,
   });
 
@@ -22,21 +20,17 @@ class DrawerIndexCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 768;
 
-    double displayChange = data.change;
-    double displayPChange = data.pChange;
-
-    if (timeframe != '1D' && basePrice != null && basePrice! > 0) {
-      displayChange = data.lastPrice - basePrice!;
-      displayPChange = (displayChange / basePrice!) * 100;
-    } else if (timeframe != '1D') {
-      displayChange = 0.0;
-      displayPChange = 0.0;
-    }
+    final displayChange = data.change;
+    final displayPChange = data.pChange;
 
     final isPositive = displayChange >= 0;
     final sign = isPositive ? '+' : '';
-    final accentColor = isPositive ? MarketColors.positive(context) : MarketColors.negative(context);
-    final badgeBgColor = isPositive ? MarketColors.posBadgeBg(context) : MarketColors.negBadgeBg(context);
+    final accentColor = isPositive
+        ? MarketColors.positive(context)
+        : MarketColors.negative(context);
+    final badgeBgColor = isPositive
+        ? MarketColors.posBadgeBg(context)
+        : MarketColors.negBadgeBg(context);
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -50,7 +44,9 @@ class DrawerIndexCard extends StatelessWidget {
             color: MarketColors.cardSurface(context),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isSelected ? MarketColors.borderSelected(context) : MarketColors.borderDefault(context),
+              color: isSelected
+                  ? MarketColors.borderSelected(context)
+                  : MarketColors.borderDefault(context),
               width: MarketColors.borderWidth(context),
             ),
           ),
@@ -77,7 +73,8 @@ class DrawerIndexCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                     decoration: BoxDecoration(
                       color: badgeBgColor,
                       borderRadius: BorderRadius.circular(99),
@@ -87,7 +84,9 @@ class DrawerIndexCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Icon(
-                          isPositive ? Icons.arrow_upward : Icons.arrow_downward,
+                          isPositive
+                              ? Icons.arrow_upward
+                              : Icons.arrow_downward,
                           size: 11.0,
                           color: accentColor,
                         ),

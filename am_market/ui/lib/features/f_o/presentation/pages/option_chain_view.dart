@@ -147,10 +147,12 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
         }
 
         return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Top Controls: Expiry Selector Dropdown + Multi-Column Toggles
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.15),
               child: Row(
                 children: [
@@ -273,10 +275,11 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
                       width: contentWidth,
                       height: constraints.maxHeight,
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           // Table Header
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                             color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                             child: Row(
                               children: _buildHeaderColumns(context, marketTheme, colors),
@@ -295,9 +298,10 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
                                 final putMap = (strikeMap['put'] as Map<String, dynamic>?) ?? {};
 
                                 return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
                                   children: [
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                       child: Row(
                                         children: _buildRowColumns(
                                           context,

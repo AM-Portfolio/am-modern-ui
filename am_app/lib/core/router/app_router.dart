@@ -22,10 +22,11 @@ export 'launch_location.dart' show resolveLaunchLocation;
 
 bool _subscriptionPageEnabled() {
   if (!GetIt.instance.isRegistered<common.FeatureFlagService>()) {
-    return false;
+    return true;
   }
   return GetIt.instance<common.FeatureFlagService>().isOn(
     common.FeatureFlagKeys.subscriptionPageEnabled,
+    defaultValue: true,
   );
 }
 
@@ -43,8 +44,7 @@ GoRouter createAppRouter({
       final location = AppRoutes.normalizePath(state.matchedLocation);
       final isAuthenticated = authState is Authenticated;
       final authPending = authState is AuthInitial ||
-          authState is AuthLoading ||
-          authState is AuthRestoreFailed;
+          authState is AuthLoading;
 
       if (!kIsWeb &&
           isAuthenticated &&

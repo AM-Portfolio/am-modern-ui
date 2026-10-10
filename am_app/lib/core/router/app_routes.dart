@@ -124,6 +124,7 @@ class AppRoutes {
     'Heatmap Explorer': 'heatmap-explorer',
     'Equity Insider': 'equity-insider',
     'Futures & Options': 'futures-options',
+    'IPO Center': 'ipo-center',
     'Watch List': 'watch-list',
   };
 
@@ -201,7 +202,7 @@ class AppRoutes {
     'Trade': tradeDiscovery,
     // Legacy session title — Paper is now a Market tab.
     'Paper': '/app/market/paper',
-    'Market': '/app/market/paper',
+    'Market': '/app/market/dashboard',
     'AI Chat': aiChat,
     'Lab': lab,
     'Analysis': analysis,

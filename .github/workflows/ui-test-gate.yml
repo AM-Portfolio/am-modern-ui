@@ -1,68 +1,231 @@
+# Pre-Release Gate — thin GHA front door (Temporal owns suites).
+# P0: deploy_mode=none → health probe → POST /qa/v2/releases/ops/start → poll progress.
+# Fail closed: never SKIPPED green. No cluster-local DNS. No in-GHA Playwright.
+
 name: Pre-Release Gate UI Test
 
 on:
-  pull_request:
-    branches:
-      - main
-      - 'release/*'
+  workflow_dispatch:
+    inputs:
+      deploy_mode:
+        description: "none = test live target; branch/image_tag = Contabo deploy first (P3)"
+        required: true
+        type: choice
+        options:
+          - none
+          - branch
+          - image_tag
+        default: none
+      image_tag:
+        description: "GHCR tag when deploy_mode=image_tag (P3)"
+        required: false
+        type: string
+        default: ""
+      target_url:
+        description: "App under test"
+        required: false
+        type: string
+        default: "https://am.asrax.in"
+      suite:
+        description: "UI suite for Temporal"
+        required: false
+        type: string
+        default: "prod_ui_full"
+      soak_min:
+        description: "Soak minutes after UI (0 for P0)"
+        required: false
+        type: string
+        default: "0"
+      skip_ui:
+        description: "Skip Playwright (Drive-pack only)"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  checks: write
+  statuses: write
 
 jobs:
-  ui-visual-test:
+  start-and-watch:
+    name: Start Temporal release ops + watch
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Deploy Preview Environment
+      - name: Reject unsupported deploy modes (P0)
+        if: ${{ github.event.inputs.deploy_mode != 'none' }}
         run: |
-          echo "Deploying branch ${{ github.event.pull_request.head.sha }} preview to Kubernetes preprod-preview namespace..."
+          echo "::error::deploy_mode=${{ github.event.inputs.deploy_mode }} is P3 — use none until Contabo deploy path lands."
+          exit 1
 
-      - name: Trigger Agent Release Gate
-        id: trigger_agent
+      - name: Resolve endpoints
+        id: ep
+        shell: bash
         run: |
-          set +e
-          RESPONSE=$(curl -sS --connect-timeout 5 --max-time 15 -X POST \
-            "http://am-ui-test-agent.am-apps-preprod.svc.cluster.local:8130/api/v1/test/run" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"targetUrl\": \"http://am-portfolio-preview-${{ github.event.pull_request.head.sha }}:9005\",
-              \"profile\": \"RELEASE_GATE\",
-              \"commitSha\": \"${{ github.event.pull_request.head.sha }}\",
-              \"callbackUrl\": \"https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }}\"
-            }" 2>&1)
-          CURL_EXIT=$?
-          set -e
+          set -euo pipefail
+          TARGET="${{ github.event.inputs.target_url }}"
+          TARGET="${TARGET:-https://am.asrax.in}"
+          TARGET="${TARGET%/}"
+          GATEWAY_BASE="${{ vars.QA_AGENT_GATEWAY_BASE }}"
+          GATEWAY_BASE="${GATEWAY_BASE:-${TARGET}/qa}"
+          GATEWAY_BASE="${GATEWAY_BASE%/}"
+          UI_TEST_BASE="${{ vars.UI_TEST_AGENT_BASE }}"
+          UI_TEST_BASE="${UI_TEST_BASE:-${TARGET}/ui-test}"
+          UI_TEST_BASE="${UI_TEST_BASE%/}"
+          {
+            echo "target_url=${TARGET}"
+            echo "gateway_base=${GATEWAY_BASE}"
+            echo "ui_test_base=${UI_TEST_BASE}"
+          } >> "$GITHUB_OUTPUT"
+          echo "target=${TARGET} gateway=${GATEWAY_BASE} ui_test=${UI_TEST_BASE}"
 
-          if [ "$CURL_EXIT" -ne 0 ] || [ -z "$RESPONSE" ] || ! echo "$RESPONSE" | jq -e '.testId' >/dev/null 2>&1; then
-            echo "UI test agent unreachable from GitHub-hosted runners (cluster-local DNS)."
-            echo "Skipping visual gate until the agent is exposed to Actions or this job runs in-cluster."
-            echo "curl_exit=$CURL_EXIT"
-            echo "response=$RESPONSE"
-            echo "SKIPPED=true" >> "$GITHUB_ENV"
-            exit 0
-          fi
-
-          echo "TEST_ID=$(echo "$RESPONSE" | jq -r .testId)" >> "$GITHUB_ENV"
-          echo "SKIPPED=false" >> "$GITHUB_ENV"
-
-      - name: Poll Test Status
-        if: env.SKIPPED != 'true'
+      - name: Probe JSON health (fail closed)
+        shell: bash
+        env:
+          GATEWAY_BASE: ${{ steps.ep.outputs.gateway_base }}
+          UI_TEST_BASE: ${{ steps.ep.outputs.ui_test_base }}
+          TARGET_URL: ${{ steps.ep.outputs.target_url }}
         run: |
-          echo "Polling status for test ID: ${{ env.TEST_ID }}..."
-          STATUS="QUEUED"
-          for i in {1..30}; do
-            RESPONSE=$(curl -sS --connect-timeout 5 --max-time 15 \
-              "http://am-ui-test-agent.am-apps-preprod.svc.cluster.local:8130/api/v1/test/status/${{ env.TEST_ID }}")
-            STATUS=$(echo "$RESPONSE" | jq -r .status)
-            echo "Current status: $STATUS"
-            if [ "$STATUS" = "COMPLETED" ]; then
-              echo "Tests completed successfully!"
-              exit 0
-            elif [ "$STATUS" = "FAILED" ]; then
-              echo "Tests failed!"
+          set -euo pipefail
+          assert_json() {
+            local url="$1"
+            local label="$2"
+            local body code ctype
+            body=$(curl -sS --connect-timeout 10 --max-time 20 -w "\n%{http_code}" "$url" || true)
+            code=$(echo "$body" | tail -n1)
+            body=$(echo "$body" | sed '$d')
+            ctype=$(curl -sS -I --connect-timeout 10 --max-time 15 "$url" | tr -d '\r' | grep -i '^content-type:' || true)
+            echo "=== ${label} ${url} → HTTP ${code} ${ctype}"
+            if [[ "$code" != "200" && "$code" != "204" ]]; then
+              echo "::error::${label} unhealthy HTTP ${code}"
               exit 1
             fi
-            sleep 10
+            if echo "$body" | head -c 20 | grep -qiE '<!DOCTYPE|<html'; then
+              echo "::error::${label} returned SPA HTML — need JSON health (routing broken)"
+              exit 1
+            fi
+            if ! echo "$body" | jq -e . >/dev/null 2>&1; then
+              echo "::error::${label} body is not JSON"
+              exit 1
+            fi
+          }
+          assert_json "${UI_TEST_BASE}/health" "ui-test"
+          # /ready preferred; fall back to /health
+          if ! curl -sS --connect-timeout 5 --max-time 10 "${GATEWAY_BASE}/ready" | jq -e . >/dev/null 2>&1; then
+            assert_json "${GATEWAY_BASE}/health" "qa-health"
+          else
+            assert_json "${GATEWAY_BASE}/ready" "qa-ready"
+          fi
+          # App reachability (SPA HTML OK)
+          code=$(curl -sS -o /dev/null -w "%{http_code}" --connect-timeout 10 --max-time 20 "${TARGET_URL}" || echo 000)
+          if [[ "$code" == "000" || "$code" -ge 500 ]]; then
+            echo "::error::target app unreachable HTTP ${code}"
+            exit 1
+          fi
+          echo "Probes OK"
+
+      - name: Start AsraxReleaseOpsWorkflow
+        id: start
+        shell: bash
+        env:
+          GATEWAY_TOKEN: ${{ secrets.QA_AGENT_GATEWAY_TOKEN }}
+          GATEWAY_BASE: ${{ steps.ep.outputs.gateway_base }}
+          TARGET_URL: ${{ steps.ep.outputs.target_url }}
+          SUITE: ${{ github.event.inputs.suite }}
+          SOAK_MIN: ${{ github.event.inputs.soak_min }}
+          SKIP_UI: ${{ github.event.inputs.skip_ui }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${GATEWAY_TOKEN}" ]]; then
+            echo "::error::QA_AGENT_GATEWAY_TOKEN secret missing"
+            exit 1
+          fi
+          SKIP_UI_JSON=false
+          [[ "${SKIP_UI}" == "true" ]] && SKIP_UI_JSON=true
+          BODY=$(jq -n \
+            --arg suite "${SUITE:-prod_ui_full}" \
+            --arg url "${TARGET_URL}" \
+            --arg sha "${SHA}" \
+            --argjson soak "${SOAK_MIN:-0}" \
+            --argjson skip_ui "${SKIP_UI_JSON}" \
+            '{
+              release_name: ("ui-test-gate-" + $sha[0:12]),
+              env: "prod",
+              suite: $suite,
+              target_url: $url,
+              login_mode: "credentials",
+              soak_min: ($soak|tonumber),
+              skip_ui: $skip_ui,
+              skip_cliq: true,
+              skip_sheet: false,
+              skip_drive: false,
+              use_temporal: true,
+              requested_by: "ui-test-gate"
+            }')
+          RESP=$(curl -sS --connect-timeout 15 --max-time 60 \
+            -X POST "${GATEWAY_BASE}/v2/releases/ops/start" \
+            -H "Authorization: Bearer ${GATEWAY_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "${BODY}")
+          echo "$RESP" | jq .
+          RID=$(echo "$RESP" | jq -r '.request_id // empty')
+          TID=$(echo "$RESP" | jq -r '.tracking_id // empty')
+          WID=$(echo "$RESP" | jq -r '.workflow_id // empty')
+          if [[ -z "$RID" || -z "$TID" ]]; then
+            echo "::error::ops/start did not return request_id/tracking_id"
+            exit 1
+          fi
+          echo "request_id=${RID}" >> "$GITHUB_OUTPUT"
+          echo "tracking_id=${TID}" >> "$GITHUB_OUTPUT"
+          echo "workflow_id=${WID}" >> "$GITHUB_OUTPUT"
+
+      - name: Watch progress
+        shell: bash
+        env:
+          GATEWAY_TOKEN: ${{ secrets.QA_AGENT_GATEWAY_TOKEN }}
+          GATEWAY_BASE: ${{ steps.ep.outputs.gateway_base }}
+          REQUEST_ID: ${{ steps.start.outputs.request_id }}
+        run: |
+          set -euo pipefail
+          # Poll up to ~100 min
+          for i in $(seq 1 200); do
+            RESP=$(curl -sS --connect-timeout 10 --max-time 30 \
+              -H "Authorization: Bearer ${GATEWAY_TOKEN}" \
+              "${GATEWAY_BASE}/v2/releases/${REQUEST_ID}" || echo '{}')
+            PHASE=$(echo "$RESP" | jq -r '.phase // "unknown"')
+            STATUS=$(echo "$RESP" | jq -r '.progress_status // .status // "unknown"')
+            PENDING=$(echo "$RESP" | jq -c '.pending // []')
+            UI_PCT=$(echo "$RESP" | jq -r '.ui_pct // 0')
+            UI_DEC=$(echo "$RESP" | jq -r '.ui_decision // empty')
+            echo "[$i] phase=${PHASE} status=${STATUS} ui_pct=${UI_PCT} decision=${UI_DEC} pending=${PENDING}"
+            {
+              echo "## Pre-Release Gate"
+              echo ""
+              echo "- request_id: \`${REQUEST_ID}\`"
+              echo "- phase: \`${PHASE}\`"
+              echo "- status: \`${STATUS}\`"
+              echo "- ui_pct: ${UI_PCT}"
+              echo "- ui_decision: \`${UI_DEC}\`"
+              echo "- pending: \`${PENDING}\`"
+            } > "$GITHUB_STEP_SUMMARY"
+
+            if echo "$RESP" | jq -e '.steps_done | index("release_ops_complete")' >/dev/null 2>&1; then
+              if [[ "${STATUS}" == *"fail"* || "${STATUS}" == *"FAIL"* || "${UI_DEC}" == "NO_GO" ]]; then
+                echo "::error::Release ops completed with failure status=${STATUS} ui=${UI_DEC}"
+                exit 1
+              fi
+              echo "Complete OK"
+              exit 0
+            fi
+            # Terminal failed statuses on request row
+            REQ_STATUS=$(echo "$RESP" | jq -r '.status // empty')
+            if [[ "$REQ_STATUS" == "failed" || "$REQ_STATUS" == "rejected" ]]; then
+              echo "::error::request status=${REQ_STATUS}"
+              exit 1
+            fi
+            sleep 30
           done
-          echo "Timed out waiting for test suite to finish."
+          echo "::error::Timed out waiting for release_ops_complete"
           exit 1

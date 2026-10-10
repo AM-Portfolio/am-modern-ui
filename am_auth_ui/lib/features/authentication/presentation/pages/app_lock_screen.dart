@@ -54,7 +54,7 @@ class _AppLockScreenState extends State<AppLockScreen> {
       _failedAttempts += 1;
       _error = _failedAttempts >= 3
           ? 'Too many failed attempts. Please sign in again.'
-          : 'Unlock failed. Try again or sign in with password.';
+          : 'Unlock cancelled or failed. Try again, use device passcode, or sign in with password.';
     });
 
     if (_failedAttempts >= 3) {

@@ -23,6 +23,11 @@ import 'intelligence/portfolio_xray_panel.dart';
 import 'intelligence/portfolio_stress_card.dart';
 import 'intelligence/portfolio_what_if_card.dart';
 
+/// Stable holdings fingerprint — ignores live summary/price ticks.
+String _holdingsIdentity(PortfolioLoaded state) =>
+    '${state.portfolioId}|${state.holdings.length}|'
+    '${state.holdings.map((h) => h.id).join(',')}';
+
 /// Portfolio overview widget showing summary and key metrics
 class PortfolioOverviewWidget extends ConsumerStatefulWidget {
   const PortfolioOverviewWidget({
@@ -154,11 +159,12 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
           cubit.loadPortfolioById(portfolioId);
         }
       },
+      // Skip full Overview rebuild on live summary ticks; metrics listen separately.
       buildWhen: (previous, current) {
         if (previous is PortfolioLoaded && current is PortfolioLoaded) {
           return previous.portfolioId != current.portfolioId ||
-              previous.summary != current.summary ||
-              previous.isRefreshing != current.isRefreshing;
+              previous.isRefreshing != current.isRefreshing ||
+              _holdingsIdentity(previous) != _holdingsIdentity(current);
         }
         return previous.runtimeType != current.runtimeType;
       },
@@ -318,85 +324,131 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: Text(
-                              state.summary.priceLabel,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withValues(alpha: 0.65),
-                                    fontWeight: FontWeight.w500,
+                          // Live summary metrics only — intel stack stays stable across ticks.
+                          BlocBuilder<PortfolioCubit, PortfolioState>(
+                            buildWhen: (previous, current) {
+                              if (previous is PortfolioLoaded &&
+                                  current is PortfolioLoaded) {
+                                return previous.summary != current.summary;
+                              }
+                              return previous.runtimeType !=
+                                  current.runtimeType;
+                            },
+                            builder: (context, metricState) {
+                              final loaded = metricState is PortfolioLoaded
+                                  ? metricState
+                                  : state;
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 10),
+                                    child: Text(
+                                      loaded.summary.priceLabel,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withValues(alpha: 0.65),
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                    ),
                                   ),
-                            ),
+                                  if (isPhone)
+                                    Builder(
+                                      builder: (context) {
+                                        final cards = _buildMetricCards(
+                                          loaded,
+                                          compact: true,
+                                          glowBorder: false,
+                                        );
+                                        return Column(
+                                          children: [
+                                            Row(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Expanded(child: cards[0]),
+                                                const SizedBox(width: 10),
+                                                Expanded(child: cards[1]),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 10),
+                                            Row(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Expanded(child: cards[2]),
+                                                const SizedBox(width: 10),
+                                                Expanded(child: cards[3]),
+                                              ],
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    )
+                                  else
+                                    Builder(
+                                      builder: (context) {
+                                        final cards = _buildMetricCards(
+                                          loaded,
+                                          compact: isTablet,
+                                        );
+                                        final leftGroup = Row(
+                                          children: [
+                                            Expanded(
+                                              child: cards[0]
+                                                  .animate()
+                                                  .fadeIn(duration: 400.ms)
+                                                  .slideY(begin: 0.2, end: 0),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: cards[1]
+                                                  .animate()
+                                                  .fadeIn(
+                                                      duration: 400.ms,
+                                                      delay: 100.ms)
+                                                  .slideY(begin: 0.2, end: 0),
+                                            ),
+                                          ],
+                                        );
+                                        final rightGroup = Row(
+                                          children: [
+                                            Expanded(
+                                              child: cards[2]
+                                                  .animate()
+                                                  .fadeIn(
+                                                      duration: 400.ms,
+                                                      delay: 200.ms)
+                                                  .slideY(begin: 0.2, end: 0),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: cards[3]
+                                                  .animate()
+                                                  .fadeIn(
+                                                      duration: 400.ms,
+                                                      delay: 300.ms)
+                                                  .slideY(begin: 0.2, end: 0),
+                                            ),
+                                          ],
+                                        );
+                                        return _twoCol(
+                                          leftGroup,
+                                          rightGroup,
+                                          leftFlex: 14,
+                                          rightFlex: 10,
+                                        );
+                                      },
+                                    ),
+                                ],
+                              );
+                            },
                           ),
-                          // ── ROW 1: 4 Metric Cards ──────────────────────────
-                          if (isPhone)
-                            Builder(
-                              builder: (context) {
-                                final cards = _buildMetricCards(
-                                  state,
-                                  compact: true,
-                                  glowBorder: false,
-                                );
-                                return Column(
-                                  children: [
-                                    Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Expanded(child: cards[0]),
-                                        const SizedBox(width: 10),
-                                        Expanded(child: cards[1]),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Expanded(child: cards[2]),
-                                        const SizedBox(width: 10),
-                                        Expanded(child: cards[3]),
-                                      ],
-                                    ),
-                                  ],
-                                );
-                              },
-                            )
-                          else
-                            Builder(
-                              builder: (context) {
-                                final cards = _buildMetricCards(
-                                  state,
-                                  compact: isTablet,
-                                );
-                                final leftGroup = Row(
-                                  children: [
-                                    Expanded(
-                                      child: cards[0].animate().fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: cards[1].animate().fadeIn(duration: 400.ms, delay: 100.ms).slideY(begin: 0.2, end: 0),
-                                    ),
-                                  ],
-                                );
-                                final rightGroup = Row(
-                                  children: [
-                                    Expanded(
-                                      child: cards[2].animate().fadeIn(duration: 400.ms, delay: 200.ms).slideY(begin: 0.2, end: 0),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: cards[3].animate().fadeIn(duration: 400.ms, delay: 300.ms).slideY(begin: 0.2, end: 0),
-                                    ),
-                                  ],
-                                );
-                                return _twoCol(leftGroup, rightGroup, leftFlex: 14, rightFlex: 10);
-                              },
-                            ),
                           SizedBox(height: isPhone ? 12 : 20),
 
                           if (masterOn)

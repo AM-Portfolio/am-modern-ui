@@ -233,41 +233,19 @@ class _PortfolioHeatmapWidgetState
     );
   }
 
-  /// Main heatmap content with state handling using dual cubit approach
-  Widget _buildHeatmapContent() => MultiBlocListener(
-    listeners: [
-      BlocListener<PortfolioCubit, PortfolioState>(
-        listenWhen: (previous, current) {
-          if (previous is PortfolioLoaded && current is PortfolioLoaded) {
-            // Only trigger if live data is active and todayChange has updated
-            return current.isLiveDataActive && 
-                   previous.summary.todayChangePercentage != current.summary.todayChangePercentage;
-          }
-          return false;
-        },
-        listener: (context, state) {
-          if (state is PortfolioLoaded && state.isLiveDataActive) {
-            // Live data updated, refresh the heatmap UI
-            CommonLogger.info('Live data update detected, refreshing heatmap', tag: widget.config.logTag);
-            // Re-trigger the heatmap load. We don't need to fetch new analytics,
-            // we just need the cubit to emit a new state so the UI updates.
-            final portfolioHeatmapCubit = context.read<PortfolioHeatmapCubit>();
-            portfolioHeatmapCubit.refresh();
-          }
-        },
-      ),
-    ],
-    child: BlocBuilder<PortfolioHeatmapCubit, PortfolioHeatmapState>(
-      builder: (context, state) {
-        CommonLogger.debug(
-          'State update: ${state.runtimeType}',
-          tag: '${widget.config.logTag}.State',
-        );
+  /// Main heatmap content with state handling using dual cubit approach.
+  /// Live summary ticks update KPI strip via PortfolioCubit; do not full-reload tiles.
+  Widget _buildHeatmapContent() =>
+      BlocBuilder<PortfolioHeatmapCubit, PortfolioHeatmapState>(
+        builder: (context, state) {
+          CommonLogger.debug(
+            'State update: ${state.runtimeType}',
+            tag: '${widget.config.logTag}.State',
+          );
 
-        return _buildStateWidget(state);
-      },
-    ),
-  );
+          return _buildStateWidget(state);
+        },
+      );
 
   /// Routes to appropriate widget based on current state
   Widget _buildStateWidget(PortfolioHeatmapState state) {

@@ -1,11 +1,11 @@
-import 'dart:ui';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:am_design_system/core/navigation/app_web_navigation.dart';
 import 'package:am_design_system/core/theme/app_colors.dart';
+import 'package:am_design_system/core/theme/app_colors_theme.dart';
 import 'package:am_design_system/core/module/module_config.dart';
 import 'package:am_design_system/shared/widgets/navigation/sidebar_item.dart';
+import 'package:am_design_system/shared/widgets/navigation/navigation_chrome.dart';
 
 /// Premium floating bottom navigation bar with glassmorphism effect.
 ///
@@ -19,10 +19,12 @@ class GlobalBottomNavigation extends StatefulWidget {
     super.key,
     this.onProfileTap,
     this.onSearchTap,
+    this.highlightSearch = false,
     this.userName,
     this.isDarkMode = false,
     this.visibleCount = 4,
     this.moduleShareUrls,
+    this.accentColor,
   });
 
   final String activeNavItem;
@@ -30,12 +32,18 @@ class GlobalBottomNavigation extends StatefulWidget {
   final List<SidebarItem> items;
   final VoidCallback? onProfileTap;
   final VoidCallback? onSearchTap;
+
+  /// Soft glow on the search control (discovery pages only).
+  final bool highlightSearch;
   final String? userName;
   final bool isDarkMode;
   final Map<String, String>? moduleShareUrls;
 
   /// How many destinations fit in the visible bar (default 4).
   final int visibleCount;
+
+  /// Active module brand accent for chrome tint.
+  final Color? accentColor;
 
   @override
   State<GlobalBottomNavigation> createState() => _GlobalBottomNavigationState();
@@ -87,113 +95,130 @@ class _GlobalBottomNavigationState extends State<GlobalBottomNavigation> {
   Widget build(BuildContext context) {
     final visibleCount =
         widget.visibleCount.clamp(1, widget.items.isEmpty ? 1 : widget.items.length);
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      color: Colors.transparent,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
-            height: 68,
-            decoration: BoxDecoration(
-              color: widget.isDarkMode
-                  ? const Color(0xFF1a1a2e).withValues(alpha: 0.85)
-                  : Colors.white.withValues(alpha: 0.85),
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                color: widget.isDarkMode
-                    ? Colors.white.withValues(alpha: 0.08)
-                    : Colors.black.withValues(alpha: 0.06),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(
-                    alpha: widget.isDarkMode ? 0.35 : 0.12,
-                  ),
-                  blurRadius: 24,
-                  offset: const Offset(0, 4),
-                ),
-                if (widget.isDarkMode)
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.08),
-                    blurRadius: 40,
-                    spreadRadius: -4,
-                    offset: const Offset(0, 2),
-                  ),
-              ],
-            ),
-            child: SafeArea(
-              top: false,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final viewportWidth =
-                      constraints.maxWidth - (_horizontalPadding * 2);
-                  final itemWidth = viewportWidth / visibleCount;
+    // Safe-area lives outside the chrome box so the icon+label column fits.
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 0, 16, 12 + bottomInset),
+      child: NavigationChrome.glass(
+        context: context,
+        isDark: widget.isDarkMode,
+        borderRadius: 28,
+        child: SizedBox(
+          height: 58,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final hasSearch = widget.onSearchTap != null;
+              final searchSlot = hasSearch ? 48.0 : 0.0;
+              final viewportWidth = constraints.maxWidth -
+                  (_horizontalPadding * 2) -
+                  searchSlot;
+              final itemWidth = viewportWidth / visibleCount;
+              final accent = widget.accentColor ??
+                  _getIconColor(widget.activeNavItem) ??
+                  AppColors.primary;
 
-                  return ListView.builder(
-                    controller: _scrollController,
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: _horizontalPadding,
+              return Row(
+                children: [
+                  if (hasSearch)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4),
+                      child: Container(
+                        decoration: widget.highlightSearch
+                            ? BoxDecoration(
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: accent.withValues(alpha: 0.32),
+                                    blurRadius: 12,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
+                              )
+                            : null,
+                        child: IconButton(
+                          tooltip: 'Search',
+                          onPressed: widget.onSearchTap,
+                          icon: Icon(
+                            Icons.search_rounded,
+                            color: widget.highlightSearch
+                                ? accent
+                                : (Theme.of(context)
+                                        .extension<AppColorsTheme>()
+                                        ?.textSecondary ??
+                                    (widget.isDarkMode
+                                        ? AppColors.textSecondaryDark
+                                        : AppColors.textSecondaryLight)),
+                          ),
+                        ),
+                      ),
                     ),
-                    itemCount: widget.items.length,
-                    itemBuilder: (context, index) {
-                      final item = widget.items[index];
-                      final isActive = widget.activeNavItem == item.title;
-                      final accentColor =
-                          _getIconColor(item.title) ?? AppColors.primary;
+                  Expanded(
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: _horizontalPadding,
+                      ),
+                      itemCount: widget.items.length,
+                      itemBuilder: (context, index) {
+                        final item = widget.items[index];
+                        final isActive = widget.activeNavItem == item.title;
+                        final accentColor =
+                            _getIconColor(item.title) ?? AppColors.primary;
 
-                      return KeyedSubtree(
-                        key: _keyFor(item.title),
-                        child: Listener(
-                          onPointerDown: (event) {
-                            final path = widget.moduleShareUrls?[item.title];
-                            if (path == null) return;
-                            if (event.buttons == kMiddleMouseButton) {
-                              AppWebNavigation.navigate(
-                                context: context,
-                                path: path,
-                                onSameTab: () => widget.onNavigate(item.title),
-                                pointerDown: event,
-                              );
-                            }
-                          },
-                          child: GestureDetector(
-                            onTap: () {
+                        return KeyedSubtree(
+                          key: _keyFor(item.title),
+                          child: Listener(
+                            onPointerDown: (event) {
                               final path = widget.moduleShareUrls?[item.title];
-                              if (path == null) {
-                                widget.onNavigate(item.title);
-                                return;
+                              if (path == null) return;
+                              if (event.buttons == kMiddleMouseButton) {
+                                AppWebNavigation.navigate(
+                                  context: context,
+                                  path: path,
+                                  onSameTab: () =>
+                                      widget.onNavigate(item.title),
+                                  pointerDown: event,
+                                );
                               }
-                              AppWebNavigation.navigate(
-                                context: context,
-                                path: path,
-                                onSameTab: () => widget.onNavigate(item.title),
-                              );
                             },
-                            behavior: HitTestBehavior.opaque,
-                            child: SizedBox(
-                              width: itemWidth,
-                              child: _NavItem(
-                                icon: item.icon,
-                                label: item.title,
-                                isActive: isActive,
-                                accentColor: accentColor,
-                                isDarkMode: widget.isDarkMode,
+                            child: GestureDetector(
+                              onTap: () {
+                                final path =
+                                    widget.moduleShareUrls?[item.title];
+                                if (path == null) {
+                                  widget.onNavigate(item.title);
+                                  return;
+                                }
+                                AppWebNavigation.navigate(
+                                  context: context,
+                                  path: path,
+                                  onSameTab: () =>
+                                      widget.onNavigate(item.title),
+                                );
+                              },
+                              behavior: HitTestBehavior.opaque,
+                              child: SizedBox(
+                                width: itemWidth,
+                                child: _NavItem(
+                                  icon: item.icon,
+                                  label: item.title,
+                                  isActive: isActive,
+                                  accentColor: accentColor,
+                                  isDarkMode: widget.isDarkMode,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),

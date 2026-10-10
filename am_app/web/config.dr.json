@@ -1,0 +1,16 @@
+{
+  "_comment": "Cluster DR — local AM_ENV=dr loads this file.",
+  "domain": "am-dr.asrax.in",
+  "env": "dr",
+  "services": {},
+  "google": {
+    "webClientId": "307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com",
+    "iosClientId": "307768822337-082220ndhdik3b6utgac7t8hun23dqns.apps.googleusercontent.com",
+    "androidClientId": "307768822337-ad7tee4d82cc0b4flgrfs157e5e6rc0g.apps.googleusercontent.com"
+  },
+  "growthbook": {
+    "enabled": true,
+    "apiHost": "https://growthbook-dr.asrax.in/gbapi",
+    "clientKey": "sdk-GLujAhix8Foe5qoC"
+  }
+}

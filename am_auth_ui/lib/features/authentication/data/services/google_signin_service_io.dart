@@ -35,6 +35,10 @@ class GoogleSignInService {
   gsi.GoogleSignIn? _googleSignIn;
   gsi.GoogleSignInAccount? _currentUser;
 
+  static const _iosClientIdFromDefine = String.fromEnvironment(
+    'AM_GOOGLE_IOS_CLIENT_ID',
+  );
+
   String get _serverClientId {
     try {
       final configClientId = ConfigService.config.google.webClientId;
@@ -44,17 +48,26 @@ class GoogleSignInService {
     } catch (_) {
       // Config may not be ready in early tests.
     }
-    // dart-define only — never a hardcoded product client ID in source.
-    if (AuthConstants.googleClientId.isNotEmpty) {
-      return AuthConstants.googleClientId;
+    return AuthConstants.googleClientId;
+  }
+
+  String get _iosClientId {
+    try {
+      final fromConfig = ConfigService.config.google.iosClientId;
+      if (fromConfig.isNotEmpty) return fromConfig;
+    } catch (_) {
+      // Config may not be ready in early tests.
     }
-    throw AuthException(AuthConstants.googleSignInNotConfigured);
+    return _iosClientIdFromDefine;
   }
 
   gsi.GoogleSignIn get _client {
+    final iosId = _iosClientId;
+    final serverId = _serverClientId;
     return _googleSignIn ??= gsi.GoogleSignIn(
+      clientId: iosId.isNotEmpty ? iosId : null,
+      serverClientId: serverId.isNotEmpty ? serverId : null,
       scopes: const <String>['email', 'openid', 'profile'],
-      serverClientId: _serverClientId,
     );
   }
 
