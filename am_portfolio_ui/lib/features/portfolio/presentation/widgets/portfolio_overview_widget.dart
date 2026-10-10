@@ -768,12 +768,22 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         : summaryToUse.totalGainLossPercentage;
     final String periodLabel = selectedTimeFrame.code == 'all' ? 'total' : selectedTimeFrame.displayName;
     final bool periodUnavailable = periodReturn == null;
-    final double? effectiveToday = summaryToUse.todayChange ??
-        (isOneDay && !totalLooksLikeCostBasis ? summaryToUse.totalGainLoss : null);
-    final double? effectiveTodayPct = summaryToUse.todayChangePercentage ??
-        (isOneDay && !totalLooksLikeCostBasis
+    // AS_OF + exact 0 is collapsed quote math — do not show ₹0.00 as a real flat day.
+    final bool todayLooksCollapsedZero = !summaryToUse.isLivePrices &&
+        summaryToUse.todayChange != null &&
+        summaryToUse.todayChange!.abs() < 0.005;
+    final double? effectiveToday = todayLooksCollapsedZero
+        ? (isOneDay && !totalLooksLikeCostBasis ? summaryToUse.totalGainLoss : null)
+        : (summaryToUse.todayChange ??
+            (isOneDay && !totalLooksLikeCostBasis ? summaryToUse.totalGainLoss : null));
+    final double? effectiveTodayPct = todayLooksCollapsedZero
+        ? (isOneDay && !totalLooksLikeCostBasis
             ? summaryToUse.totalGainLossPercentage
-            : null);
+            : null)
+        : (summaryToUse.todayChangePercentage ??
+            (isOneDay && !totalLooksLikeCostBasis
+                ? summaryToUse.totalGainLossPercentage
+                : null));
     final bool todayUnavailable = effectiveToday == null;
     final double todayChange = effectiveToday ?? 0;
     final double todayChangePct = effectiveTodayPct ?? 0;
