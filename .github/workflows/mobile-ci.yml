@@ -218,7 +218,7 @@ jobs:
     if: ${{ needs.resolve.outputs.run_ios == 'true' }}
     permissions:
       contents: read
-    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-ios.yml@main
+    uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-ios.yml@fix/ios-asc-certificate-private-key
     with:
       working_directory: am_app
       build_mode: release
