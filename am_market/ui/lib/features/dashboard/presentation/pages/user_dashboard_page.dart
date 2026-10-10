@@ -898,6 +898,14 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
 
                   const SizedBox(height: 12),
 
+                  PinnedIndicesGrid(
+                    indices: marketProvider.allIndicesData,
+                    selectedIndexSymbol: selectedIndexForMovers,
+                    onIndexSelected: _onDashboardIndexSelected,
+                  ),
+
+                  const SizedBox(height: 12),
+
                   /* // REMOVED:
                     // Index Cards Carousel  
                     SizedBox(
@@ -1531,26 +1539,10 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                                 isBarChart: isBarChart,
                                 timeFrameCode: selectedTimeframe,
                                 expandedChartPath:
-                                    '/app/chart/workspace?symbol=&tf=',
+                                    '/app/chart/compare?context=market&tf=&series=',
                                 onOpenExpanded: () {
-                                  final sym = selectedIndicesForChart.isNotEmpty
-                                      ? selectedIndicesForChart.first
-                                      : 'NIFTY 50';
-                                  final path =
-                                      '/app/chart/workspace?symbol=&tf=';
-                                  requireAuthThen(
-                                    context,
-                                    redirectPath: path,
-                                    title: 'Sign in to open Chart',
-                                    message:
-                                        'The chart terminal requires an account. Cancel to keep browsing Market.',
-                                    onAuthenticated: () {
-                                      if (kIsWeb) {
-                                        AppWebNavigation.openPathInNewTab(path);
-                                      } else {
-                                        context.push(path);
-                                      }
-                                    },
+                                  context.push(
+                                    '/app/chart/compare?context=market&tf=&series=',
                                   );
                                 },
                                 onRemoveSeries: (symbol) {
@@ -1573,50 +1565,59 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                         losers: topLosers,
                         isLoading: isLoadingMovers,
                         error: moversError,
-                        headerTrailing: GestureDetector(
-                          onTap: () {
-                            if (MediaQuery.sizeOf(context).width < 768) {
-                              _showMobileAllIndicesBottomSheet(
-                                context,
-                                marketProvider,
-                              );
-                            } else {
-                              _openDrawer();
-                            }
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color:
-                                  ModuleColors.market.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color:
-                                    ModuleColors.market.withValues(alpha: 0.35),
+                      ),
+                      right: SizedBox(
+                        height: isMobile ? 320 : 360,
+                        child: TopMoversWidgetV2(
+                          gainers: topGainers,
+                          losers: topLosers,
+                          isLoading: isLoadingMovers,
+                          error: moversError,
+                          headerTrailing: GestureDetector(
+                            onTap: () {
+                              if (MediaQuery.sizeOf(context).width < 768) {
+                                _showMobileAllIndicesBottomSheet(
+                                  context,
+                                  marketProvider,
+                                );
+                              } else {
+                                _openDrawer();
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
                               ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  selectedIndexForMovers,
-                                  style: TextStyle(
-                                    color: ModuleColors.market,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Icon(
-                                  Icons.keyboard_arrow_down_rounded,
-                                  size: 16,
+                              decoration: BoxDecoration(
+                                color:
+                                    ModuleColors.market.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
                                   color: ModuleColors.market
-                                      .withValues(alpha: 0.9),
+                                      .withValues(alpha: 0.35),
                                 ),
-                              ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    selectedIndexForMovers,
+                                    style: TextStyle(
+                                      color: ModuleColors.market,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    Icons.keyboard_arrow_down_rounded,
+                                    size: 16,
+                                    color: ModuleColors.market
+                                        .withValues(alpha: 0.9),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),

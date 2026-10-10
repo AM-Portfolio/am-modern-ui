@@ -654,10 +654,6 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         isSelected: _swipeController.currentIndex == index,
         accentColor: ModuleColors.market,
         onTap: () {
-          if (title == 'Paper') {
-            unawaited(_openPaperTab(index));
-            return;
-          }
           if (title == 'Equity Insider') {
             _equityInsiderKey.currentState?.resetToLanding();
           }

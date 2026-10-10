@@ -37,6 +37,7 @@ class FoPage extends ConsumerStatefulWidget {
 }
 
 class _FoPageState extends ConsumerState<FoPage> {
+<<<<<<< ours
   @override
   void initState() {
     super.initState();
@@ -66,6 +67,8 @@ class _FoPageState extends ConsumerState<FoPage> {
     super.dispose();
   }
 
+=======
+>>>>>>> theirs
   void _onSymbolSelected(String symbol) {
     ref.read(recentlyViewedFoSymbolsProvider.notifier).add(symbol);
     ref.read(foActiveSymbolProvider.notifier).state = symbol;
@@ -77,6 +80,7 @@ class _FoPageState extends ConsumerState<FoPage> {
     final colors = context.colors;
     final marketCyan = ModuleColors.market;
     final scaffoldBg = colors.scaffoldBackground;
+<<<<<<< ours
 
     final body = activeSymbol == null
         ? FoEmptyLandingView(
@@ -89,6 +93,8 @@ class _FoPageState extends ConsumerState<FoPage> {
     if (widget.embed) {
       return ColoredBox(color: Colors.transparent, child: body);
     }
+=======
+>>>>>>> theirs
 
     return Scaffold(
       body: Container(
@@ -106,7 +112,13 @@ class _FoPageState extends ConsumerState<FoPage> {
         ),
         child: SafeArea(
           top: false,
+<<<<<<< ours
           child: body,
+=======
+          child: activeSymbol == null
+              ? FoEmptyLandingView(onSelected: _onSymbolSelected)
+              : _buildDetailView(activeSymbol, colors),
+>>>>>>> theirs
         ),
       ),
     );
@@ -148,6 +160,7 @@ class _FoPageState extends ConsumerState<FoPage> {
       ),
     );
   }
+<<<<<<< ours
 
   /// Chart bottom embed — no symbol tile; body only for the selected main tag.
   Widget _buildEmbedDetailView() {
@@ -158,4 +171,6 @@ class _FoPageState extends ConsumerState<FoPage> {
     };
     return child;
   }
+=======
+>>>>>>> theirs
 }

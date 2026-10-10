@@ -182,6 +182,9 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
   bool _isCompact(BuildContext context) =>
       MediaQuery.sizeOf(context).width < 700;
 
+  bool _isCompact(BuildContext context) =>
+      MediaQuery.sizeOf(context).width < 700;
+
   /// Dynamic left gutter width so values like "2,255.50" or "2255" fit cleanly without truncating.
   double _leftAxisReserve(BuildContext context) {
     final compact = _isCompact(context);
