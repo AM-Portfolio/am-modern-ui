@@ -746,44 +746,20 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
     bool glowBorder = true,
   }) {
     final summaryToUse = state.summary;
-    final selectedTimeFrame = ref.read(appTimeFrameProvider);
 
-    final bool isOneDay = selectedTimeFrame == ds.TimeFrame.oneDay
-        || selectedTimeFrame.code.toUpperCase() == '1D';
-    // Cost-basis (value − invested) must not masquerade as 1D session return when day P&L is null.
-    final double costBasisGl =
-        summaryToUse.totalValue - summaryToUse.investmentValue;
-    final bool totalLooksLikeCostBasis = summaryToUse.todayChange == null &&
-        (summaryToUse.totalGainLoss - costBasisGl).abs() < 0.05;
-    // 1D prefers day P&L; else snapshot period — never silent cost-basis.
-    final double? periodReturn = isOneDay
-        ? (summaryToUse.todayChange ??
-            (totalLooksLikeCostBasis ? null : summaryToUse.totalGainLoss))
-        : summaryToUse.totalGainLoss;
-    final double? periodReturnPct = isOneDay
-        ? (summaryToUse.todayChangePercentage ??
-            (totalLooksLikeCostBasis
-                ? null
-                : summaryToUse.totalGainLossPercentage))
-        : summaryToUse.totalGainLossPercentage;
-    final String periodLabel = selectedTimeFrame.code == 'all' ? 'total' : selectedTimeFrame.displayName;
-    final bool periodUnavailable = periodReturn == null;
-    // AS_OF + exact 0 is collapsed quote math — do not show ₹0.00 as a real flat day.
+    // Total Return = overall unrealized P&L (mark − invested). Not session / not period.
+    final double periodReturn = summaryToUse.totalGainLoss;
+    final double periodReturnPct = summaryToUse.totalGainLossPercentage;
+    const String periodLabel = 'total';
+    const bool periodUnavailable = false;
+    // Today's P&L = last-session LTP day move only. AS_OF + ₹0 is collapsed quotes, not a real flat day.
     final bool todayLooksCollapsedZero = !summaryToUse.isLivePrices &&
         summaryToUse.todayChange != null &&
         summaryToUse.todayChange!.abs() < 0.005;
-    final double? effectiveToday = todayLooksCollapsedZero
-        ? (isOneDay && !totalLooksLikeCostBasis ? summaryToUse.totalGainLoss : null)
-        : (summaryToUse.todayChange ??
-            (isOneDay && !totalLooksLikeCostBasis ? summaryToUse.totalGainLoss : null));
-    final double? effectiveTodayPct = todayLooksCollapsedZero
-        ? (isOneDay && !totalLooksLikeCostBasis
-            ? summaryToUse.totalGainLossPercentage
-            : null)
-        : (summaryToUse.todayChangePercentage ??
-            (isOneDay && !totalLooksLikeCostBasis
-                ? summaryToUse.totalGainLossPercentage
-                : null));
+    final double? effectiveToday =
+        todayLooksCollapsedZero ? null : summaryToUse.todayChange;
+    final double? effectiveTodayPct =
+        todayLooksCollapsedZero ? null : summaryToUse.todayChangePercentage;
     final bool todayUnavailable = effectiveToday == null;
     final double todayChange = effectiveToday ?? 0;
     final double todayChangePct = effectiveTodayPct ?? 0;
@@ -796,7 +772,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
         value: periodUnavailable ? '—' : _formatCurrency(periodReturn),
         subtitle: periodUnavailable
             ? 'Unavailable in $periodLabel'
-            : '${periodReturnPct! >= 0 ? "+" : ""}${periodReturnPct.toStringAsFixed(2)}% in $periodLabel',
+            : '${periodReturnPct >= 0 ? "+" : ""}${periodReturnPct.toStringAsFixed(2)}% in $periodLabel',
         accentColor: periodUnavailable || periodReturn == 0
             ? context.statusNeutral
             : (periodReturn > 0
@@ -811,7 +787,7 @@ class _PortfolioOverviewWidgetState extends ConsumerState<PortfolioOverviewWidge
             : periodReturn > 0,
         compact: compact,
         glowBorder: glowBorder,
-        tooltip: selectedTimeFrame.code != 'all' ? 'Unrealized profit or loss in $periodLabel' : 'Total unrealized profit or loss across all holdings',
+        tooltip: 'Total unrealized profit or loss across all holdings',
       ),
       PortfolioMetricCard(
         title: "Today's P&L",
