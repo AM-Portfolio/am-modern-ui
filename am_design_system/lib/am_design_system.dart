@@ -35,7 +35,7 @@ export 'core/contracts/design_contract.dart';
 export 'core/utils/common_logger.dart';
 export 'core/utils/device_utils.dart';
 export 'core/utils/string_utils.dart';
-export 'core/utils/validators.dart'; 
+export 'core/utils/validators.dart';
 export 'core/utils/conditional_mouse_region.dart';
 export 'core/utils/browser_zoom.dart';
 export 'core/utils/browser_zoom_platform.dart';
@@ -162,6 +162,10 @@ export 'shared/widgets/charts/multi_series_chart_data.dart';
 export 'shared/widgets/charts/multi_series_chart_config.dart';
 export 'shared/widgets/charts/comparison_chart_colors.dart';
 export 'shared/widgets/charts/comparison_chart_view.dart';
+export 'shared/widgets/charts/chart_series_window.dart';
+export 'shared/widgets/charts/candle_chart.dart';
+export 'shared/widgets/charts/indicators/chart_indicators.dart';
+export 'shared/widgets/charts/indicators/indicator_candle_chart.dart';
 
 // Portfolio Charts & Models
 export 'shared/widgets/portfolio_overview/models/portfolio_overview_data.dart';
@@ -190,7 +194,7 @@ export 'shared/widgets/feedback/animated_login_elements.dart';
 // --- Global Models ---
 export 'shared/models/user.dart';
 export 'shared/models/holding.dart';
-export 'shared/models/am_mover_item.dart';  // Generic mover tile data model
+export 'shared/models/am_mover_item.dart'; // Generic mover tile data model
 export 'shared/widgets/holdings/universal_holdings.dart';
 export 'shared/widgets/holdings/advanced/advanced_holding_row.dart';
 export 'shared/widgets/holdings/advanced/advanced_holdings_template.dart';
@@ -208,4 +212,3 @@ export 'shared/widgets/search/typewriter_hint_controller.dart';
 
 // --- Dialogs ---
 export 'shared/widgets/dialogs/confirmation_dialog.dart';
-

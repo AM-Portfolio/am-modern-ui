@@ -10,15 +10,18 @@ import '../services/secure_storage_service.dart';
 import '../utils/logger.dart';
 import '../telemetry/product_telemetry.dart';
 import '../di/service_registry.dart';
+import 'api_http_client_stub.dart'
+    if (dart.library.html) 'api_http_client_web.dart'
+    as platform_http;
 
 /// Base API client for handling HTTP requests
 class ApiClient {
   /// Constructor — [baseUrl] must come from ConfigService / EnvDomains / DI.
   /// Falls back to same-origin (web) so cluster never needs a baked host.
   ApiClient({String? baseUrl, http.Client? client, String? category})
-      : baseUrl = _resolveBaseUrl(baseUrl),
-        category = category ?? 'API',
-        _client = client ?? http.Client();
+    : baseUrl = _resolveBaseUrl(baseUrl),
+      category = category ?? 'API',
+      _client = client ?? platform_http.createPlatformHttpClient();
 
   static String _resolveBaseUrl(String? baseUrl) {
     if (baseUrl != null && baseUrl.isNotEmpty) return baseUrl;
@@ -45,9 +48,44 @@ class ApiClient {
   Future<String?> _getAuthToken() async {
     final secureStorage = SecureStorageService();
     final token = await secureStorage.getAccessToken();
-    AppLogger.debug('🔐 Auth Token Check: "${token ?? 'null'}"',
-        tag: 'ApiClient');
+    AppLogger.debug(
+      '🔐 Auth Token Check: "${token ?? 'null'}"',
+      tag: 'ApiClient',
+    );
     return token;
+  }
+
+  /// Match [AuthInterceptor]: only real JWTs go on Authorization.
+  /// Cookie / BFF markers must not be sent as Bearer (causes 401).
+  static bool _shouldAttachBearer(String token) {
+    if (token == 'bff_cookie_session' || token.startsWith('web-access-')) {
+      return false;
+    }
+    return token.split('.').length >= 3;
+  }
+
+  /// Create headers with authentication token
+  Future<Map<String, String>> _createHeaders({
+    Map<String, String>? additionalHeaders,
+    bool requireAuth = true,
+  }) async {
+    final token = requireAuth ? await _getAuthToken() : null;
+    final attach =
+        token != null && token.isNotEmpty && _shouldAttachBearer(token);
+
+    if (attach) {
+      AppLogger.debug('Attach token to header (length: ${token.length})');
+    } else {
+      AppLogger.debug(
+        'No Bearer auth for request (requireAuth: $requireAuth, token: ${token == null ? 'null' : 'present-non-jwt'})',
+      );
+    }
+
+    return {
+      'Content-Type': 'application/json',
+      if (attach) 'Authorization': 'Bearer $token',
+      if (additionalHeaders != null) ...additionalHeaders,
+    };
   }
 
   /// Build URI from endpoint, handling both complete URLs and relative paths
@@ -100,30 +138,11 @@ class ApiClient {
   String _replaceLocalhostForAndroid(String url) =>
       url.replaceAll('localhost', '10.0.2.2');
 
-  /// Create headers with authentication token
-  Future<Map<String, String>> _createHeaders({
-    Map<String, String>? additionalHeaders,
-    bool requireAuth = true,
-  }) async {
-    final token = requireAuth ? await _getAuthToken() : null;
-
-    if (token != null) {
-      AppLogger.debug('Attach token to header (length: ${token.length})');
-    } else {
-      AppLogger.debug(
-          'No auth token available for request headers (requireAuth: $requireAuth)');
-    }
-
-    return {
-      'Content-Type': 'application/json',
-      if (token != null) 'Authorization': 'Bearer $token',
-      if (additionalHeaders != null) ...additionalHeaders,
-    };
-  }
-
   /// Handle HTTP response
   T _handleResponse<T>(
-      http.Response response, T Function(dynamic data) parser) {
+    http.Response response,
+    T Function(dynamic data) parser,
+  ) {
     AppLogger.debug(
       '📥 Response received - Status: ${response.statusCode}, Body length: ${response.body.length}',
       tag: 'ApiClient',
@@ -149,11 +168,12 @@ class ApiClient {
         final errorData = jsonDecode(response.body);
         errorBody = errorData is Map ? errorData : null;
         if (errorData is Map) {
-          message = (errorData['message'] ??
-                  errorData['error'] ??
-                  errorData['detail'] ??
-                  message)
-              .toString();
+          message =
+              (errorData['message'] ??
+                      errorData['error'] ??
+                      errorData['detail'] ??
+                      message)
+                  .toString();
           if (errorData['detail'] is Map) {
             message = errorData['detail'].toString();
           }
@@ -202,15 +222,19 @@ class ApiClient {
 
         if (!shouldRetry || attempt >= maxRetries) {
           if (attempt >= maxRetries) {
-            AppLogger.error('❌ Request failed after $maxRetries attempts',
-                tag: 'ApiClient', error: e);
+            AppLogger.error(
+              '❌ Request failed after $maxRetries attempts',
+              tag: 'ApiClient',
+              error: e,
+            );
           }
           rethrow;
         }
 
         AppLogger.warning(
-            '⚠️ Request attempt $attempt failed (Status: ${e is ApiException ? e.statusCode : "Network"}). Retrying...',
-            tag: 'ApiClient');
+          '⚠️ Request attempt $attempt failed (Status: ${e is ApiException ? e.statusCode : "Network"}). Retrying...',
+          tag: 'ApiClient',
+        );
 
         // Delay before retry - exponential backoff: 1s, 2s
         await Future.delayed(Duration(seconds: attempt));
@@ -250,13 +274,14 @@ class ApiClient {
           headers: requestHeaders,
         );
 
-        final response =
-            await _client.get(uri, headers: requestHeaders).timeout(
-                  effectiveTimeout,
-                  onTimeout: () => throw TimeoutException(
-                    'GET timed out after ${effectiveTimeout.inSeconds}s',
-                  ),
-                );
+        final response = await _client
+            .get(uri, headers: requestHeaders)
+            .timeout(
+              effectiveTimeout,
+              onTimeout: () => throw TimeoutException(
+                'GET timed out after ${effectiveTimeout.inSeconds}s',
+              ),
+            );
         stopwatch.stop();
 
         // Record Telemetry
