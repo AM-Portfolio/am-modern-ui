@@ -379,8 +379,12 @@ class ApiService {
     );
   }
 
-  Future<Map<String, dynamic>> extractFromGmail(String broker) async {
-    final url = '$_emailBase/extract/gmail/$broker?pan=PANK1234F';
+  Future<Map<String, dynamic>> extractFromGmail(
+    String broker, {
+    String? pan,
+  }) async {
+    final panQ = Uri.encodeQueryComponent((pan ?? '').trim().toUpperCase());
+    final url = '$_emailBase/extract/gmail/$broker?pan=$panQ';
     debugPrint('[ApiService] GET $url');
     final apiClient = GetIt.I.isRegistered<ApiClient>() 
         ? GetIt.I<ApiClient>() 

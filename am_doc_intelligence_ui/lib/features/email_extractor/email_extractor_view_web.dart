@@ -25,23 +25,60 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
   String? _activeExtractingBrokerId;
   
   Timer? _statusPollTimer;
+  StreamSubscription<html.MessageEvent>? _oauthMessageSub;
+  final TextEditingController _panController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _checkHealthAndLoad();
-    
-    // Periodically poll Gmail status to see if OAuth succeeded in the other window
-    _statusPollTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      if (_isServiceConnected == true) {
+    _handleGmailQueryParams();
+
+    // Popup callback posts here; also poll until status flips to connected
+    _oauthMessageSub = html.window.onMessage.listen(_onOAuthMessage);
+    _statusPollTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      if (_isServiceConnected == true && _gmailStatus?['connected'] != true) {
         _checkGmail();
       }
     });
   }
 
+  void _handleGmailQueryParams() {
+    try {
+      final uri = Uri.parse(html.window.location.href);
+      final gmail = uri.queryParameters['gmail'];
+      if (gmail == 'connected') {
+        _status = 'Gmail connected. You can extract statements now.';
+        _checkGmail();
+      } else if (gmail == 'error') {
+        _status =
+            'Gmail connection failed: ${uri.queryParameters['msg'] ?? 'unknown'}';
+      }
+    } catch (_) {}
+  }
+
+  void _onOAuthMessage(html.MessageEvent event) {
+    final data = event.data;
+    if (data is! Map) return;
+    if (data['type'] != 'am-gmail-oauth') return;
+    if (data['success'] == true) {
+      setState(() {
+        _status =
+            'Gmail connected${data['email'] != null && '${data['email']}'.isNotEmpty ? ' (${data['email']})' : ''}.';
+      });
+      _checkGmail();
+    } else {
+      setState(() {
+        _status = 'Gmail connection failed: ${data['error'] ?? 'unknown'}';
+      });
+    }
+  }
+
   @override
   void dispose() {
     _statusPollTimer?.cancel();
+    _oauthMessageSub?.cancel();
+    _panController.dispose();
     super.dispose();
   }
 
@@ -131,10 +168,16 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
           await _checkGmail();
         } else if (result['auth_url'] != null) {
           final String authUrl = result['auth_url'];
-          // Open OAuth in new tab
-          html.window.open(authUrl, '_blank');
+          // Popup preferred so callback can postMessage + close; fallback new tab
+          final popup = html.window.open(
+            authUrl,
+            'am_gmail_oauth',
+            'width=520,height=720',
+          );
           setState(() {
-            _status = 'Please complete the Google OAuth sign-in in the newly opened tab.';
+            _status = popup != null
+                ? 'Complete Google sign-in in the popup. This page will update when done.'
+                : 'Complete Google sign-in in the new tab. This page will update when done.';
           });
         }
       }
@@ -147,6 +190,14 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
   }
 
   Future<void> _extract(String brokerId) async {
+    final pan = _panController.text.trim().toUpperCase();
+    if (pan.isEmpty && brokerId != 'angleone') {
+      setState(() {
+        _status = 'Enter your PAN (PDF password) before extracting.';
+      });
+      return;
+    }
+
     setState(() {
       _activeExtractingBrokerId = brokerId;
       _status = 'Fetching latest email from ${brokerId.toUpperCase()} & scanning for statements...';
@@ -159,7 +210,7 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
       metadata: {'broker': brokerId},
     );
     try {
-      final result = await apiProvider.extractFromGmail(brokerId);
+      final result = await apiProvider.extractFromGmail(brokerId, pan: pan);
       sw.stop();
       ProductTelemetry.instance.widgetTiming(
         widget: 'gmail_extract',
@@ -227,6 +278,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
                 _buildConnectionError()
               else ...[
                 _buildGmailStatusCard(isConnected, email, contentWidth: contentWidth),
+                const SizedBox(height: 20),
+                _buildPanField(),
                 const SizedBox(height: 32),
                 Row(
                   children: [
@@ -445,6 +498,13 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
                               .titleSmall
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
+                        if (!isConnected) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            'Google may show an unverified-app warning until asrax.in finishes Google\'s OAuth review. That is expected; continue only if you trust asrax.in.',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -519,6 +579,13 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
                         .titleMedium
                         ?.copyWith(fontWeight: FontWeight.bold),
                   ),
+                  if (!isConnected) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Google may show an unverified-app warning until asrax.in finishes Google\'s OAuth review. That is expected; continue only if you trust asrax.in.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -531,6 +598,40 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
               type: isConnected
                   ? AppButtonType.secondary
                   : AppButtonType.primary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPanField() {
+    return GlassCard(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'PAN (PDF password)',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Broker statement PDFs are usually locked with your PAN. Required for Groww / Zerodha / Dhan / mStock extract.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _panController,
+              textCapitalization: TextCapitalization.characters,
+              decoration: const InputDecoration(
+                hintText: 'e.g. ABCDE1234F',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
             ),
           ],
         ),
