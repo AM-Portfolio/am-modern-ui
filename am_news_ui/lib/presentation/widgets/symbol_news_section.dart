@@ -135,6 +135,7 @@ class _SymbolNewsSectionState extends ConsumerState<SymbolNewsSection>
                     holdingsNewsEmptyLabel(
                       data: data,
                       fallback: 'No recent news for $symbol',
+                      pendingRetryDone: pendingIngestRetryDone,
                     ),
                     style: Theme.of(context).textTheme.bodyMedium,
                   )

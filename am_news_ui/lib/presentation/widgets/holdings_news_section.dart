@@ -139,6 +139,7 @@ class _HoldingsNewsSectionState extends ConsumerState<HoldingsNewsSection>
                     holdingsNewsEmptyLabel(
                       data: data,
                       fallback: widget.emptyMessage,
+                      pendingRetryDone: pendingIngestRetryDone,
                     ),
                     style: Theme.of(context).textTheme.bodyMedium,
                   )

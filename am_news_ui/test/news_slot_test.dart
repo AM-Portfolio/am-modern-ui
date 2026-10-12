@@ -115,6 +115,14 @@ void main() {
     );
     expect(
       holdingsNewsEmptyLabel(
+        data: pending,
+        fallback: 'No recent news for these symbols',
+        pendingRetryDone: true,
+      ),
+      'No recent news for these symbols',
+    );
+    expect(
+      holdingsNewsEmptyLabel(
         data: const InsightNews(),
         fallback: 'No recent news for these symbols',
       ),

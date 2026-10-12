@@ -8,8 +8,8 @@ class PortfolioSummaryDto {
     required this.investmentValue,
     required this.totalGainLoss,
     required this.totalGainLossPercentage,
-    required this.todayGainLoss,
-    required this.todayGainLossPercentage,
+    this.todayGainLoss,
+    this.todayGainLossPercentage,
     required this.totalAssets,
     required this.gainersCount,
     required this.losersCount,
@@ -24,6 +24,7 @@ class PortfolioSummaryDto {
   });
 
   /// Create from JSON response — keys match exact backend field names.
+  /// [todayGainLoss] is null when the backend omits it (unavailable), not when the day is flat.
   factory PortfolioSummaryDto.fromJson(Map<String, dynamic> json) {
     try {
       return PortfolioSummaryDto(
@@ -31,8 +32,8 @@ class PortfolioSummaryDto {
         investmentValue: _parseDouble(json['investmentValue']),
         totalGainLoss: _parseDouble(json['totalGainLoss']),
         totalGainLossPercentage: _parseDouble(json['totalGainLossPercentage']),
-        todayGainLoss: _parseDouble(json['todayGainLoss']),
-        todayGainLossPercentage: _parseDouble(json['todayGainLossPercentage']),
+        todayGainLoss: _parseNullableDouble(json['todayGainLoss']),
+        todayGainLossPercentage: _parseNullableDouble(json['todayGainLossPercentage']),
         totalAssets: _parseInt(json['totalAssets']),
         gainersCount: _parseInt(json['gainersCount']),
         losersCount: _parseInt(json['losersCount']),
@@ -57,8 +58,9 @@ class PortfolioSummaryDto {
   final double investmentValue;
   final double totalGainLoss;
   final double totalGainLossPercentage;
-  final double todayGainLoss;
-  final double todayGainLossPercentage;
+  /// Null when backend omits day P&L (no baseline / collapsed after hours).
+  final double? todayGainLoss;
+  final double? todayGainLossPercentage;
   final int totalAssets;
   final int gainersCount;
   final int losersCount;
@@ -86,6 +88,13 @@ class PortfolioSummaryDto {
     if (value is num) return value.toDouble();
     if (value is String) return double.tryParse(value) ?? 0.0;
     return 0.0;
+  }
+
+  static double? _parseNullableDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
   }
 
   static int _parseInt(dynamic value) {
