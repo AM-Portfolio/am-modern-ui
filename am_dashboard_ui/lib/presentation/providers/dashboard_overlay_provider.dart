@@ -164,63 +164,8 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
         }
       }
 
-      // Preferred portfolio missing from aggregate → fetch /{id}/history.
-      final preferred = _preferredPortfolioId;
-      if (preferred != null &&
-          (portfolioSeries[preferred]?.points.length ?? 0) < 2) {
-        try {
-          final single = await repo.getPortfolioHistory(
-            client,
-            timeFrame: timeFrame,
-            portfolioId: preferred,
-          );
-          if (gen != _generation) return;
-          for (final ref in single.portfolios) {
-            if (!availableIds.contains(ref.id)) {
-              availableIds = [...availableIds, ref.id];
-            }
-            final raw = single.byPortfolioId[ref.id] ?? const <OverlayPoint>[];
-            final rawFinite = raw
-                .where((p) => p.value.isFinite && p.value > 0)
-                .toList();
-            final percent = toPercentPoints(rawFinite);
-            if (percent.length >= 2) {
-              portfolioSeries[ref.id] = OverlaySeries(
-                id: ref.id,
-                label: ref.label,
-                points: percent,
-                rawPoints: rawFinite,
-              );
-            }
-          }
-          // Single-id endpoint may only populate aggregate — map to preferred.
-          if ((portfolioSeries[preferred]?.points.length ?? 0) < 2) {
-            final rawFinite = single.aggregate
-                .where((p) => p.value.isFinite && p.value > 0)
-                .toList();
-            final percent = toPercentPoints(rawFinite);
-            if (percent.length >= 2) {
-              if (!availableIds.contains(preferred)) {
-                availableIds = [...availableIds, preferred];
-              }
-              portfolioSeries[preferred] = OverlaySeries(
-                id: preferred,
-                label: single.portfolios.isNotEmpty
-                    ? single.portfolios.first.label
-                    : preferred,
-                points: percent,
-                rawPoints: rawFinite,
-              );
-            }
-          }
-        } catch (e) {
-          AppLogger.error(
-            'Overlay preferred portfolio history failed',
-            error: e,
-          );
-        }
-      }
-
+      // Preferred id already missing from aggregate response — no separate
+      // single-portfolio history API on this client; keep aggregate only.
       if (gen != _generation) return;
 
       // Fresh read — user may have added indices while portfolio history loaded.
