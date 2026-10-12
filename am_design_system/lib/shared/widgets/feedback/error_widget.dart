@@ -33,7 +33,7 @@ class AmErrorWidget extends StatelessWidget {
               message,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppColors.textPrimaryLight,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
             ),
             if (onRetry != null) ...[
