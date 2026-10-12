@@ -231,7 +231,7 @@ class _PortfolioOverviewWidgetState
                       final cubit = context.read<PortfolioCubit>();
                       if (portfolioId == 'all') {
                         cubit.loadAllPortfolios();
-                      } else if (portfolioId != null) {
+                      } else {
                         cubit.loadPortfolioById(portfolioId);
                       }
                     },
@@ -769,17 +769,22 @@ class _PortfolioOverviewWidgetState
     bool glowBorder = true,
   }) {
     final summaryToUse = state.summary;
-    final selectedTimeFrame = ref.read(appTimeFrameProvider);
 
-    final double periodReturn = selectedTimeFrame.code == '1d'
-        ? summaryToUse.todayChange
-        : summaryToUse.totalGainLoss;
-    final double periodReturnPct = selectedTimeFrame.code == '1d'
-        ? summaryToUse.todayChangePercentage
-        : summaryToUse.totalGainLossPercentage;
-    final String periodLabel = selectedTimeFrame.code == 'all'
-        ? 'total'
-        : selectedTimeFrame.displayName;
+    // Total Return = overall unrealized P&L (mark − invested). Not session / not period.
+    final double periodReturn = summaryToUse.totalGainLoss;
+    final double periodReturnPct = summaryToUse.totalGainLossPercentage;
+    const String periodLabel = 'total';
+    // Today's P&L = last-session LTP day move only. AS_OF + ₹0 is collapsed quotes, not a real flat day.
+    final bool todayLooksCollapsedZero = !summaryToUse.isLivePrices &&
+        summaryToUse.todayChange != null &&
+        summaryToUse.todayChange!.abs() < 0.005;
+    final double? effectiveToday =
+        todayLooksCollapsedZero ? null : summaryToUse.todayChange;
+    final double? effectiveTodayPct =
+        todayLooksCollapsedZero ? null : summaryToUse.todayChangePercentage;
+    final bool todayUnavailable = effectiveToday == null;
+    final double todayChange = effectiveToday ?? 0;
+    final double todayChangePct = effectiveTodayPct ?? 0;
 
     final modulePink = ds.ModuleColors.portfolio;
 
@@ -801,30 +806,31 @@ class _PortfolioOverviewWidgetState
         isPositive: periodReturn == 0 ? null : periodReturn > 0,
         compact: compact,
         glowBorder: glowBorder,
-        tooltip: selectedTimeFrame.code != 'all'
-            ? 'Unrealized profit or loss in $periodLabel'
-            : 'Total unrealized profit or loss across all holdings',
+        tooltip: 'Total unrealized profit or loss across all holdings',
       ),
       PortfolioMetricCard(
         title: "Today's P&L",
-        value: _formatCurrency(summaryToUse.todayChange),
-        subtitle:
-            '${summaryToUse.todayChangePercentage >= 0 ? "+" : ""}${summaryToUse.todayChangePercentage.toStringAsFixed(2)}% today',
-        accentColor: summaryToUse.todayChange == 0
+        value: todayUnavailable ? '—' : _formatCurrency(todayChange),
+        subtitle: todayUnavailable
+            ? 'Unavailable · ${summaryToUse.todayAsOfLabel}'
+            : '${todayChangePct >= 0 ? "+" : ""}${todayChangePct.toStringAsFixed(2)}% ${summaryToUse.todayAsOfLabel}',
+        accentColor: todayUnavailable || todayChange == 0
             ? context.statusNeutral
-            : (summaryToUse.todayChange > 0
+            : (todayChange > 0
                   ? context.marketPositive
                   : context.marketNegative),
         chromeColor: modulePink,
-        icon: summaryToUse.todayChange >= 0
+        icon: todayUnavailable || todayChange >= 0
             ? Icons.keyboard_double_arrow_up_rounded
             : Icons.keyboard_double_arrow_down_rounded,
-        isPositive: summaryToUse.todayChange == 0
+        isPositive: todayUnavailable || todayChange == 0
             ? null
-            : summaryToUse.todayChange > 0,
+            : todayChange > 0,
         compact: compact,
         glowBorder: glowBorder,
-        tooltip: "Unrealized profit or loss for today",
+        tooltip: todayUnavailable
+            ? 'Day P&L unavailable (missing prior session close)'
+            : "Unrealized profit or loss for the last cash session",
       ),
       PortfolioMetricCard(
         title: 'Total Balance',

@@ -175,13 +175,13 @@ class PortfolioSummaryHiveModel extends HiveObject {
   final double totalGainLossPercentage;
 
   @HiveField(6)
-  final double todayChange;
+  final double? todayChange;
 
   @HiveField(7)
-  final double todayChangePercentage;
+  final double? todayChangePercentage;
 
   @HiveField(8)
-  final double todayGainLossPercentage;
+  final double? todayGainLossPercentage;
 
   @HiveField(9)
   final int totalHoldings;
@@ -219,9 +219,9 @@ class PortfolioSummaryHiveModel extends HiveObject {
     required this.investmentValue,
     required this.totalGainLoss,
     required this.totalGainLossPercentage,
-    required this.todayChange,
-    required this.todayChangePercentage,
-    required this.todayGainLossPercentage,
+    this.todayChange,
+    this.todayChangePercentage,
+    this.todayGainLossPercentage,
     required this.totalHoldings,
     required this.totalAssets,
     required this.todayGainersCount,
@@ -303,9 +303,9 @@ class PortfolioSummaryHiveModelAdapter
       investmentValue: fields[3] as double,
       totalGainLoss: fields[4] as double,
       totalGainLossPercentage: fields[5] as double,
-      todayChange: fields[6] as double,
-      todayChangePercentage: fields[7] as double,
-      todayGainLossPercentage: fields[8] as double,
+      todayChange: fields[6] as double?,
+      todayChangePercentage: fields[7] as double?,
+      todayGainLossPercentage: fields[8] as double?,
       totalHoldings: fields[9] as int,
       totalAssets: fields[10] as int,
       todayGainersCount: fields[11] as int,

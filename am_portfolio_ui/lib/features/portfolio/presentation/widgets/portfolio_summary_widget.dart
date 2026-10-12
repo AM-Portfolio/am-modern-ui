@@ -29,7 +29,7 @@ class PortfolioSummaryWidget extends StatelessWidget {
           // Market Data Cards Row
           Row(
             children: [
-              Expanded(child: _buildMetricCard(context, "Today's Return", summary.formattedTodayChange, summary.todayChangePercentage, summary.isTodayPositive, Icons.today)),
+              Expanded(child: _buildMetricCard(context, "Today's Return", summary.formattedTodayChange, summary.todayChangePercentage ?? 0, summary.isTodayPositive, Icons.today)),
               const SizedBox(width: 12),
               Expanded(child: _buildMetricCard(context, "Total Return", summary.formattedGainLoss, summary.totalGainLossPercentage, summary.isProfitable, Icons.trending_up)),
             ],
