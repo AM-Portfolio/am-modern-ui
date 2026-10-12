@@ -194,6 +194,7 @@ class _GmailSyncModalState extends ConsumerState<GmailSyncModal> {
       );
 
       if (mounted) {
+        PortfolioDataRefresh.instance.notifyImported();
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -203,7 +204,6 @@ class _GmailSyncModalState extends ConsumerState<GmailSyncModal> {
             backgroundColor: context.marketPositive,
           ),
         );
-        // Refresh portfolio data here if needed, or let real-time streams handle it
       }
     } catch (e) {
       sw.stop();

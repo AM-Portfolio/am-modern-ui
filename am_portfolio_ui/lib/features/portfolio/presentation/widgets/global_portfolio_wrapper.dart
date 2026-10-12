@@ -86,6 +86,33 @@ class _GlobalPortfolioWrapperState
   bool _isInit = true;
 
   @override
+  void initState() {
+    super.initState();
+    PortfolioDataRefresh.instance.addListener(_onHoldingsImported);
+  }
+
+  @override
+  void dispose() {
+    PortfolioDataRefresh.instance.removeListener(_onHoldingsImported);
+    super.dispose();
+  }
+
+  void _onHoldingsImported() {
+    if (!mounted) return;
+    final cubit = _readPortfolioCubit();
+    if (cubit == null) return;
+    final notifiedId = PortfolioDataRefresh.instance.lastPortfolioId;
+    cubit.loadPortfoliosList().then((_) {
+      if (!mounted) return;
+      final id = (notifiedId != null && notifiedId.isNotEmpty)
+          ? notifiedId
+          : _selectedPortfolioId;
+      if (id == null || id.isEmpty) return;
+      _loadPortfolioDetail(cubit, id);
+    });
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_isInit) {

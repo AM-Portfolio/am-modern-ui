@@ -280,7 +280,7 @@ GoRouter createAppRouter({
               return dashboard.DashboardScreen(
                 userId: userId,
                 onOpenDocIntel: () =>
-                    context.go(AppRoutes.docIntelPath('doc-processor')),
+                    context.go(AppRoutes.docIntelPath('mailbox')),
                 onOpenPaper: () => context.go(AppRoutes.marketPath('paper')),
               );
             },
@@ -337,7 +337,7 @@ GoRouter createAppRouter({
                   context.go(AppRoutes.portfolioPath(id, currentTab));
                 },
                 onOpenDocIntel: () =>
-                    context.go(AppRoutes.docIntelPath('doc-processor')),
+                    context.go(AppRoutes.docIntelPath('mailbox')),
                 uploadPortfolioBuilder: (portfolioId, portfolioName, onCancel) {
                   return Builder(
                     builder: (context) {
@@ -373,7 +373,7 @@ GoRouter createAppRouter({
                   context.go(AppRoutes.portfolioPath(id, tab));
                 },
                 onOpenDocIntel: () =>
-                    context.go(AppRoutes.docIntelPath('doc-processor')),
+                    context.go(AppRoutes.docIntelPath('mailbox')),
                 uploadPortfolioBuilder: (portfolioId, portfolioName, onCancel) {
                   return Builder(
                     builder: (context) {
@@ -518,14 +518,14 @@ GoRouter createAppRouter({
           GoRoute(
             path: AppRoutes.docIntel,
             redirect: (context, state) =>
-                AppRoutes.docIntelPath('doc-processor'),
+                AppRoutes.docIntelPath('mailbox'),
           ),
           GoRoute(
             path: '${AppRoutes.docIntel}/:tab',
             builder: (context, state) {
-              final tab = state.pathParameters['tab'] ?? 'doc-processor';
+              final tab = state.pathParameters['tab'] ?? 'mailbox';
               final resolved =
-                  AppRoutes.isDocIntelTab(tab) ? tab : 'doc-processor';
+                  AppRoutes.isDocIntelTab(tab) ? tab : 'mailbox';
               return buildDocIntelRoute(
                 userId: _userId(context),
                 tab: resolved,

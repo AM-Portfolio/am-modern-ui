@@ -30,7 +30,7 @@ class ShareUrlBuilder {
       return null;
     }
     if (segments.length >= 3) return segments[2];
-    return 'doc-processor';
+    return 'mailbox';
   }
 
   /// Returns portfolio ID from a 3-segment portfolio or trade path, else null.

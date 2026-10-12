@@ -300,13 +300,13 @@ Widget buildAnalysisRoute({required String userId}) {
 
 Widget buildDocIntelRoute({
   required String userId,
-  String tab = 'doc-processor',
+  String tab = 'mailbox',
   ValueChanged<String>? onTabChanged,
 }) {
   return DeferredModuleLoader(
     load: _loadDocIntel,
     skeleton: const GenericModuleSkeleton(),
-    loadingMessage: 'Loading Doc Intel…',
+    loadingMessage: 'Loading Import…',
     builder: () => doc_intel_ui.DocIntelligenceScreen(
       userId: userId,
       initialTab: tab,
