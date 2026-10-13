@@ -55,53 +55,119 @@ class _FuturesPriceChartWidgetState extends ConsumerState<FuturesPriceChartWidge
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top Bar: Title, Timeframes, Chart Type
-          Row(
-            children: [
-              Text('Price Chart', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  tradingSymbol,
-                  style: TextStyle(color: colors.textSecondary, fontSize: 13),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Design System TimeFrame Selector
-              TimeFrameSelector(
-                selectedTimeFrame: _selectedTimeframe,
-                availableTimeFrames: TimeFrame.tradingTimeFrames,
-                compact: true,
-                onTimeFrameChanged: (tf) => setState(() => _selectedTimeframe = tf),
-              ),
-              const SizedBox(width: 8),
-              // Candle / Line Toggle Dropdown
-              InkWell(
-                onTap: () => setState(() {
-                  _selectedChartType = _selectedChartType == 'Candle' ? 'Line' : 'Candle';
-                }),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: colors.surface,
-                    border: Border.all(color: colors.border),
-                    borderRadius: BorderRadius.circular(6),
+          LayoutBuilder(
+            builder: (context, headerConstraints) {
+              final useDropdown =
+                  headerConstraints.maxWidth < AmBreakpoints.mobile;
+              return Row(
+                children: [
+                  Text(
+                    'Price Chart',
+                    style: TextStyle(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        _selectedChartType == 'Candle' ? Icons.candlestick_chart_rounded : Icons.show_chart_rounded,
-                        size: 14,
-                        color: ModuleColors.market,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      tradingSymbol,
+                      style: TextStyle(
+                        color: colors.textSecondary,
+                        fontSize: 13,
                       ),
-                      const SizedBox(width: 4),
-                      Text(_selectedChartType, style: TextStyle(color: colors.textPrimary, fontSize: 11, fontWeight: FontWeight.w600)),
-                    ],
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-              ),
-            ],
+                  const SizedBox(width: 8),
+                  if (useDropdown)
+                    SizedBox(
+                      width: 72,
+                      child: CustomDropdown<TimeFrame>(
+                        value: _selectedTimeframe,
+                        height: 36,
+                        isExpanded: true,
+                        fontSize: 12,
+                        iconSize: 16,
+                        borderRadius: 10,
+                        menuMaxHeight: 148,
+                        primaryColor: ModuleColors.market,
+                        contentPadding:
+                            const EdgeInsets.symmetric(horizontal: 8),
+                        items: TimeFrame.tradingTimeFrames
+                            .map(
+                              (tf) => tf.toSimpleDropdownItem(
+                                text: tf.code,
+                                fontSize: 12,
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (tf) {
+                          if (tf != null) {
+                            setState(() => _selectedTimeframe = tf);
+                          }
+                        },
+                      ),
+                    )
+                  else
+                    Flexible(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: TimeFrameSelector(
+                            selectedTimeFrame: _selectedTimeframe,
+                            availableTimeFrames: TimeFrame.tradingTimeFrames,
+                            compact: true,
+                            onTimeFrameChanged: (tf) =>
+                                setState(() => _selectedTimeframe = tf),
+                          ),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: () => setState(() {
+                      _selectedChartType =
+                          _selectedChartType == 'Candle' ? 'Line' : 'Candle';
+                    }),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.surface,
+                        border: Border.all(color: colors.border),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            _selectedChartType == 'Candle'
+                                ? Icons.candlestick_chart_rounded
+                                : Icons.show_chart_rounded,
+                            size: 14,
+                            color: ModuleColors.market,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _selectedChartType,
+                            style: TextStyle(
+                              color: colors.textPrimary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 12),
 
@@ -124,17 +190,23 @@ class _FuturesPriceChartWidgetState extends ConsumerState<FuturesPriceChartWidge
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // OHLC Readout Bar
-                    Row(
+                    // OHLC Readout Bar (wraps on narrow widths)
+                    Wrap(
+                      spacing: 4,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         _buildOhlcItem('O', latest.open.toStringAsFixed(2), colors),
                         _buildOhlcItem('H', latest.high.toStringAsFixed(2), colors),
                         _buildOhlcItem('L', latest.low.toStringAsFixed(2), colors),
                         _buildOhlcItem('C', latest.close.toStringAsFixed(2), colors),
-                        const SizedBox(width: 8),
                         Text(
                           '${isPos ? '+' : ''}${change.toStringAsFixed(2)} (${isPos ? '+' : ''}${pChange.toStringAsFixed(2)}%)',
-                          style: TextStyle(color: deltaColor, fontWeight: FontWeight.bold, fontSize: 12),
+                          style: TextStyle(
+                            color: deltaColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),

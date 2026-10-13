@@ -477,7 +477,7 @@ class _EquityInsiderFinancialsState
               borderRadius: BorderRadius.circular(3),
             ),
             child: isActive
-                ? const Icon(Icons.check, size: 10, color: Colors.white)
+                ? Icon(Icons.check, size: 10, color: context.colors.actionPrimaryFg)
                 : null,
           ),
           const SizedBox(width: 6),
@@ -621,14 +621,10 @@ class _EquityInsiderFinancialsState
     required VoidCallback onFirstTap,
     required VoidCallback onSecondTap,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Container(
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : Colors.black.withValues(alpha: 0.05),
+        color: context.colors.textPrimary.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: context.borderColor),
       ),
@@ -658,7 +654,9 @@ class _EquityInsiderFinancialsState
     required bool isSelected,
     required VoidCallback onTap,
   }) {
-    final color = isSelected ? Colors.white : context.textSecondary;
+    final color = isSelected
+        ? context.colors.actionPrimaryFg
+        : context.textSecondary;
     final bgColor = isSelected ? ModuleColors.market : Colors.transparent;
 
     return GestureDetector(

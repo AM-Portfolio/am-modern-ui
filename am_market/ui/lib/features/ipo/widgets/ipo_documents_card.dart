@@ -10,13 +10,14 @@ class IpoDocumentsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final width = MediaQuery.sizeOf(context).width;
+    final isCompact = width < AmBreakpoints.mobile;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isCompact ? 14 : 20),
       decoration: BoxDecoration(
         color: context.surfaceColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(isCompact ? 12 : 16),
         border: Border.all(
           color: context.borderColor,
           width: 1,
@@ -27,39 +28,51 @@ class IpoDocumentsCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.description_outlined, size: 18, color: ModuleColors.market),
+              Icon(
+                Icons.description_outlined,
+                size: 18,
+                color: ModuleColors.market,
+              ),
               const SizedBox(width: 8),
               Text(
                 'Documents',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: isCompact ? 15 : 16,
                   fontWeight: FontWeight.w700,
                   color: context.textPrimary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 18),
-
-          // 1. RHP PDF Button (Vibrant Green CTA)
-          _buildRhpButton(context),
+          const SizedBox(height: 14),
+          _buildDocRow(
+            context,
+            label: 'RHP PDF',
+            url: rhpUrl,
+            emphasize: true,
+          ),
+          const SizedBox(height: 10),
+          _buildDocRow(
+            context,
+            label: 'DRHP PDF',
+            url: drhpUrl,
+            emphasize: false,
+          ),
           const SizedBox(height: 12),
-
-          // 2. DRHP PDF Button
-          _buildDrhpButton(context),
-          const SizedBox(height: 16),
-
-          // 3. Advisory Note
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.info_outline_rounded, size: 15, color: context.textTertiary),
+              Icon(
+                Icons.info_outline_rounded,
+                size: 14,
+                color: context.textTertiary,
+              ),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   'Read the official RHP for detailed information before investing.',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 11.5,
                     color: context.textSecondary,
                     height: 1.3,
                   ),
@@ -72,114 +85,72 @@ class IpoDocumentsCard extends StatelessWidget {
     );
   }
 
-  Widget _buildRhpButton(BuildContext context) {
-    final hasRhp = rhpUrl != null && rhpUrl!.isNotEmpty;
+  Widget _buildDocRow(
+    BuildContext context, {
+    required String label,
+    required String? url,
+    required bool emphasize,
+  }) {
+    final hasUrl = url != null && url.isNotEmpty;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return InkWell(
-      onTap: hasRhp ? () => _launchUrl(rhpUrl!) : null,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        height: 52,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          color: hasRhp ? context.colors.statusSuccess : (context.surfaceColor),
-          borderRadius: BorderRadius.circular(10),
-          boxShadow: hasRhp
-              ? [
-                  BoxShadow(
-                    color: context.colors.statusSuccess.withValues(alpha: 0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: context.colors.textPrimary.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: const Icon(Icons.picture_as_pdf_rounded, size: 18, color: Colors.white),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'RHP PDF',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                  letterSpacing: 0.2,
-                ),
-              ),
-            ),
-            if (hasRhp)
-              const Icon(Icons.open_in_new_rounded, size: 18, color: Colors.white)
-            else
-              Text(
-                'Not available',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.white.withValues(alpha: 0.6),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
+    final bg = !hasUrl
+        ? context.surfaceColor.withValues(alpha: isDark ? 0.4 : 1)
+        : (emphasize
+            ? ModuleColors.market.withValues(alpha: isDark ? 0.18 : 0.12)
+            : context.surfaceColor);
 
-  Widget _buildDrhpButton(BuildContext context) {
-    final hasDrhp = drhpUrl != null && drhpUrl!.isNotEmpty;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = !hasUrl
+        ? context.borderColor
+        : (emphasize ? ModuleColors.market : context.borderColor);
 
-    return InkWell(
-      onTap: hasDrhp ? () => _launchUrl(drhpUrl!) : null,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        height: 48,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          color: isDark ? context.surfaceColor.withValues(alpha: 0.5) : context.surfaceColor,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: isDark ? context.dividerColor : context.borderColor,
-            width: 1,
+    final fg = !hasUrl
+        ? context.textTertiary
+        : (emphasize ? ModuleColors.market : context.textPrimary);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: hasUrl ? () => _launchUrl(url) : null,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 48),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: borderColor, width: 1),
           ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.picture_as_pdf_outlined,
-              size: 18,
-              color: hasDrhp ? context.textPrimary : context.textTertiary,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'DRHP PDF',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: hasDrhp ? context.textPrimary : context.textSecondary,
+          child: Row(
+            children: [
+              Icon(
+                Icons.picture_as_pdf_outlined,
+                size: 18,
+                color: fg,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: fg,
+                  ),
                 ),
               ),
-            ),
-            if (hasDrhp)
-              Icon(Icons.open_in_new_rounded, size: 16, color: context.textPrimary)
-            else
-              Text(
-                'Not available',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: context.textTertiary,
+              if (hasUrl)
+                Icon(Icons.open_in_new_rounded, size: 16, color: fg)
+              else
+                Text(
+                  'Not available',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: context.textTertiary,
+                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );

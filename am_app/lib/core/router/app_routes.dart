@@ -117,6 +117,7 @@ class AppRoutes {
     'Security Explorer': 'security-explorer',
     'ETF Explorer': 'etf-explorer',
     'Price Test': 'price-test',
+    'Heatmap': 'market-analysis',
     'Market Analysis': 'market-analysis',
     'Chart': 'chart',
     'Admin Dashboard': 'admin',

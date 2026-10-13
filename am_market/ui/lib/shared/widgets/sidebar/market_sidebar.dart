@@ -71,8 +71,9 @@ class MarketSidebar extends StatelessWidget {
         title: 'Market Analysis',
         icon: Icons.analytics_rounded,
         accentColor: marketAccent,
-        isSelected: selectedIndex == 'Market Analysis',
-        onTap: () => provider.selectIndex('Market Analysis'),
+        isSelected: selectedIndex == 'Heatmap' ||
+            selectedIndex == 'Market Analysis',
+        onTap: () => provider.selectIndex('Heatmap'),
       ),
       SecondarySidebarItem(
         title: 'Chart',

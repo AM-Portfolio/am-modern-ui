@@ -1,3 +1,4 @@
+import 'package:am_common/am_common.dart' show MobileSearchScope;
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
@@ -30,14 +31,6 @@ class PaperWatchlistMobile extends StatefulWidget {
 }
 
 class _PaperWatchlistMobileState extends State<PaperWatchlistMobile> {
-  final _searchController = TextEditingController();
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -51,22 +44,21 @@ class _PaperWatchlistMobileState extends State<PaperWatchlistMobile> {
           if (widget.showSearch) ...[
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-              child: SmartSearchAnchor(
-                controller: _searchController,
-                compact: true,
-                hintText: 'Search stocks',
-                category: 'STOCKS',
-                accentColor: ModuleColors.market,
-                searchHandler: (q) => controller.client.search(q),
-                onSelected: (sym) {
-                  _searchController.clear();
-                  controller.addSymbol(sym);
-                },
-                onSubmit: () {
-                  final q = _searchController.text;
-                  _searchController.clear();
-                  controller.addSymbol(q);
-                },
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () =>
+                      MobileSearchScope.tryOpenGlobalSearch(context),
+                  icon: Icon(
+                    Icons.search_rounded,
+                    size: 18,
+                    color: ModuleColors.market,
+                  ),
+                  label: Text(
+                    'Add stocks via global search',
+                    style: TextStyle(color: ModuleColors.market, fontSize: 13),
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -148,9 +140,9 @@ class _PaperWatchlistMobileState extends State<PaperWatchlistMobile> {
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Text(
                 'Quotes unavailable — pull down to refresh',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: colors.textSecondary,
+                    ),
               ),
             ),
           ],

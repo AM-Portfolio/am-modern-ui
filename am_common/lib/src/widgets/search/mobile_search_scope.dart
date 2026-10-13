@@ -21,6 +21,8 @@ class MobileSearchScope extends InheritedWidget {
     this.bannerTitle,
     this.bannerSubtitle,
     this.emptySuggestions,
+    this.highlightSearch = false,
+    this.searchHighlightColor,
     super.key,
   });
 
@@ -37,6 +39,12 @@ class MobileSearchScope extends InheritedWidget {
   final String? bannerTitle;
   final String? bannerSubtitle;
   final List<CommandItem> Function()? emptySuggestions;
+
+  /// Subtle discovery glow on the mobile module search pin.
+  final bool highlightSearch;
+
+  /// Accent for [highlightSearch]; falls back to module accent when null.
+  final Color? searchHighlightColor;
 
   static MobileSearchScope? maybeOf(BuildContext context) {
     return context.dependOnInheritedWidgetOfExactType<MobileSearchScope>();
@@ -74,7 +82,9 @@ class MobileSearchScope extends InheritedWidget {
       hintText != oldWidget.hintText ||
       bannerTitle != oldWidget.bannerTitle ||
       bannerSubtitle != oldWidget.bannerSubtitle ||
-      emptySuggestions != oldWidget.emptySuggestions;
+      emptySuggestions != oldWidget.emptySuggestions ||
+      highlightSearch != oldWidget.highlightSearch ||
+      searchHighlightColor != oldWidget.searchHighlightColor;
 }
 
 /// Compact mobile search field used when the Dashboard sticky row or module

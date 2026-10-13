@@ -19,7 +19,7 @@ import 'package:provider/provider.dart' hide Consumer;
 import 'package:flutter_riverpod/flutter_riverpod.dart' hide Provider;
 
 import 'package:am_market_ui/features/market_analysis/presentation/widgets/market_index_detail_view.dart';
-import 'package:am_market_ui/features/ipo/screens/ipo_landing_screen.dart';
+import 'package:am_market_ui/features/ipo/screens/ipo_center_host.dart';
 
 import 'package:am_market_ui/shared/widgets/mode_toggle_widget.dart';
 import 'user_dashboard_page.dart';
@@ -147,6 +147,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
     'Security Explorer': 'security-explorer',
     'ETF Explorer': 'etf-explorer',
     'Price Test': 'price-test',
+    'Heatmap': 'market-analysis',
     'Market Analysis': 'market-analysis',
     'Chart': 'chart',
     'Admin Dashboard': 'admin',
@@ -468,7 +469,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
       ),
       _createSidebarItem(
         sidebarIdx++,
-        'Market Analysis',
+        'Heatmap',
         Icons.analytics_rounded,
         'Detailed charts',
       ),
@@ -592,10 +593,10 @@ class _MarketContentState extends ConsumerState<MarketContent> {
           Icons.grid_view_rounded,
           'Market Overview',
         ),
+      _createSidebarItem(i++, 'Dashboard', Icons.home_rounded, 'Overview'),
       if (hasPaper)
         _createSidebarItem(
             i++, 'Paper', Icons.science_outlined, 'Paper trading desk'),
-      _createSidebarItem(i++, 'Dashboard', Icons.home_rounded, 'Overview'),
       _createSidebarItem(
           i++, 'Market Analysis', Icons.analytics_rounded, 'Detailed charts'),
       if (hasChart)
@@ -713,7 +714,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         accentColor: accentColor,
       ),
       NavigationItem(
-        title: 'Market Analysis',
+        title: 'Heatmap',
         subtitle: 'Detailed charts',
         icon: Icons.analytics_rounded,
         page: wrap(const HeatmapExplorerView()),
@@ -746,7 +747,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
           title: 'IPO Center',
           subtitle: 'Upcoming & listed IPOs',
           icon: Icons.new_releases_rounded,
-          page: wrap(const IpoLandingScreen(embedded: true)),
+          page: wrap(const IpoCenterHost()),
           accentColor: accentColor,
         ),
     ];
@@ -825,6 +826,13 @@ class _MarketContentState extends ConsumerState<MarketContent> {
           page: wrap(const AllIndicesPage()),
           accentColor: accentColor,
         ),
+      NavigationItem(
+        title: 'Dashboard',
+        subtitle: 'Overview',
+        icon: Icons.home_rounded,
+        page: wrap(_dashboardPage),
+        accentColor: accentColor,
+      ),
       if (paperDesk != null)
         NavigationItem(
           title: 'Paper',
@@ -835,14 +843,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
           accentColor: accentColor,
         ),
       NavigationItem(
-        title: 'Dashboard',
-        subtitle: 'Overview',
-        icon: Icons.home_rounded,
-        page: wrap(_dashboardPage),
-        accentColor: accentColor,
-      ),
-      NavigationItem(
-        title: 'Market Analysis',
+        title: 'Heatmap',
         subtitle: 'Heatmap & Details',
         icon: Icons.analytics_rounded,
         page: wrap(const HeatmapExplorerView()),
@@ -875,7 +876,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
           title: 'IPO Center',
           subtitle: 'Upcoming & listed IPOs',
           icon: Icons.new_releases_rounded,
-          page: wrap(const IpoLandingScreen(embedded: true)),
+          page: wrap(const IpoCenterHost()),
           accentColor: accentColor,
         ),
       NavigationItem(

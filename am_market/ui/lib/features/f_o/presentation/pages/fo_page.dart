@@ -61,11 +61,6 @@ class _FoPageState extends ConsumerState<FoPage> {
     }
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
   void _onSymbolSelected(String symbol) {
     ref.read(recentlyViewedFoSymbolsProvider.notifier).add(symbol);
     ref.read(foActiveSymbolProvider.notifier).state = symbol;
@@ -114,6 +109,10 @@ class _FoPageState extends ConsumerState<FoPage> {
 
   /// Full Market F&O page — header + TabBar for Option Chain / Futures / Margin.
   Widget _buildTabDetailView(String symbol, AppColorsTheme colors) {
+    final width = MediaQuery.sizeOf(context).width;
+    final isMobile = width < AmBreakpoints.mobile;
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+
     return DefaultTabController(
       length: 3,
       child: Column(
@@ -126,22 +125,42 @@ class _FoPageState extends ConsumerState<FoPage> {
             },
           ),
           TabBar(
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
             indicatorColor: ModuleColors.market,
+            indicatorWeight: isMobile ? 2 : 2.5,
+            dividerHeight: isMobile ? 0.5 : 1,
             labelColor: colors.textPrimary,
             unselectedLabelColor: colors.textSecondary,
-            tabs: const [
-              Tab(text: 'Option Chain'),
-              Tab(text: 'Futures Contracts'),
-              Tab(text: 'Margin Calculator'),
+            labelPadding: EdgeInsets.symmetric(
+              horizontal: isMobile ? 10 : 16,
+            ),
+            labelStyle: TextStyle(
+              fontSize: isMobile ? 12.5 : 14,
+              fontWeight: FontWeight.w600,
+              height: 1.1,
+            ),
+            unselectedLabelStyle: TextStyle(
+              fontSize: isMobile ? 12.5 : 14,
+              fontWeight: FontWeight.w500,
+              height: 1.1,
+            ),
+            tabs: [
+              Tab(height: isMobile ? 36 : 46, text: 'Option Chain'),
+              Tab(height: isMobile ? 36 : 46, text: 'Futures Contracts'),
+              Tab(height: isMobile ? 36 : 46, text: 'Margin Calculator'),
             ],
           ),
-          const Expanded(
-            child: TabBarView(
-              children: [
-                OptionChainView(),
-                FuturesView(),
-                MarginCalculatorView(),
-              ],
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: isMobile ? bottomInset : 0),
+              child: const TabBarView(
+                children: [
+                  OptionChainView(),
+                  FuturesView(),
+                  MarginCalculatorView(),
+                ],
+              ),
             ),
           ),
         ],

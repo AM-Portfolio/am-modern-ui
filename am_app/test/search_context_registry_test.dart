@@ -13,7 +13,7 @@ void main() {
       );
     });
 
-    test('resolves equity insider and F&O market tabs', () {
+    test('resolves equity insider, F&O, and paper market tabs', () {
       expect(
         SearchContextResolver.fromLocation('/app/market/equity-insider'),
         SearchContext.equityInsider,
@@ -21,6 +21,10 @@ void main() {
       expect(
         SearchContextResolver.fromLocation('/app/market/futures-options'),
         SearchContext.fo,
+      );
+      expect(
+        SearchContextResolver.fromLocation('/app/market/paper'),
+        SearchContext.paper,
       );
     });
 
@@ -56,7 +60,7 @@ void main() {
       );
     });
 
-    test('discovery contexts match Baskets / EI / F&O / Chart', () {
+    test('discovery contexts match Baskets / EI / F&O / Chart / Paper', () {
       expect(
         SearchContextResolver.isDiscoveryContext(SearchContext.baskets),
         isTrue,
@@ -71,6 +75,10 @@ void main() {
       );
       expect(
         SearchContextResolver.isDiscoveryContext(SearchContext.chart),
+        isTrue,
+      );
+      expect(
+        SearchContextResolver.isDiscoveryContext(SearchContext.paper),
         isTrue,
       );
       expect(
@@ -141,10 +149,13 @@ void main() {
         SearchInventory.removedDiscoverySurfaces,
         containsAll([
           'heatmap_explorer.TextFieldGo',
+          'heatmap_explorer.indexChips',
           'watchlists_page.SearchWatchlists',
           'ipo_filter_toolbar.SearchBox',
           'equity_insider_hero.ChangeStockCapsule',
           'fo_header_card.searchIcon',
+          'paper_watchlist_web.SmartSearchAnchor',
+          'paper_watchlist_mobile.SmartSearchAnchor',
           'chart_workspace_page.SmartSearchAnchor',
         ]),
       );
@@ -153,7 +164,6 @@ void main() {
         containsAll([
           'trade.InstrumentCard',
           'watchlist_detail.SearchStocksFilter',
-          'heatmap_index_chips',
         ]),
       );
       expect(

@@ -20,6 +20,7 @@ class SymbolNewsSection extends ConsumerStatefulWidget {
     required this.surface,
     this.title = 'News',
     this.embedInScroll = false,
+    this.compact = false,
   });
 
   final String symbol;
@@ -28,6 +29,9 @@ class SymbolNewsSection extends ConsumerStatefulWidget {
 
   /// When true, skip [NewsSectionViewport] (natural height inside a parent scroll).
   final bool embedInScroll;
+
+  /// Prefer compact story tiles (Equity Insider mobile).
+  final bool compact;
 
   @override
   ConsumerState<SymbolNewsSection> createState() => _SymbolNewsSectionState();
@@ -68,6 +72,24 @@ class _SymbolNewsSectionState extends ConsumerState<SymbolNewsSection>
   }
 
   Widget _buildExpandable(BuildContext context, {required Widget child}) {
+    // Embedded in a parent CustomScrollView (e.g. Equity Insider): avoid
+    // ExpansionTile/Expansible — PageStorage can hold a scroll offset (double)
+    // and crash when cast to bool? in Expansible.initState.
+    if (widget.embedInScroll) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            widget.title,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 10),
+          child,
+        ],
+      );
+    }
+
     return PageStorage(
       bucket: PageStorageBucket(),
       child: AmGlassCard(
@@ -146,9 +168,17 @@ class _SymbolNewsSectionState extends ConsumerState<SymbolNewsSection>
                     style: Theme.of(context).textTheme.bodyMedium,
                   )
                 else ...[
-                  NewsFeaturedStory(card: cards.first, quotes: quotes),
+                  NewsFeaturedStory(
+                    card: cards.first,
+                    quotes: quotes,
+                    compact: widget.compact,
+                  ),
                   for (final card in cards.skip(1).take(4))
-                    NewsCompactRow(card: card, quotes: quotes),
+                    NewsCompactRow(
+                      card: card,
+                      quotes: quotes,
+                      compact: widget.compact,
+                    ),
                 ],
               ],
             ),
