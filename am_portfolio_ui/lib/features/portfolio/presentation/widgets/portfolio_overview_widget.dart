@@ -830,7 +830,7 @@ class _PortfolioOverviewWidgetState
         glowBorder: glowBorder,
         tooltip: todayUnavailable
             ? 'Day P&L unavailable (missing prior session close)'
-            : "Unrealized profit or loss for the last cash session",
+            : 'Unrealized profit or loss for the last cash session',
       ),
       PortfolioMetricCard(
         title: 'Total Balance',
