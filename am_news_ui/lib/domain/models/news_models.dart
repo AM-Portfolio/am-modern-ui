@@ -34,6 +34,8 @@ class InsightNews {
   const InsightNews({
     this.currentAffairs = const [],
     this.holdings = const [],
+    this.pendingIngest = false,
+    this.missingSymbols = const [],
   });
 
   factory InsightNews.fromJson(Map<String, dynamic> json) {
@@ -47,14 +49,24 @@ class InsightNews {
       );
     }
 
+    final missing = (json['missing_symbols'] as List?)
+            ?.map((e) => e.toString().trim().toUpperCase())
+            .where((s) => s.isNotEmpty)
+            .toList() ??
+        const <String>[];
+
     return InsightNews(
       currentAffairs: parse('current_affairs'),
       holdings: parse('holdings'),
+      pendingIngest: json['pending_ingest'] as bool? ?? false,
+      missingSymbols: missing,
     );
   }
 
   final List<NewsCard> currentAffairs;
   final List<NewsCard> holdings;
+  final bool pendingIngest;
+  final List<String> missingSymbols;
 }
 
 DateTime? parseNewsPublishedAt(String? raw) {
@@ -112,8 +124,7 @@ List<NewsCard> filterHoldingsNewsForSymbols(
   Iterable<String> symbols,
 ) {
   final allowed = {
-    for (final raw in symbols)
-      raw.trim().toUpperCase(),
+    for (final raw in symbols) raw.trim().toUpperCase(),
   }..removeWhere((s) => s.isEmpty);
   if (allowed.isEmpty) return const [];
   return news.holdings.where((card) {

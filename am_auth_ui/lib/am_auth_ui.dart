@@ -71,6 +71,7 @@ export 'features/authentication/presentation/widgets/auth_layout.dart';
 export 'features/authentication/presentation/widgets/security_alert_banner.dart';
 export 'features/authentication/presentation/widgets/web_otp_login_widget.dart';
 export 'features/authentication/presentation/widgets/web_qr_login_section.dart';
+export 'features/authentication/presentation/widgets/login_required_dialog.dart';
 
 // DI
 export 'di/auth_providers.dart';

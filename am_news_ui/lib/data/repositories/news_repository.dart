@@ -7,7 +7,7 @@ class NewsRepository {
     required ApiClient newsClient,
     required ApiClient portfolioClient,
     required this.holdingsResource,
-    this.timeout = const Duration(milliseconds: 800),
+    this.timeout = const Duration(milliseconds: 3000),
   })  : _newsClient = newsClient,
         _portfolioClient = portfolioClient;
 
