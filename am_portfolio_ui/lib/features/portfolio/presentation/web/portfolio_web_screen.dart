@@ -37,6 +37,7 @@ class PortfolioWebScreen extends ConsumerStatefulWidget {
     this.onOpenDocIntel,
     this.uploadPortfolioBuilder,
     this.addAssetClassBuilder,
+    this.onQuickAdd,
   });
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
@@ -53,6 +54,7 @@ class PortfolioWebScreen extends ConsumerStatefulWidget {
   final VoidCallback? onOpenDocIntel;
   final Widget Function(String portfolioId, String? portfolioName, VoidCallback onCancel)? uploadPortfolioBuilder;
   final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addAssetClassBuilder;
+  final ValueChanged<GlobalAddActionKind>? onQuickAdd;
 
   @override
   ConsumerState<PortfolioWebScreen> createState() => _PortfolioWebScreenState();
@@ -88,80 +90,26 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
     super.dispose();
   }
 
+  bool get _isAddAssetClassRoute =>
+      widget.initialTab.toLowerCase() == 'add-asset-class';
+
+  void _leaveFocusedFlow() {
+    setState(_clearActiveOperation);
+    widget.onTabChanged?.call('overview');
+  }
+
   Future<void> _onGlobalAddAction() async {
     if (!mounted) return;
     final bus = GlobalAddActionsBus.instance;
-    final kind = bus.pending;
-    if (kind == null) return;
-
-    // Prefer local selection, then widget/route, then selection scope.
-    final id = _currentPortfolioId ??
-        widget.selectedPortfolioId ??
-        context.selectedPortfolioId;
-    final hasConcrete = id != null && id.isNotEmpty && id != 'all';
-    if (!hasConcrete && kind != GlobalAddActionKind.addBasket) {
-      return;
-    }
-    // Keep local id in sync for builders that read `_currentPortfolioId`.
-    if (hasConcrete && _currentPortfolioId != id) {
-      _currentPortfolioId = id;
-    }
-
-    switch (kind) {
-      case GlobalAddActionKind.uploadPortfolio:
-        if (!bus.tryConsume(kind)) return;
-        if (_isUploadingPortfolio) return;
-        if (!await _promptDiscardChanges()) return;
-        if (!mounted) return;
-        if (widget.uploadPortfolioBuilder != null) {
-          setState(() {
-            _isAddingTrade = false;
-            _isAddingAssetClass = false;
-            _isUploadingPortfolio = true;
-            _operationDirty = false;
-          });
-        } else {
-          widget.onOpenDocIntel?.call();
-        }
-        return;
-      case GlobalAddActionKind.addTrade:
-        if (!bus.tryConsume(kind)) return;
-        if (_isAddingTrade) return;
-        if (!await _promptDiscardChanges()) return;
-        if (!mounted) return;
-        if (widget.addTradeBuilder != null) {
-          setState(() {
-            _isAddingTrade = true;
-            _isAddingAssetClass = false;
-            _isUploadingPortfolio = false;
-            _operationDirty = false;
-          });
-        } else {
-          OpenAddTradeNotification().dispatch(context);
-        }
-        return;
-      case GlobalAddActionKind.addAssetClass:
-        if (!bus.tryConsume(kind)) return;
-        if (_isAddingAssetClass) return;
-        if (!await _promptDiscardChanges()) return;
-        if (!mounted) return;
-        setState(() {
-          _isAddingTrade = false;
-          _isAddingAssetClass = true;
-          _isUploadingPortfolio = false;
-          _operationDirty = false;
-        });
-        return;
-      case GlobalAddActionKind.addBasket:
-        if (!bus.tryConsume(kind)) return;
-        if (!await _promptDiscardChanges()) return;
-        if (!mounted) return;
-        widget.onTabChanged?.call('baskets');
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          BasketNavigation.setViewMode(BasketViewMode.discover);
-        });
-        return;
-    }
+    // Upload / Add Trade / Add Asset Class use dedicated URLs via onQuickAdd.
+    // Only Add Basket still lands on this module via the bus.
+    if (!bus.tryConsume(GlobalAddActionKind.addBasket)) return;
+    if (!await _promptDiscardChanges()) return;
+    if (!mounted) return;
+    widget.onTabChanged?.call('baskets');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      BasketNavigation.setViewMode(BasketViewMode.discover);
+    });
   }
 
   void _syncPortfolioSelection() {
@@ -227,7 +175,11 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
   }
 
   Future<bool> _promptDiscardChanges() async {
-    if (!_isAddingTrade && !_isUploadingPortfolio && !_isAddingAssetClass) {
+    final inFocusedFlow = _isAddingTrade ||
+        _isUploadingPortfolio ||
+        _isAddingAssetClass ||
+        _isAddAssetClassRoute;
+    if (!inFocusedFlow) {
       return true;
     }
 
@@ -358,11 +310,41 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
     ];
   }
 
+  Widget _buildAddAssetClassBody() {
+    final id = _currentPortfolioId ?? widget.selectedPortfolioId;
+    if (id == null || id.isEmpty || id == 'all') {
+      return const Center(child: Text('Select a portfolio to continue'));
+    }
+    final name = _currentPortfolioName ?? widget.selectedPortfolioName;
+    return _wrapActiveOperation(
+      widget.addAssetClassBuilder != null
+          ? widget.addAssetClassBuilder!(
+              context,
+              id,
+              name,
+              _leaveFocusedFlow,
+            )
+          : AddAssetClassWorkspace(
+              portfolioId: id,
+              portfolioName: name,
+              onOpenDocIntel: widget.onOpenDocIntel,
+              onCancel: () {
+                _promptDiscardChanges().then((ok) {
+                  if (ok && mounted) _leaveFocusedFlow();
+                });
+              },
+              onComplete: _leaveFocusedFlow,
+            ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final items = _buildNavigationItems();
     final currentIndex = _currentIndex;
-    final activePage = currentIndex < items.length ? items[currentIndex].page : items.first.page;
+    final activePage =
+        currentIndex < items.length ? items[currentIndex].page : items.first.page;
+    final focusedAssetClass = _isAddAssetClassRoute;
 
     return NotificationListener<ShellOperationDirtyNotification>(
       onNotification: (notification) {
@@ -372,205 +354,161 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         return true;
       },
       child: NotificationListener<OpenAddTradeNotification>(
-      onNotification: (notification) {
-        // Holdings embeds Trade cards as view-only; ignore edit notifications there.
-        if (widget.initialTab == 'holdings') {
-          notification.handled = true;
-          return true;
-        }
-        if (widget.addTradeBuilder != null) {
-          setState(() {
-            _isAddingTrade = true;
-            _operationDirty = false;
-          });
-          notification.handled = true;
-          return true;
-        }
-        return false;
-      },
-      child: UnifiedSidebarScaffold(
-        module: ModuleType.portfolio,
-        title: null,
-        subtitle: null,
-        showModuleBottomNavigation: false,
-        // Add / Sync lives on GlobalSidebar only (above theme).
-        headerActions: const [],
-        onBackToGlobal: () {
-          _promptDiscardChanges().then((ok) {
-            if (ok && mounted) widget.onBack?.call();
-          });
+        onNotification: (notification) {
+          // Prefer Trade module URL for new trades.
+          if (widget.onQuickAdd != null) {
+            widget.onQuickAdd!(GlobalAddActionKind.addTrade);
+            notification.handled = true;
+            return true;
+          }
+          if (widget.initialTab == 'holdings') {
+            notification.handled = true;
+            return true;
+          }
+          return false;
         },
-        onThemeToggle: () {
-          context.read<ThemeCubit>().toggleTheme();
-        },
-        onProfileTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) {
-                final authState = context.read<AuthCubit>().state;
-                if (authState is Authenticated) {
-                  return ProfileSettingsPage(
-                    userId: authState.user.id,
-                    email: authState.user.email,
-                    displayName: authState.user.displayName,
-                  );
+        child: UnifiedSidebarScaffold(
+          module: ModuleType.portfolio,
+          title: null,
+          subtitle: null,
+          showModuleBottomNavigation: false,
+          headerActions: const [],
+          onBackToGlobal: () {
+            _promptDiscardChanges().then((ok) {
+              if (ok && mounted) {
+                if (focusedAssetClass) {
+                  _leaveFocusedFlow();
+                } else {
+                  widget.onBack?.call();
                 }
-                return const ProfileSettingsPage(userId: '');
-              },
-            ),
-          );
-        },
-        onLogout: () {
-          context.read<AuthCubit>().logout();
-          widget.onBack?.call();
-        },
-        body: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: Row(
-                children: [
-                  if (widget.portfolios != null &&
-                      widget.portfolios!.any((p) => p.isDummy))
-                    Expanded(
-                      child: DemoAccountInlineBanner(
-                        onUploadPortfolio: widget.onOpenDocIntel,
-                      ),
-                    )
-                  else
-                    const Spacer(),
-                  if (currentIndex == 0 && !_isAddingTrade && !_isAddingAssetClass && !_isUploadingPortfolio) ...[
-                    const SizedBox(width: 12),
-                    Consumer(
-                      builder: (context, ref, _) {
-                        final selected = ref.watch(appTimeFrameProvider);
-                        final screenWidth = MediaQuery.of(context).size.width;
-
-                        return ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxWidth: screenWidth > 800 ? 400 : screenWidth * 0.45,
-                          ),
-                          child: TimeFrameSelector(
-                            compact: true,
-                            primaryColor: ModuleColors.portfolio,
-                            selectedTimeFrame: selected,
-                            onTimeFrameChanged: (tf) =>
-                                ref.read(appTimeFrameProvider.notifier).setTimeFrame(tf),
-                            availableTimeFrames: const [
-                              TimeFrame.oneDay,
-                              TimeFrame.oneWeek,
-                              TimeFrame.oneMonth,
-                              TimeFrame.threeMonths,
-                              TimeFrame.sixMonths,
-                              TimeFrame.oneYear,
-                              TimeFrame.fiveYears,
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ],
+              }
+            });
+          },
+          onThemeToggle: () {
+            context.read<ThemeCubit>().toggleTheme();
+          },
+          onProfileTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) {
+                  final authState = context.read<AuthCubit>().state;
+                  if (authState is Authenticated) {
+                    return ProfileSettingsPage(
+                      userId: authState.user.id,
+                      email: authState.user.email,
+                      displayName: authState.user.displayName,
+                    );
+                  }
+                  return const ProfileSettingsPage(userId: '');
+                },
               ),
-            ),
-            Expanded(
-              child: (_isAddingTrade &&
-                      widget.addTradeBuilder != null &&
-                      _currentPortfolioId != null)
-                  ? _wrapActiveOperation(
-                      widget.addTradeBuilder!(
-                        context,
-                        _currentPortfolioId!,
-                        _currentPortfolioName ?? widget.selectedPortfolioName,
-                        () {
-                          // Trade page shows its own discard before calling this.
-                          setState(_clearActiveOperation);
-                        },
-                      ),
-                    )
-                  : (_isAddingAssetClass && _currentPortfolioId != null)
-                      ? _wrapActiveOperation(
-                          widget.addAssetClassBuilder != null
-                              ? widget.addAssetClassBuilder!(
-                                  context,
-                                  _currentPortfolioId!,
-                                  _currentPortfolioName ??
-                                      widget.selectedPortfolioName,
-                                  () {
-                                    _promptDiscardChanges();
-                                  },
-                                )
-                              : AddAssetClassWorkspace(
-                                  portfolioId: _currentPortfolioId!,
-                                  portfolioName: _currentPortfolioName ??
-                                      widget.selectedPortfolioName,
-                                  onOpenDocIntel: widget.onOpenDocIntel,
-                                  onCancel: () {
-                                    _promptDiscardChanges();
-                                  },
-                                  onComplete: () {
-                                    setState(_clearActiveOperation);
-                                  },
-                                ),
-                        )
-                      : (_isUploadingPortfolio &&
-                              widget.uploadPortfolioBuilder != null &&
-                              _currentPortfolioId != null)
-                          ? _wrapActiveOperation(
-                              widget.uploadPortfolioBuilder!(
-                                _currentPortfolioId!,
-                                _currentPortfolioName ??
-                                    widget.selectedPortfolioName,
-                                () {
-                                  _promptDiscardChanges();
-                                },
+            );
+          },
+          onLogout: () {
+            context.read<AuthCubit>().logout();
+            widget.onBack?.call();
+          },
+          body: focusedAssetClass
+              ? _buildAddAssetClassBody()
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: Row(
+                        children: [
+                          if (widget.portfolios != null &&
+                              widget.portfolios!.any((p) => p.isDummy))
+                            Expanded(
+                              child: DemoAccountInlineBanner(
+                                onUploadPortfolio: widget.onOpenDocIntel,
                               ),
                             )
-                          : activePage,
+                          else
+                            const Spacer(),
+                          if (currentIndex == 0) ...[
+                            const SizedBox(width: 12),
+                            Consumer(
+                              builder: (context, ref, _) {
+                                final selected = ref.watch(appTimeFrameProvider);
+                                final screenWidth =
+                                    MediaQuery.of(context).size.width;
+
+                                return ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxWidth: screenWidth > 800
+                                        ? 400
+                                        : screenWidth * 0.45,
+                                  ),
+                                  child: TimeFrameSelector(
+                                    compact: true,
+                                    primaryColor: ModuleColors.portfolio,
+                                    selectedTimeFrame: selected,
+                                    onTimeFrameChanged: (tf) => ref
+                                        .read(appTimeFrameProvider.notifier)
+                                        .setTimeFrame(tf),
+                                    availableTimeFrames: const [
+                                      TimeFrame.oneDay,
+                                      TimeFrame.oneWeek,
+                                      TimeFrame.oneMonth,
+                                      TimeFrame.threeMonths,
+                                      TimeFrame.sixMonths,
+                                      TimeFrame.oneYear,
+                                      TimeFrame.fiveYears,
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    Expanded(child: activePage),
+                  ],
+                ),
+          footer: const SizedBox.shrink(),
+          // Keep full portfolio rail on Add Asset Class (selector + tabs).
+          sections: [
+            if (widget.portfolios != null && widget.portfolios!.isNotEmpty)
+              SecondarySidebarSection(
+                title: '',
+                customWidget: SharedPortfolioSelector<PortfolioItem>(
+                  currentPortfolioId: _currentPortfolioId,
+                  currentPortfolioName:
+                      _currentPortfolioName ?? widget.selectedPortfolioName,
+                  portfolios: [
+                    const PortfolioItem(
+                      portfolioId: 'all',
+                      portfolioName: 'All Portfolios',
+                    ),
+                    ...widget.portfolios!,
+                  ],
+                  onPortfolioSelected: _onPortfolioChanged,
+                  idExtractor: (p) => p.portfolioId,
+                  nameExtractor: (p) => p.portfolioName,
+                  accentColor: ModuleColors.portfolio,
+                ),
+              ),
+            SecondarySidebarSection(
+              title: '',
+              items: items.asMap().entries.map((entry) {
+                final index = entry.key;
+                final item = entry.value;
+                return SecondarySidebarItem(
+                  title: item.title,
+                  icon: item.icon,
+                  // No Overview/Holdings highlight while on add-asset-class URL.
+                  isSelected: !focusedAssetClass && currentIndex == index,
+                  onTap: () => _navigateToTabSlug(_tabSlugs[index]),
+                  accentColor: item.accentColor,
+                );
+              }).toList(),
             ),
           ],
         ),
-        footer: const SizedBox.shrink(),
-        sections: [
-          if (widget.portfolios != null && widget.portfolios!.isNotEmpty)
-            SecondarySidebarSection(
-              title: '',
-              customWidget: SharedPortfolioSelector<PortfolioItem>(
-                currentPortfolioId: _currentPortfolioId,
-                currentPortfolioName:
-                    _currentPortfolioName ?? widget.selectedPortfolioName,
-                portfolios: [
-                  const PortfolioItem(
-                    portfolioId: 'all',
-                    portfolioName: 'All Portfolios',
-                  ),
-                  ...widget.portfolios!,
-                ],
-                onPortfolioSelected: _onPortfolioChanged,
-                idExtractor: (p) => p.portfolioId,
-                nameExtractor: (p) => p.portfolioName,
-                accentColor: ModuleColors.portfolio,
-              ),
-            ),
-          SecondarySidebarSection(
-            title: '',
-            items: items.asMap().entries.map((entry) {
-              final index = entry.key;
-              final item = entry.value;
-              return SecondarySidebarItem(
-                title: item.title,
-                icon: item.icon,
-                isSelected: currentIndex == index,
-                onTap: () => _navigateToTabSlug(_tabSlugs[index]),
-                accentColor: item.accentColor,
-              );
-            }).toList(),
-          ),
-        ],
       ),
-    ),
     );
   }
 }

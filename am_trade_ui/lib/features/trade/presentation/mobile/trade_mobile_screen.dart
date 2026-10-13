@@ -219,7 +219,7 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
 
     return UnifiedSidebarScaffold(
       module: ModuleType.trade,
-      title: isAddTrade ? 'Add New Trade' : 'Trade',
+      title: isAddTrade ? 'Add Trade' : 'Trade',
       showAppBarOnMobile: isAddTrade,
       showMobileMenuButton: false,
       showModuleBottomNavigation: false,

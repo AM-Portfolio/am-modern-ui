@@ -342,10 +342,18 @@ GoRouter createAppRouter({
                         GoRouterState.of(context).matchedLocation,
                       ) ??
                       tab;
-                  context.go(AppRoutes.portfolioPath(id, currentTab));
+                  final nextTab = AppRoutes.isPortfolioFocusedSlug(currentTab)
+                      ? 'overview'
+                      : currentTab;
+                  context.go(AppRoutes.portfolioPath(id, nextTab));
                 },
                 onOpenDocIntel: () =>
                     context.go(AppRoutes.docIntelPath('mailbox')),
+                onQuickAdd: (kind) => requestGlobalAddAction(
+                  context,
+                  kind: kind,
+                  currentLocation: GoRouterState.of(context).matchedLocation,
+                ),
                 uploadPortfolioBuilder: (portfolioId, portfolioName, onCancel) {
                   return buildPortfolioImportHoldingsEmbed(
                     userId: _userId(context),
@@ -388,6 +396,11 @@ GoRouter createAppRouter({
                 },
                 onOpenDocIntel: () =>
                     context.go(AppRoutes.docIntelPath('mailbox')),
+                onQuickAdd: (kind) => requestGlobalAddAction(
+                  context,
+                  kind: kind,
+                  currentLocation: GoRouterState.of(context).matchedLocation,
+                ),
                 uploadPortfolioBuilder: (portfolioId, portfolioName, onCancel) {
                   return buildPortfolioImportHoldingsEmbed(
                     userId: _userId(context),
@@ -695,7 +708,7 @@ String? _legacyPortfolioTabRedirect(String location) {
     return null;
   }
   final segment = segments[2];
-  if (AppRoutes.isPortfolioTab(segment)) return null;
+  if (AppRoutes.isPortfolioRouteSlug(segment)) return null;
   return AppRoutes.portfolioPath(segment, 'overview');
 }
 

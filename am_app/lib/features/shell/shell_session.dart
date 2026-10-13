@@ -120,20 +120,28 @@ mixin ShellSessionOps on State<AppShell> {
     final portfolioId = ShareUrlBuilder.portfolioIdFromLocation(location);
     final portfolioTab = ShareUrlBuilder.portfolioTabFromLocation(location);
 
-    if (portfolioId != null) {
+    // Only sticky-update when URL has a *concrete* portfolio. Doc-intel,
+    // dashboard, market, and portfolio/all must not wipe the last selection.
+    final concreteId = (portfolioId != null &&
+            portfolioId.isNotEmpty &&
+            portfolioId != 'all' &&
+            !_isDevMockPortfolioId(portfolioId))
+        ? portfolioId
+        : null;
+
+    if (concreteId != null) {
       common.PortfolioSelectionScope.maybeStateOf(context)
-          ?.seedSelection(portfolioId, null);
+          ?.seedSelection(concreteId, null);
     }
 
     common.SessionPersistenceService.instance.patch(
       userId,
       (s) => s.copyWith(
         globalNav: nav,
-        portfolioId: portfolioId,
+        portfolioId: concreteId,
         portfolioTabIndex: portfolioTab != null
             ? AppRoutes.portfolioTabIndex(portfolioTab)
             : s.portfolioTabIndex,
-        clearPortfolio: portfolioId == null,
       ),
     );
   }

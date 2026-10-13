@@ -33,6 +33,7 @@ class PortfolioMobileScreen extends ConsumerStatefulWidget {
     this.uploadPortfolioBuilder,
     this.onOpenDocIntel,
     this.addAssetClassBuilder,
+    this.onQuickAdd,
   });
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
@@ -45,6 +46,7 @@ class PortfolioMobileScreen extends ConsumerStatefulWidget {
   final Widget Function(String portfolioId, String? portfolioName, VoidCallback onCancel)? uploadPortfolioBuilder;
   final VoidCallback? onOpenDocIntel;
   final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addAssetClassBuilder;
+  final ValueChanged<GlobalAddActionKind>? onQuickAdd;
 
   @override
   ConsumerState<PortfolioMobileScreen> createState() =>
@@ -77,6 +79,7 @@ class _PortfolioMobileScreenState extends ConsumerState<PortfolioMobileScreen> {
               uploadPortfolioBuilder: widget.uploadPortfolioBuilder,
               onOpenDocIntel: widget.onOpenDocIntel,
               addAssetClassBuilder: widget.addAssetClassBuilder,
+              onQuickAdd: widget.onQuickAdd,
             ),
           ),
           loading: () =>
@@ -139,6 +142,7 @@ class PortfolioMobileView extends StatefulWidget {
     this.uploadPortfolioBuilder,
     this.onOpenDocIntel,
     this.addAssetClassBuilder,
+    this.onQuickAdd,
   });
   final String? selectedPortfolioId;
   final String? selectedPortfolioName;
@@ -151,6 +155,7 @@ class PortfolioMobileView extends StatefulWidget {
   final Widget Function(String portfolioId, String? portfolioName, VoidCallback onCancel)? uploadPortfolioBuilder;
   final VoidCallback? onOpenDocIntel;
   final Widget Function(BuildContext context, String portfolioId, String? portfolioName, VoidCallback onComplete)? addAssetClassBuilder;
+  final ValueChanged<GlobalAddActionKind>? onQuickAdd;
 
   @override
   State<PortfolioMobileView> createState() => _PortfolioMobileViewState();
@@ -215,14 +220,16 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
   @override
   void initState() {
     super.initState();
-    final initialIndex = _tabIndexFromSlug(widget.initialTab);
-    _isAddingTrade = _isAddTradeSlug(widget.initialTab);
+    final initialIndex = _isAddAssetClassRoute
+        ? 0
+        : _tabIndexFromSlug(widget.initialTab);
     _wasOnBasketsTab = _isBasketsTab(widget.initialTab);
-    _tabController = TabController(length: 4, vsync: this, initialIndex: initialIndex);
+    _tabController =
+        TabController(length: 4, vsync: this, initialIndex: initialIndex);
     _tabController.addListener(() {
       if (mounted && !_tabController.indexIsChanging) {
         setState(() {});
-        if (!_isAddingTrade) {
+        if (!_isAddAssetClassRoute) {
           final slug = _tabSlugFromIndex(_tabController.index);
           if (_wasOnBasketsTab && !_isBasketsTab(slug)) {
             _loadPortfolioDetailIfNeeded(context.read<PortfolioCubit>());
@@ -236,6 +243,11 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     GlobalAddActionsBus.instance.addListener(_onGlobalAddAction);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Legacy /portfolio/{id}/add-trade → Trade module.
+      if (_isAddTradeSlug(widget.initialTab) && widget.onQuickAdd != null) {
+        widget.onQuickAdd!(GlobalAddActionKind.addTrade);
+        return;
+      }
       _onGlobalAddAction();
       if (_currentPortfolioId != null && mounted) {
         final cubit = context.read<PortfolioCubit>();
@@ -243,74 +255,30 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
           portfolioId: _currentPortfolioId,
           forceResubscribe: true,
         );
-        if (!_isBasketsTab(widget.initialTab)) {
+        if (!_isBasketsTab(widget.initialTab) && !_isAddAssetClassRoute) {
           _loadPortfolioDetailIfNeeded(cubit);
         }
       }
     });
   }
 
+  bool get _isAddAssetClassRoute =>
+      widget.initialTab?.toLowerCase() == 'add-asset-class';
+
+  void _leaveFocusedFlow() {
+    setState(_clearActiveOperation);
+    widget.onTabChanged?.call('overview');
+  }
+
   void _onGlobalAddAction() {
     if (!mounted) return;
     final bus = GlobalAddActionsBus.instance;
-    final kind = bus.pending;
-    if (kind == null) return;
-
-    final id = _currentPortfolioId ?? widget.selectedPortfolioId;
-    final hasConcrete = id != null && id.isNotEmpty && id != 'all';
-    if (!hasConcrete && kind != GlobalAddActionKind.addBasket) return;
-
-    switch (kind) {
-      case GlobalAddActionKind.uploadPortfolio:
-        if (!bus.tryConsume(kind)) return;
-        if (_isUploadingPortfolio) return;
-        _promptDiscardChanges().then((ok) {
-          if (!ok || !mounted) return;
-          if (widget.uploadPortfolioBuilder != null) {
-            setState(() {
-              _isUploadingPortfolio = true;
-              _isAddingTrade = false;
-              _isAddingAssetClass = false;
-              _operationDirty = false;
-            });
-          } else {
-            widget.onOpenDocIntel?.call();
-          }
-        });
-        return;
-      case GlobalAddActionKind.addTrade:
-        if (!bus.tryConsume(kind)) return;
-        if (_isAddingTrade) return;
-        _promptDiscardChanges().then((ok) {
-          if (!ok || !mounted) return;
-          if (widget.addTradeBuilder != null) {
-            _openAddTrade();
-          } else {
-            OpenAddTradeNotification().dispatch(context);
-          }
-        });
-        return;
-      case GlobalAddActionKind.addAssetClass:
-        if (!bus.tryConsume(kind)) return;
-        if (_isAddingAssetClass) return;
-        _promptDiscardChanges().then((ok) {
-          if (!ok || !mounted) return;
-          setState(() {
-            _isAddingAssetClass = true;
-            _isAddingTrade = false;
-            _isUploadingPortfolio = false;
-            _operationDirty = false;
-          });
-        });
-        return;
-      case GlobalAddActionKind.addBasket:
-        if (!bus.tryConsume(kind)) return;
-        _selectTab(3);
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          BasketNavigation.setViewMode(BasketViewMode.discover);
-        });
-        return;
-    }
+    // Upload / Add Trade / Add Asset Class use dedicated URLs via onQuickAdd.
+    if (!bus.tryConsume(GlobalAddActionKind.addBasket)) return;
+    _selectTab(3);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      BasketNavigation.setViewMode(BasketViewMode.discover);
+    });
   }
 
   @override
@@ -330,11 +298,11 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     }
 
     if (widget.initialTab != oldWidget.initialTab) {
-      final addTrade = _isAddTradeSlug(widget.initialTab);
-      if (addTrade != _isAddingTrade) {
-        setState(() => _isAddingTrade = addTrade);
+      if (_isAddTradeSlug(widget.initialTab) && widget.onQuickAdd != null) {
+        widget.onQuickAdd!(GlobalAddActionKind.addTrade);
+        return;
       }
-      if (!addTrade) {
+      if (!_isAddAssetClassRoute) {
         final newIndex = _tabIndexFromSlug(widget.initialTab);
         if (newIndex != _tabController.index) {
           _tabController.animateTo(newIndex);
@@ -372,7 +340,11 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
   }
 
   Future<bool> _promptDiscardChanges() async {
-    if (!_isAddingTrade && !_isUploadingPortfolio && !_isAddingAssetClass) {
+    final inFocusedFlow = _isAddingTrade ||
+        _isUploadingPortfolio ||
+        _isAddingAssetClass ||
+        _isAddAssetClassRoute;
+    if (!inFocusedFlow) {
       return true;
     }
     if (!_operationDirty) {
@@ -407,16 +379,6 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
       return true;
     }
     return false;
-  }
-
-  void _openAddTrade() {
-    setState(() {
-      _isAddingTrade = true;
-      _isAddingAssetClass = false;
-      _isUploadingPortfolio = false;
-      _operationDirty = false;
-    });
-    widget.onTabChanged?.call('add-trade');
   }
 
   Future<void> _selectTab(int index) async {
@@ -510,12 +472,11 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
   }
 
   void _onSyncQuickAdd(GlobalAddActionKind kind) {
+    if (widget.onQuickAdd != null) {
+      widget.onQuickAdd!(kind);
+      return;
+    }
     GlobalAddActionsBus.instance.request(kind);
-    // Re-notify next frame so listeners that missed the sync still run.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final bus = GlobalAddActionsBus.instance;
-      if (bus.pending == kind) bus.request(kind);
-    });
   }
 
   @override
@@ -551,116 +512,98 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
       },
       child: UnifiedSidebarScaffold(
         module: ModuleType.portfolio,
-        title: currentName,
+        title: _isAddAssetClassRoute ? 'Add Asset Class' : currentName,
         showModuleBottomNavigation: false,
-        showAppBarOnMobile: false,
+        showAppBarOnMobile: _isAddAssetClassRoute,
         showMobileMenuButton: false,
         autoHideMobileTabsOnScroll: true,
-        onBackToGlobal: widget.onBack,
-        mobilePillTrailing: (_currentPortfolioId != null &&
-                _currentPortfolioId != 'all')
-            ? SyncQuickActionsControl(
+        onBackToGlobal: () {
+          if (_isAddAssetClassRoute) {
+            _promptDiscardChanges().then((ok) {
+              if (ok && mounted) _leaveFocusedFlow();
+            });
+          } else {
+            widget.onBack?.call();
+          }
+        },
+        mobilePillTrailing: (_isAddAssetClassRoute ||
+                _currentPortfolioId == null ||
+                _currentPortfolioId == 'all')
+            ? null
+            : SyncQuickActionsControl(
                 accentColor: ModuleColors.portfolio,
                 iconColor: Theme.of(context).colorScheme.onSurface,
                 actions: buildGlobalAddMenuActions(_onSyncQuickAdd),
                 showSubtitles: false,
-              )
-            : null,
-        mobileStickyHeader: _tabController.index == 3
-            ? null // BasketExplorer owns Discover / My Baskets (avoid duplicate)
+              ),
+        mobileStickyHeader: _isAddAssetClassRoute || _tabController.index == 3
+            ? null
             : _buildStickyControlsRow(context, currentName),
+        // Keep full portfolio rail on Add Asset Class.
         items: [
           SecondarySidebarItem(
             title: 'Overview',
             icon: Icons.dashboard_outlined,
-            isSelected: _tabController.index == 0 && !_isAddingTrade && !_isUploadingPortfolio,
+            isSelected: !_isAddAssetClassRoute && _tabController.index == 0,
             onTap: () => _selectTab(0),
           ),
           SecondarySidebarItem(
             title: 'Holdings',
             icon: Icons.wallet,
-            isSelected: _tabController.index == 1 && !_isAddingTrade && !_isUploadingPortfolio && !_isAddingAssetClass,
+            isSelected: !_isAddAssetClassRoute && _tabController.index == 1,
             onTap: () => _selectTab(1),
           ),
           SecondarySidebarItem(
             title: 'Heatmap',
             icon: Icons.grid_view,
-            isSelected: _tabController.index == 2 && !_isAddingTrade && !_isUploadingPortfolio && !_isAddingAssetClass,
+            isSelected: !_isAddAssetClassRoute && _tabController.index == 2,
             onTap: () => _selectTab(2),
           ),
           SecondarySidebarItem(
             title: 'Baskets',
             icon: Icons.shopping_basket_outlined,
-            isSelected: _tabController.index == 3 && !_isAddingTrade && !_isUploadingPortfolio && !_isAddingAssetClass,
+            isSelected: !_isAddAssetClassRoute && _tabController.index == 3,
             onTap: () => _selectTab(3),
           ),
         ],
-        body: (_isAddingTrade &&
-                widget.addTradeBuilder != null &&
-                _currentPortfolioId != null)
+        body: _isAddAssetClassRoute
             ? _wrapActiveOperation(
-                widget.addTradeBuilder!(
-                  context,
-                  _currentPortfolioId!,
-                  currentName,
-                  () {
-                    setState(_clearActiveOperation);
-                  },
-                ),
-              )
-            : (_isAddingAssetClass && _currentPortfolioId != null)
-                ? _wrapActiveOperation(
-                    widget.addAssetClassBuilder != null
-                        ? widget.addAssetClassBuilder!(
-                            context,
-                            _currentPortfolioId!,
-                            currentName,
-                            () {
-                              _promptDiscardChanges();
-                            },
-                          )
-                        : AddAssetClassWorkspace(
-                            portfolioId: _currentPortfolioId!,
-                            portfolioName: currentName,
-                            onOpenDocIntel: widget.onOpenDocIntel,
-                            onCancel: () {
-                              _promptDiscardChanges();
-                            },
-                            onComplete: () {
-                              setState(_clearActiveOperation);
-                            },
-                          ),
-                  )
-                : (_isUploadingPortfolio &&
-                        widget.uploadPortfolioBuilder != null &&
-                        _currentPortfolioId != null)
-                    ? _wrapActiveOperation(
-                        widget.uploadPortfolioBuilder!(
-                          _currentPortfolioId!,
-                          currentName,
-                          () {
-                            _promptDiscardChanges();
-                          },
-                        ),
+                widget.addAssetClassBuilder != null
+                    ? widget.addAssetClassBuilder!(
+                        context,
+                        _currentPortfolioId!,
+                        currentName,
+                        _leaveFocusedFlow,
                       )
-                    : Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (widget.portfolios != null &&
-                        widget.portfolios!.any((p) => p.isDummy))
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-                        // Upload lives under Sync sheet — no second Upload here.
-                        child: const DemoAccountInlineBanner(),
+                    : AddAssetClassWorkspace(
+                        portfolioId: _currentPortfolioId!,
+                        portfolioName: currentName,
+                        onOpenDocIntel: widget.onOpenDocIntel,
+                        onCancel: () {
+                          _promptDiscardChanges().then((ok) {
+                            if (ok && mounted) _leaveFocusedFlow();
+                          });
+                        },
+                        onComplete: _leaveFocusedFlow,
                       ),
-                    Expanded(
-                      child: PortfolioTabContentWidget(
-                        tabController: _tabController,
-                        currentPortfolioId: _currentPortfolioId!,
-                      ),
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (widget.portfolios != null &&
+                      widget.portfolios!.any((p) => p.isDummy))
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(12, 8, 12, 0),
+                      child: DemoAccountInlineBanner(),
                     ),
-                  ],
-                ),
+                  Expanded(
+                    child: PortfolioTabContentWidget(
+                      tabController: _tabController,
+                      currentPortfolioId: _currentPortfolioId!,
+                    ),
+                  ),
+                ],
+              ),
         floatingActionButton: null,
       ),
     );

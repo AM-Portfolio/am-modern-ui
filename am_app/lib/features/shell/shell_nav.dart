@@ -75,8 +75,16 @@ mixin ShellNav on State<AppShell> {
   }
 
   void _onGlobalNavigate(String title, String userId) {
-    final path = AppRoutes.pathForNavTitle(title);
+    var path = AppRoutes.pathForNavTitle(title);
     if (path == null) return;
+
+    // Trade: land on last concrete portfolio when known (not empty discovery).
+    if (title == 'Trade') {
+      final sticky = _resolveSwipePortfolioId();
+      if (sticky != null && sticky != 'all') {
+        path = AppRoutes.tradePath(sticky, 'portfolios');
+      }
+    }
 
     ProductTelemetry.instance.featureAction(
       'global_nav',
@@ -95,10 +103,23 @@ mixin ShellNav on State<AppShell> {
   String? _resolveSwipePortfolioId() {
     final fromUrl =
         ShareUrlBuilder.portfolioIdFromLocation(_currentLocation);
-    if (fromUrl != null && fromUrl.isNotEmpty) return fromUrl;
+    if (fromUrl != null &&
+        fromUrl.isNotEmpty &&
+        fromUrl != 'all' &&
+        !_isDevMockPortfolioId(fromUrl)) {
+      return fromUrl;
+    }
+    final scopeId = context.selectedPortfolioId;
+    if (scopeId != null &&
+        scopeId.isNotEmpty &&
+        scopeId != 'all' &&
+        !_isDevMockPortfolioId(scopeId)) {
+      return scopeId;
+    }
     final cached = common.SessionPersistenceService.instance.cached?.portfolioId;
     if (cached != null &&
         cached.isNotEmpty &&
+        cached != 'all' &&
         !_isDevMockPortfolioId(cached)) {
       return cached;
     }
