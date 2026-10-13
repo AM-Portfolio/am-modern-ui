@@ -28,6 +28,23 @@ void main() {
       );
     });
 
+    test('resolves chart market tab and legacy chart paths', () {
+      expect(
+        SearchContextResolver.fromLocation('/app/market/chart'),
+        SearchContext.chart,
+      );
+      expect(
+        SearchContextResolver.fromLocation(
+          '/app/market/chart?symbol=NIFTY%2050',
+        ),
+        SearchContext.chart,
+      );
+      expect(
+        SearchContextResolver.fromLocation('/app/chart/workspace'),
+        SearchContext.chart,
+      );
+    });
+
     test('resolves portfolio, trade, dashboard', () {
       expect(
         SearchContextResolver.fromLocation('/app/portfolio/p1/holdings'),
@@ -43,7 +60,7 @@ void main() {
       );
     });
 
-    test('discovery contexts match Baskets / EI / F&O / Paper', () {
+    test('discovery contexts match Baskets / EI / F&O / Chart / Paper', () {
       expect(
         SearchContextResolver.isDiscoveryContext(SearchContext.baskets),
         isTrue,
@@ -54,6 +71,10 @@ void main() {
       );
       expect(
         SearchContextResolver.isDiscoveryContext(SearchContext.fo),
+        isTrue,
+      );
+      expect(
+        SearchContextResolver.isDiscoveryContext(SearchContext.chart),
         isTrue,
       );
       expect(
@@ -92,6 +113,19 @@ void main() {
       );
     });
 
+    test('chart context banner and Market boost', () {
+      final copy = SearchContextRegistry.copyFor(SearchContext.chart);
+      expect(copy.bannerTitle, 'Searching in Chart');
+      expect(
+        SearchContextRegistry.boost(SearchContext.chart, 'Market'),
+        greaterThan(SearchContextRegistry.boost(SearchContext.chart, 'Action')),
+      );
+      expect(
+        SearchContextRegistry.hintFor(SearchContext.chart),
+        'Search chart symbols…',
+      );
+    });
+
     test('hintFor baskets matches product copy', () {
       expect(
         SearchContextRegistry.hintFor(SearchContext.baskets),
@@ -122,6 +156,7 @@ void main() {
           'fo_header_card.searchIcon',
           'paper_watchlist_web.SmartSearchAnchor',
           'paper_watchlist_mobile.SmartSearchAnchor',
+          'chart_workspace_page.SmartSearchAnchor',
         ]),
       );
       expect(

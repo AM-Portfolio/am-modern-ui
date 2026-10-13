@@ -109,6 +109,7 @@ class WorkspaceSnapshot {
 
 class WorkspaceStore {
   static const _key = 'am_chart_ui.workspace.v2';
+  static const _recentSymbolsKey = 'am_chart_ui.recent_symbols.v1';
 
   Future<WorkspaceSnapshot?> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -127,5 +128,15 @@ class WorkspaceStore {
   Future<void> save(WorkspaceSnapshot snap) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_key, jsonEncode(snap.toJson()));
+  }
+
+  Future<List<String>> loadRecentSymbols() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList(_recentSymbolsKey) ?? const [];
+  }
+
+  Future<void> saveRecentSymbols(List<String> symbols) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_recentSymbolsKey, symbols);
   }
 }

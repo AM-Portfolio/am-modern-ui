@@ -4,6 +4,7 @@
 /// - Baskets explorer (was EtfSearchBar)
 /// - Equity Insider empty + hero change-symbol capsule
 /// - F&O empty landing + header search icon
+/// - Chart workspace header SmartSearchAnchor (desktop + mobile)
 /// - Heatmap TextField + GO
 /// - Watchlists list "Search watchlists…"
 /// - IPO toolbar search box
@@ -27,6 +28,7 @@ class SearchInventory {
     'fo_empty_landing_view.SmartSearchAnchor',
     'fo_empty_landing_view.GlobalSearchButton',
     'fo_header_card.searchIcon',
+    'chart_workspace_page.SmartSearchAnchor',
     'heatmap_explorer.TextFieldGo',
     'heatmap_explorer.indexChips',
     'watchlists_page.SearchWatchlists',

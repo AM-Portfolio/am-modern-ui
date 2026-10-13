@@ -56,8 +56,8 @@ class ChartDrawing {
     required this.id,
     required this.tool,
     required this.points,
+    required this.color,
     this.text,
-    this.color = const Color(0xFF7C4DFF),
   });
 
   final String id;

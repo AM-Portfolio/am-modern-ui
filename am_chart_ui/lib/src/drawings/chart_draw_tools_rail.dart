@@ -33,26 +33,26 @@ class ChartDrawToolsRail extends StatelessWidget {
     ChartDrawTool.measure,
   ];
 
-  static const double _expandedWidth = 52;
+  static const double _expandedWidthDesktop = 48;
+  static const double _expandedWidthMobile = 40;
   static const double _collapsedWidth = 28;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bg = theme.brightness == Brightness.dark
-        ? const Color(0xFF131722)
-        : theme.colorScheme.surfaceContainerHighest;
-    final iconColor = theme.brightness == Brightness.dark
-        ? const Color(0xFFD1D4DC)
-        : theme.iconTheme.color;
+    final isMobile = MediaQuery.sizeOf(context).width < 768;
+    final bg = theme.colorScheme.surfaceContainerHighest;
+    final iconColor = theme.iconTheme.color ?? theme.colorScheme.onSurface;
     final activeBg = theme.colorScheme.primary.withValues(alpha: 0.28);
     final activeFg = theme.colorScheme.primary;
     final edge = theme.dividerColor.withValues(alpha: 0.55);
 
+    final expandedW = isMobile ? _expandedWidthMobile : _expandedWidthDesktop;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 160),
       curve: Curves.easeOut,
-      width: expanded ? _expandedWidth : _collapsedWidth,
+      width: expanded ? expandedW : _collapsedWidth,
       decoration: BoxDecoration(
         color: bg,
         border: Border(right: BorderSide(color: edge)),
@@ -62,8 +62,9 @@ class ChartDrawToolsRail extends StatelessWidget {
           const SizedBox(height: 6),
           _RailIcon(
             tooltip: expanded ? 'Collapse tools' : 'Expand tools',
-            icon: Icons.menu,
+            icon: expanded ? Icons.chevron_left : Icons.menu,
             iconColor: iconColor,
+            isMobile: isMobile,
             onTap: onToggleExpanded,
           ),
           if (!expanded)
@@ -95,6 +96,7 @@ class ChartDrawToolsRail extends StatelessWidget {
                       selected: activeTool == t,
                       iconColor: activeTool == t ? activeFg : iconColor,
                       selectedBg: activeBg,
+                      isMobile: isMobile,
                       onTap: () => onSelectTool(t),
                     ),
                   Padding(
@@ -112,6 +114,7 @@ class ChartDrawToolsRail extends StatelessWidget {
                         ? activeFg
                         : iconColor,
                     selectedBg: activeBg,
+                    isMobile: isMobile,
                     onTap: () => onSelectTool(ChartDrawTool.eraser),
                   ),
                   _RailIcon(
@@ -121,6 +124,7 @@ class ChartDrawToolsRail extends StatelessWidget {
                     icon: Icons.delete_outline,
                     iconColor: iconColor,
                     enabled: drawingCount > 0,
+                    isMobile: isMobile,
                     onTap: onClearAll,
                   ),
                 ],
@@ -142,6 +146,7 @@ class _RailIcon extends StatelessWidget {
     this.selected = false,
     this.selectedBg,
     this.enabled = true,
+    this.isMobile = false,
   });
 
   final String tooltip;
@@ -151,6 +156,7 @@ class _RailIcon extends StatelessWidget {
   final bool selected;
   final Color? selectedBg;
   final bool enabled;
+  final bool isMobile;
 
   @override
   Widget build(BuildContext context) {
@@ -158,7 +164,10 @@ class _RailIcon extends StatelessWidget {
       message: tooltip,
       waitDuration: const Duration(milliseconds: 400),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        padding: EdgeInsets.symmetric(
+          horizontal: isMobile ? 3 : 6,
+          vertical: isMobile ? 1.5 : 2,
+        ),
         child: Material(
           color: selected
               ? (selectedBg ??
@@ -171,14 +180,17 @@ class _RailIcon extends StatelessWidget {
             borderRadius: BorderRadius.circular(6),
             onTap: enabled ? onTap : null,
             child: SizedBox(
-              height: 38,
+              height: isMobile ? 34 : 38,
               width: double.infinity,
               child: Icon(
                 icon,
-                size: 20,
+                size: isMobile ? 18 : 20,
                 color: enabled
                     ? iconColor
-                    : (iconColor ?? Colors.grey).withValues(alpha: 0.35),
+                    : Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.35),
               ),
             ),
           ),

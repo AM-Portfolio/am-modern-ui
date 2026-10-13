@@ -15,6 +15,7 @@ class PaperWatchlistMobile extends StatefulWidget {
     required this.onBuySell,
     this.onOpenFundamentals,
     this.showSearch = true,
+    this.onOpenAllIndices,
   });
 
   final WatchlistController controller;
@@ -23,6 +24,7 @@ class PaperWatchlistMobile extends StatefulWidget {
   final WatchlistSideCallback onBuySell;
   final ValueChanged<String>? onOpenFundamentals;
   final bool showSearch;
+  final VoidCallback? onOpenAllIndices;
 
   @override
   State<PaperWatchlistMobile> createState() => _PaperWatchlistMobileState();
@@ -64,10 +66,59 @@ class _PaperWatchlistMobileState extends State<PaperWatchlistMobile> {
             const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: WatchlistSourceDropdown(
-              selected: controller.selectedSource,
-              sources: List.of(controller.sources),
-              onSelected: (id) => controller.selectSource(id),
+            child: Row(
+              children: [
+                Expanded(
+                  child: WatchlistSourceDropdown(
+                    selected: controller.selectedSource,
+                    sources: List.of(controller.sources),
+                    onSelected: (id) => controller.selectSource(id),
+                    onBrowseAllIndices: widget.onOpenAllIndices,
+                  ),
+                ),
+                if (widget.onOpenAllIndices != null) ...[
+                  const SizedBox(width: 8),
+                  Tooltip(
+                    message: 'All Market Indices',
+                    child: InkWell(
+                      onTap: widget.onOpenAllIndices,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 9,
+                          vertical: 9,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.35),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.auto_graph_rounded,
+                              size: 16,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Indices',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
           if (controller.pageCount > 1) ...[

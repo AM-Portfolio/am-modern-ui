@@ -18,20 +18,21 @@ enum ChartTimeframe {
 
   static ChartTimeframe fromCode(String? code) {
     final c = (code ?? '1Y').toUpperCase();
+    if (c == '1M' || c == '1MO') return ChartTimeframe.mo1;
     return ChartTimeframe.values.firstWhere(
       (e) => e.code == c,
-      orElse: () => ChartTimeframe.y1,
+      orElse: () => ChartTimeframe.d1,
     );
   }
 
   /// Phase 1 chips shown in the toolbar.
   static const phase1 = [
-    ChartTimeframe.m1,
     ChartTimeframe.m5,
     ChartTimeframe.m15,
     ChartTimeframe.h1,
     ChartTimeframe.d1,
     ChartTimeframe.w1,
+    ChartTimeframe.mo1,
     ChartTimeframe.y1,
   ];
 }

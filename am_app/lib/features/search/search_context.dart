@@ -6,6 +6,7 @@ enum SearchContext {
   baskets,
   equityInsider,
   fo,
+  chart,
   paper,
   market,
   portfolio,
@@ -23,6 +24,12 @@ class SearchContextResolver {
     if (marketTab == 'equity-insider') return SearchContext.equityInsider;
     if (marketTab == 'futures-options') return SearchContext.fo;
     if (marketTab == 'paper') return SearchContext.paper;
+    if (marketTab == 'chart') return SearchContext.chart;
+    if (path.startsWith(AppRoutes.chartWorkspace) ||
+        path.startsWith(AppRoutes.chartCompare) ||
+        path.startsWith('/app/chart')) {
+      return SearchContext.chart;
+    }
     if (path.startsWith(AppRoutes.market)) return SearchContext.market;
 
     final portfolioTab = ShareUrlBuilder.portfolioTabFromLocation(path);
@@ -41,6 +48,7 @@ class SearchContextResolver {
       ctx == SearchContext.baskets ||
       ctx == SearchContext.equityInsider ||
       ctx == SearchContext.fo ||
+      ctx == SearchContext.chart ||
       ctx == SearchContext.paper;
 
   static String _normalize(String location) {

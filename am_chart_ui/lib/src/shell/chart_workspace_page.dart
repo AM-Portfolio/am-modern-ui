@@ -1,3 +1,4 @@
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -39,7 +40,7 @@ class ChartWorkspacePage extends ConsumerStatefulWidget {
   /// Initial bottom panel height (resizable via drag handle).
   final double bottomPanelHeight;
 
-  /// When false, symbol is chosen only via sidebar / host (no top search).
+  /// When true, shows a search icon that opens Global Omnisearch (no local symbol field).
   final bool showHeaderSearch;
 
   @override
@@ -50,6 +51,7 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
   bool _analysisFocus = false;
   late double _bottomHeight;
   bool _drawRailExpanded = true;
+  bool _showMobileDrawRail = true;
   ChartDrawTool _drawTool = ChartDrawTool.none;
   int _clearDrawingsEpoch = 0;
   int _activeDrawingsCount = 0;
@@ -59,13 +61,59 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
     super.initState();
     _bottomHeight = widget.bottomPanelHeight;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(chartTerminalProvider.notifier)
-          .bootstrap(
-            symbol: widget.initialSymbol,
-            timeframeCode: widget.initialTimeframe,
-          );
+      final ctrl = ref.read(chartTerminalProvider.notifier);
+      ctrl.bootstrap(
+        symbol: widget.initialSymbol,
+        timeframeCode: widget.initialTimeframe,
+      );
+      if (mounted) {
+        final isMobile = MediaQuery.sizeOf(context).width < 768;
+        if (isMobile) {
+          ctrl.setLayout(ChartGridLayout.one);
+          ctrl.setBottomMinimized(true);
+        }
+      }
     });
+  }
+
+  void _openMobileSidebar(Widget sidebar) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        return Container(
+          height: MediaQuery.of(ctx).size.height * 0.78,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            boxShadow: [
+              BoxShadow(
+                color: context.shadow(0.35),
+                blurRadius: 16,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 8, bottom: 4),
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: theme.hintColor.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Expanded(child: sidebar),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -73,6 +121,7 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
     final state = ref.watch(chartTerminalProvider);
     final ctrl = ref.read(chartTerminalProvider.notifier);
     final theme = Theme.of(context);
+    final isMobile = MediaQuery.sizeOf(context).width < 768;
 
     ref.listen(chartTerminalProvider.select((s) => s.activePaneIndex), (
       prev,
@@ -102,6 +151,10 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
             showHeaderSearch: widget.showHeaderSearch,
             onToggleFocus: () =>
                 setState(() => _analysisFocus = !_analysisFocus),
+            onOpenMobileSidebar: () => _openMobileSidebar(sidebar),
+            onToggleDrawRail: () =>
+                setState(() => _showMobileDrawRail = !_showMobileDrawRail),
+            showDrawRail: _showMobileDrawRail,
           ),
           Expanded(
             child: Row(
@@ -114,13 +167,18 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
                           !_analysisFocus && !state.bottomMinimized;
                       final isBottomDockVisible =
                           !_analysisFocus && state.bottomMinimized;
-                      final dockH = isBottomDockVisible ? 28.0 : 0.0;
+                      final dockH = isBottomDockVisible ? (isMobile ? 26.0 : 28.0) : 0.0;
                       final handleH = isBottomVisible ? 24.0 : 0.0;
                       final bottomH = isBottomVisible
-                          ? _bottomHeight.clamp(200.0, maxH * 0.7)
+                          ? _bottomHeight.clamp(
+                              160.0,
+                              isMobile ? maxH * 0.5 : maxH * 0.7,
+                            )
                           : 0.0;
                       final chartH =
                           (maxH - bottomH - handleH - dockH).clamp(100.0, maxH);
+
+                      final showDrawRail = !isMobile || _showMobileDrawRail;
 
                       return Column(
                         children: [
@@ -129,15 +187,21 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                // One shared TV-style draw rail (left of all panes).
-                                ChartDrawToolsRail(
-                                  expanded: _drawRailExpanded,
-                                  activeTool: _drawTool,
-                                  drawingCount: _activeDrawingsCount,
-                                  onToggleExpanded: () => setState(
-                                    () =>
-                                        _drawRailExpanded = !_drawRailExpanded,
-                                  ),
+                                if (showDrawRail)
+                                  ChartDrawToolsRail(
+                                    expanded:
+                                        isMobile ? true : _drawRailExpanded,
+                                    activeTool: _drawTool,
+                                    drawingCount: _activeDrawingsCount,
+                                    onToggleExpanded: () {
+                                      if (isMobile) {
+                                        setState(() => _showMobileDrawRail =
+                                            !_showMobileDrawRail);
+                                      } else {
+                                        setState(() => _drawRailExpanded =
+                                            !_drawRailExpanded);
+                                      }
+                                    },
                                   onSelectTool: (t) => setState(() {
                                     _drawTool = t;
                                   }),
@@ -302,19 +366,24 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
                                         color: theme.colorScheme.primary,
                                       ),
                                       const SizedBox(width: 6),
-                                      Text(
-                                        'Bottom Panel (Fundamentals · Overview · Shareholding · F&O)',
-                                        style: TextStyle(
-                                          fontSize: 11.5,
-                                          fontWeight: FontWeight.w700,
-                                          color: theme.colorScheme.primary,
+                                      Expanded(
+                                        child: Text(
+                                          isMobile
+                                              ? 'Panel (Overview · F&O · Financials)'
+                                              : 'Bottom Panel (Fundamentals · Overview · Shareholding · F&O)',
+                                          style: TextStyle(
+                                            fontSize: isMobile ? 11 : 11.5,
+                                            fontWeight: FontWeight.w700,
+                                            color: theme.colorScheme.primary,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
-                                      const Spacer(),
+                                      const SizedBox(width: 6),
                                       Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 2.5,
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: isMobile ? 6 : 8,
+                                          vertical: 2,
                                         ),
                                         decoration: BoxDecoration(
                                           color: theme.colorScheme.primary
@@ -331,14 +400,14 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
                                           children: [
                                             Icon(
                                               Icons.open_in_browser,
-                                              size: 13,
+                                              size: 12,
                                               color: theme.colorScheme.primary,
                                             ),
-                                            const SizedBox(width: 4),
+                                            const SizedBox(width: 3),
                                             Text(
-                                              'Restore Panel',
+                                              isMobile ? 'Open' : 'Restore Panel',
                                               style: TextStyle(
-                                                fontSize: 11,
+                                                fontSize: isMobile ? 10 : 11,
                                                 fontWeight: FontWeight.w700,
                                                 color:
                                                     theme.colorScheme.primary,
@@ -357,7 +426,7 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
                     },
                   ),
                 ),
-                if (!_analysisFocus) ...[
+                if (!_analysisFocus && !isMobile) ...[
                   if (!state.sidebarMinimized) ...[
                     const VerticalDivider(width: 1),
                     SizedBox(
@@ -532,7 +601,8 @@ class _ChartGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final panes = state.panes;
     final active = state.activePaneIndex;
-    final multi = state.layout != ChartGridLayout.one;
+    final isMobile = MediaQuery.sizeOf(context).width < 768;
+    final multi = !isMobile && state.layout != ChartGridLayout.one;
 
     Widget card(int i) => ChartPaneCard(
       paneIndex: i,
@@ -543,6 +613,11 @@ class _ChartGrid extends StatelessWidget {
       clearDrawingsEpoch: clearDrawingsEpoch,
       onDrawingsCountChanged: onDrawingsCountChanged,
     );
+
+    if (isMobile) {
+      final idx = active.clamp(0, panes.isNotEmpty ? panes.length - 1 : 0);
+      return card(idx);
+    }
 
     switch (state.layout) {
       case ChartGridLayout.one:
@@ -590,28 +665,148 @@ class _SlimTopBar extends ConsumerStatefulWidget {
     required this.analysisFocus,
     required this.onToggleFocus,
     this.showHeaderSearch = true,
+    this.onOpenMobileSidebar,
+    this.onToggleDrawRail,
+    this.showDrawRail = false,
   });
   final ChartTerminalState state;
   final ChartTerminalController ctrl;
   final bool analysisFocus;
   final VoidCallback onToggleFocus;
   final bool showHeaderSearch;
+  final VoidCallback? onOpenMobileSidebar;
+  final VoidCallback? onToggleDrawRail;
+  final bool showDrawRail;
 
   @override
   ConsumerState<_SlimTopBar> createState() => _SlimTopBarState();
 }
 
 class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
-  final _searchCtrl = TextEditingController();
+  void _openOmnisearch(BuildContext context) {
+    if (GlobalSearchBridge.tryOpen()) return;
+    MobileSearchScope.tryOpenGlobalSearch(context);
+  }
 
-  @override
-  void dispose() {
-    _searchCtrl.dispose();
-    super.dispose();
+  Widget _buildMobileBar(BuildContext context) {
+    final theme = Theme.of(context);
+    final state = widget.state;
+    final ctrl = widget.ctrl;
+    final active = state.active;
+
+    return Material(
+      elevation: 1,
+      color: theme.colorScheme.surface,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 6, 8, 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${active.symbol} · ${active.exchange}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14.5,
+                      letterSpacing: -0.2,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Watchlist & Indices',
+                  iconSize: 19,
+                  padding: EdgeInsets.zero,
+                  constraints:
+                      const BoxConstraints(minWidth: 32, minHeight: 32),
+                  icon: Icon(
+                    Icons.format_list_bulleted,
+                    color: theme.colorScheme.primary,
+                  ),
+                  onPressed: widget.onOpenMobileSidebar,
+                ),
+                if (widget.onToggleDrawRail != null)
+                  IconButton(
+                    tooltip: 'Drawing tools',
+                    iconSize: 18,
+                    padding: EdgeInsets.zero,
+                    constraints:
+                        const BoxConstraints(minWidth: 32, minHeight: 32),
+                    icon: Icon(
+                      widget.showDrawRail ? Icons.draw : Icons.draw_outlined,
+                      color: widget.showDrawRail
+                          ? theme.colorScheme.primary
+                          : theme.hintColor,
+                    ),
+                    onPressed: widget.onToggleDrawRail,
+                  ),
+                IconButton(
+                  tooltip: state.bottomMinimized
+                      ? 'Restore panel'
+                      : 'Minimize panel',
+                  iconSize: 18,
+                  padding: EdgeInsets.zero,
+                  constraints:
+                      const BoxConstraints(minWidth: 32, minHeight: 32),
+                  onPressed: ctrl.toggleBottomMinimized,
+                  icon: Icon(
+                    state.bottomMinimized
+                        ? Icons.splitscreen_outlined
+                        : Icons.splitscreen,
+                    color: state.bottomMinimized
+                        ? theme.hintColor
+                        : theme.colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Container(
+            height: 38,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildChartTypeSelector(context, state, ctrl),
+                  const SizedBox(width: 6),
+                  _buildMobileTimeframeDropdown(context, state, ctrl),
+                  const SizedBox(width: 6),
+                  _buildCompareButton(context, ctrl),
+                  const SizedBox(width: 6),
+                  _divider(theme),
+                  const SizedBox(width: 6),
+                  _buildIndicatorsButton(context),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    tooltip: 'Fit chart',
+                    iconSize: 18,
+                    padding: EdgeInsets.zero,
+                    constraints:
+                        const BoxConstraints(minWidth: 30, minHeight: 30),
+                    onPressed: ctrl.requestFit,
+                    icon: const Icon(Icons.fit_screen),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.sizeOf(context).width < 768;
+    if (isMobile) {
+      return _buildMobileBar(context);
+    }
+
     final theme = Theme.of(context);
     final state = widget.state;
     final ctrl = widget.ctrl;
@@ -650,8 +845,10 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            const SizedBox(width: 8),
-            _buildPriceBadge(context, active),
+            if (state.layout == ChartGridLayout.one) ...[
+              const SizedBox(width: 8),
+              _buildPriceBadge(context, active),
+            ],
             const SizedBox(width: 8),
             _divider(theme),
             const SizedBox(width: 8),
@@ -662,11 +859,13 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    _buildOhlcvStats(context, active),
-                    if (active.bars.isNotEmpty) ...[
-                      const SizedBox(width: 8),
-                      _divider(theme),
-                      const SizedBox(width: 8),
+                    if (state.layout == ChartGridLayout.one) ...[
+                      _buildOhlcvStats(context, active),
+                      if (active.bars.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        _divider(theme),
+                        const SizedBox(width: 8),
+                      ],
                     ],
                     ..._buildTimeframePills(context, state, ctrl),
                     const SizedBox(width: 8),
@@ -715,30 +914,15 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
             ),
 
             const SizedBox(width: 8),
-            // Right: search + focus toggle
+            // Right: omnisearch launcher + focus toggle
             if (showSearch)
-              ConstrainedBox(
-                constraints: const BoxConstraints(minWidth: 180, maxWidth: 280),
-                child: SizedBox(
-                  width: 240,
-                  child: SmartSearchAnchor(
-                    controller: _searchCtrl,
-                    compact: true,
-                    hintText: 'Search symbol…',
-                    category: 'STOCKS',
-                    accentColor: theme.colorScheme.primary,
-                    onSelected: (sym) {
-                      _searchCtrl.clear();
-                      ctrl.selectSymbol(sym);
-                    },
-                    onSubmit: () {
-                      final q = _searchCtrl.text.trim();
-                      if (q.isEmpty) return;
-                      _searchCtrl.clear();
-                      ctrl.selectSymbol(q);
-                    },
-                  ),
-                ),
+              IconButton(
+                tooltip: 'Search symbol',
+                iconSize: 20,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+                onPressed: () => _openOmnisearch(context),
+                icon: const Icon(Icons.search),
               ),
             const SizedBox(width: 4),
             IconButton(
@@ -831,10 +1015,15 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
 
     final isPositive = change >= 0;
     final color =
-        isPositive ? const Color(0xFF089981) : const Color(0xFFF23645);
+        isPositive ? context.marketPositive : context.marketNegative;
+
+    final isMobile = MediaQuery.sizeOf(context).width < 768;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 6 : 7,
+        vertical: isMobile ? 2 : 3,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(4),
@@ -846,16 +1035,18 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
           Text(
             '₹${price.toStringAsFixed(2)}',
             style: TextStyle(
-              fontSize: 13.5,
+              fontSize: isMobile ? 12 : 13.5,
               fontWeight: FontWeight.w800,
               color: color,
             ),
           ),
-          const SizedBox(width: 5),
+          const SizedBox(width: 4),
           Text(
-            '${isPositive ? '+' : ''}${change.toStringAsFixed(2)} (${isPositive ? '+' : ''}${changePct.toStringAsFixed(2)}%)',
+            isMobile
+                ? '(${isPositive ? '+' : ''}${changePct.toStringAsFixed(1)}%)'
+                : '${isPositive ? '+' : ''}${change.toStringAsFixed(2)} (${isPositive ? '+' : ''}${changePct.toStringAsFixed(2)}%)',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: isMobile ? 11 : 12,
               fontWeight: FontWeight.w700,
               color: color,
             ),
@@ -870,7 +1061,7 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
     final theme = Theme.of(context);
     final lastBar = active.bars.last;
     final isUp = lastBar.close >= lastBar.open;
-    final color = isUp ? const Color(0xFF089981) : const Color(0xFFF23645);
+    final color = isUp ? context.marketPositive : context.marketNegative;
     final change = lastBar.close - lastBar.open;
     final changePct =
         lastBar.open > 0 ? (change / lastBar.open) * 100 : 0.0;
@@ -947,7 +1138,7 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
     return v.toStringAsFixed(0);
   }
 
-  List<Widget> _buildTimeframePills(
+  Widget _buildMobileTimeframeDropdown(
     BuildContext context,
     ChartTerminalState state,
     ChartTerminalController ctrl,
@@ -957,7 +1148,89 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
     final primary = theme.colorScheme.primary;
 
     const quickTfs = [
-      ChartTimeframe.m1,
+      ChartTimeframe.m5,
+      ChartTimeframe.m15,
+      ChartTimeframe.h1,
+      ChartTimeframe.d1,
+      ChartTimeframe.w1,
+      ChartTimeframe.mo1,
+      ChartTimeframe.y1,
+    ];
+
+    void onSelect(ChartTimeframe tf) {
+      if (state.isMultiLayout) {
+        ctrl.setTimeframeForAll(tf);
+      } else {
+        ctrl.setTimeframe(tf);
+      }
+    }
+
+    return PopupMenuButton<ChartTimeframe>(
+      tooltip: 'Timeframe',
+      onSelected: onSelect,
+      itemBuilder: (context) => [
+        for (final tf in quickTfs)
+          PopupMenuItem<ChartTimeframe>(
+            value: tf,
+            height: 36,
+            child: Row(
+              children: [
+                Text(
+                  tf.label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: active.timeframe == tf
+                        ? FontWeight.w800
+                        : FontWeight.w500,
+                    color: active.timeframe == tf ? primary : null,
+                  ),
+                ),
+                const Spacer(),
+                if (active.timeframe == tf)
+                  Icon(Icons.check, size: 16, color: primary),
+              ],
+            ),
+          ),
+      ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: theme.cardColor.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(5),
+          border: Border.all(color: theme.dividerColor.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.schedule, size: 14, color: primary),
+            const SizedBox(width: 4),
+            Text(
+              active.timeframe.label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: theme.textTheme.bodyMedium?.color,
+              ),
+            ),
+            const SizedBox(width: 2),
+            Icon(Icons.arrow_drop_down, size: 16, color: theme.hintColor),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildTimeframePills(
+    BuildContext context,
+    ChartTerminalState state,
+    ChartTerminalController ctrl,
+  ) {
+    final active = state.active;
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+    final isMobile = MediaQuery.sizeOf(context).width < 768;
+
+    const quickTfs = [
       ChartTimeframe.m5,
       ChartTimeframe.m15,
       ChartTimeframe.h1,
@@ -983,7 +1256,10 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
             onTap: () => onSelect(tf),
             borderRadius: BorderRadius.circular(4),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 7 : 9,
+                vertical: isMobile ? 3.5 : 5,
+              ),
               decoration: BoxDecoration(
                 color: active.timeframe == tf
                     ? primary.withValues(alpha: 0.22)
@@ -997,7 +1273,7 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
               child: Text(
                 tf.label,
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: isMobile ? 12 : 13,
                   fontWeight: active.timeframe == tf
                       ? FontWeight.w800
                       : FontWeight.w600,
@@ -1011,46 +1287,6 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
             ),
           ),
         ),
-      PopupMenuButton<ChartTimeframe>(
-        tooltip: 'More timeframes',
-        padding: EdgeInsets.zero,
-        onSelected: onSelect,
-        itemBuilder: (context) => [
-          const PopupMenuItem(
-            enabled: false,
-            height: 26,
-            child: Text(
-              'Seconds',
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
-            ),
-          ),
-          for (final tf in [ChartTimeframe.s1, ChartTimeframe.s5])
-            PopupMenuItem(
-              value: tf,
-              height: 30,
-              child: Text(tf.label, style: const TextStyle(fontSize: 12)),
-            ),
-          const PopupMenuDivider(),
-          const PopupMenuItem(
-            enabled: false,
-            height: 26,
-            child: Text(
-              'Minutes',
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
-            ),
-          ),
-          for (final tf in [ChartTimeframe.m3, ChartTimeframe.m30])
-            PopupMenuItem(
-              value: tf,
-              height: 30,
-              child: Text(tf.label, style: const TextStyle(fontSize: 12)),
-            ),
-        ],
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-          child: Icon(Icons.arrow_drop_down, size: 16, color: theme.hintColor),
-        ),
-      ),
     ];
   }
 
@@ -1074,6 +1310,8 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
         _ => Icons.candlestick_chart,
       };
     }
+
+    final isMobile = MediaQuery.sizeOf(context).width < 768;
 
     return PopupMenuButton<ChartTypeId>(
       tooltip: state.isMultiLayout ? 'Chart type (all panes)' : 'Chart type',
@@ -1108,7 +1346,10 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
           ),
       ],
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        padding: EdgeInsets.symmetric(
+          horizontal: isMobile ? 7 : 10,
+          vertical: isMobile ? 3.5 : 5,
+        ),
         decoration: BoxDecoration(
           color: theme.cardColor.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(5),
@@ -1119,19 +1360,19 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
           children: [
             Icon(
               iconFor(active.chartType),
-              size: 16,
+              size: isMobile ? 15 : 16,
               color: theme.colorScheme.primary,
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 5),
             Text(
               active.chartType.label,
-              style: const TextStyle(
-                fontSize: 13,
+              style: TextStyle(
+                fontSize: isMobile ? 12 : 13,
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(width: 3),
-            Icon(Icons.arrow_drop_down, size: 18, color: theme.hintColor),
+            const SizedBox(width: 2),
+            Icon(Icons.arrow_drop_down, size: isMobile ? 16 : 18, color: theme.hintColor),
           ],
         ),
       ),
@@ -1140,11 +1381,15 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
 
   Widget _buildIndicatorsButton(BuildContext context) {
     final theme = Theme.of(context);
+    final isMobile = MediaQuery.sizeOf(context).width < 768;
     return InkWell(
       onTap: () => _showIndicatorsModal(context),
       borderRadius: BorderRadius.circular(4),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        padding: EdgeInsets.symmetric(
+          horizontal: isMobile ? 7 : 10,
+          vertical: isMobile ? 3.5 : 5,
+        ),
         decoration: BoxDecoration(
           color: theme.cardColor.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(5),
@@ -1154,7 +1399,10 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 4 : 5,
+                vertical: 1.5,
+              ),
               decoration: BoxDecoration(
                 color: theme.colorScheme.primary.withValues(alpha: 0.18),
                 borderRadius: BorderRadius.circular(3),
@@ -1162,18 +1410,18 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
               child: Text(
                 'fx',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: isMobile ? 11 : 12,
                   fontWeight: FontWeight.w800,
                   fontStyle: FontStyle.italic,
                   color: theme.colorScheme.primary,
                 ),
               ),
             ),
-            const SizedBox(width: 6),
-            const Text(
+            const SizedBox(width: 5),
+            Text(
               'Indicators',
               style: TextStyle(
-                fontSize: 13,
+                fontSize: isMobile ? 12 : 13,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -1188,7 +1436,6 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
       context: context,
       builder: (ctx) {
         final theme = Theme.of(ctx);
-        final isDark = theme.brightness == Brightness.dark;
         const indicators = [
           ('RSI', 'Relative Strength Index', 'Momentum'),
           (
@@ -1273,9 +1520,7 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: isDark
-                          ? Colors.white10
-                          : Colors.black.withValues(alpha: 0.05),
+                      color: ctx.glassOverlay(0.08),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(ind.$3, style: const TextStyle(fontSize: 10)),
@@ -1310,6 +1555,7 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
     ChartTerminalController ctrl,
   ) {
     final theme = Theme.of(context);
+    final isMobile = MediaQuery.sizeOf(context).width < 768;
     return PopupMenuButton<String>(
       tooltip: 'Compare with Benchmark',
       onSelected: (sym) => ctrl.selectSymbol(sym),
@@ -1340,7 +1586,10 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
         ),
       ],
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        padding: EdgeInsets.symmetric(
+          horizontal: isMobile ? 7 : 10,
+          vertical: isMobile ? 3.5 : 5,
+        ),
         decoration: BoxDecoration(
           color: theme.cardColor.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(5),
@@ -1349,12 +1598,12 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.add, size: 16, color: theme.colorScheme.primary),
-            const SizedBox(width: 5),
-            const Text(
+            Icon(Icons.add, size: isMobile ? 15 : 16, color: theme.colorScheme.primary),
+            const SizedBox(width: 4),
+            Text(
               'Compare',
               style: TextStyle(
-                fontSize: 13,
+                fontSize: isMobile ? 12 : 13,
                 fontWeight: FontWeight.w700,
               ),
             ),

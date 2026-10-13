@@ -228,6 +228,9 @@ class _IndicesPerformanceViewState extends State<IndicesPerformanceView> {
                             selectedSeries: _selectedForChart.toList(),
                             isLoading: _isLoadingHistorical,
                             error: _error,
+                            showExpandButton: true,
+                            expandedChartPath:
+                                '/app/market/chart?symbol=${Uri.encodeComponent(_selectedForChart.isNotEmpty ? _selectedForChart.first : 'NIFTY 50')}&tf=1D',
                           ),
                         ),
                       ),

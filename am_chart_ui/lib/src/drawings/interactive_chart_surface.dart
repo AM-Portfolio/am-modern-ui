@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
 import '../chart_engine/advanced_chart_canvas.dart';
@@ -20,6 +21,8 @@ class InteractiveChartSurface extends StatefulWidget {
     this.externalCrosshairTime,
     this.drawTool = ChartDrawTool.none,
     this.clearDrawingsEpoch = 0,
+    this.zoomEpoch = 0,
+    this.zoomDelta = 1.0,
     this.onDrawingsCountChanged,
   });
 
@@ -28,6 +31,8 @@ class InteractiveChartSurface extends StatefulWidget {
   final bool isMock;
   final VoidCallback? onNeedOlderHistory;
   final int viewEpoch;
+  final int zoomEpoch;
+  final double zoomDelta;
   final void Function(ChartBar? bar)? onCrosshair;
 
   /// Synced multi-pane crosshair time from another pane.
@@ -67,8 +72,13 @@ class _InteractiveChartSurfaceState extends State<InteractiveChartSurface> {
 
   void _notifyCount() => widget.onDrawingsCountChanged?.call(_drawings.length);
 
+  Color get _drawAccent => Theme.of(context).colorScheme.primary;
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final drawAccent = theme.colorScheme.primary;
+    final noteBackdrop = theme.colorScheme.scrim.withValues(alpha: 0.54);
     return LayoutBuilder(
       builder: (context, constraints) {
         final size = Size(constraints.maxWidth, constraints.maxHeight);
@@ -82,15 +92,21 @@ class _InteractiveChartSurfaceState extends State<InteractiveChartSurface> {
               panZoomEnabled: _tool == ChartDrawTool.none,
               onNeedOlderHistory: widget.onNeedOlderHistory,
               viewEpoch: widget.viewEpoch,
+              zoomEpoch: widget.zoomEpoch,
+              zoomDelta: widget.zoomDelta,
               onCrosshair: widget.onCrosshair,
               externalCrosshairTime: widget.externalCrosshairTime,
             ),
-            CustomPaint(
-              size: size,
-              painter: _DrawingsPainter(
-                drawings: _drawings,
-                pending: _pendingPoint,
-                pendingTool: _tool,
+            IgnorePointer(
+              child: CustomPaint(
+                size: size,
+                painter: _DrawingsPainter(
+                  drawings: _drawings,
+                  pending: _pendingPoint,
+                  pendingTool: _tool,
+                  accentColor: drawAccent,
+                  noteBackdrop: noteBackdrop,
+                ),
               ),
             ),
             if (_tool != ChartDrawTool.none)
@@ -143,7 +159,12 @@ class _InteractiveChartSurfaceState extends State<InteractiveChartSurface> {
     if (_tool == ChartDrawTool.hLine || _tool == ChartDrawTool.vLine) {
       setState(() {
         _drawings.add(
-          ChartDrawing(id: 'd${_idSeq++}', tool: _tool, points: [p]),
+          ChartDrawing(
+            id: 'd${_idSeq++}',
+            tool: _tool,
+            points: [p],
+            color: _drawAccent,
+          ),
         );
       });
       _notifyCount();
@@ -160,6 +181,7 @@ class _InteractiveChartSurfaceState extends State<InteractiveChartSurface> {
               id: 'd${_idSeq++}',
               tool: _tool,
               points: [_pendingPoint!, p],
+              color: _drawAccent,
             ),
           );
           _pendingPoint = null;
@@ -222,6 +244,7 @@ class _InteractiveChartSurfaceState extends State<InteractiveChartSurface> {
           tool: ChartDrawTool.note,
           points: [p],
           text: text.trim(),
+          color: _drawAccent,
         ),
       );
     });
@@ -249,14 +272,18 @@ class _ToolHint extends StatelessWidget {
       ChartDrawTool.eraser => 'Click near a drawing to erase',
       _ => tool.label,
     };
+    final theme = Theme.of(context);
     return Material(
-      color: Colors.black54,
+      color: theme.colorScheme.scrim.withValues(alpha: 0.54),
       borderRadius: BorderRadius.circular(4),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         child: Text(
           msg,
-          style: const TextStyle(fontSize: 11, color: Colors.white),
+          style: TextStyle(
+            fontSize: 11,
+            color: context.colors.actionPrimaryFg,
+          ),
         ),
       ),
     );
@@ -268,11 +295,15 @@ class _DrawingsPainter extends CustomPainter {
     required this.drawings,
     required this.pending,
     required this.pendingTool,
+    required this.accentColor,
+    required this.noteBackdrop,
   });
 
   final List<ChartDrawing> drawings;
   final Offset? pending;
   final ChartDrawTool pendingTool;
+  final Color accentColor;
+  final Color noteBackdrop;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -296,7 +327,7 @@ class _DrawingsPainter extends CustomPainter {
     }
     if (pending != null) {
       final c = map(pending!);
-      canvas.drawCircle(c, 4, Paint()..color = const Color(0xFF7C4DFF));
+      canvas.drawCircle(c, 4, Paint()..color = accentColor);
     }
   }
 
@@ -393,7 +424,7 @@ class _DrawingsPainter extends CustomPainter {
                 color: d.color,
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                backgroundColor: Colors.black54,
+                backgroundColor: noteBackdrop,
               ),
             ),
             textDirection: TextDirection.ltr,
@@ -410,5 +441,7 @@ class _DrawingsPainter extends CustomPainter {
   bool shouldRepaint(covariant _DrawingsPainter oldDelegate) =>
       oldDelegate.drawings != drawings ||
       oldDelegate.pending != pending ||
-      oldDelegate.pendingTool != pendingTool;
+      oldDelegate.pendingTool != pendingTool ||
+      oldDelegate.accentColor != accentColor ||
+      oldDelegate.noteBackdrop != noteBackdrop;
 }
