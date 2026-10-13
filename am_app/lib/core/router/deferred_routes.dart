@@ -302,6 +302,8 @@ Widget buildDocIntelRoute({
   required String userId,
   String tab = 'mailbox',
   ValueChanged<String>? onTabChanged,
+  void Function(String portfolioId, String portfolioName)? onOpenPortfolio,
+  void Function(String portfolioId, String portfolioName)? onOpenTrade,
 }) {
   return DeferredModuleLoader(
     load: _loadDocIntel,
@@ -311,6 +313,8 @@ Widget buildDocIntelRoute({
       userId: userId,
       initialTab: tab,
       onTabChanged: onTabChanged,
+      onOpenPortfolio: onOpenPortfolio,
+      onOpenTrade: onOpenTrade,
     ),
   );
 }

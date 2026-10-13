@@ -531,6 +531,22 @@ GoRouter createAppRouter({
                 tab: resolved,
                 onTabChanged: (slug) =>
                     context.go(AppRoutes.docIntelPath(slug)),
+                onOpenPortfolio: (id, name) {
+                  if (id.isEmpty) {
+                    context.go(AppRoutes.portfolio);
+                    return;
+                  }
+                  _patchPortfolioSession(context, id, name);
+                  context.go(AppRoutes.portfolioPath(id, 'overview'));
+                },
+                onOpenTrade: (id, name) {
+                  if (id.isEmpty) {
+                    context.go(AppRoutes.trade);
+                    return;
+                  }
+                  _patchPortfolioSession(context, id, name);
+                  context.go(AppRoutes.tradePath(id, 'portfolios'));
+                },
               );
             },
           ),

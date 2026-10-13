@@ -4,58 +4,73 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_doc_intelligence_ui/features/document_processor/document_processor_view.dart';
 import 'package:am_doc_intelligence_ui/features/email_extractor/email_extractor_view.dart';
 import 'package:am_doc_intelligence_ui/features/import_holdings_info_rail.dart';
+import 'package:am_doc_intelligence_ui/features/import_holdings_shared_controls.dart';
 import 'package:am_doc_intelligence_ui/features/recent_imports_store.dart';
 import 'package:am_doc_intelligence_ui/services/api_service.dart';
 
-/// Import holdings — **mobile** uses Portfolio/Trade section pills (Email | Upload);
-/// **web/desktop** keeps title + segmented toggle, no Email/Upload sidebar.
+enum _ImportSource { email, upload }
+
+/// Import holdings — tab card (Email | Document upload) + mode-specific fields.
 class DocIntelligenceScreen extends StatefulWidget {
   const DocIntelligenceScreen({
     required this.userId,
     this.initialTab = 'mailbox',
     this.onTabChanged,
+    this.onOpenPortfolio,
+    this.onOpenTrade,
     super.key,
   });
 
   final String userId;
-  /// Legacy: `email-extractor` / `doc-processor` / `mailbox` / `upload`.
   final String initialTab;
   final ValueChanged<String>? onTabChanged;
+  final void Function(String portfolioId, String portfolioName)? onOpenPortfolio;
+  final void Function(String portfolioId, String portfolioName)? onOpenTrade;
 
   @override
   State<DocIntelligenceScreen> createState() => _DocIntelligenceScreenState();
 }
 
-enum _ImportMode { mailbox, upload }
-
 class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
-  late _ImportMode _mode;
   List<RecentImportEntry> _recentEntries = const [];
+  String? _selectedBrokerKey;
+  String? _documentType;
+  late _ImportSource _source;
+  final TextEditingController _portfolioNameController =
+      TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  String? _autoPortfolioName;
 
-  /// Same cutoff as [UnifiedSidebarScaffold.tabletBreakpoint].
   static const double _mobileShellMax = 1100;
 
-  static _ImportMode _modeFromSlug(String slug) {
+  static _ImportSource _sourceFromSlug(String slug) {
     switch (slug) {
       case 'doc-processor':
       case 'upload':
-        return _ImportMode.upload;
+        return _ImportSource.upload;
       case 'email-extractor':
       case 'mailbox':
       default:
-        if (!kIsWeb) return _ImportMode.upload;
-        return _ImportMode.mailbox;
+        if (!kIsWeb) return _ImportSource.upload;
+        return _ImportSource.email;
     }
   }
 
-  static String _slugForMode(_ImportMode mode) =>
-      mode == _ImportMode.upload ? 'upload' : 'mailbox';
+  static String _slugForSource(_ImportSource source) =>
+      source == _ImportSource.upload ? 'upload' : 'mailbox';
 
   @override
   void initState() {
     super.initState();
-    _mode = _modeFromSlug(widget.initialTab);
+    _source = _sourceFromSlug(widget.initialTab);
     _loadRecent();
+  }
+
+  @override
+  void dispose() {
+    _portfolioNameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadRecent() async {
@@ -68,18 +83,12 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
   void didUpdateWidget(covariant DocIntelligenceScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.initialTab != oldWidget.initialTab) {
-      final next = _modeFromSlug(widget.initialTab);
-      if (next != _mode) setState(() => _mode = next);
+      final next = _sourceFromSlug(widget.initialTab);
+      if (next != _source) setState(() => _source = next);
     }
     if (oldWidget.userId != widget.userId) {
       _loadRecent();
     }
-  }
-
-  void _setMode(_ImportMode mode) {
-    if (_mode == mode) return;
-    setState(() => _mode = mode);
-    widget.onTabChanged?.call(_slugForMode(mode));
   }
 
   Future<void> _prependRecent(RecentImportEntry entry) async {
@@ -89,44 +98,206 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
     setState(() => _recentEntries = next);
   }
 
-  List<SecondarySidebarItem> _mobileNavItems() {
-    final accent = ModuleColors.analytics;
-    return [
-      SecondarySidebarItem(
-        title: 'Email',
-        icon: Icons.mail_outline,
-        accentColor: accent,
-        isSelected: _mode == _ImportMode.mailbox,
-        onTap: () => _setMode(_ImportMode.mailbox),
-      ),
-      SecondarySidebarItem(
-        title: 'Upload',
-        icon: Icons.cloud_upload_outlined,
-        accentColor: accent,
-        isSelected: _mode == _ImportMode.upload,
-        onTap: () => _setMode(_ImportMode.upload),
-      ),
-    ];
+  void _setSource(_ImportSource source) {
+    if (_source == source) return;
+    setState(() => _source = source);
+    widget.onTabChanged?.call(_slugForSource(source));
   }
 
-  Widget _mainPanel() {
-    return KeyedSubtree(
-      key: ValueKey(
-        'import_main_${apiProvider.environment}_${_mode.name}',
-      ),
-      child: _mode == _ImportMode.upload
-          ? DocumentProcessorView(
-              embeddedInImportShell: true,
-              onImportCompleted: _prependRecent,
-            )
-          : EmailExtractorView(
-              compactImportMode: true,
-              onImportCompleted: _prependRecent,
+  void _onBrokerSelected(String key) {
+    final brokerDefault = brokerKeyDisplayName(key);
+    final current = _portfolioNameController.text.trim();
+    final shouldReplaceName = current.isEmpty ||
+        current == (_autoPortfolioName ?? '') ||
+        (_selectedBrokerKey != null &&
+            current == brokerKeyDisplayName(_selectedBrokerKey));
+    setState(() {
+      _selectedBrokerKey = key;
+      _documentType = null;
+      if (shouldReplaceName) {
+        _portfolioNameController.text = brokerDefault;
+        _autoPortfolioName = brokerDefault;
+      }
+    });
+  }
+
+  Widget _sourceTabs() {
+    final accent = Theme.of(context).colorScheme.primary;
+    final border = Theme.of(context).colorScheme.outlineVariant;
+    final fill = Theme.of(context).brightness == Brightness.dark
+        ? Theme.of(context).colorScheme.surfaceContainerHighest
+        : Theme.of(context).colorScheme.surface;
+
+    Widget tab({
+      required String label,
+      required IconData icon,
+      required _ImportSource source,
+    }) {
+      final selected = _source == source;
+      final onAccent =
+          ThemeData.estimateBrightnessForColor(accent) == Brightness.dark
+              ? Colors.white
+              : const Color(0xFF0B0D0F);
+      final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+      return Expanded(
+        child: Material(
+          color: selected ? accent : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          child: InkWell(
+            onTap: () => _setSource(source),
+            borderRadius: BorderRadius.circular(8),
+            child: SizedBox(
+              height: 40,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, size: 17, color: selected ? onAccent : muted),
+                  const SizedBox(width: 8),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: selected ? onAccent : muted,
+                    ),
+                  ),
+                ],
+              ),
             ),
+          ),
+        ),
+      );
+    }
+
+    return GlassCard(
+      padding: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(6),
+        child: Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: fill,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: border.withValues(alpha: 0.7)),
+          ),
+          child: Row(
+            children: [
+              tab(
+                label: 'Email',
+                icon: Icons.mail_outline,
+                source: _ImportSource.email,
+              ),
+              const SizedBox(width: 4),
+              tab(
+                label: 'Document upload',
+                icon: Icons.cloud_upload_outlined,
+                source: _ImportSource.upload,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
-  // ─── Mobile: section pills (no page title) ───────────────────────────
+  Widget _sharedControls() {
+    final brokerHint = _selectedBrokerKey != null
+        ? brokerKeyDisplayName(_selectedBrokerKey)
+        : null;
+    final isEmail = _source == _ImportSource.email;
+    return ImportHoldingsSharedControls(
+      selectedBrokerKey: _selectedBrokerKey,
+      onBrokerSelected: _onBrokerSelected,
+      portfolioNameController: _portfolioNameController,
+      passwordController: _passwordController,
+      documentType: _documentType,
+      onDocumentTypeChanged: (v) => setState(() {
+        _documentType =
+            (v == null || v.isEmpty || v == kImportDocTypeAuto) ? null : v;
+      }),
+      portfolioNameHint: brokerHint != null
+          ? 'Optional — defaults to $brokerHint'
+          : 'Optional — defaults to broker name',
+      showPassword: true,
+      passwordRequiredHint: isEmail,
+      showDocumentType: !isEmail,
+      documentTypeOptional: false,
+      useSimpleDocTypePicker: true,
+    );
+  }
+
+  Widget _modeBodies() {
+    // Keep both panes mounted (no health re-check on tab switch) but only the
+    // active one contributes height — IndexedStack used the taller pane and
+    // left a large empty gap above Recent imports on mobile.
+    final email = _source == _ImportSource.email;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Visibility(
+          visible: email,
+          maintainState: true,
+          maintainAnimation: true,
+          maintainSize: false,
+          child: EmailExtractorView(
+            compactImportMode: true,
+            useSharedImportControls: true,
+            sharedBrokerEmailId: brokerKeyToEmailId(_selectedBrokerKey),
+            passwordController: _passwordController,
+            portfolioNameController: _portfolioNameController,
+            onImportCompleted: _prependRecent,
+            onOpenPortfolio: widget.onOpenPortfolio,
+            onOpenTrade: widget.onOpenTrade,
+          ),
+        ),
+        Visibility(
+          visible: !email,
+          maintainState: true,
+          maintainAnimation: true,
+          maintainSize: false,
+          child: DocumentProcessorView(
+            embeddedInImportShell: true,
+            useSharedImportControls: true,
+            sharedBrokerDocCode: brokerKeyToDocCode(_selectedBrokerKey),
+            sharedDocumentType: _documentType,
+            portfolioNameController: _portfolioNameController,
+            passwordController: _passwordController,
+            onImportCompleted: _prependRecent,
+            onOpenPortfolio: widget.onOpenPortfolio,
+            onOpenTrade: widget.onOpenTrade,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _mainColumn({required bool isCompact}) {
+    final gap = isCompact ? 8.0 : 10.0;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _sourceTabs(),
+        SizedBox(height: gap),
+        _sharedControls(),
+        SizedBox(height: gap),
+        _modeBodies(),
+      ],
+    );
+  }
+
+  /// Shared controls + mode bodies (no Email/Upload tabs).
+  Widget _mainContentBelowTabs({required bool isCompact}) {
+    final gap = isCompact ? 8.0 : 10.0;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _sharedControls(),
+        SizedBox(height: gap),
+        _modeBodies(),
+      ],
+    );
+  }
 
   Widget _mobileBody() {
     const gap = 8.0;
@@ -139,9 +310,7 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
         PlatformConstants.globalBottomNavReserve(context) + 12,
       ),
       children: [
-        const ImportPrivacyCard(isCompact: true),
-        const SizedBox(height: gap),
-        _mainPanel(),
+        _mainColumn(isCompact: true),
         const SizedBox(height: gap),
         ImportRecentCard(
           isCompact: true,
@@ -157,94 +326,15 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
     return UnifiedSidebarScaffold(
       title: 'Import holdings',
       icon: Icons.cloud_download_outlined,
-      accentColor: ModuleColors.analytics,
+      accentColor: Theme.of(context).colorScheme.primary,
+      // Scaffold assert requires exactly one of items/sections.
+      items: const <SecondarySidebarItem>[],
       showAppBarOnMobile: false,
       showMobileMenuButton: false,
       showModuleBottomNavigation: false,
       autoHideMobileTabsOnScroll: false,
       enableMobileSearch: true,
-      items: _mobileNavItems(),
       body: _mobileBody(),
-    );
-  }
-
-  // ─── Web: title + Email|Upload toggle, no secondary sidebar ──────────
-
-  Widget _modeSegment({
-    required String label,
-    required IconData icon,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    final accent = ModuleColors.analytics;
-    final onAccent =
-        ThemeData.estimateBrightnessForColor(accent) == Brightness.dark
-            ? Colors.white
-            : const Color(0xFF0B0D0F);
-    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
-
-    return Material(
-      color: selected ? accent : Colors.transparent,
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: SizedBox(
-          height: 40,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, size: 17, color: selected ? onAccent : muted),
-                const SizedBox(width: 8),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                    color: selected ? onAccent : muted,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _webModeToggle() {
-    final border = Theme.of(context).colorScheme.outlineVariant;
-    final fill = Theme.of(context).brightness == Brightness.dark
-        ? Theme.of(context).colorScheme.surfaceContainerHighest
-        : Theme.of(context).colorScheme.surface;
-
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: fill,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: border.withValues(alpha: 0.7)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _modeSegment(
-            label: 'Email',
-            icon: Icons.mail_outline,
-            selected: _mode == _ImportMode.mailbox,
-            onTap: () => _setMode(_ImportMode.mailbox),
-          ),
-          const SizedBox(width: 4),
-          _modeSegment(
-            label: 'Upload',
-            icon: Icons.cloud_upload_outlined,
-            selected: _mode == _ImportMode.upload,
-            onTap: () => _setMode(_ImportMode.upload),
-          ),
-        ],
-      ),
     );
   }
 
@@ -258,7 +348,7 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
             width: 4,
             height: 28,
             decoration: BoxDecoration(
-              color: ModuleColors.analytics,
+              color: Theme.of(context).colorScheme.primary,
               borderRadius: BorderRadius.circular(4),
             ),
           ),
@@ -273,30 +363,53 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
                   ),
             ),
           ),
-          _webModeToggle(),
         ],
       ),
     );
   }
 
   Widget _webBody() {
+    const gap = 10.0;
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            flex: 5,
-            child: SingleChildScrollView(child: _mainPanel()),
+          // Tabs only on the left; rail starts with Broker on the next row.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(flex: 5, child: _sourceTabs()),
+              const SizedBox(width: 14),
+              const Expanded(flex: 3, child: SizedBox.shrink()),
+            ],
           ),
-          const SizedBox(width: 14),
+          const SizedBox(height: gap),
           Expanded(
-            flex: 3,
-            child: SingleChildScrollView(
-              child: ImportHoldingsInfoRail(
-                isCompact: true,
-                recentEntries: _recentEntries,
-              ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: SingleChildScrollView(
+                    child: KeyedSubtree(
+                      key: ValueKey('import_main_${apiProvider.environment}'),
+                      child: _mainContentBelowTabs(isCompact: false),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  flex: 3,
+                  child: SingleChildScrollView(
+                    child: ImportHoldingsInfoRail(
+                      isCompact: false,
+                      showPrivacy: false,
+                      recentEntries: _recentEntries,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

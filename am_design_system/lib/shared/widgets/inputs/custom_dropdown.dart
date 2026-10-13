@@ -129,6 +129,12 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
     // long labels are not clipped off-screen.
     final alignEnd = origin.dx + size.width > screenWidth * 0.62;
     final maxMenuWidth = math.min(screenWidth - 24, 280.0);
+    // Never allow minWidth > maxWidth (wide expanded fields used to crash).
+    final preferredMin = widget.isExpanded
+        ? size.width
+        : math.max(size.width, 160.0);
+    final menuMaxWidth = math.max(maxMenuWidth, math.min(preferredMin, maxMenuWidth));
+    final menuMinWidth = math.min(preferredMin, menuMaxWidth);
 
     return OverlayEntry(
       builder: (context) => Stack(
@@ -153,10 +159,8 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                   maxHeight: widget.menuMaxHeight,
-                  minWidth: widget.isExpanded
-                      ? size.width
-                      : math.max(size.width, 160.0),
-                  maxWidth: maxMenuWidth,
+                  minWidth: menuMinWidth,
+                  maxWidth: menuMaxWidth,
                 ),
                 child: Container(
                   decoration: widget.enableGlass

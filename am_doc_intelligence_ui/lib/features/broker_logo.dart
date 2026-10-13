@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:am_design_system/am_design_system.dart';
 
 /// Local broker logo assets under `assets/images/brokers/`.
 const String _pkg = 'am_doc_intelligence_ui';
@@ -86,15 +85,17 @@ String brokerDisplayName(String code) {
 }
 
 /// Colored letter chip when no logo asset exists (e.g. Upstox).
-Widget brokerLetterAvatar(String code, {double size = 26}) {
+Widget brokerLetterAvatar(String code, {double size = 26, Color? color}) {
   final name = brokerDisplayName(code);
   final letter = name.isNotEmpty ? name[0].toUpperCase() : '?';
+  // Prefer theme primary when available; callers can pass [color].
+  final accent = color ?? const Color(0xFF6C5DD3);
   return Container(
     width: size,
     height: size,
     alignment: Alignment.center,
     decoration: BoxDecoration(
-      color: ModuleColors.analytics.withValues(alpha: 0.15),
+      color: accent.withValues(alpha: 0.15),
       borderRadius: BorderRadius.circular(size * 0.22),
     ),
     child: Text(
@@ -102,7 +103,7 @@ Widget brokerLetterAvatar(String code, {double size = 26}) {
       style: TextStyle(
         fontWeight: FontWeight.w800,
         fontSize: size * 0.45,
-        color: ModuleColors.analytics,
+        color: accent,
       ),
     ),
   );
