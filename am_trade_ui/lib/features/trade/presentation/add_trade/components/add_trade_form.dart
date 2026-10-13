@@ -76,6 +76,8 @@ class _AddTradeFormState extends State<AddTradeForm> {
   List<FundamentalReasons> _selectedFundamentalReasons = [];
   final TextEditingController _notesController = TextEditingController();
 
+  bool _lastEmittedDirty = false;
+
   @override
   void initState() {
     super.initState();
@@ -83,6 +85,64 @@ class _AddTradeFormState extends State<AddTradeForm> {
     if (widget.initialData != null) {
       _loadInitialData();
     }
+    for (final c in [
+      _symbolController,
+      _isinController,
+      _descriptionController,
+      _strikePriceController,
+      _entryPriceController,
+      _entryQuantityController,
+      _exitPriceController,
+      _exitQuantityController,
+      _strategyController,
+      _notesController,
+    ]) {
+      c.addListener(_emitDirty);
+    }
+  }
+
+  void _setAndDirty(VoidCallback update) {
+    setState(update);
+    _emitDirty();
+  }
+
+  bool _computeDirty() {
+    // Defaults for a blank "New Trade" explore session — not dirty.
+    if (_symbolController.text.trim().isNotEmpty) return true;
+    if (_isinController.text.trim().isNotEmpty) return true;
+    if (_descriptionController.text.trim().isNotEmpty) return true;
+    if (_strikePriceController.text.trim().isNotEmpty) return true;
+    if (_entryPriceController.text.trim().isNotEmpty) return true;
+    if (_entryQuantityController.text.trim().isNotEmpty) return true;
+    if (_exitPriceController.text.trim().isNotEmpty) return true;
+    if (_exitQuantityController.text.trim().isNotEmpty) return true;
+    if (_strategyController.text.trim().isNotEmpty) return true;
+    if (_notesController.text.trim().isNotEmpty) return true;
+    if (_selectedExchange != null) return true;
+    if (_selectedSegment != null) return true;
+    if (_selectedDerivativeType != null) return true;
+    if (_selectedOptionType != null) return true;
+    if (_expiryDate != null) return true;
+    if (_entryDate != null) return true;
+    if (_exitDate != null) return true;
+    if (_selectedBroker != null) return true;
+    if (_selectedOrderType != null) return true;
+    if (_attachments.isNotEmpty) return true;
+    if (_selectedEntryPsychology.isNotEmpty) return true;
+    if (_selectedExitPsychology.isNotEmpty) return true;
+    if (_selectedTechnicalReasons.isNotEmpty) return true;
+    if (_selectedFundamentalReasons.isNotEmpty) return true;
+    if (_selectedDirection != TradeDirections.long) return true;
+    if (_selectedStatus != TradeStatuses.open) return true;
+    return false;
+  }
+
+  void _emitDirty() {
+    if (!mounted) return;
+    final dirty = _computeDirty();
+    if (dirty == _lastEmittedDirty) return;
+    _lastEmittedDirty = dirty;
+    ShellOperationDirtyNotification(dirty).dispatch(context);
   }
 
   void _loadInitialData() {
@@ -132,6 +192,20 @@ class _AddTradeFormState extends State<AddTradeForm> {
 
   @override
   void dispose() {
+    for (final c in [
+      _symbolController,
+      _isinController,
+      _descriptionController,
+      _strikePriceController,
+      _entryPriceController,
+      _entryQuantityController,
+      _exitPriceController,
+      _exitQuantityController,
+      _strategyController,
+      _notesController,
+    ]) {
+      c.removeListener(_emitDirty);
+    }
     _pageController.dispose();
     _symbolController.dispose();
     _isinController.dispose();
@@ -269,34 +343,34 @@ class _AddTradeFormState extends State<AddTradeForm> {
   }
 
   void _onInstrumentSelected(Map<String, dynamic> instrument) {
-    setState(() {
-      _symbolController.text = instrument['symbol'] ?? 
-                              instrument['tradingSymbol'] ?? 
-                              instrument['tradingsymbol'] ?? 
-                              instrument['name'] ?? 
-                              '';
-      _descriptionController.text = instrument['description'] ?? 
-                                   instrument['displayName'] ?? 
-                                   instrument['name'] ?? 
-                                   '';
-      
+    _setAndDirty(() {
+      _symbolController.text = instrument['symbol'] ??
+          instrument['tradingSymbol'] ??
+          instrument['tradingsymbol'] ??
+          instrument['name'] ??
+          '';
+      _descriptionController.text = instrument['description'] ??
+          instrument['displayName'] ??
+          instrument['name'] ??
+          '';
+
       // Auto-select exchange if available
       if (instrument['exchange'] != null) {
         final exchangeStr = instrument['exchange'].toString().toLowerCase();
         if (exchangeStr == 'nse') _selectedExchange = ExchangeTypes.nse;
         if (exchangeStr == 'bse') _selectedExchange = ExchangeTypes.bse;
       }
-      
+
       // Auto-select segment if available
       if (instrument['segment'] != null) {
         final segmentStr = instrument['segment'].toString().toUpperCase();
         if (segmentStr == 'EQUITY') _selectedSegment = MarketSegments.equity;
       }
     });
-    
+
     AppLogger.info(
-      'Instrument selected: ${_symbolController.text} - ${_descriptionController.text}', 
-      tag: 'AddTradeForm'
+      'Instrument selected: ${_symbolController.text} - ${_descriptionController.text}',
+      tag: 'AddTradeForm',
     );
   }
 
@@ -322,34 +396,46 @@ class _AddTradeFormState extends State<AddTradeForm> {
                 child: TradeDetailsStep(
                   symbolController: _symbolController,
                   selectedExchange: _selectedExchange,
-                  onExchangeChanged: (value) => setState(() => _selectedExchange = value),
+                  onExchangeChanged: (value) =>
+                      _setAndDirty(() => _selectedExchange = value),
                   selectedSegment: _selectedSegment,
-                  onSegmentChanged: (value) => setState(() => _selectedSegment = value),
+                  onSegmentChanged: (value) =>
+                      _setAndDirty(() => _selectedSegment = value),
                   selectedDirection: _selectedDirection,
-                  onDirectionChanged: (value) => setState(() => _selectedDirection = value),
+                  onDirectionChanged: (value) =>
+                      _setAndDirty(() => _selectedDirection = value),
                   selectedStatus: _selectedStatus,
-                  onStatusChanged: (value) => setState(() => _selectedStatus = value),
+                  onStatusChanged: (value) =>
+                      _setAndDirty(() => _selectedStatus = value),
                   entryDate: _entryDate,
-                  onEntryDateSelected: (date) => setState(() => _entryDate = date),
+                  onEntryDateSelected: (date) =>
+                      _setAndDirty(() => _entryDate = date),
                   entryPriceController: _entryPriceController,
                   entryQuantityController: _entryQuantityController,
                   exitDate: _exitDate,
-                  onExitDateSelected: (date) => setState(() => _exitDate = date),
+                  onExitDateSelected: (date) =>
+                      _setAndDirty(() => _exitDate = date),
                   exitPriceController: _exitPriceController,
                   exitQuantityController: _exitQuantityController,
                   selectedBroker: _selectedBroker,
-                  onBrokerChanged: (value) => setState(() => _selectedBroker = value),
+                  onBrokerChanged: (value) =>
+                      _setAndDirty(() => _selectedBroker = value),
                   selectedOrderType: _selectedOrderType,
-                  onOrderTypeChanged: (value) => setState(() => _selectedOrderType = value),
+                  onOrderTypeChanged: (value) =>
+                      _setAndDirty(() => _selectedOrderType = value),
                   selectedDerivativeType: _selectedDerivativeType,
-                  onDerivativeTypeChanged: (value) => setState(() => _selectedDerivativeType = value),
+                  onDerivativeTypeChanged: (value) =>
+                      _setAndDirty(() => _selectedDerivativeType = value),
                   strikePriceController: _strikePriceController,
                   selectedOptionType: _selectedOptionType,
-                  onOptionTypeChanged: (value) => setState(() => _selectedOptionType = value),
+                  onOptionTypeChanged: (value) =>
+                      _setAndDirty(() => _selectedOptionType = value),
                   expiryDate: _expiryDate,
-                  onExpiryDateSelected: (date) => setState(() => _expiryDate = date),
+                  onExpiryDateSelected: (date) =>
+                      _setAndDirty(() => _expiryDate = date),
                   attachments: _attachments,
-                  onAttachmentsChanged: (files) => setState(() => _attachments = files),
+                  onAttachmentsChanged: (files) =>
+                      _setAndDirty(() => _attachments = files),
                   userId: () {
                     final authState = context.read<AuthCubit>().state;
                     return authState is Authenticated ? authState.user.id : '';
@@ -364,13 +450,18 @@ class _AddTradeFormState extends State<AddTradeForm> {
                 child: OptionalDetailsStep(
                   strategyController: _strategyController,
                   selectedEntryPsychology: _selectedEntryPsychology,
-                  onEntryPsychologyChanged: (factors) => setState(() => _selectedEntryPsychology = factors),
+                  onEntryPsychologyChanged: (factors) =>
+                      _setAndDirty(() => _selectedEntryPsychology = factors),
                   selectedExitPsychology: _selectedExitPsychology,
-                  onExitPsychologyChanged: (factors) => setState(() => _selectedExitPsychology = factors),
+                  onExitPsychologyChanged: (factors) =>
+                      _setAndDirty(() => _selectedExitPsychology = factors),
                   selectedTechnicalReasons: _selectedTechnicalReasons,
-                  onTechnicalReasonsChanged: (reasons) => setState(() => _selectedTechnicalReasons = reasons),
+                  onTechnicalReasonsChanged: (reasons) =>
+                      _setAndDirty(() => _selectedTechnicalReasons = reasons),
                   selectedFundamentalReasons: _selectedFundamentalReasons,
-                  onFundamentalReasonsChanged: (reasons) => setState(() => _selectedFundamentalReasons = reasons),
+                  onFundamentalReasonsChanged: (reasons) =>
+                      _setAndDirty(
+                          () => _selectedFundamentalReasons = reasons),
                   notesController: _notesController,
                 ),
               ),

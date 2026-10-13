@@ -16,12 +16,15 @@ class AddAssetClassWorkspace extends ConsumerStatefulWidget {
     required this.portfolioId,
     required this.portfolioName,
     required this.onComplete,
+    this.onCancel,
     this.onOpenDocIntel,
   });
 
   final String portfolioId;
   final String? portfolioName;
   final VoidCallback onComplete;
+  /// When set, Cancel uses this (e.g. shell discard prompt) instead of [onComplete].
+  final VoidCallback? onCancel;
   final VoidCallback? onOpenDocIntel;
 
   @override
@@ -32,7 +35,7 @@ class _AddAssetClassWorkspaceState extends ConsumerState<AddAssetClassWorkspace>
   bool _isSaving = false;
 
   void _handleCancel() {
-    widget.onComplete();
+    (widget.onCancel ?? widget.onComplete)();
   }
 
   Future<void> _handleSave() async {

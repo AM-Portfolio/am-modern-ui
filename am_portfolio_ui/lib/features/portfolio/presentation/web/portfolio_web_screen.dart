@@ -71,6 +71,8 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
   bool _isAddingTrade = false;
   bool _isAddingAssetClass = false;
   bool _isUploadingPortfolio = false;
+  /// True only after the user edits/selects something on an in-shell form.
+  bool _operationDirty = false;
 
   @override
   void initState() {
@@ -112,7 +114,12 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         if (!await _promptDiscardChanges()) return;
         if (!mounted) return;
         if (widget.uploadPortfolioBuilder != null) {
-          setState(() => _isUploadingPortfolio = true);
+          setState(() {
+            _isAddingTrade = false;
+            _isAddingAssetClass = false;
+            _isUploadingPortfolio = true;
+            _operationDirty = false;
+          });
         } else {
           widget.onOpenDocIntel?.call();
         }
@@ -123,7 +130,12 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         if (!await _promptDiscardChanges()) return;
         if (!mounted) return;
         if (widget.addTradeBuilder != null) {
-          setState(() => _isAddingTrade = true);
+          setState(() {
+            _isAddingTrade = true;
+            _isAddingAssetClass = false;
+            _isUploadingPortfolio = false;
+            _operationDirty = false;
+          });
         } else {
           OpenAddTradeNotification().dispatch(context);
         }
@@ -133,7 +145,12 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         if (_isAddingAssetClass) return;
         if (!await _promptDiscardChanges()) return;
         if (!mounted) return;
-        setState(() => _isAddingAssetClass = true);
+        setState(() {
+          _isAddingTrade = false;
+          _isAddingAssetClass = true;
+          _isUploadingPortfolio = false;
+          _operationDirty = false;
+        });
         return;
       case GlobalAddActionKind.addBasket:
         if (!bus.tryConsume(kind)) return;
@@ -187,15 +204,47 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
     return index >= 0 ? index : 0;
   }
 
+  void _clearActiveOperation() {
+    _isAddingTrade = false;
+    _isAddingAssetClass = false;
+    _isUploadingPortfolio = false;
+    _operationDirty = false;
+  }
+
+  void _markOperationDirty() {
+    if (!mounted || _operationDirty) return;
+    setState(() => _operationDirty = true);
+  }
+
+  /// Marks dirty on any pointer interaction inside add-trade / upload /
+  /// asset-class. Notification bubbling alone is unreliable for those panes.
+  Widget _wrapActiveOperation(Widget child) {
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) => _markOperationDirty(),
+      child: child,
+    );
+  }
+
   Future<bool> _promptDiscardChanges() async {
-    if (!_isAddingTrade && !_isUploadingPortfolio && !_isAddingAssetClass) return true;
+    if (!_isAddingTrade && !_isUploadingPortfolio && !_isAddingAssetClass) {
+      return true;
+    }
+
+    // Exploring an empty form — leave without a discard prompt.
+    if (!_operationDirty) {
+      setState(_clearActiveOperation);
+      return true;
+    }
 
     final shouldDiscard = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Theme.of(context).colorScheme.surface,
         title: const Text('Discard Unsaved Changes?'),
-        content: const Text('You have an active operation. Are you sure you want to discard it and navigate away?'),
+        content: const Text(
+          'You have unsaved edits. Are you sure you want to discard them and navigate away?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -203,18 +252,17 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('Discard', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            child: Text(
+              'Discard',
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
           ),
         ],
       ),
     );
 
     if (shouldDiscard == true) {
-      setState(() {
-        _isAddingTrade = false;
-        _isAddingAssetClass = false;
-        _isUploadingPortfolio = false;
-      });
+      setState(_clearActiveOperation);
       return true;
     }
     return false;
@@ -226,7 +274,13 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
     }
   }
 
-  void _onPortfolioChanged(String portfolioId, String portfolioName) {
+  Future<void> _onPortfolioChanged(
+    String portfolioId,
+    String portfolioName,
+  ) async {
+    if (!await _promptDiscardChanges()) return;
+    if (!mounted) return;
+
     setState(() {
       _currentPortfolioId = portfolioId;
       _currentPortfolioName = portfolioName;
@@ -239,6 +293,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         context.read<PortfolioCubit>().loadPortfolioById(portfolioId);
       }
     }
+    widget.onPortfolioChanged?.call(portfolioId, portfolioName);
   }
 
   List<NavigationItem> _buildNavigationItems() {
@@ -309,7 +364,14 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
     final currentIndex = _currentIndex;
     final activePage = currentIndex < items.length ? items[currentIndex].page : items.first.page;
 
-    return NotificationListener<OpenAddTradeNotification>(
+    return NotificationListener<ShellOperationDirtyNotification>(
+      onNotification: (notification) {
+        if (_operationDirty != notification.isDirty) {
+          setState(() => _operationDirty = notification.isDirty);
+        }
+        return true;
+      },
+      child: NotificationListener<OpenAddTradeNotification>(
       onNotification: (notification) {
         // Holdings embeds Trade cards as view-only; ignore edit notifications there.
         if (widget.initialTab == 'holdings') {
@@ -319,6 +381,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         if (widget.addTradeBuilder != null) {
           setState(() {
             _isAddingTrade = true;
+            _operationDirty = false;
           });
           notification.handled = true;
           return true;
@@ -332,7 +395,11 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
         showModuleBottomNavigation: false,
         // Add / Sync lives on GlobalSidebar only (above theme).
         headerActions: const [],
-        onBackToGlobal: widget.onBack,
+        onBackToGlobal: () {
+          _promptDiscardChanges().then((ok) {
+            if (ok && mounted) widget.onBack?.call();
+          });
+        },
         onThemeToggle: () {
           context.read<ThemeCubit>().toggleTheme();
         },
@@ -409,42 +476,59 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
               ),
             ),
             Expanded(
-              child: (_isAddingTrade && widget.addTradeBuilder != null && _currentPortfolioId != null)
-                  ? widget.addTradeBuilder!(
-                      context,
-                      _currentPortfolioId!,
-                      _currentPortfolioName ?? widget.selectedPortfolioName,
-                      () {
-                        setState(() {
-                          _isAddingTrade = false;
-                        });
-                      },
+              child: (_isAddingTrade &&
+                      widget.addTradeBuilder != null &&
+                      _currentPortfolioId != null)
+                  ? _wrapActiveOperation(
+                      widget.addTradeBuilder!(
+                        context,
+                        _currentPortfolioId!,
+                        _currentPortfolioName ?? widget.selectedPortfolioName,
+                        () {
+                          // Trade page shows its own discard before calling this.
+                          setState(_clearActiveOperation);
+                        },
+                      ),
                     )
                   : (_isAddingAssetClass && _currentPortfolioId != null)
-                      ? (widget.addAssetClassBuilder != null
-                          ? widget.addAssetClassBuilder!(
-                              context,
-                              _currentPortfolioId!,
-                              _currentPortfolioName ?? widget.selectedPortfolioName,
-                              () { setState(() { _isAddingAssetClass = false; }); },
-                            )
-                          : AddAssetClassWorkspace(
-                              portfolioId: _currentPortfolioId!,
-                              portfolioName: _currentPortfolioName ?? widget.selectedPortfolioName,
-                              onOpenDocIntel: widget.onOpenDocIntel,
-                              onComplete: () { setState(() { _isAddingAssetClass = false; }); },
-                            ))
-                      : (_isUploadingPortfolio && widget.uploadPortfolioBuilder != null && _currentPortfolioId != null)
-                      ? widget.uploadPortfolioBuilder!(
-                          _currentPortfolioId!,
-                          _currentPortfolioName ?? widget.selectedPortfolioName,
-                          () {
-                            setState(() {
-                              _isUploadingPortfolio = false;
-                            });
-                          },
+                      ? _wrapActiveOperation(
+                          widget.addAssetClassBuilder != null
+                              ? widget.addAssetClassBuilder!(
+                                  context,
+                                  _currentPortfolioId!,
+                                  _currentPortfolioName ??
+                                      widget.selectedPortfolioName,
+                                  () {
+                                    _promptDiscardChanges();
+                                  },
+                                )
+                              : AddAssetClassWorkspace(
+                                  portfolioId: _currentPortfolioId!,
+                                  portfolioName: _currentPortfolioName ??
+                                      widget.selectedPortfolioName,
+                                  onOpenDocIntel: widget.onOpenDocIntel,
+                                  onCancel: () {
+                                    _promptDiscardChanges();
+                                  },
+                                  onComplete: () {
+                                    setState(_clearActiveOperation);
+                                  },
+                                ),
                         )
-                      : activePage,
+                      : (_isUploadingPortfolio &&
+                              widget.uploadPortfolioBuilder != null &&
+                              _currentPortfolioId != null)
+                          ? _wrapActiveOperation(
+                              widget.uploadPortfolioBuilder!(
+                                _currentPortfolioId!,
+                                _currentPortfolioName ??
+                                    widget.selectedPortfolioName,
+                                () {
+                                  _promptDiscardChanges();
+                                },
+                              ),
+                            )
+                          : activePage,
             ),
           ],
         ),
@@ -486,6 +570,7 @@ class _PortfolioWebScreenState extends ConsumerState<PortfolioWebScreen> {
           ),
         ],
       ),
+    ),
     );
   }
 }

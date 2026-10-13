@@ -164,6 +164,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
   bool _isAddingTrade = false;
   bool _isAddingAssetClass = false;
   bool _isUploadingPortfolio = false;
+  bool _operationDirty = false;
   bool _wasOnBasketsTab = false;
 
   bool _isBasketsTab(String? slug) => slug?.toLowerCase() == 'baskets';
@@ -264,32 +265,43 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
       case GlobalAddActionKind.uploadPortfolio:
         if (!bus.tryConsume(kind)) return;
         if (_isUploadingPortfolio) return;
-        if (widget.uploadPortfolioBuilder != null) {
-          setState(() {
-            _isUploadingPortfolio = true;
-            _isAddingTrade = false;
-            _isAddingAssetClass = false;
-          });
-        } else {
-          widget.onOpenDocIntel?.call();
-        }
+        _promptDiscardChanges().then((ok) {
+          if (!ok || !mounted) return;
+          if (widget.uploadPortfolioBuilder != null) {
+            setState(() {
+              _isUploadingPortfolio = true;
+              _isAddingTrade = false;
+              _isAddingAssetClass = false;
+              _operationDirty = false;
+            });
+          } else {
+            widget.onOpenDocIntel?.call();
+          }
+        });
         return;
       case GlobalAddActionKind.addTrade:
         if (!bus.tryConsume(kind)) return;
         if (_isAddingTrade) return;
-        if (widget.addTradeBuilder != null) {
-          _openAddTrade();
-        } else {
-          OpenAddTradeNotification().dispatch(context);
-        }
+        _promptDiscardChanges().then((ok) {
+          if (!ok || !mounted) return;
+          if (widget.addTradeBuilder != null) {
+            _openAddTrade();
+          } else {
+            OpenAddTradeNotification().dispatch(context);
+          }
+        });
         return;
       case GlobalAddActionKind.addAssetClass:
         if (!bus.tryConsume(kind)) return;
         if (_isAddingAssetClass) return;
-        setState(() {
-          _isAddingAssetClass = true;
-          _isAddingTrade = false;
-          _isUploadingPortfolio = false;
+        _promptDiscardChanges().then((ok) {
+          if (!ok || !mounted) return;
+          setState(() {
+            _isAddingAssetClass = true;
+            _isAddingTrade = false;
+            _isUploadingPortfolio = false;
+            _operationDirty = false;
+          });
         });
         return;
       case GlobalAddActionKind.addBasket:
@@ -340,17 +352,80 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     }
   }
 
+  void _clearActiveOperation() {
+    _isAddingTrade = false;
+    _isAddingAssetClass = false;
+    _isUploadingPortfolio = false;
+    _operationDirty = false;
+  }
+
+  void _markOperationDirty() {
+    if (!mounted || _operationDirty) return;
+    setState(() => _operationDirty = true);
+  }
+
+  Widget _wrapActiveOperation(Widget child) {
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) => _markOperationDirty(),
+      child: child,
+    );
+  }
+
+  Future<bool> _promptDiscardChanges() async {
+    if (!_isAddingTrade && !_isUploadingPortfolio && !_isAddingAssetClass) {
+      return true;
+    }
+    if (!_operationDirty) {
+      setState(_clearActiveOperation);
+      return true;
+    }
+    final shouldDiscard = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        title: const Text('Discard Unsaved Changes?'),
+        content: const Text(
+          'You have unsaved edits. Are you sure you want to discard them and navigate away?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              'Discard',
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (shouldDiscard == true) {
+      setState(_clearActiveOperation);
+      return true;
+    }
+    return false;
+  }
+
   void _openAddTrade() {
-    setState(() => _isAddingTrade = true);
+    setState(() {
+      _isAddingTrade = true;
+      _isAddingAssetClass = false;
+      _isUploadingPortfolio = false;
+      _operationDirty = false;
+    });
     widget.onTabChanged?.call('add-trade');
   }
 
-  void _selectTab(int index) {
+  Future<void> _selectTab(int index) async {
+    if (!await _promptDiscardChanges()) return;
+    if (!mounted) return;
     setState(() {
       _tabController.index = index;
-      _isAddingTrade = false;
-      _isAddingAssetClass = false;
-      _isUploadingPortfolio = false;
+      _clearActiveOperation();
     });
     final slug = _tabSlugFromIndex(index);
     if (_wasOnBasketsTab && !_isBasketsTab(slug)) {
@@ -568,43 +643,52 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
         body: (_isAddingTrade &&
                 widget.addTradeBuilder != null &&
                 _currentPortfolioId != null)
-            ? widget.addTradeBuilder!(
-                context,
-                _currentPortfolioId!,
-                currentName,
-                () {
-                  setState(() {
-                    _isAddingTrade = false;
-                  });
-                },
+            ? _wrapActiveOperation(
+                widget.addTradeBuilder!(
+                  context,
+                  _currentPortfolioId!,
+                  currentName,
+                  () {
+                    setState(_clearActiveOperation);
+                  },
+                ),
               )
             : (_isAddingAssetClass && _currentPortfolioId != null)
-                ? (widget.addAssetClassBuilder != null
-                    ? widget.addAssetClassBuilder!(
-                        context,
-                        _currentPortfolioId!,
-                        currentName,
-                        () { setState(() { _isAddingAssetClass = false; }); },
-                      )
-                    : AddAssetClassWorkspace(
-                        portfolioId: _currentPortfolioId!,
-                        portfolioName: currentName,
-                        onOpenDocIntel: widget.onOpenDocIntel,
-                        onComplete: () { setState(() { _isAddingAssetClass = false; }); },
-                      ))
-                : (_isUploadingPortfolio &&
-                widget.uploadPortfolioBuilder != null &&
-                _currentPortfolioId != null)
-                ? widget.uploadPortfolioBuilder!(
-                    _currentPortfolioId!,
-                    currentName,
-                    () {
-                      setState(() {
-                        _isUploadingPortfolio = false;
-                      });
-                    },
+                ? _wrapActiveOperation(
+                    widget.addAssetClassBuilder != null
+                        ? widget.addAssetClassBuilder!(
+                            context,
+                            _currentPortfolioId!,
+                            currentName,
+                            () {
+                              _promptDiscardChanges();
+                            },
+                          )
+                        : AddAssetClassWorkspace(
+                            portfolioId: _currentPortfolioId!,
+                            portfolioName: currentName,
+                            onOpenDocIntel: widget.onOpenDocIntel,
+                            onCancel: () {
+                              _promptDiscardChanges();
+                            },
+                            onComplete: () {
+                              setState(_clearActiveOperation);
+                            },
+                          ),
                   )
-                : Column(
+                : (_isUploadingPortfolio &&
+                        widget.uploadPortfolioBuilder != null &&
+                        _currentPortfolioId != null)
+                    ? _wrapActiveOperation(
+                        widget.uploadPortfolioBuilder!(
+                          _currentPortfolioId!,
+                          currentName,
+                          () {
+                            _promptDiscardChanges();
+                          },
+                        ),
+                      )
+                    : Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     if (widget.portfolios != null &&
