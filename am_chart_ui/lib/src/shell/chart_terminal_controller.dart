@@ -71,9 +71,12 @@ class ChartTerminalState {
     this.searchHits = const [],
     this.bottomTab = 0,
     this.fitEpoch = 0,
+    this.zoomEpoch = 0,
+    this.zoomDelta = 1.0,
     this.syncedCrosshairTime,
     this.bottomMinimized = false,
     this.sidebarMinimized = false,
+    this.recentSearches = const [],
   });
 
   final ChartGridLayout layout;
@@ -81,9 +84,16 @@ class ChartTerminalState {
   final int activePaneIndex;
   final List<WatchlistSymbol> searchHits;
   final int bottomTab;
+  final List<String> recentSearches;
 
   /// Bumped by [ChartTerminalController.requestFit] for the active pane.
   final int fitEpoch;
+
+  /// Incremented whenever a zoom in/out action is fired.
+  final int zoomEpoch;
+
+  /// Zoom multiplier for the current [zoomEpoch] (e.g. >1 for zoom in, <1 for zoom out).
+  final double zoomDelta;
 
   /// Shared vertical crosshair time across multi-pane layouts (null = clear).
   final DateTime? syncedCrosshairTime;
@@ -117,9 +127,12 @@ class ChartTerminalState {
     List<WatchlistSymbol>? searchHits,
     int? bottomTab,
     int? fitEpoch,
+    int? zoomEpoch,
+    double? zoomDelta,
     DateTime? syncedCrosshairTime,
     bool? bottomMinimized,
     bool? sidebarMinimized,
+    List<String>? recentSearches,
     bool clearSyncedCrosshair = false,
   }) {
     return ChartTerminalState(
@@ -129,11 +142,14 @@ class ChartTerminalState {
       searchHits: searchHits ?? this.searchHits,
       bottomTab: bottomTab ?? this.bottomTab,
       fitEpoch: fitEpoch ?? this.fitEpoch,
+      zoomEpoch: zoomEpoch ?? this.zoomEpoch,
+      zoomDelta: zoomDelta ?? this.zoomDelta,
       syncedCrosshairTime: clearSyncedCrosshair
           ? null
           : (syncedCrosshairTime ?? this.syncedCrosshairTime),
       bottomMinimized: bottomMinimized ?? this.bottomMinimized,
       sidebarMinimized: sidebarMinimized ?? this.sidebarMinimized,
+      recentSearches: recentSearches ?? this.recentSearches,
     );
   }
 }
@@ -173,6 +189,20 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
 
   void requestFit() {
     state = state.copyWith(fitEpoch: state.fitEpoch + 1);
+  }
+
+  void zoomIn({double factor = 1.35}) {
+    state = state.copyWith(
+      zoomEpoch: state.zoomEpoch + 1,
+      zoomDelta: factor,
+    );
+  }
+
+  void zoomOut({double factor = 0.74}) {
+    state = state.copyWith(
+      zoomEpoch: state.zoomEpoch + 1,
+      zoomDelta: factor,
+    );
   }
 
   static ChartPaneState _emptyPane(String id, String symbol) => ChartPaneState(
@@ -238,12 +268,41 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
     }
 
     final active = (saved?.activePaneIndex ?? 0).clamp(0, panes.length - 1);
+    final recent = await _store.loadRecentSymbols();
     state = ChartTerminalState(
       layout: layout,
       panes: panes,
       activePaneIndex: active,
+      recentSearches: recent,
     );
+    if (symbol != null && symbol.isNotEmpty) {
+      await addRecentSearch(symbol);
+    }
     await Future.wait([for (var i = 0; i < panes.length; i++) reloadPane(i)]);
+  }
+
+  Future<void> addRecentSearch(String symbol) async {
+    final clean = symbol.trim().toUpperCase();
+    if (clean.isEmpty) return;
+    final updated = [
+      clean,
+      ...state.recentSearches.where((s) => s.toUpperCase() != clean),
+    ].take(10).toList();
+    state = state.copyWith(recentSearches: updated);
+    await _store.saveRecentSymbols(updated);
+  }
+
+  Future<void> removeRecentSearch(String symbol) async {
+    final clean = symbol.trim().toUpperCase();
+    final updated =
+        state.recentSearches.where((s) => s.toUpperCase() != clean).toList();
+    state = state.copyWith(recentSearches: updated);
+    await _store.saveRecentSymbols(updated);
+  }
+
+  Future<void> clearRecentSearches() async {
+    state = state.copyWith(recentSearches: const []);
+    await _store.saveRecentSymbols(const []);
   }
 
   Future<void> setLayout(ChartGridLayout layout) async {
@@ -305,6 +364,7 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
       activePaneIndex: i,
       searchHits: const [],
     );
+    await addRecentSearch(symbol);
     await reloadPane(i);
     await _persist();
   }
@@ -380,7 +440,6 @@ class ChartTerminalController extends Notifier<ChartTerminalState> {
     }
     _lastWidenAt = now;
     const ladder = <ChartTimeframe>[
-      ChartTimeframe.m1,
       ChartTimeframe.m5,
       ChartTimeframe.m15,
       ChartTimeframe.h1,

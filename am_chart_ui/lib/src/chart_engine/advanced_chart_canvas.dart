@@ -1,9 +1,9 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../chart_types/chart_type_id.dart';
@@ -37,6 +37,8 @@ class AdvancedChartCanvas extends StatefulWidget {
     this.panZoomEnabled = true,
     this.onNeedOlderHistory,
     this.viewEpoch = 0,
+    this.zoomEpoch = 0,
+    this.zoomDelta = 1.0,
   });
 
   final List<ChartBar> bars;
@@ -56,16 +58,27 @@ class AdvancedChartCanvas extends StatefulWidget {
   /// Increment to reset zoom/pan (Fit).
   final int viewEpoch;
 
+  /// Increment to trigger animated zoom in/out transition.
+  final int zoomEpoch;
+
+  /// Multiplier to apply to zoom on [zoomEpoch] change.
+  final double zoomDelta;
+
   @override
   State<AdvancedChartCanvas> createState() => _AdvancedChartCanvasState();
 }
 
-class _AdvancedChartCanvasState extends State<AdvancedChartCanvas> {
+class _AdvancedChartCanvasState extends State<AdvancedChartCanvas>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _zoomAnimCtrl;
+  Animation<double>? _zoomAnim;
+
   double _zoom = 1.0;
   double _pan = 0;
   int? _localHoverIndex;
-  Offset? _dragOrigin;
-  double _panAtDragStart = 0;
+  double _scaleStartZoom = 1.0;
+  Offset _lastFocalPoint = Offset.zero;
+  int _lastPointerCount = 0;
 
   int? get _displayHoverIndex {
     if (_localHoverIndex != null) return _localHoverIndex;
@@ -75,11 +88,47 @@ class _AdvancedChartCanvasState extends State<AdvancedChartCanvas> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _zoomAnimCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 240),
+    )..addListener(() {
+        if (_zoomAnim != null) {
+          setState(() {
+            _zoom = _zoomAnim!.value;
+          });
+        }
+      });
+  }
+
+  @override
+  void dispose() {
+    _zoomAnimCtrl.dispose();
+    super.dispose();
+  }
+
+  void _animateZoomTo(double targetZoom) {
+    final clamped = targetZoom.clamp(0.2, 10.0);
+    _zoomAnim = Tween<double>(
+      begin: _zoom,
+      end: clamped,
+    ).animate(CurvedAnimation(
+      parent: _zoomAnimCtrl,
+      curve: Curves.easeOutCubic,
+    ));
+    _zoomAnimCtrl.forward(from: 0.0);
+  }
+
+  @override
   void didUpdateWidget(covariant AdvancedChartCanvas oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.viewEpoch != widget.viewEpoch) {
-      _zoom = 1.0;
-      _pan = 0;
+      _animateZoomTo(1.0);
+      setState(() => _pan = 0);
+    } else if (oldWidget.zoomEpoch != widget.zoomEpoch &&
+        widget.zoomEpoch > 0) {
+      _animateZoomTo(_zoom * widget.zoomDelta);
     }
   }
 
@@ -104,36 +153,11 @@ class _AdvancedChartCanvasState extends State<AdvancedChartCanvas> {
     widget.onCrosshair?.call(null);
   }
 
-  bool get _ctrlPressed =>
-      HardwareKeyboard.instance.isControlPressed ||
-      HardwareKeyboard.instance.isMetaPressed;
-
   void _onScroll(PointerScrollEvent e) {
     if (!widget.panZoomEnabled) return;
-    if (_ctrlPressed) {
-      setState(() {
-        final delta = e.scrollDelta.dy > 0 ? 0.92 : 1.08;
-        _zoom = (_zoom * delta).clamp(0.4, 8.0);
-      });
-      return;
-    }
-
-    // Wheel pans X: scroll down → older (left), up → newer (right).
-    final n = widget.bars.length;
-    final visible = _visibleCount(n);
-    final maxStart = math.max(0, n - visible);
-    final startBefore = _startIndex(n, visible);
-    final panDelta =
-        -e.scrollDelta.dy; // invert: down dy>0 → older → decrease start
-    setState(() {
-      _pan += panDelta;
-    });
-    final startAfter = _startIndex(n, visible);
-    if (startBefore <= 0 && startAfter <= 0 && e.scrollDelta.dy > 0) {
-      widget.onNeedOlderHistory?.call();
-    } else if (maxStart > 0 && startBefore == 0 && e.scrollDelta.dy > 0) {
-      widget.onNeedOlderHistory?.call();
-    }
+    // Mouse wheel or trackpad scroll directly zooms in and out
+    final factor = e.scrollDelta.dy < 0 ? 1.15 : 0.87;
+    _animateZoomTo(_zoom * factor);
   }
 
   @override
@@ -151,52 +175,80 @@ class _AdvancedChartCanvasState extends State<AdvancedChartCanvas> {
           onExit: (_) => _clearLocalHover(),
           child: Stack(
             children: [
-              // Pointer-only gestures — avoid GestureDetector pan+scale assert.
               Listener(
                 onPointerHover: (e) =>
                     _updateHover(e.localPosition, constraints.biggest),
                 onPointerSignal: (e) {
                   if (e is PointerScrollEvent) _onScroll(e);
                 },
-                onPointerDown: (e) {
-                  if (!widget.panZoomEnabled) return;
-                  _dragOrigin = e.localPosition;
-                  _panAtDragStart = _pan;
-                  _updateHover(e.localPosition, constraints.biggest);
-                },
-                onPointerMove: (e) {
-                  _updateHover(e.localPosition, constraints.biggest);
-                  if (!widget.panZoomEnabled) return;
-                  final origin = _dragOrigin;
-                  if (origin == null) return;
-                  final n = widget.bars.length;
-                  final visible = _visibleCount(n);
-                  final startBefore = _startIndex(n, visible);
-                  setState(() {
-                    _pan = _panAtDragStart + (e.localPosition.dx - origin.dx);
-                  });
-                  final startAfter = _startIndex(n, visible);
-                  if (startBefore <= 0 &&
-                      startAfter <= 0 &&
-                      e.localPosition.dx > origin.dx) {
-                    widget.onNeedOlderHistory?.call();
-                  }
-                },
-                onPointerUp: (_) => _dragOrigin = null,
-                onPointerCancel: (_) => _dragOrigin = null,
-                child: CustomPaint(
-                  size: Size(constraints.maxWidth, constraints.maxHeight),
-                  painter: _ChartPainter(
-                    bars: widget.bars,
-                    chartType: widget.chartType,
-                    zoom: _zoom,
-                    pan: _pan,
-                    hoverIndex: hover,
-                    gridColor: theme.dividerColor.withValues(alpha: 0.25),
-                    labelColor: theme.hintColor,
-                    upColor: const Color(0xFF26A69A),
-                    downColor: const Color(0xFFEF5350),
-                    accent: theme.colorScheme.primary,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onDoubleTapDown: (details) {
+                    if (!widget.panZoomEnabled) return;
+                    // Double-tap fingertip transition to zoom in or reset
+                    final target = _zoom > 1.4 ? 1.0 : 2.2;
+                    _animateZoomTo(target);
+                  },
+                  onScaleStart: (details) {
+                    if (!widget.panZoomEnabled) return;
+                    _zoomAnimCtrl.stop();
+                    _scaleStartZoom = _zoom;
+                    _lastFocalPoint = details.localFocalPoint;
+                    _lastPointerCount = details.pointerCount;
+                    _updateHover(details.localFocalPoint, constraints.biggest);
+                  },
+                  onScaleUpdate: (details) {
+                    if (!widget.panZoomEnabled) return;
+                    _updateHover(details.localFocalPoint, constraints.biggest);
+
+                    if (details.pointerCount != _lastPointerCount) {
+                      _scaleStartZoom = _zoom;
+                      _lastFocalPoint = details.localFocalPoint;
+                      _lastPointerCount = details.pointerCount;
+                      return;
+                    }
+
+                    if (details.pointerCount >= 2 ||
+                        (details.scale - 1.0).abs() > 0.05) {
+                      // Fingertip pinch zoom in and zoom out
+                      final targetZoom =
+                          (_scaleStartZoom * details.scale).clamp(0.2, 10.0);
+                      setState(() {
+                        _zoom = targetZoom;
+                      });
+                    } else {
+                      // Single fingertip horizontal pan along timeline
+                      final dx =
+                          details.localFocalPoint.dx - _lastFocalPoint.dx;
+                      final n = widget.bars.length;
+                      final visible = _visibleCount(n);
+                      final startBefore = _startIndex(n, visible);
+                      setState(() {
+                        _pan += dx;
+                      });
+                      final startAfter = _startIndex(n, visible);
+                      if (startBefore <= 0 && startAfter <= 0 && dx > 0) {
+                        widget.onNeedOlderHistory?.call();
+                      }
+                    }
+                    _lastFocalPoint = details.localFocalPoint;
+                  },
+                  child: CustomPaint(
+                    size: Size(constraints.maxWidth, constraints.maxHeight),
+                    painter: _ChartPainter(
+                      bars: widget.bars,
+                      chartType: widget.chartType,
+                      zoom: _zoom,
+                      pan: _pan,
+                      hoverIndex: hover,
+                      gridColor: theme.dividerColor.withValues(alpha: 0.25),
+                      labelColor: theme.hintColor,
+                      upColor: context.marketPositive,
+                      downColor: context.marketNegative,
+                      accent: theme.colorScheme.primary,
+                      badgeBackground: theme.colorScheme.inverseSurface,
+                      badgeForeground: theme.colorScheme.onInverseSurface,
+                    ),
                   ),
                 ),
               ),
@@ -210,15 +262,15 @@ class _AdvancedChartCanvasState extends State<AdvancedChartCanvas> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.orange.withValues(alpha: 0.85),
+                      color: context.statusWarning.withValues(alpha: 0.85),
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: const Text(
+                    child: Text(
                       'MOCK DATA',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
-                        color: Colors.black,
+                        color: context.colors.actionPrimaryFg,
                       ),
                     ),
                   ),
@@ -253,8 +305,8 @@ class _AdvancedChartCanvasState extends State<AdvancedChartCanvas> {
   }
 
   int _visibleCount(int n) {
-    final base = math.min(n, 80);
-    return math.max(10, (base / _zoom).round()).clamp(10, n);
+    final base = math.min(n, 36);
+    return math.max(4, (base / _zoom).round()).clamp(4, n);
   }
 
   int _startIndex(int n, int visible) {
@@ -270,7 +322,10 @@ class _OhlcBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fmt = DateFormat('dd MMM HH:mm');
+    final isDaily = bar.time.hour == 0 && bar.time.minute == 0;
+    final fmt = isDaily
+        ? DateFormat('dd MMM yyyy')
+        : DateFormat('dd MMM HH:mm');
     final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(8),
@@ -313,6 +368,8 @@ class _ChartPainter extends CustomPainter {
     required this.upColor,
     required this.downColor,
     required this.accent,
+    required this.badgeBackground,
+    required this.badgeForeground,
   });
 
   final List<ChartBar> bars;
@@ -325,13 +382,15 @@ class _ChartPainter extends CustomPainter {
   final Color upColor;
   final Color downColor;
   final Color accent;
+  final Color badgeBackground;
+  final Color badgeForeground;
 
   @override
   void paint(Canvas canvas, Size size) {
     // Left flush (shared tools rail owns the workspace left); price scale right.
     const left = 8.0;
     const right = 56.0;
-    const bottom = 22.0;
+    const bottom = 24.0;
     const top = 8.0;
     final plot = Rect.fromLTWH(
       left,
@@ -341,9 +400,10 @@ class _ChartPainter extends CustomPainter {
     );
     if (plot.width <= 0 || plot.height <= 0 || bars.isEmpty) return;
 
+    final defaultBase = math.min(bars.length, 36);
     final visible = math
-        .max(10, (math.min(bars.length, 80) / zoom).round())
-        .clamp(10, bars.length);
+        .max(4, (defaultBase / zoom).round())
+        .clamp(4, bars.length);
     final maxStart = math.max(0, bars.length - visible);
     final start = (maxStart + (-pan / 8).round()).clamp(0, maxStart);
     final end = math.min(bars.length - 1, start + visible - 1);
@@ -430,6 +490,12 @@ class _ChartPainter extends CustomPainter {
         break;
     }
 
+    final totalSpan = slice.isNotEmpty
+        ? slice.last.time.difference(slice.first.time).abs()
+        : Duration.zero;
+    final allZeroTime =
+        slice.every((b) => b.time.hour == 0 && b.time.minute == 0);
+
     if (hoverIndex != null && hoverIndex! >= start && hoverIndex! <= end) {
       final i = hoverIndex! - start;
       final cx = plot.left + (i + 0.5) * slot;
@@ -440,16 +506,63 @@ class _ChartPainter extends CustomPainter {
           ..color = accent.withValues(alpha: 0.45)
           ..strokeWidth = 1,
       );
+
+      final hoverBar = slice[i];
+      final isDaily = hoverBar.time.hour == 0 && hoverBar.time.minute == 0;
+      final hoverTimeStr = isDaily
+          ? DateFormat('d MMM yyyy').format(hoverBar.time)
+          : (totalSpan.inDays > 1
+              ? DateFormat('d MMM HH:mm').format(hoverBar.time)
+              : DateFormat('HH:mm').format(hoverBar.time));
+
+      final hoverTp = TextPainter(
+        text: TextSpan(
+          text: hoverTimeStr,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: badgeForeground,
+          ),
+        ),
+        textDirection: ui.TextDirection.ltr,
+      )..layout();
+
+      final badgeW = hoverTp.width + 10;
+      final badgeH = hoverTp.height + 4;
+      final badgeX = (cx - badgeW / 2).clamp(plot.left, plot.right - badgeW);
+      final badgeY = plot.bottom + 2;
+
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(badgeX, badgeY, badgeW, badgeH),
+          const Radius.circular(3),
+        ),
+        Paint()..color = badgeBackground,
+      );
+      hoverTp.paint(canvas, Offset(badgeX + 5, badgeY + 2));
     }
 
-    // X labels
-    final fmt = DateFormat('HH:mm');
+    // X labels (smart format based on timeframe & date range)
     final step = math.max(1, slice.length ~/ 6);
     for (var i = 0; i < slice.length; i += step) {
       final cx = plot.left + (i + 0.5) * slot;
+      final barTime = slice[i].time;
+      final String labelStr;
+      if (allZeroTime || totalSpan.inDays > 1) {
+        if (totalSpan.inDays > 365) {
+          labelStr = DateFormat('MMM yy').format(barTime);
+        } else if (totalSpan.inDays > 60) {
+          labelStr = DateFormat('MMM d').format(barTime);
+        } else {
+          labelStr = DateFormat('d MMM').format(barTime);
+        }
+      } else {
+        labelStr = DateFormat('HH:mm').format(barTime);
+      }
+
       final tp = TextPainter(
         text: TextSpan(
-          text: fmt.format(slice[i].time),
+          text: labelStr,
           style: TextStyle(fontSize: 10, color: labelColor),
         ),
         textDirection: ui.TextDirection.ltr,
@@ -466,6 +579,8 @@ class _ChartPainter extends CustomPainter {
     double Function(double) yFor, {
     required bool hollow,
   }) {
+    final wickW = (slot * 0.08).clamp(1.0, 3.0);
+    final bodyW = (slot * 0.72).clamp(2.0, 48.0);
     for (var i = 0; i < slice.length; i++) {
       final b = slice[i];
       final cx = plot.left + (i + 0.5) * slot;
@@ -476,14 +591,13 @@ class _ChartPainter extends CustomPainter {
         Offset(cx, yFor(b.low)),
         Paint()
           ..color = color
-          ..strokeWidth = 1.2,
+          ..strokeWidth = wickW,
       );
       final top = math.min(yFor(b.open), yFor(b.close));
       final bot = math.max(yFor(b.open), yFor(b.close));
-      final w = math.max(slot * 0.55, 2.0).clamp(2.0, 14.0);
       final rect = Rect.fromCenter(
         center: Offset(cx, (top + bot) / 2),
-        width: w,
+        width: bodyW,
         height: math.max(bot - top, 1.5),
       );
       if (hollow && bull) {
@@ -492,7 +606,7 @@ class _ChartPainter extends CustomPainter {
           Paint()
             ..color = color
             ..style = PaintingStyle.stroke
-            ..strokeWidth = 1.2,
+            ..strokeWidth = wickW,
         );
       } else {
         canvas.drawRect(rect, Paint()..color = color);
@@ -507,23 +621,25 @@ class _ChartPainter extends CustomPainter {
     double slot,
     double Function(double) yFor,
   ) {
+    final barW = (slot * 0.08).clamp(1.0, 3.0);
+    final tickW = (slot * 0.32).clamp(2.0, 20.0);
     for (var i = 0; i < slice.length; i++) {
       final b = slice[i];
       final cx = plot.left + (i + 0.5) * slot;
       final color = b.close >= b.open ? upColor : downColor;
       final p = Paint()
         ..color = color
-        ..strokeWidth = 1.4
+        ..strokeWidth = barW
         ..strokeCap = StrokeCap.round;
       canvas.drawLine(Offset(cx, yFor(b.high)), Offset(cx, yFor(b.low)), p);
       canvas.drawLine(
-        Offset(cx - slot * 0.25, yFor(b.open)),
+        Offset(cx - tickW, yFor(b.open)),
         Offset(cx, yFor(b.open)),
         p,
       );
       canvas.drawLine(
         Offset(cx, yFor(b.close)),
-        Offset(cx + slot * 0.25, yFor(b.close)),
+        Offset(cx + tickW, yFor(b.close)),
         p,
       );
     }
@@ -578,6 +694,7 @@ class _ChartPainter extends CustomPainter {
     double slot,
     double Function(double) yFor,
   ) {
+    final colW = (slot * 0.72).clamp(2.0, 48.0);
     for (var i = 0; i < slice.length; i++) {
       final b = slice[i];
       final cx = plot.left + (i + 0.5) * slot;
@@ -585,11 +702,10 @@ class _ChartPainter extends CustomPainter {
       final y0 = yFor(b.open);
       final y1 = yFor(b.close);
       canvas.drawRect(
-        Rect.fromLTRB(
-          cx - slot * 0.3,
-          math.min(y0, y1),
-          cx + slot * 0.3,
-          math.max(y0, y1),
+        Rect.fromCenter(
+          center: Offset(cx, (y0 + y1) / 2),
+          width: colW,
+          height: math.max((y1 - y0).abs(), 1.5),
         ),
         Paint()..color = color.withValues(alpha: 0.7),
       );

@@ -176,6 +176,47 @@ void main() {
     engine.dispose();
   });
 
+  testWidgets('chart empty suggestions show Recent chart from bridge',
+      (tester) async {
+    ChartSearchBridge.bind(
+      recentSymbols: const ['PNB', 'BANKNIFTY', 'TCS'],
+      selectSymbol: (_) {},
+    );
+    addTearDown(ChartSearchBridge.unbind);
+
+    final engine = UnifiedSearchEngine(
+      debounce: Duration.zero,
+      securities: _FakeSecurities((_) async => const []),
+      etfBasket: _FakeEtf((_) async => const []),
+    );
+
+    final navKey = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navKey,
+        home: const Scaffold(body: SizedBox()),
+      ),
+    );
+
+    List<CommandItem>? items;
+    engine.query(
+      rawQuery: '',
+      context: SearchContext.chart,
+      navContext: navKey.currentContext!,
+      seedActions: const [],
+      onResult: (snap) => items = snap.items,
+    );
+    await tester.pump();
+
+    expect(items, isNotNull);
+    final chartRecents = items!
+        .where((i) => i.subtitle == 'Recent chart')
+        .map((i) => i.title)
+        .toList();
+    expect(chartRecents, ['PNB', 'BANKNIFTY', 'TCS']);
+    engine.dispose();
+  });
+
   testWidgets('baskets query surfaces Gold theme before Market', (tester) async {
     final engine = UnifiedSearchEngine(
       debounce: Duration.zero,

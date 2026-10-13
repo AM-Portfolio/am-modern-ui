@@ -15,25 +15,75 @@ class WatchlistSourceDropdown extends StatelessWidget {
     required this.selected,
     required this.sources,
     required this.onSelected,
+    this.onBrowseAllIndices,
   });
 
   final WatchlistSource selected;
   final List<WatchlistSource> sources;
   final ValueChanged<String> onSelected;
+  final VoidCallback? onBrowseAllIndices;
 
   @override
   Widget build(BuildContext context) {
     final accent = _watchlistAccent(context);
+    final isIndex =
+        selected.id == 'nifty-50' || selected.id.startsWith('index:');
     return PopupMenuButton<String>(
-      tooltip: 'Choose watchlist',
-      onSelected: onSelected,
+      tooltip: 'Choose watchlist or index',
+      onSelected: (val) {
+        if (val == '__all_indices__') {
+          onBrowseAllIndices?.call();
+        } else {
+          onSelected(val);
+        }
+      },
       offset: const Offset(0, 40),
       itemBuilder: (context) => [
         for (final s in sources)
           PopupMenuItem(
             value: s.id,
-            child: Text(s.name),
+            child: Row(
+              children: [
+                Icon(
+                  s.id == 'nifty-50' || s.id.startsWith('index:')
+                      ? Icons.auto_graph
+                      : Icons.bookmark,
+                  size: 16,
+                  color: s.id == selected.id ? accent : null,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    s.name,
+                    style: TextStyle(
+                      fontWeight:
+                          s.id == selected.id ? FontWeight.w700 : FontWeight.w500,
+                      color: s.id == selected.id ? accent : null,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
+        if (onBrowseAllIndices != null) ...[
+          const PopupMenuDivider(),
+          PopupMenuItem(
+            value: '__all_indices__',
+            child: Row(
+              children: [
+                Icon(Icons.dashboard_customize_outlined, size: 16, color: accent),
+                const SizedBox(width: 8),
+                Text(
+                  'Browse All Indices…',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: accent,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -46,7 +96,8 @@ class WatchlistSourceDropdown extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(Icons.bookmark, size: 18, color: accent),
+            Icon(isIndex ? Icons.auto_graph : Icons.bookmark,
+                size: 18, color: accent),
             const SizedBox(width: 8),
             Expanded(
               child: Text(

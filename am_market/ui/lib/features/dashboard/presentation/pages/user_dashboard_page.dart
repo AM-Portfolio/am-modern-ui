@@ -1540,7 +1540,12 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                                     timeFrameCode: selectedTimeframe,
                                     expandedChartPath: marketChartPath,
                                     onOpenExpanded: () {
-                                      chartContext.go(marketChartPath);
+                                      if (kIsWeb) {
+                                        AppWebNavigation.openPathInNewTab(
+                                            marketChartPath);
+                                      } else {
+                                        chartContext.go(marketChartPath);
+                                      }
                                     },
                                     onRemoveSeries: (symbol) {
                                       setState(() {

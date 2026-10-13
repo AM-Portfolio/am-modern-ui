@@ -1,3 +1,4 @@
+import 'package:am_common/am_common.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -29,6 +30,14 @@ class SearchNavigationHandler {
       case SearchContext.fo:
         _setFoSymbol(sym);
         context.go(AppRoutes.marketPath('futures-options'));
+        return;
+      case SearchContext.chart:
+        final select = ChartSearchBridge.selectSymbol;
+        if (select != null) {
+          select(sym);
+          return;
+        }
+        context.go(AppRoutes.chartWorkspacePath(symbol: sym));
         return;
       case SearchContext.baskets:
       case SearchContext.market:

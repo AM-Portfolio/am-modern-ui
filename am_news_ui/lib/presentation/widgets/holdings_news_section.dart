@@ -72,20 +72,23 @@ class _HoldingsNewsSectionState extends ConsumerState<HoldingsNewsSection>
   }
 
   Widget _buildExpandable(BuildContext context, {required Widget child}) {
-    return AmGlassCard(
-      surfaceAlpha: 0.32,
-      padding: EdgeInsets.zero,
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: const Color(0x00000000)),
-        child: ExpansionTile(
-          key: const PageStorageKey('holdings_news_expansion_tile'),
-          title: Text(
-            widget.title,
-            style: Theme.of(context).textTheme.titleMedium,
+    return PageStorage(
+      bucket: PageStorageBucket(),
+      child: AmGlassCard(
+        surfaceAlpha: 0.32,
+        padding: EdgeInsets.zero,
+        child: Theme(
+          data: Theme.of(context).copyWith(dividerColor: const Color(0x00000000)),
+          child: ExpansionTile(
+            key: const PageStorageKey('holdings_news_expansion_tile'),
+            title: Text(
+              widget.title,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            initiallyExpanded: true,
+            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            children: [child],
           ),
-          initiallyExpanded: true,
-          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          children: [child],
         ),
       ),
     );
