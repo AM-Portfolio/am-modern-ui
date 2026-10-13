@@ -8,14 +8,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
-import 'package:am_design_system/am_design_system.dart';
 import '../../features/shell/app_shell.dart';
 import 'app_routes.dart';
 import 'auth_refresh_listenable.dart';
 import 'deferred_routes.dart';
 import 'launch_location.dart';
 import 'share_url_builder.dart';
-import 'package:am_doc_intelligence_ui/features/document_processor/document_processor_view.dart';
 export 'launch_location.dart' show resolveLaunchLocation;
 
 bool _subscriptionPageEnabled() {
@@ -339,20 +337,26 @@ GoRouter createAppRouter({
                 onOpenDocIntel: () =>
                     context.go(AppRoutes.docIntelPath('mailbox')),
                 uploadPortfolioBuilder: (portfolioId, portfolioName, onCancel) {
-                  return Builder(
-                    builder: (context) {
-                      final theme = Theme.of(context);
-                      return Theme(
-                        data: theme.copyWith(
-                          colorScheme: theme.colorScheme.copyWith(
-                            primary: ModuleColors.portfolio,
-                            primaryContainer:
-                                ModuleColors.portfolio.withOpacity(0.12),
-                          ),
-                          primaryColor: ModuleColors.portfolio,
-                        ),
-                        child: const DocumentProcessorView(),
-                      );
+                  return buildPortfolioImportHoldingsEmbed(
+                    userId: _userId(context),
+                    tab: 'mailbox',
+                    onOpenPortfolio: (id, name) {
+                      onCancel();
+                      if (id.isEmpty) {
+                        context.go(AppRoutes.portfolio);
+                        return;
+                      }
+                      _patchPortfolioSession(context, id, name);
+                      context.go(AppRoutes.portfolioPath(id, 'overview'));
+                    },
+                    onOpenTrade: (id, name) {
+                      onCancel();
+                      if (id.isEmpty) {
+                        context.go(AppRoutes.trade);
+                        return;
+                      }
+                      _patchPortfolioSession(context, id, name);
+                      context.go(AppRoutes.tradePath(id, 'portfolios'));
                     },
                   );
                 },
@@ -375,20 +379,26 @@ GoRouter createAppRouter({
                 onOpenDocIntel: () =>
                     context.go(AppRoutes.docIntelPath('mailbox')),
                 uploadPortfolioBuilder: (portfolioId, portfolioName, onCancel) {
-                  return Builder(
-                    builder: (context) {
-                      final theme = Theme.of(context);
-                      return Theme(
-                        data: theme.copyWith(
-                          colorScheme: theme.colorScheme.copyWith(
-                            primary: ModuleColors.portfolio,
-                            primaryContainer:
-                                ModuleColors.portfolio.withOpacity(0.12),
-                          ),
-                          primaryColor: ModuleColors.portfolio,
-                        ),
-                        child: const DocumentProcessorView(),
-                      );
+                  return buildPortfolioImportHoldingsEmbed(
+                    userId: _userId(context),
+                    tab: 'mailbox',
+                    onOpenPortfolio: (id, name) {
+                      onCancel();
+                      if (id.isEmpty) {
+                        context.go(AppRoutes.portfolio);
+                        return;
+                      }
+                      _patchPortfolioSession(context, id, name);
+                      context.go(AppRoutes.portfolioPath(id, 'overview'));
+                    },
+                    onOpenTrade: (id, name) {
+                      onCancel();
+                      if (id.isEmpty) {
+                        context.go(AppRoutes.trade);
+                        return;
+                      }
+                      _patchPortfolioSession(context, id, name);
+                      context.go(AppRoutes.tradePath(id, 'portfolios'));
                     },
                   );
                 },

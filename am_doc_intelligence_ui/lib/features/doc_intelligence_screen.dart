@@ -322,19 +322,21 @@ class _DocIntelligenceScreenState extends State<DocIntelligenceScreen> {
     );
   }
 
+  /// Content-only shell — never mounts a secondary "Import holdings" sidebar
+  /// (Portfolio / AppShell already own navigation chrome).
   Widget _buildMobileShell() {
-    return UnifiedSidebarScaffold(
-      title: 'Import holdings',
-      icon: Icons.cloud_download_outlined,
-      accentColor: Theme.of(context).colorScheme.primary,
-      // Scaffold assert requires exactly one of items/sections.
-      items: const <SecondarySidebarItem>[],
-      showAppBarOnMobile: false,
-      showMobileMenuButton: false,
-      showModuleBottomNavigation: false,
-      autoHideMobileTabsOnScroll: false,
-      enableMobileSearch: true,
-      body: _mobileBody(),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return ColoredBox(
+      color: isDark
+          ? Theme.of(context).scaffoldBackgroundColor
+          : Theme.of(context).colorScheme.surface,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _webHeader(),
+          Expanded(child: _mobileBody()),
+        ],
+      ),
     );
   }
 

@@ -319,6 +319,44 @@ Widget buildDocIntelRoute({
   );
 }
 
+/// Same Import holdings page as `/app/doc-intel`, themed for Portfolio module
+/// (pink accent) when opened via Upload Portfolio inside portfolio shell.
+Widget buildPortfolioImportHoldingsEmbed({
+  required String userId,
+  String tab = 'mailbox',
+  void Function(String portfolioId, String portfolioName)? onOpenPortfolio,
+  void Function(String portfolioId, String portfolioName)? onOpenTrade,
+}) {
+  return DeferredModuleLoader(
+    load: _loadDocIntel,
+    skeleton: const GenericModuleSkeleton(),
+    loadingMessage: 'Loading Import…',
+    builder: () {
+      return Builder(
+        builder: (context) {
+          final theme = Theme.of(context);
+          return Theme(
+            data: theme.copyWith(
+              colorScheme: theme.colorScheme.copyWith(
+                primary: ModuleColors.portfolio,
+                primaryContainer:
+                    ModuleColors.portfolio.withValues(alpha: 0.12),
+              ),
+              primaryColor: ModuleColors.portfolio,
+            ),
+            child: doc_intel_ui.DocIntelligenceScreen(
+              userId: userId,
+              initialTab: tab,
+              onOpenPortfolio: onOpenPortfolio,
+              onOpenTrade: onOpenTrade,
+            ),
+          );
+        },
+      );
+    },
+  );
+}
+
 Widget buildProfileRoute({
   required String userId,
   String? email,
