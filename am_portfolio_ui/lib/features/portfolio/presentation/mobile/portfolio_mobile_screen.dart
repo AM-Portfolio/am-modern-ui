@@ -673,16 +673,26 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     return SizedBox(
       width: double.infinity,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 2, 8, 6),
+        // Match pill track horizontal inset (16) so Paper / settings align
+        // with the top nav bar edges.
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Shrinks first when space is tight — never nest Flexible+min Rows.
+            // Paper switcher + compact As of under it.
             Flexible(
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 128),
-                  child: _buildPortfolioSwitcher(context, currentName),
+                  constraints: const BoxConstraints(maxWidth: 148),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildPortfolioSwitcher(context, currentName),
+                      if (hasSelectedPortfolio) _buildStickyAsOfLabel(context),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -702,7 +712,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
                   ),
                   if (hasSelectedPortfolio) ...[
                     const SizedBox(width: 4),
-                    _buildPortfolioMenu(context),
+                    _buildPortfolioManageDropdown(context),
                   ],
                 ],
               ),
@@ -710,6 +720,42 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildStickyAsOfLabel(BuildContext context) {
+    return BlocBuilder<PortfolioCubit, PortfolioState>(
+      buildWhen: (previous, current) {
+        if (previous is PortfolioLoaded && current is PortfolioLoaded) {
+          return previous.summary.priceLabel != current.summary.priceLabel;
+        }
+        return previous.runtimeType != current.runtimeType;
+      },
+      builder: (context, state) {
+        if (state is! PortfolioLoaded) return const SizedBox.shrink();
+        final label = state.summary.priceLabel;
+        if (label.isEmpty) return const SizedBox.shrink();
+        // Tighter stamp under Paper (drop "As of " prefix when present).
+        final compact =
+            label.startsWith('As of ') ? label.substring(6) : label;
+        return Padding(
+          padding: const EdgeInsets.only(top: 2, left: 2),
+          child: Text(
+            compact,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.55),
+                  fontSize: 10,
+                  height: 1.1,
+                  fontWeight: FontWeight.w500,
+                ),
+          ),
+        );
+      },
     );
   }
 
@@ -761,7 +807,8 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     );
   }
 
-  Widget _buildPortfolioMenu(BuildContext context) {
+  /// Settings-style manage control (Edit / Delete) — not Sync more_vert.
+  Widget _buildPortfolioManageDropdown(BuildContext context) {
     final portfolios = widget.portfolios ?? const [];
     final portfolio = portfolios
         .where((p) => p.portfolioId == _currentPortfolioId)
@@ -769,39 +816,56 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
 
     if (portfolio == null) return const SizedBox.shrink();
 
-    return PopupMenuButton<String>(
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-      icon: const Icon(Icons.more_vert, size: 20),
-      onSelected: (value) {
-        if (value == 'edit') {
-          _showEditPortfolioModal(portfolio);
-        } else if (value == 'delete') {
-          _deletePortfolio(portfolio);
-        }
-      },
-      itemBuilder: (context) => [
-        const PopupMenuItem(
-          value: 'edit',
-          child: Row(
-            children: [
-              Icon(Icons.edit, size: 18),
-              SizedBox(width: 8),
-              Text('Edit Portfolio'),
-            ],
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final error = context.statusError;
+
+    return SizedBox(
+      width: 40,
+      child: CustomDropdown<String>(
+        value: null,
+        hint: '',
+        height: 36,
+        isExpanded: true,
+        fontSize: 12,
+        iconSize: 18,
+        icon: Icons.settings_outlined,
+        borderRadius: 10,
+        menuMaxHeight: 148,
+        menuMaxWidth: 200,
+        primaryColor: ModuleColors.portfolio,
+        backgroundColor: isDark ? context.glassOverlay(0.06) : null,
+        borderColor: isDark ? context.glassOverlay(0.1) : null,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 6),
+        items: [
+          DropdownMenuItem<String>(
+            value: 'edit',
+            child: Row(
+              children: [
+                Icon(Icons.edit_outlined, size: 16, color: context.textPrimary),
+                const SizedBox(width: 8),
+                const Text('Edit Portfolio'),
+              ],
+            ),
           ),
-        ),
-        PopupMenuItem(
-          value: 'delete',
-          child: Row(
-            children: [
-              Icon(Icons.delete, size: 18, color: context.statusError),
-              const SizedBox(width: 8),
-              Text('Delete Portfolio', style: TextStyle(color: context.statusError)),
-            ],
+          DropdownMenuItem<String>(
+            value: 'delete',
+            child: Row(
+              children: [
+                Icon(Icons.delete_outline, size: 16, color: error),
+                const SizedBox(width: 8),
+                Text('Delete Portfolio', style: TextStyle(color: error)),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+        onChanged: (value) {
+          if (value == 'edit') {
+            _showEditPortfolioModal(portfolio);
+          } else if (value == 'delete') {
+            _deletePortfolio(portfolio);
+          }
+        },
+      ),
     );
   }
 }

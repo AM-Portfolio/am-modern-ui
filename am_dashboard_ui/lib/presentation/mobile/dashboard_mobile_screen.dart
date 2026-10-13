@@ -5,6 +5,7 @@ import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_store.dart'
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_timeframe_provider.dart';
 import 'package:am_dashboard_ui/presentation/providers/has_demo_portfolio_provider.dart';
+import 'package:am_dashboard_ui/presentation/widgets/paper_trading_nav_chip.dart';
 import 'package:am_common/am_common.dart';
 import '../shared/widgets/glass_card.dart';
 import 'package:am_design_system/am_design_system.dart';
@@ -180,15 +181,10 @@ class _DashboardMobileScreenState
                     constraints:
                         const BoxConstraints(minWidth: 40, minHeight: 40),
                   ),
-                if (widget.onOpenPaper != null)
-                  IconButton(
-                    tooltip: 'Paper trading',
-                    onPressed: widget.onOpenPaper,
-                    icon: Icon(Icons.science_outlined, color: onSurface, size: 22),
-                    padding: EdgeInsets.zero,
-                    constraints:
-                        const BoxConstraints(minWidth: 40, minHeight: 40),
-                  ),
+                if (widget.onOpenPaper != null) ...[
+                  PaperTradingNavChip(onTap: widget.onOpenPaper!),
+                  const SizedBox(width: 6),
+                ],
                 const GlobalTimeFrameBar(
                   variant: GlobalTimeFrameVariant.dropdown,
                 ),

@@ -28,6 +28,7 @@ class CustomDropdown<T> extends StatefulWidget {
     this.enabled = true,
     this.enableGlass = false,
     this.menuMaxHeight = 300,
+    this.menuMaxWidth,
   });
 
   /// Current selected value
@@ -87,6 +88,10 @@ class CustomDropdown<T> extends StatefulWidget {
   /// Max height of the open menu; remaining options scroll.
   final double menuMaxHeight;
 
+  /// Max width of the open menu. When null, compact expanded triggers cap near
+  /// the button width (not a full 280px panel).
+  final double? menuMaxWidth;
+
   @override
   State<CustomDropdown<T>> createState() => _CustomDropdownState<T>();
 }
@@ -128,12 +133,18 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
     // Pin menu to the right of the button when near the screen edge so
     // long labels are not clipped off-screen.
     final alignEnd = origin.dx + size.width > screenWidth * 0.62;
-    final maxMenuWidth = math.min(screenWidth - 24, 280.0);
+    // Cap default at 280 for wide fields; compact expanded triggers stay near
+    // the button so 1D/1W menus are not half-screen wide.
+    final defaultCap = widget.menuMaxWidth ??
+        (widget.isExpanded && size.width < 160
+            ? math.max(size.width, 120.0)
+            : 280.0);
+    final maxMenuWidth = math.min(screenWidth - 24, defaultCap);
     // Never allow minWidth > maxWidth (wide expanded fields used to crash).
     final preferredMin = widget.isExpanded
         ? size.width
         : math.max(size.width, 160.0);
-    final menuMaxWidth = math.max(maxMenuWidth, math.min(preferredMin, maxMenuWidth));
+    final menuMaxWidth = math.min(maxMenuWidth, math.max(preferredMin, maxMenuWidth));
     final menuMinWidth = math.min(preferredMin, menuMaxWidth);
 
     return OverlayEntry(

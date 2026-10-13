@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/core/theme/app_colors.dart';
 import 'package:am_design_system/shared/widgets/inputs/custom_dropdown.dart';
@@ -40,6 +42,7 @@ class MobileTimeFrameDropdown extends ConsumerWidget {
         iconSize: 16,
         borderRadius: 10,
         menuMaxHeight: menuMaxHeightForThreeItems,
+        menuMaxWidth: math.max(width, 120),
         primaryColor: primaryColor ?? AppColors.primary,
         backgroundColor:
             isDark ? Colors.white.withValues(alpha: 0.06) : null,
