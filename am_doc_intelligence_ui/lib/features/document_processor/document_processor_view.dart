@@ -10,6 +10,10 @@ import 'package:am_library/am_library.dart';
 import 'package:am_doc_intelligence_ui/features/document_processor/document_processor_layout.dart';
 import 'package:am_doc_intelligence_ui/features/document_processor/pending_batch_intake.dart';
 import 'package:am_doc_intelligence_ui/features/document_processor/pending_sync_file.dart';
+import 'package:am_doc_intelligence_ui/features/broker_logo.dart';
+import 'package:am_common/am_common.dart';
+import 'package:am_doc_intelligence_ui/features/import_process_banner.dart';
+import 'package:am_doc_intelligence_ui/features/recent_imports_store.dart';
 import 'package:am_doc_intelligence_ui/models/batch_sync_models.dart';
 import 'package:am_doc_intelligence_ui/models/sync_unavailable_exception.dart';
 import 'package:am_doc_intelligence_ui/services/api_service.dart';
@@ -17,7 +21,17 @@ import 'package:am_doc_intelligence_ui/utils/file_downloader.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class DocumentProcessorView extends StatefulWidget {
-  const DocumentProcessorView({super.key});
+  const DocumentProcessorView({
+    super.key,
+    this.embeddedInImportShell = false,
+    this.onImportCompleted,
+  });
+
+  /// When true, uses Import holdings rail styling (capabilities/privacy/recent).
+  final bool embeddedInImportShell;
+
+  /// Pushes one Recent Imports entry after a batch finishes.
+  final ValueChanged<RecentImportEntry>? onImportCompleted;
 
   @override
   State<DocumentProcessorView> createState() => _DocumentProcessorViewState();
@@ -33,6 +47,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   String _status = '';
   Map<String, dynamic>? _lastResult;
   bool _processing = false;
+  DateTime? _busyStartedAt;
   bool _dragHover = false;
   bool _intakeBusy = false;
   DropzoneViewController? _dropzoneController;
@@ -78,6 +93,82 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     _batchStatus = status;
     _parserConfigExpanded = false;
     if (statusMessage != null) _status = statusMessage;
+  }
+
+  void _beginBusy(String message) {
+    _processing = true;
+    _busyStartedAt = DateTime.now();
+    _status = message;
+    showImportSnackBar(
+      context,
+      message: message,
+      phase: ImportProcessPhase.busy,
+    );
+  }
+
+  void _endBusy({
+    required String message,
+    required ImportProcessPhase phase,
+  }) {
+    _processing = false;
+    _busyStartedAt = null;
+    _status = message;
+    showImportSnackBar(context, message: message, phase: phase);
+  }
+
+  void _notifyRecentImportsFromBatch(BatchSyncStatus status) {
+    final files = status.files
+        .map((f) => f.fileName)
+        .where((n) => n.isNotEmpty)
+        .toList();
+    final overall = status.overallStatus.toUpperCase();
+    String entryStatus;
+    if (status.failed > 0 && status.completed > 0) {
+      entryStatus = 'partial';
+    } else if (status.failed > 0 && status.completed == 0) {
+      entryStatus = 'failed';
+    } else if (overall.contains('FAIL')) {
+      entryStatus = 'failed';
+    } else {
+      entryStatus = 'success';
+    }
+    final title = files.length == 1
+        ? files.first
+        : 'Upload · ${status.completed}/${status.total} files';
+    final entry = RecentImportEntry(
+      id: 'up-${status.batchId}-${DateTime.now().millisecondsSinceEpoch}',
+      source: 'upload',
+      title: title,
+      status: entryStatus,
+      at: DateTime.now().toUtc(),
+      files: files.isEmpty
+          ? ['Batch ${status.batchId}']
+          : files,
+      detail:
+          '${status.completed} of ${status.total} completed'
+          '${status.failed > 0 ? ', ${status.failed} failed' : ''}',
+    );
+    widget.onImportCompleted?.call(entry);
+    if (entryStatus != 'failed') {
+      PortfolioDataRefresh.instance.notifyImported();
+    }
+  }
+
+  ImportProcessPhase get _bannerPhase {
+    if (_processing) return ImportProcessPhase.busy;
+    final lower = _status.toLowerCase();
+    if (lower.contains('error') ||
+        lower.contains('failed') ||
+        lower.contains('not available')) {
+      return ImportProcessPhase.error;
+    }
+    if (lower.contains('completed') ||
+        lower.contains('success') ||
+        lower.contains('synced') ||
+        lower.contains('review needed')) {
+      return ImportProcessPhase.success;
+    }
+    return ImportProcessPhase.idle;
   }
 
   void _clearPendingFiles() {
@@ -292,11 +383,11 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     if (_pendingFiles.isEmpty || _processing) return;
 
     setState(() {
-      _processing = true;
       _lastResult = null;
       _batchStatus = null;
-      _status =
-          'Submitting ${_pendingFiles.length} file${_pendingFiles.length == 1 ? '' : 's'}...';
+      _beginBusy(
+        'Submitting ${_pendingFiles.length} file${_pendingFiles.length == 1 ? '' : 's'}…',
+      );
     });
 
     final sharedName = _sharedPortfolioController.text.trim();
@@ -362,8 +453,10 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       ProductTelemetry.instance.clientError(errorType: 'doc_process');
       if (!mounted) return;
       setState(() {
-        _status = 'Error uploading: $e';
-        _processing = false;
+        _endBusy(
+          message: 'Upload failed: ${shortImportError(e)}',
+          phase: ImportProcessPhase.error,
+        );
       });
     }
   }
@@ -375,18 +468,27 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       ProductTelemetry.instance.clientError(errorType: 'doc_process');
       if (!mounted) return;
       setState(() {
-        _processing = false;
-        _status = 'Auto-detect is unavailable here. '
-            'Set broker and document type for each file below, then Sync again.';
+        _endBusy(
+          message:
+              'Auto-detect unavailable — set broker and document type, then Sync again.',
+          phase: ImportProcessPhase.error,
+        );
       });
       return;
     }
 
     if (!mounted) return;
     setState(() {
+      _busyStartedAt ??= DateTime.now();
+      _processing = true;
       _status =
-          'Batch sync unavailable — parsing ${_pendingFiles.length} file(s) with legacy /process...';
+          'Parsing ${_pendingFiles.length} file(s)…';
     });
+    showImportSnackBar(
+      context,
+      message: _status,
+      phase: ImportProcessPhase.busy,
+    );
 
     try {
       await _runSequentialProcessFallback();
@@ -394,8 +496,10 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       ProductTelemetry.instance.clientError(errorType: 'doc_process');
       if (!mounted) return;
       setState(() {
-        _processing = false;
-        _status = 'Error uploading: $fallbackError';
+        _endBusy(
+          message: 'Upload failed: ${shortImportError(fallbackError)}',
+          phase: ImportProcessPhase.error,
+        );
       });
     }
   }
@@ -482,7 +586,11 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       }
     }
     final totalFiles = _pendingFiles.length;
+    final msg =
+        'Parse $overall: $completed of $totalFiles completed'
+        '${failed > 0 ? ', $failed failed' : ''}';
     setState(() {
+      _busyStartedAt = null;
       _processing = false;
       _applyBatchStatus(
         BatchSyncStatus(
@@ -493,15 +601,22 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
           overallStatus: overall,
           files: fileStatuses,
         ),
-        statusMessage:
-            'Legacy parse $overall: $completed of $totalFiles completed'
-            '${failed > 0 ? ', $failed failed' : ''} '
-            '(used /process because Auto-detect /sync was unavailable)',
+        statusMessage: msg,
       );
       _lastResult = lastOk;
       _clearPendingFiles();
     });
     _scrollResultsToTop();
+    if (_batchStatus != null) {
+      _notifyRecentImportsFromBatch(_batchStatus!);
+    }
+    showImportSnackBar(
+      context,
+      message: msg,
+      phase: failed > 0
+          ? ImportProcessPhase.error
+          : ImportProcessPhase.success,
+    );
 
     ProductTelemetry.instance.featureAction(
       'doc_process',
@@ -538,6 +653,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       setState(() {
         _applyBatchStatus(status, statusMessage: statusMessage);
         if (status.isTerminal) {
+          _busyStartedAt = null;
           _processing = false;
           // Clear intake queue so compact UI enters resultsIdle.
           _clearPendingFiles();
@@ -547,6 +663,15 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         _pollTimer?.cancel();
         _pollTimer = null;
         _scrollResultsToTop();
+        _notifyRecentImportsFromBatch(status);
+        final failed = status.failed > 0;
+        showImportSnackBar(
+          context,
+          message: statusMessage,
+          phase: failed
+              ? ImportProcessPhase.error
+              : ImportProcessPhase.success,
+        );
         ProductTelemetry.instance.featureAction(
           'doc_process',
           tag: 'docs',
@@ -561,7 +686,12 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() => _status = 'Status check failed: $e');
+      setState(() {
+        _endBusy(
+          message: 'Status check failed: ${shortImportError(e)}',
+          phase: ImportProcessPhase.error,
+        );
+      });
     }
   }
 
@@ -612,13 +742,23 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
 
         final hasBatch = _batchStatus != null;
         final compactHasBatch = isCompact && hasBatch;
-        final hideOnlineFooter = compactHasBatch;
+
+        final embed = widget.embeddedInImportShell;
+        // Shell already pads; keep cards flush with the title bar.
+        final pagePadH = embed
+            ? 0.0
+            : (isCompact ? 12.0 : (isMedium ? 16.0 : 32.0));
+        final pagePadV = embed ? 0.0 : (isCompact ? 8.0 : 24.0);
 
         return SingleChildScrollView(
           controller: _pageScroll,
+          // No scroll on Import empty state; allow scroll only for batch results.
+          physics: embed && !hasBatch
+              ? const NeverScrollableScrollPhysics()
+              : const AlwaysScrollableScrollPhysics(),
           padding: EdgeInsets.symmetric(
-            horizontal: isCompact ? 12.0 : (isMedium ? 20.0 : 32.0),
-            vertical: isCompact ? 8.0 : 24.0,
+            horizontal: pagePadH,
+            vertical: pagePadV,
           ),
           child: Column(
             // Compact: stretch so GlassCards fill width (no left-clustered black gutter).
@@ -668,36 +808,53 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                       const SizedBox(height: 16),
                     ],
                   ],
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _buildUploadSection(
-                              contentWidth: contentWidth * 0.6,
-                              isCompact: isCompact,
-                            ),
-                            const SizedBox(height: 20),
-                            _buildConfigurationSection(
-                              stackDropdowns: stackConfigDropdowns,
-                              isCompact: isCompact,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 24),
-                      Expanded(
-                        flex: 2,
-                        child: _buildDetailsPanel(
-                          isGrid: false,
+                  // Import shell owns the info rail — main column only when embedded.
+                  if (embed)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildUploadSection(
+                          contentWidth: contentWidth,
                           isCompact: isCompact,
                         ),
-                      ),
-                    ],
-                  ),
+                        const SizedBox(height: 8),
+                        _buildConfigurationSection(
+                          stackDropdowns: stackConfigDropdowns,
+                          isCompact: isCompact,
+                        ),
+                      ],
+                    )
+                  else
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _buildUploadSection(
+                                contentWidth: contentWidth * 0.6,
+                                isCompact: isCompact,
+                              ),
+                              const SizedBox(height: 20),
+                              _buildConfigurationSection(
+                                stackDropdowns: stackConfigDropdowns,
+                                isCompact: isCompact,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 24),
+                        Expanded(
+                          flex: 2,
+                          child: _buildDetailsPanel(
+                            isGrid: false,
+                            isCompact: isCompact,
+                          ),
+                        ),
+                      ],
+                    ),
                 ] else if (compactHasBatch) ...[
                   // Results-first, then restore upload + parser + capabilities.
                   if (_status.isNotEmpty || _processing) ...[
@@ -722,11 +879,13 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                     stackDropdowns: false,
                     isCompact: true,
                   ),
-                  const SizedBox(height: 8),
-                  _buildDetailsPanel(
-                    isGrid: true,
-                    isCompact: true,
-                  ),
+                  if (!embed) ...[
+                    const SizedBox(height: 8),
+                    _buildDetailsPanel(
+                      isGrid: true,
+                      isCompact: true,
+                    ),
+                  ],
                 ] else ...[
                   // Empty / medium: Upload → Parser → Capabilities
                   Column(
@@ -742,11 +901,13 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                             isCompact ? false : stackConfigDropdowns,
                         isCompact: isCompact,
                       ),
-                      SizedBox(height: isCompact ? 8 : 18),
-                      _buildDetailsPanel(
-                        isGrid: isCompact || isMedium,
-                        isCompact: isCompact,
-                      ),
+                      if (!embed) ...[
+                        SizedBox(height: isCompact ? 8 : 18),
+                        _buildDetailsPanel(
+                          isGrid: isCompact || isMedium,
+                          isCompact: isCompact,
+                        ),
+                      ],
                     ],
                   ),
                   SizedBox(height: isCompact ? 8 : 20),
@@ -762,20 +923,6 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                     SizedBox(height: isCompact ? 8 : 24),
                     _buildResultSection(),
                   ],
-                ],
-                if (_isServiceConnected == true && !hideOnlineFooter) ...[
-                  SizedBox(height: isCompact ? 8 : 16),
-                  Text(
-                    'Doc processor online',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurfaceVariant
-                          .withValues(alpha: 0.7),
-                    ),
-                  ),
                 ],
               ],
             ],
@@ -823,6 +970,11 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   }
 
   Widget _buildDetailsPanel({required bool isGrid, required bool isCompact}) {
+    // Shell owns the right rail — do not duplicate it inside the main panel.
+    if (widget.embeddedInImportShell) {
+      return const SizedBox.shrink();
+    }
+
     final mfDesc = isCompact
         ? 'CAS, AMFI statements and holdings.'
         : 'CAS, AMFI statements';
@@ -1028,20 +1180,35 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontSize: 11,
+            fontSize: widget.embeddedInImportShell ? 10 : 11,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.5,
             color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.8),
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: widget.embeddedInImportShell ? 4 : 8),
         CustomDropdown<String>(
+          height: widget.embeddedInImportShell ? 36 : 40,
           // Closed field shows Select; __AUTO__/null still means auto-detect.
           value: _selectedBrokerType,
           items: [
-            ...apiProvider.brokerTypes
-                .map((e) => e.toSimpleDropdownItem(text: e)),
-            '__AUTO__'.toSimpleDropdownItem(text: 'Auto-detect (recommended)'),
+            ...apiProvider.brokerTypes.map(
+              (e) => DropdownMenuItem<String>(
+                value: e,
+                child: brokerDropdownLabel(e),
+              ),
+            ),
+            DropdownMenuItem<String>(
+              value: '__AUTO__',
+              child: Row(
+                children: [
+                  Icon(Icons.auto_awesome_outlined,
+                      size: 16, color: ModuleColors.analytics),
+                  const SizedBox(width: 8),
+                  const Text('Auto-detect', style: TextStyle(fontSize: 13)),
+                ],
+              ),
+            ),
           ],
           hint: 'Select',
           onChanged: (v) {
@@ -1066,17 +1233,22 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontSize: 11,
+            fontSize: widget.embeddedInImportShell ? 10 : 11,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.5,
             color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.8),
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: widget.embeddedInImportShell ? 4 : 8),
         _loadingTypes
-            ? const ShimmerLoading(
-                child: SkeletonBox(height: 42, width: double.infinity))
+            ? ShimmerLoading(
+                child: SkeletonBox(
+                  height: widget.embeddedInImportShell ? 36 : 42,
+                  width: double.infinity,
+                ),
+              )
             : CustomDropdown<String>(
+                height: widget.embeddedInImportShell ? 36 : 40,
                 value: _selectedDocType,
                 items: [
                   ..._getFilteredDocTypes().map((e) =>
@@ -1091,24 +1263,28 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       ],
     );
 
+    final embed = widget.embeddedInImportShell;
+    final gapSm = embed ? 4.0 : (isCompact ? 8.0 : 12.0);
+    final gapMd = embed ? 6.0 : (isCompact ? 10.0 : 16.0);
+
     final parserBody = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (stackDropdowns) ...[
           brokerSelect,
-          const SizedBox(height: 12),
+          SizedBox(height: gapSm),
           docTypeSelect,
         ] else ...[
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(child: brokerSelect),
-              SizedBox(width: isCompact ? 10 : 16),
+              SizedBox(width: embed ? 10 : (isCompact ? 10 : 16)),
               Expanded(child: docTypeSelect),
             ],
           ),
         ],
-        SizedBox(height: isCompact ? 8 : 12),
+        SizedBox(height: gapSm),
         CheckboxListTile(
           contentPadding: EdgeInsets.zero,
           value: _samePortfolioForAll,
@@ -1116,26 +1292,25 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
               ? null
               : (v) => setState(() => _samePortfolioForAll = v ?? true),
           title: Text(
-            isCompact
-                ? 'Use same portfolio name for all files'
+            embed || isCompact
+                ? 'Same portfolio name for all files'
                 : 'Use the same portfolio name for every file',
             style: TextStyle(
-              fontSize: isCompact ? 12 : 13,
+              fontSize: embed ? 12 : (isCompact ? 12 : 13),
               fontWeight: FontWeight.w500,
             ),
           ),
           controlAffinity: ListTileControlAffinity.leading,
           dense: true,
-          visualDensity: isCompact
-              ? VisualDensity.compact
-              : VisualDensity.standard,
+          visualDensity: VisualDensity.compact,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
         if (_samePortfolioForAll) ...[
-          SizedBox(height: isCompact ? 4 : 6),
+          SizedBox(height: embed ? 2 : (isCompact ? 4 : 6)),
           AppTextField(
             controller: _sharedPortfolioController,
             labelText: 'Portfolio name',
-            hintText: isCompact
+            hintText: embed || isCompact
                 ? 'Portfolio name'
                 : 'Optional — leave blank to use the broker name',
           ),
@@ -1143,24 +1318,39 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       ],
     );
 
+    final accent = embed
+        ? ModuleColors.analytics
+        : Theme.of(context).colorScheme.primary;
     final header = Row(
       children: [
         Icon(
           Icons.settings_outlined,
-          color: Theme.of(context).colorScheme.primary,
-          size: isCompact ? 16 : 20,
+          color: accent,
+          size: embed ? 15 : (isCompact ? 16 : 20),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 6),
+        if (embed) ...[
+          Text(
+            'STEP 2',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.6,
+              color: accent,
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
         Expanded(
           child: Text(
-            'Parser Configuration',
+            embed ? 'Parser & security' : 'Parser Configuration',
             style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: isCompact ? 13 : 15,
+              fontWeight: FontWeight.w700,
+              fontSize: embed ? 13 : (isCompact ? 13 : 15),
             ),
           ),
         ),
-        if (isCompact)
+        if (isCompact && !embed)
           Icon(
             _parserConfigExpanded
                 ? Icons.expand_less
@@ -1173,11 +1363,13 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
 
     return GlassCard(
       child: Padding(
-        padding: EdgeInsets.all(isCompact ? 12.0 : 20.0),
+        padding: EdgeInsets.all(
+          embed ? 10.0 : (isCompact ? 12.0 : 20.0),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (isCompact)
+            if (isCompact && !embed)
               InkWell(
                 onTap: () => setState(
                     () => _parserConfigExpanded = !_parserConfigExpanded),
@@ -1189,8 +1381,8 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
               )
             else
               header,
-            if (!isCompact || _parserConfigExpanded) ...[
-              SizedBox(height: isCompact ? 10 : 18),
+            if (!isCompact || embed || _parserConfigExpanded) ...[
+              SizedBox(height: gapMd),
               parserBody,
             ],
           ],
@@ -1204,7 +1396,9 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     required bool isCompact,
   }) {
     final bool isInteractable = !_processing && !_intakeBusy;
-    final primary = Theme.of(context).colorScheme.primary;
+    final primary = widget.embeddedInImportShell
+        ? ModuleColors.analytics
+        : Theme.of(context).colorScheme.primary;
     final batchFull = _pendingFiles.length >= _maxFiles;
     final showBrokerDownload = (_selectedBrokerType == 'ZERODHA') ||
         (_selectedBrokerType == 'GROWW') ||
@@ -1215,7 +1409,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     String headline;
     if (_processing) {
       headline =
-          'Syncing ${_pendingFiles.length} file${_pendingFiles.length == 1 ? '' : 's'}...';
+          'Processing ${_pendingFiles.length} file${_pendingFiles.length == 1 ? '' : 's'}...';
     } else if (_intakeBusy) {
       headline = 'Adding files…';
     } else if (_dragHover) {
@@ -1225,60 +1419,62 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     } else if (batchFull) {
       headline = 'Batch ready · $_maxFiles of $_maxFiles files';
     } else {
-      headline = 'Upload broker files';
+      headline = widget.embeddedInImportShell
+          ? 'Drag & drop your statement here'
+          : 'Upload broker files';
     }
 
-    final selectFilesButton = isCompact
-        ? FilledButton.icon(
-            onPressed:
-                isInteractable && !batchFull ? _pickAndUpload : null,
-            icon: const Icon(Icons.description_outlined, size: 18),
-            label: Text(
-              batchFull ? 'Batch full' : 'Select Files',
-              style: const TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.w600),
-            ),
-            style: FilledButton.styleFrom(
-              backgroundColor: primary,
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              disabledBackgroundColor: primary.withOpacity(0.35),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
-            ),
-          )
-        : OutlinedButton.icon(
-            onPressed:
-                isInteractable && !batchFull ? _pickAndUpload : null,
-            icon: const Icon(Icons.folder_open, size: 18),
-            label: Text(
-              batchFull ? 'Batch full' : 'Select Files',
-              style: const TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.w600),
-            ),
-            style: OutlinedButton.styleFrom(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-            ),
-          );
+    final onPrimary = ThemeData.estimateBrightnessForColor(primary) ==
+            Brightness.dark
+        ? Colors.white
+        : const Color(0xFF0B0D0F);
 
-    final zoneDecoration = BoxDecoration(
-      color: _dragHover
-          ? primary.withOpacity(0.10)
-          : (batchFull && isInteractable
-              ? primary.withOpacity(0.03)
-              : Colors.transparent),
-      border: Border.all(
-        color: primary.withOpacity(
-          _dragHover ? 0.75 : (isInteractable ? 0.45 : 0.2),
-        ),
-        style: BorderStyle.solid,
-        width: _dragHover ? 2 : 1.5,
+    final selectFilesButton = FilledButton.icon(
+      onPressed: isInteractable && !batchFull ? _pickAndUpload : null,
+      icon: const Icon(Icons.folder_open, size: 18),
+      label: Text(
+        batchFull ? 'Batch full' : 'Select files',
+        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
       ),
-      borderRadius: BorderRadius.circular(isCompact ? 14 : 16),
+      style: FilledButton.styleFrom(
+        backgroundColor: primary,
+        foregroundColor: onPrimary,
+        disabledBackgroundColor: primary.withValues(alpha: 0.35),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+
+    final sampleLink = TextButton.icon(
+      onPressed: _downloadSample,
+      icon: Icon(Icons.star_outline, size: 16, color: primary),
+      label: Text(
+        'Sample Portfolio CSV',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: primary,
+        ),
+      ),
+    );
+
+    final radius = BorderRadius.circular(isCompact ? 14 : 16);
+    final zoneFill = _dragHover
+        ? primary.withValues(alpha: 0.10)
+        : Colors.transparent;
+    final dashColor = primary.withValues(
+      alpha: _dragHover ? 0.9 : (isInteractable ? 0.65 : 0.3),
+    );
+
+    final embeddedActions = Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 12,
+      runSpacing: 8,
+      children: [
+        selectFilesButton,
+        sampleLink,
+      ],
     );
 
     final uploadHeadline = Column(
@@ -1286,25 +1482,28 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       children: [
         _processing || _intakeBusy
             ? SizedBox(
-                height: isCompact ? 32 : 44,
-                width: isCompact ? 32 : 44,
-                child: const CircularProgressIndicator(strokeWidth: 3),
+                height: isCompact ? 32 : 48,
+                width: isCompact ? 32 : 48,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  color: primary,
+                ),
               )
             : Icon(
                 _dragHover
                     ? Icons.file_download_outlined
                     : Icons.cloud_upload_outlined,
-                size: isCompact ? 30 : 44,
+                size: isCompact ? 36 : 52,
                 color: isInteractable ? primary : context.colors.textMuted,
               ),
-        SizedBox(height: isCompact ? 8 : 10),
+        SizedBox(height: isCompact ? 10 : 14),
         Text(
           headline,
           textAlign: TextAlign.center,
           style: TextStyle(
             color: isInteractable ? primary : context.colors.textMuted,
-            fontWeight: FontWeight.bold,
-            fontSize: isCompact ? 13 : 15,
+            fontWeight: FontWeight.w700,
+            fontSize: isCompact ? 14 : 16,
           ),
         ),
         SizedBox(height: isCompact ? 4 : 6),
@@ -1315,37 +1514,33 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: isCompact ? 11 : 12,
-            color: Theme.of(context)
-                .colorScheme
-                .onSurfaceVariant
-                .withOpacity(0.8),
+            color: isInteractable
+                ? primary.withValues(alpha: 0.85)
+                : Theme.of(context)
+                    .colorScheme
+                    .onSurfaceVariant
+                    .withValues(alpha: 0.8),
           ),
         ),
+        if (widget.embeddedInImportShell) ...[
+          SizedBox(height: isCompact ? 14 : 18),
+          embeddedActions,
+        ],
       ],
     );
 
-    // Dropzone/InkWell only cover the headline area so compact Select Files stays tappable.
+    // Dropzone sits behind content; buttons use IgnorePointer so clicks pass
+    // through only on empty area — buttons stay tappable above.
     final dropTarget = ClipRRect(
-      borderRadius: BorderRadius.circular(isCompact ? 14 : 16),
+      borderRadius: radius,
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              isCompact ? 14 : 24,
-              isCompact ? 14 : 28,
-              isCompact ? 14 : 24,
-              isCompact ? 4 : 28,
-            ),
-            child: uploadHeadline,
-          ),
           if (kIsWeb && isInteractable)
             Positioned.fill(
               child: DropzoneView(
                 operation: DragOperation.copy,
                 cursor: CursorType.pointer,
-                // Do not set mime here: many OS drops send an empty MIME and
-                // would be rejected before extension checks can run.
                 onCreated: (ctrl) => _dropzoneController = ctrl,
                 onHover: () {
                   if (!_dragHover) setState(() => _dragHover = true);
@@ -1353,7 +1548,6 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                 onLeave: () {
                   if (_dragHover) setState(() => _dragHover = false);
                 },
-                // Use onDropFiles only — onDropFile also fires and would double-add.
                 onDropFiles: _onDropFiles,
                 onDropInvalid: _onDropInvalid,
               ),
@@ -1364,39 +1558,69 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: isInteractable ? _pickAndUpload : null,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: radius,
                 ),
               ),
             ),
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: isCompact ? 14 : 24,
+              vertical: widget.embeddedInImportShell
+                  ? (isCompact ? 16 : 22)
+                  : (isCompact ? 14 : 28),
+            ),
+            child: uploadHeadline,
+          ),
         ],
       ),
     );
 
-    final uploadZone = Container(
-      width: double.infinity,
-      decoration: zoneDecoration,
-      child: isCompact
-          ? Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                dropTarget,
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
-                  child: selectFilesButton,
-                ),
-              ],
-            )
-          : dropTarget,
+    final uploadZone = CustomPaint(
+      painter: _DashedRRectPainter(
+        color: dashColor,
+        strokeWidth: _dragHover ? 2 : 1.6,
+        radius: isCompact ? 14 : 16,
+      ),
+      child: Container(
+        width: double.infinity,
+        constraints: BoxConstraints(
+          minHeight: widget.embeddedInImportShell
+              ? (isCompact ? 150 : 168)
+              : 0,
+        ),
+        decoration: BoxDecoration(
+          color: zoneFill,
+          borderRadius: radius,
+        ),
+        child: dropTarget,
+      ),
     );
 
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          uploadZone,
-          // Web/wide: Select Files + Sample stay below the zone (unchanged).
-          // Compact: Select Files is inside the zone; hide Sample/broker help.
-          if (!isCompact)
+          if (widget.embeddedInImportShell)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 4),
+              child: Text(
+                'STEP 1 OF 2',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.8,
+                  color: primary,
+                ),
+              ),
+            ),
+          Padding(
+            padding: widget.embeddedInImportShell
+                ? const EdgeInsets.fromLTRB(12, 0, 12, 10)
+                : EdgeInsets.zero,
+            child: uploadZone,
+          ),
+          // Legacy (non-shell): Select Files + Sample below the zone.
+          if (!widget.embeddedInImportShell && !isCompact)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
               child: Wrap(
@@ -1406,14 +1630,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                 runSpacing: 8,
                 children: [
                   selectFilesButton,
-                  TextButton.icon(
-                    onPressed: _downloadSample,
-                    icon: const Icon(Icons.download, size: 16),
-                    label: const Text(
-                      'Sample Portfolio CSV',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                  ),
+                  sampleLink,
                   if (showBrokerDownload)
                     TextButton.icon(
                       onPressed: () {
@@ -1426,8 +1643,8 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                       style: TextButton.styleFrom(
                         backgroundColor:
                             Theme.of(context).brightness == Brightness.dark
-                                ? primary.withOpacity(0.3)
-                                : primary.withOpacity(0.12),
+                                ? primary.withValues(alpha: 0.3)
+                                : primary.withValues(alpha: 0.12),
                         padding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 8),
                         shape: RoundedRectangleBorder(
@@ -1438,7 +1655,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                         Icons.open_in_new,
                         size: 15,
                         color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white.withOpacity(0.9)
+                            ? Colors.white.withValues(alpha: 0.9)
                             : primary,
                       ),
                       label: Text(
@@ -1455,6 +1672,11 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                     ),
                 ],
               ),
+            )
+          else if (!widget.embeddedInImportShell && isCompact)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+              child: selectFilesButton,
             ),
           if (_pendingFiles.isNotEmpty) ...[
             const Divider(height: 1),
@@ -1507,10 +1729,15 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
               child: SizedBox(
                 width: double.infinity,
                 child: AppButton(
-                  text: 'Sync portfolios (${_pendingFiles.length})',
+                  text: widget.embeddedInImportShell
+                      ? 'Process & import (${_pendingFiles.length})'
+                      : 'Sync portfolios (${_pendingFiles.length})',
                   onPressed: _submitBatch,
                   isLoading: _processing,
                   type: AppButtonType.primary,
+                  backgroundColor: widget.embeddedInImportShell
+                      ? ModuleColors.analytics
+                      : null,
                 ),
               ),
             ),
@@ -1524,8 +1751,23 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     final file = _pendingFiles[index];
     final primary = Theme.of(context).colorScheme.primary;
     final brokerItems = [
-      ...apiProvider.brokerTypes.map((e) => e.toSimpleDropdownItem(text: e)),
-      '__AUTO__'.toSimpleDropdownItem(text: 'Auto-detect (recommended)'),
+      ...apiProvider.brokerTypes.map(
+        (e) => DropdownMenuItem<String>(
+          value: e,
+          child: brokerDropdownLabel(e),
+        ),
+      ),
+      DropdownMenuItem<String>(
+        value: '__AUTO__',
+        child: Row(
+          children: [
+            Icon(Icons.auto_awesome_outlined,
+                size: 16, color: ModuleColors.analytics),
+            const SizedBox(width: 8),
+            const Text('Auto-detect', style: TextStyle(fontSize: 13)),
+          ],
+        ),
+      ),
     ];
     final docTypeValues = <String>{..._docTypes};
     if (file.documentType != null) {
@@ -1683,44 +1925,11 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   }
 
   Widget _buildStatusLog() {
-    final lower = _status.toLowerCase();
-    final isError = lower.contains('error') ||
-        lower.contains('failed to fetch') ||
-        lower.contains('not available');
-    Color statusColor = isError
-        ? context.colors.statusError
-        : Theme.of(context).colorScheme.primary;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.04),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: statusColor.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          Icon(isError ? Icons.error_outline : Icons.info_outline,
-              color: statusColor, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              _status.isEmpty ? 'Ready' : _status,
-              style: TextStyle(
-                  color: statusColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13),
-            ),
-          ),
-          if (_processing)
-            const SizedBox(
-              width: 14,
-              height: 14,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-        ],
-      ),
+    if (_status.isEmpty && !_processing) return const SizedBox.shrink();
+    return ImportProcessBanner(
+      phase: _bannerPhase,
+      message: _status.isEmpty ? 'Working…' : _status,
+      busyStartedAt: _busyStartedAt,
     );
   }
 
@@ -1734,12 +1943,13 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     final batch = _batchStatus;
     if (batch == null) return;
     setState(() {
-      _processing = true;
-      _status = confirm
-          ? 'Confirming ${file.fileName}...'
-          : (password != null
-              ? 'Retrying ${file.fileName} with password...'
-              : 'Resolving ${file.fileName}...');
+      _beginBusy(
+        confirm
+            ? 'Confirming ${file.fileName}…'
+            : (password != null
+                ? 'Retrying ${file.fileName}…'
+                : 'Resolving ${file.fileName}…'),
+      );
     });
     try {
       final updated = await apiProvider.resolveBatchFile(
@@ -1756,8 +1966,10 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _processing = false;
-        _status = 'Resolve failed: $e';
+        _endBusy(
+          message: 'Resolve failed: ${shortImportError(e)}',
+          phase: ImportProcessPhase.error,
+        );
       });
     }
   }
@@ -3139,4 +3351,51 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       ),
     );
   }
+}
+
+/// Dashed rounded rect for the import drop zone (design-system accent color).
+class _DashedRRectPainter extends CustomPainter {
+  _DashedRRectPainter({
+    required this.color,
+    required this.strokeWidth,
+    required this.radius,
+  });
+
+  final Color color;
+  final double strokeWidth;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke;
+    final rrect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(
+        strokeWidth / 2,
+        strokeWidth / 2,
+        size.width - strokeWidth,
+        size.height - strokeWidth,
+      ),
+      Radius.circular(radius),
+    );
+    final path = Path()..addRRect(rrect);
+    const dash = 6.0;
+    const gap = 4.0;
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        final next = (distance + dash).clamp(0.0, metric.length);
+        canvas.drawPath(metric.extractPath(distance, next), paint);
+        distance = next + gap;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedRRectPainter oldDelegate) =>
+      oldDelegate.color != color ||
+      oldDelegate.strokeWidth != strokeWidth ||
+      oldDelegate.radius != radius;
 }

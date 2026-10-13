@@ -100,6 +100,7 @@ export 'core/avatar/avatar_presets.dart';
 export 'core/avatar/user_avatar_preference.dart';
 export 'core/avatar/user_avatar_store.dart';
 export 'core/avatar/user_avatar.dart';
+export 'core/portfolio/portfolio_data_refresh.dart';
 export 'core/telemetry/boot_trace.dart';
 export 'core/telemetry/boot_rum_collector.dart';
 export 'core/di/network_providers.dart';

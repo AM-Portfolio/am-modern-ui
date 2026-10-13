@@ -79,6 +79,9 @@ class AppRoutes {
       '$profile?highlight=subscription';
 
   static const docIntelTabs = [
+    'mailbox',
+    'upload',
+    // Legacy slugs still accepted in URLs
     'doc-processor',
     'email-extractor',
   ];
@@ -189,8 +192,7 @@ class AppRoutes {
 
   static String marketPath([String tab = 'all-indices']) => '/app/market/$tab';
 
-  static String docIntelPath([String tab = 'doc-processor']) =>
-      '$docIntel/$tab';
+  static String docIntelPath([String tab = 'mailbox']) => '$docIntel/$tab';
 
   static bool isDocIntelTab(String slug) => docIntelTabs.contains(slug);
 
@@ -209,7 +211,7 @@ class AppRoutes {
     'AI Chat': aiChat,
     'Lab': lab,
     'Analysis': analysis,
-    'Doc Intel': '${AppRoutes.docIntel}/doc-processor',
+    'Doc Intel': '${AppRoutes.docIntel}/mailbox',
     'Profile': profile,
     'Subscription': subscription,
   };

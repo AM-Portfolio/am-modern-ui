@@ -3,6 +3,7 @@ import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_provider.da
 import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_renderer.dart';
 import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_store.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
+import 'package:am_dashboard_ui/presentation/providers/dashboard_portfolio_refresh_binder.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_timeframe_provider.dart';
 import 'package:am_dashboard_ui/presentation/providers/has_demo_portfolio_provider.dart';
 import 'package:am_common/am_common.dart';
@@ -72,7 +73,9 @@ class DashboardWebScreen extends ConsumerWidget {
     final showDemoBanner =
         ref.watch(hasDemoPortfolioProvider).asData?.value ?? false;
 
-    return Scaffold(
+    return DashboardPortfolioRefreshBinder(
+      userId: userId,
+      child: Scaffold(
       backgroundColor: context.colors.scaffoldBackground,
       body: Stack(
         children: [
@@ -207,6 +210,7 @@ class DashboardWebScreen extends ConsumerWidget {
           ),
         ],
       ),
+    ),
     );
   }
 }

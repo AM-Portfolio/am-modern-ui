@@ -1,6 +1,8 @@
 # Analysis options for am_analysis_core package
 
 analyzer:
+  exclude:
+    - build/**
   language:
     strict-casts: true
     strict-raw-types: true
