@@ -34,12 +34,14 @@ class TradeResponsiveLayout extends ConsumerStatefulWidget {
     this.initialTab = 'portfolios',
     this.onTabChanged,
     this.onPortfolioChanged,
+    this.onQuickAdd,
   });
 
   final String? initialPortfolioId;
   final String initialTab;
   final ValueChanged<String>? onTabChanged;
   final void Function(String portfolioId, String portfolioName)? onPortfolioChanged;
+  final ValueChanged<GlobalAddActionKind>? onQuickAdd;
 
   /// Must match UnifiedSidebarScaffold.tabletBreakpoint so we don't render
   /// TradeWebScreen inside a width where the sidebar already collapses to mobile.
@@ -217,6 +219,7 @@ class TradeResponsiveLayoutState extends ConsumerState<TradeResponsiveLayout> {
               }
             },
             onPortfolioChanged: _onPortfolioChanged,
+            onQuickAdd: widget.onQuickAdd,
           );
         }
 

@@ -20,12 +20,14 @@ class DashboardMobileScreen extends ConsumerStatefulWidget {
   final String userId;
   final VoidCallback? onOpenDocIntel;
   final VoidCallback? onOpenPaper;
+  final ValueChanged<GlobalAddActionKind>? onQuickAdd;
 
   const DashboardMobileScreen({
     super.key,
     required this.userId,
     this.onOpenDocIntel,
     this.onOpenPaper,
+    this.onQuickAdd,
   });
 
   @override
@@ -116,8 +118,6 @@ class _DashboardMobileScreenState
 
   Widget _buildStickyHeader({
     required Color onSurface,
-    required Color chipBg,
-    required Color chipBorder,
     required bool showDemoBadge,
   }) {
     final scope = MobileSearchScope.maybeOf(context);
@@ -132,91 +132,76 @@ class _DashboardMobileScreenState
       );
     }
 
-    final narrow = MediaQuery.sizeOf(context).width < 360;
-    return Material(
-      color: Colors.transparent,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.md,
-          AppSpacing.sm - 2,
-          AppSpacing.md,
-          AppSpacing.sm + 2,
-        ),
-        child: Row(
-          children: [
-            IconButton(
-              tooltip: 'Search',
-              onPressed: () {
-                if (MobileSearchScope.tryOpenGlobalSearch(context)) return;
-                MobileSearchScope.setOpen(context, true);
-                setState(() => _searchOpen = true);
-              },
-              icon: Icon(Icons.search_rounded, color: onSurface, size: 22),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-            ),
-            if (showDemoBadge) ...[
-              const SizedBox(width: AppSpacing.sm),
-              const DemoAccountBadge(),
-            ],
-            Expanded(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                mainAxisSize: MainAxisSize.max,
-                children: [
-                  if (kDashboardCustomizeEnabled) ...[
-                    IconButton(
-                      tooltip: 'Customize dashboard',
-                      onPressed: () => DashboardCustomizeSheet.show(context),
-                      icon: Icon(Icons.tune, color: onSurface, size: 22),
-                      padding: EdgeInsets.zero,
-                      constraints:
-                          const BoxConstraints(minWidth: 36, minHeight: 36),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = ModuleColors.dashboard;
+    const trackHeight = 58.0;
+    const segmentHeight = 50.0;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
+      child: NavigationChrome.glass(
+        context: context,
+        isDark: isDark,
+        borderRadius: 24,
+        child: SizedBox(
+          height: trackHeight,
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: Row(
+              children: [
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    if (MobileSearchScope.tryOpenGlobalSearch(context)) return;
+                    MobileSearchScope.setOpen(context, true);
+                    setState(() => _searchOpen = true);
+                  },
+                  child: SizedBox(
+                    width: 44,
+                    height: segmentHeight,
+                    child: Icon(
+                      Icons.search_rounded,
+                      color: accent,
+                      size: 22,
                     ),
-                    const SizedBox(width: 4),
-                  ],
-                  if (widget.onOpenDocIntel != null) ...[
-                    if (narrow)
-                      IconButton(
-                        tooltip: 'Add Portfolio',
-                        onPressed: widget.onOpenDocIntel,
-                        icon: Icon(
-                          Icons.psychology_outlined,
-                          color: context.colors.statusInfo,
-                          size: 22,
-                        ),
-                        padding: EdgeInsets.zero,
-                        constraints:
-                            const BoxConstraints(minWidth: 36, minHeight: 36),
-                      )
-                    else
-                      _DocIntelAddPortfolioButton(
-                        onTap: widget.onOpenDocIntel!,
-                        backgroundColor: chipBg,
-                        borderColor: chipBorder,
-                        foregroundColor: onSurface,
-                      ),
-                    const SizedBox(width: 8),
-                  ],
-                  if (widget.onOpenPaper != null) ...[
-                    IconButton(
-                      tooltip: 'Paper trading',
-                      onPressed: widget.onOpenPaper,
-                      icon: Icon(Icons.science_outlined,
-                          color: onSurface, size: 22),
-                      padding: EdgeInsets.zero,
-                      constraints:
-                          const BoxConstraints(minWidth: 36, minHeight: 36),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  const GlobalTimeFrameBar(
-                    variant: GlobalTimeFrameVariant.dropdown,
                   ),
+                ),
+                if (showDemoBadge) ...[
+                  const SizedBox(width: 4),
+                  const DemoAccountBadge(),
                 ],
-              ),
+                const Spacer(),
+                if (kDashboardCustomizeEnabled)
+                  IconButton(
+                    tooltip: 'Customize dashboard',
+                    onPressed: () => DashboardCustomizeSheet.show(context),
+                    icon: Icon(Icons.tune, color: onSurface, size: 22),
+                    padding: EdgeInsets.zero,
+                    constraints:
+                        const BoxConstraints(minWidth: 40, minHeight: 40),
+                  ),
+                if (widget.onOpenPaper != null)
+                  IconButton(
+                    tooltip: 'Paper trading',
+                    onPressed: widget.onOpenPaper,
+                    icon: Icon(Icons.science_outlined, color: onSurface, size: 22),
+                    padding: EdgeInsets.zero,
+                    constraints:
+                        const BoxConstraints(minWidth: 40, minHeight: 40),
+                  ),
+                const GlobalTimeFrameBar(
+                  variant: GlobalTimeFrameVariant.dropdown,
+                ),
+                if (widget.onQuickAdd != null)
+                  SyncQuickActionsControl(
+                    accentColor: accent,
+                    iconColor: onSurface,
+                    actions: buildGlobalAddMenuActions(widget.onQuickAdd!),
+                    showSubtitles: false,
+                  ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -243,12 +228,6 @@ class _DashboardMobileScreenState
 
     final bgColor = Theme.of(context).colorScheme.surface;
     final onSurface = Theme.of(context).colorScheme.onSurface;
-    final chipBg = isDark
-        ? Colors.white.withValues(alpha: 0.08)
-        : context.colors.actionPrimaryBg.withValues(alpha: 0.1);
-    final chipBorder = isDark
-        ? Colors.white.withValues(alpha: 0.12)
-        : context.colors.actionPrimaryBg.withValues(alpha: 0.2);
 
     Future<void> refresh() async {
       retryDashboardSummary(ref, userId);
@@ -308,11 +287,9 @@ class _DashboardMobileScreenState
           SafeArea(
             child: Column(
               children: [
-                // Sticky top: actions (customize · Doc Intel · paper · timeframe)
+                // Sticky top: Sync / paper / timeframe
                 _buildStickyHeader(
                   onSurface: onSurface,
-                  chipBg: chipBg,
-                  chipBorder: chipBorder,
                   showDemoBadge: showDemoBanner,
                 ),
                 Expanded(
@@ -352,62 +329,6 @@ class _DashboardMobileScreenState
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Compact chip: Doc Intel icon + "Add Portfolio" — opens Doc Intelligence.
-class _DocIntelAddPortfolioButton extends StatelessWidget {
-  const _DocIntelAddPortfolioButton({
-    required this.onTap,
-    required this.backgroundColor,
-    required this.borderColor,
-    required this.foregroundColor,
-  });
-
-  final VoidCallback onTap;
-  final Color backgroundColor;
-  final Color borderColor;
-  final Color foregroundColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          height: 36,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: borderColor),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.psychology_outlined,
-                size: 17,
-                color: context.colors.statusInfo,
-              ),
-              const SizedBox(width: 5),
-              Text(
-                'Add Portfolio',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: foregroundColor,
-                  fontFamily: 'Inter',
-                  height: 1,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

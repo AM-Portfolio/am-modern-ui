@@ -76,6 +76,7 @@ class UnifiedSidebarScaffold extends StatefulWidget {
     this.mobileLeadingWidth,
     this.titleWidget,
     this.mobileStickyHeader,
+    this.mobilePillTrailing,
     this.autoHideMobileTabsOnScroll = false,
     this.enableMobileSearch = true,
   }) : assert((items != null) != (sections != null),
@@ -98,6 +99,9 @@ class UnifiedSidebarScaffold extends StatefulWidget {
   /// timeframe). Stays visible while [autoHideMobileTabsOnScroll] collapses the
   /// tabs, so the row naturally slides up/down with the SizeTransition.
   final Widget? mobileStickyHeader;
+
+  /// Trailing widget inside the mobile pill track (e.g. more_vert quick actions).
+  final Widget? mobilePillTrailing;
 
   /// Sidebar Subtitle (e.g. "Real-time Analytics")
   final String? subtitle;
@@ -496,6 +500,7 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
       );
     }
 
+    final trailing = widget.mobilePillTrailing;
     final trackChild = fillTrack
         ? Row(
             children: [
@@ -507,6 +512,7 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
                     key: i == selectedIndex ? selectedKey : null,
                   ),
                 ),
+              if (trailing != null) trailing,
             ],
           )
         : Row(
@@ -525,6 +531,7 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
                   ),
                 ),
               ),
+              if (trailing != null) trailing,
             ],
           );
 

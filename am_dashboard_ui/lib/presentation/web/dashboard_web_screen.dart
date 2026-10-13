@@ -19,12 +19,14 @@ class DashboardWebScreen extends ConsumerWidget {
   final String userId;
   final VoidCallback? onOpenDocIntel;
   final VoidCallback? onOpenPaper;
+  final ValueChanged<GlobalAddActionKind>? onQuickAdd;
 
   const DashboardWebScreen({
     super.key,
     required this.userId,
     this.onOpenDocIntel,
     this.onOpenPaper,
+    this.onQuickAdd,
   });
 
   void _listenDashboardFirstData(WidgetRef ref, String tfCode) {
@@ -157,23 +159,6 @@ class DashboardWebScreen extends ConsumerWidget {
                                 DashboardCustomizeSheet.show(context),
                             icon: const Icon(Icons.tune),
                           ),
-                        if (onOpenDocIntel != null)
-                          TextButton.icon(
-                            onPressed: onOpenDocIntel,
-                            icon: Icon(
-                              Icons.psychology_outlined,
-                              size: 18,
-                              color: context.colors.statusInfo,
-                            ),
-                            label: const Text('Add Portfolio'),
-                            style: TextButton.styleFrom(
-                              foregroundColor: onSurface,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.sm + 2,
-                                vertical: AppSpacing.sm - 2,
-                              ),
-                            ),
-                          ),
                         if (onOpenPaper != null)
                           TextButton.icon(
                             onPressed: onOpenPaper,
@@ -193,6 +178,15 @@ class DashboardWebScreen extends ConsumerWidget {
                           ),
                         const SizedBox(width: AppSpacing.md),
                         const GlobalTimeFrameBar(),
+                        if (onQuickAdd != null) ...[
+                          const SizedBox(width: AppSpacing.sm),
+                          SyncQuickActionsControl(
+                            accentColor: ModuleColors.dashboard,
+                            iconColor: onSurface,
+                            actions: buildGlobalAddMenuActions(onQuickAdd!),
+                            showSubtitles: false,
+                          ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: AppSpacing.lg),

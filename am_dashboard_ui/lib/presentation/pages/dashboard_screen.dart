@@ -1,3 +1,4 @@
+import 'package:am_common/am_common.dart';
 import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_bootstrap.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
 import 'package:am_design_system/am_design_system.dart';
@@ -10,12 +11,14 @@ class DashboardScreen extends ConsumerWidget {
   final String userId;
   final VoidCallback? onOpenDocIntel;
   final VoidCallback? onOpenPaper;
+  final ValueChanged<GlobalAddActionKind>? onQuickAdd;
 
   const DashboardScreen({
     super.key,
     required this.userId,
     this.onOpenDocIntel,
     this.onOpenPaper,
+    this.onQuickAdd,
   });
 
   @override
@@ -29,11 +32,13 @@ class DashboardScreen extends ConsumerWidget {
                 userId: resolvedUserId,
                 onOpenDocIntel: onOpenDocIntel,
                 onOpenPaper: onOpenPaper,
+                onQuickAdd: onQuickAdd,
               )
             : DashboardWebScreen(
                 userId: resolvedUserId,
                 onOpenDocIntel: onOpenDocIntel,
                 onOpenPaper: onOpenPaper,
+                onQuickAdd: onQuickAdd,
               ),
       ),
       loading: () => const _DashboardSessionLoading(),

@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/shell/app_shell.dart';
+import '../../features/shell/global_add_action_request.dart';
 import 'app_routes.dart';
 import 'auth_refresh_listenable.dart';
 import 'deferred_routes.dart';
@@ -280,6 +281,15 @@ GoRouter createAppRouter({
                 onOpenDocIntel: () =>
                     context.go(AppRoutes.docIntelPath('mailbox')),
                 onOpenPaper: () => context.go(AppRoutes.marketPath('paper')),
+                onQuickAdd: (kind) {
+                  requestGlobalAddAction(
+                    context,
+                    kind: kind,
+                    currentLocation: AppRoutes.dashboard,
+                    onUploadOnDashboard: () =>
+                        context.go(AppRoutes.docIntelPath('mailbox')),
+                  );
+                },
               );
             },
           ),
@@ -425,6 +435,11 @@ GoRouter createAppRouter({
                   _patchPortfolioSession(context, id, name);
                   context.go(AppRoutes.tradePath(id, 'portfolios'));
                 },
+                onQuickAdd: (kind) => requestGlobalAddAction(
+                  context,
+                  kind: kind,
+                  currentLocation: GoRouterState.of(context).matchedLocation,
+                ),
               );
             },
           ),
@@ -451,6 +466,11 @@ GoRouter createAppRouter({
                       tab;
                   context.go(AppRoutes.tradePath(id, currentTab));
                 },
+                onQuickAdd: (kind) => requestGlobalAddAction(
+                  context,
+                  kind: kind,
+                  currentLocation: GoRouterState.of(context).matchedLocation,
+                ),
               );
             },
           ),
@@ -466,6 +486,11 @@ GoRouter createAppRouter({
                   _patchPortfolioSession(context, id, name);
                   context.go(AppRoutes.tradePath(id, tab));
                 },
+                onQuickAdd: (kind) => requestGlobalAddAction(
+                  context,
+                  kind: kind,
+                  currentLocation: GoRouterState.of(context).matchedLocation,
+                ),
               );
             },
           ),

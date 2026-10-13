@@ -1,7 +1,6 @@
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
-import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/portfolio_actions_sheet.dart';
 import 'package:am_portfolio_ui/features/basket/presentation/basket_navigation.dart';
 import 'package:am_portfolio_ui/features/basket/presentation/widgets/discover/discover_view_mode.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -510,66 +509,13 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     }
   }
 
-  /// Opens Sync / quick portfolio actions sheet.
-  void _openSyncActions() {
-    if (_currentPortfolioId == null || _currentPortfolioId == 'all') return;
-    GlobalBottomNavVisibility.suppressChromeTapReveal = true;
-    GlobalBottomNavVisibility.requestHide();
-    showPortfolioActionsSheet(
-      context: context,
-      triggerColor: ModuleColors.portfolio,
-      actions: [
-        FloatingMenuAction(
-          icon: Icons.upload_file_rounded,
-          title: 'Upload Portfolio',
-          subtitle: 'Import from file or broker',
-          iconColor: ModuleColors.portfolio,
-          onTap: () {
-            if (_isUploadingPortfolio) return;
-            if (widget.uploadPortfolioBuilder != null) {
-              setState(() {
-                _isUploadingPortfolio = true;
-                _isAddingTrade = false;
-              });
-            } else if (widget.onOpenDocIntel != null) {
-              widget.onOpenDocIntel!();
-            }
-          },
-        ),
-        FloatingMenuAction(
-          icon: Icons.add_circle_outline_rounded,
-          title: 'Add Trade',
-          subtitle: 'Buy or sell an asset',
-          iconColor: ModuleColors.trade,
-          onTap: () {
-            if (!_isAddingTrade) _openAddTrade();
-          },
-        ),
-        FloatingMenuAction(
-          icon: Icons.account_balance_wallet_outlined,
-          title: 'Add Asset Class',
-          subtitle: 'Create a new asset class',
-          iconColor: ModuleColors.market,
-          onTap: () {
-            if (_isAddingAssetClass) return;
-            setState(() {
-              _isAddingAssetClass = true;
-              _isAddingTrade = false;
-              _isUploadingPortfolio = false;
-            });
-          },
-        ),
-        FloatingMenuAction(
-          icon: Icons.shopping_basket_outlined,
-          title: 'Add Basket',
-          subtitle: 'Create a new basket',
-          iconColor: ModuleColors.reports,
-          onTap: () {
-            _selectTab(3);
-          },
-        ),
-      ],
-    );
+  void _onSyncQuickAdd(GlobalAddActionKind kind) {
+    GlobalAddActionsBus.instance.request(kind);
+    // Re-notify next frame so listeners that missed the sync still run.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final bus = GlobalAddActionsBus.instance;
+      if (bus.pending == kind) bus.request(kind);
+    });
   }
 
   @override
@@ -611,6 +557,15 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
         showMobileMenuButton: false,
         autoHideMobileTabsOnScroll: true,
         onBackToGlobal: widget.onBack,
+        mobilePillTrailing: (_currentPortfolioId != null &&
+                _currentPortfolioId != 'all')
+            ? SyncQuickActionsControl(
+                accentColor: ModuleColors.portfolio,
+                iconColor: Theme.of(context).colorScheme.onSurface,
+                actions: buildGlobalAddMenuActions(_onSyncQuickAdd),
+                showSubtitles: false,
+              )
+            : null,
         mobileStickyHeader: _tabController.index == 3
             ? null // BasketExplorer owns Discover / My Baskets (avoid duplicate)
             : _buildStickyControlsRow(context, currentName),
@@ -712,57 +667,6 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
   }
 
   Widget _buildStickyControlsRow(BuildContext context, String currentName) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final onSurface = context.textPrimary;
-    final chipBg = isDark
-        ? context.glassOverlay(0.08)
-        : const Color(0xFFEDE9FE);
-    final chipBorder = isDark
-        ? context.glassOverlay(0.12)
-        : const Color(0xFFDDD6FE);
-
-    Widget actionChip({
-      required VoidCallback onTap,
-      required IconData icon,
-      required String label,
-      Color? iconColor,
-      bool iconOnly = false,
-    }) {
-      return Tooltip(
-        message: label,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(10),
-          child: Container(
-            height: 36,
-            padding: EdgeInsets.symmetric(horizontal: iconOnly ? 8 : 8),
-            decoration: BoxDecoration(
-              color: chipBg,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: chipBorder),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, size: 17, color: iconColor ?? onSurface),
-                if (!iconOnly) ...[
-                  const SizedBox(width: 4),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: onSurface,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
     final hasSelectedPortfolio =
         _currentPortfolioId != null && _currentPortfolioId != 'all';
 
@@ -792,15 +696,6 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (hasSelectedPortfolio) ...[
-                    actionChip(
-                      onTap: _openSyncActions,
-                      icon: Icons.add_rounded,
-                      iconColor: ModuleColors.portfolio,
-                      label: 'Sync',
-                    ),
-                    const SizedBox(width: 4),
-                  ],
                   GlobalTimeFrameBar(
                     variant: GlobalTimeFrameVariant.dropdown,
                     primaryColor: ModuleColors.portfolio,

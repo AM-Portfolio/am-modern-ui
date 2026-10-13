@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -50,6 +49,7 @@ class TradeMobileScreen extends ConsumerStatefulWidget {
     this.onBack,
     this.onTabChanged,
     this.onPortfolioChanged,
+    this.onQuickAdd,
   });
 
   final String? selectedPortfolioId;
@@ -70,6 +70,9 @@ class TradeMobileScreen extends ConsumerStatefulWidget {
   /// Called when a portfolio is selected (for cross-layout state sync)
   final void Function(String id, String name)? onPortfolioChanged;
 
+  /// Sync / more_vert quick actions (Upload, Add Trade, …).
+  final ValueChanged<GlobalAddActionKind>? onQuickAdd;
+
   @override
   ConsumerState<TradeMobileScreen> createState() => _TradeMobileScreenState();
 }
@@ -78,13 +81,12 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
   late MobileTradeViewType _selectedView;
   String? _currentPortfolioId;
   String? _currentPortfolioName;
-  Timer? _fabHideTimer;
-  bool _showFab = true;
 
   @override
   void initState() {
     super.initState();
-    _resetFabHideTimer();
+    GlobalAddActionsBus.instance.addListener(_onGlobalAddAction);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _onGlobalAddAction());
 
     // Prefer explicit mobile view; fall back to web-index mapping.
     if (widget.initialView != MobileTradeViewType.portfolios ||
@@ -136,20 +138,26 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
 
   @override
   void dispose() {
-    _fabHideTimer?.cancel();
+    GlobalAddActionsBus.instance.removeListener(_onGlobalAddAction);
     super.dispose();
   }
 
-  void _resetFabHideTimer() {
-    _fabHideTimer?.cancel();
-    if (!_showFab) {
-      setState(() => _showFab = true);
+  void _onGlobalAddAction() {
+    if (!mounted) return;
+    final bus = GlobalAddActionsBus.instance;
+    if (!bus.tryConsume(GlobalAddActionKind.addTrade)) return;
+    _onViewChanged(MobileTradeViewType.addTrade);
+  }
+
+  void _handleQuickAdd(GlobalAddActionKind kind) {
+    if (widget.onQuickAdd != null) {
+      widget.onQuickAdd!(kind);
+      return;
     }
-    _fabHideTimer = Timer(const Duration(seconds: 5), () {
-      if (mounted) {
-        setState(() => _showFab = false);
-      }
-    });
+    GlobalAddActionsBus.instance.request(kind);
+    if (kind == GlobalAddActionKind.addTrade) {
+      _onViewChanged(MobileTradeViewType.addTrade);
+    }
   }
 
   void _onViewChanged(MobileTradeViewType viewType) {
@@ -207,73 +215,66 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
   @override
   Widget build(BuildContext context) {
     final isAddTrade = _selectedView == MobileTradeViewType.addTrade;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
 
-    return Listener(
-      behavior: HitTestBehavior.translucent,
-      onPointerDown: (_) => _resetFabHideTimer(),
-      onPointerMove: (_) => _resetFabHideTimer(),
-      child: NotificationListener<ScrollNotification>(
-        onNotification: (notification) {
-          if (notification is ScrollUpdateNotification) {
-            _resetFabHideTimer();
-          }
-          return false;
-        },
-        child: UnifiedSidebarScaffold(
-          module: ModuleType.trade,
-          title: isAddTrade ? 'Add New Trade' : 'Trade',
-          showAppBarOnMobile: isAddTrade,
-          showMobileMenuButton: false,
-          showModuleBottomNavigation: false,
-          autoHideMobileTabsOnScroll: true,
-          onBackToGlobal: widget.onBack,
-          floatingActionButton: _buildFloatingActionButton(context),
-          // Hide Portfolios/Holdings/Calendar pills on add-trade — one clean top bar.
-          items: isAddTrade
-              ? const <SecondarySidebarItem>[]
-              : [
-                  SecondarySidebarItem(
-                    title: 'Portfolios',
-                    icon: Icons.account_balance_wallet,
-                    isSelected: _selectedView == MobileTradeViewType.portfolios,
-                    accentColor: ModuleColors.trade,
-                    onTap: () =>
-                        _onViewChanged(MobileTradeViewType.portfolios),
-                  ),
-                  SecondarySidebarItem(
-                    title: 'Holdings',
-                    icon: Icons.dashboard_outlined,
-                    isSelected: _selectedView == MobileTradeViewType.holdings,
-                    accentColor: ModuleColors.trade,
-                    onTap: () => _onViewChanged(MobileTradeViewType.holdings),
-                  ),
-                  SecondarySidebarItem(
-                    title: 'Calendar',
-                    icon: Icons.calendar_today_outlined,
-                    isSelected: _selectedView == MobileTradeViewType.calendar,
-                    accentColor: ModuleColors.trade,
-                    onTap: () => _onViewChanged(MobileTradeViewType.calendar),
-                  ),
-                  SecondarySidebarItem(
-                    title: 'Journal',
-                    icon: Icons.book_outlined,
-                    isSelected: _selectedView == MobileTradeViewType.journal,
-                    accentColor: ModuleColors.trade,
-                    onTap: () => _onViewChanged(MobileTradeViewType.journal),
-                  ),
-                  if (ref.watch(tradeMetricsMobileEnabledProvider))
-                    SecondarySidebarItem(
-                      title: 'Metrics',
-                      icon: Icons.analytics_outlined,
-                      isSelected: _selectedView == MobileTradeViewType.analysis,
-                      accentColor: ModuleColors.trade,
-                      onTap: () =>
-                          _onViewChanged(MobileTradeViewType.analysis),
-                    ),
-                ],
-          body: _buildMainContent(context),
-        ),
-      ),
+    return UnifiedSidebarScaffold(
+      module: ModuleType.trade,
+      title: isAddTrade ? 'Add New Trade' : 'Trade',
+      showAppBarOnMobile: isAddTrade,
+      showMobileMenuButton: false,
+      showModuleBottomNavigation: false,
+      autoHideMobileTabsOnScroll: true,
+      onBackToGlobal: widget.onBack,
+      mobilePillTrailing: isAddTrade
+          ? null
+          : SyncQuickActionsControl(
+              accentColor: ModuleColors.trade,
+              iconColor: onSurface,
+              actions: buildGlobalAddMenuActions(_handleQuickAdd),
+              showSubtitles: false,
+            ),
+      // Hide Portfolios/Holdings/Calendar pills on add-trade — one clean top bar.
+      items: isAddTrade
+          ? const <SecondarySidebarItem>[]
+          : [
+              SecondarySidebarItem(
+                title: 'Portfolios',
+                icon: Icons.account_balance_wallet,
+                isSelected: _selectedView == MobileTradeViewType.portfolios,
+                accentColor: ModuleColors.trade,
+                onTap: () => _onViewChanged(MobileTradeViewType.portfolios),
+              ),
+              SecondarySidebarItem(
+                title: 'Holdings',
+                icon: Icons.dashboard_outlined,
+                isSelected: _selectedView == MobileTradeViewType.holdings,
+                accentColor: ModuleColors.trade,
+                onTap: () => _onViewChanged(MobileTradeViewType.holdings),
+              ),
+              SecondarySidebarItem(
+                title: 'Calendar',
+                icon: Icons.calendar_today_outlined,
+                isSelected: _selectedView == MobileTradeViewType.calendar,
+                accentColor: ModuleColors.trade,
+                onTap: () => _onViewChanged(MobileTradeViewType.calendar),
+              ),
+              SecondarySidebarItem(
+                title: 'Journal',
+                icon: Icons.book_outlined,
+                isSelected: _selectedView == MobileTradeViewType.journal,
+                accentColor: ModuleColors.trade,
+                onTap: () => _onViewChanged(MobileTradeViewType.journal),
+              ),
+              if (ref.watch(tradeMetricsMobileEnabledProvider))
+                SecondarySidebarItem(
+                  title: 'Metrics',
+                  icon: Icons.analytics_outlined,
+                  isSelected: _selectedView == MobileTradeViewType.analysis,
+                  accentColor: ModuleColors.trade,
+                  onTap: () => _onViewChanged(MobileTradeViewType.analysis),
+                ),
+            ],
+      body: _buildMainContent(context),
     );
   }
 
@@ -611,34 +612,4 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
         ),
       );
 
-  Widget? _buildFloatingActionButton(BuildContext context) {
-    if (_selectedView == MobileTradeViewType.addTrade ||
-        _selectedView == MobileTradeViewType.journal ||
-        _selectedView == MobileTradeViewType.analysis) {
-      return null;
-    }
-
-    return AnimatedScale(
-      duration: const Duration(milliseconds: 400),
-      scale: _showFab ? 1.0 : 0.0,
-      curve: _showFab ? Curves.elasticOut : Curves.easeInBack,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 200),
-        opacity: _showFab ? 1.0 : 0.0,
-        child: Padding(
-          padding: EdgeInsets.only(
-            bottom: PlatformConstants.globalBottomNavReserve(context),
-          ),
-          child: FloatingActionButton(
-            onPressed: () => _onViewChanged(MobileTradeViewType.addTrade),
-            backgroundColor: ModuleColors.trade,
-            foregroundColor: Colors.white,
-            elevation: 4,
-            shape: const CircleBorder(),
-            child: const Icon(Icons.add),
-          ),
-        ),
-      ),
-    );
-  }
 }

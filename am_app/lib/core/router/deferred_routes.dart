@@ -33,6 +33,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
+import 'package:am_common/am_common.dart' as common;
 import 'package:am_design_system/am_design_system.dart';
 import '../../features/chart/chart_terminal_host_page.dart';
 import '../../features/shell/skeletons/module_skeletons.dart';
@@ -187,6 +188,7 @@ Widget buildPortfolioRoute({
 Widget buildTradeDiscoveryRoute({
   required void Function(String slug) onTabChanged,
   required void Function(String id, String name) onPortfolioChanged,
+  void Function(common.GlobalAddActionKind kind)? onQuickAdd,
 }) {
   return DeferredModuleLoader(
     load: _loadTrade,
@@ -199,6 +201,7 @@ Widget buildTradeDiscoveryRoute({
         initialTab: 'portfolios',
         onTabChanged: onTabChanged,
         onPortfolioChanged: onPortfolioChanged,
+        onQuickAdd: onQuickAdd,
       ),
     ),
   );
@@ -209,6 +212,7 @@ Widget buildTradePortfolioRoute({
   required String tab,
   required void Function(String slug) onTabChanged,
   required void Function(String id, String name) onPortfolioChanged,
+  void Function(common.GlobalAddActionKind kind)? onQuickAdd,
 }) {
   return DeferredModuleLoader(
     load: _loadTrade,
@@ -222,6 +226,7 @@ Widget buildTradePortfolioRoute({
         initialTab: tab,
         onTabChanged: onTabChanged,
         onPortfolioChanged: onPortfolioChanged,
+        onQuickAdd: onQuickAdd,
       ),
     ),
   );
@@ -231,6 +236,7 @@ Widget buildTradeLegacyTabRoute({
   required String tab,
   required void Function(String slug) onTabChanged,
   required void Function(String id, String name) onPortfolioChanged,
+  void Function(common.GlobalAddActionKind kind)? onQuickAdd,
 }) {
   return DeferredModuleLoader(
     load: _loadTrade,
@@ -243,6 +249,7 @@ Widget buildTradeLegacyTabRoute({
         initialTab: tab,
         onTabChanged: onTabChanged,
         onPortfolioChanged: onPortfolioChanged,
+        onQuickAdd: onQuickAdd,
       ),
     ),
   );

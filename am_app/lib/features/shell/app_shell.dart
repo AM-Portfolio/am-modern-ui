@@ -23,6 +23,7 @@ import '../search/search_context.dart';
 import '../search/search_context_registry.dart';
 import '../search/search_discovery_hint.dart';
 import '../search/unified_search_engine.dart';
+import 'global_add_action_request.dart';
 
 part 'shell_nav.dart';
 part 'shell_session.dart';
