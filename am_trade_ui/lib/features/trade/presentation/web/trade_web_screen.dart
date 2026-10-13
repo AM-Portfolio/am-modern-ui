@@ -44,11 +44,9 @@ import '../cubit/oms_state.dart';
 import '../../providers/oms_providers.dart';
 import '../../internal/data/dtos/oms_dto.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/mobile/widgets/portfolio_form_modal.dart';
-import 'package:am_portfolio_ui/features/portfolio/internal/data/dtos/portfolio_create_request_dto.dart';
 import 'package:am_portfolio_ui/features/portfolio/internal/data/dtos/portfolio_update_request_dto.dart';
 import 'package:am_portfolio_ui/features/portfolio/internal/domain/entities/portfolio_list.dart';
 import 'package:am_portfolio_ui/features/portfolio/providers/portfolio_providers.dart';
-import '../../internal/domain/entities/trade_portfolio.dart';
 
 /// Trade view types for navigation
 enum TradeViewType {
@@ -552,23 +550,50 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         title: null,
         subtitle: null,
         showModuleBottomNavigation: false,
-        headerActions: const [ShareLinkButton()],
+        headerActions: [
+          const ShareLinkButton(),
+          SidebarFloatingActionMenu(
+            compact: true,
+            direction: AxisDirection.down,
+            triggerColor: ModuleColors.trade,
+            actions: [
+              FloatingMenuAction(
+                icon: Icons.add_circle_outline_rounded,
+                title: addTradeTitle,
+                subtitle: 'Buy or sell an asset',
+                iconColor: ModuleColors.trade,
+                onTap: () {
+                  final index = _swipeController.items
+                      .indexWhere((item) => item.title == addTradeTitle);
+                  if (index != -1) {
+                    _swipeController.navigateTo(index);
+                  }
+                },
+              ),
+            ],
+          ),
+        ],
         onBackToGlobal: widget.onBack,
         onThemeToggle: () {
           context.read<ThemeCubit>().toggleTheme();
         },
-        // Footer: Add Trade Button (Synced with Trade Theme)
-        footer: SidebarPrimaryAction(
-          title: addTradeTitle,
-          icon: Icons.add,
-          accentColor: ModuleColors.trade,
-          onTap: () {
-            final index = _swipeController.items
-                .indexWhere((item) => item.title == addTradeTitle);
-            if (index != -1) {
-              _swipeController.navigateTo(index);
-            }
-          },
+        footer: SidebarFloatingActionMenu(
+          triggerColor: ModuleColors.trade,
+          actions: [
+            FloatingMenuAction(
+              icon: Icons.add_circle_outline_rounded,
+              title: addTradeTitle,
+              subtitle: 'Buy or sell an asset',
+              iconColor: ModuleColors.trade,
+              onTap: () {
+                final index = _swipeController.items
+                    .indexWhere((item) => item.title == addTradeTitle);
+                if (index != -1) {
+                  _swipeController.navigateTo(index);
+                }
+              },
+            ),
+          ],
         ),
         body: Column(
           children: [
@@ -671,40 +696,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
               _onPortfolioSelected(portfolio.id, portfolio.name);
             },
             onCreatePaperWallet: null,
-            // ─── CREATE PORTFOLIO ────────────────────────────────────────
-            onCreatePortfolio: () {
-              PortfolioFormModal.show(
-                context: context,
-                portfolio: null, // null = create mode
-                onSubmit: (name, desc) async {
-                  final service = ref.read(portfolioServiceProvider).value;
-                  if (service == null) {
-                    throw Exception('Portfolio service not ready');
-                  }
-                  final request = PortfolioCreateRequestDto(
-                    name: name,
-                    description: desc,
-                    currency: 'USD',
-                    initialCapital: 0,
-                  );
-                  final created = await service.createPortfolio(request);
-                  // Optimistically add the new portfolio to local cache so it
-                  // appears immediately without waiting for the backend cache
-                  final repository = ref.read(tradeRepositoryProvider).value;
-                  if (repository != null) {
-                    repository.addCachedPortfolio(
-                      TradePortfolio(
-                        id: created.portfolioId,
-                        name: created.portfolioName,
-                        description: desc,
-                      ),
-                    );
-                  }
-                  // We explicitly DO NOT call ref.invalidate here, because that would
-                  // trigger a network request that returns the stale backend cache.
-                },
-              );
-            },
+            onCreatePortfolio: null,
             // ─── EDIT PORTFOLIO ──────────────────────────────────────────
             onEditPortfolio: (portfolio) {
               if (portfolio.isPaper) return;

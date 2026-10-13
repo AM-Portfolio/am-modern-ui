@@ -4,8 +4,9 @@ class PortfolioSocketUpdateDto {
   final double investmentValue;
   final double totalGainLoss;
   final double totalGainLossPercentage;
-  final double todayGainLoss;
-  final double todayGainLossPercentage;
+  /// Null when backend omits day P&L (unavailable), not when the day is flat.
+  final double? todayGainLoss;
+  final double? todayGainLossPercentage;
   final List<SocketEquityHoldingDto> equities;
 
   PortfolioSocketUpdateDto({
@@ -14,19 +15,20 @@ class PortfolioSocketUpdateDto {
     required this.investmentValue,
     required this.totalGainLoss,
     required this.totalGainLossPercentage,
-    required this.todayGainLoss,
-    required this.todayGainLossPercentage,
+    this.todayGainLoss,
+    this.todayGainLossPercentage,
     required this.equities,
   });
 
   factory PortfolioSocketUpdateDto.fromJson(Map<String, dynamic> json) {
-    return PortfolioSocketUpdateDto(      portfolioId: json['portfolioId'] as String?,
+    return PortfolioSocketUpdateDto(
+      portfolioId: json['portfolioId'] as String?,
       currentValue: _parseDouble(json['currentValue']),
       investmentValue: _parseDouble(json['investmentValue']),
       totalGainLoss: _parseDouble(json['totalGainLoss']),
       totalGainLossPercentage: _parseDouble(json['totalGainLossPercentage']),
-      todayGainLoss: _parseDouble(json['todayGainLoss']),
-      todayGainLossPercentage: _parseDouble(json['todayGainLossPercentage']),
+      todayGainLoss: _parseNullableDouble(json['todayGainLoss']),
+      todayGainLossPercentage: _parseNullableDouble(json['todayGainLossPercentage']),
       equities: json['equities'] is List
           ? (json['equities'] as List)
                 .map(
@@ -44,6 +46,13 @@ class PortfolioSocketUpdateDto {
     if (value is num) return value.toDouble();
     if (value is String) return double.tryParse(value) ?? 0.0;
     return 0.0;
+  }
+
+  static double? _parseNullableDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
   }
 }
 

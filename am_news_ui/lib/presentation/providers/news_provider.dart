@@ -7,10 +7,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 final newsRepositoryProvider = FutureProvider<NewsRepository>((ref) async {
   final config = await ref.watch(appConfigProvider.future);
   final newsBase = config.api.news?.baseUrl ?? EnvDomains.news;
+  final timeoutMs = config.api.news?.connectTimeoutMs ?? 3000;
   return NewsRepository(
     newsClient: ApiClient(baseUrl: newsBase),
     portfolioClient: ApiClient(baseUrl: config.api.portfolio.baseUrl),
     holdingsResource: config.api.portfolio.holdingsResource,
+    timeout: Duration(milliseconds: timeoutMs),
   );
 });
 

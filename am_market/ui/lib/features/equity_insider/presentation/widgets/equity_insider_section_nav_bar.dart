@@ -33,6 +33,9 @@ class EquityInsiderSectionNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final activeColor = ModuleColors.market;
+    final gap = isMobile ? 12.0 : 24.0;
+    final fontSize = isMobile ? 13.0 : 15.0;
+    final vPad = isMobile ? 8.0 : 12.0;
 
     Widget buildTabs() {
       return Row(
@@ -40,16 +43,16 @@ class EquityInsiderSectionNavBar extends StatelessWidget {
         children: List.generate(sections.length, (index) {
           final isActive = index == activeIndex;
           return Padding(
-            padding: const EdgeInsets.only(right: 24.0),
+            padding: EdgeInsets.only(right: gap),
             child: InkWell(
               onTap: () => onTabSelected(index),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: EdgeInsets.symmetric(vertical: vPad),
                 decoration: BoxDecoration(
                   border: Border(
                     bottom: BorderSide(
                       color: isActive ? activeColor : Colors.transparent,
-                      width: 3,
+                      width: isMobile ? 2.5 : 3,
                     ),
                   ),
                 ),
@@ -58,8 +61,8 @@ class EquityInsiderSectionNavBar extends StatelessWidget {
                   style: TextStyle(
                     color: isActive ? activeColor : context.colors.textSecondary,
                     fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                    fontSize: 15,
-                    letterSpacing: 0.3,
+                    fontSize: fontSize,
+                    letterSpacing: 0.2,
                   ),
                 ),
               ),

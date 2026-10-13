@@ -414,11 +414,11 @@ class _PortfolioAnalysisWebPageState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Icon(Icons.pie_chart, color: ModuleColors.portfolio, size: 20),
-              SizedBox(width: 8),
-              Expanded(
+              const SizedBox(width: 8),
+              const Expanded(
                 child: Text(
                   'Sector Allocation',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
@@ -450,11 +450,11 @@ class _PortfolioAnalysisWebPageState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Icon(Icons.account_balance, color: ModuleColors.portfolio, size: 20),
-              SizedBox(width: 8),
-              Expanded(
+              const SizedBox(width: 8),
+              const Expanded(
                 child: Text(
                   'Market Cap Distribution',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),

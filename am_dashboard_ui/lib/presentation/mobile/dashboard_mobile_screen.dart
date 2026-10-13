@@ -42,12 +42,23 @@ class _DashboardMobileScreenState
   void initState() {
     super.initState();
     _pageController = PageController();
+    PortfolioDataRefresh.instance.addListener(_onHoldingsImported);
   }
 
   @override
   void dispose() {
+    PortfolioDataRefresh.instance.removeListener(_onHoldingsImported);
     _pageController.dispose();
     super.dispose();
+  }
+
+  void _onHoldingsImported() {
+    if (!mounted) return;
+    final id = widget.userId;
+    if (id.isEmpty) return;
+    ref.invalidate(portfolioOverviewsProvider(id));
+    ref.invalidate(hasDemoPortfolioProvider);
+    ref.invalidate(dashboardStreamProvider(id));
   }
 
   Widget _buildLoadingCard(double height, {String? label}) {

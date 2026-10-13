@@ -97,7 +97,6 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final provider = provider_pkg.Provider.of<MarketProvider>(context, listen: false);
 
     // Listen to global timeframe changes and synchronize internal data state
     ref.listen<TimeFrame>(appTimeFrameProvider, (previous, next) {
@@ -117,66 +116,12 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
         bottom: false,
         child: Column(
           children: [
-            // Global timeframe only — tab name is already in the top pill strip.
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
-              child: Row(
-                children: [
-                  const Spacer(),
-                  GlobalTimeFrameBar(primaryColor: ModuleColors.market),
-                ],
-              ),
-            ),
-            // 1. Header & Search
-            Container(
-              margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
-              padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: isDark
-                ? context.colors.cardSurface.withValues(alpha: 0.60)
-                : context.colors.cardSurface.withValues(alpha: 0.90),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: context.colors.border.withValues(alpha: isDark ? 0.35 : 0.5)),
-            boxShadow: isDark
-                ? []
-                : [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    )
-                  ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Quick index chips (symbol discovery via top Global Search)
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _buildQuickActionChip(provider, "NIFTY BANK", "NIFTY BANK"),
-                    _buildQuickActionChip(provider, "NIFTY IT", "NIFTY IT"),
-                    _buildQuickActionChip(provider, "MIDCAP", "NIFTY MIDCAP 50"),
-                    _buildQuickActionChip(provider, "INDIA VIX", "INDIA VIX"),
-                    _buildQuickActionChip(provider, "NIFTY 50", "NIFTY 50"),
-                    // Note: Using "NIFTY SMLCAP 50" to match database index symbol
-                    _buildQuickActionChip(provider, "SMALL CAP", "NIFTY SMLCAP 50"),
-                  ],
-                ),
-              )
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 10),
-
-        // Main Content Area
+        // Main Content Area — index discovery via Global Search
         Expanded(
           child: _showingIndices
             ? SingleChildScrollView(
                 controller: _scrollController,
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
                 child: Column(
                   children: [
                     _buildHeatmapSection(),
@@ -312,8 +257,12 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
                                                             // Monthly Cells
                                                             ..._months.map((monthKey) {
                                                                 final val = yearly.monthlyReturns[monthKey];
-                                                                final baseColor = val != null ? _getColorForChange(val).withOpacity(0.8) : (isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05));
-                                                                final glowColor = (val != null && val >= 0) ? const Color(0xFF47E266).withOpacity(0.3) : const Color(0xFFFFB4AB).withOpacity(0.3);
+                                                                final baseColor = val != null
+                                                                    ? _getColorForChange(val).withValues(alpha: 0.8)
+                                                                    : context.colors.textPrimary.withValues(alpha: 0.05);
+                                                                final glowColor = (val != null && val >= 0)
+                                                                    ? context.colors.marketPositiveIndicator.withValues(alpha: 0.3)
+                                                                    : context.colors.marketNegativeIndicator.withValues(alpha: 0.3);
                                                                 return Expanded(
                                                                   child: _HoverableHeatmapCell(
                                                                      val: val,
@@ -597,9 +546,10 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
   }
 
   Color _getColorForChange(double pChange) {
-      if (pChange > 0) return const Color(0xFF47E266); // Success Green
-      if (pChange == 0) return const Color(0xFF918FA0); // Outline/Neutral Gray
-      return const Color(0xFFFFB4AB); // Error Red
+    final colors = context.colors;
+    if (pChange > 0) return colors.marketPositiveIndicator;
+    if (pChange == 0) return colors.textTertiary;
+    return colors.marketNegativeIndicator;
   }
 
   // --- New Market Heatmap Section ---
@@ -777,45 +727,6 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
       );
   }
 
-  Widget _buildQuickActionChip(MarketProvider provider, String label, String symbol) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    bool isSelected = _selectedSymbol == symbol;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _showingIndices = false; // Drill down into this index
-          _selectedSymbol = symbol;
-        });
-        _fetchData();
-      },
-      child: Container(
-        margin: const EdgeInsets.only(right: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? ModuleColors.market.withValues(alpha: isDark ? 0.25 : 0.15)
-              : (isDark ? context.colors.cardSurface.withValues(alpha: 0.5) : Colors.black.withOpacity(0.04)),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected
-                ? ModuleColors.market.withValues(alpha: 0.6)
-                : context.colors.border.withValues(alpha: isDark ? 0.2 : 0.4),
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected
-                ? ModuleColors.market
-                : context.colors.textSecondary,
-            fontSize: 12,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      ),
-    );
-  }
-
 }
 
 class _HoverableHeatmapCell extends StatefulWidget {
@@ -907,48 +818,49 @@ class _HoverableMarketHeatmapCardState extends State<_HoverableMarketHeatmapCard
     Color borderOutlineColor;
     List<BoxShadow> glowShadows;
 
+    final themeColors = context.colors;
     if (widget.value > 0) {
-      cardColor = const Color(0xFF47E266);
-      textColor = const Color(0xFF47E266);
-      borderOutlineColor = cardColor.withOpacity(0.12);
+      cardColor = themeColors.marketPositiveIndicator;
+      textColor = themeColors.marketPositiveIndicator;
+      borderOutlineColor = cardColor.withValues(alpha: 0.12);
       glowShadows = _isHovered ? [
         BoxShadow(
-          color: cardColor.withOpacity(0.6),
+          color: cardColor.withValues(alpha: 0.6),
           blurRadius: 16,
           spreadRadius: 1,
           offset: const Offset(0, 4),
         )
       ] : (widget.isDark ? [
         BoxShadow(
-          color: cardColor.withOpacity(0.12),
+          color: cardColor.withValues(alpha: 0.12),
           blurRadius: 12,
           spreadRadius: 1,
           offset: const Offset(0, 4),
         )
       ] : []);
     } else if (widget.value < 0) {
-      cardColor = const Color(0xFFFFB4AB);
-      textColor = const Color(0xFFFFB4AB);
-      borderOutlineColor = cardColor.withOpacity(0.12);
+      cardColor = themeColors.marketNegativeIndicator;
+      textColor = themeColors.marketNegativeIndicator;
+      borderOutlineColor = cardColor.withValues(alpha: 0.12);
       glowShadows = _isHovered ? [
         BoxShadow(
-          color: cardColor.withOpacity(0.6),
+          color: cardColor.withValues(alpha: 0.6),
           blurRadius: 16,
           spreadRadius: 1,
           offset: const Offset(0, 4),
         )
       ] : (widget.isDark ? [
         BoxShadow(
-          color: cardColor.withOpacity(0.12),
+          color: cardColor.withValues(alpha: 0.12),
           blurRadius: 12,
           spreadRadius: 1,
           offset: const Offset(0, 4),
         )
       ] : []);
     } else {
-      cardColor = const Color(0xFF918FA0);
-      textColor = const Color(0xFF918FA0);
-      borderOutlineColor = cardColor.withOpacity(0.12);
+      cardColor = themeColors.textTertiary;
+      textColor = themeColors.textTertiary;
+      borderOutlineColor = cardColor.withValues(alpha: 0.12);
       glowShadows = [];
     }
 

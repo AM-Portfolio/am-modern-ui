@@ -186,8 +186,8 @@ class _PaperOrdersPaneState extends State<PaperOrdersPane> {
   Color _sideColor(BuildContext context, String side) {
     final colors = context.colors;
     return side == 'SELL'
-        ? colors.statusError
-        : colors.marketPositiveIndicator;
+        ? colors.marketNegativeIndicator
+        : ModuleColors.market;
   }
 
   Color _statusColor(BuildContext context, String displayStatus) {

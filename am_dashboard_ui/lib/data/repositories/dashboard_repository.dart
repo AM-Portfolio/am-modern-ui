@@ -404,12 +404,23 @@ class DashboardRepository {
 
   /// Same feed as the portfolio history chart (`GET /v1/portfolios/history`).
   /// 1D uses `/v1/portfolios/intraday`.
+  /// When [portfolioId] is set, uses `/{id}/history` (or `/{id}/intraday`).
   Future<PortfolioOverlayHistory> getPortfolioHistory(
     ApiClient portfolioClient, {
     required String timeFrame,
+    String? portfolioId,
   }) async {
     final isIntraday = timeFrame.toUpperCase() == '1D';
-    final path = isIntraday ? '/v1/portfolios/intraday' : '/v1/portfolios/history';
+    final singleId = (portfolioId != null &&
+            portfolioId.isNotEmpty &&
+            portfolioId != 'all')
+        ? portfolioId
+        : null;
+    final path = singleId == null
+        ? (isIntraday ? '/v1/portfolios/intraday' : '/v1/portfolios/history')
+        : (isIntraday
+            ? '/v1/portfolios/$singleId/intraday'
+            : '/v1/portfolios/$singleId/history');
     try {
       final data = await portfolioClient.get(
         path,

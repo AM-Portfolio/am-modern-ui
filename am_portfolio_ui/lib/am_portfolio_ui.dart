@@ -18,3 +18,14 @@ export 'features/portfolio/presentation/widgets/sidebar/portfolio_sidebar.dart';
 export 'features/portfolio/presentation/widgets/global_portfolio_wrapper.dart';
 export 'features/portfolio/presentation/sections/portfolio_comparison_chart_section.dart';
 export 'features/portfolio/presentation/sections/portfolio_chart_section.dart';
+
+// Intelligence Widgets
+export 'features/portfolio/presentation/widgets/intelligence/portfolio_health_card.dart';
+export 'features/portfolio/presentation/widgets/intelligence/portfolio_xray_panel.dart';
+export 'features/portfolio/presentation/widgets/intelligence/portfolio_risk_radar_card.dart';
+export 'features/portfolio/presentation/widgets/portfolio_overview_widget.dart';
+
+// State Management (Cubits needed for embedding intelligence widgets)
+export 'features/portfolio/presentation/cubit/portfolio_cubit.dart';
+export 'features/portfolio/presentation/cubit/portfolio_analytics_cubit.dart';
+export 'features/portfolio/providers/portfolio_providers.dart';

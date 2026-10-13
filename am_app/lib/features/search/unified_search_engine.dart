@@ -131,7 +131,10 @@ class UnifiedSearchEngine {
     _timer = Timer(debounce, () async {
       final nav = SearchNavigationHandler(navContext, container: container);
       final secCategory =
-          context == SearchContext.equityInsider ? 'STOCKS' : 'ALL';
+          (context == SearchContext.equityInsider ||
+                  context == SearchContext.paper)
+              ? 'STOCKS'
+              : 'ALL';
 
       var securitiesItems = <CommandItem>[];
       var basketItems = <CommandItem>[];
@@ -268,16 +271,44 @@ class UnifiedSearchEngine {
     final nav = SearchNavigationHandler(navContext, container: container);
     final out = <CommandItem>[];
 
-    for (final sym in recentSymbols.take(4)) {
-      out.add(
-        CommandItem(
-          title: sym,
-          subtitle: 'Recent',
-          icon: Icons.history,
-          category: 'Market',
-          onSelected: () => nav.openSecurity(sym, context),
-        ),
-      );
+    if (context == SearchContext.chart) {
+      final chartRecents = ChartSearchBridge.recentSymbols;
+      for (final sym in chartRecents.take(8)) {
+        out.add(
+          CommandItem(
+            title: sym,
+            subtitle: 'Recent chart',
+            icon: Icons.history,
+            category: 'Market',
+            onSelected: () => nav.openSecurity(sym, SearchContext.chart),
+          ),
+        );
+      }
+      if (chartRecents.isEmpty) {
+        for (final sym in const ['NIFTY 50', 'BANKNIFTY', 'RELIANCE', 'TCS']) {
+          out.add(
+            CommandItem(
+              title: sym,
+              subtitle: 'Popular chart',
+              icon: Icons.show_chart,
+              category: 'Market',
+              onSelected: () => nav.openSecurity(sym, SearchContext.chart),
+            ),
+          );
+        }
+      }
+    } else {
+      for (final sym in recentSymbols.take(4)) {
+        out.add(
+          CommandItem(
+            title: sym,
+            subtitle: 'Recent',
+            icon: Icons.history,
+            category: 'Market',
+            onSelected: () => nav.openSecurity(sym, context),
+          ),
+        );
+      }
     }
 
     if (context == SearchContext.baskets) {
@@ -322,16 +353,20 @@ class UnifiedSearchEngine {
       }
     }
 
-    if (context == SearchContext.equityInsider) {
+    if (context == SearchContext.equityInsider ||
+        context == SearchContext.paper) {
       for (final sym in const ['RELIANCE', 'TCS', 'HDFCBANK', 'INFY']) {
         out.add(
           CommandItem(
             title: sym,
-            subtitle: 'Popular stock',
-            icon: Icons.insights,
+            subtitle: context == SearchContext.paper
+                ? 'Paper watchlist'
+                : 'Popular stock',
+            icon: context == SearchContext.paper
+                ? Icons.science_outlined
+                : Icons.insights,
             category: 'Market',
-            onSelected: () =>
-                nav.openSecurity(sym, SearchContext.equityInsider),
+            onSelected: () => nav.openSecurity(sym, context),
           ),
         );
       }

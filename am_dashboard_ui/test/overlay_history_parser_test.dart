@@ -8,52 +8,40 @@ void main() {
   const groww = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
 
   List<Map<String, dynamic>> twoZerodhaDays() => [
+    {
+      'snapshotDate': '2026-08-20',
+      'totalUserWealth': 100.0,
+      'portfolios': [
         {
-          'snapshotDate': '2026-08-20',
-          'totalUserWealth': 100.0,
-          'portfolios': [
-            {
-              'portfolioId': zerodhaA,
-              'portfolioName': 'Zerodha',
-              'brokerType': 'ZERODHA',
-              'close': 60.0,
-            },
-            {
-              'portfolioId': zerodhaB,
-              'portfolioName': 'Zerodha',
-              'brokerType': 'ZERODHA',
-              'close': 40.0,
-            },
-          ],
+          'portfolioId': zerodhaA,
+          'portfolioName': 'Zerodha',
+          'brokerType': 'ZERODHA',
+          'close': 60.0,
         },
         {
-          'snapshotDate': '2026-08-21',
-          'totalUserWealth': 110.0,
-          'portfolios': [
-            {
-              'portfolioId': zerodhaA,
-              'portfolioName': 'Zerodha',
-              'close': 66.0,
-            },
-          ],
+          'portfolioId': zerodhaB,
+          'portfolioName': 'Zerodha',
+          'brokerType': 'ZERODHA',
+          'close': 40.0,
         },
-        {
-          'snapshotDate': '2026-08-22',
-          'totalUserWealth': 120.0,
-          'portfolios': [
-            {
-              'portfolioId': zerodhaA,
-              'portfolioName': 'Zerodha',
-              'close': 70.0,
-            },
-            {
-              'portfolioId': zerodhaB,
-              'portfolioName': 'Zerodha',
-              'close': 50.0,
-            },
-          ],
-        },
-      ];
+      ],
+    },
+    {
+      'snapshotDate': '2026-08-21',
+      'totalUserWealth': 110.0,
+      'portfolios': [
+        {'portfolioId': zerodhaA, 'portfolioName': 'Zerodha', 'close': 66.0},
+      ],
+    },
+    {
+      'snapshotDate': '2026-08-22',
+      'totalUserWealth': 120.0,
+      'portfolios': [
+        {'portfolioId': zerodhaA, 'portfolioName': 'Zerodha', 'close': 70.0},
+        {'portfolioId': zerodhaB, 'portfolioName': 'Zerodha', 'close': 50.0},
+      ],
+    },
+  ];
 
   group('parsePortfolioOverlayHistory', () {
     test('two same-name portfolios become two series with unique labels', () {
@@ -77,37 +65,43 @@ void main() {
         isIntraday: false,
       );
 
-      expect(
-        history.byPortfolioId[zerodhaB]!.map((p) => p.value).toList(),
-        [40.0, 40.0, 50.0],
-      );
+      expect(history.byPortfolioId[zerodhaB]!.map((p) => p.value).toList(), [
+        40.0,
+        40.0,
+        50.0,
+      ]);
     });
 
     test('1D uses portfolios[].value', () {
-      final history = parsePortfolioOverlayHistory(
-        [
-          {
-            'timestamp': '09:15',
-            'totalWealth': 100.0,
-            'portfolios': [
-              {'portfolioId': zerodhaA, 'portfolioName': 'Zerodha', 'value': 55.0},
-            ],
-          },
-          {
-            'timestamp': '09:20',
-            'totalWealth': 101.0,
-            'portfolios': [
-              {'portfolioId': zerodhaA, 'portfolioName': 'Zerodha', 'value': 56.0},
-            ],
-          },
-        ],
-        isIntraday: true,
-      );
+      final history = parsePortfolioOverlayHistory([
+        {
+          'timestamp': '09:15',
+          'totalWealth': 100.0,
+          'portfolios': [
+            {
+              'portfolioId': zerodhaA,
+              'portfolioName': 'Zerodha',
+              'value': 55.0,
+            },
+          ],
+        },
+        {
+          'timestamp': '09:20',
+          'totalWealth': 101.0,
+          'portfolios': [
+            {
+              'portfolioId': zerodhaA,
+              'portfolioName': 'Zerodha',
+              'value': 56.0,
+            },
+          ],
+        },
+      ], isIntraday: true);
 
-      expect(
-        history.byPortfolioId[zerodhaA]!.map((p) => p.value).toList(),
-        [55.0, 56.0],
-      );
+      expect(history.byPortfolioId[zerodhaA]!.map((p) => p.value).toList(), [
+        55.0,
+        56.0,
+      ]);
       for (final point in history.byPortfolioId[zerodhaA]!) {
         expect(DateTime.tryParse(point.xLabel), isNotNull);
         expect(point.xLabel, contains('T09:'));
@@ -125,70 +119,53 @@ void main() {
     });
 
     test('does not use a UUID as the visible portfolio name', () {
-      final history = parsePortfolioOverlayHistory(
-        [
-          {
-            'snapshotDate': '2026-08-20',
-            'totalUserWealth': 100.0,
-            'portfolios': [
-              {
-                'portfolioId': zerodhaA,
-                'portfolioName': '',
-                'close': 100.0,
-              },
-            ],
-          },
-        ],
-        isIntraday: false,
-      );
+      final history = parsePortfolioOverlayHistory([
+        {
+          'snapshotDate': '2026-08-20',
+          'totalUserWealth': 100.0,
+          'portfolios': [
+            {'portfolioId': zerodhaA, 'portfolioName': '', 'close': 100.0},
+          ],
+        },
+      ], isIntraday: false);
       expect(history.portfolios.single.label, 'Portfolio');
       expect(history.portfolios.single.label.contains('-'), isFalse);
     });
 
     test('does not show userId when it is sent as the portfolio name', () {
       const userId = '39a1da0e-4424-4019-8960-aec84cb56e3e';
-      final history = parsePortfolioOverlayHistory(
-        [
-          {
-            'snapshotDate': '2026-08-20',
-            'totalUserWealth': 100.0,
-            'portfolios': [
-              {
-                'portfolioId': zerodhaA,
-                'portfolioName': userId,
-                'close': 100.0,
-              },
-            ],
-          },
-        ],
-        isIntraday: false,
-      );
+      final history = parsePortfolioOverlayHistory([
+        {
+          'snapshotDate': '2026-08-20',
+          'totalUserWealth': 100.0,
+          'portfolios': [
+            {'portfolioId': zerodhaA, 'portfolioName': userId, 'close': 100.0},
+          ],
+        },
+      ], isIntraday: false);
       expect(history.portfolios.single.label, 'Portfolio');
       expect(history.portfolios.single.label, isNot(userId));
     });
 
     test('lists portfolios even when close is omitted', () {
-      final history = parsePortfolioOverlayHistory(
-        [
-          {
-            'snapshotDate': '2026-08-20',
-            'totalUserWealth': 100.0,
-            'portfolios': [
-              {
-                'portfolioId': zerodhaA,
-                'portfolioName': 'Zerodha',
-                'brokerType': 'ZERODHA',
-              },
-              {
-                'portfolioId': zerodhaB,
-                'portfolioName': 'Zerodha',
-                'brokerType': 'ZERODHA',
-              },
-            ],
-          },
-        ],
-        isIntraday: false,
-      );
+      final history = parsePortfolioOverlayHistory([
+        {
+          'snapshotDate': '2026-08-20',
+          'totalUserWealth': 100.0,
+          'portfolios': [
+            {
+              'portfolioId': zerodhaA,
+              'portfolioName': 'Zerodha',
+              'brokerType': 'ZERODHA',
+            },
+            {
+              'portfolioId': zerodhaB,
+              'portfolioName': 'Zerodha',
+              'brokerType': 'ZERODHA',
+            },
+          ],
+        },
+      ], isIntraday: false);
 
       expect(history.portfolios.map((p) => p.id), [zerodhaA, zerodhaB]);
     });
@@ -196,17 +173,40 @@ void main() {
 
   group('default overlay selection', () {
     test('defaults to Overall, NIFTY 50, and first portfolio', () {
+      expect(defaultOverlaySelectedIds([zerodhaA, zerodhaB, groww]), [
+        OverlayChartIds.overall,
+        OverlayChartIds.nifty50,
+        zerodhaA,
+      ]);
+    });
+
+    test('prefers sidebar portfolio when present in history', () {
       expect(
-        defaultOverlaySelectedIds([zerodhaA, zerodhaB, groww]),
+        defaultOverlaySelectedIds([
+          zerodhaA,
+          zerodhaB,
+          groww,
+        ], preferredPortfolioId: groww),
+        [OverlayChartIds.overall, OverlayChartIds.nifty50, groww],
+      );
+    });
+
+    test('falls back to first when preferred missing from history', () {
+      expect(
+        defaultOverlaySelectedIds([
+          zerodhaA,
+          zerodhaB,
+        ], preferredPortfolioId: groww),
         [OverlayChartIds.overall, OverlayChartIds.nifty50, zerodhaA],
       );
     });
 
     test('one portfolio plus Overall and NIFTY 50', () {
-      expect(
-        defaultOverlaySelectedIds([zerodhaA]),
-        [OverlayChartIds.overall, OverlayChartIds.nifty50, zerodhaA],
-      );
+      expect(defaultOverlaySelectedIds([zerodhaA]), [
+        OverlayChartIds.overall,
+        OverlayChartIds.nifty50,
+        zerodhaA,
+      ]);
     });
 
     test('untouched selection resets to default after history load', () {
@@ -217,6 +217,18 @@ void main() {
           selectionTouched: false,
         ),
         [OverlayChartIds.overall, OverlayChartIds.nifty50, zerodhaA],
+      );
+    });
+
+    test('untouched selection prefers sidebar portfolio', () {
+      expect(
+        mergeOverlaySelection(
+          previous: const [OverlayChartIds.nifty50],
+          availablePortfolioIds: [zerodhaA, zerodhaB, groww],
+          selectionTouched: false,
+          preferredPortfolioId: groww,
+        ),
+        [OverlayChartIds.overall, OverlayChartIds.nifty50, groww],
       );
     });
 
@@ -240,14 +252,16 @@ void main() {
         'cccccccc-cccc-cccc-cccc-cccccccccccc',
       ];
       final selected = defaultOverlaySelectedIds(ids);
-      expect(selected, [OverlayChartIds.overall, OverlayChartIds.nifty50, zerodhaA]);
+      expect(selected, [
+        OverlayChartIds.overall,
+        OverlayChartIds.nifty50,
+        zerodhaA,
+      ]);
       expect(selected, hasLength(OverlayChartIds.defaultVisibleLines));
     });
 
     test('touched mix can grow past 3 up to 10', () {
-      final portfolios = [
-        for (var i = 0; i < 12; i++) 'pf-$i',
-      ];
+      final portfolios = [for (var i = 0; i < 12; i++) 'pf-$i'];
       final previous = [
         OverlayChartIds.overall,
         ...portfolios.take(9),

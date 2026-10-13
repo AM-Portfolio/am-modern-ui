@@ -6,7 +6,9 @@ import '../widgets/heatmap_filters.dart';
 import '../widgets/heatmap_grid.dart';
 
 class HeatmapView extends StatefulWidget {
-  const HeatmapView({super.key});
+  final ValueChanged<String>? onSelectStock;
+
+  const HeatmapView({super.key, this.onSelectStock});
 
   @override
   State<HeatmapView> createState() => _HeatmapViewState();
@@ -28,6 +30,15 @@ class _HeatmapViewState extends State<HeatmapView> {
   Widget build(BuildContext context) {
     final provider = context.watch<MarketProvider>();
     final data = provider.currentIndexData;
+
+    if (provider.isLoading && (data == null || data.stocks.isEmpty)) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24.0),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
 
     if (data == null || data.stocks.isEmpty) {
       return Center(
@@ -88,6 +99,7 @@ class _HeatmapViewState extends State<HeatmapView> {
           child: HeatmapGrid(
             stocks: stocks,
             provider: provider,
+            onSelectStock: widget.onSelectStock,
           ),
         ),
       ],

@@ -236,30 +236,37 @@ class _FuturesOpenInterestCardState extends ConsumerState<FuturesOpenInterestCar
           // Dynamic Interactive Graph Canvas
           LayoutBuilder(
             builder: (context, constraints) {
+              void updateHover(Offset local) {
+                final width = constraints.maxWidth - 30;
+                if (width <= 0 || dataPoints.isEmpty) return;
+                final idx = ((local.dx - 30) / width * dataPoints.length)
+                    .floor()
+                    .clamp(0, dataPoints.length - 1);
+                if (_hoverIndex != idx) setState(() => _hoverIndex = idx);
+              }
+
               return MouseRegion(
-                onHover: (event) {
-                  final width = constraints.maxWidth - 30;
-                  if (width > 0 && dataPoints.isNotEmpty) {
-                    final idx = ((event.localPosition.dx - 30) / width * dataPoints.length).floor().clamp(0, dataPoints.length - 1);
-                    if (_hoverIndex != idx) setState(() => _hoverIndex = idx);
-                  }
-                },
+                onHover: (event) => updateHover(event.localPosition),
                 onExit: (_) => setState(() => _hoverIndex = null),
-                child: Container(
-                  height: 140,
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  decoration: BoxDecoration(
-                    color: colors.surface.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: CustomPaint(
-                    size: const Size(double.infinity, 140),
-                    painter: _OiDualAxisPainter(
-                      marketTheme: marketTheme,
-                      colors: colors,
-                      isOi: isOi,
-                      dataPoints: dataPoints,
-                      hoverIndex: _hoverIndex,
+                child: GestureDetector(
+                  onTapDown: (d) => updateHover(d.localPosition),
+                  onHorizontalDragUpdate: (d) => updateHover(d.localPosition),
+                  child: Container(
+                    height: 140,
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    decoration: BoxDecoration(
+                      color: colors.surface.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: CustomPaint(
+                      size: const Size(double.infinity, 140),
+                      painter: _OiDualAxisPainter(
+                        marketTheme: marketTheme,
+                        colors: colors,
+                        isOi: isOi,
+                        dataPoints: dataPoints,
+                        hoverIndex: _hoverIndex,
+                      ),
                     ),
                   ),
                 ),
@@ -415,8 +422,9 @@ class _OiDualAxisPainter extends CustomPainter {
 
     // X-Axis date labels
     final step = (dataPoints.length / 5).ceil().clamp(1, dataPoints.length);
+    final xDenom = (dataPoints.length - 1).clamp(1, dataPoints.length);
     for (int i = 0; i < dataPoints.length; i += step) {
-      final x = leftPadding + (i / (dataPoints.length - 1)) * (chartWidth - 20);
+      final x = leftPadding + (i / xDenom) * (chartWidth - 20);
       final tp = TextPainter(
         text: TextSpan(text: dataPoints[i].date, style: textStyle),
         textDirection: ui.TextDirection.ltr,

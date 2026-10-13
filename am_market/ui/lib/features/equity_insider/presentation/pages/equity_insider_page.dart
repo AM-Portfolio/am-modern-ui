@@ -12,7 +12,6 @@ import '../widgets/equity_insider_financials.dart';
 import '../widgets/equity_insider_shareholding.dart';
 import '../widgets/equity_insider_peers.dart';
 import '../widgets/equity_insider_section_nav_bar.dart';
-import '../widgets/equity_insider_empty_view.dart';
 
 /// Equity Insider – Fundamental Analysis.
 class EquityInsiderPage extends ConsumerStatefulWidget {
@@ -33,16 +32,24 @@ class EquityInsiderPage extends ConsumerStatefulWidget {
 }
 
 class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
+  static const _fallbackSymbols = [
+    'RELIANCE',
+    'TCS',
+    'HDFCBANK',
+    'ICICIBANK',
+    'INFY',
+    'BHARTIARTL',
+  ];
+
+  /// Soft-landing: keep/re-apply a useful default instead of an empty screen.
   void resetToLanding() {
-    setState(() {
-      _submittedSymbol = null;
-      _symbolHistory.clear();
-    });
-    ref.read(equityInsiderActiveSymbolProvider.notifier).state = null;
+    _symbolHistory.clear();
+    ensureDefaultSymbol();
   }
 
   final List<String> _symbolHistory = [];
   String? _submittedSymbol;
+  bool _defaultResolveScheduled = false;
 
   @override
   void initState() {
@@ -56,8 +63,43 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
       final pending = ref.read(equityInsiderActiveSymbolProvider);
       if (pending != null && pending.isNotEmpty) {
         navigateToSymbol(pending);
+        return;
+      }
+      if (_submittedSymbol == null) {
+        ensureDefaultSymbol();
       }
     });
+  }
+
+  /// Resolves recent → smart recommendations → RELIANCE fallback.
+  Future<void> ensureDefaultSymbol() async {
+    if (_submittedSymbol != null && _submittedSymbol!.isNotEmpty) return;
+    if (_defaultResolveScheduled) return;
+    _defaultResolveScheduled = true;
+    try {
+      final recent = ref.read(recentlyViewedStocksProvider);
+      if (recent.isNotEmpty) {
+        navigateToSymbol(recent.first);
+        return;
+      }
+      final pending = ref.read(equityInsiderActiveSymbolProvider);
+      if (pending != null && pending.isNotEmpty) {
+        navigateToSymbol(pending);
+        return;
+      }
+      try {
+        final recs = await ref.read(dynamicStockRecommendationsProvider.future);
+        if (!mounted) return;
+        if (recs.isNotEmpty) {
+          navigateToSymbol(recs.first);
+          return;
+        }
+      } catch (_) {}
+      if (!mounted) return;
+      navigateToSymbol(_fallbackSymbols.first);
+    } finally {
+      _defaultResolveScheduled = false;
+    }
   }
 
   @override
@@ -121,16 +163,10 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
         child: SafeArea(
           top: false,
           child: _submittedSymbol == null
-              ? _buildEmptySearch()
+              ? const Center(child: CircularProgressIndicator())
               : _buildDataView(_submittedSymbol!),
         ),
       ),
-    );
-  }
-
-  Widget _buildEmptySearch() {
-    return EquityInsiderEmptyView(
-      onSelectSymbol: navigateToSymbol,
     );
   }
 
@@ -138,7 +174,7 @@ class EquityInsiderPageState extends ConsumerState<EquityInsiderPage> {
     return _FundamentalsBody(
       symbol: symbol,
       onSelectSymbol: navigateToSymbol,
-      onBack: _handleBack,
+      onBack: _symbolHistory.isNotEmpty ? _handleBack : null,
       showPeers: widget.showPeers,
     );
   }
@@ -148,13 +184,13 @@ class _FundamentalsBody extends ConsumerStatefulWidget {
   const _FundamentalsBody({
     required this.symbol,
     required this.onSelectSymbol,
-    required this.onBack,
+    this.onBack,
     this.showPeers = true,
   });
 
   final String symbol;
   final ValueChanged<String> onSelectSymbol;
-  final VoidCallback onBack;
+  final VoidCallback? onBack;
   final bool showPeers;
 
   @override
@@ -163,8 +199,9 @@ class _FundamentalsBody extends ConsumerStatefulWidget {
 
 class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
   static const double _stickyHeroExtentDesktop = 120;
-  static const double _stickyHeroExtentMobile = 60;
-  static const double _stickyNavExtent = 52;
+  /// Compact mockup sticky bar (~logo + name/chips + LTP row).
+  static const double _stickyHeroExtentMobile = 92;
+  static const double _stickyNavExtent = 44;
 
   final ScrollController _scrollController = ScrollController();
   late final List<GlobalKey> _sectionKeys =
@@ -256,7 +293,7 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
     return Container(
       key: sectionKey,
       child: GlassCard(
-        padding: EdgeInsets.all(isMobile ? 16 : 24),
+        padding: EdgeInsets.all(isMobile ? 12 : 24),
         child: child,
       ),
     );
@@ -289,11 +326,9 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                         isMobile ? 12 : 16,
                         isMobile ? 4 : 8,
                       ),
-                      child: KeyedSubtree(
-                        key: _sectionKeys[0],
-                        child: EquityInsiderHeroBar(
-                          symbol: widget.symbol,
-                        ),
+                      child: EquityInsiderHeroBar(
+                        symbol: widget.symbol,
+                        onBack: widget.onBack,
                       ),
                     ),
                   ),
@@ -330,7 +365,7 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(
                       isMobile ? 12 : 16,
-                      14,
+                      isMobile ? 12 : 14,
                       isMobile ? 12 : 16,
                       bottomPad,
                     ),
@@ -338,13 +373,15 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         // Row 1: Valuation & Key Metrics (Left 60%) + Price Performance & Chart (Right 40%)
+                        // Overview tab scrolls to KPIs (sectionKeys[0]).
                         if (isMobile) ...[
                           _buildSectionCard(
+                            sectionKey: _sectionKeys[0],
                             context: context,
                             isMobile: isMobile,
                             child: EquityInsiderKpis(symbol: widget.symbol),
                           ),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 12),
                           _buildSectionCard(
                             sectionKey: _sectionKeys[1],
                             context: context,
@@ -358,6 +395,7 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                               Expanded(
                                 flex: 60,
                                 child: _buildSectionCard(
+                                  sectionKey: _sectionKeys[0],
                                   context: context,
                                   isMobile: false,
                                   child: EquityInsiderKpis(symbol: widget.symbol),
@@ -376,7 +414,7 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                             ],
                           ),
                         ],
-                        const SizedBox(height: 14),
+                        SizedBox(height: isMobile ? 12 : 14),
 
                         // Row 2: Financial Performance (Left 60%) + Shareholding Pattern (Right 40%)
                         if (isMobile) ...[
@@ -386,7 +424,7 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                             isMobile: isMobile,
                             child: EquityInsiderFinancials(symbol: widget.symbol),
                           ),
-                          const SizedBox(height: 14),
+                          SizedBox(height: isMobile ? 10 : 14),
                           _buildSectionCard(
                             sectionKey: _sectionKeys[3],
                             context: context,
@@ -419,7 +457,7 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                             ],
                           ),
                         ],
-                        const SizedBox(height: 14),
+                        SizedBox(height: isMobile ? 10 : 14),
 
                         // Row 3: Full-width Peer Comparison Section
                         if (widget.showPeers) ...[
@@ -432,14 +470,17 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                               onPeerSelected: widget.onSelectSymbol,
                             ),
                           ),
-                          const SizedBox(height: 14),
+                          SizedBox(height: isMobile ? 10 : 14),
                         ],
-                        KeyedSubtree(
-                          key: _sectionKeys[_newsKeyIndex],
+                        _buildSectionCard(
+                          sectionKey: _sectionKeys[_newsKeyIndex],
+                          context: context,
+                          isMobile: isMobile,
                           child: SymbolNewsSection(
                             symbol: widget.symbol,
                             surface: NewsUiSurface.equityInsider,
                             embedInScroll: true,
+                            compact: isMobile,
                           ),
                         ),
                       ],
@@ -479,7 +520,7 @@ class _StickySectionNavDelegate extends SliverPersistentHeaderDelegate {
     return Material(
       color: backgroundColor,
       elevation: overlapsContent || shrinkOffset > 0 ? 1.5 : 0,
-      shadowColor: Colors.black26,
+      shadowColor: context.colors.textPrimary.withValues(alpha: 0.26),
       child: SizedBox(
         height: extent,
         width: double.infinity,

@@ -87,32 +87,64 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
             final sortedPeers = _getSortedPeers(peers, activeCols);
             final double maxRoe = peers.fold(0.0, (m, p) => max(m, p.roe ?? 0.0));
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
+                final isCompactMobile = width < AmBreakpoints.mobile;
+
+                if (isCompactMobile) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildSortTab('Price', 'currentPrice'),
-                      const SizedBox(width: 8),
-                      _buildSortTab('Day Chg', 'dayChangePercent'),
-                      ...activeCols.map((col) => Padding(
-                            padding: const EdgeInsets.only(left: 8),
-                            child: _buildSortTab(col.label, col.key),
-                          )),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _buildSortTab('Price', 'currentPrice'),
+                            const SizedBox(width: 8),
+                            ..._compactMobileSortColumns(activeCols).map(
+                              (col) => Padding(
+                                padding: const EdgeInsets.only(left: 8),
+                                child: _buildSortTab(col.label, col.key),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildCompactMobilePeersTable(context, sortedPeers, activeCols),
                     ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                AmAdaptiveTableCardView<CompetitorPeer>(
-                  items: sortedPeers,
-                  breakpoint: 768.0,
-                  spacing: 10.0,
-                  tableBuilder: (context, items) => _buildDesktopTable(context, items, maxRoe, activeCols),
-                  cardBuilder: (context, peer, index) => _buildMobilePeerCard(context, peer, maxRoe, activeCols),
-                ),
-              ],
+                  );
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _buildSortTab('Price', 'currentPrice'),
+                          const SizedBox(width: 8),
+                          _buildSortTab('Day Chg', 'dayChangePercent'),
+                          ...activeCols.map((col) => Padding(
+                                padding: const EdgeInsets.only(left: 8),
+                                child: _buildSortTab(col.label, col.key),
+                              )),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    AmAdaptiveTableCardView<CompetitorPeer>(
+                      items: sortedPeers,
+                      breakpoint: 800.0,
+                      spacing: 10.0,
+                      tableBuilder: (context, items) => _buildDesktopTable(context, items, maxRoe, activeCols),
+                      cardBuilder: (context, peer, index) => _buildMobilePeerCard(context, peer, maxRoe, activeCols),
+                    ),
+                  ],
+                );
+              },
             );
           },
           loading: () => const Padding(
@@ -129,6 +161,218 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
         ),
       ],
     );
+  }
+
+  static const _compactSortKeys = ['pe', 'pb', 'roe', 'roa'];
+
+  List<PeerColumnDef> _compactMobileSortColumns(List<PeerColumnDef> activeCols) {
+    final List<PeerColumnDef> result = [];
+    for (final key in _compactSortKeys) {
+      for (final col in activeCols) {
+        if (col.key == key) {
+          result.add(col);
+          break;
+        }
+      }
+    }
+    return result;
+  }
+
+  PeerColumnDef? _findColumn(List<PeerColumnDef> activeCols, String key) {
+    for (final col in activeCols) {
+      if (col.key == key) return col;
+    }
+    return null;
+  }
+
+  String _compactSecondaryHeader(List<PeerColumnDef> activeCols) {
+    if (_activeSortColumn == 'currentPrice') {
+      return _findColumn(activeCols, 'pe') != null ? 'P/E' : '—';
+    }
+    return 'PRICE';
+  }
+
+  Widget _buildCompactMobilePeersTable(
+    BuildContext context,
+    List<CompetitorPeer> sortedPeers,
+    List<PeerColumnDef> activeCols,
+  ) {
+    final primaryHeader = _compactPrimaryHeaderFor(activeCols);
+    final secondaryHeader = _compactSecondaryHeader(activeCols);
+
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: context.borderColor.withValues(alpha: 0.4)),
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 5,
+                child: Text(
+                  'COMPANY',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.4,
+                    color: context.textTertiary,
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    primaryHeader,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.4,
+                      color: ModuleColors.market,
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    secondaryHeader,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.4,
+                      color: context.textTertiary,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        ...sortedPeers.map((peer) => _buildCompactMobilePeerRow(context, peer, activeCols)),
+      ],
+    );
+  }
+
+  String _compactPrimaryHeaderFor(List<PeerColumnDef> activeCols) {
+    if (_activeSortColumn == 'currentPrice') return 'PRICE';
+    for (final col in activeCols) {
+      if (col.key == _activeSortColumn) return col.label.toUpperCase();
+    }
+    return _activeSortColumn.toUpperCase();
+  }
+
+  Widget _buildCompactMobilePeerRow(
+    BuildContext context,
+    CompetitorPeer peer,
+    List<PeerColumnDef> activeCols,
+  ) {
+    final isCurrent = peer.symbol == widget.symbol;
+    final targetSymbol = (peer.symbol ?? '').trim();
+    final displayName = targetSymbol.isNotEmpty ? targetSymbol : (peer.companyName ?? '—');
+    final isClickable = targetSymbol.isNotEmpty && targetSymbol != widget.symbol;
+
+    final primaryText = _compactPrimaryValue(peer, activeCols);
+    final secondaryText = _compactSecondaryValue(peer, activeCols);
+
+    return Material(
+      color: isCurrent ? ModuleColors.market.withValues(alpha: 0.12) : Colors.transparent,
+      child: InkWell(
+        onTap: isClickable ? () => widget.onPeerSelected?.call(targetSymbol) : null,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: context.borderColor.withValues(alpha: 0.25)),
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 5,
+                child: Text(
+                  displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: isCurrent
+                        ? ModuleColors.market
+                        : (isClickable ? ModuleColors.market : context.textPrimary),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    primaryText,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isCurrent ? ModuleColors.market : context.textPrimary,
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    secondaryText,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: context.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _compactPrimaryValue(CompetitorPeer peer, List<PeerColumnDef> activeCols) {
+    if (_activeSortColumn == 'currentPrice') {
+      return peer.currentPrice != null
+          ? '₹${NumberFormat('#,##,##0.00', 'en_IN').format(peer.currentPrice)}'
+          : '—';
+    }
+    final col = _findColumn(activeCols, _activeSortColumn);
+    if (col == null) return '—';
+    if (col.key == 'roe' || col.key == 'roa') {
+      final v = col.valueGetter(peer);
+      return v != null ? v.toStringAsFixed(2) : '—';
+    }
+    if (col.key == 'pe' || col.key == 'pb') {
+      final v = col.valueGetter(peer);
+      return v != null ? v.toStringAsFixed(2) : '—';
+    }
+    final v = col.valueGetter(peer);
+    return v != null ? v.toStringAsFixed(2) : '—';
+  }
+
+  String _compactSecondaryValue(CompetitorPeer peer, List<PeerColumnDef> activeCols) {
+    if (_activeSortColumn == 'currentPrice') {
+      final pe = peer.pe;
+      return pe != null ? pe.toStringAsFixed(2) : '—';
+    }
+    return peer.currentPrice != null
+        ? '₹${NumberFormat('#,##,##0.00', 'en_IN').format(peer.currentPrice)}'
+        : '—';
   }
 
   Widget _buildDesktopTable(
@@ -543,7 +787,9 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-            color: isActive ? Colors.white : context.textSecondary,
+            color: isActive
+                ? context.colors.actionPrimaryFg
+                : context.textSecondary,
           ),
         ),
       ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/portfolio_metric_card.dart';
 
 import '../../models/trade_portfolio_view_model.dart';
 import '../loaders/trade_portfolio_skeleton_loader.dart';
@@ -9,23 +10,15 @@ import '../mobile/trade_portfolio_mobile_card.dart';
 import '../mobile/trade_portfolio_mobile_filter.dart';
 import '../mobile/trade_portfolio_mobile_header.dart';
 
-// Theme-aware surfaces / borders (no hardcoded hex)
+// Theme-aware surfaces / borders — match Portfolio glass chrome
 Color _getCardBorder(BuildContext context) =>
-    Theme.of(context).brightness == Brightness.dark
-        ? context.borderColor
-        : Theme.of(context).colorScheme.outline.withValues(alpha: 0.1);
+    context.glassOverlay(context.isDark ? 0.07 : 0.06);
 Color _getCardHoverBorder(BuildContext context) =>
-    Theme.of(context).brightness == Brightness.dark
-        ? ModuleColors.trade
-        : Theme.of(context).colorScheme.primary;
-Color _getBadgeBg(BuildContext context) => Theme.of(context).brightness ==
-        Brightness.dark
-    ? context.surfaceColor
-    : Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5);
-Color _getBadgeBorder(BuildContext context) =>
-    Theme.of(context).brightness == Brightness.dark
-        ? context.borderColor
-        : Theme.of(context).colorScheme.outline.withValues(alpha: 0.1);
+    ModuleColors.trade.withValues(alpha: 0.35);
+Color _getBadgeBg(BuildContext context) => context.cardColor.withValues(
+      alpha: context.isDark ? 0.35 : 0.55,
+    );
+Color _getBadgeBorder(BuildContext context) => _getCardBorder(context);
 Color _getSearchBg(BuildContext context) =>
     Theme.of(context).brightness == Brightness.dark
         ? context.surfaceColor
@@ -317,79 +310,78 @@ class _TradePortfolioDiscoveryTemplateState
                 ],
               ),
               const SizedBox(height: 12),
-              // Stat badges row
+              // Metric cards — same glass chrome as Portfolio overview
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    _buildStatBadge(
-                      label: 'Total Value',
+                    _metricCard(
+                      title: 'Total Value',
                       value: '₹${_formatNum(totalValue)}',
+                      subtitle: 'Across portfolios',
+                      accent: ModuleColors.trade,
                       icon: Icons.account_balance_wallet_rounded,
-                      iconColor: Theme.of(context).colorScheme.onPrimary,
-                      iconBgColor: ModuleColors.trade,
                     ),
                     const SizedBox(width: 8),
-                    _buildStatBadge(
-                      label: 'Profitable',
+                    _metricCard(
+                      title: 'Profitable',
                       value: '$profitableCount/${widget.portfolios.length}',
+                      subtitle: 'Portfolios in profit',
+                      accent: context.statusSuccess,
+                      chrome: ModuleColors.trade,
                       icon: Icons.trending_up_rounded,
-                      iconColor: Theme.of(context).colorScheme.onPrimary,
-                      iconBgColor: context.statusSuccess,
-                      valueColor: context.statusSuccess,
+                      isPositive: true,
                     ),
                     const SizedBox(width: 8),
-                    _buildStatBadge(
-                      label: 'Total Trades',
+                    _metricCard(
+                      title: 'Total Trades',
                       value: '$totalTrades',
+                      subtitle: 'All portfolios',
+                      accent: ModuleColors.trade,
                       icon: Icons.swap_horiz_rounded,
-                      iconColor: Theme.of(context).colorScheme.onPrimary,
-                      iconBgColor: ModuleColors.trade,
                     ),
                     const SizedBox(width: 8),
-                    _buildStatBadge(
-                      label: 'Realized P&L',
+                    _metricCard(
+                      title: 'Realized P&L',
                       value:
                           '${totalNetProfitLoss >= 0 ? '+' : ''}₹${_formatNum(totalNetProfitLoss)}',
+                      subtitle: 'Closed trades',
+                      accent: totalNetProfitLoss >= 0
+                          ? context.statusSuccess
+                          : context.statusError,
+                      chrome: ModuleColors.trade,
                       icon: totalNetProfitLoss >= 0
                           ? Icons.arrow_upward_rounded
                           : Icons.arrow_downward_rounded,
-                      iconColor: Theme.of(context).colorScheme.onPrimary,
-                      iconBgColor: totalNetProfitLoss >= 0
-                          ? context.statusSuccess
-                          : context.statusError,
-                      valueColor: totalNetProfitLoss >= 0
-                          ? context.statusSuccess
-                          : context.statusError,
+                      isPositive:
+                          totalNetProfitLoss == 0 ? null : totalNetProfitLoss > 0,
                     ),
                     const SizedBox(width: 8),
-                    _buildStatBadge(
-                      label: 'Live P&L',
+                    _metricCard(
+                      title: 'Live P&L',
                       value:
                           '${totalUnrealizedPnL >= 0 ? '+' : ''}₹${_formatNum(totalUnrealizedPnL)}',
+                      subtitle: 'Open positions',
+                      accent: totalUnrealizedPnL >= 0
+                          ? context.statusSuccess
+                          : context.statusError,
+                      chrome: ModuleColors.trade,
                       icon: totalUnrealizedPnL >= 0
                           ? Icons.show_chart_rounded
                           : Icons.trending_down_rounded,
-                      iconColor: Theme.of(context).colorScheme.onPrimary,
-                      iconBgColor: totalUnrealizedPnL >= 0
-                          ? context.statusSuccess
-                          : context.statusError,
-                      valueColor: totalUnrealizedPnL >= 0
-                          ? context.statusSuccess
-                          : context.statusError,
+                      isPositive:
+                          totalUnrealizedPnL == 0 ? null : totalUnrealizedPnL > 0,
                     ),
                     const SizedBox(width: 8),
-                    _buildStatBadge(
-                      label: 'Closed Win Rate',
+                    _metricCard(
+                      title: 'Closed Win Rate',
                       value: '${avgWinRate.toStringAsFixed(1)}%',
+                      subtitle: 'Average across portfolios',
+                      accent: avgWinRate >= 50
+                          ? ModuleColors.trade
+                          : context.statusWarning,
+                      chrome: ModuleColors.trade,
                       icon: Icons.percent_rounded,
-                      iconColor: Theme.of(context).colorScheme.onPrimary,
-                      iconBgColor: avgWinRate >= 50
-                          ? ModuleColors.trade
-                          : context.statusWarning,
-                      valueColor: avgWinRate >= 50
-                          ? ModuleColors.trade
-                          : context.statusWarning,
                     ),
                   ],
                 ),
@@ -408,22 +400,27 @@ class _TradePortfolioDiscoveryTemplateState
     return v.toStringAsFixed(2);
   }
 
-  /// Stat badge matching the screenshot: small colored icon box + label + value
-  Widget _buildStatBadge({
-    required String label,
+  Widget _metricCard({
+    required String title,
     required String value,
+    required String subtitle,
+    required Color accent,
     required IconData icon,
-    required Color iconColor,
-    required Color iconBgColor,
-    Color? valueColor,
+    Color? chrome,
+    bool? isPositive,
   }) {
-    return _StatBadge(
-      label: label,
-      value: value,
-      icon: icon,
-      iconColor: iconColor,
-      iconBgColor: iconBgColor,
-      valueColor: valueColor,
+    return SizedBox(
+      width: 168,
+      child: PortfolioMetricCard(
+        title: title,
+        value: value,
+        subtitle: subtitle,
+        accentColor: accent,
+        chromeColor: chrome ?? accent,
+        icon: icon,
+        isPositive: isPositive,
+        compact: true,
+      ),
     );
   }
 
@@ -633,8 +630,8 @@ class _TradePortfolioDiscoveryTemplateState
         builder: (context, constraints) {
           int crossAxisCount;
           int itemsPerPage;
-          // Fixed pixel height instead of aspect ratio
-          const double cardHeight = 255.0;
+          // Fixed pixel height — room for PAPER badge + metrics + value row
+          const double cardHeight = 280.0;
           const double maxCardWidth = 420.0;
 
           // Calculate columns dynamically so cards are never wider than maxCardWidth
@@ -872,80 +869,6 @@ class _TradePortfolioDiscoveryTemplateState
   }
 }
 
-// ─── STAT BADGE ────────────────────────────────────────────────────────────
-class _StatBadge extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color iconColor;
-  final Color iconBgColor;
-  final Color? valueColor;
-
-  const _StatBadge({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.iconColor,
-    required this.iconBgColor,
-    this.valueColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 56,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: _getBadgeBg(context),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _getBadgeBorder(context)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: iconBgColor,
-              borderRadius: BorderRadius.circular(7),
-            ),
-            child: Icon(icon, color: iconColor, size: 17),
-          ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.5),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 1),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: valueColor ?? Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // ─── PORTFOLIO HOVER CARD ─────────────────────────────────────────────────
 class _PortfolioHoverCard extends StatefulWidget {
   final TradePortfolioViewModel portfolio;
@@ -980,38 +903,34 @@ class _PortfolioHoverCardState extends State<_PortfolioHoverCard> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            gradient: Theme.of(context).brightness == Brightness.dark
-                ? LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      ModuleColors.trade.withValues(alpha: 0.35),
-                      context.surfaceColor,
-                    ],
-                  )
-                : null,
-            color: Theme.of(context).brightness == Brightness.dark
-                ? null
-                : Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(14),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                context.cardColor.withValues(alpha: context.isDark ? 0.3 : 0.5),
+                context.cardColor.withValues(alpha: context.isDark ? 0.1 : 0.15),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: _isHovered
-                  ? _getCardHoverBorder(context).withValues(alpha: 0.7)
+                  ? _getCardHoverBorder(context)
                   : _getCardBorder(context),
               width: 1,
             ),
             boxShadow: _isHovered
                 ? [
                     BoxShadow(
-                      color: ModuleColors.trade.withValues(alpha: 0.25),
-                      blurRadius: 20,
-                      spreadRadius: 2,
+                      color: ModuleColors.trade.withValues(alpha: 0.22),
+                      blurRadius: 24,
+                      spreadRadius: -2,
+                      offset: const Offset(0, 4),
                     ),
                   ]
                 : [
                     BoxShadow(
-                      color: context.shadow(0.3),
-                      blurRadius: 10,
+                      color: context.shadow(context.isDark ? 0.3 : 0.06),
+                      blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
                   ],

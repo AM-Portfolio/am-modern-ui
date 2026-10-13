@@ -9,11 +9,13 @@ import 'package:provider/provider.dart';
 class HeatmapGrid extends StatelessWidget {
   final List stocks;
   final MarketProvider provider;
+  final ValueChanged<String>? onSelectStock;
 
   const HeatmapGrid({
     super.key,
     required this.stocks,
     required this.provider,
+    this.onSelectStock,
   });
 
   @override
@@ -66,6 +68,10 @@ class HeatmapGrid extends StatelessWidget {
 
                   return InkWell(
                     onTap: () {
+                      if (onSelectStock != null) {
+                        onSelectStock!(stock.symbol);
+                        return;
+                      }
                       Navigator.push(
                         context,
                         MaterialPageRoute(

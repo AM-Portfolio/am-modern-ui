@@ -28,8 +28,8 @@ class CrossModuleSectionSequence {
   /// Market user-mode pages in swipe order (matches dashboard_page user nav).
   static const marketSwipeTabs = [
     'all-indices',
-    'paper',
     'dashboard',
+    'paper',
     'market-analysis',
     'equity-insider',
     'futures-options',
