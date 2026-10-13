@@ -80,12 +80,6 @@ class PortfolioSidebar extends StatelessWidget {
       ),
     ];
 
-    // New Trade Button
-    final newTradeButton = SidebarFloatingActionMenu(
-      triggerColor: portfolioAccent,
-      actions: [],
-    );
-
     return SecondarySidebar(
       title: 'WORKSPACE',
       subtitle: 'Personal Account',
@@ -93,7 +87,6 @@ class PortfolioSidebar extends StatelessWidget {
       accentColor: portfolioAccent,
       width: 250,
       sections: sections,
-      footer: newTradeButton,
     );
   }
 }

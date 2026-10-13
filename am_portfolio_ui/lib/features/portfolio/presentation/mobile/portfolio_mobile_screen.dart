@@ -1,6 +1,9 @@
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/portfolio_actions_sheet.dart';
+import 'package:am_portfolio_ui/features/basket/presentation/basket_navigation.dart';
+import 'package:am_portfolio_ui/features/basket/presentation/widgets/discover/discover_view_mode.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -230,8 +233,10 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
       }
     });
     _currentPortfolioId = widget.selectedPortfolioId;
+    GlobalAddActionsBus.instance.addListener(_onGlobalAddAction);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _onGlobalAddAction();
       if (_currentPortfolioId != null && mounted) {
         final cubit = context.read<PortfolioCubit>();
         cubit.subscribeToPortfolioUpdates(
@@ -243,6 +248,58 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
         }
       }
     });
+  }
+
+  void _onGlobalAddAction() {
+    if (!mounted) return;
+    final bus = GlobalAddActionsBus.instance;
+    final kind = bus.pending;
+    if (kind == null) return;
+
+    final id = _currentPortfolioId ?? widget.selectedPortfolioId;
+    final hasConcrete = id != null && id.isNotEmpty && id != 'all';
+    if (!hasConcrete && kind != GlobalAddActionKind.addBasket) return;
+
+    switch (kind) {
+      case GlobalAddActionKind.uploadPortfolio:
+        if (!bus.tryConsume(kind)) return;
+        if (_isUploadingPortfolio) return;
+        if (widget.uploadPortfolioBuilder != null) {
+          setState(() {
+            _isUploadingPortfolio = true;
+            _isAddingTrade = false;
+            _isAddingAssetClass = false;
+          });
+        } else {
+          widget.onOpenDocIntel?.call();
+        }
+        return;
+      case GlobalAddActionKind.addTrade:
+        if (!bus.tryConsume(kind)) return;
+        if (_isAddingTrade) return;
+        if (widget.addTradeBuilder != null) {
+          _openAddTrade();
+        } else {
+          OpenAddTradeNotification().dispatch(context);
+        }
+        return;
+      case GlobalAddActionKind.addAssetClass:
+        if (!bus.tryConsume(kind)) return;
+        if (_isAddingAssetClass) return;
+        setState(() {
+          _isAddingAssetClass = true;
+          _isAddingTrade = false;
+          _isUploadingPortfolio = false;
+        });
+        return;
+      case GlobalAddActionKind.addBasket:
+        if (!bus.tryConsume(kind)) return;
+        _selectTab(3);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          BasketNavigation.setViewMode(BasketViewMode.discover);
+        });
+        return;
+    }
   }
 
   @override
@@ -305,6 +362,7 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
 
   @override
   void dispose() {
+    GlobalAddActionsBus.instance.removeListener(_onGlobalAddAction);
     _tabController.dispose();
     super.dispose();
   }

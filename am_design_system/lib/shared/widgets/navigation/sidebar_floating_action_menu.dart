@@ -17,6 +17,7 @@ class SidebarFloatingActionMenu extends StatefulWidget {
     required this.triggerColor,
     this.direction = AxisDirection.up,
     this.compact = false,
+    this.openBeside = false,
     super.key,
   });
 
@@ -27,6 +28,10 @@ class SidebarFloatingActionMenu extends StatefulWidget {
   /// When true, renders a compact 40×40 circle icon button instead of the
   /// full-width sidebar pill. Use this when placing the button in AppBar.actions.
   final bool compact;
+
+  /// When true, menu opens to the end/right of the trigger (global sidebar)
+  /// so strip icons stay visible instead of being covered.
+  final bool openBeside;
 
   @override
   State<SidebarFloatingActionMenu> createState() => _SidebarFloatingActionMenuState();
@@ -77,6 +82,25 @@ class _SidebarFloatingActionMenuState extends State<SidebarFloatingActionMenu>
   Widget _buildOverlay(BuildContext context) {
     final colors = Theme.of(context).extension<AppColorsTheme>() ?? AppColorsTheme.dark;
     final isUp = widget.direction == AxisDirection.up;
+    final beside = widget.openBeside;
+
+    final Alignment targetAnchor;
+    final Alignment followerAnchor;
+    final Offset offset;
+    if (beside) {
+      // Sit to the right of the global strip; grow upward from the + button.
+      targetAnchor = Alignment.centerRight;
+      followerAnchor = Alignment.bottomLeft;
+      offset = const Offset(14, 20);
+    } else if (_isActuallyCompact) {
+      targetAnchor = isUp ? Alignment.topLeft : Alignment.bottomRight;
+      followerAnchor = isUp ? Alignment.bottomLeft : Alignment.topRight;
+      offset = isUp ? const Offset(0, -12) : const Offset(0, 12);
+    } else {
+      targetAnchor = isUp ? Alignment.topCenter : Alignment.bottomCenter;
+      followerAnchor = isUp ? Alignment.bottomCenter : Alignment.topCenter;
+      offset = isUp ? const Offset(0, -12) : const Offset(0, 12);
+    }
 
     return Stack(
       children: [
@@ -90,23 +114,19 @@ class _SidebarFloatingActionMenuState extends State<SidebarFloatingActionMenu>
         ),
         CompositedTransformFollower(
           link: _layerLink,
-          targetAnchor: _isActuallyCompact
-              ? (isUp ? Alignment.topLeft : Alignment.bottomRight)
-              : (isUp ? Alignment.topCenter : Alignment.bottomCenter),
-          followerAnchor: _isActuallyCompact
-              ? (isUp ? Alignment.bottomLeft : Alignment.topRight)
-              : (isUp ? Alignment.bottomCenter : Alignment.topCenter),
-          offset: isUp ? const Offset(0, -12) : const Offset(0, 12),
+          targetAnchor: targetAnchor,
+          followerAnchor: followerAnchor,
+          offset: offset,
           child: Material(
             type: MaterialType.transparency,
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: _isActuallyCompact
-                  ? (isUp ? CrossAxisAlignment.start : CrossAxisAlignment.end)
+              crossAxisAlignment: beside || _isActuallyCompact
+                  ? CrossAxisAlignment.start
                   : CrossAxisAlignment.center,
               children: [
                 // Connector line (between trigger and first item)
-                if (!isUp)
+                if (!isUp && !beside)
                   SizeTransition(
                     sizeFactor: _controller,
                     child: Container(
@@ -128,7 +148,7 @@ class _SidebarFloatingActionMenuState extends State<SidebarFloatingActionMenu>
                   );
 
                   return Padding(
-                    padding: isUp
+                    padding: (isUp || beside)
                         ? const EdgeInsets.only(bottom: 8.0)
                         : const EdgeInsets.only(top: 8.0),
                     child: _FloatingMenuPill(
@@ -150,7 +170,7 @@ class _SidebarFloatingActionMenuState extends State<SidebarFloatingActionMenu>
                 }),
 
                 // Connector line (between last item and trigger for up-direction)
-                if (isUp)
+                if (isUp && !beside)
                   SizeTransition(
                     sizeFactor: _controller,
                     child: Container(

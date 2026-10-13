@@ -9,6 +9,8 @@ import 'package:am_design_system/core/theme/app_colors_theme.dart';
 import 'package:am_design_system/core/theme/color_extensions.dart';
 import 'package:am_design_system/shared/widgets/navigation/sidebar_item.dart';
 import 'package:am_design_system/shared/widgets/navigation/sidebar_layout_metrics.dart';
+import 'package:am_design_system/shared/widgets/navigation/floating_menu_action.dart';
+import 'package:am_design_system/shared/widgets/navigation/sidebar_floating_action_menu.dart';
 import 'package:am_design_system/core/utils/conditional_mouse_region.dart';
 import 'package:am_design_system/core/module/module_config.dart';
 import 'package:am_design_system/shared/widgets/share/share_link_button.dart';
@@ -35,6 +37,7 @@ class GlobalSidebar extends StatelessWidget {
     this.userAvatar,
     this.isDarkMode = false,
     this.moduleShareUrls,
+    this.addActions,
   });
 
   final String activeNavItem;
@@ -56,6 +59,9 @@ class GlobalSidebar extends StatelessWidget {
   final Widget? userAvatar;
   final bool isDarkMode;
   final Map<String, String>? moduleShareUrls;
+
+  /// Global "+ Sync" quick actions (above theme). One place for the whole app.
+  final List<FloatingMenuAction>? addActions;
 
   @override
   Widget build(BuildContext context) {
@@ -130,26 +136,40 @@ class GlobalSidebar extends StatelessWidget {
               ),
             ),
 
-            // 3. Bottom Actions (Theme, Profile)
+            // 3. Bottom Actions (Add, Theme, Profile)
             Padding(
               padding: const EdgeInsets.only(bottom: 32),
-              child: Column(
-                children: [
-                  // Theme picker (full catalog — same as Profile)
-                  if (onThemeToggle != null) ...[
-                    _buildActionButton(
-                      icon: Icons.palette_rounded,
-                      onTap: onThemeToggle!,
-                      isDarkMode: isDarkMode,
-                      tooltip: 'Select Theme',
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-
-                  // User Profile Avatar (At the very bottom)
-                  _buildUserProfile(),
-                ],
+              child: Builder(
+                builder: (context) {
+                  // Brand/theme primary — same as palette icon (not module pink).
+                  final themeAccent = Theme.of(context).colorScheme.primary;
+                  final actions = addActions;
+                  return Column(
+                    children: [
+                      if (actions != null && actions.isNotEmpty) ...[
+                        SidebarFloatingActionMenu(
+                          compact: true,
+                          direction: AxisDirection.up,
+                          openBeside: true,
+                          triggerColor: themeAccent,
+                          actions: actions,
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      if (onThemeToggle != null) ...[
+                        _buildActionButton(
+                          icon: Icons.palette_rounded,
+                          onTap: onThemeToggle!,
+                          isDarkMode: isDarkMode,
+                          tooltip: 'Select Theme',
+                          color: themeAccent,
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      _buildUserProfile(),
+                    ],
+                  );
+                },
               ),
             ),
           ],
