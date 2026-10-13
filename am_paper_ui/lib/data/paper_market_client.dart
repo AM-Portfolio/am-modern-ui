@@ -74,12 +74,15 @@ class PaperMarketClient {
     return s;
   }
 
-  /// Nifty 50 constituents via indices batch (same path as Market dashboard).
-  Future<List<WatchlistStock>> fetchNifty50Constituents() async {
+  /// Fetch constituents for any index (e.g. NIFTY 50, NIFTY BANK, NIFTY IT, NIFTY 100).
+  Future<List<WatchlistStock>> fetchIndexConstituents(String indexSymbol) async {
     await _ensureAuth();
+    final cleanSym = indexSymbol.replaceAll('index:', '').trim();
+    final effectiveSym = cleanSym.isEmpty ? 'NIFTY 50' : cleanSym;
+
     try {
       final result =
-          await _sdk.marketIndexApi.getLatestIndicesData(const ['NIFTY 50']);
+          await _sdk.marketIndexApi.getLatestIndicesData([effectiveSym]);
       if (result != null && result.data.isNotEmpty) {
         return _mapIndexStocks(result.data);
       }
@@ -94,7 +97,7 @@ class PaperMarketClient {
       final response = await http.post(
         Uri.parse('${EnvDomains.market}/v1/indices/batch?forceRefresh=false'),
         headers: headers,
-        body: jsonEncode(const ['NIFTY 50']),
+        body: jsonEncode([effectiveSym]),
       );
       if (response.statusCode != 200) return const [];
       final decoded = jsonDecode(response.body);
@@ -114,6 +117,11 @@ class PaperMarketClient {
     } catch (_) {
       return const [];
     }
+  }
+
+  /// Nifty 50 constituents via indices batch (same path as Market dashboard).
+  Future<List<WatchlistStock>> fetchNifty50Constituents() async {
+    return fetchIndexConstituents('NIFTY 50');
   }
 
   List<WatchlistStock> _mapIndexStocks(List<StockData> data) {

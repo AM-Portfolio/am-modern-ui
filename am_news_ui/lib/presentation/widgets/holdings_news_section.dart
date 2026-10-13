@@ -5,6 +5,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_news_ui/domain/models/news_models.dart';
 import 'package:am_news_ui/presentation/providers/news_provider.dart';
 import 'package:am_news_ui/presentation/widgets/glass_card.dart';
+import 'package:am_news_ui/presentation/widgets/news_pending_retry.dart';
 import 'package:am_news_ui/presentation/widgets/news_section_viewport.dart';
 import 'package:am_news_ui/presentation/widgets/news_story_tiles.dart';
 import 'package:flutter/foundation.dart';
@@ -35,7 +36,8 @@ class HoldingsNewsSection extends ConsumerStatefulWidget {
       _HoldingsNewsSectionState();
 }
 
-class _HoldingsNewsSectionState extends ConsumerState<HoldingsNewsSection> {
+class _HoldingsNewsSectionState extends ConsumerState<HoldingsNewsSection>
+    with NewsPendingRetryMixin {
   Set<String> _subscribed = {};
 
   Future<void> _subscribeQuotes(List<NewsCard> cards) async {
@@ -70,20 +72,23 @@ class _HoldingsNewsSectionState extends ConsumerState<HoldingsNewsSection> {
   }
 
   Widget _buildExpandable(BuildContext context, {required Widget child}) {
-    return AmGlassCard(
-      surfaceAlpha: 0.32,
-      padding: EdgeInsets.zero,
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: const Color(0x00000000)),
-        child: ExpansionTile(
-          key: const PageStorageKey('holdings_news_expansion_tile'),
-          title: Text(
-            widget.title,
-            style: Theme.of(context).textTheme.titleMedium,
+    return PageStorage(
+      bucket: PageStorageBucket(),
+      child: AmGlassCard(
+        surfaceAlpha: 0.32,
+        padding: EdgeInsets.zero,
+        child: Theme(
+          data: Theme.of(context).copyWith(dividerColor: const Color(0x00000000)),
+          child: ExpansionTile(
+            key: const PageStorageKey('holdings_news_expansion_tile'),
+            title: Text(
+              widget.title,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            initiallyExpanded: true,
+            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            children: [child],
           ),
-          initiallyExpanded: true,
-          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          children: [child],
         ),
       ),
     );
@@ -119,6 +124,12 @@ class _HoldingsNewsSectionState extends ConsumerState<HoldingsNewsSection> {
         ),
         data: (data) {
           final cards = filterHoldingsNewsForSymbols(data, widget.symbols);
+          schedulePendingIngestRetry(
+            data: data,
+            cards: cards,
+            invalidate: () =>
+                ref.invalidate(newsInsightForSymbolsProvider(key)),
+          );
           unawaited(_subscribeQuotes(cards));
           return _buildExpandable(
             context,
@@ -128,7 +139,11 @@ class _HoldingsNewsSectionState extends ConsumerState<HoldingsNewsSection> {
               children: [
                 if (cards.isEmpty)
                   Text(
-                    widget.emptyMessage,
+                    holdingsNewsEmptyLabel(
+                      data: data,
+                      fallback: widget.emptyMessage,
+                      pendingRetryDone: pendingIngestRetryDone,
+                    ),
                     style: Theme.of(context).textTheme.bodyMedium,
                   )
                 else ...[

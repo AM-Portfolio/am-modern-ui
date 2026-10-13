@@ -37,11 +37,19 @@ class PortfolioOverlayHistory {
     required this.aggregate,
     required this.portfolios,
     required this.byPortfolioId,
+    this.historyStatus,
+    this.phase,
+    this.startedAt,
   });
 
   final List<OverlayPoint> aggregate;
   final List<OverlayPortfolioRef> portfolios;
   final Map<String, List<OverlayPoint>> byPortfolioId;
+  final String? historyStatus;
+  final String? phase;
+  final String? startedAt;
+
+  bool get isBuilding => (historyStatus ?? '').toUpperCase() == 'BUILDING';
 }
 
 class OverlayChartState {
@@ -54,21 +62,19 @@ class OverlayChartState {
     required this.failedIds,
     this.firstWealth,
     this.lastWealth,
+    this.historyBuilding = false,
+    this.historyPhase,
+    this.historyStartedAt,
+    this.historyReadyToastPending = false,
   });
 
   factory OverlayChartState.initial(String timeFrame) {
     return OverlayChartState(
       timeFrame: timeFrame,
-      selectedIds: const [
-        OverlayChartIds.overall,
-        OverlayChartIds.nifty50,
-      ],
+      selectedIds: const [OverlayChartIds.overall, OverlayChartIds.nifty50],
       availablePortfolios: const [],
       series: const {},
-      pendingIds: const {
-        OverlayChartIds.overall,
-        OverlayChartIds.nifty50,
-      },
+      pendingIds: const {OverlayChartIds.overall, OverlayChartIds.nifty50},
       failedIds: const {},
     );
   }
@@ -81,6 +87,10 @@ class OverlayChartState {
   final Map<String, String> failedIds;
   final double? firstWealth;
   final double? lastWealth;
+  final bool historyBuilding;
+  final String? historyPhase;
+  final String? historyStartedAt;
+  final bool historyReadyToastPending;
 
   bool get atCap => selectedIds.length >= OverlayChartIds.maxVisibleLines;
 
@@ -105,6 +115,10 @@ class OverlayChartState {
     double? firstWealth,
     double? lastWealth,
     bool clearWealth = false,
+    bool? historyBuilding,
+    String? historyPhase,
+    String? historyStartedAt,
+    bool? historyReadyToastPending,
   }) {
     return OverlayChartState(
       timeFrame: timeFrame ?? this.timeFrame,
@@ -115,6 +129,11 @@ class OverlayChartState {
       failedIds: failedIds ?? this.failedIds,
       firstWealth: clearWealth ? null : (firstWealth ?? this.firstWealth),
       lastWealth: clearWealth ? null : (lastWealth ?? this.lastWealth),
+      historyBuilding: historyBuilding ?? this.historyBuilding,
+      historyPhase: historyPhase ?? this.historyPhase,
+      historyStartedAt: historyStartedAt ?? this.historyStartedAt,
+      historyReadyToastPending:
+          historyReadyToastPending ?? this.historyReadyToastPending,
     );
   }
 }
@@ -166,16 +185,25 @@ String normalizeOverlayTimestamp(
   String raw, {
   required bool isIntraday,
   DateTime? referenceDate,
-}) =>
-    MultiSeriesChartTime.normalize(
-      raw,
-      isIntraday: isIntraday,
-      referenceDate: referenceDate,
-    );
+}) => MultiSeriesChartTime.normalize(
+  raw,
+  isIntraday: isIntraday,
+  referenceDate: referenceDate,
+);
 
 const _monthAbbr = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ];
 
 /// Compact X tick: `20 Aug` for daily, `09:15` for intraday timestamps.
@@ -202,8 +230,8 @@ String formatOverlayPercent(double v) {
   final body = abs >= 10
       ? abs.toStringAsFixed(0)
       : abs >= 1
-          ? abs.toStringAsFixed(1)
-          : abs.toStringAsFixed(2);
+      ? abs.toStringAsFixed(1)
+      : abs.toStringAsFixed(2);
   final trimmed = body.contains('.')
       ? body.replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '')
       : body;
@@ -220,7 +248,9 @@ String formatOverlayAxisPercent(double v) {
 
 /// Duplicate names become `Zerodha · 0650` using the first 4 id chars.
 /// Raw UUIDs (including userId) are never shown as the display name.
-Map<String, String> uniquePortfolioLabels(List<OverlayPortfolioRef> portfolios) {
+Map<String, String> uniquePortfolioLabels(
+  List<OverlayPortfolioRef> portfolios,
+) {
   final counts = <String, int>{};
   for (final p in portfolios) {
     final name = _overlayDisplayName(p);
@@ -250,15 +280,23 @@ String _overlayDisplayName(OverlayPortfolioRef p) {
   return name;
 }
 
-/// Overall + NIFTY 50 by default; optional third line is the first portfolio.
-List<String> defaultOverlaySelectedIds(List<String> portfolioIds) {
-  final selected = <String>[
-    OverlayChartIds.overall,
-    OverlayChartIds.nifty50,
-  ];
+/// Overall + NIFTY 50 by default; optional third line prefers [preferredPortfolioId]
+/// when present in history, otherwise the first portfolio.
+List<String> defaultOverlaySelectedIds(
+  List<String> portfolioIds, {
+  String? preferredPortfolioId,
+}) {
+  final selected = <String>[OverlayChartIds.overall, OverlayChartIds.nifty50];
   if (selected.length < OverlayChartIds.defaultVisibleLines &&
       portfolioIds.isNotEmpty) {
-    selected.add(portfolioIds.first);
+    final preferred =
+        preferredPortfolioId != null &&
+            preferredPortfolioId.isNotEmpty &&
+            preferredPortfolioId != 'all' &&
+            portfolioIds.contains(preferredPortfolioId)
+        ? preferredPortfolioId
+        : portfolioIds.first;
+    selected.add(preferred);
   }
   return selected.take(OverlayChartIds.defaultVisibleLines).toList();
 }
@@ -267,6 +305,7 @@ List<String> mergeOverlaySelection({
   required List<String> previous,
   required List<String> availablePortfolioIds,
   required bool selectionTouched,
+  String? preferredPortfolioId,
 }) {
   bool isValid(String id) =>
       OverlayChartIds.isOverall(id) ||
@@ -274,9 +313,20 @@ List<String> mergeOverlaySelection({
       OverlayChartIds.isIndex(id);
 
   if (!selectionTouched) {
-    return defaultOverlaySelectedIds(availablePortfolioIds);
+    return defaultOverlaySelectedIds(
+      availablePortfolioIds,
+      preferredPortfolioId: preferredPortfolioId,
+    );
   }
-  final kept = previous.where(isValid).take(OverlayChartIds.maxVisibleLines).toList();
-  if (kept.isEmpty) return defaultOverlaySelectedIds(availablePortfolioIds);
+  final kept = previous
+      .where(isValid)
+      .take(OverlayChartIds.maxVisibleLines)
+      .toList();
+  if (kept.isEmpty) {
+    return defaultOverlaySelectedIds(
+      availablePortfolioIds,
+      preferredPortfolioId: preferredPortfolioId,
+    );
+  }
   return kept;
 }

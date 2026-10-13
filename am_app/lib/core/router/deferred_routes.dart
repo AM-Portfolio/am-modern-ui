@@ -34,6 +34,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
 import 'package:am_design_system/am_design_system.dart';
+import '../../features/chart/chart_terminal_host_page.dart';
 import '../../features/shell/skeletons/module_skeletons.dart';
 import '../di/injection.dart';
 import 'deferred_module_loader.dart';
@@ -76,7 +77,8 @@ Widget _defaultPortfolioAddTradeBuilder(
 ) {
   return Consumer(
     builder: (context, ref, _) {
-      final cubitAsync = ref.watch(trade_providers.tradeControllerCubitProvider);
+      final cubitAsync =
+          ref.watch(trade_providers.tradeControllerCubitProvider);
       return cubitAsync.when(
         data: (cubit) {
           final theme = Theme.of(context);
@@ -154,7 +156,9 @@ Widget buildPortfolioRoute({
   PortfolioAddTradeBuilder? addTradeBuilder,
   PortfolioHoldingsPageBuilder? holdingsPageBuilder,
   VoidCallback? onOpenDocIntel,
-  Widget Function(String portfolioId, String? portfolioName, VoidCallback onCancel)? uploadPortfolioBuilder,
+  Widget Function(
+          String portfolioId, String? portfolioName, VoidCallback onCancel)?
+      uploadPortfolioBuilder,
 }) {
   final tradeBuilder = addTradeBuilder ?? _defaultPortfolioAddTradeBuilder;
   final holdingsBuilder =
@@ -248,6 +252,8 @@ Widget buildMarketRoute({
   required String userId,
   required String tab,
   required void Function(String slug) onTabChanged,
+  String? symbol,
+  String? tf,
 }) {
   return DeferredModuleLoader(
     load: _loadMarket,
@@ -258,6 +264,10 @@ Widget buildMarketRoute({
       initialTab: tab,
       onTabChanged: onTabChanged,
       paperDesk: paper_ui.PaperGateScreen(),
+      chartDesk: ChartTerminalHostPage(
+        initialSymbol: symbol,
+        initialTimeframe: tf,
+      ),
     ),
   );
 }
@@ -323,7 +333,8 @@ Widget buildProfileRoute({
     skeleton: const GenericModuleSkeleton(),
     loadingMessage: 'Loading Profile…',
     builder: () => _ProfileSubscriptionLoader(
-      builder: (statusLabel, isPaid, referralLabel) => user_ui.ProfileSettingsPage(
+      builder: (statusLabel, isPaid, referralLabel) =>
+          user_ui.ProfileSettingsPage(
         userId: userId,
         email: email,
         displayName: displayName,
@@ -369,7 +380,8 @@ class _ProfileSubscriptionLoader extends StatefulWidget {
       _ProfileSubscriptionLoaderState();
 }
 
-class _ProfileSubscriptionLoaderState extends State<_ProfileSubscriptionLoader> {
+class _ProfileSubscriptionLoaderState
+    extends State<_ProfileSubscriptionLoader> {
   String? _statusLabel;
   bool _isPaid = false;
   String? _referralLabel;
@@ -445,8 +457,9 @@ class _ProfileSubscriptionLoaderState extends State<_ProfileSubscriptionLoader> 
       if (!GetIt.instance.isRegistered<am_sub.SubscriptionRemoteDataSource>()) {
         return;
       }
-      final summary = await GetIt.instance<am_sub.SubscriptionRemoteDataSource>()
-          .getReferralSummary();
+      final summary =
+          await GetIt.instance<am_sub.SubscriptionRemoteDataSource>()
+              .getReferralSummary();
       if (!mounted) return;
       setState(() {
         _referralLabel =

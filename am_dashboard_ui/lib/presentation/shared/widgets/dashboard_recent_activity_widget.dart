@@ -285,11 +285,24 @@ class _DashboardRecentActivityWidgetState
           const SizedBox(height: AppSpacing.sm + 4),
           LayoutBuilder(
             builder: (context, constraints) {
+              // Fit table to visible rows (max 10) — no empty space when fewer.
+              const rowHeight = 44.0;
+              const headerBlock = 41.0; // header padding + divider
+              const footerBlock = 56.0;
+              const maxVisibleRows = 10;
+              final itemCount = activities.length;
+              final visibleRows =
+                  itemCount == 0 ? 2 : itemCount.clamp(1, maxVisibleRows);
+              final separators = itemCount == 0 ? 0 : visibleRows - 1;
+              final tableHeight =
+                  headerBlock + (visibleRows * rowHeight) + separators + footerBlock;
+
               final table = SizedBox(
-                height: 450,
+                height: tableHeight,
                 child: PaginatedSortableTable<ActivityItem>(
                   items: activities,
                   pageSize: widget.pageSize,
+                  rowHeight: rowHeight,
                   pageSizeOptions: const [10, 25, 50],
                   initialSortColumnIndex: widget.sortColumnIndex,
                   initialSortDirection: widget.sortDirection,

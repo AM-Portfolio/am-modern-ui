@@ -17,6 +17,25 @@ class AppWebNavigation {
     return path;
   }
 
+  /// Always open [path] in a new browser tab (web only). No-op off web.
+  static void openPathInNewTab(String path) {
+    if (!kIsWeb) return;
+    final uri = Uri.parse(path);
+    final base = Uri.base;
+    final full = base
+        .replace(
+          path: uri.path.isEmpty ? path : uri.path,
+          query: uri.hasQuery ? uri.query : '',
+          fragment: '',
+        )
+        .toString();
+    // Prefer preserving query from relative path like /app/chart/workspace?symbol=...
+    final withQuery = path.contains('?')
+        ? '${base.origin}${path.startsWith('/') ? path : '/$path'}'
+        : full;
+    openUrlInNewTab(withQuery);
+  }
+
   static bool shouldOpenNewTab({PointerDownEvent? pointerDown}) {
     if (pointerDown != null && pointerDown.buttons == kMiddleMouseButton) {
       return true;

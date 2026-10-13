@@ -268,16 +268,44 @@ class UnifiedSearchEngine {
     final nav = SearchNavigationHandler(navContext, container: container);
     final out = <CommandItem>[];
 
-    for (final sym in recentSymbols.take(4)) {
-      out.add(
-        CommandItem(
-          title: sym,
-          subtitle: 'Recent',
-          icon: Icons.history,
-          category: 'Market',
-          onSelected: () => nav.openSecurity(sym, context),
-        ),
-      );
+    if (context == SearchContext.chart) {
+      final chartRecents = ChartSearchBridge.recentSymbols;
+      for (final sym in chartRecents.take(8)) {
+        out.add(
+          CommandItem(
+            title: sym,
+            subtitle: 'Recent chart',
+            icon: Icons.history,
+            category: 'Market',
+            onSelected: () => nav.openSecurity(sym, SearchContext.chart),
+          ),
+        );
+      }
+      if (chartRecents.isEmpty) {
+        for (final sym in const ['NIFTY 50', 'BANKNIFTY', 'RELIANCE', 'TCS']) {
+          out.add(
+            CommandItem(
+              title: sym,
+              subtitle: 'Popular chart',
+              icon: Icons.show_chart,
+              category: 'Market',
+              onSelected: () => nav.openSecurity(sym, SearchContext.chart),
+            ),
+          );
+        }
+      }
+    } else {
+      for (final sym in recentSymbols.take(4)) {
+        out.add(
+          CommandItem(
+            title: sym,
+            subtitle: 'Recent',
+            icon: Icons.history,
+            category: 'Market',
+            onSelected: () => nav.openSecurity(sym, context),
+          ),
+        );
+      }
     }
 
     if (context == SearchContext.baskets) {

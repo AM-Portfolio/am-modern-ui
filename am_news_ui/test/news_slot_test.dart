@@ -1,6 +1,7 @@
 import 'package:am_common/am_common.dart';
 import 'package:am_news_ui/am_news_ui.dart';
 import 'package:am_news_ui/presentation/widgets/news_article_opener.dart';
+import 'package:am_news_ui/presentation/widgets/news_pending_retry.dart';
 import 'package:am_news_ui/presentation/widgets/news_relative_time.dart';
 import 'package:am_news_ui/presentation/widgets/news_symbol_chip.dart';
 import 'package:am_news_ui/presentation/widgets/news_thumbnail.dart';
@@ -94,6 +95,39 @@ void main() {
       'holdings': <Map<String, dynamic>>[],
     });
     expect(filterHoldingsNewsForSymbols(belOnly, ['IRCTC', 'PNB']), isEmpty);
+  });
+
+  test('InsightNews parses pending_ingest and empty label', () {
+    final pending = InsightNews.fromJson({
+      'current_affairs': <Map<String, dynamic>>[],
+      'holdings': <Map<String, dynamic>>[],
+      'pending_ingest': true,
+      'missing_symbols': ['idea', 'PWL'],
+    });
+    expect(pending.pendingIngest, isTrue);
+    expect(pending.missingSymbols, ['IDEA', 'PWL']);
+    expect(
+      holdingsNewsEmptyLabel(
+        data: pending,
+        fallback: 'No recent news for these symbols',
+      ),
+      'Fetching news…',
+    );
+    expect(
+      holdingsNewsEmptyLabel(
+        data: pending,
+        fallback: 'No recent news for these symbols',
+        pendingRetryDone: true,
+      ),
+      'No recent news for these symbols',
+    );
+    expect(
+      holdingsNewsEmptyLabel(
+        data: const InsightNews(),
+        fallback: 'No recent news for these symbols',
+      ),
+      'No recent news for these symbols',
+    );
   });
 
   testWidgets('holdings section does not show current-affairs fallback',
