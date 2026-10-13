@@ -21,11 +21,9 @@ import 'pages/trade_holdings_dashboard_mobile_page.dart';
 import 'journal_mobile_page.dart';
 import '../analysis/trade_analysis_page.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/mobile/widgets/portfolio_form_modal.dart';
-import 'package:am_portfolio_ui/features/portfolio/internal/data/dtos/portfolio_create_request_dto.dart';
 import 'package:am_portfolio_ui/features/portfolio/internal/data/dtos/portfolio_update_request_dto.dart';
 import 'package:am_portfolio_ui/features/portfolio/internal/domain/entities/portfolio_list.dart';
 import 'package:am_portfolio_ui/features/portfolio/providers/portfolio_providers.dart';
-import '../../internal/domain/entities/trade_portfolio.dart';
 
 /// Trade view types for mobile navigation.
 ///
@@ -397,35 +395,7 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
                 _onPortfolioSelected(portfolio.id, portfolio.name);
               },
               onCreatePaperWallet: null,
-              onCreatePortfolio: () {
-                PortfolioFormModal.show(
-                  context: context,
-                  portfolio: null,
-                  onSubmit: (name, desc) async {
-                    final service = ref.read(portfolioServiceProvider).value;
-                    if (service == null) {
-                      throw Exception('Portfolio service not ready');
-                    }
-                    final request = PortfolioCreateRequestDto(
-                      name: name,
-                      description: desc,
-                      currency: 'INR',
-                      initialCapital: 0,
-                    );
-                    final created = await service.createPortfolio(request);
-                    final repository = ref.read(tradeRepositoryProvider).value;
-                    if (repository != null) {
-                      repository.addCachedPortfolio(
-                        TradePortfolio(
-                          id: created.portfolioId,
-                          name: created.portfolioName,
-                          description: desc,
-                        ),
-                      );
-                    }
-                  },
-                );
-              },
+              onCreatePortfolio: null,
               onEditPortfolio: (portfolio) {
                 if (portfolio.isPaper) return;
                 final portfolioItem = PortfolioItem(
