@@ -1027,13 +1027,8 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                 ],
                 const SizedBox(width: 8),
                 _buildUnitToggle(context),
-                if (!widget.isBarChart) ...[
+                if (widget.showExpandButton) ...[
                   const SizedBox(width: 8),
-                  _buildZoomControls(theme),
-                ],
-                if (widget.showExpandButton &&
-                    (widget.onOpenExpanded != null ||
-                        widget.expandedChartPath != null)) ...[
                   _buildExpandButton(context),
                 ],
               ],
@@ -1095,9 +1090,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                 const SizedBox(width: 6),
                 widget.legendTrailing!,
               ],
-              if (widget.showExpandButton &&
-                  (widget.onOpenExpanded != null ||
-                      widget.expandedChartPath != null)) ...[
+              if (widget.showExpandButton) ...[
                 const SizedBox(width: 2),
                 _buildExpandButton(context, compact: true),
               ],
@@ -1151,69 +1144,58 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     );
   }
 
-  Widget _buildExpandButton(BuildContext context, {bool compact = false}) {
-    final path = widget.expandedChartPath;
-    final min = compact ? 36.0 : 32.0;
-    return IconButton(
-      visualDensity: VisualDensity.compact,
-      padding: EdgeInsets.zero,
-      constraints: BoxConstraints(minWidth: min, minHeight: min),
-      tooltip: 'Open advanced chart',
-      icon: Icon(Icons.open_in_new, size: compact ? 18 : 20),
-      onPressed: () {
-        if (path != null) {
-          AppWebNavigation.navigate(
-            context: context,
-            path: path,
-            onSameTab: widget.onOpenExpanded ?? () => context.go(path),
-          );
-        } else {
-          widget.onOpenExpanded?.call();
-        }
-      },
-    );
+  String _resolveChartPath() {
+    if (widget.expandedChartPath != null &&
+        widget.expandedChartPath!.isNotEmpty) {
+      return widget.expandedChartPath!;
+    }
+    final primarySymbol = widget.selectedIndices.isNotEmpty
+        ? widget.selectedIndices.first
+        : 'NIFTY 50';
+    final tf = widget.timeFrameCode ?? '1D';
+    return '/app/market/chart?symbol=${Uri.encodeComponent(primarySymbol)}&tf=${Uri.encodeComponent(tf)}';
   }
 
-  Widget _buildZoomControls(ThemeData theme) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconButton(
-          visualDensity: VisualDensity.compact,
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-          icon: Icon(
-            Icons.zoom_out,
-            color: ModuleColors.dashboard,
-            size: 22,
-          ),
-          onPressed: () => _zoom(_zoomScale - 0.2),
-          tooltip: 'Zoom Out',
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2),
-          child: Text(
-            '${(_zoomScale * 100).toInt()}%',
-            style: TextStyle(
-              color: theme.textTheme.bodySmall?.color?.withOpacity(0.8),
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
+  Widget _buildExpandButton(BuildContext context, {bool compact = false}) {
+    final path = _resolveChartPath();
+    final min = compact ? 34.0 : 32.0;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final iconColor = widget.accentColor ??
+        (isDark ? const Color(0xFF26A69A) : theme.colorScheme.primary);
+
+    return Tooltip(
+      message: 'Open Market Chart in new tab',
+      child: IconButton(
+        visualDensity: VisualDensity.compact,
+        padding: EdgeInsets.zero,
+        constraints: BoxConstraints(minWidth: min, minHeight: min),
+        icon: Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: iconColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: iconColor.withValues(alpha: 0.3),
+              width: 1,
             ),
           ),
-        ),
-        IconButton(
-          visualDensity: VisualDensity.compact,
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-          icon: Icon(
-            Icons.zoom_in,
-            color: ModuleColors.dashboard,
-            size: 22,
+          child: Icon(
+            Icons.candlestick_chart_rounded,
+            size: compact ? 16 : 18,
+            color: iconColor,
           ),
-          onPressed: () => _zoom(_zoomScale + 0.2),
-          tooltip: 'Zoom In',
         ),
-      ],
+        onPressed: () {
+          if (widget.onOpenExpanded != null) {
+            widget.onOpenExpanded!();
+          } else if (kIsWeb) {
+            AppWebNavigation.openPathInNewTab(path);
+          } else {
+            context.go(path);
+          }
+        },
+      ),
     );
   }
 

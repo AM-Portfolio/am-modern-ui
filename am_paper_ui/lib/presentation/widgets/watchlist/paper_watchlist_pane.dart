@@ -19,6 +19,8 @@ class PaperWatchlistPane extends StatefulWidget {
     this.compactChrome = false,
     this.showRecentHistory = false,
     this.showSearch = true,
+    this.onOpenAllIndices,
+    this.controller,
   });
 
   final String selectedSymbol;
@@ -37,23 +39,35 @@ class PaperWatchlistPane extends StatefulWidget {
   /// When false, omit the Search stocks field (e.g. chart host uses header search).
   final bool showSearch;
 
+  /// Triggered to open the All Market Indices drawer / view.
+  final VoidCallback? onOpenAllIndices;
+
+  /// Optional host-provided controller (e.g. for chart terminal synchronization).
+  final WatchlistController? controller;
+
   @override
   State<PaperWatchlistPane> createState() => _PaperWatchlistPaneState();
 }
 
 class _PaperWatchlistPaneState extends State<PaperWatchlistPane> {
-  late final WatchlistController _controller;
+  late final WatchlistController _internalController;
+  WatchlistController get _controller => widget.controller ?? _internalController;
 
   @override
   void initState() {
     super.initState();
-    _controller = WatchlistController(onSelectSymbol: widget.onSelectSymbol);
-    _controller.bootstrap();
+    if (widget.controller == null) {
+      _internalController =
+          WatchlistController(onSelectSymbol: widget.onSelectSymbol);
+      _internalController.bootstrap();
+    }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    if (widget.controller == null) {
+      _internalController.dispose();
+    }
     super.dispose();
   }
 
@@ -70,6 +84,7 @@ class _PaperWatchlistPaneState extends State<PaperWatchlistPane> {
             onBuySell: widget.onBuySell,
             onOpenFundamentals: widget.onOpenFundamentals,
             showSearch: widget.showSearch,
+            onOpenAllIndices: widget.onOpenAllIndices,
           );
           if (!widget.showRecentHistory) return mobile;
           return Column(

@@ -28,9 +28,17 @@ class WatchlistController extends ChangeNotifier {
   final PaperMarketClient _client;
   final WatchlistApiClient _watchlistApi;
 
-  final List<WatchlistSource> sources = [
-    const WatchlistSource(id: kNifty50Id, name: 'Nifty 50'),
+  static const List<WatchlistSource> defaultIndexSources = [
+    WatchlistSource(id: kNifty50Id, name: 'Nifty 50'),
+    WatchlistSource(id: 'index:NIFTY BANK', name: 'Nifty Bank'),
+    WatchlistSource(id: 'index:NIFTY IT', name: 'Nifty IT'),
+    WatchlistSource(id: 'index:NIFTY NEXT 50', name: 'Nifty Next 50'),
+    WatchlistSource(id: 'index:NIFTY 100', name: 'Nifty 100'),
+    WatchlistSource(id: 'index:NIFTY 500', name: 'Nifty 500'),
+    WatchlistSource(id: 'index:NIFTY MIDCAP 100', name: 'Nifty Midcap 100'),
   ];
+
+  final List<WatchlistSource> sources = List.of(defaultIndexSources);
   String selectedSourceId = kNifty50Id;
   List<WatchlistStock> allRows = [];
   int pageIndex = 0;
@@ -48,6 +56,8 @@ class WatchlistController extends ChangeNotifier {
   bool _disposed = false;
 
   bool get isNifty => selectedSourceId == kNifty50Id;
+  bool get isIndex =>
+      selectedSourceId == kNifty50Id || selectedSourceId.startsWith('index:');
 
   bool get pageNeedsQuoteSpinner {
     final page = pageRows;
@@ -93,9 +103,12 @@ class WatchlistController extends ChangeNotifier {
     try {
       final lists = await _watchlistApi.getWatchlists();
       if (_disposed) return;
+      final currentCustom =
+          sources.where((s) => s.id.startsWith('index:') && !defaultIndexSources.any((d) => d.id == s.id)).toList();
       sources
         ..clear()
-        ..add(const WatchlistSource(id: kNifty50Id, name: 'Nifty 50'));
+        ..addAll(defaultIndexSources)
+        ..addAll(currentCustom);
       for (final w in lists) {
         if (w.id.isEmpty) continue;
         sources.add(WatchlistSource(id: w.id, name: w.name));
@@ -105,9 +118,19 @@ class WatchlistController extends ChangeNotifier {
       if (_disposed) return;
       sources
         ..clear()
-        ..add(const WatchlistSource(id: kNifty50Id, name: 'Nifty 50'));
+        ..addAll(defaultIndexSources);
       _notify();
     }
+  }
+
+  Future<void> selectIndexSource(String symbol) async {
+    final cleanSym = symbol.replaceAll('index:', '').trim();
+    final sourceId =
+        cleanSym.toUpperCase() == 'NIFTY 50' ? kNifty50Id : 'index:$cleanSym';
+    if (!sources.any((s) => s.id == sourceId)) {
+      sources.add(WatchlistSource(id: sourceId, name: cleanSym));
+    }
+    await selectSource(sourceId);
   }
 
   Future<void> selectSource(String id) async {
@@ -128,9 +151,10 @@ class WatchlistController extends ChangeNotifier {
 
     try {
       List<WatchlistStock> rows;
-      if (id == kNifty50Id) {
-        rows = await _client.fetchNifty50Constituents();
-        if (rows.isEmpty) {
+      if (id == kNifty50Id || id.startsWith('index:')) {
+        final symbol = id == kNifty50Id ? 'NIFTY 50' : id.substring(6);
+        rows = await _client.fetchIndexConstituents(symbol);
+        if (rows.isEmpty && id == kNifty50Id) {
           throw Exception('Could not load Nifty 50 constituents');
         }
       } else {

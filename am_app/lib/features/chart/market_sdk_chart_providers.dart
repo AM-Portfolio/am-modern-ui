@@ -94,6 +94,7 @@ class MarketSdkHistoricalProvider implements HistoricalDataProvider {
     switch (timeframe.toUpperCase()) {
       case '1W':
         return '1W';
+      case '1M':
       case '1MO':
       case '1MONTH':
         return '1M';
@@ -103,7 +104,7 @@ class MarketSdkHistoricalProvider implements HistoricalDataProvider {
         return '1Y';
       case '1D':
         return '1D';
-      // Intraday chips (1M/5M/15M/1H) → session range
+      // Intraday chips (5M/15M/1H) → session range
       default:
         return '1D';
     }

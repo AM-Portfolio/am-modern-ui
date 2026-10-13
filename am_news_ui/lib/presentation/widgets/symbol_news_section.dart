@@ -68,19 +68,25 @@ class _SymbolNewsSectionState extends ConsumerState<SymbolNewsSection>
   }
 
   Widget _buildExpandable(BuildContext context, {required Widget child}) {
-    return AmGlassCard(
-      surfaceAlpha: 0.32,
-      padding: EdgeInsets.zero,
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          title: Text(
-            widget.title,
-            style: Theme.of(context).textTheme.titleMedium,
+    return PageStorage(
+      bucket: PageStorageBucket(),
+      child: AmGlassCard(
+        surfaceAlpha: 0.32,
+        padding: EdgeInsets.zero,
+        child: Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            key: PageStorageKey<String>(
+              'symbol_news_${widget.symbol}_${widget.title}',
+            ),
+            title: Text(
+              widget.title,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            initiallyExpanded: true,
+            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            children: [child],
           ),
-          initiallyExpanded: true,
-          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          children: [child],
         ),
       ),
     );

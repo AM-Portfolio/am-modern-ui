@@ -1,5 +1,6 @@
 import 'package:am_chart_ui/am_chart_ui.dart';
 import 'package:am_common/am_common.dart';
+import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/am_market_ui.dart';
 import 'package:am_news_ui/am_news_ui.dart';
 import 'package:am_paper_ui/am_paper_ui.dart';
@@ -17,6 +18,7 @@ enum _ChartBottomSection {
   overview,
   financials,
   shareholding,
+  heatmap,
   news,
   optionChain,
   futures,
@@ -91,9 +93,14 @@ class _ChartTerminalBody extends ConsumerStatefulWidget {
 }
 
 class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   _ChartBottomSection _section = _ChartBottomSection.overview;
   late final TabController _sidebarTabController;
+  late final WatchlistController _watchlistController;
+  late final MarketProvider _marketProvider;
+  ChartTerminalController? _currentTerminalCtrl;
+  String _indicesSearchQuery = '';
+  IndicesRegion _region = IndicesRegion.indian;
 
   static const _baseTags = <(_ChartBottomSection, String)>[
     (_ChartBottomSection.overview, 'Overview'),
@@ -105,16 +112,61 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
     (_ChartBottomSection.margin, 'Margin'),
   ];
 
-  List<(_ChartBottomSection, String)> get _tags {
+  static const _indexTags = <(_ChartBottomSection, String)>[
+    (_ChartBottomSection.heatmap, 'Heatmap'),
+    (_ChartBottomSection.news, 'News'),
+    (_ChartBottomSection.optionChain, 'Option Chain'),
+    (_ChartBottomSection.futures, 'Futures'),
+    (_ChartBottomSection.margin, 'Margin'),
+  ];
+
+  bool _isIndexSymbol(String symbol) {
+    final s = symbol.trim().toUpperCase();
+    if (s.isEmpty) return false;
+    if (_marketProvider.allIndicesData
+            .any((idx) => idx.indexSymbol.toUpperCase() == s) ||
+        _marketProvider.globalIndicesData
+            .any((idx) => idx.indexSymbol.toUpperCase() == s)) {
+      return true;
+    }
+    return s.startsWith('NIFTY') ||
+        s.startsWith('BANKNIFTY') ||
+        s.startsWith('FINNIFTY') ||
+        s.startsWith('MIDCPNIFTY') ||
+        s.contains('SENSEX') ||
+        s.contains('INDIA VIX') ||
+        s.startsWith('BSE ') ||
+        s.startsWith('CNX ') ||
+        const {
+          'NASDAQ',
+          'DOW JONES',
+          'S&P 500',
+          'FTSE 100',
+          'DAX',
+          'NIKKEI 225',
+          'HANG SENG',
+          'KOSPI',
+          'SHANGHAI COMPOSITE',
+          'CAC 40',
+          'GIFT NIFTY',
+        }.contains(s);
+  }
+
+  List<(_ChartBottomSection, String)> _getTags(String activeSymbol) {
     final selected = ref.watch(chartSelectedPortfolioProvider);
-    if (selected == null || _sidebarTabController.index == 0) return _baseTags;
-    return [
-      (_ChartBottomSection.overview, 'Overview'),
-      (_ChartBottomSection.holdings, 'Holdings'),
-      (_ChartBottomSection.healthScore, 'Health Score'),
-      (_ChartBottomSection.portfolioXRay, 'Portfolio X-Ray'),
-      (_ChartBottomSection.riskRadar, 'Risk Radar'),
-    ];
+    if (selected != null && _sidebarTabController.index == 2) {
+      return [
+        (_ChartBottomSection.overview, 'Overview'),
+        (_ChartBottomSection.holdings, 'Holdings'),
+        (_ChartBottomSection.healthScore, 'Health Score'),
+        (_ChartBottomSection.portfolioXRay, 'Portfolio X-Ray'),
+        (_ChartBottomSection.riskRadar, 'Risk Radar'),
+      ];
+    }
+    if (_isIndexSymbol(activeSymbol)) {
+      return _indexTags;
+    }
+    return _baseTags;
   }
 
   bool _isFoSection(_ChartBottomSection s) =>
@@ -123,7 +175,9 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
       s == _ChartBottomSection.margin;
 
   void _syncFoSymbol(String symbol) {
-    final sym = symbol.trim().toUpperCase();
+    var sym = symbol.trim().toUpperCase();
+    if (sym == 'NIFTY 50') sym = 'NIFTY';
+    if (sym == 'NIFTY BANK') sym = 'BANKNIFTY';
     if (sym.isEmpty) return;
     ref.read(foActiveSymbolProvider.notifier).state = sym;
   }
@@ -131,38 +185,115 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
   @override
   void initState() {
     super.initState();
-    _sidebarTabController = TabController(length: 2, vsync: this);
+    _marketProvider = MarketProvider();
+    _marketProvider.addListener(() {
+      if (mounted) setState(() {});
+    });
+
+    _watchlistController = WatchlistController(
+      onSelectSymbol: (s) {
+        _currentTerminalCtrl?.selectSymbol(s);
+        _syncFoSymbol(s);
+        if (_isIndexSymbol(s)) {
+          _marketProvider.selectIndex(s);
+          if (_section == _ChartBottomSection.overview ||
+              _section == _ChartBottomSection.financials ||
+              _section == _ChartBottomSection.shareholding) {
+            setState(() => _section = _ChartBottomSection.heatmap);
+          }
+        } else {
+          if (_section == _ChartBottomSection.heatmap) {
+            setState(() => _section = _ChartBottomSection.overview);
+          }
+        }
+      },
+    );
+    _watchlistController.bootstrap();
+
+    _sidebarTabController = TabController(length: 3, vsync: this);
     _sidebarTabController.addListener(() {
       if (!mounted) return;
-      if (_sidebarTabController.index == 0) {
+      if (_sidebarTabController.index != 2) {
         if (_section == _ChartBottomSection.healthScore ||
             _section == _ChartBottomSection.portfolioXRay ||
             _section == _ChartBottomSection.riskRadar ||
             _section == _ChartBottomSection.holdings) {
-          _section = _ChartBottomSection.overview;
+          final sym = ref.read(chartTerminalProvider).symbol;
+          _section = _isIndexSymbol(sym)
+              ? _ChartBottomSection.heatmap
+              : _ChartBottomSection.overview;
         }
       } else {
         if (_isFoSection(_section) ||
             _section == _ChartBottomSection.news ||
             _section == _ChartBottomSection.financials ||
-            _section == _ChartBottomSection.shareholding) {
+            _section == _ChartBottomSection.shareholding ||
+            _section == _ChartBottomSection.heatmap) {
           _section = _ChartBottomSection.overview;
         }
       }
       setState(() {});
     });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        if (_marketProvider.allIndicesData.isEmpty) {
+          _marketProvider.loadAllIndicesData();
+        }
+      }
+    });
   }
 
   @override
   void dispose() {
+    ChartSearchBridge.unbind();
+    _marketProvider.dispose();
+    _watchlistController.dispose();
     _sidebarTabController.dispose();
     super.dispose();
+  }
+
+  void _bindChartSearch(ChartTerminalController ctrl, ChartTerminalState state) {
+    ChartSearchBridge.bind(
+      recentSymbols: state.recentSearches,
+      selectSymbol: (sym) {
+        ctrl.selectSymbol(sym);
+        _syncFoSymbol(sym);
+        if (_isIndexSymbol(sym)) {
+          _marketProvider.selectIndex(sym);
+          if (_section == _ChartBottomSection.overview ||
+              _section == _ChartBottomSection.financials ||
+              _section == _ChartBottomSection.shareholding) {
+            setState(() => _section = _ChartBottomSection.heatmap);
+          }
+        } else if (_section == _ChartBottomSection.heatmap) {
+          setState(() => _section = _ChartBottomSection.overview);
+        }
+      },
+    );
+  }
+
+  void _handleIndexSelected(
+    StockIndicesMarketData data,
+    ChartTerminalController ctrl,
+  ) {
+    final sym = data.indexSymbol.trim();
+    ctrl.selectSymbol(sym);
+    _syncFoSymbol(sym);
+    _marketProvider.selectIndex(sym);
+    _watchlistController.selectIndexSource(sym);
+    setState(() {
+      _section = _ChartBottomSection.heatmap;
+    });
+    if (mounted && MediaQuery.sizeOf(context).width < 768 && Navigator.of(context).canPop()) {
+      Navigator.of(context).maybePop();
+    }
   }
 
   Widget _sectionBody(String symbol, {bool scrollable = true}) {
     final selectedPortfolio = ref.watch(chartSelectedPortfolioProvider);
 
-    if (selectedPortfolio != null && _sidebarTabController.index == 1) {
+    if (selectedPortfolio != null && _sidebarTabController.index == 2) {
       Widget? portfolioBody;
       switch (_section) {
         case _ChartBottomSection.holdings:
@@ -226,6 +357,19 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
           key: ValueKey('sh-$sym'),
           symbol: sym,
         );
+      case _ChartBottomSection.heatmap:
+        return MarketHeatmapWidget(
+          key: ValueKey('heatmap-$sym'),
+          provider: _marketProvider,
+          symbol: sym,
+          onSelectStock: (stockSym) {
+            _currentTerminalCtrl?.selectSymbol(stockSym);
+            _syncFoSymbol(stockSym);
+            setState(() {
+              _section = _ChartBottomSection.overview;
+            });
+          },
+        );
       case _ChartBottomSection.news:
         return SymbolNewsSection(
           key: ValueKey('news-$sym'),
@@ -282,8 +426,9 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
   }
 
   void _openFullView(String symbol) {
-    final tags = _tags;
-    final label = tags.firstWhere((t) => t.$1 == _section).$2;
+    final tags = _getTags(symbol);
+    final match = tags.where((t) => t.$1 == _section);
+    final label = match.isNotEmpty ? match.first.$2 : 'Details';
     showDialog<void>(
       context: context,
       barrierDismissible: true,
@@ -312,25 +457,242 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
     );
   }
 
+  Widget _buildIndicesSidebarTab(
+    BuildContext context,
+    ChartTerminalState state,
+    ChartTerminalController ctrl,
+  ) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final provider = _marketProvider;
+
+    final rawIndices = _region == IndicesRegion.global
+        ? provider.globalIndicesData
+        : provider.allIndicesData;
+
+    final q = _indicesSearchQuery.trim().toLowerCase();
+    final filtered = rawIndices.where((idx) {
+      if (q.isEmpty) return true;
+      return idx.indexSymbol.toLowerCase().contains(q) ||
+          (idx.indexName ?? '').toLowerCase().contains(q);
+    }).toList();
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
+          child: MarketRegionToggle(
+            value: _region,
+            onChanged: (r) {
+              setState(() => _region = r);
+              if (r == IndicesRegion.global &&
+                  provider.globalIndicesData.isEmpty) {
+                provider.loadGlobalIndicesData();
+              }
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: TextField(
+            onChanged: (v) => setState(() => _indicesSearchQuery = v),
+            style: const TextStyle(fontSize: 13.5),
+            decoration: InputDecoration(
+              isDense: true,
+              hintText: 'Search indices...',
+              hintStyle: TextStyle(fontSize: 13, color: theme.hintColor),
+              prefixIcon: Icon(Icons.search, size: 18, color: theme.hintColor),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              filled: true,
+              fillColor: context.glassOverlay(0.06),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide:
+                    BorderSide(color: theme.dividerColor.withValues(alpha: 0.2)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide:
+                    BorderSide(color: theme.dividerColor.withValues(alpha: 0.2)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: theme.colorScheme.primary),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        const Divider(height: 1),
+        Expanded(
+          child: filtered.isEmpty
+              ? Center(
+                  child: provider.isLoading
+                      ? const CircularProgressIndicator()
+                      : Text(
+                          _region == IndicesRegion.global
+                              ? 'No global indices found'
+                              : 'No indices found',
+                          style: TextStyle(fontSize: 12, color: theme.hintColor),
+                        ),
+                )
+              : ListView.separated(
+                  itemCount: filtered.length,
+                  separatorBuilder: (_, __) => Divider(
+                    height: 1,
+                    color: theme.dividerColor.withValues(alpha: 0.15),
+                  ),
+                  itemBuilder: (context, i) {
+                    final item = filtered[i];
+                    final isSelected = item.indexSymbol.toUpperCase() ==
+                        state.symbol.toUpperCase();
+                    final isPositive = item.change >= 0;
+                    final changeColor = isPositive
+                        ? context.marketPositive
+                        : context.marketNegative;
+                    return InkWell(
+                      onTap: () => _handleIndexSelected(item, ctrl),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 9,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? (isDark
+                                  ? context.colors.marketCardSurface
+                                  : theme.colorScheme.primary
+                                      .withValues(alpha: 0.08))
+                              : Colors.transparent,
+                          border: isSelected
+                              ? Border(
+                                  left: BorderSide(
+                                    color: theme.colorScheme.primary,
+                                    width: 3,
+                                  ),
+                                )
+                              : null,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.indexSymbol.toUpperCase(),
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w800
+                                          : FontWeight.w600,
+                                      color: isSelected
+                                          ? context.textPrimary
+                                          : context.textSecondary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    (item.indexName ?? '').isNotEmpty
+                                        ? item.indexName!
+                                        : 'Index',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: theme.hintColor,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  item.lastPrice > 0
+                                      ? '₹${item.lastPrice.toStringAsFixed(2)}'
+                                      : '—',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: isSelected
+                                        ? changeColor
+                                        : context.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${isPositive ? '+' : ''}${item.pChange.toStringAsFixed(2)}%',
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: changeColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final tags = _tags;
-    final selectedPortfolio = ref.watch(chartSelectedPortfolioProvider);
-    if (_section == _ChartBottomSection.holdings && selectedPortfolio == null) {
+    final terminalState = ref.watch(chartTerminalProvider);
+    final terminalCtrl = ref.read(chartTerminalProvider.notifier);
+    _currentTerminalCtrl = terminalCtrl;
+    _bindChartSearch(terminalCtrl, terminalState);
+    final activeSymbol = terminalState.symbol;
+    final isIndex = _isIndexSymbol(activeSymbol);
+    final tags = _getTags(activeSymbol);
+
+    if (isIndex &&
+        _marketProvider.currentIndexData?.indexSymbol.toUpperCase() !=
+            activeSymbol.toUpperCase()) {
+      _marketProvider.selectIndex(activeSymbol);
+    }
+
+    if (!tags.any((t) => t.$1 == _section)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          setState(() => _section = _ChartBottomSection.overview);
+          setState(() {
+            _section = isIndex
+                ? _ChartBottomSection.heatmap
+                : _ChartBottomSection.overview;
+          });
         }
       });
     }
 
-    return ChartWorkspacePage(
+    final selectedPortfolio = ref.watch(chartSelectedPortfolioProvider);
+    if (_section == _ChartBottomSection.holdings && selectedPortfolio == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() => _section = isIndex
+              ? _ChartBottomSection.heatmap
+              : _ChartBottomSection.overview);
+        }
+      });
+    }
+
+    final chartWorkspace = ChartWorkspacePage(
       initialSymbol: widget.initialSymbol,
       initialTimeframe: widget.initialTimeframe,
       sidebarWidth: 300,
       bottomPanelHeight: 360,
       showHeaderSearch: true,
       sidebarBuilder: (context, state, ctrl) {
+        _currentTerminalCtrl = ctrl;
         final theme = Theme.of(context);
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -355,6 +717,7 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
                       indicatorSize: TabBarIndicatorSize.tab,
                       tabs: const [
                         Tab(text: 'Watchlist', height: 36),
+                        Tab(text: 'Indices', height: 36),
                         Tab(text: 'Portfolio', height: 36),
                       ],
                     ),
@@ -369,7 +732,13 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
                       Icons.chevron_right,
                       color: theme.hintColor,
                     ),
-                    onPressed: () => ctrl.setSidebarMinimized(true),
+                    onPressed: () {
+                      ctrl.setSidebarMinimized(true);
+                      if (MediaQuery.sizeOf(context).width < 768 &&
+                          Navigator.of(context).canPop()) {
+                        Navigator.of(context).maybePop();
+                      }
+                    },
                   ),
                   const SizedBox(width: 4),
                 ],
@@ -381,21 +750,38 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
                 controller: _sidebarTabController,
                 children: [
                   PaperWatchlistPane(
+                    controller: _watchlistController,
                     selectedSymbol: state.symbol,
-                    onSelectSymbol: (s) => ctrl.selectSymbol(s),
+                    onSelectSymbol: (s) {
+                      ctrl.selectSymbol(s);
+                      if (MediaQuery.sizeOf(context).width < 768 &&
+                          Navigator.of(context).canPop()) {
+                        Navigator.of(context).maybePop();
+                      }
+                    },
                     onBuySell: (_, __) {},
                     onOpenFundamentals: (s) {
                       ctrl.selectSymbol(s);
                       setState(() => _section = _ChartBottomSection.overview);
+                      if (MediaQuery.sizeOf(context).width < 768 &&
+                          Navigator.of(context).canPop()) {
+                        Navigator.of(context).maybePop();
+                      }
                     },
                     compactChrome: true,
                     showRecentHistory: widget.paperEnabled,
                     showSearch: false,
+                    onOpenAllIndices: () => _sidebarTabController.animateTo(1),
                   ),
+                  _buildIndicesSidebarTab(context, state, ctrl),
                   ChartPortfolioSidebar(
                     paperEnabled: widget.paperEnabled,
                     onPortfolioSelected: (_) {
                       setState(() => _section = _ChartBottomSection.holdings);
+                      if (MediaQuery.sizeOf(context).width < 768 &&
+                          Navigator.of(context).canPop()) {
+                        Navigator.of(context).maybePop();
+                      }
                     },
                   ),
                 ],
@@ -409,7 +795,7 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _ChartBottomSectionBar(
-              tags: tags,
+              tags: _getTags(state.symbol),
               selected: _section,
               onSelected: (tag) {
                 setState(() => _section = tag);
@@ -431,6 +817,8 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
         );
       },
     );
+
+    return chartWorkspace;
   }
 }
 
@@ -456,6 +844,7 @@ class _ChartBottomSectionBar extends StatelessWidget {
       _ChartBottomSection.overview => Icons.grid_view_rounded,
       _ChartBottomSection.financials => Icons.bar_chart_rounded,
       _ChartBottomSection.shareholding => Icons.account_tree_outlined,
+      _ChartBottomSection.heatmap => Icons.view_quilt_rounded,
       _ChartBottomSection.news => Icons.article_outlined,
       _ChartBottomSection.optionChain => Icons.hub_outlined,
       _ChartBottomSection.futures => Icons.trending_up_rounded,

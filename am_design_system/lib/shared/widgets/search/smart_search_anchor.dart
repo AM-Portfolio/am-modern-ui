@@ -46,6 +46,10 @@ class SmartSearchAnchor extends StatefulWidget {
     this.forceUppercase = true,
     this.resultBadge = 'STOCK',
     this.overlayPlacement = SmartSearchOverlayPlacement.auto,
+    this.fontSize,
+    this.iconSize,
+    this.contentPadding,
+    this.borderRadius,
   });
 
   final TextEditingController? controller;
@@ -66,6 +70,10 @@ class SmartSearchAnchor extends StatefulWidget {
   final String? resultBadge;
   /// Stress/What-If footers often sit near the viewport bottom — use [above] or [auto].
   final SmartSearchOverlayPlacement overlayPlacement;
+  final double? fontSize;
+  final double? iconSize;
+  final EdgeInsetsGeometry? contentPadding;
+  final double? borderRadius;
 
   @override
   State<SmartSearchAnchor> createState() => _SmartSearchAnchorState();
@@ -570,7 +578,7 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
             : TextCapitalization.words,
         style: TextStyle(
           color: context.colors.textPrimary,
-          fontSize: widget.compact ? 13 : 15,
+          fontSize: widget.fontSize ?? (widget.compact ? 13 : 15),
           height: 1.2,
         ),
         decoration: InputDecoration(
@@ -579,15 +587,22 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
               : (widget.hintText ?? (widget.compact ? 'Symbol…' : 'e.g. HDFC, TCS, RELIANCE')),
           hintStyle: TextStyle(
             color: context.colors.textTertiary,
-            fontSize: widget.compact ? 13 : null,
+            fontSize: widget.fontSize ?? (widget.compact ? 13 : null),
             fontStyle: _typewriterController != null ? FontStyle.italic : FontStyle.normal,
           ),
           isDense: widget.compact,
           filled: true,
           fillColor: context.colors.scaffoldBackground,
-          prefixIcon: Icon(Icons.search, color: effectiveAccentColor, size: widget.compact ? 16 : 22),
+          prefixIcon: Icon(
+            Icons.search,
+            color: effectiveAccentColor,
+            size: widget.iconSize ?? (widget.compact ? 16 : 22),
+          ),
           prefixIconConstraints: widget.compact
-              ? const BoxConstraints(minWidth: 34, minHeight: 32)
+              ? BoxConstraints(
+                  minWidth: (widget.iconSize ?? 16) + 18,
+                  minHeight: 32,
+                )
               : null,
           suffixIcon: _isLoading
               ? Padding(
@@ -619,20 +634,27 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
           suffixIconConstraints: widget.compact
               ? const BoxConstraints(minWidth: 28, minHeight: 28)
               : null,
-          contentPadding: EdgeInsets.symmetric(
-            horizontal: widget.compact ? 8 : 16,
-            vertical: widget.compact ? 10 : 14,
-          ),
+          contentPadding: widget.contentPadding ??
+              EdgeInsets.symmetric(
+                horizontal: widget.compact ? 8 : 16,
+                vertical: widget.compact ? 10 : 14,
+              ),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(widget.compact ? 8 : 12),
+            borderRadius: BorderRadius.circular(
+              widget.borderRadius ?? (widget.compact ? 8 : 12),
+            ),
             borderSide: BorderSide(color: context.colors.border),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(widget.compact ? 8 : 12),
+            borderRadius: BorderRadius.circular(
+              widget.borderRadius ?? (widget.compact ? 8 : 12),
+            ),
             borderSide: BorderSide(color: context.colors.border),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(widget.compact ? 8 : 12),
+            borderRadius: BorderRadius.circular(
+              widget.borderRadius ?? (widget.compact ? 8 : 12),
+            ),
             borderSide: BorderSide(color: effectiveAccentColor, width: 1.5),
           ),
         ),
