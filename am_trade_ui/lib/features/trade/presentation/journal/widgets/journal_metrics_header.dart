@@ -22,38 +22,52 @@ class JournalMetricsHeader extends StatelessWidget {
     final avgRr = s?.avgRR;
     final pnlFmt = NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
 
-    return Container(
-      padding: const EdgeInsets.all(16),
+    StatType pnlType = StatType.neutral;
+    if (pnl != null) {
+      pnlType = pnl >= 0 ? StatType.positive : StatType.negative;
+    }
+
+    StatType winType = StatType.neutral;
+    if (winRate != null) {
+      final pct = winRate * (winRate <= 1 ? 100 : 1);
+      winType = pct >= 50 ? StatType.positive : StatType.negative;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Row(
         children: [
           Expanded(
-            child: MetricCard(
+            child: AmStatCard(
               title: 'Total Trades',
               value: '${s?.totalTrades ?? 0}',
+              type: StatType.neutral,
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
-            child: MetricCard(
+            child: AmStatCard(
               title: 'Win Rate',
               value: winRate == null
                   ? '—'
                   : '${(winRate * (winRate <= 1 ? 100 : 1)).toStringAsFixed(0)}%',
+              type: winType,
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
-            child: MetricCard(
+            child: AmStatCard(
               title: 'Avg R:R',
               value: avgRr == null ? '—' : avgRr.toStringAsFixed(2),
+              type: StatType.accent,
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
-            child: MetricCard(
+            child: AmStatCard(
               title: 'Net P&L',
               value: pnl == null ? '—' : pnlFmt.format(pnl),
-              isPositive: pnl == null ? null : pnl >= 0,
+              type: pnlType,
             ),
           ),
           if (onOpenAnalysis != null) ...[
@@ -67,55 +81,6 @@ class JournalMetricsHeader extends StatelessWidget {
             ),
           ],
         ],
-      ),
-    );
-  }
-}
-
-class MetricCard extends StatelessWidget {
-  const MetricCard({
-    super.key,
-    required this.title,
-    required this.value,
-    this.isPositive,
-  });
-
-  final String title;
-  final String value;
-  final bool? isPositive;
-
-  @override
-  Widget build(BuildContext context) {
-    Color? valueColor;
-    if (isPositive != null) {
-      valueColor = isPositive! ? context.statusSuccess : context.statusError;
-    }
-
-    return Card(
-      elevation: 0,
-      color: context.colors.cardSurface.withValues(alpha: 0.3),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: context.textSecondary,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: valueColor,
-                  ),
-            ),
-          ],
-        ),
       ),
     );
   }

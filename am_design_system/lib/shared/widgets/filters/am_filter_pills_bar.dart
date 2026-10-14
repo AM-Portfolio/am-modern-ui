@@ -23,7 +23,8 @@ class AMFilterPillsBar<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final selectedBg = activeColor ?? const Color(0xFFD4AF37); // Market Gold default
+    // Prefer theme primary action; callers can pass ModuleColors.* for module accent.
+    final selectedBg = activeColor ?? colors.actionPrimaryBg;
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -53,13 +54,19 @@ class AMFilterPillsBar<T> extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (isSelected && showCheckmark) ...[
-                      const Icon(Icons.check_rounded, size: 14, color: Colors.black),
+                      Icon(
+                        Icons.check_rounded,
+                        size: 14,
+                        color: colors.actionPrimaryFg,
+                      ),
                       const SizedBox(width: 6),
                     ],
                     Text(
                       label,
                       style: TextStyle(
-                        color: isSelected ? Colors.black : colors.textSecondary,
+                        color: isSelected
+                            ? colors.actionPrimaryFg
+                            : colors.textSecondary,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                         fontSize: 12,
                       ),

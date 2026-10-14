@@ -211,9 +211,12 @@ class JournalTemplateCubit extends Cubit<JournalTemplateState> {
     }
   }
 
-  /// Use a template to create a journal entry
-  Future<void> useTemplate({
-        required String templateId,
+  /// Use a template to create a journal entry.
+  /// Does not emit [JournalTemplateLoading] so the Playbooks grid stays visible
+  /// behind the dialog (Loading → Used previously blanked the tab).
+  /// Returns the created journal entry id; rethrows on failure.
+  Future<String> useTemplate({
+    required String templateId,
     required Map<String, dynamic> fieldValues,
     String? tradeId,
     String? customTitle,
@@ -224,7 +227,7 @@ class JournalTemplateCubit extends Cubit<JournalTemplateState> {
       params: {'templateId': templateId},
     );
 
-    emit(const JournalTemplateLoading());
+    final previous = state;
 
     try {
       final entry = await _useTemplateUseCase(
@@ -240,6 +243,11 @@ class JournalTemplateCubit extends Cubit<JournalTemplateState> {
       );
 
       emit(JournalTemplateUsed(entry.id));
+      // Restore list so IndexedStack Playbooks tab does not fall through to empty.
+      if (previous is JournalTemplateLoaded) {
+        emit(previous);
+      }
+      return entry.id;
     } catch (e) {
       AppLogger.error(
         'Failed to use template',
@@ -248,7 +256,12 @@ class JournalTemplateCubit extends Cubit<JournalTemplateState> {
         stackTrace: StackTrace.current,
       );
 
-      emit(JournalTemplateError(e.toString()));
+      if (previous is JournalTemplateLoaded) {
+        emit(previous);
+      } else {
+        emit(JournalTemplateError(e.toString()));
+      }
+      rethrow;
     }
   }
 }

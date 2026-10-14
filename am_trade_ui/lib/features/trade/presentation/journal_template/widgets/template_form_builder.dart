@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../internal/domain/entities/journal_template.dart';
@@ -86,7 +87,7 @@ class _TemplateFormBuilderState extends ConsumerState<TemplateFormBuilder> {
                         padding: const EdgeInsets.all(24),
                         children: widget.template.fields.map((field) {
                           return Padding(
-                            padding: const EdgeInsets.only(bottom: 20),
+                            padding: const EdgeInsets.only(bottom: 8),
                             child: _buildField(context, field),
                           );
                         }).toList(),
@@ -217,10 +218,35 @@ class _TemplateFormBuilderState extends ConsumerState<TemplateFormBuilder> {
   }
 
   Widget _buildCheckboxField(BuildContext context, field) {
+    final colors = context.colors;
     return CheckboxListTile(
-      title: Text(field.fieldLabel),
-      subtitle: field.helpText != null ? Text(field.helpText!) : null,
-      value: _fieldValues[field.fieldId] as bool? ?? (field.defaultValue == 'true'),
+      dense: true,
+      visualDensity: VisualDensity.compact,
+      contentPadding: EdgeInsets.zero,
+      controlAffinity: ListTileControlAffinity.leading,
+      title: Text(
+        field.fieldLabel,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+      ),
+      subtitle: field.helpText != null
+          ? Text(
+              field.helpText!,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colors.textSecondary,
+                  ),
+            )
+          : null,
+      value: _fieldValues[field.fieldId] as bool? ??
+          (field.defaultValue == 'true'),
+      checkColor: colors.actionPrimaryFg,
+      fillColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return ModuleColors.trade;
+        }
+        return null;
+      }),
       onChanged: (value) {
         setState(() {
           _fieldValues[field.fieldId] = value ?? false;
@@ -314,27 +340,34 @@ class _TemplateFormBuilderState extends ConsumerState<TemplateFormBuilder> {
     );
   }
 
-  void _submitForm() async {
-    if (_formKey.currentState!.validate()) {
-      // Collect all field values
-      for (final entry in _controllers.entries) {
-        _fieldValues[entry.key] = entry.value.text;
-      }
-      
-      // Use the template
+  Future<void> _submitForm() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    for (final entry in _controllers.entries) {
+      _fieldValues[entry.key] = entry.value.text;
+    }
+
+    final messenger = ScaffoldMessenger.maybeOf(context);
+
+    try {
       final cubit = await ref.read(journalTemplateCubitProvider.future);
-      cubit.useTemplate(
+      await cubit.useTemplate(
         templateId: widget.template.id,
         fieldValues: _fieldValues,
       );
-      
+
+      if (!mounted) return;
+
+      // Parent handles snackbar / tab switch — pop this dialog once only
+      // (a second pop was blanking the journal route).
       widget.onSubmit(_fieldValues);
-      Navigator.of(context).pop();
-      
-      ScaffoldMessenger.of(context).showSnackBar(
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+      messenger?.showSnackBar(
         SnackBar(
-          content: const Text('Journal entry created from template!'),
-          backgroundColor: Theme.of(context).colorScheme.primary,
+          content: Text('Could not create entry: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
     }

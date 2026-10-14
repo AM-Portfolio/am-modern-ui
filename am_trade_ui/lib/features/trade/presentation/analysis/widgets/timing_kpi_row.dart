@@ -262,15 +262,14 @@ class _KpiCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
 
-    return Container(
+    // AppCard chrome + sparkline slot (AmStatCard has no trailing chart slot).
+    return AppCard(
+      elevation: 0,
+      backgroundColor: colors.cardSurface,
+      margin: EdgeInsets.zero,
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
         vertical: AppSpacing.md,
-      ),
-      decoration: BoxDecoration(
-        color: colors.cardSurface,
-        borderRadius: AppRadii.card,
-        border: Border.all(color: colors.border.withValues(alpha: 0.4)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -285,9 +284,9 @@ class _KpiCard extends StatelessWidget {
                     Text(
                       title,
                       style: context.text.caption(compact: true).copyWith(
-                        color: colors.textSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
+                            color: colors.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
                     ),
                     const SizedBox(width: AppSpacing.xxs),
                     Icon(
@@ -301,10 +300,10 @@ class _KpiCard extends StatelessWidget {
                 Text(
                   value,
                   style: context.text.heroTitle(compact: true).copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: valueColor ?? colors.textPrimary,
-                    height: 1.1,
-                  ),
+                        fontWeight: FontWeight.bold,
+                        color: valueColor ?? colors.textPrimary,
+                        height: 1.1,
+                      ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -313,8 +312,8 @@ class _KpiCard extends StatelessWidget {
                   Text(
                     subtitle!,
                     style: context.text.caption(compact: true).copyWith(
-                      color: subtitleColor ?? colors.textSecondary,
-                    ),
+                          color: subtitleColor ?? colors.textSecondary,
+                        ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
