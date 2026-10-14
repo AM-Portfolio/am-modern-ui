@@ -3,8 +3,6 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../internal/domain/entities/journal_template.dart';
-import '../../../journal_template_providers.dart';
-import 'template_form_builder.dart';
 
 /// Dialog showing template details with use template action
 class TemplateDetailDialog extends ConsumerStatefulWidget {
@@ -373,26 +371,13 @@ class _TemplateDetailDialogState extends ConsumerState<TemplateDetailDialog>
           const SizedBox(width: 12),
           ElevatedButton.icon(
             onPressed: () {
-              Navigator.of(context).pop();
-              _showUseTemplateForm(context);
+              // Pop detail with a result; parent opens the form with a valid context.
+              Navigator.of(context).pop(true);
             },
             icon: const Icon(Icons.edit_note),
             label: const Text('Use Template'),
           ),
         ],
-      ),
-    );
-  }
-
-  void _showUseTemplateForm(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => TemplateFormBuilder(
-        template: widget.template,
-        onSubmit: (fieldValues) {
-          widget.onUseTemplate?.call(widget.template);
-          Navigator.of(context).pop();
-        },
       ),
     );
   }

@@ -214,8 +214,11 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
                                 TemplateBrowserPage(
                                   embedded: true,
                                   onTemplateSelected: (_) async {
+                                    // Called after Create Entry succeeds (form already
+                                    // pops itself once). Switch to Entries — do not
+                                    // Navigator.pop here or the journal route blanks.
                                     await journalCubit.loadJournalEntries();
-                                    if (!context.mounted) return;
+                                    if (!mounted) return;
                                     setState(() => _tab = _JournalTab.entries);
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(

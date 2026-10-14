@@ -51,26 +51,7 @@ class JournalNavigationSidebar extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
             if (!isCollapsed) ...[
-            // Search
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Search',
-                  prefixIcon: const Icon(Icons.search, size: 18),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                  isDense: true,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide.none,
-                  ),
-                  filled: true,
-                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
+            // Local search removed — use global app search.
             // Add Folder Button
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),

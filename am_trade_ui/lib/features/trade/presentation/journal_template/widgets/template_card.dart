@@ -56,6 +56,7 @@ class _TemplateCardState extends State<TemplateCard>
   }
 
   Widget _buildGridCard(BuildContext context) {
+    final colors = context.colors;
     return MouseRegion(
       onEnter: (_) {
         setState(() => _isHovered = true);
@@ -74,48 +75,49 @@ class _TemplateCardState extends State<TemplateCard>
               onTap: widget.onTap,
               child: Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: AppRadii.card,
                   boxShadow: [
                     BoxShadow(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                      color: ModuleColors.trade.withValues(alpha: 0.12),
                       blurRadius: _elevationAnimation.value,
                       offset: Offset(0, _elevationAnimation.value / 2),
                     ),
                   ],
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: AppRadii.card,
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                     child: Container(
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Theme.of(context).colorScheme.surface.withOpacity(0.8),
-                            Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.6),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(20),
+                        color: colors.cardSurface,
+                        borderRadius: AppRadii.card,
                         border: Border.all(
                           color: _isHovered
-                              ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
-                              : Theme.of(context).colorScheme.outline.withOpacity(0.1),
+                              ? ModuleColors.trade.withValues(alpha: 0.45)
+                              : colors.border.withValues(alpha: 0.35),
                           width: 1.5,
                         ),
                       ),
                       child: Padding(
-                        padding: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.all(AppSpacing.md),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             _buildHeader(context),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: AppSpacing.xs),
                             _buildTitle(context),
-                            const SizedBox(height: 8),
-                            _buildDescription(context),
-                            const Spacer(),
+                            const SizedBox(height: AppSpacing.xxs),
+                            _buildDescription(context, maxLines: 2),
+                            const SizedBox(height: AppSpacing.sm),
+                            // Fill leftover cell height with summary, not a blank void.
+                            Expanded(
+                              child: Align(
+                                alignment: Alignment.topLeft,
+                                child: _buildFieldSummary(context, maxItems: 5),
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.xs),
                             _buildFooter(context),
                           ],
                         ),
@@ -132,6 +134,7 @@ class _TemplateCardState extends State<TemplateCard>
   }
 
   Widget _buildListCard(BuildContext context) {
+    final colors = context.colors;
     return MouseRegion(
       onEnter: (_) {
         setState(() => _isHovered = true);
@@ -147,55 +150,50 @@ class _TemplateCardState extends State<TemplateCard>
           return GestureDetector(
             onTap: widget.onTap,
             child: Container(
-              height: 120,
+              constraints: const BoxConstraints(minHeight: 120),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: AppRadii.card,
                 boxShadow: [
                   BoxShadow(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                    color: ModuleColors.trade.withValues(alpha: 0.1),
                     blurRadius: _elevationAnimation.value,
                     offset: Offset(0, _elevationAnimation.value / 2),
                   ),
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: AppRadii.card,
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                   child: Container(
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Theme.of(context).colorScheme.surface.withOpacity(0.8),
-                          Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.6),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
+                      color: colors.cardSurface,
+                      borderRadius: AppRadii.card,
                       border: Border.all(
                         color: _isHovered
-                            ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
-                            : Theme.of(context).colorScheme.outline.withOpacity(0.1),
+                            ? ModuleColors.trade.withValues(alpha: 0.45)
+                            : colors.border.withValues(alpha: 0.35),
                         width: 1.5,
                       ),
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(AppSpacing.md),
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 _buildTitle(context),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: AppSpacing.xxs),
                                 _buildDescription(context, maxLines: 2),
+                                const SizedBox(height: AppSpacing.sm),
+                                _buildFieldSummary(context, maxItems: 3),
                               ],
                             ),
                           ),
-                          const SizedBox(width: 16),
+                          const SizedBox(width: AppSpacing.md),
                           Column(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             crossAxisAlignment: CrossAxisAlignment.end,
@@ -217,11 +215,81 @@ class _TemplateCardState extends State<TemplateCard>
     );
   }
 
+  /// Checklist-style preview of template fields — fills former empty card space.
+  Widget _buildFieldSummary(BuildContext context, {int maxItems = 4}) {
+    final colors = context.colors;
+    final fields = widget.template.fields;
+    if (fields.isEmpty) {
+      return Text(
+        widget.template.description ??
+            'Open this playbook to review fields and start an entry.',
+        style: context.text.caption(compact: true).copyWith(
+              color: colors.textSecondary,
+              height: 1.35,
+            ),
+        maxLines: 4,
+        overflow: TextOverflow.ellipsis,
+      );
+    }
+
+    final visible = fields.take(maxItems).toList();
+    final remaining = fields.length - visible.length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final field in visible)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.check_circle_outline,
+                  size: 14,
+                  color: ModuleColors.trade.withValues(alpha: 0.85),
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Expanded(
+                  child: Text(
+                    field.fieldLabel,
+                    style: context.text.caption(compact: true).copyWith(
+                          color: colors.textPrimary.withValues(alpha: 0.85),
+                          height: 1.25,
+                        ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (field.required)
+                  Text(
+                    'Req',
+                    style: context.text.caption(compact: true).copyWith(
+                          color: context.statusError.withValues(alpha: 0.8),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 10,
+                        ),
+                  ),
+              ],
+            ),
+          ),
+        if (remaining > 0)
+          Text(
+            '+$remaining more field${remaining == 1 ? '' : 's'}',
+            style: context.text.caption(compact: true).copyWith(
+                  color: ModuleColors.trade,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+      ],
+    );
+  }
+
   Widget _buildHeader(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _buildCategoryChip(context),
+        Flexible(child: _buildCategoryChip(context)),
         _buildFavoriteButton(context),
       ],
     );
@@ -231,18 +299,19 @@ class _TemplateCardState extends State<TemplateCard>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(8),
+        color: ModuleColors.trade.withValues(alpha: 0.15),
+        borderRadius: AppRadii.chip,
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+          color: ModuleColors.trade.withValues(alpha: 0.3),
         ),
       ),
       child: Text(
         widget.template.category.displayName,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Theme.of(context).colorScheme.onPrimaryContainer,
+              color: ModuleColors.trade,
               fontWeight: FontWeight.w600,
             ),
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }
@@ -264,6 +333,9 @@ class _TemplateCardState extends State<TemplateCard>
             ),
             onPressed: widget.onFavoriteToggle,
             iconSize: 20,
+            visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
           ),
         );
       },
@@ -275,6 +347,7 @@ class _TemplateCardState extends State<TemplateCard>
       widget.template.name,
       style: Theme.of(context).textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
+            color: context.colors.textPrimary,
           ),
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
@@ -285,7 +358,7 @@ class _TemplateCardState extends State<TemplateCard>
     return Text(
       widget.template.description ?? 'No description available',
       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+            color: context.colors.textSecondary,
           ),
       maxLines: maxLines,
       overflow: TextOverflow.ellipsis,
@@ -293,14 +366,15 @@ class _TemplateCardState extends State<TemplateCard>
   }
 
   Widget _buildFooter(BuildContext context) {
+    final colors = context.colors;
     return Row(
       children: [
         if (widget.template.isSystemTemplate)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(6),
+              color: colors.statusWarning.withValues(alpha: 0.15),
+              borderRadius: AppRadii.chip,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -308,13 +382,13 @@ class _TemplateCardState extends State<TemplateCard>
                 Icon(
                   Icons.verified,
                   size: 12,
-                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                  color: colors.statusWarning,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   'System',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSecondaryContainer,
+                        color: colors.statusWarning,
                       ),
                 ),
               ],
@@ -324,13 +398,13 @@ class _TemplateCardState extends State<TemplateCard>
         Icon(
           Icons.people_outline,
           size: 14,
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+          color: colors.textSecondary,
         ),
         const SizedBox(width: 4),
         Text(
           '${widget.template.usageCount}',
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                color: colors.textSecondary,
               ),
         ),
       ],

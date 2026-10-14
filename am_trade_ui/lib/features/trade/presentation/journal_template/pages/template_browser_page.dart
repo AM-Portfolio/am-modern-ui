@@ -11,6 +11,7 @@ import '../../../journal_template_providers.dart';
 import '../widgets/template_card.dart';
 import '../widgets/template_category_filter.dart';
 import '../widgets/template_detail_dialog.dart';
+import '../widgets/template_form_builder.dart';
 import '../widgets/create_template_dialog.dart';
 
 /// Modern template browser page with glassmorphism design
@@ -89,112 +90,133 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
     final cubitAsync = ref.watch(journalTemplateCubitProvider);
     
     return cubitAsync.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (error, stack) => Scaffold(body: Center(child: Text('Error: $error'))),
-      data: (cubit) => Listener(
-        behavior: HitTestBehavior.translucent,
-        onPointerDown: (_) => _resetFabHideTimer(),
-        onPointerMove: (_) => _resetFabHideTimer(),
-        child: NotificationListener<ScrollNotification>(
-          onNotification: (notification) {
-            if (notification is ScrollUpdateNotification) {
-              _resetFabHideTimer();
-            }
-            return false;
-          },
-          child: Scaffold(
-            body: Container(
-              decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Theme.of(context).colorScheme.surface,
-              Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
-              Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          top: !widget.embedded,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isMobile = constraints.maxWidth < 768;
-              
-              Widget mainContent = Expanded(
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: BlocConsumer<JournalTemplateCubit,
-                      JournalTemplateState>(
-                    bloc: cubit,
-                    listener: (context, state) {
-                      if (state is JournalTemplateError) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(state.message),
-                            backgroundColor: Theme.of(context).colorScheme.error,
-                          ),
-                        );
-                      } else if (state is JournalTemplateCreated) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Template "${state.template.name}" created!'),
-                            backgroundColor: Theme.of(context).colorScheme.primary,
-                          ),
-                        );
-                        cubit.loadTemplates();
-                      }
-                    },
-                    builder: (context, state) {
-                      if (state is JournalTemplateLoading) {
-                        return _buildLoadingState();
-                      } else if (state is JournalTemplateLoaded) {
-                        return _buildTemplateGrid(context, state.templates);
-                      } else if (state is JournalTemplateError) {
-                        return _buildErrorState(context, state.message);
-                      }
-                      return _buildEmptyState(context);
-                    },
-                  ),
-                ),
-              );
-
-              Widget filterContent = TemplateCategoryFilter(
-                selectedCategory: _selectedCategory,
-                isHorizontal: isMobile,
-                onCategorySelected: (category) {
-                  setState(() => _selectedCategory = category);
-                  cubit.loadTemplates(
-                    category: category,
-                    search: _searchQuery.isEmpty ? null : _searchQuery,
-                  );
-                },
-              );
-
-              return Column(
-                children: [
-                  _buildHeader(context),
-                  if (isMobile) filterContent,
-                  Expanded(
-                    child: isMobile
-                        ? mainContent
-                        : Row(
-                            children: [
-                              filterContent,
-                              mainContent,
-                            ],
-                          ),
-                  ),
-                ],
-              );
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(child: Text('Error: $error')),
+      data: (cubit) {
+        final body = Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: (_) => _resetFabHideTimer(),
+          onPointerMove: (_) => _resetFabHideTimer(),
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (notification) {
+              if (notification is ScrollUpdateNotification) {
+                _resetFabHideTimer();
+              }
+              return false;
             },
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Theme.of(context).colorScheme.surface,
+                    Theme.of(context)
+                        .colorScheme
+                        .surfaceContainerHighest
+                        .withOpacity(0.5),
+                    Theme.of(context)
+                        .colorScheme
+                        .primaryContainer
+                        .withOpacity(0.3),
+                  ],
+                ),
+              ),
+              child: SafeArea(
+                top: !widget.embedded,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isMobile = constraints.maxWidth < 768;
+
+                    Widget mainContent = Expanded(
+                      child: FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: BlocConsumer<JournalTemplateCubit,
+                            JournalTemplateState>(
+                          bloc: cubit,
+                          listener: (context, state) {
+                            if (state is JournalTemplateError) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(state.message),
+                                  backgroundColor:
+                                      Theme.of(context).colorScheme.error,
+                                ),
+                              );
+                            } else if (state is JournalTemplateCreated) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Template "${state.template.name}" created!',
+                                  ),
+                                  backgroundColor:
+                                      Theme.of(context).colorScheme.primary,
+                                ),
+                              );
+                              cubit.loadTemplates();
+                            }
+                          },
+                          builder: (context, state) {
+                            if (state is JournalTemplateLoading) {
+                              return _buildLoadingState();
+                            } else if (state is JournalTemplateLoaded) {
+                              return _buildTemplateGrid(
+                                context,
+                                state.templates,
+                              );
+                            } else if (state is JournalTemplateError) {
+                              return _buildErrorState(context, state.message);
+                            }
+                            return _buildEmptyState(context);
+                          },
+                        ),
+                      ),
+                    );
+
+                    Widget filterContent = TemplateCategoryFilter(
+                      selectedCategory: _selectedCategory,
+                      isHorizontal: isMobile,
+                      onCategorySelected: (category) {
+                        setState(() => _selectedCategory = category);
+                        cubit.loadTemplates(
+                          category: category,
+                          search: _searchQuery.isEmpty ? null : _searchQuery,
+                        );
+                      },
+                    );
+
+                    return Column(
+                      children: [
+                        _buildHeader(context),
+                        if (isMobile) filterContent,
+                        Expanded(
+                          child: isMobile
+                              ? mainContent
+                              : Row(
+                                  children: [
+                                    filterContent,
+                                    mainContent,
+                                  ],
+                                ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
           ),
-        ),
-      ),
-      floatingActionButton: _buildFloatingActionButton(context),
-    ),
-    ),
-    ),
+        );
+
+        // Embedded in Journal: do not nest another Scaffold/FAB — that fights
+        // the global sidebar "+" and can look like the rail button moved.
+        if (widget.embedded) return body;
+
+        return Scaffold(
+          body: body,
+          floatingActionButton: _buildFloatingActionButton(context),
+        );
+      },
     );
   }
 
@@ -202,16 +224,27 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
     final isMobile = MediaQuery.sizeOf(context).width < 768;
 
     if (widget.embedded) {
+      // Journal hub already has global search — skip local "Search templates".
+      // Create Template lives here (not a nested Scaffold FAB) so the global
+      // sidebar "+" stays in its normal rail position.
       return Padding(
-        padding: EdgeInsets.fromLTRB(12, isMobile ? 4 : 12, 12, 8),
+        padding: EdgeInsets.fromLTRB(12, isMobile ? 4 : 8, 12, 4),
         child: Row(
           children: [
-            Expanded(child: _buildSearchBar(context)),
-            const SizedBox(width: 8),
+            const Spacer(),
             IconButton(
               icon: Icon(_isGridView ? Icons.view_list : Icons.grid_view),
               onPressed: () => setState(() => _isGridView = !_isGridView),
               tooltip: _isGridView ? 'List View' : 'Grid View',
+            ),
+            const SizedBox(width: 4),
+            AppButton(
+              text: 'Create Template',
+              type: AppButtonType.primary,
+              icon: Icons.add,
+              backgroundColor: ModuleColors.trade,
+              onPressed: () => _showCreateTemplateDialog(context),
+              height: 36,
             ),
           ],
         ),
@@ -314,10 +347,11 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
         ? GridView.builder(
             padding: const EdgeInsets.all(24),
             gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 350,
-              childAspectRatio: 0.85,
-              crossAxisSpacing: 20,
-              mainAxisSpacing: 20,
+              maxCrossAxisExtent: 320,
+              // Shorter cards so checklist sits closer to the footer (less void).
+              childAspectRatio: 1.05,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
             ),
             itemCount: templates.length,
             itemBuilder: (context, index) {
@@ -477,12 +511,30 @@ class _TemplateBrowserPageState extends ConsumerState<TemplateBrowserPage>
     );
   }
 
-  void _showTemplateDetail(BuildContext context, JournalTemplate template) {
-    showDialog(
+  Future<void> _showTemplateDetail(
+    BuildContext context,
+    JournalTemplate template,
+  ) async {
+    final use = await showDialog<bool>(
       context: context,
-      builder: (context) => TemplateDetailDialog(
+      builder: (dialogContext) => TemplateDetailDialog(
         template: template,
         onUseTemplate: widget.onTemplateSelected,
+      ),
+    );
+    if (use != true || !mounted) return;
+    await _showUseTemplateForm(template);
+  }
+
+  Future<void> _showUseTemplateForm(JournalTemplate template) async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: this.context,
+      builder: (dialogContext) => TemplateFormBuilder(
+        template: template,
+        onSubmit: (_) {
+          widget.onTemplateSelected?.call(template);
+        },
       ),
     );
   }

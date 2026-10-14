@@ -73,7 +73,7 @@ class _TemplateCategoryFilterState extends State<TemplateCategoryFilter> {
     }
 
     return Container(
-      width: 280,
+      width: 200,
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface.withOpacity(0.5),
         border: Border(
