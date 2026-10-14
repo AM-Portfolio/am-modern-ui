@@ -67,6 +67,11 @@ on:
         required: false
         type: boolean
         default: false
+      skip_validate:
+        description: "Skip Common Validation (faster iOS/Android-only debug; keep false on main store ladder)"
+        required: false
+        type: boolean
+        default: false
       am_domain:
         description: "Override AM_DOMAIN dart-define (empty = prod default when deploying)"
         required: false
@@ -96,6 +101,7 @@ jobs:
       deploy_ios_production: ${{ steps.p.outputs.deploy_ios_production }}
       am_domain: ${{ steps.p.outputs.am_domain }}
       am_env: ${{ steps.p.outputs.am_env }}
+      skip_validate: ${{ steps.p.outputs.skip_validate }}
     steps:
       - id: p
         shell: bash
@@ -108,11 +114,14 @@ jobs:
 
           RUN_ANDROID=true
           RUN_IOS=true
+          SKIP_VALIDATE=false
           if [ "$EVENT" = "workflow_dispatch" ]; then
             RUN_ANDROID="${{ github.event.inputs.run_android }}"
             RUN_IOS="${{ github.event.inputs.run_ios }}"
+            SKIP_VALIDATE="${{ github.event.inputs.skip_validate }}"
             [ -z "$RUN_ANDROID" ] && RUN_ANDROID=true
             [ -z "$RUN_IOS" ] && RUN_IOS=true
+            [ -z "$SKIP_VALIDATE" ] && SKIP_VALIDATE=false
           fi
 
           DEPLOY_ANDROID_INTERNAL=false
@@ -176,13 +185,14 @@ jobs:
             echo "deploy_ios_production=$DEPLOY_IOS_PRODUCTION"
             echo "am_domain=$DOMAIN"
             echo "am_env=$ENV_LABEL"
+            echo "skip_validate=$SKIP_VALIDATE"
           } >> "$GITHUB_OUTPUT"
-          echo "Branch=$REF run_android=$RUN_ANDROID run_ios=$RUN_IOS android_internal=$DEPLOY_ANDROID_INTERNAL android_prod=$DEPLOY_ANDROID_PRODUCTION ios_tf=$DEPLOY_IOS_TF ios_prod=$DEPLOY_IOS_PRODUCTION domain=$DOMAIN env=$ENV_LABEL"
+          echo "Branch=$REF run_android=$RUN_ANDROID run_ios=$RUN_IOS android_internal=$DEPLOY_ANDROID_INTERNAL android_prod=$DEPLOY_ANDROID_PRODUCTION ios_tf=$DEPLOY_IOS_TF ios_prod=$DEPLOY_IOS_PRODUCTION domain=$DOMAIN env=$ENV_LABEL skip_validate=$SKIP_VALIDATE"
 
   validate:
     name: Common Validation
     needs: resolve
-    if: ${{ needs.resolve.outputs.run_android == 'true' || needs.resolve.outputs.run_ios == 'true' }}
+    if: ${{ (needs.resolve.outputs.run_android == 'true' || needs.resolve.outputs.run_ios == 'true') && needs.resolve.outputs.skip_validate != 'true' }}
     permissions:
       contents: read
     uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-validate.yml@main
@@ -192,7 +202,7 @@ jobs:
   android:
     name: Android
     needs: [resolve, validate]
-    if: ${{ needs.resolve.outputs.run_android == 'true' }}
+    if: ${{ always() && !cancelled() && needs.resolve.outputs.run_android == 'true' && (needs.validate.result == 'success' || needs.validate.result == 'skipped') }}
     permissions:
       contents: read
     uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-android.yml@main
@@ -215,7 +225,7 @@ jobs:
   ios:
     name: iOS
     needs: [resolve, validate]
-    if: ${{ needs.resolve.outputs.run_ios == 'true' }}
+    if: ${{ always() && !cancelled() && needs.resolve.outputs.run_ios == 'true' && (needs.validate.result == 'success' || needs.validate.result == 'skipped') }}
     permissions:
       contents: read
     uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-ios.yml@main
