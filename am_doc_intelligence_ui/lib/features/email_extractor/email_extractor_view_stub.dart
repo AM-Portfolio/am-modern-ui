@@ -9,6 +9,12 @@ class EmailExtractorView extends StatelessWidget {
     this.compactImportMode = false,
     this.footer,
     this.onImportCompleted,
+    this.useSharedImportControls = false,
+    this.sharedBrokerEmailId,
+    this.passwordController,
+    this.portfolioNameController,
+    this.onOpenPortfolio,
+    this.onOpenTrade,
   });
 
   /// When embedded under Import holdings.
@@ -17,10 +23,16 @@ class EmailExtractorView extends StatelessWidget {
 
   /// Unused on native — web-only mailbox extract.
   final ValueChanged<RecentImportEntry>? onImportCompleted;
+  final bool useSharedImportControls;
+  final String? sharedBrokerEmailId;
+  final TextEditingController? passwordController;
+  final TextEditingController? portfolioNameController;
+  final void Function(String portfolioId, String portfolioName)? onOpenPortfolio;
+  final void Function(String portfolioId, String portfolioName)? onOpenTrade;
 
   @override
   Widget build(BuildContext context) {
-    final accent = ModuleColors.analytics;
+    final accent = Theme.of(context).colorScheme.primary;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final card = Center(
@@ -66,7 +78,7 @@ class EmailExtractorView extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 'Mailbox import needs Google sign-in in a browser. '
-                'On this device, switch to Upload to add a broker PDF or Excel.',
+                'On this device, use Upload below to add a broker PDF or Excel.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 13,

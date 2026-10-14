@@ -34,12 +34,14 @@ class TradeResponsiveLayout extends ConsumerStatefulWidget {
     this.initialTab = 'portfolios',
     this.onTabChanged,
     this.onPortfolioChanged,
+    this.onQuickAdd,
   });
 
   final String? initialPortfolioId;
   final String initialTab;
   final ValueChanged<String>? onTabChanged;
   final void Function(String portfolioId, String portfolioName)? onPortfolioChanged;
+  final ValueChanged<GlobalAddActionKind>? onQuickAdd;
 
   /// Must match UnifiedSidebarScaffold.tabletBreakpoint so we don't render
   /// TradeWebScreen inside a width where the sidebar already collapses to mobile.
@@ -67,17 +69,22 @@ class TradeResponsiveLayout extends ConsumerStatefulWidget {
   };
 
   static int tabIndexFromSlug(String slug) {
+    if (slug == 'add-trade') return _webAddTradeIndex;
     final normalized = _slugAliases[slug] ?? slug;
     final index = _tabSlugs.indexOf(normalized);
     return index >= 0 ? index : 0;
   }
 
-  static String slugFromIndex(int index) =>
-      _tabSlugs[index.clamp(0, _tabSlugs.length - 1)];
+  static String slugFromIndex(int index) {
+    if (index == _webAddTradeIndex) return 'add-trade';
+    return _tabSlugs[index.clamp(0, _tabSlugs.length - 1)];
+  }
 
   static MobileTradeViewType _mobileViewFromSlug(String slug) {
     final normalized = _slugAliases[slug] ?? slug;
     switch (normalized) {
+      case 'add-trade':
+        return MobileTradeViewType.addTrade;
       case 'holdings':
         return MobileTradeViewType.holdings;
       case 'calendar':
@@ -115,7 +122,12 @@ class TradeResponsiveLayoutState extends ConsumerState<TradeResponsiveLayout> {
     super.initState();
     _currentTabIndex = TradeResponsiveLayout.tabIndexFromSlug(widget.initialTab);
     _currentPortfolioId = widget.initialPortfolioId;
-    WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrapTradeData());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _bootstrapTradeData();
+      if (widget.initialTab == 'add-trade') {
+        openAddTrade();
+      }
+    });
   }
 
   void _bootstrapTradeData() {
@@ -130,7 +142,14 @@ class TradeResponsiveLayoutState extends ConsumerState<TradeResponsiveLayout> {
     if (widget.initialTab != oldWidget.initialTab) {
       final next = TradeResponsiveLayout.tabIndexFromSlug(widget.initialTab);
       // Prefer mobile-only slug indices when present in URL.
-      if (widget.initialTab == 'templates' ||
+      if (widget.initialTab == 'add-trade') {
+        if (_currentTabIndex != TradeResponsiveLayout._webAddTradeIndex) {
+          setState(
+            () => _currentTabIndex = TradeResponsiveLayout._webAddTradeIndex,
+          );
+        }
+        WidgetsBinding.instance.addPostFrameCallback((_) => openAddTrade());
+      } else if (widget.initialTab == 'templates' ||
           widget.initialTab == 'metrics' ||
           widget.initialTab == 'report') {
         final mobile = TradeResponsiveLayout._mobileViewFromSlug(widget.initialTab);
@@ -151,6 +170,7 @@ class TradeResponsiveLayoutState extends ConsumerState<TradeResponsiveLayout> {
     setState(() {
       _currentTabIndex = TradeResponsiveLayout._webAddTradeIndex;
     });
+    widget.onTabChanged?.call('add-trade');
     // Give it a frame to mount TradeWebScreen if it was on mobile
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _webScreenKey.currentState?.openAddTrade();
@@ -164,9 +184,7 @@ class TradeResponsiveLayoutState extends ConsumerState<TradeResponsiveLayout> {
     if (_currentTabIndex != index) {
       setState(() => _currentTabIndex = index);
     }
-    if (index != TradeResponsiveLayout._webAddTradeIndex) {
-      widget.onTabChanged?.call(TradeResponsiveLayout.slugFromIndex(index));
-    }
+    widget.onTabChanged?.call(TradeResponsiveLayout.slugFromIndex(index));
   }
 
   void _onPortfolioChanged(String id, String name) {
@@ -217,6 +235,7 @@ class TradeResponsiveLayoutState extends ConsumerState<TradeResponsiveLayout> {
               }
             },
             onPortfolioChanged: _onPortfolioChanged,
+            onQuickAdd: widget.onQuickAdd,
           );
         }
 

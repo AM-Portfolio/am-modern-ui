@@ -352,25 +352,27 @@ class _PortfolioOverviewWidgetState
                               final loaded = metricState is PortfolioLoaded
                                   ? metricState
                                   : state;
+                              // Mobile: As of lives under Paper in the sticky row.
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: 10),
-                                    child: Text(
-                                      loaded.summary.priceLabel,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurface
-                                                .withValues(alpha: 0.65),
-                                            fontWeight: FontWeight.w500,
-                                          ),
+                                  if (!isPhone)
+                                    Padding(
+                                      padding: const EdgeInsets.only(bottom: 10),
+                                      child: Text(
+                                        loaded.summary.priceLabel,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface
+                                                  .withValues(alpha: 0.65),
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                      ),
                                     ),
-                                  ),
                                   if (isPhone)
                                     Builder(
                                       builder: (context) {
@@ -812,8 +814,8 @@ class _PortfolioOverviewWidgetState
         title: "Today's P&L",
         value: todayUnavailable ? '—' : _formatCurrency(todayChange),
         subtitle: todayUnavailable
-            ? 'Unavailable · ${summaryToUse.todayAsOfLabel}'
-            : '${todayChangePct >= 0 ? "+" : ""}${todayChangePct.toStringAsFixed(2)}% ${summaryToUse.todayAsOfLabel}',
+            ? 'Unavailable'
+            : '${todayChangePct >= 0 ? "+" : ""}${todayChangePct.toStringAsFixed(2)}%',
         accentColor: todayUnavailable || todayChange == 0
             ? context.statusNeutral
             : (todayChange > 0
@@ -835,8 +837,7 @@ class _PortfolioOverviewWidgetState
       PortfolioMetricCard(
         title: 'Total Balance',
         value: _formatCurrency(summaryToUse.totalValue),
-        subtitle:
-            '${summaryToUse.priceLabel} · ${summaryToUse.totalAssets} holdings',
+        subtitle: '${summaryToUse.totalAssets} holdings',
         accentColor: modulePink,
         icon: null,
         isPositive: null,

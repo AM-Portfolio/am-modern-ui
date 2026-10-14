@@ -6,6 +6,8 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_library/am_library.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_doc_intelligence_ui/features/broker_logo.dart';
+import 'package:am_doc_intelligence_ui/features/import_holdings_shared_controls.dart';
+import 'package:am_doc_intelligence_ui/features/import_portfolio_sync.dart';
 import 'package:am_doc_intelligence_ui/features/import_process_banner.dart';
 import 'package:am_doc_intelligence_ui/features/recent_imports_store.dart';
 import 'package:am_doc_intelligence_ui/services/api_service.dart';
@@ -16,6 +18,12 @@ class EmailExtractorView extends StatefulWidget {
     this.compactImportMode = false,
     this.footer,
     this.onImportCompleted,
+    this.useSharedImportControls = false,
+    this.sharedBrokerEmailId,
+    this.passwordController,
+    this.portfolioNameController,
+    this.onOpenPortfolio,
+    this.onOpenTrade,
   });
 
   /// Hide standalone page chrome when embedded under Import holdings.
@@ -26,6 +34,21 @@ class EmailExtractorView extends StatefulWidget {
 
   /// Called after a broker extract succeeds or fails (for Recent Imports).
   final ValueChanged<RecentImportEntry>? onImportCompleted;
+
+  /// When true, broker/password live on the parent shared controls.
+  final bool useSharedImportControls;
+
+  /// Email-extractor broker id from shared icons (e.g. `dhan`, `angleone`).
+  final String? sharedBrokerEmailId;
+
+  /// Shared PDF password (parent-owned when [useSharedImportControls]).
+  final TextEditingController? passwordController;
+
+  /// Optional portfolio name for sync matching.
+  final TextEditingController? portfolioNameController;
+
+  final void Function(String portfolioId, String portfolioName)? onOpenPortfolio;
+  final void Function(String portfolioId, String portfolioName)? onOpenTrade;
 
   @override
   State<EmailExtractorView> createState() => _EmailExtractorViewState();
@@ -52,6 +75,12 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
   bool _pdfPasswordVisible = false;
   ImportProcessPhase _phase = ImportProcessPhase.idle;
   DateTime? _busyStartedAt;
+  Widget? _bannerActions;
+  String? _resolvedPortfolioId;
+  String? _resolvedPortfolioName;
+
+  TextEditingController get _effectivePasswordController =>
+      widget.passwordController ?? _panController;
 
   @override
   void initState() {
@@ -72,17 +101,65 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
     String message, {
     required ImportProcessPhase phase,
     bool snack = true,
+    Widget? actions,
   }) {
     _status = message;
     _phase = phase;
-    if (phase == ImportProcessPhase.busy) {
+    _bannerActions = actions;
+    if (phase == ImportProcessPhase.busy ||
+        phase == ImportProcessPhase.syncing) {
       _busyStartedAt ??= DateTime.now();
-    } else {
+    } else if (phase != ImportProcessPhase.success) {
       _busyStartedAt = null;
     }
-    if (snack && mounted) {
+    if (snack &&
+        mounted &&
+        phase != ImportProcessPhase.syncing &&
+        phase != ImportProcessPhase.busy) {
       showImportSnackBar(context, message: message, phase: phase);
     }
+  }
+
+  Widget? _deepLinkActions() {
+    final id = _resolvedPortfolioId;
+    final name = _resolvedPortfolioName ?? 'Portfolio';
+    if (id == null || id.isEmpty) {
+      if (widget.onOpenPortfolio == null && widget.onOpenTrade == null) {
+        return null;
+      }
+      return Wrap(
+        spacing: 8,
+        runSpacing: 6,
+        children: [
+          if (widget.onOpenPortfolio != null)
+            ActionChip(
+              label: const Text('Open Portfolio'),
+              onPressed: () => widget.onOpenPortfolio!('', name),
+            ),
+          if (widget.onOpenTrade != null)
+            ActionChip(
+              label: const Text('Open Trade'),
+              onPressed: () => widget.onOpenTrade!('', name),
+            ),
+        ],
+      );
+    }
+    return Wrap(
+      spacing: 8,
+      runSpacing: 6,
+      children: [
+        if (widget.onOpenPortfolio != null)
+          ActionChip(
+            label: const Text('Open Portfolio'),
+            onPressed: () => widget.onOpenPortfolio!(id, name),
+          ),
+        if (widget.onOpenTrade != null)
+          ActionChip(
+            label: const Text('Open Trade'),
+            onPressed: () => widget.onOpenTrade!(id, name),
+          ),
+      ],
+    );
   }
 
   void _handleGmailQueryParams() {
@@ -132,7 +209,10 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
   void dispose() {
     _statusPollTimer?.cancel();
     _oauthMessageSub?.cancel();
-    _panController.dispose();
+    // Only dispose locally owned controller.
+    if (widget.passwordController == null) {
+      _panController.dispose();
+    }
     super.dispose();
   }
 
@@ -324,6 +404,7 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
 
   void _onBrokerTap(String brokerId, {required bool gmailConnected}) {
     setState(() => _selectedBrokerId = brokerId);
+    if (widget.useSharedImportControls) return;
     if (!gmailConnected) {
       setState(() {
         _setFeedback('Connect Gmail first', phase: ImportProcessPhase.error);
@@ -333,14 +414,36 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
     _extract(brokerId);
   }
 
-  Future<void> _extract(String brokerId) async {
-    setState(() => _selectedBrokerId = brokerId);
+  Future<void> _importFromSharedControls({required bool gmailConnected}) async {
+    final brokerId = widget.sharedBrokerEmailId;
+    if (brokerId == null || brokerId.isEmpty) {
+      setState(() {
+        _setFeedback('Select a broker first', phase: ImportProcessPhase.error);
+      });
+      return;
+    }
+    if (!gmailConnected) {
+      setState(() {
+        _setFeedback('Connect Gmail first', phase: ImportProcessPhase.error);
+      });
+      return;
+    }
+    await _extract(brokerId);
+  }
 
-    final pan = _panController.text.trim();
+  Future<void> _extract(String brokerId) async {
+    setState(() {
+      _selectedBrokerId = brokerId;
+      _resolvedPortfolioId = null;
+      _resolvedPortfolioName = null;
+      _bannerActions = null;
+    });
+
+    final pan = _effectivePasswordController.text.trim();
     if (pan.isEmpty && brokerId != 'angleone') {
       setState(() {
         _setFeedback(
-          'Enter PDF password, then tap ${brokerDisplayName(brokerId)}',
+          'Enter PDF password, then import ${brokerDisplayName(brokerId)}',
           phase: ImportProcessPhase.error,
         );
       });
@@ -375,17 +478,21 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
       );
       if (!mounted) return;
       final count = result['count'];
-      final portfolioId = result['db_id']?.toString();
+      // Never pass extractor Mongo db_id as portfolio UUID.
       final fileName = result['filename']?.toString() ??
           result['file_name']?.toString() ??
           'Gmail · $label statement';
-      final msg = count != null
-          ? 'Imported $count holdings from $label'
-          : 'Imported from $label';
+      final holdingsLabel = count != null ? '$count holdings' : 'holdings';
       setState(() {
         _activeExtractingBrokerId = null;
-        _setFeedback(msg, phase: ImportProcessPhase.success);
+        _busyStartedAt = DateTime.now();
+        _setFeedback(
+          'Parsed $holdingsLabel — syncing to portfolio (up to ~60s)…',
+          phase: ImportProcessPhase.syncing,
+          snack: false,
+        );
       });
+
       widget.onImportCompleted?.call(RecentImportEntry(
         id: 'mb-${DateTime.now().millisecondsSinceEpoch}',
         source: 'mailbox',
@@ -394,9 +501,42 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
         at: DateTime.now().toUtc(),
         files: [fileName],
         detail: count != null ? '$count holdings' : null,
-        portfolioId: portfolioId,
       ));
-      PortfolioDataRefresh.instance.notifyImported(portfolioId: portfolioId);
+
+      final typedName = widget.portfolioNameController?.text.trim() ?? '';
+      final targetName = typedName.isNotEmpty
+          ? typedName
+          : brokerDisplayName(brokerId);
+      final sync = await waitForImportedPortfolio(
+        brokerKey: normalizeBrokerKey(brokerId) ?? brokerId,
+        targetPortfolioName: targetName,
+      );
+      if (!mounted) return;
+
+      if (sync != null) {
+        _resolvedPortfolioId = sync.portfolioId;
+        _resolvedPortfolioName = sync.portfolioName;
+        PortfolioDataRefresh.instance
+            .notifyImported(portfolioId: sync.portfolioId);
+        setState(() {
+          _setFeedback(
+            count != null
+                ? 'Imported $count holdings from $label'
+                : 'Imported from $label',
+            phase: ImportProcessPhase.success,
+            actions: _deepLinkActions(),
+          );
+        });
+      } else {
+        PortfolioDataRefresh.instance.notifyImported();
+        setState(() {
+          _setFeedback(
+            'Import saved; portfolio may still update',
+            phase: ImportProcessPhase.success,
+            actions: _deepLinkActions(),
+          );
+        });
+      }
     } catch (e) {
       sw.stop();
       ProductTelemetry.instance.widgetTiming(
@@ -450,6 +590,23 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
           }
           if (_isServiceConnected == false) {
             return _buildConnectionError();
+          }
+          if (widget.useSharedImportControls) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildSharedMailboxCard(isConnected, email),
+                if (_status.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  _buildStatusLog(),
+                ],
+                if (widget.footer != null) ...[
+                  const SizedBox(height: 8),
+                  widget.footer!,
+                ],
+              ],
+            );
           }
           // Two full-width cards (same width as each other / column):
           // 1) Gmail + broker tiles  2) PDF password
@@ -662,7 +819,7 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
     String email,
     double contentWidth,
   ) {
-    final accent = ModuleColors.analytics;
+    final accent = Theme.of(context).colorScheme.primary;
     // Inner width after card pad — used so broker grid spans edge-to-edge.
     final gridWidth = (contentWidth - _compactCardPad.horizontal).clamp(120.0, 4000.0);
 
@@ -768,6 +925,135 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
     );
   }
 
+  /// Mailbox connect + Import button (broker/password live on shared controls).
+  Widget _buildSharedMailboxCard(bool isConnected, String email) {
+    final accent = Theme.of(context).colorScheme.primary;
+    final brokerId = widget.sharedBrokerEmailId;
+    final brokerLabel = brokerId != null && brokerId.isNotEmpty
+        ? brokerDisplayName(brokerId)
+        : null;
+    final extracting = _activeExtractingBrokerId != null ||
+        _phase == ImportProcessPhase.busy ||
+        _phase == ImportProcessPhase.syncing;
+
+    return GlassCard(
+      padding: EdgeInsets.zero,
+      child: Padding(
+        padding: _compactCardPad,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  isConnected
+                      ? Icons.mark_email_read_outlined
+                      : Icons.mail_outline,
+                  size: 18,
+                  color: accent,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    isConnected
+                        ? (email.isNotEmpty && email != 'Not Connected'
+                            ? email
+                            : 'Gmail connected')
+                        : 'Connect Gmail',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+                if (!isConnected)
+                  FilledButton(
+                    onPressed: () => _startOAuth(addMailbox: false),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: accent,
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      minimumSize: const Size(0, 32),
+                    ),
+                    child: const Text('Connect', style: TextStyle(fontSize: 12)),
+                  )
+                else ...[
+                  TextButton(
+                    onPressed: _mailboxes.length >= 5
+                        ? null
+                        : () => _startOAuth(addMailbox: true),
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    child: const Text('Add', style: TextStyle(fontSize: 12)),
+                  ),
+                  TextButton(
+                    onPressed: () => _handleGmailConnectionToggle(true),
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    child:
+                        const Text('Disconnect', style: TextStyle(fontSize: 12)),
+                  ),
+                ],
+              ],
+            ),
+            if (isConnected && _mailboxes.length > 1) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final m in _mailboxes)
+                    ChoiceChip(
+                      label: Text(
+                        '${m['email']}',
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                      selected: _selectedMailbox == m['email'],
+                      visualDensity: VisualDensity.compact,
+                      onSelected: (_) {
+                        setState(
+                            () => _selectedMailbox = m['email'] as String?);
+                      },
+                    ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 10),
+            FilledButton.icon(
+              onPressed: extracting
+                  ? null
+                  : () => _importFromSharedControls(gmailConnected: isConnected),
+              icon: extracting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.mark_email_unread_outlined, size: 18),
+              label: Text(
+                brokerLabel != null
+                    ? 'Import from mailbox · $brokerLabel'
+                    : 'Import from mailbox',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              style: FilledButton.styleFrom(
+                backgroundColor: accent,
+                minimumSize: const Size.fromHeight(40),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildCompactPasswordCard() {
     final forId = _activeExtractingBrokerId ?? _selectedBrokerId;
     final forBroker = forId != null ? brokerDisplayName(forId) : null;
@@ -788,7 +1074,7 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
             ),
             const SizedBox(height: 8),
             TextField(
-              controller: _panController,
+              controller: _effectivePasswordController,
               obscureText: !_pdfPasswordVisible,
               style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
               decoration: InputDecoration(
@@ -911,7 +1197,7 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
             ),
             const SizedBox(height: 12),
             TextField(
-              controller: _panController,
+              controller: _effectivePasswordController,
               obscureText: !_pdfPasswordVisible,
               decoration: InputDecoration(
                 hintText: 'PAN or broker PDF password',
@@ -962,7 +1248,7 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
           _activeExtractingBrokerId == brokerId;
       final bool selected = _selectedBrokerId == brokerId;
       // High-contrast select ring (works in light + dark app chrome).
-      const selectColor = Color(0xFF12B76A);
+      final selectColor = Theme.of(context).colorScheme.primary;
 
       final logoPath = brokerLogoAsset(brokerId);
       final label = brokerDisplayName(brokerId.isNotEmpty ? brokerId : brokerName);
@@ -1012,7 +1298,7 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
                       child: Container(
                         width: 20,
                         height: 20,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           color: selectColor,
                           shape: BoxShape.circle,
                         ),
@@ -1027,7 +1313,7 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
                     Positioned.fill(
                       child: ColoredBox(
                         color: Colors.white.withValues(alpha: 0.7),
-                        child: const Center(
+                        child: Center(
                           child: SizedBox(
                             height: 18,
                             width: 18,
@@ -1074,6 +1360,8 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
       phase: _phase,
       message: _status,
       busyStartedAt: _busyStartedAt,
+      syncTimeout: const Duration(seconds: 60),
+      actions: _bannerActions,
     );
   }
 }

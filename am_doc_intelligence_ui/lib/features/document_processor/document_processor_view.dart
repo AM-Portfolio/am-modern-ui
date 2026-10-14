@@ -12,6 +12,8 @@ import 'package:am_doc_intelligence_ui/features/document_processor/pending_batch
 import 'package:am_doc_intelligence_ui/features/document_processor/pending_sync_file.dart';
 import 'package:am_doc_intelligence_ui/features/broker_logo.dart';
 import 'package:am_common/am_common.dart';
+import 'package:am_doc_intelligence_ui/features/import_holdings_shared_controls.dart';
+import 'package:am_doc_intelligence_ui/features/import_portfolio_sync.dart';
 import 'package:am_doc_intelligence_ui/features/import_process_banner.dart';
 import 'package:am_doc_intelligence_ui/features/recent_imports_store.dart';
 import 'package:am_doc_intelligence_ui/models/batch_sync_models.dart';
@@ -25,6 +27,13 @@ class DocumentProcessorView extends StatefulWidget {
     super.key,
     this.embeddedInImportShell = false,
     this.onImportCompleted,
+    this.useSharedImportControls = false,
+    this.sharedBrokerDocCode,
+    this.sharedDocumentType,
+    this.portfolioNameController,
+    this.passwordController,
+    this.onOpenPortfolio,
+    this.onOpenTrade,
   });
 
   /// When true, uses Import holdings rail styling (capabilities/privacy/recent).
@@ -32,6 +41,15 @@ class DocumentProcessorView extends StatefulWidget {
 
   /// Pushes one Recent Imports entry after a batch finishes.
   final ValueChanged<RecentImportEntry>? onImportCompleted;
+
+  /// Parent owns broker / doc type / name / password.
+  final bool useSharedImportControls;
+  final String? sharedBrokerDocCode;
+  final String? sharedDocumentType;
+  final TextEditingController? portfolioNameController;
+  final TextEditingController? passwordController;
+  final void Function(String portfolioId, String portfolioName)? onOpenPortfolio;
+  final void Function(String portfolioId, String portfolioName)? onOpenTrade;
 
   @override
   State<DocumentProcessorView> createState() => _DocumentProcessorViewState();
@@ -68,21 +86,44 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   final TextEditingController _sharedPortfolioController =
       TextEditingController();
   final ScrollController _pageScroll = ScrollController();
+  Widget? _bannerActions;
+  ImportProcessPhase? _phaseOverride;
 
   final currencyFormatter =
       NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
 
+  TextEditingController get _effectivePortfolioController =>
+      widget.portfolioNameController ?? _sharedPortfolioController;
+
   @override
   void initState() {
     super.initState();
+    _applySharedSelections();
     _checkHealthAndLoad();
+  }
+
+  @override
+  void didUpdateWidget(covariant DocumentProcessorView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.sharedBrokerDocCode != widget.sharedBrokerDocCode ||
+        oldWidget.sharedDocumentType != widget.sharedDocumentType) {
+      _applySharedSelections();
+    }
+  }
+
+  void _applySharedSelections() {
+    if (!widget.useSharedImportControls) return;
+    _selectedBrokerType = widget.sharedBrokerDocCode;
+    _selectedDocType = widget.sharedDocumentType;
   }
 
   @override
   void dispose() {
     _pollTimer?.cancel();
     _pageScroll.dispose();
-    _sharedPortfolioController.dispose();
+    if (widget.portfolioNameController == null) {
+      _sharedPortfolioController.dispose();
+    }
     for (final file in _pendingFiles) {
       file.dispose();
     }
@@ -116,7 +157,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     showImportSnackBar(context, message: message, phase: phase);
   }
 
-  void _notifyRecentImportsFromBatch(BatchSyncStatus status) {
+  Future<void> _notifyRecentImportsFromBatch(BatchSyncStatus status) async {
     final files = status.files
         .map((f) => f.fileName)
         .where((n) => n.isNotEmpty)
@@ -149,12 +190,99 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
           '${status.failed > 0 ? ', ${status.failed} failed' : ''}',
     );
     widget.onImportCompleted?.call(entry);
-    if (entryStatus != 'failed') {
+    if (entryStatus == 'failed') return;
+    await _waitForPortfolioSyncAfterParse(
+      holdingsHint: '${status.completed} file(s)',
+    );
+  }
+
+  Widget? _deepLinkActions({String? id, String? name}) {
+    final portfolioId = id ?? '';
+    final portfolioName = name ?? 'Portfolio';
+    if (widget.onOpenPortfolio == null && widget.onOpenTrade == null) {
+      return null;
+    }
+    return Wrap(
+      spacing: 8,
+      runSpacing: 6,
+      children: [
+        if (widget.onOpenPortfolio != null)
+          ActionChip(
+            label: const Text('Open Portfolio'),
+            onPressed: () =>
+                widget.onOpenPortfolio!(portfolioId, portfolioName),
+          ),
+        if (widget.onOpenTrade != null)
+          ActionChip(
+            label: const Text('Open Trade'),
+            onPressed: () => widget.onOpenTrade!(portfolioId, portfolioName),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _waitForPortfolioSyncAfterParse({
+    required String holdingsHint,
+  }) async {
+    final brokerCode = _selectedBrokerType ?? widget.sharedBrokerDocCode;
+    final brokerKey = normalizeBrokerKey(brokerCode);
+    final targetName = _effectivePortfolioController.text.trim();
+
+    if (!mounted) return;
+    setState(() {
+      _processing = true;
+      _busyStartedAt = DateTime.now();
+      _phaseOverride = ImportProcessPhase.syncing;
+      _bannerActions = null;
+      _status =
+          'Parsed $holdingsHint — syncing to portfolio (up to ~60s)…';
+    });
+
+    final sync = await waitForImportedPortfolio(
+      brokerKey: brokerKey ?? brokerCode ?? '',
+      targetPortfolioName: targetName.isEmpty ? null : targetName,
+    );
+    if (!mounted) return;
+
+    if (sync != null) {
+      PortfolioDataRefresh.instance
+          .notifyImported(portfolioId: sync.portfolioId);
+      setState(() {
+        _processing = false;
+        _phaseOverride = ImportProcessPhase.success;
+        _bannerActions = _deepLinkActions(
+          id: sync.portfolioId,
+          name: sync.portfolioName,
+        );
+        _status = 'Import synced · ${sync.portfolioName}';
+        _busyStartedAt = null;
+      });
+      showImportSnackBar(
+        context,
+        message: _status,
+        phase: ImportProcessPhase.success,
+      );
+    } else {
       PortfolioDataRefresh.instance.notifyImported();
+      setState(() {
+        _processing = false;
+        _phaseOverride = ImportProcessPhase.success;
+        _bannerActions = _deepLinkActions(
+          name: targetName.isEmpty ? null : targetName,
+        );
+        _status = 'Import saved; portfolio may still update';
+        _busyStartedAt = null;
+      });
+      showImportSnackBar(
+        context,
+        message: _status,
+        phase: ImportProcessPhase.success,
+      );
     }
   }
 
   ImportProcessPhase get _bannerPhase {
+    if (_phaseOverride != null) return _phaseOverride!;
     if (_processing) return ImportProcessPhase.busy;
     final lower = _status.toLowerCase();
     if (lower.contains('error') ||
@@ -165,7 +293,8 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     if (lower.contains('completed') ||
         lower.contains('success') ||
         lower.contains('synced') ||
-        lower.contains('review needed')) {
+        lower.contains('review needed') ||
+        lower.contains('import saved')) {
       return ImportProcessPhase.success;
     }
     return ImportProcessPhase.idle;
@@ -253,15 +382,14 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
             .where((t) =>
                 t == 'STOCK_PORTFOLIO' ||
                 t == 'MUTUAL_FUND' ||
-                t == 'TRADE_EQ' ||
-                t == 'TRADE_MF')
+                t == 'TRADE_EQ')
             .toList();
       case 'DHAN':
         return ['PORTFOLIO_EQUITY', 'PORTFOLIO_ETF'];
 
       case 'ANGEL_ONE':
         return _docTypes
-            .where((t) => t == 'COMBINE_PORTFOLIO' || t == 'TRADE_EQ')
+            .where((t) => t == 'STOCK_PORTFOLIO' || t == 'TRADE_EQ')
             .toList();
       case 'MSTOCK':
         return _docTypes
@@ -336,6 +464,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   Future<void> _stageIncoming(List<StagedFileBytes> incoming) {
     final next = _intakeChain.then((_) async {
       if (!mounted || _processing || incoming.isEmpty) return;
+      _applySharedSelections();
       setState(() => _intakeBusy = true);
       try {
         final result = PendingBatchIntake.addAll(
@@ -382,15 +511,70 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   Future<void> _submitBatch() async {
     if (_pendingFiles.isEmpty || _processing) return;
 
+    _applySharedSelections();
+
+    if (widget.useSharedImportControls) {
+      final broker = _selectedBrokerType;
+      // null / empty doc type = Auto (backend detect / leave unset).
+      final docType = (_selectedDocType == null ||
+              _selectedDocType!.isEmpty ||
+              _selectedDocType == kImportDocTypeAuto ||
+              kUnsupportedImportDocTypes.contains(_selectedDocType))
+          ? null
+          : _selectedDocType;
+      var name = _effectivePortfolioController.text.trim();
+      if (broker == null || broker.isEmpty) {
+        setState(() {
+          _phaseOverride = ImportProcessPhase.error;
+          _status = 'Select a broker before uploading';
+        });
+        showImportSnackBar(
+          context,
+          message: _status,
+          phase: ImportProcessPhase.error,
+        );
+        return;
+      }
+      if (docType == null || docType.isEmpty) {
+        setState(() {
+          _phaseOverride = ImportProcessPhase.error;
+          _status = 'Select a document type before uploading';
+        });
+        showImportSnackBar(
+          context,
+          message: _status,
+          phase: ImportProcessPhase.error,
+        );
+        return;
+      }
+      if (name.isEmpty) {
+        name = brokerDisplayName(broker);
+        _effectivePortfolioController.text = name;
+      }
+      final sharedPassword = widget.passwordController?.text.trim() ?? '';
+      for (final file in _pendingFiles) {
+        file.brokerType = broker;
+        file.documentType = docType;
+        file.portfolioController.text = name;
+        if (sharedPassword.isNotEmpty &&
+            file.passwordController.text.trim().isEmpty) {
+          file.passwordController.text = sharedPassword;
+        }
+      }
+      _samePortfolioForAll = true;
+    }
+
     setState(() {
       _lastResult = null;
       _batchStatus = null;
+      _bannerActions = null;
+      _phaseOverride = null;
       _beginBusy(
         'Submitting ${_pendingFiles.length} file${_pendingFiles.length == 1 ? '' : 's'}…',
       );
     });
 
-    final sharedName = _sharedPortfolioController.text.trim();
+    final sharedName = _effectivePortfolioController.text.trim();
     ProductTelemetry.instance.featureAction(
       'doc_upload',
       tag: 'docs',
@@ -506,7 +690,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
 
   String? _portfolioNameForPending(PendingSyncFile file) {
     if (_samePortfolioForAll) {
-      final shared = _sharedPortfolioController.text.trim();
+      final shared = _effectivePortfolioController.text.trim();
       return shared.isEmpty ? null : shared;
     }
     final perFile = file.portfolioController.text.trim();
@@ -607,16 +791,16 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       _clearPendingFiles();
     });
     _scrollResultsToTop();
-    if (_batchStatus != null) {
-      _notifyRecentImportsFromBatch(_batchStatus!);
+    if (failed > 0 && completed == 0) {
+      showImportSnackBar(
+        context,
+        message: msg,
+        phase: ImportProcessPhase.error,
+      );
     }
-    showImportSnackBar(
-      context,
-      message: msg,
-      phase: failed > 0
-          ? ImportProcessPhase.error
-          : ImportProcessPhase.success,
-    );
+    if (_batchStatus != null) {
+      await _notifyRecentImportsFromBatch(_batchStatus!);
+    }
 
     ProductTelemetry.instance.featureAction(
       'doc_process',
@@ -663,15 +847,15 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         _pollTimer?.cancel();
         _pollTimer = null;
         _scrollResultsToTop();
-        _notifyRecentImportsFromBatch(status);
-        final failed = status.failed > 0;
-        showImportSnackBar(
-          context,
-          message: statusMessage,
-          phase: failed
-              ? ImportProcessPhase.error
-              : ImportProcessPhase.success,
-        );
+        final failed = status.failed > 0 && status.completed == 0;
+        if (failed) {
+          showImportSnackBar(
+            context,
+            message: statusMessage,
+            phase: ImportProcessPhase.error,
+          );
+        }
+        await _notifyRecentImportsFromBatch(status);
         ProductTelemetry.instance.featureAction(
           'doc_process',
           tag: 'docs',
@@ -817,11 +1001,13 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                           contentWidth: contentWidth,
                           isCompact: isCompact,
                         ),
-                        const SizedBox(height: 8),
-                        _buildConfigurationSection(
-                          stackDropdowns: stackConfigDropdowns,
-                          isCompact: isCompact,
-                        ),
+                        if (!widget.useSharedImportControls) ...[
+                          const SizedBox(height: 8),
+                          _buildConfigurationSection(
+                            stackDropdowns: stackConfigDropdowns,
+                            isCompact: isCompact,
+                          ),
+                        ],
                       ],
                     )
                   else
@@ -874,11 +1060,13 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                     contentWidth: contentWidth,
                     isCompact: true,
                   ),
-                  const SizedBox(height: 8),
-                  _buildConfigurationSection(
-                    stackDropdowns: false,
-                    isCompact: true,
-                  ),
+                  if (!widget.useSharedImportControls) ...[
+                    const SizedBox(height: 8),
+                    _buildConfigurationSection(
+                      stackDropdowns: false,
+                      isCompact: true,
+                    ),
+                  ],
                   if (!embed) ...[
                     const SizedBox(height: 8),
                     _buildDetailsPanel(
@@ -895,12 +1083,14 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                         contentWidth: contentWidth,
                         isCompact: isCompact,
                       ),
-                      SizedBox(height: isCompact ? 8 : 18),
-                      _buildConfigurationSection(
-                        stackDropdowns:
-                            isCompact ? false : stackConfigDropdowns,
-                        isCompact: isCompact,
-                      ),
+                      if (!widget.useSharedImportControls) ...[
+                        SizedBox(height: isCompact ? 8 : 18),
+                        _buildConfigurationSection(
+                          stackDropdowns:
+                              isCompact ? false : stackConfigDropdowns,
+                          isCompact: isCompact,
+                        ),
+                      ],
                       if (!embed) ...[
                         SizedBox(height: isCompact ? 8 : 18),
                         _buildDetailsPanel(
@@ -1203,7 +1393,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
               child: Row(
                 children: [
                   Icon(Icons.auto_awesome_outlined,
-                      size: 16, color: ModuleColors.analytics),
+                      size: 16, color: Theme.of(context).colorScheme.primary),
                   const SizedBox(width: 8),
                   const Text('Auto-detect', style: TextStyle(fontSize: 13)),
                 ],
@@ -1308,7 +1498,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         if (_samePortfolioForAll) ...[
           SizedBox(height: embed ? 2 : (isCompact ? 4 : 6)),
           AppTextField(
-            controller: _sharedPortfolioController,
+            controller: _effectivePortfolioController,
             labelText: 'Portfolio name',
             hintText: embed || isCompact
                 ? 'Portfolio name'
@@ -1318,9 +1508,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       ],
     );
 
-    final accent = embed
-        ? ModuleColors.analytics
-        : Theme.of(context).colorScheme.primary;
+    final accent = Theme.of(context).colorScheme.primary;
     final header = Row(
       children: [
         Icon(
@@ -1329,18 +1517,6 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
           size: embed ? 15 : (isCompact ? 16 : 20),
         ),
         const SizedBox(width: 6),
-        if (embed) ...[
-          Text(
-            'STEP 2',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.6,
-              color: accent,
-            ),
-          ),
-          const SizedBox(width: 8),
-        ],
         Expanded(
           child: Text(
             embed ? 'Parser & security' : 'Parser Configuration',
@@ -1396,9 +1572,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
     required bool isCompact,
   }) {
     final bool isInteractable = !_processing && !_intakeBusy;
-    final primary = widget.embeddedInImportShell
-        ? ModuleColors.analytics
-        : Theme.of(context).colorScheme.primary;
+    final primary = Theme.of(context).colorScheme.primary;
     final batchFull = _pendingFiles.length >= _maxFiles;
     final showBrokerDownload = (_selectedBrokerType == 'ZERODHA') ||
         (_selectedBrokerType == 'GROWW') ||
@@ -1600,22 +1774,9 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (widget.embeddedInImportShell)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 10, 14, 4),
-              child: Text(
-                'STEP 1 OF 2',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.8,
-                  color: primary,
-                ),
-              ),
-            ),
           Padding(
             padding: widget.embeddedInImportShell
-                ? const EdgeInsets.fromLTRB(12, 0, 12, 10)
+                ? const EdgeInsets.fromLTRB(12, 10, 12, 10)
                 : EdgeInsets.zero,
             child: uploadZone,
           ),
@@ -1736,7 +1897,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
                   isLoading: _processing,
                   type: AppButtonType.primary,
                   backgroundColor: widget.embeddedInImportShell
-                      ? ModuleColors.analytics
+                      ? Theme.of(context).colorScheme.primary
                       : null,
                 ),
               ),
@@ -1762,7 +1923,7 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
         child: Row(
           children: [
             Icon(Icons.auto_awesome_outlined,
-                size: 16, color: ModuleColors.analytics),
+                size: 16, color: Theme.of(context).colorScheme.primary),
             const SizedBox(width: 8),
             const Text('Auto-detect', style: TextStyle(fontSize: 13)),
           ],
@@ -1925,11 +2086,15 @@ class _DocumentProcessorViewState extends State<DocumentProcessorView> {
   }
 
   Widget _buildStatusLog() {
-    if (_status.isEmpty && !_processing) return const SizedBox.shrink();
+    if (_status.isEmpty && !_processing && _bannerActions == null) {
+      return const SizedBox.shrink();
+    }
     return ImportProcessBanner(
       phase: _bannerPhase,
       message: _status.isEmpty ? 'Working…' : _status,
       busyStartedAt: _busyStartedAt,
+      syncTimeout: const Duration(seconds: 60),
+      actions: _bannerActions,
     );
   }
 

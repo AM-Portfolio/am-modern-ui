@@ -16,12 +16,15 @@ class AddAssetClassWorkspace extends ConsumerStatefulWidget {
     required this.portfolioId,
     required this.portfolioName,
     required this.onComplete,
+    this.onCancel,
     this.onOpenDocIntel,
   });
 
   final String portfolioId;
   final String? portfolioName;
   final VoidCallback onComplete;
+  /// When set, Cancel uses this (e.g. shell discard prompt) instead of [onComplete].
+  final VoidCallback? onCancel;
   final VoidCallback? onOpenDocIntel;
 
   @override
@@ -32,7 +35,7 @@ class _AddAssetClassWorkspaceState extends ConsumerState<AddAssetClassWorkspace>
   bool _isSaving = false;
 
   void _handleCancel() {
-    widget.onComplete();
+    (widget.onCancel ?? widget.onComplete)();
   }
 
   Future<void> _handleSave() async {
@@ -173,10 +176,28 @@ class _AddAssetClassWorkspaceState extends ConsumerState<AddAssetClassWorkspace>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Text('Select Asset Class Type', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                  ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Add Asset Class',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.4,
+                          height: 1.1,
+                        ),
+                      ),
+                      Text(
+                        'Choose type and add holdings',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.65),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 IconButton(
                   tooltip: 'Close',

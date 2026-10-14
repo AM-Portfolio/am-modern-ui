@@ -462,6 +462,38 @@ class ApiService {
       parser: (data) => Map<String, dynamic>.from(data),
     );
   }
+
+  /// Brief portfolio list for post-import sync polling (id + name only).
+  Future<List<Map<String, String>>> listPortfoliosBrief() async {
+    final base = EnvDomains.portfolio;
+    final url = '$base/v1/portfolios/list';
+    debugPrint('[ApiService] GET $url');
+    final apiClient = GetIt.I.isRegistered<ApiClient>()
+        ? GetIt.I<ApiClient>()
+        : ApiClient();
+    final headers = await _getHeaders();
+
+    return apiClient.get<List<Map<String, String>>>(
+      url,
+      headers: headers,
+      parser: (data) {
+        if (data is! List) return <Map<String, String>>[];
+        final out = <Map<String, String>>[];
+        for (final item in data) {
+          if (item is! Map) continue;
+          final id = item['portfolioId']?.toString() ??
+              item['id']?.toString() ??
+              '';
+          final name = item['portfolioName']?.toString() ??
+              item['name']?.toString() ??
+              '';
+          if (id.isEmpty) continue;
+          out.add({'portfolioId': id, 'portfolioName': name});
+        }
+        return out;
+      },
+    );
+  }
 }
 
 final apiProvider = ApiService();
