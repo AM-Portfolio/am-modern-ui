@@ -87,6 +87,31 @@ on:
           - preprod
           - prod
         default: ""
+      skip_ios_build:
+        description: "Skip Flutter IPA build; reuse a prior Actions IPA artifact"
+        required: false
+        type: boolean
+        default: false
+      reuse_artifact_run_id:
+        description: "Prior run id that owns the IPA (e.g. 38629861487)"
+        required: false
+        type: string
+        default: ""
+      reuse_artifact_name:
+        description: "Prior artifact name (e.g. ios-release-38629861487)"
+        required: false
+        type: string
+        default: ""
+      reuse_version_name:
+        description: "Marketing version of reused IPA (e.g. 2.0.0)"
+        required: false
+        type: string
+        default: ""
+      reuse_version_code:
+        description: "Build number of reused IPA (e.g. 207)"
+        required: false
+        type: string
+        default: ""
 
 jobs:
   resolve:
@@ -102,6 +127,11 @@ jobs:
       am_domain: ${{ steps.p.outputs.am_domain }}
       am_env: ${{ steps.p.outputs.am_env }}
       skip_validate: ${{ steps.p.outputs.skip_validate }}
+      skip_ios_build: ${{ steps.p.outputs.skip_ios_build }}
+      reuse_artifact_run_id: ${{ steps.p.outputs.reuse_artifact_run_id }}
+      reuse_artifact_name: ${{ steps.p.outputs.reuse_artifact_name }}
+      reuse_version_name: ${{ steps.p.outputs.reuse_version_name }}
+      reuse_version_code: ${{ steps.p.outputs.reuse_version_code }}
     steps:
       - id: p
         shell: bash
@@ -115,13 +145,24 @@ jobs:
           RUN_ANDROID=true
           RUN_IOS=true
           SKIP_VALIDATE=false
+          SKIP_IOS_BUILD=false
+          REUSE_RUN_ID=""
+          REUSE_ART=""
+          REUSE_VNAME=""
+          REUSE_VCODE=""
           if [ "$EVENT" = "workflow_dispatch" ]; then
             RUN_ANDROID="${{ github.event.inputs.run_android }}"
             RUN_IOS="${{ github.event.inputs.run_ios }}"
             SKIP_VALIDATE="${{ github.event.inputs.skip_validate }}"
+            SKIP_IOS_BUILD="${{ github.event.inputs.skip_ios_build }}"
+            REUSE_RUN_ID="${{ github.event.inputs.reuse_artifact_run_id }}"
+            REUSE_ART="${{ github.event.inputs.reuse_artifact_name }}"
+            REUSE_VNAME="${{ github.event.inputs.reuse_version_name }}"
+            REUSE_VCODE="${{ github.event.inputs.reuse_version_code }}"
             [ -z "$RUN_ANDROID" ] && RUN_ANDROID=true
             [ -z "$RUN_IOS" ] && RUN_IOS=true
             [ -z "$SKIP_VALIDATE" ] && SKIP_VALIDATE=false
+            [ -z "$SKIP_IOS_BUILD" ] && SKIP_IOS_BUILD=false
           fi
 
           DEPLOY_ANDROID_INTERNAL=false
@@ -186,8 +227,13 @@ jobs:
             echo "am_domain=$DOMAIN"
             echo "am_env=$ENV_LABEL"
             echo "skip_validate=$SKIP_VALIDATE"
+            echo "skip_ios_build=$SKIP_IOS_BUILD"
+            echo "reuse_artifact_run_id=$REUSE_RUN_ID"
+            echo "reuse_artifact_name=$REUSE_ART"
+            echo "reuse_version_name=$REUSE_VNAME"
+            echo "reuse_version_code=$REUSE_VCODE"
           } >> "$GITHUB_OUTPUT"
-          echo "Branch=$REF run_android=$RUN_ANDROID run_ios=$RUN_IOS android_internal=$DEPLOY_ANDROID_INTERNAL android_prod=$DEPLOY_ANDROID_PRODUCTION ios_tf=$DEPLOY_IOS_TF ios_prod=$DEPLOY_IOS_PRODUCTION domain=$DOMAIN env=$ENV_LABEL skip_validate=$SKIP_VALIDATE"
+          echo "Branch=$REF run_android=$RUN_ANDROID run_ios=$RUN_IOS android_internal=$DEPLOY_ANDROID_INTERNAL android_prod=$DEPLOY_ANDROID_PRODUCTION ios_tf=$DEPLOY_IOS_TF ios_prod=$DEPLOY_IOS_PRODUCTION domain=$DOMAIN env=$ENV_LABEL skip_validate=$SKIP_VALIDATE skip_ios_build=$SKIP_IOS_BUILD reuse=$REUSE_ART"
 
   validate:
     name: Common Validation
@@ -228,6 +274,7 @@ jobs:
     if: ${{ always() && !cancelled() && needs.resolve.outputs.run_ios == 'true' && (needs.validate.result == 'success' || needs.validate.result == 'skipped') }}
     permissions:
       contents: read
+      actions: read
     uses: AM-Portfolio/am-pipelines/.github/workflows/central-mobile-ios.yml@main
     with:
       working_directory: am_app
@@ -243,4 +290,9 @@ jobs:
       deploy_production: ${{ needs.resolve.outputs.deploy_ios_production == 'true' }}
       gh_env_internal: ios-internal
       gh_env_prod: ios-prod
+      skip_ios_build: ${{ needs.resolve.outputs.skip_ios_build == 'true' }}
+      reuse_artifact_run_id: ${{ needs.resolve.outputs.reuse_artifact_run_id }}
+      reuse_artifact_name: ${{ needs.resolve.outputs.reuse_artifact_name }}
+      reuse_version_name: ${{ needs.resolve.outputs.reuse_version_name }}
+      reuse_version_code: ${{ needs.resolve.outputs.reuse_version_code }}
     secrets: inherit
