@@ -23,9 +23,11 @@ Same GitHub Mobile CI binary promotes Internal → final stores.
 |-------|---------|-----|------|-------------|
 | Build | AAB | IPA + `ios-keep-<sha>` | when platform enabled | — |
 | Internal | Play **internal** (upload AAB) | **TestFlight** | feature dispatch; always on `main` | `android-internal` / `ios-internal` |
-| Production | Play **production** (**promote** same `versionCode`; do not re-upload AAB) | **App Store** | **`main` only** (or `force_deploy`) after Internal succeeds | `android-prod` / `ios-prod` (required reviewers) |
+| Production | Play **production** (**promote** same `versionCode`; do not re-upload AAB) | **App Store Submit for Review** (ASC API) | **`main` only** (or `force_deploy`) after Internal succeeds | `android-prod` / `ios-prod` (required reviewers) |
 
 **Android:** Internal uploads the AAB once; Production assigns that `versionCode` to the production track via Play API promote. Re-uploading the same AAB fails with “Version code N has already been used.”
+
+**iOS:** After `ios-prod` approval, CI attaches the TestFlight build to the App Store version and **submits for review** (helpers under `am-pipelines/.github/workflows/ios/`). ASC metadata for that marketing version (screenshots, App Privacy, pricing/category) must already be complete or the job fails with explicit ASC errors — it does not invent screenshots.
 
 **Operator:** confirm Internal on device / TestFlight before approving `*-prod`.
 
