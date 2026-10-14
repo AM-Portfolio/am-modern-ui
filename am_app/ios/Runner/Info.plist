@@ -45,6 +45,9 @@
 		<true/>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
+		<!-- Export compliance: HTTPS/TLS only — skips "Missing Compliance" on ASC uploads -->
+		<key>ITSAppUsesNonExemptEncryption</key>
+		<false/>
 		<!-- Privacy — purpose strings only for linked SDKs; access is opt-in at runtime -->
 		<key>NSCameraUsageDescription</key>
 		<string>Am App can use the camera if you choose to take a profile photo. This is optional.</string>
