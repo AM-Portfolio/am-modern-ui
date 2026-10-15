@@ -3,8 +3,10 @@ import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_provider.da
 import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_renderer.dart';
 import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_store.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
+import 'package:am_dashboard_ui/presentation/providers/dashboard_portfolio_refresh_binder.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_timeframe_provider.dart';
 import 'package:am_dashboard_ui/presentation/providers/has_demo_portfolio_provider.dart';
+import 'package:am_dashboard_ui/presentation/widgets/paper_trading_nav_chip.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
@@ -18,12 +20,14 @@ class DashboardWebScreen extends ConsumerWidget {
   final String userId;
   final VoidCallback? onOpenDocIntel;
   final VoidCallback? onOpenPaper;
+  final ValueChanged<GlobalAddActionKind>? onQuickAdd;
 
   const DashboardWebScreen({
     super.key,
     required this.userId,
     this.onOpenDocIntel,
     this.onOpenPaper,
+    this.onQuickAdd,
   });
 
   void _listenDashboardFirstData(WidgetRef ref, String tfCode) {
@@ -72,7 +76,9 @@ class DashboardWebScreen extends ConsumerWidget {
     final showDemoBanner =
         ref.watch(hasDemoPortfolioProvider).asData?.value ?? false;
 
-    return Scaffold(
+    return DashboardPortfolioRefreshBinder(
+      userId: userId,
+      child: Scaffold(
       backgroundColor: context.colors.scaffoldBackground,
       body: Stack(
         children: [
@@ -154,42 +160,20 @@ class DashboardWebScreen extends ConsumerWidget {
                                 DashboardCustomizeSheet.show(context),
                             icon: const Icon(Icons.tune),
                           ),
-                        if (onOpenDocIntel != null)
-                          TextButton.icon(
-                            onPressed: onOpenDocIntel,
-                            icon: Icon(
-                              Icons.psychology_outlined,
-                              size: 18,
-                              color: context.colors.statusInfo,
-                            ),
-                            label: const Text('Add Portfolio'),
-                            style: TextButton.styleFrom(
-                              foregroundColor: onSurface,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.sm + 2,
-                                vertical: AppSpacing.sm - 2,
-                              ),
-                            ),
-                          ),
-                        if (onOpenPaper != null)
-                          TextButton.icon(
-                            onPressed: onOpenPaper,
-                            icon: Icon(
-                              Icons.science_outlined,
-                              size: 18,
-                              color: context.colors.statusInfo,
-                            ),
-                            label: const Text('Paper trading'),
-                            style: TextButton.styleFrom(
-                              foregroundColor: onSurface,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.sm + 2,
-                                vertical: AppSpacing.sm - 2,
-                              ),
-                            ),
-                          ),
-                        const SizedBox(width: AppSpacing.md),
+                        if (onOpenPaper != null) ...[
+                          PaperTradingNavChip(onTap: onOpenPaper!),
+                          const SizedBox(width: AppSpacing.sm),
+                        ],
                         const GlobalTimeFrameBar(),
+                        if (onQuickAdd != null) ...[
+                          const SizedBox(width: AppSpacing.sm),
+                          SyncQuickActionsControl(
+                            accentColor: ModuleColors.dashboard,
+                            iconColor: onSurface,
+                            actions: buildGlobalAddMenuActions(onQuickAdd!),
+                            showSubtitles: false,
+                          ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: AppSpacing.lg),
@@ -207,6 +191,7 @@ class DashboardWebScreen extends ConsumerWidget {
           ),
         ],
       ),
+    ),
     );
   }
 }

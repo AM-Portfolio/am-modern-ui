@@ -1,7 +1,5 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
-import '../../../internal/data/dtos/portfolio_create_request_dto.dart';
-import '../../../internal/data/dtos/portfolio_update_request_dto.dart';
 import '../../../internal/domain/entities/portfolio_list.dart';
 
 class PortfolioFormModal extends StatefulWidget {
@@ -40,8 +38,7 @@ class _PortfolioFormModalState extends State<PortfolioFormModal> {
     _nameController = TextEditingController(
       text: widget.portfolio?.portfolioName ?? '',
     );
-    _descController =
-        TextEditingController(); // Our backend takes description, though we don't display it yet
+    _descController = TextEditingController();
   }
 
   @override
@@ -76,100 +73,149 @@ class _PortfolioFormModalState extends State<PortfolioFormModal> {
     }
   }
 
+  InputDecoration _fieldDecoration({
+    required String label,
+    String? errorText,
+  }) {
+    final accent = ModuleColors.portfolio;
+    final radius = BorderRadius.circular(12);
+    return InputDecoration(
+      labelText: label,
+      errorText: errorText,
+      floatingLabelStyle: TextStyle(color: accent),
+      labelStyle: TextStyle(color: context.textSecondary),
+      border: OutlineInputBorder(borderRadius: radius),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: radius,
+        borderSide: BorderSide(
+          color: Theme.of(context).colorScheme.outlineVariant,
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: radius,
+        borderSide: BorderSide(color: accent, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: radius,
+        borderSide: BorderSide(color: context.statusError),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: radius,
+        borderSide: BorderSide(color: context.statusError, width: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.portfolio != null;
+    final accent = ModuleColors.portfolio;
+    final safeBottom = MediaQuery.paddingOf(context).bottom;
+    // Global bottom nav chrome (~70) sits above the home indicator.
+    const navChrome = 70.0;
 
-    return Container(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      decoration: BoxDecoration(
-        color: context.cardColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return ValueListenableBuilder<double>(
+      valueListenable: GlobalBottomNavVisibility.factor,
+      builder: (context, navFactor, _) {
+        final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+        // When nav is visible, lift Save Changes above it; when hidden, sit on
+        // the safe bottom inset only.
+        final bottomPad =
+            keyboard + safeBottom + (navChrome * navFactor.clamp(0.0, 1.0));
+
+        return Container(
+          padding: EdgeInsets.only(bottom: bottomPad),
+          decoration: BoxDecoration(
+            color: context.cardColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    isEdit ? 'Edit Portfolio' : 'Create Portfolio',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: context.textPrimary,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        isEdit ? 'Edit Portfolio' : 'Create Portfolio',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: context.textPrimary,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
                   ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close),
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: _nameController,
+                    autofocus: true,
+                    cursorColor: accent,
+                    style: TextStyle(color: context.textPrimary),
+                    decoration: _fieldDecoration(
+                      label: 'Portfolio Name',
+                      errorText: _error,
+                    ),
+                    onSubmitted: (_) => _submit(),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _descController,
+                    cursorColor: accent,
+                    style: TextStyle(color: context.textPrimary),
+                    decoration: _fieldDecoration(
+                      label: 'Description (Optional)',
+                    ),
+                    onSubmitted: (_) => _submit(),
+                  ),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    height: 48,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: accent,
+                        foregroundColor: context.colors.actionPrimaryFg,
+                        disabledBackgroundColor:
+                            accent.withValues(alpha: 0.45),
+                        overlayColor: accent.withValues(alpha: 0.18),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: _isLoading ? null : _submit,
+                      child: _isLoading
+                          ? SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                color: context.colors.actionPrimaryFg,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Text(
+                              isEdit ? 'Save Changes' : 'Create',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: context.colors.actionPrimaryFg,
+                              ),
+                            ),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
-              TextField(
-                controller: _nameController,
-                autofocus: true,
-                decoration: InputDecoration(
-                  labelText: 'Portfolio Name',
-                  errorText: _error,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onSubmitted: (_) => _submit(),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _descController,
-                decoration: InputDecoration(
-                  labelText: 'Description (Optional)',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onSubmitted: (_) => _submit(),
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                height: 48,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ModuleColors.portfolio,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed: _isLoading ? null : _submit,
-                  child: _isLoading
-                      ? SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            color: context.colors.actionPrimaryFg,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text(
-                          isEdit ? 'Save Changes' : 'Create',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: context.colors.actionPrimaryFg,
-                          ),
-                        ),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

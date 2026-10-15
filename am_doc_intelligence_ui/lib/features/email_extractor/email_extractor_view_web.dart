@@ -4,10 +4,51 @@ import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_library/am_library.dart';
+import 'package:am_common/am_common.dart';
+import 'package:am_doc_intelligence_ui/features/broker_logo.dart';
+import 'package:am_doc_intelligence_ui/features/import_holdings_shared_controls.dart';
+import 'package:am_doc_intelligence_ui/features/import_portfolio_sync.dart';
+import 'package:am_doc_intelligence_ui/features/import_process_banner.dart';
+import 'package:am_doc_intelligence_ui/features/recent_imports_store.dart';
 import 'package:am_doc_intelligence_ui/services/api_service.dart';
 
 class EmailExtractorView extends StatefulWidget {
-  const EmailExtractorView({super.key});
+  const EmailExtractorView({
+    super.key,
+    this.compactImportMode = false,
+    this.footer,
+    this.onImportCompleted,
+    this.useSharedImportControls = false,
+    this.sharedBrokerEmailId,
+    this.passwordController,
+    this.portfolioNameController,
+    this.onOpenPortfolio,
+    this.onOpenTrade,
+  });
+
+  /// Hide standalone page chrome when embedded under Import holdings.
+  final bool compactImportMode;
+
+  /// Optional trailing content (e.g. info rail on mobile).
+  final Widget? footer;
+
+  /// Called after a broker extract succeeds or fails (for Recent Imports).
+  final ValueChanged<RecentImportEntry>? onImportCompleted;
+
+  /// When true, broker/password live on the parent shared controls.
+  final bool useSharedImportControls;
+
+  /// Email-extractor broker id from shared icons (e.g. `dhan`, `angleone`).
+  final String? sharedBrokerEmailId;
+
+  /// Shared PDF password (parent-owned when [useSharedImportControls]).
+  final TextEditingController? passwordController;
+
+  /// Optional portfolio name for sync matching.
+  final TextEditingController? portfolioNameController;
+
+  final void Function(String portfolioId, String portfolioName)? onOpenPortfolio;
+  final void Function(String portfolioId, String portfolioName)? onOpenTrade;
 
   @override
   State<EmailExtractorView> createState() => _EmailExtractorViewState();
@@ -18,30 +59,160 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
   bool _loading = true;
   String _status = '';
   Map<String, dynamic>? _gmailStatus;
-  
+  List<Map<String, dynamic>> _mailboxes = [];
+  String? _selectedMailbox;
+
   // Health
   bool? _isServiceConnected;
   bool _checkingHealth = true;
   String? _activeExtractingBrokerId;
-  
+  /// Persists highlight on the broker tile the user picked.
+  String? _selectedBrokerId;
+
   Timer? _statusPollTimer;
+  StreamSubscription<html.MessageEvent>? _oauthMessageSub;
+  final TextEditingController _panController = TextEditingController();
+  bool _pdfPasswordVisible = false;
+  ImportProcessPhase _phase = ImportProcessPhase.idle;
+  DateTime? _busyStartedAt;
+  Widget? _bannerActions;
+  String? _resolvedPortfolioId;
+  String? _resolvedPortfolioName;
+
+  TextEditingController get _effectivePasswordController =>
+      widget.passwordController ?? _panController;
 
   @override
   void initState() {
     super.initState();
     _checkHealthAndLoad();
-    
-    // Periodically poll Gmail status to see if OAuth succeeded in the other window
-    _statusPollTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      if (_isServiceConnected == true) {
+    _handleGmailQueryParams();
+
+    // Popup callback posts here; also poll until status flips to connected
+    _oauthMessageSub = html.window.onMessage.listen(_onOAuthMessage);
+    _statusPollTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      if (_isServiceConnected == true && _gmailStatus?['connected'] != true) {
         _checkGmail();
       }
     });
   }
 
+  void _setFeedback(
+    String message, {
+    required ImportProcessPhase phase,
+    bool snack = true,
+    Widget? actions,
+  }) {
+    _status = message;
+    _phase = phase;
+    _bannerActions = actions;
+    if (phase == ImportProcessPhase.busy ||
+        phase == ImportProcessPhase.syncing) {
+      _busyStartedAt ??= DateTime.now();
+    } else if (phase != ImportProcessPhase.success) {
+      _busyStartedAt = null;
+    }
+    if (snack &&
+        mounted &&
+        phase != ImportProcessPhase.syncing &&
+        phase != ImportProcessPhase.busy) {
+      showImportSnackBar(context, message: message, phase: phase);
+    }
+  }
+
+  Widget? _deepLinkActions() {
+    final id = _resolvedPortfolioId;
+    final name = _resolvedPortfolioName ?? 'Portfolio';
+    if (id == null || id.isEmpty) {
+      if (widget.onOpenPortfolio == null && widget.onOpenTrade == null) {
+        return null;
+      }
+      return Wrap(
+        spacing: 8,
+        runSpacing: 6,
+        children: [
+          if (widget.onOpenPortfolio != null)
+            ActionChip(
+              label: const Text('Open Portfolio'),
+              onPressed: () => widget.onOpenPortfolio!('', name),
+            ),
+          if (widget.onOpenTrade != null)
+            ActionChip(
+              label: const Text('Open Trade'),
+              onPressed: () => widget.onOpenTrade!('', name),
+            ),
+        ],
+      );
+    }
+    return Wrap(
+      spacing: 8,
+      runSpacing: 6,
+      children: [
+        if (widget.onOpenPortfolio != null)
+          ActionChip(
+            label: const Text('Open Portfolio'),
+            onPressed: () => widget.onOpenPortfolio!(id, name),
+          ),
+        if (widget.onOpenTrade != null)
+          ActionChip(
+            label: const Text('Open Trade'),
+            onPressed: () => widget.onOpenTrade!(id, name),
+          ),
+      ],
+    );
+  }
+
+  void _handleGmailQueryParams() {
+    try {
+      final uri = Uri.parse(html.window.location.href);
+      final gmail = uri.queryParameters['gmail'];
+      if (gmail == 'connected') {
+        _status = 'Gmail connected';
+        _phase = ImportProcessPhase.success;
+        _busyStartedAt = null;
+        _checkGmail();
+      } else if (gmail == 'error') {
+        _status =
+            'Gmail connection failed: ${uri.queryParameters['msg'] ?? 'unknown'}';
+        _phase = ImportProcessPhase.error;
+        _busyStartedAt = null;
+      }
+    } catch (_) {}
+  }
+
+  void _onOAuthMessage(html.MessageEvent event) {
+    final data = event.data;
+    if (data is! Map) return;
+    if (data['type'] != 'am-gmail-oauth') return;
+    if (data['success'] == true) {
+      final email = data['email'] != null && '${data['email']}'.isNotEmpty
+          ? ' (${data['email']})'
+          : '';
+      setState(() {
+        _setFeedback(
+          'Gmail connected$email',
+          phase: ImportProcessPhase.success,
+        );
+      });
+      _checkGmail();
+    } else {
+      setState(() {
+        _setFeedback(
+          'Gmail connection failed: ${data['error'] ?? 'unknown'}',
+          phase: ImportProcessPhase.error,
+        );
+      });
+    }
+  }
+
   @override
   void dispose() {
     _statusPollTimer?.cancel();
+    _oauthMessageSub?.cancel();
+    // Only dispose locally owned controller.
+    if (widget.passwordController == null) {
+      _panController.dispose();
+    }
     super.dispose();
   }
 
@@ -96,70 +267,208 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
     }
   }
 
+  void _applyMailboxesFrom(Map<String, dynamic> status) {
+    final raw = status['mailboxes'];
+    final list = raw is List
+        ? raw
+            .whereType<Map>()
+            .map((m) => Map<String, dynamic>.from(m))
+            .toList()
+        : <Map<String, dynamic>>[];
+    _mailboxes = list;
+    if (_selectedMailbox == null ||
+        !_mailboxes.any((m) => m['email'] == _selectedMailbox)) {
+      Map<String, dynamic>? def;
+      for (final m in _mailboxes) {
+        if (m['is_default'] == true) {
+          def = m;
+          break;
+        }
+      }
+      def ??= _mailboxes.isNotEmpty ? _mailboxes.first : null;
+      _selectedMailbox = def?['email'] as String?;
+    }
+  }
+
   Future<void> _checkGmail() async {
     try {
       final status = await apiProvider.checkGmailStatus();
       if (!mounted) return;
       setState(() {
         _gmailStatus = status;
+        _applyMailboxesFrom(status);
+        // OAuth popup finished — poll flipped to connected.
+        if (status['connected'] == true &&
+            _phase == ImportProcessPhase.busy) {
+          final email = status['email'];
+          _setFeedback(
+            email != null && '$email'.isNotEmpty
+                ? 'Gmail connected ($email)'
+                : 'Gmail connected',
+            phase: ImportProcessPhase.success,
+          );
+        }
       });
     } catch (e) {
-       debugPrint('Gmail check error: $e');
+      debugPrint('Gmail check error: $e');
     }
   }
 
-  Future<void> _handleGmailConnectionToggle(bool isConnected) async {
+  Future<void> _startOAuth({required bool addMailbox}) async {
     setState(() {
-      _status = isConnected ? 'Disconnecting Gmail account...' : 'Initiating Google OAuth connection...';
+      _busyStartedAt = DateTime.now();
+      _setFeedback(
+        addMailbox ? 'Connecting another Gmail…' : 'Opening Google sign-in…',
+        phase: ImportProcessPhase.busy,
+      );
     });
-    
     try {
-      if (isConnected) {
-        final result = await apiProvider.disconnectGmail();
-        if (!mounted) return;
+      final result = await apiProvider.connectGmail(addMailbox: addMailbox);
+      if (!mounted) return;
+      if (result['connected'] == true && result['auth_url'] == null) {
         setState(() {
-          _status = result['message'] ?? 'Gmail disconnected successfully!';
+          _setFeedback('Gmail already connected', phase: ImportProcessPhase.success);
         });
         await _checkGmail();
-      } else {
-        final result = await apiProvider.connectGmail();
-        if (!mounted) return;
-        if (result['connected'] == true) {
-          setState(() {
-            _status = 'Gmail already connected!';
-          });
-          await _checkGmail();
-        } else if (result['auth_url'] != null) {
-          final String authUrl = result['auth_url'];
-          // Open OAuth in new tab
-          html.window.open(authUrl, '_blank');
-          setState(() {
-            _status = 'Please complete the Google OAuth sign-in in the newly opened tab.';
-          });
-        }
+        return;
+      }
+      if (result['error'] != null) {
+        setState(() {
+          _setFeedback(
+            'Gmail connect failed: ${result['error']}',
+            phase: ImportProcessPhase.error,
+          );
+        });
+        return;
+      }
+      if (result['auth_url'] != null) {
+        final String authUrl = result['auth_url'];
+        html.window.open(
+          authUrl,
+          'am_gmail_oauth',
+          'width=520,height=720',
+        );
+        setState(() {
+          _setFeedback(
+            'Complete Google sign-in in the popup…',
+            phase: ImportProcessPhase.busy,
+            snack: false,
+          );
+        });
       }
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _status = 'Error: $e';
+        _setFeedback(
+          'Gmail connect failed: ${shortImportError(e)}',
+          phase: ImportProcessPhase.error,
+        );
       });
     }
   }
 
+  Future<void> _handleGmailConnectionToggle(bool isConnected) async {
+    if (isConnected) {
+      final target = _selectedMailbox;
+      setState(() {
+        _busyStartedAt = DateTime.now();
+        _setFeedback(
+          target != null ? 'Disconnecting $target…' : 'Disconnecting Gmail…',
+          phase: ImportProcessPhase.busy,
+        );
+      });
+      try {
+        final result = await apiProvider.disconnectGmail(mailbox: target);
+        if (!mounted) return;
+        setState(() {
+          _selectedMailbox = null;
+          _setFeedback(
+            result['message']?.toString() ?? 'Gmail disconnected',
+            phase: ImportProcessPhase.success,
+          );
+        });
+        await _checkGmail();
+      } catch (e) {
+        if (!mounted) return;
+        setState(() {
+          _setFeedback(
+            'Disconnect failed: ${shortImportError(e)}',
+            phase: ImportProcessPhase.error,
+          );
+        });
+      }
+      return;
+    }
+    await _startOAuth(addMailbox: false);
+  }
+
+  void _onBrokerTap(String brokerId, {required bool gmailConnected}) {
+    setState(() => _selectedBrokerId = brokerId);
+    if (widget.useSharedImportControls) return;
+    if (!gmailConnected) {
+      setState(() {
+        _setFeedback('Connect Gmail first', phase: ImportProcessPhase.error);
+      });
+      return;
+    }
+    _extract(brokerId);
+  }
+
+  Future<void> _importFromSharedControls({required bool gmailConnected}) async {
+    final brokerId = widget.sharedBrokerEmailId;
+    if (brokerId == null || brokerId.isEmpty) {
+      setState(() {
+        _setFeedback('Select a broker first', phase: ImportProcessPhase.error);
+      });
+      return;
+    }
+    if (!gmailConnected) {
+      setState(() {
+        _setFeedback('Connect Gmail first', phase: ImportProcessPhase.error);
+      });
+      return;
+    }
+    await _extract(brokerId);
+  }
+
   Future<void> _extract(String brokerId) async {
     setState(() {
+      _selectedBrokerId = brokerId;
+      _resolvedPortfolioId = null;
+      _resolvedPortfolioName = null;
+      _bannerActions = null;
+    });
+
+    final pan = _effectivePasswordController.text.trim();
+    if (pan.isEmpty && brokerId != 'angleone') {
+      setState(() {
+        _setFeedback(
+          'Enter PDF password, then import ${brokerDisplayName(brokerId)}',
+          phase: ImportProcessPhase.error,
+        );
+      });
+      return;
+    }
+
+    final label = brokerDisplayName(brokerId);
+    setState(() {
       _activeExtractingBrokerId = brokerId;
-      _status = 'Fetching latest email from ${brokerId.toUpperCase()} & scanning for statements...';
+      _busyStartedAt = DateTime.now();
+      _setFeedback('Importing $label…', phase: ImportProcessPhase.busy);
     });
 
     final sw = Stopwatch()..start();
     ProductTelemetry.instance.featureAction(
       'gmail_extract',
       tag: 'docs',
-      metadata: {'broker': brokerId},
+      metadata: {'broker': brokerId, 'mailbox': _selectedMailbox},
     );
     try {
-      final result = await apiProvider.extractFromGmail(brokerId);
+      final result = await apiProvider.extractFromGmail(
+        brokerId,
+        pan: pan,
+        mailbox: _selectedMailbox,
+      );
       sw.stop();
       ProductTelemetry.instance.widgetTiming(
         widget: 'gmail_extract',
@@ -168,10 +477,66 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
         technicalArea: 'docs',
       );
       if (!mounted) return;
+      final count = result['count'];
+      // Never pass extractor Mongo db_id as portfolio UUID.
+      final fileName = result['filename']?.toString() ??
+          result['file_name']?.toString() ??
+          'Gmail · $label statement';
+      final holdingsLabel = count != null ? '$count holdings' : 'holdings';
       setState(() {
-        _status = 'Extraction successful!\n- Parsed ${result['count']} holdings\n- Saved Portfolio ID: ${result['db_id']}';
         _activeExtractingBrokerId = null;
+        _busyStartedAt = DateTime.now();
+        _setFeedback(
+          'Parsed $holdingsLabel — syncing to portfolio (up to ~60s)…',
+          phase: ImportProcessPhase.syncing,
+          snack: false,
+        );
       });
+
+      widget.onImportCompleted?.call(RecentImportEntry(
+        id: 'mb-${DateTime.now().millisecondsSinceEpoch}',
+        source: 'mailbox',
+        title: label,
+        status: 'success',
+        at: DateTime.now().toUtc(),
+        files: [fileName],
+        detail: count != null ? '$count holdings' : null,
+      ));
+
+      final typedName = widget.portfolioNameController?.text.trim() ?? '';
+      final targetName = typedName.isNotEmpty
+          ? typedName
+          : brokerDisplayName(brokerId);
+      final sync = await waitForImportedPortfolio(
+        brokerKey: normalizeBrokerKey(brokerId) ?? brokerId,
+        targetPortfolioName: targetName,
+      );
+      if (!mounted) return;
+
+      if (sync != null) {
+        _resolvedPortfolioId = sync.portfolioId;
+        _resolvedPortfolioName = sync.portfolioName;
+        PortfolioDataRefresh.instance
+            .notifyImported(portfolioId: sync.portfolioId);
+        setState(() {
+          _setFeedback(
+            count != null
+                ? 'Imported $count holdings from $label'
+                : 'Imported from $label',
+            phase: ImportProcessPhase.success,
+            actions: _deepLinkActions(),
+          );
+        });
+      } else {
+        PortfolioDataRefresh.instance.notifyImported();
+        setState(() {
+          _setFeedback(
+            'Import saved; portfolio may still update',
+            phase: ImportProcessPhase.success,
+            actions: _deepLinkActions(),
+          );
+        });
+      }
     } catch (e) {
       sw.stop();
       ProductTelemetry.instance.widgetTiming(
@@ -182,10 +547,20 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
       );
       ProductTelemetry.instance.clientError(errorType: 'gmail_extract');
       if (!mounted) return;
+      final err = shortImportError(e);
       setState(() {
-        _status = 'Extraction failed: $e';
         _activeExtractingBrokerId = null;
+        _setFeedback('Import failed: $err', phase: ImportProcessPhase.error);
       });
+      widget.onImportCompleted?.call(RecentImportEntry(
+        id: 'mb-${DateTime.now().millisecondsSinceEpoch}',
+        source: 'mailbox',
+        title: label,
+        status: 'failed',
+        at: DateTime.now().toUtc(),
+        files: ['Gmail · $label statement'],
+        detail: err,
+      ));
     }
   }
 
@@ -198,60 +573,112 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
       builder: (context, constraints) {
         final double contentWidth = constraints.maxWidth;
         final bool isCompact = contentWidth < 560;
+        final embed = widget.compactImportMode;
+
+        if (embed) {
+          if (_checkingHealth) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 28),
+              child: Center(
+                child: SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(strokeWidth: 2.5),
+                ),
+              ),
+            );
+          }
+          if (_isServiceConnected == false) {
+            return _buildConnectionError();
+          }
+          if (widget.useSharedImportControls) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildSharedMailboxCard(isConnected, email),
+                if (_status.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  _buildStatusLog(),
+                ],
+                if (widget.footer != null) ...[
+                  const SizedBox(height: 8),
+                  widget.footer!,
+                ],
+              ],
+            );
+          }
+          // Two full-width cards (same width as each other / column):
+          // 1) Gmail + broker tiles  2) PDF password
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildCompactImportCard(isConnected, email, contentWidth),
+              const SizedBox(height: 6),
+              _buildCompactPasswordCard(),
+              if (_status.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                _buildStatusLog(),
+              ],
+              if (widget.footer != null) ...[
+                const SizedBox(height: 8),
+                widget.footer!,
+              ],
+            ],
+          );
+        }
 
         return SingleChildScrollView(
           padding: EdgeInsets.symmetric(
             horizontal: isCompact ? 16.0 : 32.0,
             vertical: 24.0,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(isCompact: isCompact),
-              const SizedBox(height: 28),
-              if (_checkingHealth)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 40),
-                  child: Center(
-                    child: Column(
-                      children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 16),
-                        Text('Checking email extractor connectivity...',
-                            style: TextStyle(color: Colors.grey)),
-                      ],
-                    ),
-                  ),
-                )
-              else if (_isServiceConnected == false)
-                _buildConnectionError()
-              else ...[
-                _buildGmailStatusCard(isConnected, email, contentWidth: contentWidth),
-                const SizedBox(height: 32),
-                Row(
-                  children: [
-                    Icon(Icons.list_alt_outlined,
-                        color: Theme.of(context).colorScheme.primary, size: 22),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Available Broker Profiles',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            fontSize: isCompact ? 18 : null,
-                          ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                if (_loading)
-                  const ShimmerLoading(
-                      child: SkeletonBox(height: 180, width: double.infinity))
-                else
-                  _buildBrokerGrid(isConnected, contentWidth: contentWidth),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildHeader(isCompact: isCompact),
                 const SizedBox(height: 28),
-                _buildStatusLog(),
+                if (_checkingHealth)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 16),
+                          Text('Checking email extractor connectivity...',
+                              style: TextStyle(color: Colors.grey)),
+                        ],
+                      ),
+                    ),
+                  )
+                else if (_isServiceConnected == false)
+                  _buildConnectionError()
+                else ...[
+                  _buildMailboxSection(isConnected, email),
+                  const SizedBox(height: 16),
+                  if (_loading)
+                    const ShimmerLoading(
+                        child:
+                            SkeletonBox(height: 64, width: double.infinity))
+                  else
+                    _buildBrokerGrid(isConnected, contentWidth: contentWidth),
+                  const SizedBox(height: 16),
+                  _buildPanField(),
+                  if (_status.isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    _buildStatusLog(),
+                  ],
+                ],
+                if (widget.footer != null) ...[
+                  const SizedBox(height: 16),
+                  widget.footer!,
+                ],
               ],
-            ],
+            ),
           ),
         );
       },
@@ -383,154 +810,412 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
     );
   }
 
-  Widget _buildGmailStatusCard(bool isConnected, String email,
-      {required double contentWidth}) {
-    final bool isCompact = contentWidth < 680;
+  static const EdgeInsets _compactCardPad =
+      EdgeInsets.fromLTRB(12, 10, 12, 12);
 
-    if (isCompact) {
-      return GlassCard(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: (isConnected ? Colors.green : Colors.amber)
-                          .withOpacity(0.08),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                          color: (isConnected ? Colors.green : Colors.amber)
-                              .withOpacity(0.3)),
-                    ),
-                    child: Icon(
-                      isConnected
-                          ? Icons.verified_user_outlined
-                          : Icons.lock_open_outlined,
-                      color: isConnected ? Colors.green : Colors.amber,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          isConnected
-                              ? 'GMAIL MAILBOX CONNECTED'
-                              : 'SECURE GMAIL INTEGRATION REQUIRED',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 10,
-                            letterSpacing: 0.5,
-                            color: isConnected
-                                ? Colors.green
-                                : (Theme.of(context).brightness ==
-                                        Brightness.dark
-                                    ? Colors.amber
-                                    : Colors.orange.shade800),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          isConnected
-                              ? email
-                              : 'Authorize read-only scanning to extract holdings.',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleSmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              AppButton(
-                text: isConnected
-                    ? 'Disconnect Access'
-                    : 'Authenticate Google Mail',
-                onPressed: () => _handleGmailConnectionToggle(isConnected),
-                type: isConnected
-                    ? AppButtonType.secondary
-                    : AppButtonType.primary,
-              ),
-            ],
-          ),
-        ),
-      );
-    }
+  /// Gmail row + broker tiles in one full-width card (tiles align to card edges).
+  Widget _buildCompactImportCard(
+    bool isConnected,
+    String email,
+    double contentWidth,
+  ) {
+    final accent = Theme.of(context).colorScheme.primary;
+    // Inner width after card pad — used so broker grid spans edge-to-edge.
+    final gridWidth = (contentWidth - _compactCardPad.horizontal).clamp(120.0, 4000.0);
 
     return GlassCard(
+      padding: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Row(
+        padding: _compactCardPad,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: (isConnected ? Colors.green : Colors.amber)
-                    .withOpacity(0.08),
-                shape: BoxShape.circle,
-                border: Border.all(
-                    color: (isConnected ? Colors.green : Colors.amber)
-                        .withOpacity(0.3)),
-              ),
-              child: Icon(
-                isConnected
-                    ? Icons.verified_user_outlined
-                    : Icons.lock_open_outlined,
-                color: isConnected ? Colors.green : Colors.amber,
-                size: 32,
-              ),
-            ),
-            const SizedBox(width: 24),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
+            Row(
+              children: [
+                Icon(
+                  isConnected
+                      ? Icons.mark_email_read_outlined
+                      : Icons.mail_outline,
+                  size: 18,
+                  color: accent,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
                     isConnected
-                        ? 'GMAIL MAILBOX CONNECTED'
-                        : 'SECURE GMAIL INTEGRATION REQUIRED',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
-                      letterSpacing: 0.8,
-                      color: isConnected
-                          ? Colors.green
-                          : (Theme.of(context).brightness == Brightness.dark
-                              ? Colors.amber
-                              : Colors.orange.shade800),
+                        ? (email.isNotEmpty && email != 'Not Connected'
+                            ? email
+                            : 'Gmail connected')
+                        : 'Connect Gmail',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    isConnected
-                        ? email
-                        : 'Authorize read-only statement scanning to extract holdings automatically.',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                if (!isConnected)
+                  FilledButton(
+                    onPressed: () => _startOAuth(addMailbox: false),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: accent,
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      minimumSize: const Size(0, 32),
+                    ),
+                    child: const Text('Connect', style: TextStyle(fontSize: 12)),
+                  )
+                else ...[
+                  TextButton(
+                    onPressed: _mailboxes.length >= 5
+                        ? null
+                        : () => _startOAuth(addMailbox: true),
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    child: const Text('Add', style: TextStyle(fontSize: 12)),
+                  ),
+                  TextButton(
+                    onPressed: () => _handleGmailConnectionToggle(true),
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    child:
+                        const Text('Disconnect', style: TextStyle(fontSize: 12)),
                   ),
                 ],
+              ],
+            ),
+            if (isConnected && _mailboxes.length > 1) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final m in _mailboxes)
+                    ChoiceChip(
+                      label: Text(
+                        '${m['email']}',
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                      selected: _selectedMailbox == m['email'],
+                      visualDensity: VisualDensity.compact,
+                      onSelected: (_) {
+                        setState(
+                            () => _selectedMailbox = m['email'] as String?);
+                      },
+                    ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 8),
+            if (_loading)
+              const ShimmerLoading(
+                child: SkeletonBox(height: 56, width: double.infinity),
+              )
+            else
+              _buildBrokerGrid(isConnected, contentWidth: gridWidth),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Mailbox connect + Import button (broker/password live on shared controls).
+  Widget _buildSharedMailboxCard(bool isConnected, String email) {
+    final accent = Theme.of(context).colorScheme.primary;
+    final brokerId = widget.sharedBrokerEmailId;
+    final brokerLabel = brokerId != null && brokerId.isNotEmpty
+        ? brokerDisplayName(brokerId)
+        : null;
+    final extracting = _activeExtractingBrokerId != null ||
+        _phase == ImportProcessPhase.busy ||
+        _phase == ImportProcessPhase.syncing;
+
+    return GlassCard(
+      padding: EdgeInsets.zero,
+      child: Padding(
+        padding: _compactCardPad,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  isConnected
+                      ? Icons.mark_email_read_outlined
+                      : Icons.mail_outline,
+                  size: 18,
+                  color: accent,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    isConnected
+                        ? (email.isNotEmpty && email != 'Not Connected'
+                            ? email
+                            : 'Gmail connected')
+                        : 'Connect Gmail',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+                if (!isConnected)
+                  FilledButton(
+                    onPressed: () => _startOAuth(addMailbox: false),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: accent,
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      minimumSize: const Size(0, 32),
+                    ),
+                    child: const Text('Connect', style: TextStyle(fontSize: 12)),
+                  )
+                else ...[
+                  TextButton(
+                    onPressed: _mailboxes.length >= 5
+                        ? null
+                        : () => _startOAuth(addMailbox: true),
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    child: const Text('Add', style: TextStyle(fontSize: 12)),
+                  ),
+                  TextButton(
+                    onPressed: () => _handleGmailConnectionToggle(true),
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    child:
+                        const Text('Disconnect', style: TextStyle(fontSize: 12)),
+                  ),
+                ],
+              ],
+            ),
+            if (isConnected && _mailboxes.length > 1) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final m in _mailboxes)
+                    ChoiceChip(
+                      label: Text(
+                        '${m['email']}',
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                      selected: _selectedMailbox == m['email'],
+                      visualDensity: VisualDensity.compact,
+                      onSelected: (_) {
+                        setState(
+                            () => _selectedMailbox = m['email'] as String?);
+                      },
+                    ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 10),
+            FilledButton.icon(
+              onPressed: extracting
+                  ? null
+                  : () => _importFromSharedControls(gmailConnected: isConnected),
+              icon: extracting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.mark_email_unread_outlined, size: 18),
+              label: Text(
+                brokerLabel != null
+                    ? 'Import from mailbox · $brokerLabel'
+                    : 'Import from mailbox',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              style: FilledButton.styleFrom(
+                backgroundColor: accent,
+                minimumSize: const Size.fromHeight(40),
               ),
             ),
-            const SizedBox(width: 16),
-            AppButton(
-              text: isConnected
-                  ? 'Disconnect Access'
-                  : 'Authenticate Google Mail',
-              onPressed: () => _handleGmailConnectionToggle(isConnected),
-              type: isConnected
-                  ? AppButtonType.secondary
-                  : AppButtonType.primary,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactPasswordCard() {
+    final forId = _activeExtractingBrokerId ?? _selectedBrokerId;
+    final forBroker = forId != null ? brokerDisplayName(forId) : null;
+    return GlassCard(
+      padding: EdgeInsets.zero,
+      child: Padding(
+        padding: _compactCardPad,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              forBroker != null ? 'Password · $forBroker' : 'PDF password',
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _effectivePasswordController,
+              obscureText: !_pdfPasswordVisible,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+              decoration: InputDecoration(
+                hintText: 'PAN / PDF password',
+                isDense: true,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                suffixIcon: IconButton(
+                  tooltip: _pdfPasswordVisible ? 'Hide' : 'Show',
+                  icon: Icon(
+                    _pdfPasswordVisible
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    size: 18,
+                  ),
+                  onPressed: () => setState(
+                    () => _pdfPasswordVisible = !_pdfPasswordVisible,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMailboxSection(bool isConnected, String email) {
+    final accent = Theme.of(context).colorScheme.primary;
+    return GlassCard(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  isConnected ? Icons.mark_email_read_outlined : Icons.mail_outline,
+                  size: 20,
+                  color: isConnected ? Colors.green : accent,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    isConnected ? 'Gmail' : 'Connect Gmail',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                ),
+                if (!isConnected)
+                  TextButton(
+                    onPressed: () => _startOAuth(addMailbox: false),
+                    child: const Text('Connect'),
+                  )
+                else ...[
+                  TextButton(
+                    onPressed: _mailboxes.length >= 5
+                        ? null
+                        : () => _startOAuth(addMailbox: true),
+                    child: const Text('Add'),
+                  ),
+                  TextButton(
+                    onPressed: () => _handleGmailConnectionToggle(true),
+                    child: const Text('Disconnect'),
+                  ),
+                ],
+              ],
+            ),
+            if (isConnected && _mailboxes.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final m in _mailboxes)
+                    ChoiceChip(
+                      label: Text(
+                        '${m['email']}${m['is_default'] == true ? ' · default' : ''}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      selected: _selectedMailbox == m['email'],
+                      onSelected: (_) {
+                        setState(() => _selectedMailbox = m['email'] as String?);
+                      },
+                    ),
+                ],
+              ),
+            ] else if (isConnected) ...[
+              const SizedBox(height: 6),
+              Text(email, style: Theme.of(context).textTheme.bodySmall),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPanField() {
+    return GlassCard(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'PDF password (for the broker you select)',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Unlocks the statement PDF for the broker you tap. May be your PAN or a broker-specific password.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _effectivePasswordController,
+              obscureText: !_pdfPasswordVisible,
+              decoration: InputDecoration(
+                hintText: 'PAN or broker PDF password',
+                border: const OutlineInputBorder(),
+                isDense: true,
+                suffixIcon: IconButton(
+                  tooltip: _pdfPasswordVisible ? 'Hide' : 'Show',
+                  icon: Icon(
+                    _pdfPasswordVisible
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    size: 20,
+                  ),
+                  onPressed: () => setState(
+                    () => _pdfPasswordVisible = !_pdfPasswordVisible,
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -539,178 +1224,144 @@ class _EmailExtractorViewState extends State<EmailExtractorView> {
   }
 
   Widget _buildBrokerGrid(bool isConnected, {required double contentWidth}) {
-    final bool isSingleColumn = contentWidth < 680;
+    // Narrow screens: fewer columns so tiles wrap (avoids mobile overflow).
+    final int cols;
+    if (_brokers.isEmpty) {
+      cols = 1;
+    } else if (contentWidth < 360) {
+      cols = 3;
+    } else if (contentWidth < 480) {
+      cols = _brokers.length <= 4 ? _brokers.length : 4;
+    } else if (_brokers.length <= 6) {
+      cols = _brokers.length;
+    } else if (contentWidth < 720) {
+      cols = 5;
+    } else {
+      cols = 6;
+    }
 
-    Widget buildBrokerCard(Map<String, dynamic> broker) {
+    Widget buildBrokerTile(Map<String, dynamic> broker) {
       final String brokerId = broker['id']?.toString() ?? '';
       final String brokerName =
           broker['name']?.toString() ?? 'Unknown Broker';
-      final String format = broker['format']?.toString() ?? 'N/A';
       final bool isCurrentlyExtracting =
           _activeExtractingBrokerId == brokerId;
+      final bool selected = _selectedBrokerId == brokerId;
+      // High-contrast select ring (works in light + dark app chrome).
+      final selectColor = Theme.of(context).colorScheme.primary;
 
-      // Custom colors/icons per broker
-      Color brokerColor = Theme.of(context).colorScheme.primary;
-      IconData brokerIcon = Icons.account_balance_outlined;
-      if (brokerId == 'zerodha') {
-        brokerColor = Colors.blue;
-        brokerIcon = Icons.auto_graph_outlined;
-      } else if (brokerId == 'groww') {
-        brokerColor = Colors.teal;
-        brokerIcon = Icons.show_chart_outlined;
-      } else if (brokerId == 'angleone') {
-        brokerColor = Colors.deepOrange;
-        brokerIcon = Icons.analytics_outlined;
-      }
+      final logoPath = brokerLogoAsset(brokerId);
+      final label = brokerDisplayName(brokerId.isNotEmpty ? brokerId : brokerName);
 
-      return GlassCard(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: brokerColor.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(12),
+      return Tooltip(
+        message: label,
+        child: Material(
+          color: Colors.white,
+          elevation: selected ? 4 : 0,
+          shadowColor: selectColor.withValues(alpha: 0.55),
+          borderRadius: BorderRadius.circular(10),
+          child: InkWell(
+            onTap: isCurrentlyExtracting
+                ? null
+                : () => _onBrokerTap(brokerId, gmailConnected: isConnected),
+            borderRadius: BorderRadius.circular(10),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: selected ? selectColor : const Color(0xFFE4E7EC),
+                  width: selected ? 3 : 1,
                 ),
-                child: Icon(brokerIcon, color: brokerColor, size: 28),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(brokerName,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 15)),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(format,
-                              style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.grey)),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Positioned.fill(
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: logoPath != null
+                          ? Image.asset(
+                              logoPath,
+                              package: 'am_doc_intelligence_ui',
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) =>
+                                  brokerLetterAvatar(brokerId, size: 26),
+                            )
+                          : brokerLetterAvatar(brokerId, size: 26),
+                    ),
+                  ),
+                  if (selected)
+                    Positioned(
+                      top: -2,
+                      right: -2,
+                      child: Container(
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          color: selectColor,
+                          shape: BoxShape.circle,
                         ),
-                      ],
+                        child: const Icon(
+                          Icons.check,
+                          size: 13,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
-                  ],
-                ),
+                  if (isCurrentlyExtracting)
+                    Positioned.fill(
+                      child: ColoredBox(
+                        color: Colors.white.withValues(alpha: 0.7),
+                        child: Center(
+                          child: SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: selectColor,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
-              isCurrentlyExtracting
-                  ? const SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Container(
-                      decoration: BoxDecoration(
-                        color: isConnected
-                            ? Theme.of(context)
-                                .colorScheme
-                                .primary
-                                .withOpacity(0.08)
-                            : Colors.grey.withOpacity(0.05),
-                        shape: BoxShape.circle,
-                      ),
-                      child: IconButton(
-                        onPressed:
-                            isConnected ? () => _extract(brokerId) : null,
-                        icon: Icon(Icons.arrow_circle_down_outlined,
-                            color: isConnected
-                                ? Theme.of(context).colorScheme.primary
-                                : Colors.grey.withOpacity(0.4)),
-                        tooltip: isConnected
-                            ? 'Extract holdings from mailbox'
-                            : 'Connect Gmail to enable mailbox scanning',
-                      ),
-                    ),
-            ],
+            ),
           ),
         ),
       );
     }
 
-    if (isSingleColumn) {
-      return Column(
-        children: _brokers
-            .map((broker) => Padding(
-                  padding: const EdgeInsets.only(bottom: 16.0),
-                  child: buildBrokerCard(broker),
-                ))
-            .toList(),
-      );
-    }
+    // Wrap (not GridView) so height is always content-sized on mobile web —
+    // shrinkWrap GridView still left a tall empty band under the Gmail row.
+    const tileExtent = 56.0;
+    const gap = 8.0;
+    final tileWidth =
+        ((contentWidth - gap * (cols - 1)) / cols).clamp(48.0, 200.0);
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 2.8,
-        crossAxisSpacing: 20,
-        mainAxisSpacing: 20,
-      ),
-      itemCount: _brokers.length,
-      itemBuilder: (context, index) {
-        return buildBrokerCard(_brokers[index]);
-      },
+    return Wrap(
+      spacing: gap,
+      runSpacing: gap,
+      children: [
+        for (final broker in _brokers)
+          SizedBox(
+            width: tileWidth,
+            height: tileExtent,
+            child: buildBrokerTile(broker),
+          ),
+      ],
     );
   }
 
   Widget _buildStatusLog() {
     if (_status.isEmpty) return const SizedBox.shrink();
-    
-    bool isError = _status.toLowerCase().contains('failed') || _status.toLowerCase().contains('error');
-    Color statusColor = isError ? Colors.red : Theme.of(context).colorScheme.primary;
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.02),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: statusColor.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(isError ? Icons.error_outline : Icons.terminal_outlined, color: statusColor, size: 20),
-              const SizedBox(width: 12),
-              Text(
-                'EXTRACTION AUDIT LOG', 
-                style: TextStyle(
-                  fontWeight: FontWeight.bold, 
-                  fontSize: 11, 
-                  letterSpacing: 0.8, 
-                  color: statusColor
-                )
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            _status, 
-            style: TextStyle(
-              color: isError ? Colors.red : Colors.black87, 
-              fontFamily: 'monospace', 
-              fontSize: 12,
-              height: 1.4,
-            )
-          ),
-        ],
-      ),
+    return ImportProcessBanner(
+      phase: _phase,
+      message: _status,
+      busyStartedAt: _busyStartedAt,
+      syncTimeout: const Duration(seconds: 60),
+      actions: _bannerActions,
     );
   }
 }

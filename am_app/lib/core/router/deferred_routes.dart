@@ -33,6 +33,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
+import 'package:am_common/am_common.dart' as common;
 import 'package:am_design_system/am_design_system.dart';
 import '../../features/chart/chart_terminal_host_page.dart';
 import '../../features/shell/skeletons/module_skeletons.dart';
@@ -159,6 +160,7 @@ Widget buildPortfolioRoute({
   Widget Function(
           String portfolioId, String? portfolioName, VoidCallback onCancel)?
       uploadPortfolioBuilder,
+  void Function(common.GlobalAddActionKind kind)? onQuickAdd,
 }) {
   final tradeBuilder = addTradeBuilder ?? _defaultPortfolioAddTradeBuilder;
   final holdingsBuilder =
@@ -179,6 +181,7 @@ Widget buildPortfolioRoute({
         holdingsPageBuilder: holdingsBuilder,
         onOpenDocIntel: onOpenDocIntel,
         uploadPortfolioBuilder: uploadPortfolioBuilder,
+        onQuickAdd: onQuickAdd,
       ),
     ),
   );
@@ -187,6 +190,7 @@ Widget buildPortfolioRoute({
 Widget buildTradeDiscoveryRoute({
   required void Function(String slug) onTabChanged,
   required void Function(String id, String name) onPortfolioChanged,
+  void Function(common.GlobalAddActionKind kind)? onQuickAdd,
 }) {
   return DeferredModuleLoader(
     load: _loadTrade,
@@ -199,6 +203,7 @@ Widget buildTradeDiscoveryRoute({
         initialTab: 'portfolios',
         onTabChanged: onTabChanged,
         onPortfolioChanged: onPortfolioChanged,
+        onQuickAdd: onQuickAdd,
       ),
     ),
   );
@@ -209,6 +214,7 @@ Widget buildTradePortfolioRoute({
   required String tab,
   required void Function(String slug) onTabChanged,
   required void Function(String id, String name) onPortfolioChanged,
+  void Function(common.GlobalAddActionKind kind)? onQuickAdd,
 }) {
   return DeferredModuleLoader(
     load: _loadTrade,
@@ -222,6 +228,7 @@ Widget buildTradePortfolioRoute({
         initialTab: tab,
         onTabChanged: onTabChanged,
         onPortfolioChanged: onPortfolioChanged,
+        onQuickAdd: onQuickAdd,
       ),
     ),
   );
@@ -231,6 +238,7 @@ Widget buildTradeLegacyTabRoute({
   required String tab,
   required void Function(String slug) onTabChanged,
   required void Function(String id, String name) onPortfolioChanged,
+  void Function(common.GlobalAddActionKind kind)? onQuickAdd,
 }) {
   return DeferredModuleLoader(
     load: _loadTrade,
@@ -243,6 +251,7 @@ Widget buildTradeLegacyTabRoute({
         initialTab: tab,
         onTabChanged: onTabChanged,
         onPortfolioChanged: onPortfolioChanged,
+        onQuickAdd: onQuickAdd,
       ),
     ),
   );
@@ -300,18 +309,60 @@ Widget buildAnalysisRoute({required String userId}) {
 
 Widget buildDocIntelRoute({
   required String userId,
-  String tab = 'doc-processor',
+  String tab = 'mailbox',
   ValueChanged<String>? onTabChanged,
+  void Function(String portfolioId, String portfolioName)? onOpenPortfolio,
+  void Function(String portfolioId, String portfolioName)? onOpenTrade,
 }) {
   return DeferredModuleLoader(
     load: _loadDocIntel,
     skeleton: const GenericModuleSkeleton(),
-    loadingMessage: 'Loading Doc Intel…',
+    loadingMessage: 'Loading Import…',
     builder: () => doc_intel_ui.DocIntelligenceScreen(
       userId: userId,
       initialTab: tab,
       onTabChanged: onTabChanged,
+      onOpenPortfolio: onOpenPortfolio,
+      onOpenTrade: onOpenTrade,
     ),
+  );
+}
+
+/// Same Import holdings page as `/app/doc-intel`, themed for Portfolio module
+/// (pink accent) when opened via Upload Portfolio inside portfolio shell.
+Widget buildPortfolioImportHoldingsEmbed({
+  required String userId,
+  String tab = 'mailbox',
+  void Function(String portfolioId, String portfolioName)? onOpenPortfolio,
+  void Function(String portfolioId, String portfolioName)? onOpenTrade,
+}) {
+  return DeferredModuleLoader(
+    load: _loadDocIntel,
+    skeleton: const GenericModuleSkeleton(),
+    loadingMessage: 'Loading Import…',
+    builder: () {
+      return Builder(
+        builder: (context) {
+          final theme = Theme.of(context);
+          return Theme(
+            data: theme.copyWith(
+              colorScheme: theme.colorScheme.copyWith(
+                primary: ModuleColors.portfolio,
+                primaryContainer:
+                    ModuleColors.portfolio.withValues(alpha: 0.12),
+              ),
+              primaryColor: ModuleColors.portfolio,
+            ),
+            child: doc_intel_ui.DocIntelligenceScreen(
+              userId: userId,
+              initialTab: tab,
+              onOpenPortfolio: onOpenPortfolio,
+              onOpenTrade: onOpenTrade,
+            ),
+          );
+        },
+      );
+    },
   );
 }
 

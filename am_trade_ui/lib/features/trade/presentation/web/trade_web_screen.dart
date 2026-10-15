@@ -109,6 +109,23 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     _symbolController = TextEditingController(text: '');
 
     _initializeSwipeController();
+    GlobalAddActionsBus.instance.addListener(_onGlobalAddAction);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _onGlobalAddAction());
+  }
+
+  void _onGlobalAddAction() {
+    if (!mounted) return;
+    final bus = GlobalAddActionsBus.instance;
+    if (!bus.tryConsume(GlobalAddActionKind.addTrade)) return;
+    openAddTrade();
+  }
+
+  @override
+  void dispose() {
+    GlobalAddActionsBus.instance.removeListener(_onGlobalAddAction);
+    _symbolController.dispose();
+    _swipeController.dispose();
+    super.dispose();
   }
 
   @override
@@ -550,51 +567,13 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         title: null,
         subtitle: null,
         showModuleBottomNavigation: false,
-        headerActions: [
-          const ShareLinkButton(),
-          SidebarFloatingActionMenu(
-            compact: true,
-            direction: AxisDirection.down,
-            triggerColor: ModuleColors.trade,
-            actions: [
-              FloatingMenuAction(
-                icon: Icons.add_circle_outline_rounded,
-                title: addTradeTitle,
-                subtitle: 'Buy or sell an asset',
-                iconColor: ModuleColors.trade,
-                onTap: () {
-                  final index = _swipeController.items
-                      .indexWhere((item) => item.title == addTradeTitle);
-                  if (index != -1) {
-                    _swipeController.navigateTo(index);
-                  }
-                },
-              ),
-            ],
-          ),
-        ],
+        // Add / Sync lives on GlobalSidebar only (above theme).
+        headerActions: const [ShareLinkButton()],
         onBackToGlobal: widget.onBack,
         onThemeToggle: () {
           context.read<ThemeCubit>().toggleTheme();
         },
-        footer: SidebarFloatingActionMenu(
-          triggerColor: ModuleColors.trade,
-          actions: [
-            FloatingMenuAction(
-              icon: Icons.add_circle_outline_rounded,
-              title: addTradeTitle,
-              subtitle: 'Buy or sell an asset',
-              iconColor: ModuleColors.trade,
-              onTap: () {
-                final index = _swipeController.items
-                    .indexWhere((item) => item.title == addTradeTitle);
-                if (index != -1) {
-                  _swipeController.navigateTo(index);
-                }
-              },
-            ),
-          ],
-        ),
+        footer: const SizedBox.shrink(),
         body: Column(
           children: [
             if (isPaperSelected && paper != null) PaperWalletBanner(wallet: paper),

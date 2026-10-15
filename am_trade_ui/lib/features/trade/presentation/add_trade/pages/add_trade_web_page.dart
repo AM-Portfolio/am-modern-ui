@@ -227,11 +227,26 @@ class _AddTradeWebPageState extends State<AddTradeWebPage> {
                   ),
                 ],
               ),
-              child: Text(
-                widget.existingTrade != null ? 'Edit Trade' : 'New Trade',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.existingTrade != null ? 'Edit Trade' : 'Add Trade',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.4,
+                      height: 1.1,
+                    ),
+                  ),
+                  if (widget.existingTrade == null)
+                    Text(
+                      'Buy or sell an asset',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface
+                            .withValues(alpha: 0.65),
+                      ),
+                    ),
+                ],
               ),
             ),
 

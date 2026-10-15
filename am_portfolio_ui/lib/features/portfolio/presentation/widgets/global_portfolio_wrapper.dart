@@ -86,6 +86,45 @@ class _GlobalPortfolioWrapperState
   bool _isInit = true;
 
   @override
+  void initState() {
+    super.initState();
+    PortfolioDataRefresh.instance.addListener(_onHoldingsImported);
+  }
+
+  @override
+  void dispose() {
+    PortfolioDataRefresh.instance.removeListener(_onHoldingsImported);
+    super.dispose();
+  }
+
+  void _onHoldingsImported() {
+    if (!mounted) return;
+    final cubit = _readPortfolioCubit();
+    if (cubit == null) return;
+    final notifiedId = PortfolioDataRefresh.instance.lastPortfolioId;
+    cubit.loadPortfoliosList().then((_) {
+      if (!mounted) return;
+      final list = cubit.state.portfolioList?.portfolios ?? const [];
+      // Only trust lastPortfolioId when it exists in the refreshed list
+      // (never use email-extractor Mongo db_id as a portfolio UUID).
+      final notifiedInList = notifiedId != null &&
+          notifiedId.isNotEmpty &&
+          list.any((p) => p.portfolioId == notifiedId);
+      final id = notifiedInList ? notifiedId : _selectedPortfolioId;
+      if (id == null || id.isEmpty) return;
+      if (notifiedInList) {
+        final match = list.firstWhere((p) => p.portfolioId == notifiedId);
+        _rememberPortfolioSelection(
+          match.portfolioId,
+          match.portfolioName,
+          notifyUrl: false,
+        );
+      }
+      _loadPortfolioDetail(cubit, id);
+    });
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_isInit) {

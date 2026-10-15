@@ -8,14 +8,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
-import 'package:am_design_system/am_design_system.dart';
 import '../../features/shell/app_shell.dart';
+import '../../features/shell/global_add_action_request.dart';
 import 'app_routes.dart';
 import 'auth_refresh_listenable.dart';
 import 'deferred_routes.dart';
 import 'launch_location.dart';
 import 'share_url_builder.dart';
-import 'package:am_doc_intelligence_ui/features/document_processor/document_processor_view.dart';
 export 'launch_location.dart' show resolveLaunchLocation;
 
 bool _subscriptionPageEnabled() {
@@ -280,8 +279,17 @@ GoRouter createAppRouter({
               return dashboard.DashboardScreen(
                 userId: userId,
                 onOpenDocIntel: () =>
-                    context.go(AppRoutes.docIntelPath('doc-processor')),
+                    context.go(AppRoutes.docIntelPath('mailbox')),
                 onOpenPaper: () => context.go(AppRoutes.marketPath('paper')),
+                onQuickAdd: (kind) {
+                  requestGlobalAddAction(
+                    context,
+                    kind: kind,
+                    currentLocation: AppRoutes.dashboard,
+                    onUploadOnDashboard: () =>
+                        context.go(AppRoutes.docIntelPath('mailbox')),
+                  );
+                },
               );
             },
           ),
@@ -334,25 +342,39 @@ GoRouter createAppRouter({
                         GoRouterState.of(context).matchedLocation,
                       ) ??
                       tab;
-                  context.go(AppRoutes.portfolioPath(id, currentTab));
+                  final nextTab = AppRoutes.isPortfolioFocusedSlug(currentTab)
+                      ? 'overview'
+                      : currentTab;
+                  context.go(AppRoutes.portfolioPath(id, nextTab));
                 },
                 onOpenDocIntel: () =>
-                    context.go(AppRoutes.docIntelPath('doc-processor')),
+                    context.go(AppRoutes.docIntelPath('mailbox')),
+                onQuickAdd: (kind) => requestGlobalAddAction(
+                  context,
+                  kind: kind,
+                  currentLocation: GoRouterState.of(context).matchedLocation,
+                ),
                 uploadPortfolioBuilder: (portfolioId, portfolioName, onCancel) {
-                  return Builder(
-                    builder: (context) {
-                      final theme = Theme.of(context);
-                      return Theme(
-                        data: theme.copyWith(
-                          colorScheme: theme.colorScheme.copyWith(
-                            primary: ModuleColors.portfolio,
-                            primaryContainer:
-                                ModuleColors.portfolio.withOpacity(0.12),
-                          ),
-                          primaryColor: ModuleColors.portfolio,
-                        ),
-                        child: const DocumentProcessorView(),
-                      );
+                  return buildPortfolioImportHoldingsEmbed(
+                    userId: _userId(context),
+                    tab: 'mailbox',
+                    onOpenPortfolio: (id, name) {
+                      onCancel();
+                      if (id.isEmpty) {
+                        context.go(AppRoutes.portfolio);
+                        return;
+                      }
+                      _patchPortfolioSession(context, id, name);
+                      context.go(AppRoutes.portfolioPath(id, 'overview'));
+                    },
+                    onOpenTrade: (id, name) {
+                      onCancel();
+                      if (id.isEmpty) {
+                        context.go(AppRoutes.trade);
+                        return;
+                      }
+                      _patchPortfolioSession(context, id, name);
+                      context.go(AppRoutes.tradePath(id, 'portfolios'));
                     },
                   );
                 },
@@ -373,22 +395,33 @@ GoRouter createAppRouter({
                   context.go(AppRoutes.portfolioPath(id, tab));
                 },
                 onOpenDocIntel: () =>
-                    context.go(AppRoutes.docIntelPath('doc-processor')),
+                    context.go(AppRoutes.docIntelPath('mailbox')),
+                onQuickAdd: (kind) => requestGlobalAddAction(
+                  context,
+                  kind: kind,
+                  currentLocation: GoRouterState.of(context).matchedLocation,
+                ),
                 uploadPortfolioBuilder: (portfolioId, portfolioName, onCancel) {
-                  return Builder(
-                    builder: (context) {
-                      final theme = Theme.of(context);
-                      return Theme(
-                        data: theme.copyWith(
-                          colorScheme: theme.colorScheme.copyWith(
-                            primary: ModuleColors.portfolio,
-                            primaryContainer:
-                                ModuleColors.portfolio.withOpacity(0.12),
-                          ),
-                          primaryColor: ModuleColors.portfolio,
-                        ),
-                        child: const DocumentProcessorView(),
-                      );
+                  return buildPortfolioImportHoldingsEmbed(
+                    userId: _userId(context),
+                    tab: 'mailbox',
+                    onOpenPortfolio: (id, name) {
+                      onCancel();
+                      if (id.isEmpty) {
+                        context.go(AppRoutes.portfolio);
+                        return;
+                      }
+                      _patchPortfolioSession(context, id, name);
+                      context.go(AppRoutes.portfolioPath(id, 'overview'));
+                    },
+                    onOpenTrade: (id, name) {
+                      onCancel();
+                      if (id.isEmpty) {
+                        context.go(AppRoutes.trade);
+                        return;
+                      }
+                      _patchPortfolioSession(context, id, name);
+                      context.go(AppRoutes.tradePath(id, 'portfolios'));
                     },
                   );
                 },
@@ -415,6 +448,11 @@ GoRouter createAppRouter({
                   _patchPortfolioSession(context, id, name);
                   context.go(AppRoutes.tradePath(id, 'portfolios'));
                 },
+                onQuickAdd: (kind) => requestGlobalAddAction(
+                  context,
+                  kind: kind,
+                  currentLocation: GoRouterState.of(context).matchedLocation,
+                ),
               );
             },
           ),
@@ -441,6 +479,11 @@ GoRouter createAppRouter({
                       tab;
                   context.go(AppRoutes.tradePath(id, currentTab));
                 },
+                onQuickAdd: (kind) => requestGlobalAddAction(
+                  context,
+                  kind: kind,
+                  currentLocation: GoRouterState.of(context).matchedLocation,
+                ),
               );
             },
           ),
@@ -456,6 +499,11 @@ GoRouter createAppRouter({
                   _patchPortfolioSession(context, id, name);
                   context.go(AppRoutes.tradePath(id, tab));
                 },
+                onQuickAdd: (kind) => requestGlobalAddAction(
+                  context,
+                  kind: kind,
+                  currentLocation: GoRouterState.of(context).matchedLocation,
+                ),
               );
             },
           ),
@@ -518,19 +566,35 @@ GoRouter createAppRouter({
           GoRoute(
             path: AppRoutes.docIntel,
             redirect: (context, state) =>
-                AppRoutes.docIntelPath('doc-processor'),
+                AppRoutes.docIntelPath('mailbox'),
           ),
           GoRoute(
             path: '${AppRoutes.docIntel}/:tab',
             builder: (context, state) {
-              final tab = state.pathParameters['tab'] ?? 'doc-processor';
+              final tab = state.pathParameters['tab'] ?? 'mailbox';
               final resolved =
-                  AppRoutes.isDocIntelTab(tab) ? tab : 'doc-processor';
+                  AppRoutes.isDocIntelTab(tab) ? tab : 'mailbox';
               return buildDocIntelRoute(
                 userId: _userId(context),
                 tab: resolved,
                 onTabChanged: (slug) =>
                     context.go(AppRoutes.docIntelPath(slug)),
+                onOpenPortfolio: (id, name) {
+                  if (id.isEmpty) {
+                    context.go(AppRoutes.portfolio);
+                    return;
+                  }
+                  _patchPortfolioSession(context, id, name);
+                  context.go(AppRoutes.portfolioPath(id, 'overview'));
+                },
+                onOpenTrade: (id, name) {
+                  if (id.isEmpty) {
+                    context.go(AppRoutes.trade);
+                    return;
+                  }
+                  _patchPortfolioSession(context, id, name);
+                  context.go(AppRoutes.tradePath(id, 'portfolios'));
+                },
               );
             },
           ),
@@ -644,7 +708,7 @@ String? _legacyPortfolioTabRedirect(String location) {
     return null;
   }
   final segment = segments[2];
-  if (AppRoutes.isPortfolioTab(segment)) return null;
+  if (AppRoutes.isPortfolioRouteSlug(segment)) return null;
   return AppRoutes.portfolioPath(segment, 'overview');
 }
 

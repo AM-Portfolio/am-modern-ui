@@ -405,11 +405,17 @@ class _FilterPanelState extends ConsumerState<FilterPanel> with SingleTickerProv
               child: Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.1),
+                  color: context.statusWarning.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                  border: Border.all(
+                    color: context.statusWarning.withValues(alpha: 0.3),
+                  ),
                 ),
-                child: Icon(Icons.bookmark_add_rounded, size: 18, color: Colors.amber[700]),
+                child: Icon(
+                  Icons.bookmark_add_rounded,
+                  size: 18,
+                  color: context.statusWarning,
+                ),
               ),
             ),
           ),

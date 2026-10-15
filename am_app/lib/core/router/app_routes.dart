@@ -79,6 +79,9 @@ class AppRoutes {
       '$profile?highlight=subscription';
 
   static const docIntelTabs = [
+    'mailbox',
+    'upload',
+    // Legacy slugs still accepted in URLs
     'doc-processor',
     'email-extractor',
   ];
@@ -89,6 +92,11 @@ class AppRoutes {
     'analysis',
     'heatmap',
     'baskets',
+  ];
+
+  /// Focused portfolio flows (own URL, no Overview/Holdings left rail).
+  static const portfolioFocusedSlugs = [
+    'add-asset-class',
   ];
 
   static const tradeTabs = [
@@ -108,6 +116,11 @@ class AppRoutes {
     'metrics': 'analysis',
     'market-analysis': 'analysis',
   };
+
+  /// Focused trade flows (own URL; not in primary swipe slug list).
+  static const tradeFocusedSlugs = [
+    'add-trade',
+  ];
 
   static const marketStaticSlugs = {
     'Paper': 'paper',
@@ -132,8 +145,17 @@ class AppRoutes {
 
   static bool isPortfolioTab(String slug) => portfolioTabs.contains(slug);
 
+  static bool isPortfolioFocusedSlug(String slug) =>
+      portfolioFocusedSlugs.contains(slug);
+
+  /// Normal tab or focused flow under `/app/portfolio/{id}/…`.
+  static bool isPortfolioRouteSlug(String slug) =>
+      isPortfolioTab(slug) || isPortfolioFocusedSlug(slug);
+
   static bool isTradeTab(String slug) =>
-      tradeTabs.contains(slug) || tradeTabAliases.containsKey(slug);
+      tradeTabs.contains(slug) ||
+      tradeTabAliases.containsKey(slug) ||
+      tradeFocusedSlugs.contains(slug);
 
   static String normalizeTradeTab(String tab) => tradeTabAliases[tab] ?? tab;
 
@@ -189,8 +211,7 @@ class AppRoutes {
 
   static String marketPath([String tab = 'all-indices']) => '/app/market/$tab';
 
-  static String docIntelPath([String tab = 'doc-processor']) =>
-      '$docIntel/$tab';
+  static String docIntelPath([String tab = 'mailbox']) => '$docIntel/$tab';
 
   static bool isDocIntelTab(String slug) => docIntelTabs.contains(slug);
 
@@ -209,7 +230,7 @@ class AppRoutes {
     'AI Chat': aiChat,
     'Lab': lab,
     'Analysis': analysis,
-    'Doc Intel': '${AppRoutes.docIntel}/doc-processor',
+    'Doc Intel': '${AppRoutes.docIntel}/mailbox',
     'Profile': profile,
     'Subscription': subscription,
   };

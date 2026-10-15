@@ -379,13 +379,45 @@ class ApiService {
     );
   }
 
-  Future<Map<String, dynamic>> extractFromGmail(String broker) async {
-    final url = '$_emailBase/extract/gmail/$broker?pan=PANK1234F';
+  Future<Map<String, dynamic>> listGmailMailboxes() async {
+    final url = '$_emailBase/gmail/mailboxes';
     debugPrint('[ApiService] GET $url');
-    final apiClient = GetIt.I.isRegistered<ApiClient>() 
-        ? GetIt.I<ApiClient>() 
+    try {
+      final apiClient = GetIt.I.isRegistered<ApiClient>()
+          ? GetIt.I<ApiClient>()
+          : ApiClient();
+      final headers = await _getHeaders();
+      return await apiClient.get<Map<String, dynamic>>(
+        url,
+        headers: headers,
+        parser: (data) => Map<String, dynamic>.from(data),
+      );
+    } catch (e) {
+      debugPrint('[ApiService] gmail/mailboxes error: $e');
+      return {'mailboxes': [], 'connected': false, 'error': '$e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> extractFromGmail(
+    String broker, {
+    String? pan,
+    String? mailbox,
+  }) async {
+    final params = <String, String>{
+      'pan': (pan ?? '').trim().toUpperCase(),
+    };
+    final m = (mailbox ?? '').trim();
+    if (m.isNotEmpty) params['mailbox'] = m;
+    final qs = params.entries
+        .map((e) =>
+            '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
+        .join('&');
+    final url = '$_emailBase/extract/gmail/$broker?$qs';
+    debugPrint('[ApiService] GET $url');
+    final apiClient = GetIt.I.isRegistered<ApiClient>()
+        ? GetIt.I<ApiClient>()
         : ApiClient();
-        
+
     final headers = await _getHeaders();
     return apiClient.get<Map<String, dynamic>>(
       url,
@@ -394,13 +426,16 @@ class ApiService {
     );
   }
 
-  Future<Map<String, dynamic>> connectGmail() async {
-    final url = '$_emailBase/gmail/connect';
+  /// Start OAuth. [addMailbox]=true forces connecting another Gmail (up to 5).
+  Future<Map<String, dynamic>> connectGmail({bool addMailbox = false}) async {
+    final url = addMailbox
+        ? '$_emailBase/gmail/connect?add=1'
+        : '$_emailBase/gmail/connect';
     debugPrint('[ApiService] GET $url');
-    final apiClient = GetIt.I.isRegistered<ApiClient>() 
-        ? GetIt.I<ApiClient>() 
+    final apiClient = GetIt.I.isRegistered<ApiClient>()
+        ? GetIt.I<ApiClient>()
         : ApiClient();
-        
+
     final headers = await _getHeaders();
     return apiClient.get<Map<String, dynamic>>(
       url,
@@ -409,18 +444,54 @@ class ApiService {
     );
   }
 
-  Future<Map<String, dynamic>> disconnectGmail() async {
-    final url = '$_emailBase/gmail/disconnect';
+  /// Disconnect one mailbox or all if [mailbox] is null.
+  Future<Map<String, dynamic>> disconnectGmail({String? mailbox}) async {
+    final m = (mailbox ?? '').trim();
+    final url = m.isEmpty
+        ? '$_emailBase/gmail/disconnect'
+        : '$_emailBase/gmail/mailboxes/${Uri.encodeComponent(m)}';
     debugPrint('[ApiService] DELETE $url');
-    final apiClient = GetIt.I.isRegistered<ApiClient>() 
-        ? GetIt.I<ApiClient>() 
+    final apiClient = GetIt.I.isRegistered<ApiClient>()
+        ? GetIt.I<ApiClient>()
         : ApiClient();
-        
+
     final headers = await _getHeaders();
     return apiClient.delete<Map<String, dynamic>>(
       url,
       headers: headers,
       parser: (data) => Map<String, dynamic>.from(data),
+    );
+  }
+
+  /// Brief portfolio list for post-import sync polling (id + name only).
+  Future<List<Map<String, String>>> listPortfoliosBrief() async {
+    final base = EnvDomains.portfolio;
+    final url = '$base/v1/portfolios/list';
+    debugPrint('[ApiService] GET $url');
+    final apiClient = GetIt.I.isRegistered<ApiClient>()
+        ? GetIt.I<ApiClient>()
+        : ApiClient();
+    final headers = await _getHeaders();
+
+    return apiClient.get<List<Map<String, String>>>(
+      url,
+      headers: headers,
+      parser: (data) {
+        if (data is! List) return <Map<String, String>>[];
+        final out = <Map<String, String>>[];
+        for (final item in data) {
+          if (item is! Map) continue;
+          final id = item['portfolioId']?.toString() ??
+              item['id']?.toString() ??
+              '';
+          final name = item['portfolioName']?.toString() ??
+              item['name']?.toString() ??
+              '';
+          if (id.isEmpty) continue;
+          out.add({'portfolioId': id, 'portfolioName': name});
+        }
+        return out;
+      },
     );
   }
 }

@@ -1,16 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_doc_intelligence_ui/features/recent_imports_store.dart';
 
-/// Native builds: Email Extractor requires web/OAuth — styled empty state only.
+/// Native builds: Gmail OAuth is web-only — point users to Upload or desktop web.
 class EmailExtractorView extends StatelessWidget {
-  const EmailExtractorView({super.key});
+  const EmailExtractorView({
+    super.key,
+    this.compactImportMode = false,
+    this.footer,
+    this.onImportCompleted,
+    this.useSharedImportControls = false,
+    this.sharedBrokerEmailId,
+    this.passwordController,
+    this.portfolioNameController,
+    this.onOpenPortfolio,
+    this.onOpenTrade,
+  });
+
+  /// When embedded under Import holdings.
+  final bool compactImportMode;
+  final Widget? footer;
+
+  /// Unused on native — web-only mailbox extract.
+  final ValueChanged<RecentImportEntry>? onImportCompleted;
+  final bool useSharedImportControls;
+  final String? sharedBrokerEmailId;
+  final TextEditingController? passwordController;
+  final TextEditingController? portfolioNameController;
+  final void Function(String portfolioId, String portfolioName)? onOpenPortfolio;
+  final void Function(String portfolioId, String portfolioName)? onOpenTrade;
 
   @override
   Widget build(BuildContext context) {
-    final accent = ModuleColors.analytics;
+    final accent = Theme.of(context).colorScheme.primary;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Center(
+    final card = Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Container(
@@ -43,7 +68,7 @@ class EmailExtractorView extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'Email Extractor',
+                'Connect Gmail on web',
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 17,
@@ -52,7 +77,8 @@ class EmailExtractorView extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Available on web. Use Document Processor on mobile to upload broker files.',
+                'Mailbox import needs Google sign-in in a browser. '
+                'On this device, use Upload below to add a broker PDF or Excel.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 13,
@@ -63,6 +89,20 @@ class EmailExtractorView extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+
+    if (footer == null) return card;
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          card,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: footer!,
+          ),
+        ],
       ),
     );
   }

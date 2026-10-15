@@ -36,16 +36,27 @@ class GmailConnectButton extends ConsumerWidget {
   }
 
   Widget _buildConnectButton(BuildContext context, WidgetRef ref) {
-    return ElevatedButton.icon(
-      onPressed: () => _handleConnect(context, ref),
-      icon: const Icon(Icons.mail_outline, size: 18),
-      label: const Text('Connect Gmail'),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: context.cardColor,
-        foregroundColor: context.statusError,
-        elevation: 0,
-        side: BorderSide(color: context.statusError),
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ElevatedButton.icon(
+          onPressed: () => _handleConnect(context, ref),
+          icon: const Icon(Icons.mail_outline, size: 18),
+          label: const Text('Connect Gmail'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: context.cardColor,
+            foregroundColor: context.statusError,
+            elevation: 0,
+            side: BorderSide(color: context.statusError),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Google may show an unverified-app warning until asrax.in finishes Google\'s OAuth review.',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ],
     );
   }
 

@@ -50,4 +50,4 @@ class RemoteDashboardLayoutRepository implements DashboardLayoutRepository {
 }
 
 /// Feature flag — set false to hide customize UI without removing layout infra.
-const bool kDashboardCustomizeEnabled = true;
+const bool kDashboardCustomizeEnabled = false;

@@ -22,6 +22,7 @@ class PortfolioScreen extends StatelessWidget {
     this.holdingsPageBuilder,
     this.onOpenDocIntel,
     this.uploadPortfolioBuilder,
+    this.onQuickAdd,
   });
 
   final String? initialPortfolioId;
@@ -37,6 +38,7 @@ class PortfolioScreen extends StatelessWidget {
   final Widget Function(BuildContext context, String portfolioId)? holdingsPageBuilder;
   final VoidCallback? onOpenDocIntel;
   final Widget Function(String portfolioId, String? portfolioName, VoidCallback onCancel)? uploadPortfolioBuilder;
+  final ValueChanged<GlobalAddActionKind>? onQuickAdd;
 
   @override
   Widget build(BuildContext context) {
@@ -47,11 +49,14 @@ class PortfolioScreen extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Use the same standardized breakpoint (1100px) as AppShell
-        final isMobileView = constraints.maxWidth < 1100;
+        // Match AppShell GlobalSidebar gate (full layout width > 1100), not
+        // content-only width — otherwise desktop chrome + mobile portfolio
+        // leaves GlobalAddActions with no listener.
+        final layoutWidth = MediaQuery.sizeOf(context).width;
+        final isMobileView = layoutWidth <= 1100;
 
         CommonLogger.debug(
-          'Using PortfolioListWrapper for ${isMobileView ? 'mobile' : 'web'} view (width: ${constraints.maxWidth})',
+          'Using PortfolioListWrapper for ${isMobileView ? 'mobile' : 'web'} view (layout: $layoutWidth, content: ${constraints.maxWidth})',
           tag: 'PortfolioScreen',
         );
 
@@ -69,6 +74,7 @@ class PortfolioScreen extends StatelessWidget {
           holdingsPageBuilder: holdingsPageBuilder,
           onOpenDocIntel: onOpenDocIntel,
           uploadPortfolioBuilder: uploadPortfolioBuilder,
+          onQuickAdd: onQuickAdd,
         );
       },
     );

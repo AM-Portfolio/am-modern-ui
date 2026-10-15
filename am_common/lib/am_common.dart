@@ -78,6 +78,7 @@ export 'features/navigation/widgets/vertical_scroll_navigator.dart';
 export 'features/navigation/widgets/horizontal_section_navigator.dart';
 export 'features/navigation/widgets/add_trade_fab.dart';
 export 'features/navigation/notifications.dart';
+export 'features/navigation/global_add_actions_bus.dart';
 export 'features/navigation/cross_section_nav_scope.dart';
 
 // ============================================================================
@@ -100,6 +101,7 @@ export 'core/avatar/avatar_presets.dart';
 export 'core/avatar/user_avatar_preference.dart';
 export 'core/avatar/user_avatar_store.dart';
 export 'core/avatar/user_avatar.dart';
+export 'core/portfolio/portfolio_data_refresh.dart';
 export 'core/telemetry/boot_trace.dart';
 export 'core/telemetry/boot_rum_collector.dart';
 export 'core/di/network_providers.dart';
