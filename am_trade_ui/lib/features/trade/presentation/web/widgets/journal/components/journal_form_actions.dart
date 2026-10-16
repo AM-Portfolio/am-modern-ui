@@ -25,7 +25,7 @@ class JournalFormActions extends StatelessWidget {
       return Align(
         alignment: Alignment.centerRight,
         child: AppButton(
-          text: 'Edit Journal',
+          text: 'Edit entry',
           icon: Icons.edit_outlined,
           backgroundColor: ModuleColors.trade,
           onPressed: onToggleEditMode,
@@ -37,12 +37,11 @@ class JournalFormActions extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        if (!isNewEntry && onCancel != null) ...[
+        if (onCancel != null) ...[
           AppButton(
             text: 'Cancel',
             type: AppButtonType.secondary,
             isOutlined: true,
-            icon: Icons.close,
             onPressed: onCancel,
             height: 44,
           ),
@@ -51,8 +50,8 @@ class JournalFormActions extends StatelessWidget {
         AppButton(
           text: isSubmitting
               ? 'Saving...'
-              : (isNewEntry ? 'Create Journal' : 'Update Journal'),
-          icon: isNewEntry ? Icons.add_rounded : Icons.save_outlined,
+              : (isNewEntry ? 'Save entry' : 'Update entry'),
+          icon: isNewEntry ? Icons.check_rounded : Icons.save_outlined,
           backgroundColor: ModuleColors.trade,
           isLoading: isSubmitting,
           onPressed: isSubmitting ? null : onSubmit,

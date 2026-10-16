@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,6 +22,8 @@ class TradeCalendarAnalyticsMobilePage extends ConsumerStatefulWidget {
 
 class _TradeCalendarAnalyticsMobilePageState extends ConsumerState<TradeCalendarAnalyticsMobilePage> {
   int _selectedYear = DateTime.now().year;
+  int _focusMonth = DateTime.now().month;
+  bool _didResolveInitial = false;
 
   @override
   void initState() {
@@ -30,13 +34,19 @@ class _TradeCalendarAnalyticsMobilePageState extends ConsumerState<TradeCalendar
     });
   }
 
-  /// Initialize trade calendar with optimal settings
+  /// Initialize trade calendar on the user's latest trade year/month.
   void _initializeTradeCalendar() async {
     final portfolioId = widget.portfolioId;
     final cubit = await ref.read(tradeCalendarCubitProvider(portfolioId).future);
 
-    // Start in yearly view
-    cubit.navigateToYearly( portfolioId: widget.portfolioId, year: _selectedYear);
+    final target = await cubit.resolveLatestOpenTarget(portfolioId: widget.portfolioId);
+    if (!mounted) return;
+    setState(() {
+      _selectedYear = target.year;
+      _focusMonth = target.month;
+      _didResolveInitial = true;
+    });
+    await cubit.navigateToYearly(portfolioId: widget.portfolioId, year: target.year);
   }
 
   @override
@@ -93,11 +103,12 @@ class _TradeCalendarAnalyticsMobilePageState extends ConsumerState<TradeCalendar
       return const Center(child: Text('No data available'));
     }
 
-    // Compact year window so current year is reachable after load scroll.
+    // Include latest-trade year even when older than the previous now-2 window.
     final nowYear = DateTime.now().year;
-    final startYear = nowYear - 2;
+    final startYear = math.min(_selectedYear, nowYear - 2);
+    final endYear = math.max(_selectedYear, nowYear);
     final yearsData = <int, Map<int, CalendarMonthData>>{};
-    for (var y = startYear; y <= nowYear; y++) {
+    for (var y = startYear; y <= endYear; y++) {
       yearsData[y] = YearCalendarConverter.convertToMonthsData(
         entity: entityData,
         portfolioId: widget.portfolioId,
@@ -112,9 +123,15 @@ class _TradeCalendarAnalyticsMobilePageState extends ConsumerState<TradeCalendar
       children: [
         Expanded(
           child: YearCalendarWidget(
-            // Key forces remount so initState scrolls to current year after load.
-            key: ValueKey('trade-year-cal-$startYear-$nowYear'),
-            year: nowYear,
+            // Remount once after latest-activity resolve so scroll lands on year+month.
+            // Keep key stable afterward so year picker changes use didUpdateWidget.
+            key: ValueKey(
+              _didResolveInitial
+                  ? 'trade-year-cal-ready-${widget.portfolioId}-$_focusMonth'
+                  : 'trade-year-cal-pending-${widget.portfolioId}',
+            ),
+            year: _selectedYear,
+            initialMonth: _didResolveInitial ? _focusMonth : 1,
             monthsData: yearCalendarData,
             yearsData: yearsData,
             config: YearCalendarConfig(
@@ -128,6 +145,10 @@ class _TradeCalendarAnalyticsMobilePageState extends ConsumerState<TradeCalendar
               setState(() {
                 _selectedYear = newYear;
               });
+              cubit.navigateToYearly(
+                portfolioId: widget.portfolioId,
+                year: newYear,
+              );
             },
           ),
         ),

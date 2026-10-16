@@ -54,14 +54,14 @@ class TradeCalendarAnalyticsWebPage extends ConsumerStatefulWidget {
 
 class _TradeCalendarAnalyticsWebPageState extends ConsumerState<TradeCalendarAnalyticsWebPage>
     with TickerProviderStateMixin {
-  // Year selection
+  // Year selection — resolved from latest trade activity on init
   late int _selectedYear;
 
   @override
   void initState() {
     super.initState();
 
-    // Initialize with current year
+    // Placeholder until latest-activity resolves (avoids flashing wrong year).
     _selectedYear = DateTime.now().year;
 
     // Initialize cubit after the frame is built
@@ -70,13 +70,17 @@ class _TradeCalendarAnalyticsWebPageState extends ConsumerState<TradeCalendarAna
     });
   }
 
-  /// Initialize trade calendar with optimal settings
+  /// Initialize trade calendar on the user's latest trade year.
   void _initializeTradeCalendar() async {
     final portfolioId = widget.portfolioId;
     final cubit = await ref.read(tradeCalendarCubitProvider(portfolioId).future);
-    
-    // Start in yearly view
-    cubit.navigateToYearly( portfolioId: widget.portfolioId, year: _selectedYear);
+
+    final target = await cubit.resolveLatestOpenTarget(portfolioId: widget.portfolioId);
+    if (!mounted) return;
+    setState(() {
+      _selectedYear = target.year;
+    });
+    await cubit.navigateToYearly(portfolioId: widget.portfolioId, year: target.year);
   }
 
   /// Handle date selection changes through Cubit

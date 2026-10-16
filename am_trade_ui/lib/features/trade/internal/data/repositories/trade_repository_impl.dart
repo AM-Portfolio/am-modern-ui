@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:am_common/am_common.dart';
 import 'package:get_it/get_it.dart';
+import '../../domain/entities/calendar_latest_activity.dart';
 import '../../domain/entities/favorite_filter.dart';
 import '../../domain/entities/trade_calendar.dart';
 import '../../domain/entities/trade_holding.dart';
@@ -164,6 +165,36 @@ class TradeRepositoryImpl implements TradeRepository {
         return _cachedSummary!;
       }
 
+      rethrow;
+    }
+  }
+
+  @override
+  Future<CalendarLatestActivity?> getCalendarLatestActivity(
+      String portfolioId) async {
+    AppLogger.methodEntry(
+      'getCalendarLatestActivity',
+      tag: 'TradeRepository',
+      params: {'portfolioId': portfolioId},
+    );
+
+    try {
+      final dto =
+          await _remoteDataSource.getCalendarLatestActivity(portfolioId);
+      final entity = dto?.toEntity();
+      AppLogger.methodExit(
+        'getCalendarLatestActivity',
+        tag: 'TradeRepository',
+        result: entity == null ? 'empty' : '${entity.year}-${entity.month}',
+      );
+      return entity;
+    } catch (e, stackTrace) {
+      AppLogger.error(
+        'Failed to fetch calendar latest activity',
+        tag: 'TradeRepository',
+        error: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }

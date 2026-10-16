@@ -2,6 +2,7 @@ import 'package:am_library/am_library.dart';
 import 'package:am_common/core/config/config_service.dart';
 import 'package:am_common/core/config/app_config.dart';
 import 'package:am_common/am_common.dart';
+import '../dtos/calendar_latest_activity_dto.dart';
 import '../dtos/trade_calendar_dto.dart';
 import '../dtos/trade_controller_dtos.dart';
 import '../dtos/trade_holding_dto.dart';
@@ -21,6 +22,9 @@ abstract class TradeRemoteDataSource {
 
   /// Get trade summary from remote API
   Future<TradePortfolioSummaryDto> getTradeSummary(String portfolioId);
+
+  /// Latest trade activity for calendar default open; null when 204 / no trades.
+  Future<CalendarLatestActivityDto?> getCalendarLatestActivity(String portfolioId);
 
   /// Get trade calendar by month from remote API
   Future<TradeCalendarDto> getTradeCalendarByMonth(
@@ -386,6 +390,56 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
       } else {
         rethrow;
       }
+    }
+  }
+
+  @override
+  Future<CalendarLatestActivityDto?> getCalendarLatestActivity(
+      String portfolioId) async {
+    AppLogger.methodEntry(
+      'getCalendarLatestActivity',
+      tag: 'TradeRemoteDataSource',
+      params: {'portfolioId': portfolioId},
+    );
+
+    try {
+      final fullUri =
+          '${_buildUri(_tradeConfig.baseUrl, 'v1/trades/calendar/latest-activity')}?portfolioId=$portfolioId';
+
+      final response = await _apiClient.get<CalendarLatestActivityDto?>(
+        fullUri,
+        parser: (data) {
+          if (data == null) return null;
+          if (data is! Map<String, dynamic>) return null;
+          if (data.isEmpty) return null;
+          return CalendarLatestActivityDto.fromJson(data);
+        },
+      );
+
+      AppLogger.methodExit(
+        'getCalendarLatestActivity',
+        tag: 'TradeRemoteDataSource',
+        result: response == null
+            ? 'empty'
+            : '${response.year}-${response.month}',
+      );
+      return response;
+    } catch (e, stackTrace) {
+      AppLogger.error(
+        'Failed to fetch calendar latest activity',
+        tag: 'TradeRemoteDataSource',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      if (_useMockData) {
+        final now = DateTime.now();
+        return CalendarLatestActivityDto(
+          lastTradeDate: now,
+          year: now.year,
+          month: now.month,
+        );
+      }
+      rethrow;
     }
   }
 

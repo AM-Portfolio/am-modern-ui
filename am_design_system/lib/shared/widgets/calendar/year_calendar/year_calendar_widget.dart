@@ -22,6 +22,8 @@ class YearCalendarWidget extends StatefulWidget {
     /// When provided (typically mobile), months scroll continuously across years
     /// and the sticky year follows Dec ↔ Jan transitions.
     this.yearsData,
+    /// Month (1–12) to land on within [year] on first open. Defaults to January.
+    this.initialMonth,
   });
 
   final int year;
@@ -33,6 +35,9 @@ class YearCalendarWidget extends StatefulWidget {
 
   /// year -> (month -> data). Enables continuous multi-year scrolling.
   final Map<int, Map<int, CalendarMonthData>>? yearsData;
+
+  /// Month (1–12) to scroll to on first open when [yearsData] is set.
+  final int? initialMonth;
 
   @override
   State<YearCalendarWidget> createState() => _YearCalendarWidgetState();
@@ -56,7 +61,8 @@ class _YearCalendarWidgetState extends State<YearCalendarWidget> {
     _pinnedYear = widget.year;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.yearsData != null) {
-        _scrollToYear(widget.year, animate: false);
+        final month = (widget.initialMonth ?? 1).clamp(1, 12);
+        _scrollToYearMonth(widget.year, month, animate: false);
       }
     });
   }
@@ -69,7 +75,7 @@ class _YearCalendarWidgetState extends State<YearCalendarWidget> {
     if (oldWidget.year != widget.year && widget.year != _pinnedYear) {
       _pinnedYear = widget.year;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToYear(widget.year, animate: true);
+        _scrollToYearMonth(widget.year, 1, animate: true);
       });
     }
   }
@@ -85,7 +91,7 @@ class _YearCalendarWidgetState extends State<YearCalendarWidget> {
     if (newYear == _pinnedYear) return;
     setState(() => _pinnedYear = newYear);
     widget.onYearChanged?.call(newYear);
-    _scrollToYear(newYear, animate: true);
+    _scrollToYearMonth(newYear, 1, animate: true);
   }
 
   void _setPinnedYearFromScroll(int year) {
@@ -121,11 +127,17 @@ class _YearCalendarWidgetState extends State<YearCalendarWidget> {
     return widget.yearsData?[_pinnedYear] ?? widget.monthsData;
   }
 
-  Future<void> _scrollToYear(int year, {required bool animate}) async {
+  Future<void> _scrollToYearMonth(
+    int year,
+    int month, {
+    required bool animate,
+  }) async {
     if (!mounted || widget.yearsData == null) return;
 
+    final targetMonth = month.clamp(1, 12);
     final months = _continuousMonths();
-    final index = months.indexWhere((e) => e.year == year && e.month == 1);
+    final index =
+        months.indexWhere((e) => e.year == year && e.month == targetMonth);
     if (index < 0) return;
 
     _suppressScrollYearSync = true;
@@ -164,10 +176,10 @@ class _YearCalendarWidgetState extends State<YearCalendarWidget> {
     }
     await applyOffset();
 
-    // Refine with ensureVisible once Jan of [year] is built.
+    // Refine with ensureVisible once the target month card is built.
     await WidgetsBinding.instance.endOfFrame;
     if (!mounted) return;
-    final key = _keyFor(year, 1);
+    final key = _keyFor(year, targetMonth);
     var ctx = key.currentContext;
     if (ctx == null) {
       await WidgetsBinding.instance.endOfFrame;
