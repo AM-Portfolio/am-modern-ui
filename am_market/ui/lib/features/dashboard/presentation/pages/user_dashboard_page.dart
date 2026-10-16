@@ -110,7 +110,10 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
 
     final pinnedSymbols =
         provider.allIndicesData.take(12).map((e) => e.indexSymbol).toList();
-    unawaited(provider.ensureIndexSparklines(pinnedSymbols, range: '1W'));
+    unawaited(provider.ensureIndexSparklines(
+      pinnedSymbols,
+      range: provider.selectedIndicesTimeframe,
+    ));
 
     if (_preloadTimer == null && _preloadingQueue.isNotEmpty) {
       // Delay the start of background fetches by 2.0 seconds. This ensures that
@@ -346,8 +349,9 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
     _loadHistoricalData();
     _loadTopMovers();
     final pinnedSymbols =
-        provider.allIndicesData.take(6).map((e) => e.indexSymbol).toList();
-    _loadTimeframeOnDemand(pinnedSymbols, tf);
+        provider.allIndicesData.take(12).map((e) => e.indexSymbol).toList();
+    unawaited(provider.ensureIndexSparklines(pinnedSymbols, range: tf));
+    _loadTimeframeOnDemand(pinnedSymbols.take(6).toList(), tf);
   }
 
   /// Opens the All Indices panel (from the app bar chip on mobile).
@@ -385,57 +389,63 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
 
   /// [SIP Optimization] Opens the mobile bottom sheet and lazy-loads the base prices
   /// for all indices for the current timeframe so they display correct percentages.
-  void _showMobileAllIndicesBottomSheet(
-      BuildContext context, MarketProvider provider) {
+  Future<void> _showMobileAllIndicesBottomSheet(
+      BuildContext context, MarketProvider provider) async {
     final allSymbols = [
       ...provider.allIndicesData.map((e) => e.indexSymbol),
       ...provider.globalIndicesData.map((e) => e.indexSymbol),
     ];
     _loadTimeframeOnDemand(allSymbols, _selectedTimeframe);
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: context.glassOverlay(0.55),
-      builder: (context) {
-        return ListenableBuilder(
-          listenable: provider,
-          builder: (context, _) {
-            return Consumer(
-              builder: (context, ref, _) {
-                final tf = ref.watch(appTimeFrameProvider).code;
-                return DraggableScrollableSheet(
-                  initialChildSize: 0.75,
-                  minChildSize: 0.4,
-                  maxChildSize: 0.92,
-                  expand: false,
-                  builder: (context, scrollController) => AllIndicesBottomSheet(
-                    scrollController: scrollController,
-                    initialTimeframe: tf,
-                    indices: provider.allIndicesData,
-                    globalIndices: provider.globalIndicesData,
-                    availableIndices: provider.availableIndices,
-                    selectedIndexSymbol: selectedIndexForMovers,
-                    onNeedGlobal: () {
-                      if (provider.globalIndicesData.isEmpty) {
-                        provider.loadGlobalIndicesData();
-                      }
-                    },
-                    onIndexSelected: (data) {
-                      if (!provider.isGlobalSymbol(data.indexSymbol)) {
-                        _onDashboardIndexSelected(data);
-                      }
-                      Navigator.pop(context);
-                    },
-                  ),
-                );
-              },
-            );
-          },
-        );
-      },
-    );
+    GlobalBottomNavVisibility.pushModalLock();
+    try {
+      await showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        barrierColor: context.glassOverlay(0.55),
+        builder: (context) {
+          return ListenableBuilder(
+            listenable: provider,
+            builder: (context, _) {
+              return Consumer(
+                builder: (context, ref, _) {
+                  final tf = ref.watch(appTimeFrameProvider).code;
+                  return DraggableScrollableSheet(
+                    initialChildSize: 0.75,
+                    minChildSize: 0.4,
+                    maxChildSize: 0.92,
+                    expand: false,
+                    builder: (context, scrollController) =>
+                        AllIndicesBottomSheet(
+                      scrollController: scrollController,
+                      initialTimeframe: tf,
+                      indices: provider.allIndicesData,
+                      globalIndices: provider.globalIndicesData,
+                      availableIndices: provider.availableIndices,
+                      selectedIndexSymbol: selectedIndexForMovers,
+                      onNeedGlobal: () {
+                        if (provider.globalIndicesData.isEmpty) {
+                          provider.loadGlobalIndicesData();
+                        }
+                      },
+                      onIndexSelected: (data) {
+                        if (!provider.isGlobalSymbol(data.indexSymbol)) {
+                          _onDashboardIndexSelected(data);
+                        }
+                        Navigator.pop(context);
+                      },
+                    ),
+                  );
+                },
+              );
+            },
+          );
+        },
+      );
+    } finally {
+      GlobalBottomNavVisibility.popModalLock();
+    }
   }
 
   @override
@@ -672,6 +682,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
     BuildContext context,
     MarketProvider marketProvider,
   ) {
+    GlobalBottomNavVisibility.pushModalLock();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -788,6 +799,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
         );
       },
     ).whenComplete(() {
+      GlobalBottomNavVisibility.popModalLock();
       if (mounted) setState(() => _popoverSearchQuery = '');
     });
   }
@@ -816,6 +828,9 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
 
     // Main content
     final isMobile = MediaQuery.sizeOf(context).width < 768;
+    // Shared height so Indices Comparison + Top Movers bottoms align (web)
+    // and mobile shows 5 tiles without inner scroll.
+    final moversRowHeight = isMobile ? 460.0 : 420.0;
     final marketColor = ModuleColors.market;
     final scaffoldBg = context.colors.scaffoldBackground;
 
@@ -950,10 +965,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                     leftFlex: 2,
                     rightFlex: 1,
                     left: Container(
-                      height: isMobile
-                          ? (MediaQuery.sizeOf(context).height * 0.38)
-                              .clamp(380.0, 440.0)
-                          : 360,
+                      height: moversRowHeight,
                       padding: EdgeInsets.fromLTRB(
                         isMobile ? 10 : 14,
                         isMobile ? 8 : 10,
@@ -1563,7 +1575,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                       ),
                     ),
                       right: SizedBox(
-                        height: isMobile ? 320 : 360,
+                        height: moversRowHeight,
                         child: TopMoversWidgetV2(
                           gainers: topGainers,
                           losers: topLosers,

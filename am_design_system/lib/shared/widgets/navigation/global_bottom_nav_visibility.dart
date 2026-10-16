@@ -17,7 +17,29 @@ abstract final class GlobalBottomNavVisibility {
   /// Bumped to request an immediate bottom-nav hide (AppShell listens).
   static final ValueNotifier<int> hideRequests = ValueNotifier<int>(0);
 
+  /// Nested count of full-screen overlays (bottom sheets / dialogs) that must
+  /// keep the floating company nav hidden until dismissed.
+  static int _modalLocks = 0;
+
+  /// True while any [pushModalLock] has not yet been matched by [popModalLock].
+  static bool get isModalLocked => _modalLocks > 0;
+
   static void requestHide() => hideRequests.value++;
+
+  /// Hide the nav and block tap/scroll reveal until [popModalLock].
+  static void pushModalLock() {
+    _modalLocks++;
+    suppressChromeTapReveal = true;
+    requestHide();
+  }
+
+  /// Release one [pushModalLock]. Safe to call from `finally`.
+  static void popModalLock() {
+    if (_modalLocks > 0) _modalLocks--;
+    if (_modalLocks == 0) {
+      suppressChromeTapReveal = false;
+    }
+  }
 
   static void setFactor(double value) {
     final next = value.clamp(0.0, 1.0);

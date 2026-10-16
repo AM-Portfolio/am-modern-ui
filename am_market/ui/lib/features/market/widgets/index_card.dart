@@ -40,7 +40,8 @@ class IndexCard extends StatelessWidget {
           }
         }
 
-        final isPositive = displayChange >= 0;
+        // One narrative: % sign and sparkline stroke use the same pChange.
+        final isPositive = displayPChange >= 0;
         final changeColor = isLoading
             ? MarketColors.textMuted(context)
             : (isPositive
@@ -52,16 +53,9 @@ class IndexCard extends StatelessWidget {
         final sparkline = provider.indexSparklines[data.indexSymbol] ??
             provider.indexSparklines[data.indexSymbol.trim().toUpperCase()] ??
             const <double>[];
-        // Sparkline is a 1W series — color by series slope, not today's 1D change.
-        final Color sparklineColor;
-        if (sparkline.length >= 2) {
-          final seriesUp = sparkline.last >= sparkline.first;
-          sparklineColor = seriesUp
-              ? MarketColors.positive(context)
-              : MarketColors.negative(context);
-        } else {
-          sparklineColor = MarketColors.textMuted(context);
-        }
+        final sparklineColor = sparkline.length >= 2
+            ? changeColor
+            : MarketColors.textMuted(context);
 
         return MouseRegion(
           cursor: SystemMouseCursors.click,

@@ -459,16 +459,18 @@ class ApiService {
     String? timeFrame,
   }) async {
     try {
-      String url = '$baseUrl${MarketEndpoints.movers}?type=$type&limit=$limit';
-      if (indexSymbol != null && indexSymbol.isNotEmpty) {
-        url += '&indexSymbol=$indexSymbol';
-      }
-      if (timeFrame != null && timeFrame.isNotEmpty) {
-        url += '&timeFrame=$timeFrame';
-      }
+      final uri = Uri.parse('$baseUrl${MarketEndpoints.movers}').replace(
+        queryParameters: <String, String>{
+          'type': type,
+          'limit': '$limit',
+          if (indexSymbol != null && indexSymbol.isNotEmpty)
+            'indexSymbol': indexSymbol,
+          if (timeFrame != null && timeFrame.isNotEmpty) 'timeFrame': timeFrame,
+        },
+      );
 
       final headers = await _getHeaders();
-      final response = await http.get(Uri.parse(url), headers: headers);
+      final response = await http.get(uri, headers: headers);
 
       if (response.statusCode == 200) {
         return List<Map<String, dynamic>>.from(json.decode(response.body));
@@ -489,17 +491,19 @@ class ApiService {
     String? timeFrame,
   }) async {
     try {
-      String url =
-          '$baseUrl${MarketEndpoints.movers}?type=all&limit=$limit'; // type=all triggers unified response
-      if (indexSymbol != null && indexSymbol.isNotEmpty) {
-        url += '&indexSymbol=$indexSymbol';
-      }
-      if (timeFrame != null && timeFrame.isNotEmpty) {
-        url += '&timeFrame=$timeFrame';
-      }
+      // Encode query params (indexSymbol often contains spaces, e.g. "NIFTY 50").
+      final uri = Uri.parse('$baseUrl${MarketEndpoints.movers}').replace(
+        queryParameters: <String, String>{
+          'type': 'all',
+          'limit': '$limit',
+          if (indexSymbol != null && indexSymbol.isNotEmpty)
+            'indexSymbol': indexSymbol,
+          if (timeFrame != null && timeFrame.isNotEmpty) 'timeFrame': timeFrame,
+        },
+      );
 
       final headers = await _getHeaders();
-      final response = await http.get(Uri.parse(url), headers: headers);
+      final response = await http.get(uri, headers: headers);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
