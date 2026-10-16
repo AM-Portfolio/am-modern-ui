@@ -350,7 +350,7 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
                     ),
                     child: Center(
                       child: Text(
-                        'Gainers (${widget.gainers.length})',
+                        'Gainers (${widget.gainers.take(widget.maxItemsPerColumn).length})',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: _showGainers
@@ -378,7 +378,7 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
                     ),
                     child: Center(
                       child: Text(
-                        'Losers (${widget.losers.length})',
+                        'Losers (${widget.losers.take(widget.maxItemsPerColumn).length})',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: !_showGainers
@@ -395,17 +395,20 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
           ),
         ),
         const SizedBox(height: 12),
-        // Fades between Gainers and Losers lists
+        // Fades between Gainers and Losers lists (no duplicate section header —
+        // tabs already label Gainers / Losers).
         if (widget.scrollEmbedded)
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
             child: _showGainers
                 ? _buildColumn(
                     context, 'Gainers', widget.gainers, true, isDark,
-                    key: const ValueKey('gainers'))
+                    key: const ValueKey('gainers'),
+                    showSectionHeader: false)
                 : _buildColumn(
                     context, 'Losers', widget.losers, false, isDark,
-                    key: const ValueKey('losers')),
+                    key: const ValueKey('losers'),
+                    showSectionHeader: false),
           )
         else
           Expanded(
@@ -414,10 +417,12 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
               child: _showGainers
                   ? _buildColumn(
                       context, 'Gainers', widget.gainers, true, isDark,
-                      key: const ValueKey('gainers'))
+                      key: const ValueKey('gainers'),
+                      showSectionHeader: false)
                   : _buildColumn(
                       context, 'Losers', widget.losers, false, isDark,
-                      key: const ValueKey('losers')),
+                      key: const ValueKey('losers'),
+                      showSectionHeader: false),
             ),
           ),
       ],
@@ -450,10 +455,15 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
     bool isGainers,
     bool isDark, {
     Key? key,
+    bool showSectionHeader = true,
   }) {
     final color = isGainers ? _positiveColor(context) : _negativeColor(context);
     final displayItems = items.take(widget.maxItemsPerColumn).toList();
     final embedded = widget.scrollEmbedded;
+    // Fixed-height hosts (market dashboard) size for maxItemsPerColumn tiles —
+    // use a Column so there is no inner scrollbar when the list fits.
+    final useTightColumn =
+        embedded || displayItems.length <= widget.maxItemsPerColumn;
 
     final listBody = displayItems.isEmpty
         ? Padding(
@@ -466,7 +476,7 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
               ),
             ),
           )
-        : (embedded
+        : (useTightColumn
             ? Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -495,28 +505,33 @@ class _AmTopMoversPanelState extends State<AmTopMoversPanel> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: embedded ? MainAxisSize.min : MainAxisSize.max,
       children: [
-        Row(
-          children: [
-            Icon(
-              isGainers
-                  ? Icons.trending_up_rounded
-                  : Icons.trending_down_rounded,
-              color: color,
-              size: 15,
-            ),
-            const SizedBox(width: 5),
-            Text(
-              '$label (${items.length})',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
+        if (showSectionHeader) ...[
+          Row(
+            children: [
+              Icon(
+                isGainers
+                    ? Icons.trending_up_rounded
+                    : Icons.trending_down_rounded,
                 color: color,
+                size: 15,
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        if (embedded) listBody else Expanded(child: listBody),
+              const SizedBox(width: 5),
+              Text(
+                '$label (${displayItems.length})',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+        ],
+        if (embedded || useTightColumn)
+          listBody
+        else
+          Expanded(child: listBody),
       ],
     );
   }

@@ -88,6 +88,8 @@ mixin ShellBottomNavChrome on State<AppShell>, TickerProvider {
 
   void _showBottomNavWithIdleHide() {
     if (_mobileSearchOpen.value) return;
+    // Indices / other modal sheets hold a lock until dismissed.
+    if (GlobalBottomNavVisibility.isModalLocked) return;
     // AI chat + keyboard: never flash the floating nav while typing.
     if (mounted &&
         _isAiChatRoute &&
@@ -126,6 +128,9 @@ mixin ShellBottomNavChrome on State<AppShell>, TickerProvider {
     _chromePointer = null;
     _chromePointerDown = null;
     _chromePointerMoved = false;
+    if (GlobalBottomNavVisibility.isModalLocked) {
+      return;
+    }
     if (GlobalBottomNavVisibility.suppressChromeTapReveal) {
       GlobalBottomNavVisibility.suppressChromeTapReveal = false;
       return;
@@ -140,6 +145,9 @@ mixin ShellBottomNavChrome on State<AppShell>, TickerProvider {
     _chromePointer = null;
     _chromePointerDown = null;
     _chromePointerMoved = false;
+    if (GlobalBottomNavVisibility.isModalLocked) {
+      return;
+    }
     if (GlobalBottomNavVisibility.suppressChromeTapReveal) {
       GlobalBottomNavVisibility.suppressChromeTapReveal = false;
     }

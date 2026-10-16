@@ -1,4 +1,3 @@
-import 'package:am_common/am_common.dart' show MobileSearchScope;
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
@@ -71,36 +70,6 @@ class _PaperWatchlistWebState extends State<PaperWatchlistWeb> {
               ],
             ),
           ),
-          if (widget.showSearch)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: () =>
-                      MobileSearchScope.tryOpenGlobalSearch(context),
-                  icon: Icon(
-                    Icons.search_rounded,
-                    size: 18,
-                    color: ModuleColors.market,
-                  ),
-                  label: Text(
-                    'Add stocks via global search',
-                    style: TextStyle(color: ModuleColors.market, fontSize: 13),
-                  ),
-                ),
-              ),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-              child: Text(
-                'Use Global Search to add stocks',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colors.textSecondary,
-                    ),
-              ),
-            ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: WatchlistSourceDropdown(

@@ -1,4 +1,3 @@
-import 'package:am_common/am_common.dart' show MobileSearchScope;
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
@@ -41,41 +40,8 @@ class _PaperWatchlistMobileState extends State<PaperWatchlistMobile> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (widget.showSearch) ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: () =>
-                      MobileSearchScope.tryOpenGlobalSearch(context),
-                  icon: Icon(
-                    Icons.search_rounded,
-                    size: 18,
-                    color: ModuleColors.market,
-                  ),
-                  label: Text(
-                    'Add stocks via global search',
-                    style: TextStyle(color: ModuleColors.market, fontSize: 13),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-          ] else ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-              child: Text(
-                'Use Global Search to add stocks',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colors.textSecondary,
-                    ),
-              ),
-            ),
-            const SizedBox(height: 8),
-          ],
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
             child: Row(
               children: [
                 Expanded(

@@ -19,24 +19,56 @@ class PerformanceRankingPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final focus = focusSymbol?.trim().toUpperCase();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
+          padding: const EdgeInsets.fromLTRB(18, 10, 10, 4),
           child: Row(
             children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: ModuleColors.market.withValues(alpha: isDark ? 0.22 : 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.leaderboard_rounded,
+                  size: 17,
+                  color: ModuleColors.market,
+                ),
+              ),
+              const SizedBox(width: 10),
               Expanded(
-                child: Text(
-                  'Performance · ${data.monthName} ${data.year}',
-                  style: context.text.sectionTitle(compact: true).copyWith(
-                        color: MarketColors.textPrimary(context),
-                      ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Performance',
+                      style: context.text.sectionTitle(compact: true).copyWith(
+                            color: MarketColors.textPrimary(context),
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.2,
+                          ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${data.monthName} ${data.year}',
+                      style: context.text.caption().copyWith(
+                            color: MarketColors.textMuted(context),
+                            fontWeight: FontWeight.w500,
+                          ),
+                    ),
+                  ],
                 ),
               ),
               IconButton(
+                visualDensity: VisualDensity.compact,
                 icon: Icon(
-                  Icons.close,
+                  Icons.close_rounded,
                   color: MarketColors.textMuted(context),
                 ),
                 onPressed: () => Navigator.of(context).maybePop(),
@@ -44,16 +76,19 @@ class PerformanceRankingPanel extends StatelessWidget {
             ],
           ),
         ),
-        Divider(color: MarketColors.borderDefault(context), height: 16),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          child: Divider(
+            height: 1,
+            color: MarketColors.borderDefault(context).withValues(alpha: 0.55),
+          ),
+        ),
         Expanded(
           child: ListView.separated(
             controller: scrollController,
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 20),
             itemCount: data.allIndices.length,
-            separatorBuilder: (_, __) => Divider(
-              height: 1,
-              color: MarketColors.borderDefault(context).withValues(alpha: 0.5),
-            ),
+            separatorBuilder: (_, __) => const SizedBox(height: 6),
             itemBuilder: (context, index) {
               final perf = data.allIndices[index];
               final isPositive = perf.returnPercentage >= 0;
@@ -67,26 +102,35 @@ class PerformanceRankingPanel extends StatelessWidget {
                   ? MarketColors.positiveBg(context)
                   : MarketColors.negativeBg(context);
 
-              return Container(
-                decoration: isFocus
-                    ? BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: ModuleColors.market.withValues(alpha: 0.7),
-                          width: 1.5,
-                        ),
-                      )
-                    : null,
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                decoration: BoxDecoration(
+                  color: isFocus
+                      ? ModuleColors.market.withValues(alpha: isDark ? 0.14 : 0.08)
+                      : (isDark
+                          ? Colors.white.withValues(alpha: 0.03)
+                          : Colors.black.withValues(alpha: 0.02)),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isFocus
+                        ? ModuleColors.market.withValues(alpha: 0.65)
+                        : MarketColors.borderDefault(context)
+                            .withValues(alpha: 0.45),
+                    width: isFocus ? 1.4 : 1,
+                  ),
+                ),
                 child: ListTile(
+                  dense: true,
                   contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                   leading: CircleAvatar(
+                    radius: 16,
                     backgroundColor: bg,
                     child: Text(
                       '$rank',
                       style: context.text.caption().copyWith(
                             color: accent,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w800,
                           ),
                     ),
                   ),
@@ -95,17 +139,27 @@ class PerformanceRankingPanel extends StatelessWidget {
                     style: context.text.body().copyWith(
                           color: MarketColors.textPrimary(context),
                           fontWeight:
-                              isFocus ? FontWeight.w700 : FontWeight.w500,
+                              isFocus ? FontWeight.w700 : FontWeight.w600,
+                          fontSize: 13.5,
                         ),
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  trailing: Text(
-                    '${isPositive ? '+' : ''}${perf.returnPercentage.toStringAsFixed(2)}%',
-                    style: context.text.body().copyWith(
-                          color: accent,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  trailing: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: bg,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${isPositive ? '+' : ''}${perf.returnPercentage.toStringAsFixed(2)}%',
+                      style: context.text.body().copyWith(
+                            color: accent,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12.5,
+                          ),
+                    ),
                   ),
                 ),
               );
@@ -138,70 +192,88 @@ class PerformanceRankingDialog extends StatelessWidget {
         (Theme.of(context).brightness == Brightness.dark
             ? AppColorsTheme.dark
             : AppColorsTheme.light);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    if (isMobile) {
-      await showModalBottomSheet<void>(
+    GlobalBottomNavVisibility.pushModalLock();
+    try {
+      if (isMobile) {
+        await showModalBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          barrierColor: Colors.black.withValues(alpha: 0.45),
+          builder: (ctx) => DraggableScrollableSheet(
+            // 60% viewport — list scrolls inside the sheet.
+            initialChildSize: 0.60,
+            maxChildSize: 0.85,
+            minChildSize: 0.40,
+            builder: (ctx, scrollController) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: colors.cardSurface,
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(22)),
+                  border: Border.all(
+                    color: colors.border.withValues(alpha: 0.55),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.12),
+                      blurRadius: 28,
+                      offset: const Offset(0, -6),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: colors.textSecondary.withValues(alpha: 0.35),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                    ),
+                    Expanded(
+                      child: PerformanceRankingPanel(
+                        data: data,
+                        scrollController: scrollController,
+                        focusSymbol: focusSymbol,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+        return;
+      }
+
+      await showDialog<void>(
         context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (ctx) => DraggableScrollableSheet(
-          initialChildSize: 0.85,
-          maxChildSize: 0.95,
-          minChildSize: 0.45,
-          builder: (ctx, scrollController) {
-            return Container(
-              decoration: BoxDecoration(
-                color: colors.cardSurface,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(16)),
-                border: Border.all(color: colors.border.withValues(alpha: 0.5)),
+        builder: (ctx) => Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520, maxHeight: 560),
+            child: Material(
+              color: colors.cardSurface,
+              borderRadius: BorderRadius.circular(20),
+              clipBehavior: Clip.antiAlias,
+              elevation: 8,
+              child: PerformanceRankingPanel(
+                data: data,
+                focusSymbol: focusSymbol,
               ),
-              child: Column(
-                children: [
-                  const SizedBox(height: 8),
-                  Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: colors.textSecondary.withValues(alpha: 0.35),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  Expanded(
-                    child: PerformanceRankingPanel(
-                      data: data,
-                      scrollController: scrollController,
-                      focusSymbol: focusSymbol,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      );
-      return;
-    }
-
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(24),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520, maxHeight: 640),
-          child: Material(
-            color: colors.cardSurface,
-            borderRadius: BorderRadius.circular(16),
-            clipBehavior: Clip.antiAlias,
-            child: PerformanceRankingPanel(
-              data: data,
-              focusSymbol: focusSymbol,
             ),
           ),
         ),
-      ),
-    );
+      );
+    } finally {
+      GlobalBottomNavVisibility.popModalLock();
+    }
   }
 
   @override
