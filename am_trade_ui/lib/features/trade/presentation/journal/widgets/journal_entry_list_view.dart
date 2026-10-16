@@ -11,8 +11,10 @@ class JournalEntryListView extends StatelessWidget {
     required this.selectedEntryId,
     required this.onEntrySelected,
     required this.onLogDayPressed,
-    this.listTitle = 'Log day',
-    this.emptyMessage = 'No journal entries yet.\nTap Log Day to start.',
+    this.listTitle = 'Entries',
+    this.emptyMessage = 'No journal entries yet.',
+    this.emptySubtitle =
+        'Start documenting your trades to unlock powerful insights.',
   });
 
   final List<JournalEntry> entries;
@@ -21,6 +23,7 @@ class JournalEntryListView extends StatelessWidget {
   final VoidCallback onLogDayPressed;
   final String listTitle;
   final String emptyMessage;
+  final String emptySubtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -29,93 +32,73 @@ class JournalEntryListView extends StatelessWidget {
     final groupedEntries = _groupEntriesByDate(entries);
 
     return Container(
-      width: 300,
+      width: 340,
       decoration: BoxDecoration(
-        color: colors.cardSurface,
+        color: colors.cardSurface.withValues(alpha: 0.55),
         border: Border(
           right: BorderSide(color: colors.border.withValues(alpha: 0.35)),
-          left: BorderSide(color: colors.border.withValues(alpha: 0.35)),
         ),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.sm,
+            ),
             child: Row(
               children: [
-                Icon(
-                  Icons.note_add_outlined,
-                  size: 20,
-                  color: ModuleColors.trade,
+                Text(
+                  listTitle,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Text(
-                    listTitle,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                Text(
+                  '${entries.length} ${entries.length == 1 ? 'entry' : 'entries'}',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: colors.textSecondary,
                   ),
                 ),
               ],
             ),
           ),
           Divider(height: 1, color: colors.border.withValues(alpha: 0.35)),
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              children: [
-                AppButton(
-                  text: 'Log Day',
-                  icon: Icons.add_rounded,
-                  backgroundColor: ModuleColors.trade,
-                  width: double.infinity,
-                  height: 44,
-                  onPressed: onLogDayPressed,
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-            child: Row(
-              children: [
-                Text(
-                  '${entries.length} entries',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: colors.textSecondary,
-                  ),
-                ),
-                const Spacer(),
-                Icon(
-                  Icons.sort,
-                  size: 18,
-                  color: colors.textSecondary,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
           Expanded(
             child: entries.isEmpty
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      child: Text(
-                        emptyMessage,
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colors.textSecondary,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
+                ? _EmptyListState(
+                    message: emptyMessage,
+                    subtitle: emptySubtitle,
+                    onLogDayPressed: onLogDayPressed,
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                    itemCount: groupedEntries.length,
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      AppSpacing.md,
+                      AppSpacing.md,
+                      AppSpacing.lg,
+                    ),
+                    itemCount: groupedEntries.length + 1,
                     itemBuilder: (context, index) {
-                      final dateKey = groupedEntries.keys.elementAt(index);
+                      if (index == 0) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                          child: AppButton(
+                            text: 'Log day',
+                            icon: Icons.add_rounded,
+                            backgroundColor: ModuleColors.trade,
+                            width: double.infinity,
+                            height: 44,
+                            onPressed: onLogDayPressed,
+                          ),
+                        );
+                      }
+                      final dateKey =
+                          groupedEntries.keys.elementAt(index - 1);
                       final dayEntries = groupedEntries[dateKey]!;
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,6 +130,73 @@ class JournalEntryListView extends StatelessWidget {
     }
     final sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
     return {for (final key in sortedKeys) key: grouped[key]!};
+  }
+}
+
+class _EmptyListState extends StatelessWidget {
+  const _EmptyListState({
+    required this.message,
+    required this.subtitle,
+    required this.onLogDayPressed,
+  });
+
+  final String message;
+  final String subtitle;
+  final VoidCallback onLogDayPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = context.colors;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: ModuleColors.trade.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                Icons.menu_book_outlined,
+                size: 30,
+                color: ModuleColors.trade.withValues(alpha: 0.85),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colors.textSecondary,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            AppButton(
+              text: 'Log day',
+              icon: Icons.add_rounded,
+              backgroundColor: ModuleColors.trade,
+              height: 44,
+              onPressed: onLogDayPressed,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -183,10 +233,7 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.xs,
-        ),
+        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
         child: Material(
           color: widget.isSelected
               ? ModuleColors.trade.withValues(alpha: 0.12)
