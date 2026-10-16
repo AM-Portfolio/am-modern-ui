@@ -313,82 +313,167 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
     final expiryControl = _buildExpiryControl(context, colors, expiriesList, activeExpiry, fullWidth: isMobileLayout);
     const chipGroups = OptionChainColumnGroup.values;
 
-    String chipLabel(OptionChainColumnGroup group) {
-      if (!isMobileLayout) return group.label;
+    String chipLabel(OptionChainColumnGroup group, {required bool compact}) {
+      if (!compact) return group.label;
       switch (group) {
         case OptionChainColumnGroup.bidAsk:
-          return 'Bid/Ask';
+          return 'Bid';
         case OptionChainColumnGroup.valuation:
-          return 'Valuation';
+          return 'Val';
         case OptionChainColumnGroup.greeks:
-          return 'Greeks';
+          return 'Grk';
       }
     }
 
-    Widget callsBadge() => Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: marketTheme.positive.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(4),
+    Widget sideBadge({
+      required String text,
+      required Color accent,
+      required bool expand,
+    }) {
+      final child = Container(
+        alignment: Alignment.center,
+        padding: EdgeInsets.symmetric(
+          horizontal: expand ? 2 : 8,
+          vertical: 6,
+        ),
+        decoration: BoxDecoration(
+          color: accent.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: accent.withValues(alpha: 0.35)),
+        ),
+        child: Text(
+          text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: accent,
+            fontWeight: FontWeight.bold,
+            fontSize: expand ? 10 : 11,
           ),
-          child: Text('CALLS', style: TextStyle(color: marketTheme.positive, fontWeight: FontWeight.bold, fontSize: 11)),
-        );
+        ),
+      );
+      return child;
+    }
 
-    Widget putsBadge() => Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: marketTheme.negative.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(4),
+    Widget compactToggle({
+      required String label,
+      required bool selected,
+      required VoidCallback onTap,
+    }) {
+      return Material(
+        color: selected
+            ? ModuleColors.market.withValues(alpha: 0.22)
+            : colors.cardSurface,
+        borderRadius: BorderRadius.circular(6),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(6),
+          child: Container(
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: selected
+                    ? ModuleColors.market
+                    : colors.border.withValues(alpha: 0.35),
+              ),
+            ),
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: selected ? ModuleColors.market : colors.textSecondary,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                fontSize: 10,
+              ),
+            ),
           ),
-          child: Text('PUTS', style: TextStyle(color: marketTheme.negative, fontWeight: FontWeight.bold, fontSize: 11)),
-        );
+        ),
+      );
+    }
 
-    Widget groupChips() => Row(
+    Widget groupChips({required bool compact}) => Row(
           mainAxisSize: MainAxisSize.min,
-          children: chipGroups.map((group) {
-            final isSelected = _activeGroups.contains(group);
-            return Padding(
-              padding: const EdgeInsets.only(right: 6.0),
-              child: FilterChip(
-                label: Text(chipLabel(group)),
-                selected: isSelected,
-                onSelected: (_) => _toggleGroup(group),
+          children: [
+            for (var i = 0; i < chipGroups.length; i++) ...[
+              if (i > 0) const SizedBox(width: 6),
+              FilterChip(
+                label: Text(chipLabel(chipGroups[i], compact: compact)),
+                selected: _activeGroups.contains(chipGroups[i]),
+                onSelected: (_) => _toggleGroup(chipGroups[i]),
                 selectedColor: ModuleColors.market.withValues(alpha: 0.2),
                 checkmarkColor: ModuleColors.market,
                 labelStyle: TextStyle(
-                  color: isSelected ? ModuleColors.market : colors.textSecondary,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: _activeGroups.contains(chipGroups[i])
+                      ? ModuleColors.market
+                      : colors.textSecondary,
+                  fontWeight: _activeGroups.contains(chipGroups[i])
+                      ? FontWeight.bold
+                      : FontWeight.normal,
                   fontSize: 11,
                 ),
                 side: BorderSide(
-                  color: isSelected ? ModuleColors.market : colors.border.withValues(alpha: 0.3),
+                  color: _activeGroups.contains(chipGroups[i])
+                      ? ModuleColors.market
+                      : colors.border.withValues(alpha: 0.3),
                 ),
-                visualDensity: isMobileLayout ? VisualDensity.compact : VisualDensity.standard,
+                visualDensity: VisualDensity.standard,
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 padding: const EdgeInsets.symmetric(horizontal: 4),
               ),
-            );
-          }).toList(),
+            ],
+          ],
         );
+
+    // Compact equal-flex row: CALLS | Bid | Val | Grk | PUTS (always fits).
+    Widget mobileGroupRow() {
+      return Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: sideBadge(
+              text: 'CALLS',
+              accent: marketTheme.positive,
+              expand: true,
+            ),
+          ),
+          const SizedBox(width: 3),
+          for (final group in chipGroups) ...[
+            Expanded(
+              flex: 3,
+              child: compactToggle(
+                label: chipLabel(group, compact: true),
+                selected: _activeGroups.contains(group),
+                onTap: () => _toggleGroup(group),
+              ),
+            ),
+            const SizedBox(width: 3),
+          ],
+          Expanded(
+            flex: 3,
+            child: sideBadge(
+              text: 'PUTS',
+              accent: marketTheme.negative,
+              expand: true,
+            ),
+          ),
+        ],
+      );
+    }
 
     if (isMobileLayout) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
         color: toolbarColor,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             expiryControl,
             const SizedBox(height: 6),
-            Row(
-              children: [
-                callsBadge(),
-                const SizedBox(width: 6),
-                Expanded(child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: groupChips())),
-                const SizedBox(width: 6),
-                putsBadge(),
-              ],
-            ),
+            mobileGroupRow(),
           ],
         ),
       );
@@ -403,11 +488,19 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
           children: [
             expiryControl,
             const SizedBox(width: 12),
-            callsBadge(),
+            sideBadge(
+              text: 'CALLS',
+              accent: marketTheme.positive,
+              expand: false,
+            ),
             const SizedBox(width: 12),
-            groupChips(),
+            groupChips(compact: false),
             const SizedBox(width: 12),
-            putsBadge(),
+            sideBadge(
+              text: 'PUTS',
+              accent: marketTheme.negative,
+              expand: false,
+            ),
           ],
         ),
       ),

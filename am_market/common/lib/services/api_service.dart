@@ -308,11 +308,12 @@ class ApiService {
       if (symbols.isEmpty) return {};
 
       final headers = await _getHeaders();
-      // Use query param 'symbols'
-      final query = symbols.join(',');
+      // Encode so symbols like "NIFTY 50" survive the query string.
+      final query = symbols.map(Uri.encodeQueryComponent).join(',');
+      final encodedRange = Uri.encodeQueryComponent(range);
       final response = await http.get(
         Uri.parse(
-            '$baseUrl${MarketEndpoints.historicalCharts}?symbols=$query&range=$range'),
+            '$baseUrl${MarketEndpoints.historicalCharts}?symbols=$query&range=$encodedRange'),
         headers: headers,
       );
 
