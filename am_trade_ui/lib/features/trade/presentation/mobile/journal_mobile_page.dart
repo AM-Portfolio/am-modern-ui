@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -56,7 +57,14 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final cubit = await ref.read(journalCubitProvider.future);
       if (!mounted) return;
+      cubit.setPortfolioId(widget.portfolioId, reload: false);
       cubit.loadJournalEntries();
+      JournalSearchBridge.bind(
+        applySearchQuery: (q) {
+          if (!mounted) return;
+          cubit.setFilters(searchQuery: q);
+        },
+      );
     });
   }
 
@@ -80,6 +88,7 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
   @override
   void dispose() {
     _fabHideTimer?.cancel();
+    JournalSearchBridge.unbind();
     super.dispose();
   }
 
@@ -92,7 +101,7 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
           children: [
             ListTile(
               leading: const Icon(Icons.candlestick_chart),
-              title: const Text('Trade Journal'),
+              title: const Text('Review trade'),
               onTap: () {
                 Navigator.pop(ctx);
                 Navigator.of(context).push(
@@ -273,7 +282,7 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (message) => Center(child: Text('Error: $message')),
         success: (_) => const Center(child: CircularProgressIndicator()),
-        loaded: (entries, summary, status, folder, tags, q, setup) {
+        loaded: (entries, summary, adherence, status, folder, tags, q, setup) {
           if (entries.isEmpty) {
             return const Center(child: Text('No journal entries'));
           }

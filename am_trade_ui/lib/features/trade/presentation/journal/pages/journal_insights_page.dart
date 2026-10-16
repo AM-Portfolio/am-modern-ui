@@ -4,17 +4,33 @@ import 'package:intl/intl.dart';
 
 import '../../../internal/data/dtos/journal_entry_dto.dart';
 import '../../cubit/journal/journal_cubit.dart';
+import '../models/journal_folder_filter.dart';
 
 class JournalInsightsPage extends StatefulWidget {
-  const JournalInsightsPage({super.key, required this.journalCubit});
+  const JournalInsightsPage({
+    super.key,
+    required this.journalCubit,
+    this.startDate,
+    this.endDate,
+    this.onReviewTrades,
+    this.unreviewedCount,
+  });
 
   final JournalCubit journalCubit;
+  final DateTime? startDate;
+  final DateTime? endDate;
+  /// Switch hub to Entries / Log Day when Insights has no structured reviews yet.
+  final VoidCallback? onReviewTrades;
+
+  /// Optional override for the empty-state CTA. When null the page derives it
+  /// from the cubit's loaded entries (trade-like entries without an outcome).
+  final int? unreviewedCount;
 
   @override
-  State<JournalInsightsPage> createState() => _JournalInsightsPageState();
+  State<JournalInsightsPage> createState() => JournalInsightsPageState();
 }
 
-class _JournalInsightsPageState extends State<JournalInsightsPage> {
+class JournalInsightsPageState extends State<JournalInsightsPage> {
   List<MistakeAnalysisDto> _mistakes = [];
   List<LessonLearnedDto> _lessons = [];
   JournalAdherenceDto? _adherence;
@@ -28,16 +44,64 @@ class _JournalInsightsPageState extends State<JournalInsightsPage> {
     _load();
   }
 
+  @override
+  void didUpdateWidget(covariant JournalInsightsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.startDate != widget.startDate ||
+        oldWidget.endDate != widget.endDate) {
+      _load();
+    }
+  }
+
+  /// Re-fetch mistakes / lessons / adherence / report card (e.g. after Log Day save).
+  Future<void> reload() => _load();
+
+  /// Trade-like entries in range that still lack a post-trade outcome.
+  int get _unreviewedCount {
+    final override = widget.unreviewedCount;
+    if (override != null) return override;
+    final entries = widget.journalCubit.currentEntries;
+    final start = widget.startDate;
+    final end = widget.endDate;
+    var n = 0;
+    for (final e in entries) {
+      if (!JournalFolderFilter.isTradeLikeEntry(e)) continue;
+      if (start != null && e.entryDate.isBefore(start)) continue;
+      if (end != null && e.entryDate.isAfter(end.add(const Duration(days: 1)))) {
+        continue;
+      }
+      final outcome = e.postTradeReview?.tradeOutcome;
+      if (outcome == null || outcome.trim().isEmpty) n++;
+    }
+    return n;
+  }
+
   Future<void> _load() async {
+    if (!mounted) return;
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      final mistakes = await widget.journalCubit.loadMistakesSummary();
-      final lessons = await widget.journalCubit.loadLessons(limit: 20);
-      final adherence = await widget.journalCubit.loadAdherence();
-      final report = await widget.journalCubit.loadReportCard();
+      final start = widget.startDate;
+      final end = widget.endDate;
+      final mistakes = await widget.journalCubit.loadMistakesSummary(
+        start: start,
+        end: end,
+      );
+      final lessons = await widget.journalCubit.loadLessons(
+        start: start,
+        end: end,
+        limit: 20,
+      );
+      final adherence = await widget.journalCubit.loadAdherence(
+        start: start,
+        end: end,
+      );
+      final report = await widget.journalCubit.loadReportCard(
+        start: start,
+        end: end,
+      );
       if (!mounted) return;
       setState(() {
         _mistakes = mistakes;
@@ -85,6 +149,10 @@ class _JournalInsightsPageState extends State<JournalInsightsPage> {
 
     final pnlFmt = NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
     final a = _adherence;
+    final emptyInsights = (a?.sampleSize ?? 0) == 0 &&
+        _mistakes.isEmpty &&
+        _lessons.isEmpty;
+    final unreviewed = emptyInsights ? _unreviewedCount : 0;
 
     return RefreshIndicator(
       color: ModuleColors.trade,
@@ -109,30 +177,70 @@ class _JournalInsightsPageState extends State<JournalInsightsPage> {
                   color: colors.textSecondary,
                 ),
           ),
+          if (emptyInsights) ...[
+            const SizedBox(height: AppSpacing.lg),
+            AppCard(
+              elevation: 0,
+              backgroundColor: colors.cardSurface,
+              margin: EdgeInsets.zero,
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      unreviewed > 0
+                          ? 'Review $unreviewed unreviewed trade${unreviewed == 1 ? '' : 's'} to unlock Insights'
+                          : 'Review today’s fills to unlock Insights',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      'Log Day → attach today’s fills → set outcome + mistake. '
+                      'Those PostTradeReview fields power mistakes, adherence, and lessons here.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: colors.textSecondary,
+                          ),
+                    ),
+                    if (widget.onReviewTrades != null) ...[
+                      const SizedBox(height: AppSpacing.md),
+                      AppButton(
+                        text: 'Review trade',
+                        type: AppButtonType.primary,
+                        backgroundColor: ModuleColors.trade,
+                        onPressed: widget.onReviewTrades,
+                        height: 36,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: AppSpacing.lg),
-          Wrap(
-            spacing: AppSpacing.md,
-            runSpacing: AppSpacing.md,
-            children: [
-              _statCard(
+          _InsightMetricsRow(
+            cards: [
+              (
                 'Plan adherence',
                 a?.avgPlanAdherenceScore == null
                     ? '—'
                     : '${a!.avgPlanAdherenceScore!.toStringAsFixed(0)}%',
               ),
-              _statCard(
+              (
                 'Checklist completion',
                 a?.avgChecklistCompletionPct == null
                     ? '—'
                     : '${a!.avgChecklistCompletionPct!.toStringAsFixed(0)}%',
               ),
-              _statCard(
+              (
                 'Avg execution score',
                 a?.avgExecutionScore == null
                     ? '—'
                     : a!.avgExecutionScore!.toStringAsFixed(1),
               ),
-              _statCard(
+              (
                 'Sample size',
                 '${a?.sampleSize ?? 0}',
               ),
@@ -279,7 +387,7 @@ class _JournalInsightsPageState extends State<JournalInsightsPage> {
           if (_report != null) ...[
             const SizedBox(height: AppSpacing.xl),
             Text(
-              'Weekly report card',
+              'Report card',
               style: Theme.of(context)
                   .textTheme
                   .titleLarge
@@ -290,29 +398,27 @@ class _JournalInsightsPageState extends State<JournalInsightsPage> {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Window: ${_report!.from ?? '—'} → ${_report!.to ?? '—'}',
+              'Hub range: ${_report!.from ?? '—'} → ${_report!.to ?? '—'}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: colors.textSecondary,
                   ),
             ),
             const SizedBox(height: AppSpacing.sm),
-            Wrap(
-              spacing: AppSpacing.md,
-              runSpacing: AppSpacing.md,
-              children: [
-                _statCard(
+            _InsightMetricsRow(
+              cards: [
+                (
                   'Report adherence',
                   _report!.adherence?.avgPlanAdherenceScore == null
                       ? '—'
                       : '${_report!.adherence!.avgPlanAdherenceScore!.toStringAsFixed(0)}%',
                 ),
-                _statCard(
+                (
                   'Top mistake',
                   (_report!.mistakes?.isNotEmpty ?? false)
                       ? (_report!.mistakes!.first.mistakeCategory ?? '—')
                       : '—',
                 ),
-                _statCard(
+                (
                   'Lessons logged',
                   '${_report!.topLessons?.length ?? 0}',
                 ),
@@ -323,14 +429,105 @@ class _JournalInsightsPageState extends State<JournalInsightsPage> {
       ),
     );
   }
+}
 
-  Widget _statCard(String title, String value) {
-    return SizedBox(
-      width: 180,
-      child: AmStatCard(
-        title: title,
-        value: value,
-        type: StatType.accent,
+/// Equal-width metric strip — avoids [AmStatCard] overflow artifacts in Wrap.
+class _InsightMetricsRow extends StatelessWidget {
+  const _InsightMetricsRow({required this.cards});
+
+  final List<(String title, String value)> cards;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final gap = AppSpacing.md;
+        final wide = constraints.maxWidth >= 720;
+        if (wide) {
+          return Row(
+            children: [
+              for (var i = 0; i < cards.length; i++) ...[
+                if (i > 0) SizedBox(width: gap),
+                Expanded(
+                  child: _InsightMetricCard(
+                    title: cards[i].$1,
+                    value: cards[i].$2,
+                  ),
+                ),
+              ],
+            ],
+          );
+        }
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            for (final c in cards)
+              SizedBox(
+                width: (constraints.maxWidth - gap) / 2,
+                child: _InsightMetricCard(title: c.$1, value: c.$2),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _InsightMetricCard extends StatelessWidget {
+  const _InsightMetricCard({
+    required this.title,
+    required this.value,
+  });
+
+  final String title;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = context.colors;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.md,
+      ),
+      decoration: BoxDecoration(
+        color: colors.cardSurface,
+        borderRadius: AppRadii.card,
+        border: Border.all(color: colors.border.withValues(alpha: 0.3)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: colors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+              fontSize: 22,
+              color: value == '—'
+                  ? colors.textSecondary
+                  : ModuleColors.trade,
+              height: 1.1,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -224,7 +224,8 @@ abstract class CalendarNavigationState with _$CalendarNavigationState {
 
   const CalendarNavigationState._();
 
-  /// Create initial state (yearly view, current year)
+  /// Placeholder before [TradeCalendarCubit.openAtLatestActivity] resolves the
+  /// user's latest trade year. Prefer opening via that method, not this alone.
   factory CalendarNavigationState.initial() {
     final now = DateTime.now();
     return CalendarNavigationState(

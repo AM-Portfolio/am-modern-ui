@@ -1,3 +1,4 @@
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
 import '../components/journal_form_header.dart';
@@ -87,87 +88,95 @@ class _OptionalFieldsSectionState extends State<OptionalFieldsSection> {
     final hasWatchlist = _watchlistItems.isNotEmpty;
     final hasReflection = _reflectionController.text.trim().isNotEmpty;
 
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: theme.dividerColor.withOpacity(0.2)),
-        borderRadius: BorderRadius.circular(12),
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.2),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Entry Date
-          JournalFormHeader(
-            entryDate: widget.entryDate,
-            isEditMode: widget.isEditMode,
-            onDateSelect: widget.onDateSelect,
-          ),
-
-          // Trade ID field - only show in edit mode or if it has a value
-          if (widget.isEditMode || hasTradeId) ...[const SizedBox(height: 12), _buildTradeIdField(theme)],
-
-          // URL section - only show in edit mode or if URL exists
-          if (widget.isEditMode || hasUrl) ...[
-            const SizedBox(height: 12),
-            InkWell(
-              onTap: widget.onToggleUrlExpansion,
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  border: Border.all(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        JournalFormHeader(
+          entryDate: widget.entryDate,
+          isEditMode: widget.isEditMode,
+          onDateSelect: widget.onDateSelect,
+        ),
+        if (widget.isEditMode || hasTradeId) ...[
+          const SizedBox(height: AppSpacing.md),
+          _buildTradeIdField(theme),
+        ],
+        if (widget.isEditMode || hasUrl) ...[
+          const SizedBox(height: AppSpacing.md),
+          InkWell(
+            onTap: widget.onToggleUrlExpansion,
+            borderRadius: AppRadii.card,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: widget.isUrlExpanded
+                      ? ModuleColors.trade.withValues(alpha: 0.55)
+                      : theme.dividerColor.withValues(alpha: 0.35),
+                ),
+                borderRadius: AppRadii.card,
+                color: widget.isUrlExpanded
+                    ? ModuleColors.trade.withValues(alpha: 0.08)
+                    : null,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.link,
+                    size: 18,
                     color: widget.isUrlExpanded
-                        ? theme.colorScheme.primary.withOpacity(0.5)
-                        : theme.dividerColor.withOpacity(0.3),
+                        ? ModuleColors.trade
+                        : theme.colorScheme.onSurfaceVariant,
                   ),
-                  borderRadius: BorderRadius.circular(8),
-                  color: widget.isUrlExpanded ? theme.colorScheme.primaryContainer.withOpacity(0.2) : null,
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.link,
-                      size: 18,
-                      color: widget.isUrlExpanded ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(
+                    widget.isUrlExpanded ? 'Add URL' : 'Add URL (optional)',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: widget.isUrlExpanded
+                          ? ModuleColors.trade
+                          : theme.colorScheme.onSurfaceVariant,
+                      fontWeight: widget.isUrlExpanded
+                          ? FontWeight.w600
+                          : FontWeight.normal,
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      widget.isUrlExpanded ? 'Add URL' : 'Add URL (optional)',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: widget.isUrlExpanded ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
-                        fontWeight: widget.isUrlExpanded ? FontWeight.w600 : FontWeight.normal,
-                      ),
-                    ),
-                    const Spacer(),
-                    Icon(
-                      widget.isUrlExpanded ? Icons.expand_less : Icons.expand_more,
-                      size: 20,
-                      color: widget.isUrlExpanded ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ],
-                ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    widget.isUrlExpanded
+                        ? Icons.expand_less
+                        : Icons.expand_more,
+                    size: 20,
+                    color: widget.isUrlExpanded
+                        ? ModuleColors.trade
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
+                ],
               ),
             ),
-
-            // Expandable URL field
-            if (widget.isUrlExpanded) ...[
-              const SizedBox(height: 8),
-              _buildUrlField(theme),
-              if (widget.urlPreview != null) ...[
-                const SizedBox(height: 8),
-                UrlPreviewWidget(url: widget.urlPreview!, onClose: widget.onClearUrl),
-              ],
+          ),
+          if (widget.isUrlExpanded) ...[
+            const SizedBox(height: AppSpacing.sm),
+            _buildUrlField(theme),
+            if (widget.urlPreview != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              UrlPreviewWidget(
+                url: widget.urlPreview!,
+                onClose: widget.onClearUrl,
+              ),
             ],
           ],
-
-          // Pre-Market Watchlist Section
-          if (widget.isEditMode || hasWatchlist) ...[const SizedBox(height: 16), _buildWatchlistSection(theme)],
-
-          // Post-Session Reflection Section
-          if (widget.isEditMode || hasReflection) ...[const SizedBox(height: 16), _buildReflectionSection(theme)],
         ],
-      ),
+        if (widget.isEditMode || hasWatchlist) ...[
+          const SizedBox(height: AppSpacing.md),
+          _buildWatchlistSection(theme),
+        ],
+        if (widget.isEditMode || hasReflection) ...[
+          const SizedBox(height: AppSpacing.md),
+          _buildReflectionSection(theme),
+        ],
+      ],
     );
   }
 

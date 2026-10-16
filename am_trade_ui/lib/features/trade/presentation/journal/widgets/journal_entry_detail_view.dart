@@ -27,12 +27,14 @@ class JournalEntryDetailView extends StatefulWidget {
 class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
   GlobalKey<JournalEntryFormState> _formKey =
       GlobalKey<JournalEntryFormState>();
+  var _formEditMode = false;
 
   @override
   void didUpdateWidget(covariant JournalEntryDetailView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.entry?.id != widget.entry?.id) {
       _formKey = GlobalKey<JournalEntryFormState>();
+      _formEditMode = false;
     }
   }
 
@@ -45,6 +47,8 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
           SnackBar(
             content: Text('Applied "${selection.name}" template'),
             backgroundColor: ModuleColors.trade,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(AppSpacing.md),
           ),
         );
       },
@@ -54,87 +58,132 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
   @override
   Widget build(BuildContext context) {
     if (widget.entry == null) {
+      final theme = Theme.of(context);
+      final colors = context.colors;
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.touch_app_outlined,
-              size: 64,
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.2),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Select an entry to view details',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.4),
-                  ),
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 88,
+                height: 88,
+                decoration: BoxDecoration(
+                  color: ModuleColors.trade.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: ModuleColors.trade.withValues(alpha: 0.18),
+                      blurRadius: 28,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.edit_note_rounded,
+                  size: 42,
+                  color: ModuleColors.trade,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Text(
+                'Select an entry to view details',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Or create a new journal entry to get started.',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
 
     final dateStr = DateFormat('EEE MMM dd, yyyy').format(widget.entry!.entryDate);
     final colors = context.colors;
+    final editing = _formEditMode;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor.withValues(alpha: 0.8),
-        borderRadius: const BorderRadius.only(topLeft: Radius.circular(16)),
-      ),
+    return ColoredBox(
+      color: colors.surface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.lg,
-              AppSpacing.lg,
-              AppSpacing.sm,
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.calendar_today_outlined,
-                  size: 20,
-                  color: colors.textSecondary,
-                ),
-                const SizedBox(width: AppSpacing.sm + AppSpacing.xs),
-                Expanded(
-                  child: Text(
-                    dateStr,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+          Material(
+            color: colors.cardSurface,
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: colors.border.withValues(alpha: 0.35),
                   ),
                 ),
-                AppButton(
-                  text: 'Use template',
-                  icon: Icons.auto_awesome_outlined,
-                  backgroundColor: ModuleColors.trade,
-                  onPressed: _showTemplateBrowser,
-                ),
-              ],
+              ),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.sm + 2,
+                AppSpacing.md,
+                AppSpacing.sm + 2,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today_outlined,
+                    size: 16,
+                    color: ModuleColors.trade,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      dateStr,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                  ),
+                  if (editing)
+                    AppButton(
+                      text: 'Template',
+                      icon: Icons.auto_awesome_outlined,
+                      type: AppButtonType.secondary,
+                      isOutlined: true,
+                      height: 32,
+                      onPressed: _showTemplateBrowser,
+                    )
+                  else
+                    AppButton(
+                      text: 'Edit',
+                      icon: Icons.edit_outlined,
+                      backgroundColor: ModuleColors.trade,
+                      height: 32,
+                      onPressed: () {
+                        _formKey.currentState?.enterEditMode();
+                        setState(() => _formEditMode = true);
+                      },
+                    ),
+                ],
+              ),
             ),
           ),
-          Divider(height: 1, color: colors.border.withValues(alpha: 0.35)),
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-              child: JournalEntryForm(
-                key: _formKey,
-                cubit: widget.cubit,
-                portfolioId: widget.portfolioId,
-                entry: widget.entry,
-                onBrowseTemplates: _showTemplateBrowser,
-              ),
+            child: JournalEntryForm(
+              key: _formKey,
+              cubit: widget.cubit,
+              portfolioId: widget.portfolioId,
+              entry: widget.entry,
+              onBrowseTemplates: _showTemplateBrowser,
+              onEditModeChanged: (editing) {
+                if (mounted) setState(() => _formEditMode = editing);
+              },
             ),
           ),
         ],

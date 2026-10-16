@@ -33,22 +33,36 @@ abstract class JournalRemoteDataSource {
     String endDate,
   );
 
-  Future<JournalSummaryDto> getSummary(String startDate, String endDate);
+  Future<JournalSummaryDto> getSummary(
+    String startDate,
+    String endDate, {
+    String? portfolioId,
+  });
 
   Future<List<MistakeAnalysisDto>> getMistakesSummary(
     String startDate,
-    String endDate,
-  );
+    String endDate, {
+    String? portfolioId,
+  });
 
   Future<List<LessonLearnedDto>> getLessons(
     String startDate,
     String endDate, {
     int limit = 10,
+    String? portfolioId,
   });
 
-  Future<JournalAdherenceDto> getAdherence(String startDate, String endDate);
+  Future<JournalAdherenceDto> getAdherence(
+    String startDate,
+    String endDate, {
+    String? portfolioId,
+  });
 
-  Future<JournalReportCardDto> getReportCard(String startDate, String endDate);
+  Future<JournalReportCardDto> getReportCard(
+    String startDate,
+    String endDate, {
+    String? portfolioId,
+  });
 
   Future<TradeJournalEntryResponseDto> updatePrePlan(
     String entryId,
@@ -82,11 +96,16 @@ abstract class JournalRemoteDataSource {
 
   Future<int> bulkDelete(List<String> entryIds);
 
-  Future<String> exportCsv(String startDate, String endDate);
+  Future<String> exportCsv(
+    String startDate,
+    String endDate, {
+    String? portfolioId,
+  });
 
   Future<List<TradeJournalEntryResponseDto>> createFromTrades(
     List<String> tradeIds, {
-    String journalStatus = 'COMPLETED',
+    String journalStatus = 'DRAFT',
+    String? portfolioId,
   });
 }
 
@@ -136,6 +155,18 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
     if (params.isEmpty) return uri;
     return '$uri?${params.join('&')}';
   }
+
+  Map<String, dynamic> _rangeQuery(
+    String startDate,
+    String endDate,
+    String? portfolioId,
+  ) =>
+      {
+        'startDate': startDate,
+        'endDate': endDate,
+        if (portfolioId != null && portfolioId.isNotEmpty)
+          'portfolioId': portfolioId,
+      };
 
   List<TradeJournalEntryResponseDto> _parseEntryList(dynamic data) {
     if (data is Map<String, dynamic> &&
@@ -329,10 +360,14 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
   }
 
   @override
-  Future<JournalSummaryDto> getSummary(String startDate, String endDate) async {
+  Future<JournalSummaryDto> getSummary(
+    String startDate,
+    String endDate, {
+    String? portfolioId,
+  }) async {
     final fullUri = _withQuery(
       _buildUri(_baseUrl, 'v1/journal/summary'),
-      {'startDate': startDate, 'endDate': endDate},
+      _rangeQuery(startDate, endDate, portfolioId),
     );
     return _apiClient.get<JournalSummaryDto>(
       fullUri,
@@ -344,11 +379,12 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
   @override
   Future<List<MistakeAnalysisDto>> getMistakesSummary(
     String startDate,
-    String endDate,
-  ) async {
+    String endDate, {
+    String? portfolioId,
+  }) async {
     final fullUri = _withQuery(
       _buildUri(_baseUrl, 'v1/journal/mistakes/summary'),
-      {'startDate': startDate, 'endDate': endDate},
+      _rangeQuery(startDate, endDate, portfolioId),
     );
     return _apiClient.get<List<MistakeAnalysisDto>>(
       fullUri,
@@ -370,10 +406,11 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
     String startDate,
     String endDate, {
     int limit = 10,
+    String? portfolioId,
   }) async {
     final fullUri = _withQuery(
       _buildUri(_baseUrl, 'v1/journal/lessons'),
-      {'startDate': startDate, 'endDate': endDate, 'limit': limit},
+      {..._rangeQuery(startDate, endDate, portfolioId), 'limit': limit},
     );
     return _apiClient.get<List<LessonLearnedDto>>(
       fullUri,
@@ -391,11 +428,12 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
   @override
   Future<JournalAdherenceDto> getAdherence(
     String startDate,
-    String endDate,
-  ) async {
+    String endDate, {
+    String? portfolioId,
+  }) async {
     final fullUri = _withQuery(
       _buildUri(_baseUrl, 'v1/journal/adherence'),
-      {'startDate': startDate, 'endDate': endDate},
+      _rangeQuery(startDate, endDate, portfolioId),
     );
     return _apiClient.get<JournalAdherenceDto>(
       fullUri,
@@ -407,11 +445,12 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
   @override
   Future<JournalReportCardDto> getReportCard(
     String startDate,
-    String endDate,
-  ) async {
+    String endDate, {
+    String? portfolioId,
+  }) async {
     final fullUri = _withQuery(
       _buildUri(_baseUrl, 'v1/journal/report-card'),
-      {'startDate': startDate, 'endDate': endDate},
+      _rangeQuery(startDate, endDate, portfolioId),
     );
     return _apiClient.get<JournalReportCardDto>(
       fullUri,
@@ -539,10 +578,14 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
   }
 
   @override
-  Future<String> exportCsv(String startDate, String endDate) async {
+  Future<String> exportCsv(
+    String startDate,
+    String endDate, {
+    String? portfolioId,
+  }) async {
     final fullUri = _withQuery(
       _buildUri(_baseUrl, 'v1/journal/export'),
-      {'startDate': startDate, 'endDate': endDate},
+      _rangeQuery(startDate, endDate, portfolioId),
     );
     return _apiClient.get<String>(
       fullUri,
@@ -556,12 +599,18 @@ class JournalRemoteDataSourceImpl implements JournalRemoteDataSource {
   @override
   Future<List<TradeJournalEntryResponseDto>> createFromTrades(
     List<String> tradeIds, {
-    String journalStatus = 'COMPLETED',
+    String journalStatus = 'DRAFT',
+    String? portfolioId,
   }) async {
     final fullUri = _buildUri(_baseUrl, 'v1/journal/from-trades');
     return _apiClient.post<List<TradeJournalEntryResponseDto>>(
       fullUri,
-      body: {'tradeIds': tradeIds, 'journalStatus': journalStatus},
+      body: {
+        'tradeIds': tradeIds,
+        'journalStatus': journalStatus,
+        if (portfolioId != null && portfolioId.isNotEmpty)
+          'portfolioId': portfolioId,
+      },
       parser: (data) => _parseEntryList(data),
     );
   }
