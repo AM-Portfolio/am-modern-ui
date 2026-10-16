@@ -291,6 +291,10 @@ class MarketProvider with ChangeNotifier {
   Map<String, List<double>> _indexSparklines = {};
   bool _isLoadingSparklines = false;
   String? _sparklineRange;
+  List<String>? _pendingSparklineSymbols;
+  String? _pendingSparklineRange;
+  /// Bumped on TF change so in-flight sparkline fetches discard stale results.
+  int _sparklineGeneration = 0;
 
   String get selectedIndicesTimeframe => _selectedIndicesTimeframe;
   Map<String, double> get timeframeBasePrices => _timeframeBasePrices;
@@ -302,6 +306,13 @@ class MarketProvider with ChangeNotifier {
     if (_selectedIndicesTimeframe == timeframe) return;
 
     _selectedIndicesTimeframe = timeframe;
+    // Sparklines must match card TF — clear cache + pending so stale in-flight
+    // writes cannot poison the next range.
+    _indexSparklines.clear();
+    _sparklineRange = null;
+    _pendingSparklineSymbols = null;
+    _pendingSparklineRange = null;
+    _sparklineGeneration++;
     final requestGeneration = ++_indicesRequestGeneration;
     notifyListeners();
 
@@ -346,13 +357,12 @@ class MarketProvider with ChangeNotifier {
 
   /// Loads mini close-price series for index sparkline cards.
   /// Skips symbols already cached for [range]. Safe to call repeatedly.
-  /// Concurrent calls while a fetch is in flight are ignored (no rebuild storm).
+  /// Concurrent calls while a fetch is in flight are queued and drained after.
+  /// In-flight results are discarded when [setIndicesTimeframe] bumps generation.
   Future<void> ensureIndexSparklines(
     List<String> symbols, {
     String range = '1W',
   }) async {
-    if (_isLoadingSparklines) return;
-
     final unique = symbols
         .map((s) => s.trim())
         .where((s) => s.isNotEmpty)
@@ -360,31 +370,58 @@ class MarketProvider with ChangeNotifier {
         .toList();
     if (unique.isEmpty) return;
 
-    if (_sparklineRange != null && _sparklineRange != range) {
-      _indexSparklines.clear();
+    if (_isLoadingSparklines) {
+      final pending = <String>{
+        ...?_pendingSparklineSymbols,
+        ...unique,
+      }.toList();
+      _pendingSparklineSymbols = pending;
+      _pendingSparklineRange = range;
+      return;
     }
-    _sparklineRange = range;
 
-    final missing = unique
-        .where((s) => (_indexSparklines[s]?.length ?? 0) < 2)
-        .toList();
+    // Cache is valid only for the active range (null after TF clear).
+    if (_sparklineRange != range) {
+      _indexSparklines.clear();
+      _sparklineRange = range;
+    }
+
+    final missing = unique.where((s) {
+      final direct = _indexSparklines[s];
+      final upper = _indexSparklines[s.toUpperCase()];
+      return (direct?.length ?? 0) < 2 && (upper?.length ?? 0) < 2;
+    }).toList();
     if (missing.isEmpty) return;
 
+    final fetchGeneration = _sparklineGeneration;
     _isLoadingSparklines = true;
-    // Safe to notify: callers must not invoke this from build, and the
-    // in-flight guard above blocks re-entry (preserves web sparkline shimmer).
     notifyListeners();
 
     try {
       final fetcher =
           debugHistoryBatchFetcher ?? _apiService.fetchHistoryBatch;
       final history = await fetcher(missing, range);
-      history.forEach((sym, points) {
+      // TF may have changed while we awaited — never write a stale series.
+      if (fetchGeneration != _sparklineGeneration || _sparklineRange != range) {
+        return;
+      }
+      for (final requested in missing) {
+        List<Map<String, dynamic>>? points = history[requested];
+        if (points == null) {
+          for (final entry in history.entries) {
+            if (entry.key.toUpperCase() == requested.toUpperCase()) {
+              points = entry.value;
+              break;
+            }
+          }
+        }
+        if (points == null) continue;
         final closes = extractSparklineCloses(points);
         if (closes.length >= 2) {
-          _indexSparklines[sym] = closes;
+          _indexSparklines[requested] = closes;
+          _indexSparklines[requested.toUpperCase()] = closes;
         }
-      });
+      }
     } catch (e) {
       CommonLogger.error(
         'Error fetching index sparklines',
@@ -394,13 +431,27 @@ class MarketProvider with ChangeNotifier {
     } finally {
       _isLoadingSparklines = false;
       notifyListeners();
+      final pending = _pendingSparklineSymbols;
+      final pendingRange = _pendingSparklineRange ?? range;
+      _pendingSparklineSymbols = null;
+      _pendingSparklineRange = null;
+      if (pending != null && pending.isNotEmpty) {
+        await ensureIndexSparklines(pending, range: pendingRange);
+      }
     }
   }
 
   /// Maps history data-points to a sparkline close series (testable helper).
+  /// Points are sorted ascending by timestamp so first→last slope is correct.
   static List<double> extractSparklineCloses(List<Map<String, dynamic>> points) {
+    final sorted = List<Map<String, dynamic>>.from(points)
+      ..sort((a, b) {
+        final ta = _sparklinePointMillis(a);
+        final tb = _sparklinePointMillis(b);
+        return ta.compareTo(tb);
+      });
     final closes = <double>[];
-    for (final point in points) {
+    for (final point in sorted) {
       final raw =
           point['close'] ?? point['price'] ?? point['lastPrice'] ?? point['value'];
       if (raw is num && raw > 0) {
@@ -408,6 +459,22 @@ class MarketProvider with ChangeNotifier {
       }
     }
     return closes;
+  }
+
+  static int _sparklinePointMillis(Map<String, dynamic> point) {
+    final raw = point['timestamp'] ??
+        point['time'] ??
+        point['date'] ??
+        point['datetime'] ??
+        point['ts'];
+    if (raw is int) return raw;
+    if (raw is num) return raw.toInt();
+    if (raw is String) {
+      final asInt = int.tryParse(raw);
+      if (asInt != null) return asInt;
+      return DateTime.tryParse(raw)?.millisecondsSinceEpoch ?? 0;
+    }
+    return 0;
   }
 
   void toggleForceRefresh(bool value) {
@@ -482,12 +549,19 @@ class MarketProvider with ChangeNotifier {
       if (_allIndicesData[i].indexSymbol.toUpperCase() ==
           updateSymbolBase.toUpperCase()) {
         final current = _allIndicesData[i];
-        final double? newLtp = data['lastPrice']?.toDouble();
-        final double? newPChange = data['changePercent']?.toDouble();
+        final double? newLtp = (data['lastPrice'] as num?)?.toDouble();
+        final double? newPChange =
+            (data['changePercent'] as num?)?.toDouble() ??
+                (data['pChange'] as num?)?.toDouble();
+        final double? newChange = (data['change'] as num?)?.toDouble() ??
+            (data['netChange'] as num?)?.toDouble();
 
-        if (newLtp != null) {
+        if (newLtp != null || newPChange != null || newChange != null) {
           _allIndicesData[i] = current.copyWith(
-              lastPrice: newLtp, pChange: newPChange ?? current.pChange);
+            lastPrice: newLtp ?? current.lastPrice,
+            pChange: newPChange ?? current.pChange,
+            change: newChange ?? current.change,
+          );
           _notifyThrottled();
         }
         break;
