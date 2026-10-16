@@ -291,6 +291,8 @@ class MarketProvider with ChangeNotifier {
   Map<String, List<double>> _indexSparklines = {};
   bool _isLoadingSparklines = false;
   String? _sparklineRange;
+  List<String>? _pendingSparklineSymbols;
+  String? _pendingSparklineRange;
 
   String get selectedIndicesTimeframe => _selectedIndicesTimeframe;
   Map<String, double> get timeframeBasePrices => _timeframeBasePrices;
@@ -346,13 +348,11 @@ class MarketProvider with ChangeNotifier {
 
   /// Loads mini close-price series for index sparkline cards.
   /// Skips symbols already cached for [range]. Safe to call repeatedly.
-  /// Concurrent calls while a fetch is in flight are ignored (no rebuild storm).
+  /// Concurrent calls while a fetch is in flight are queued and drained after.
   Future<void> ensureIndexSparklines(
     List<String> symbols, {
     String range = '1W',
   }) async {
-    if (_isLoadingSparklines) return;
-
     final unique = symbols
         .map((s) => s.trim())
         .where((s) => s.isNotEmpty)
@@ -360,31 +360,52 @@ class MarketProvider with ChangeNotifier {
         .toList();
     if (unique.isEmpty) return;
 
+    if (_isLoadingSparklines) {
+      final pending = <String>{
+        ...?_pendingSparklineSymbols,
+        ...unique,
+      }.toList();
+      _pendingSparklineSymbols = pending;
+      _pendingSparklineRange = range;
+      return;
+    }
+
     if (_sparklineRange != null && _sparklineRange != range) {
       _indexSparklines.clear();
     }
     _sparklineRange = range;
 
-    final missing = unique
-        .where((s) => (_indexSparklines[s]?.length ?? 0) < 2)
-        .toList();
+    final missing = unique.where((s) {
+      final direct = _indexSparklines[s];
+      final upper = _indexSparklines[s.toUpperCase()];
+      return (direct?.length ?? 0) < 2 && (upper?.length ?? 0) < 2;
+    }).toList();
     if (missing.isEmpty) return;
 
     _isLoadingSparklines = true;
-    // Safe to notify: callers must not invoke this from build, and the
-    // in-flight guard above blocks re-entry (preserves web sparkline shimmer).
     notifyListeners();
 
     try {
       final fetcher =
           debugHistoryBatchFetcher ?? _apiService.fetchHistoryBatch;
       final history = await fetcher(missing, range);
-      history.forEach((sym, points) {
+      for (final requested in missing) {
+        List<Map<String, dynamic>>? points = history[requested];
+        if (points == null) {
+          for (final entry in history.entries) {
+            if (entry.key.toUpperCase() == requested.toUpperCase()) {
+              points = entry.value;
+              break;
+            }
+          }
+        }
+        if (points == null) continue;
         final closes = extractSparklineCloses(points);
         if (closes.length >= 2) {
-          _indexSparklines[sym] = closes;
+          _indexSparklines[requested] = closes;
+          _indexSparklines[requested.toUpperCase()] = closes;
         }
-      });
+      }
     } catch (e) {
       CommonLogger.error(
         'Error fetching index sparklines',
@@ -394,6 +415,13 @@ class MarketProvider with ChangeNotifier {
     } finally {
       _isLoadingSparklines = false;
       notifyListeners();
+      final pending = _pendingSparklineSymbols;
+      final pendingRange = _pendingSparklineRange ?? range;
+      _pendingSparklineSymbols = null;
+      _pendingSparklineRange = null;
+      if (pending != null && pending.isNotEmpty) {
+        await ensureIndexSparklines(pending, range: pendingRange);
+      }
     }
   }
 

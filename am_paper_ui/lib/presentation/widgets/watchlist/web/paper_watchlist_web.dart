@@ -14,6 +14,7 @@ class PaperWatchlistWeb extends StatefulWidget {
     required this.onSelectSymbol,
     required this.onBuySell,
     this.onOpenFundamentals,
+    this.showSearch = true,
   });
 
   final WatchlistController controller;
@@ -21,6 +22,7 @@ class PaperWatchlistWeb extends StatefulWidget {
   final ValueChanged<String> onSelectSymbol;
   final WatchlistSideCallback onBuySell;
   final ValueChanged<String>? onOpenFundamentals;
+  final bool showSearch;
 
   @override
   State<PaperWatchlistWeb> createState() => _PaperWatchlistWebState();
@@ -69,20 +71,36 @@ class _PaperWatchlistWebState extends State<PaperWatchlistWeb> {
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: () => MobileSearchScope.tryOpenGlobalSearch(context),
-                icon: Icon(Icons.search_rounded, size: 18, color: ModuleColors.market),
-                label: Text(
-                  'Add stocks via global search',
-                  style: TextStyle(color: ModuleColors.market, fontSize: 13),
+          if (widget.showSearch)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () =>
+                      MobileSearchScope.tryOpenGlobalSearch(context),
+                  icon: Icon(
+                    Icons.search_rounded,
+                    size: 18,
+                    color: ModuleColors.market,
+                  ),
+                  label: Text(
+                    'Add stocks via global search',
+                    style: TextStyle(color: ModuleColors.market, fontSize: 13),
+                  ),
                 ),
               ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+              child: Text(
+                'Use Global Search to add stocks',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: colors.textSecondary,
+                    ),
+              ),
             ),
-          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: WatchlistSourceDropdown(

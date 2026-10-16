@@ -109,7 +109,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
     if (provider.allIndicesData.isEmpty) return;
 
     final pinnedSymbols =
-        provider.allIndicesData.take(6).map((e) => e.indexSymbol).toList();
+        provider.allIndicesData.take(12).map((e) => e.indexSymbol).toList();
     unawaited(provider.ensureIndexSparklines(pinnedSymbols, range: '1W'));
 
     if (_preloadTimer == null && _preloadingQueue.isNotEmpty) {

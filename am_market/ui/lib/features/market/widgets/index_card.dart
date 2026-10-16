@@ -49,8 +49,19 @@ class IndexCard extends StatelessWidget {
 
         final displayPChangeFormatted = displayPChange.abs().toStringAsFixed(2);
         final displayChangeFormatted = numberFormat.format(displayChange.abs());
-        final sparkline =
-            provider.indexSparklines[data.indexSymbol] ?? const <double>[];
+        final sparkline = provider.indexSparklines[data.indexSymbol] ??
+            provider.indexSparklines[data.indexSymbol.trim().toUpperCase()] ??
+            const <double>[];
+        // Sparkline is a 1W series — color by series slope, not today's 1D change.
+        final Color sparklineColor;
+        if (sparkline.length >= 2) {
+          final seriesUp = sparkline.last >= sparkline.first;
+          sparklineColor = seriesUp
+              ? MarketColors.positive(context)
+              : MarketColors.negative(context);
+        } else {
+          sparklineColor = MarketColors.textMuted(context);
+        }
 
         return MouseRegion(
           cursor: SystemMouseCursors.click,
@@ -143,7 +154,7 @@ class IndexCard extends StatelessWidget {
                         ? CustomPaint(
                             painter: _IndexSparklinePainter(
                               data: sparkline,
-                              color: changeColor,
+                              color: sparklineColor,
                             ),
                           )
                         : (provider.isLoadingSparklines
@@ -153,7 +164,7 @@ class IndexCard extends StatelessWidget {
                                   height: 12,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 1.5,
-                                    color: changeColor.withValues(alpha: 0.5),
+                                    color: sparklineColor.withValues(alpha: 0.5),
                                   ),
                                 ),
                               )

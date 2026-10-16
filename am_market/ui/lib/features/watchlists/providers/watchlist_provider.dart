@@ -34,8 +34,21 @@ class WatchlistsNotifier extends AsyncNotifier<List<Watchlist>> {
   }
 
   Future<void> refresh() async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() => _fetchWatchlists());
+    // Keep prior lists visible while reloading (stale-while-revalidate).
+    final previous = state.asData?.value;
+    if (previous == null) {
+      state = const AsyncValue.loading();
+    }
+    try {
+      final lists = await _fetchWatchlists();
+      state = AsyncValue.data(lists);
+    } catch (e, st) {
+      if (previous != null) {
+        state = AsyncValue.data(previous);
+      } else {
+        state = AsyncValue.error(e, st);
+      }
+    }
   }
 
   Future<void> createWatchlist(String name) async {

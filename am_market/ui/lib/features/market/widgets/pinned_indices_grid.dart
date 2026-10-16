@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:provider/provider.dart';
 import 'package:am_market_common/models/market_data.dart';
+import 'package:am_market_common/providers/market_provider.dart';
 import 'index_card.dart';
 
 class PinnedIndicesGrid extends StatelessWidget {
@@ -99,15 +101,29 @@ class _MobileIndicesStripState extends State<_MobileIndicesStrip>
   void initState() {
     super.initState();
     _ticker = createTicker(_onTick);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _evaluateMarquee());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _evaluateMarquee();
+      _warmSparklines();
+    });
   }
 
   @override
   void didUpdateWidget(covariant _MobileIndicesStrip oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.indices.length != widget.indices.length) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _evaluateMarquee());
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _evaluateMarquee();
+        _warmSparklines();
+      });
     }
+  }
+
+  void _warmSparklines() {
+    if (!mounted || widget.indices.isEmpty) return;
+    final symbols = widget.indices.map((e) => e.indexSymbol).toList();
+    unawaited(
+      context.read<MarketProvider>().ensureIndexSparklines(symbols, range: '1W'),
+    );
   }
 
   @override

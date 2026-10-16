@@ -62,8 +62,18 @@ class _PaperWatchlistMobileState extends State<PaperWatchlistMobile> {
               ),
             ),
             const SizedBox(height: 8),
-          ] else
+          ] else ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+              child: Text(
+                'Use Global Search to add stocks',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: colors.textSecondary,
+                    ),
+              ),
+            ),
             const SizedBox(height: 8),
+          ],
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Row(
