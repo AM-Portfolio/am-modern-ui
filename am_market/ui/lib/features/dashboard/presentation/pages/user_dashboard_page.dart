@@ -678,130 +678,132 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
     }
   }
 
-  void _showCompareIndicesBottomSheet(
+  Future<void> _showCompareIndicesBottomSheet(
     BuildContext context,
     MarketProvider marketProvider,
-  ) {
+  ) async {
     GlobalBottomNavVisibility.pushModalLock();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            final source = _compareRegion == IndicesRegion.global
-                ? marketProvider.globalIndicesData
-                : marketProvider.allIndicesData;
-            final filtered = source.where((data) {
-              final q = _popoverSearchQuery.toLowerCase();
-              if (q.isEmpty) return true;
-              return data.indexSymbol.toLowerCase().contains(q) ||
-                  (data.indexName?.toLowerCase().contains(q) ?? false);
-            }).toList();
-            final accent = ModuleColors.market;
-            return SafeArea(
-              child: Padding(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.viewInsetsOf(context).bottom,
-                ),
-                child: SizedBox(
-                  height: MediaQuery.sizeOf(context).height * 0.65,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(height: 8),
-                      Center(
-                        child: Container(
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).dividerColor,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                        child: Text(
-                          'Compare Indices',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: TextField(
-                          decoration: InputDecoration(
-                            hintText: 'Search indices…',
-                            prefixIcon: const Icon(Icons.search, size: 20),
-                            isDense: true,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
+    try {
+      await showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        builder: (sheetContext) {
+          return StatefulBuilder(
+            builder: (context, setSheetState) {
+              final source = _compareRegion == IndicesRegion.global
+                  ? marketProvider.globalIndicesData
+                  : marketProvider.allIndicesData;
+              final filtered = source.where((data) {
+                final q = _popoverSearchQuery.toLowerCase();
+                if (q.isEmpty) return true;
+                return data.indexSymbol.toLowerCase().contains(q) ||
+                    (data.indexName?.toLowerCase().contains(q) ?? false);
+              }).toList();
+              final accent = ModuleColors.market;
+              return SafeArea(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.viewInsetsOf(context).bottom,
+                  ),
+                  child: SizedBox(
+                    height: MediaQuery.sizeOf(context).height * 0.65,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: 8),
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).dividerColor,
+                              borderRadius: BorderRadius.circular(2),
                             ),
                           ),
-                          onChanged: (v) {
-                            setSheetState(() => _popoverSearchQuery = v);
-                          },
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: filtered.length,
-                          itemBuilder: (context, index) {
-                            final data = filtered[index];
-                            final selected = selectedIndicesForChart
-                                .contains(data.indexSymbol);
-                            return CheckboxListTile(
-                              dense: true,
-                              activeColor: accent,
-                              title: Text(data.indexSymbol),
-                              subtitle: data.indexName != null
-                                  ? Text(data.indexName!)
-                                  : null,
-                              value: selected,
-                              onChanged: (v) {
-                                setState(() {
-                                  if (v == true) {
-                                    if (!selectedIndicesForChart
-                                        .contains(data.indexSymbol)) {
-                                      selectedIndicesForChart = [
-                                        ...selectedIndicesForChart,
-                                        data.indexSymbol,
-                                      ];
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                          child: Text(
+                            'Compare Indices',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: TextField(
+                            decoration: InputDecoration(
+                              hintText: 'Search indices…',
+                              prefixIcon: const Icon(Icons.search, size: 20),
+                              isDense: true,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            onChanged: (v) {
+                              setSheetState(() => _popoverSearchQuery = v);
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Expanded(
+                          child: ListView.builder(
+                            itemCount: filtered.length,
+                            itemBuilder: (context, index) {
+                              final data = filtered[index];
+                              final selected = selectedIndicesForChart
+                                  .contains(data.indexSymbol);
+                              return CheckboxListTile(
+                                dense: true,
+                                activeColor: accent,
+                                title: Text(data.indexSymbol),
+                                subtitle: data.indexName != null
+                                    ? Text(data.indexName!)
+                                    : null,
+                                value: selected,
+                                onChanged: (v) {
+                                  setState(() {
+                                    if (v == true) {
+                                      if (!selectedIndicesForChart
+                                          .contains(data.indexSymbol)) {
+                                        selectedIndicesForChart = [
+                                          ...selectedIndicesForChart,
+                                          data.indexSymbol,
+                                        ];
+                                      }
+                                    } else {
+                                      selectedIndicesForChart =
+                                          List.from(selectedIndicesForChart)
+                                            ..remove(data.indexSymbol);
                                     }
-                                  } else {
-                                    selectedIndicesForChart =
-                                        List.from(selectedIndicesForChart)
-                                          ..remove(data.indexSymbol);
-                                  }
-                                });
-                                setSheetState(() {});
-                                _loadHistoricalData();
-                              },
-                            );
-                          },
+                                  });
+                                  setSheetState(() {});
+                                  _loadHistoricalData();
+                                },
+                              );
+                            },
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
-        );
-      },
-    ).whenComplete(() {
+              );
+            },
+          );
+        },
+      );
+    } finally {
       GlobalBottomNavVisibility.popModalLock();
       if (mounted) setState(() => _popoverSearchQuery = '');
-    });
+    }
   }
 
   @override

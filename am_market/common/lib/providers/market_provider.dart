@@ -293,6 +293,8 @@ class MarketProvider with ChangeNotifier {
   String? _sparklineRange;
   List<String>? _pendingSparklineSymbols;
   String? _pendingSparklineRange;
+  /// Bumped on TF change so in-flight sparkline fetches discard stale results.
+  int _sparklineGeneration = 0;
 
   String get selectedIndicesTimeframe => _selectedIndicesTimeframe;
   Map<String, double> get timeframeBasePrices => _timeframeBasePrices;
@@ -304,9 +306,13 @@ class MarketProvider with ChangeNotifier {
     if (_selectedIndicesTimeframe == timeframe) return;
 
     _selectedIndicesTimeframe = timeframe;
-    // Sparklines must match card TF — clear so next warm refetches this range.
+    // Sparklines must match card TF — clear cache + pending so stale in-flight
+    // writes cannot poison the next range.
     _indexSparklines.clear();
     _sparklineRange = null;
+    _pendingSparklineSymbols = null;
+    _pendingSparklineRange = null;
+    _sparklineGeneration++;
     final requestGeneration = ++_indicesRequestGeneration;
     notifyListeners();
 
@@ -352,6 +358,7 @@ class MarketProvider with ChangeNotifier {
   /// Loads mini close-price series for index sparkline cards.
   /// Skips symbols already cached for [range]. Safe to call repeatedly.
   /// Concurrent calls while a fetch is in flight are queued and drained after.
+  /// In-flight results are discarded when [setIndicesTimeframe] bumps generation.
   Future<void> ensureIndexSparklines(
     List<String> symbols, {
     String range = '1W',
@@ -373,10 +380,11 @@ class MarketProvider with ChangeNotifier {
       return;
     }
 
-    if (_sparklineRange != null && _sparklineRange != range) {
+    // Cache is valid only for the active range (null after TF clear).
+    if (_sparklineRange != range) {
       _indexSparklines.clear();
+      _sparklineRange = range;
     }
-    _sparklineRange = range;
 
     final missing = unique.where((s) {
       final direct = _indexSparklines[s];
@@ -385,6 +393,7 @@ class MarketProvider with ChangeNotifier {
     }).toList();
     if (missing.isEmpty) return;
 
+    final fetchGeneration = _sparklineGeneration;
     _isLoadingSparklines = true;
     notifyListeners();
 
@@ -392,6 +401,10 @@ class MarketProvider with ChangeNotifier {
       final fetcher =
           debugHistoryBatchFetcher ?? _apiService.fetchHistoryBatch;
       final history = await fetcher(missing, range);
+      // TF may have changed while we awaited — never write a stale series.
+      if (fetchGeneration != _sparklineGeneration || _sparklineRange != range) {
+        return;
+      }
       for (final requested in missing) {
         List<Map<String, dynamic>>? points = history[requested];
         if (points == null) {
