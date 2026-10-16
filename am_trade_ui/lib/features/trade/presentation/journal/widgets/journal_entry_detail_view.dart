@@ -27,12 +27,14 @@ class JournalEntryDetailView extends StatefulWidget {
 class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
   GlobalKey<JournalEntryFormState> _formKey =
       GlobalKey<JournalEntryFormState>();
+  var _formEditMode = false;
 
   @override
   void didUpdateWidget(covariant JournalEntryDetailView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.entry?.id != widget.entry?.id) {
       _formKey = GlobalKey<JournalEntryFormState>();
+      _formEditMode = false;
     }
   }
 
@@ -108,6 +110,7 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
 
     final dateStr = DateFormat('EEE MMM dd, yyyy').format(widget.entry!.entryDate);
     final colors = context.colors;
+    final editing = _formEditMode;
 
     return ColoredBox(
       color: colors.surface,
@@ -127,33 +130,46 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
               ),
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.lg,
+                AppSpacing.sm + 2,
                 AppSpacing.md,
-                AppSpacing.md,
-                AppSpacing.md,
+                AppSpacing.sm + 2,
               ),
               child: Row(
                 children: [
                   Icon(
                     Icons.calendar_today_outlined,
-                    size: 18,
+                    size: 16,
                     color: ModuleColors.trade,
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
                       dateStr,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
                     ),
                   ),
-                  AppButton(
-                    text: 'Use template',
-                    icon: Icons.auto_awesome_outlined,
-                    backgroundColor: ModuleColors.trade,
-                    height: 40,
-                    onPressed: _showTemplateBrowser,
-                  ),
+                  if (editing)
+                    AppButton(
+                      text: 'Template',
+                      icon: Icons.auto_awesome_outlined,
+                      type: AppButtonType.secondary,
+                      isOutlined: true,
+                      height: 32,
+                      onPressed: _showTemplateBrowser,
+                    )
+                  else
+                    AppButton(
+                      text: 'Edit',
+                      icon: Icons.edit_outlined,
+                      backgroundColor: ModuleColors.trade,
+                      height: 32,
+                      onPressed: () {
+                        _formKey.currentState?.enterEditMode();
+                        setState(() => _formEditMode = true);
+                      },
+                    ),
                 ],
               ),
             ),
@@ -165,6 +181,9 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
               portfolioId: widget.portfolioId,
               entry: widget.entry,
               onBrowseTemplates: _showTemplateBrowser,
+              onEditModeChanged: (editing) {
+                if (mounted) setState(() => _formEditMode = editing);
+              },
             ),
           ),
         ],

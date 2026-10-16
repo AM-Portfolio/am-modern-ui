@@ -21,17 +21,9 @@ class JournalFormActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // View mode: Edit lives in the detail header — no sticky footer chrome.
     if (!isEditMode && !isNewEntry) {
-      return Align(
-        alignment: Alignment.centerRight,
-        child: AppButton(
-          text: 'Edit entry',
-          icon: Icons.edit_outlined,
-          backgroundColor: ModuleColors.trade,
-          onPressed: onToggleEditMode,
-          height: 44,
-        ),
-      );
+      return const SizedBox.shrink();
     }
 
     return Row(
@@ -43,7 +35,7 @@ class JournalFormActions extends StatelessWidget {
             type: AppButtonType.secondary,
             isOutlined: true,
             onPressed: onCancel,
-            height: 44,
+            height: 36,
           ),
           const SizedBox(width: AppSpacing.sm),
         ],
@@ -55,7 +47,7 @@ class JournalFormActions extends StatelessWidget {
           backgroundColor: ModuleColors.trade,
           isLoading: isSubmitting,
           onPressed: isSubmitting ? null : onSubmit,
-          height: 44,
+          height: 36,
         ),
       ],
     );

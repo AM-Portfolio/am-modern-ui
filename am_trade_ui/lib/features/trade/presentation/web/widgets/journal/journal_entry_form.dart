@@ -39,6 +39,7 @@ class JournalEntryForm extends ConsumerStatefulWidget {
     this.onCreated,
     this.onBrowseTemplates,
     this.onCancelCreate,
+    this.onEditModeChanged,
   });
 
   final JournalCubit cubit;
@@ -56,6 +57,8 @@ class JournalEntryForm extends ConsumerStatefulWidget {
   final VoidCallback? onBrowseTemplates;
   /// Dismiss create mode without saving (Log day flow).
   final VoidCallback? onCancelCreate;
+  /// Notifies the detail chrome when view ↔ edit toggles (header Edit button).
+  final ValueChanged<bool>? onEditModeChanged;
 
   @override
   ConsumerState<JournalEntryForm> createState() => JournalEntryFormState();
@@ -97,6 +100,23 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
   List<TradeHoldingViewModel> _availableTrades = [];
   bool _isEditMode = false; // View mode by default when editing existing entry
   String? _appliedTemplateName;
+
+  bool get isEditMode => _isEditMode;
+
+  void enterEditMode() => _setEditMode(true);
+
+  void exitEditMode() {
+    if (widget.entry != null) {
+      _initFormFields();
+    }
+    _setEditMode(false);
+  }
+
+  void _setEditMode(bool value) {
+    if (_isEditMode == value) return;
+    setState(() => _isEditMode = value);
+    widget.onEditModeChanged?.call(value);
+  }
 
   // Per-trade mini reviews (feed Insights when trades are linked), keyed by tradeId.
   final Map<String, TradeMiniReviewRow> _reviewRows = {};
@@ -165,13 +185,32 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     }
   }
 
+  /// Quill JSON when possible; plain text fallback (Weekly Review historically
+  /// saved raw notes — never throw on open or the detail pane goes blank).
+  quill.Document _documentFromContent(String? raw) {
+    if (raw == null || raw.trim().isEmpty) {
+      return quill.Document();
+    }
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is List) {
+        return quill.Document.fromJson(decoded);
+      }
+      if (decoded is Map && decoded['ops'] is List) {
+        return quill.Document.fromJson(decoded['ops'] as List);
+      }
+    } catch (_) {
+      // Fall through to plain text.
+    }
+    final doc = quill.Document();
+    doc.insert(0, raw.endsWith('\n') ? raw : '$raw\n');
+    return doc;
+  }
+
   void _initFormFields() {
     _titleController.text = widget.entry?.title ?? '';
 
-    final doc = widget.entry?.content != null && widget.entry!.content!.isNotEmpty
-        ? quill.Document.fromJson(jsonDecode(widget.entry!.content!))
-        : quill.Document();
-    _quillController.document = doc;
+    _quillController.document = _documentFromContent(widget.entry?.content);
 
     _tradeIdController.text = widget.entry?.tradeId ?? '';
     _entryDate = widget.entry?.entryDate ?? DateTime.now();
@@ -373,6 +412,7 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       _appliedTemplateName = selection.name;
       _isEditMode = true;
     });
+    widget.onEditModeChanged?.call(true);
   }
 
   Future<void> browseTemplates() async {
@@ -899,7 +939,7 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
           });
         }
       } else {
-        setState(() => _isEditMode = false);
+        _setEditMode(false);
       }
     } catch (e) {
       if (mounted) {
@@ -981,7 +1021,10 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (isWide)
+                    // Reading mode: full-width notes — skip the empty sidebar chrome.
+                    if (!_isEditMode && widget.entry != null)
+                      _buildLeftColumn(context)
+                    else if (isWide)
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -1003,7 +1046,9 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
                 ),
               ),
             ),
-            _buildStickyActions(context),
+            // Sticky bar only while composing / editing — view mode uses header Edit.
+            if (_isEditMode || widget.entry == null)
+              _buildStickyActions(context),
           ],
         );
       },
@@ -1018,9 +1063,9 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
         width: double.infinity,
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.lg,
-          AppSpacing.sm + AppSpacing.xs,
+          AppSpacing.sm,
           AppSpacing.lg,
-          AppSpacing.md,
+          AppSpacing.sm + AppSpacing.xs,
         ),
         decoration: BoxDecoration(
           border: Border(
@@ -1043,19 +1088,18 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
                 ),
               ),
             JournalFormActions(
-          isEditMode: _isEditMode,
-          isSubmitting: _isSubmitting,
-          isNewEntry: widget.entry == null,
-          onSubmit: _submit,
-          onToggleEditMode: () => setState(() => _isEditMode = !_isEditMode),
-          onCancel: () {
-            if (widget.entry == null) {
-              widget.onCancelCreate?.call();
-              return;
-            }
-            _initFormFields();
-            setState(() => _isEditMode = false);
-          },
+              isEditMode: _isEditMode,
+              isSubmitting: _isSubmitting,
+              isNewEntry: widget.entry == null,
+              onSubmit: _submit,
+              onToggleEditMode: () => _setEditMode(!_isEditMode),
+              onCancel: () {
+                if (widget.entry == null) {
+                  widget.onCancelCreate?.call();
+                  return;
+                }
+                exitEditMode();
+              },
             ),
           ],
         ),
@@ -1063,8 +1107,135 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     );
   }
 
+  bool get _hasBehaviorData =>
+      _planningBehaviorController.text.trim().isNotEmpty ||
+      _midBehaviorController.text.trim().isNotEmpty ||
+      _endBehaviorController.text.trim().isNotEmpty ||
+      _planningMood != null ||
+      _midMood != null ||
+      _endMood != null;
+
   Widget _buildLeftColumn(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.colors;
+
+    // Reader-first layout: title + notes dominate; hide empty chrome.
+    if (!_isEditMode && widget.entry != null) {
+      final review = widget.entry!.postTradeReview;
+      final checklist = review?.postChecklist ?? const <String>[];
+      final completed = review?.completedChecklistItems ?? const <String>[];
+      final lesson = review?.lessonLearned?.trim();
+      final isWeekly =
+          (widget.entry!.entryType ?? '').toUpperCase() == 'WEEKLY_REVIEW';
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _titleController.text.trim().isEmpty
+                ? 'Untitled entry'
+                : _titleController.text.trim(),
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              height: 1.25,
+            ),
+          ),
+          if (isWeekly && checklist.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.md),
+            JournalFormSurface(
+              title: 'Process checklist',
+              subtitle: '${completed.length} / ${checklist.length} completed',
+              leading: Icon(
+                Icons.checklist_rounded,
+                size: 18,
+                color: ModuleColors.trade,
+              ),
+              child: Column(
+                children: [
+                  for (final item in checklist)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          Icon(
+                            completed.contains(item)
+                                ? Icons.check_circle_rounded
+                                : Icons.radio_button_unchecked,
+                            size: 18,
+                            color: completed.contains(item)
+                                ? const Color(0xFF00B894)
+                                : colors.textSecondary,
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: Text(
+                              item,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                decoration: completed.contains(item)
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                                color: completed.contains(item)
+                                    ? colors.textSecondary
+                                    : null,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.md),
+          JournalFormSurface(
+            title: isWeekly ? 'Notes / lessons' : 'Notes',
+            leading: Icon(
+              Icons.notes_rounded,
+              size: 18,
+              color: ModuleColors.trade,
+            ),
+            child: (lesson != null &&
+                    lesson.isNotEmpty &&
+                    _quillController.document.toPlainText().trim().isEmpty)
+                ? Padding(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: SelectableText(
+                      lesson,
+                      style: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
+                    ),
+                  )
+                : RichTextEditor(
+                    controller: _quillController,
+                    readOnly: true,
+                    minHeight: 320,
+                  ),
+          ),
+          if (_hasBehaviorData) ...[
+            const SizedBox(height: AppSpacing.md),
+            JournalFormSurface(
+              title: 'Behavior & mood',
+              leading: Icon(
+                Icons.psychology_alt_outlined,
+                size: 18,
+                color: ModuleColors.trade,
+              ),
+              child: _buildBehaviorTracking(),
+            ),
+          ],
+          if (_relatedTradeIds.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              '${_relatedTradeIds.length} linked trade(s)',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colors.textSecondary,
+              ),
+            ),
+          ],
+        ],
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1116,17 +1287,6 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
         ],
         const SizedBox(height: AppSpacing.md),
         JournalFormSurface(
-          title: 'Behavior & mood',
-          subtitle: 'Planning, mid-session, and end-of-day',
-          leading: Icon(
-            Icons.psychology_alt_outlined,
-            size: 18,
-            color: ModuleColors.trade,
-          ),
-          child: _buildBehaviorTracking(),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        JournalFormSurface(
           title: 'Notes',
           subtitle: 'Checklist and free-form writing',
           leading: Icon(
@@ -1137,7 +1297,19 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
           child: RichTextEditor(
             controller: _quillController,
             readOnly: !_isEditMode,
+            minHeight: 360,
           ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        JournalFormSurface(
+          title: 'Behavior & mood',
+          subtitle: 'Planning, mid-session, and end-of-day',
+          leading: Icon(
+            Icons.psychology_alt_outlined,
+            size: 18,
+            color: ModuleColors.trade,
+          ),
+          child: _buildBehaviorTracking(),
         ),
       ],
     );
