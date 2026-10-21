@@ -50,7 +50,14 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
           ),
         ),
         child: Padding(
-          padding: EdgeInsets.all(isMobile ? 12.0 : 16.0),
+          padding: isMobile
+              ? const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.xs,
+                  AppSpacing.md,
+                  AppSpacing.md,
+                )
+              : const EdgeInsets.all(AppSpacing.md),
           child: watchlistsAsync.when(
             data: (watchlists) {
               if (watchlists.isEmpty) {
@@ -163,7 +170,6 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 8),
         // Unified Header Row: My Watchlists + Count Badge + Create Button
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,

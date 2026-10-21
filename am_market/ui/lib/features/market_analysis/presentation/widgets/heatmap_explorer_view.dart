@@ -121,7 +121,12 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
           child: _showingIndices
             ? SingleChildScrollView(
                 controller: _scrollController,
-                padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.xs,
+                  AppSpacing.md,
+                  AppSpacing.md,
+                ),
                 child: Column(
                   children: [
                     _buildHeatmapSection(),

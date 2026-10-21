@@ -124,6 +124,7 @@ class _FoPageState extends ConsumerState<FoPage> {
               ref.read(foActiveSymbolProvider.notifier).state = null;
             },
           ),
+          SizedBox(height: AppSpacing.xs),
           TabBar(
             isScrollable: true,
             tabAlignment: TabAlignment.start,

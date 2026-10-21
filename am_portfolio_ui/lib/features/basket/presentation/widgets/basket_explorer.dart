@@ -12,7 +12,6 @@ import '../basket_navigation.dart';
 import '../../domain/models/basket_opportunity.dart';
 import '../pages/my_baskets_view.dart';
 import 'discover/discover_baskets_table.dart';
-import 'discover/discover_copy.dart';
 import 'discover/discover_filter_bar.dart';
 import 'discover/discover_layout.dart';
 import 'discover/discover_mode_toggle.dart';
@@ -379,42 +378,9 @@ class _BasketExplorerState extends ConsumerState<BasketExplorer> {
                                   padding: const EdgeInsets.only(
                                     bottom: DiscoverLayout.mobileMetaGap,
                                   ),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          DiscoverCopy.basketsCount(
-                                            displayList.length,
-                                          ),
-                                          style: theme.textTheme.bodySmall
-                                              ?.copyWith(
-                                            color:
-                                                context.colors.textSecondary,
-                                          ),
-                                        ),
-                                      ),
-                                      TextButton(
-                                        onPressed: _scrollToAllBaskets,
-                                        style: TextButton.styleFrom(
-                                          foregroundColor:
-                                              ModuleColors.portfolio,
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: AppSpacing.xs,
-                                          ),
-                                          minimumSize: Size.zero,
-                                          tapTargetSize:
-                                              MaterialTapTargetSize.shrinkWrap,
-                                        ),
-                                        child: Text(
-                                          DiscoverCopy.viewAll,
-                                          style: theme.textTheme.labelLarge
-                                              ?.copyWith(
-                                            color: ModuleColors.portfolio,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                                  child: DiscoverBasketsMetaRow(
+                                    count: displayList.length,
+                                    onViewAll: _scrollToAllBaskets,
                                   ),
                                 );
                               }

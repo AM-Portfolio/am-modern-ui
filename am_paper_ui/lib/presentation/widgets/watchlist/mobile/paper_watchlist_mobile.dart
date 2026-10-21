@@ -41,7 +41,12 @@ class _PaperWatchlistMobileState extends State<PaperWatchlistMobile> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.xs,
+              AppSpacing.md,
+              0,
+            ),
             child: Row(
               children: [
                 Expanded(
