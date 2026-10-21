@@ -108,7 +108,9 @@ void main() {
 
       final name = tester.getRect(find.byKey(const Key('ei-header-name')));
       final ltp = tester.getRect(find.textContaining('₹'));
+      final nseChip = tester.getRect(find.widgetWithText(AmToggleChip, 'NSE'));
       expect(ltp.top, greaterThanOrEqualTo(name.bottom - 1));
+      expect(nseChip.top - name.bottom, lessThan(AppSpacing.sm));
 
       // Flutter tests use a square-glyph font, so didExceedMaxLines is not a
       // real-font signal for a 24-char name at 390. Title width must still be
@@ -133,7 +135,7 @@ void main() {
       );
       expect(
         EquityInsiderHeaderCard.mobileStickyPinExtent,
-        lessThanOrEqualTo(cardH + AppSpacing.md),
+        lessThanOrEqualTo(cardH + AppSpacing.lg),
       );
 
       final nameWidget = tester.widget<Text>(

@@ -52,6 +52,11 @@ void main() {
       findsOneWidget,
     );
     expect(find.byType(CustomDropdown<DiscoverSortMode>), findsOneWidget);
+    expect(find.byIcon(Icons.more_horiz), findsOneWidget);
+    final periodBox = tester.getRect(
+      find.byType(CustomDropdown<DiscoverPerformancePeriod>),
+    );
+    expect(periodBox.width, lessThanOrEqualTo(56));
 
     await tester.tap(find.text('1Y'));
     await tester.pumpAndSettle();

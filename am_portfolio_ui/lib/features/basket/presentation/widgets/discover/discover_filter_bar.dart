@@ -38,7 +38,7 @@ class DiscoverFilterBar extends StatelessWidget {
       };
 
   /// Trailing cluster width estimate for period chips + sort + clear.
-  static const double _periodChipsTrailing = 268;
+  static const double _periodChipsTrailing = 236;
 
   @override
   Widget build(BuildContext context) {
@@ -134,7 +134,7 @@ class _PeriodMenu extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(left: AppSpacing.xs),
       child: _GlobalStyleDropdown<DiscoverPerformancePeriod>(
-        width: 72,
+        width: 52,
         value: discoverState.period,
         items: [
           for (final p in DiscoverPerformancePeriod.values)
@@ -246,7 +246,7 @@ class _ThemeOverflowRow extends StatelessWidget {
       builder: (context, constraints) {
         final budget =
             (constraints.maxWidth - trailingReserve).clamp(80.0, 9999.0);
-        final moreWidth = _chipWidth('More ▾') + AppSpacing.sm;
+        const moreWidth = 40.0 + AppSpacing.sm;
         final topPicksWidth = _chipWidth('Top picks') + AppSpacing.sm;
         var used = topPicksWidth;
         final visible = <BasketTheme>[];
@@ -319,11 +319,8 @@ class _ThemeOverflowRow extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(right: AppSpacing.xs),
                   child: _GlobalStyleDropdown<BasketTheme>(
-                    width: 96,
-                    value: overflow
-                        .where((t) => t.id == selectedThemeId)
-                        .firstOrNull,
-                    hint: 'More',
+                    width: 40,
+                    icon: Icons.more_horiz,
                     items: [
                       for (final t in overflow)
                         t.toSimpleDropdownItem(
@@ -354,11 +351,13 @@ class _GlobalStyleDropdown<T> extends StatelessWidget {
     required this.onChanged,
     this.value,
     this.hint,
+    this.icon,
   });
 
   final double width;
   final T? value;
   final String? hint;
+  final IconData? icon;
   final List<DropdownMenuItem<T>> items;
   final ValueChanged<T?> onChanged;
 
@@ -370,17 +369,20 @@ class _GlobalStyleDropdown<T> extends StatelessWidget {
       child: CustomDropdown<T>(
         value: value,
         hint: hint,
+        icon: icon,
         height: 36,
         isExpanded: true,
         fontSize: 12,
-        iconSize: 16,
+        iconSize: icon == Icons.more_horiz ? 18 : 16,
         borderRadius: 10,
         menuMaxHeight: MobileTimeFrameDropdown.menuMaxHeightForThreeItems,
         menuMaxWidth: width < 120 ? 160 : width,
         primaryColor: ModuleColors.portfolio,
         backgroundColor: isDark ? Colors.white.withValues(alpha: 0.06) : null,
         borderColor: isDark ? Colors.white.withValues(alpha: 0.1) : null,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: icon == Icons.more_horiz ? 4 : 6,
+        ),
         items: items,
         onChanged: onChanged,
       ),

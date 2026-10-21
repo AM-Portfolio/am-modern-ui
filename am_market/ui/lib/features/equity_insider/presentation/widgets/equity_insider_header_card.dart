@@ -25,8 +25,8 @@ class EquityInsiderHeaderCard extends ConsumerWidget {
 
   static final NumberFormat _inr = NumberFormat('#,##,##0.00', 'en_IN');
 
-  /// Mobile sticky pin: measured GlassCard at 390 plus [AppSpacing.xs] on each edge.
-  static const double mobileStickyPinExtent = 128;
+  /// Mobile sticky pin: GlassCard + page pad (xs×2) + slack for real fonts.
+  static const double mobileStickyPinExtent = 108;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -192,13 +192,8 @@ class EquityInsiderHeaderCard extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Row(
-                children: [
-                  Expanded(child: _nameText(context, compact: true)),
-                  MarketWatchlistStar(symbol: symbol),
-                ],
-              ),
-              SizedBox(height: AppSpacing.xs),
+              _nameText(context, compact: true),
+              SizedBox(height: AppSpacing.xxs),
               _ExchangeChips(ref: ref),
               SizedBox(height: AppSpacing.xs),
               _priceRow(
@@ -211,6 +206,7 @@ class EquityInsiderHeaderCard extends ConsumerWidget {
             ],
           ),
         ),
+        MarketWatchlistStar(symbol: symbol),
       ],
     );
   }

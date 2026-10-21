@@ -622,6 +622,7 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
                                     : Icons.expand_more,
                                 color:
                                     isDark ? Colors.white70 : Colors.black54,
+                                size: AppTypeScale.h4,
                               ),
                               onPressed: () => setState(
                                 () =>
@@ -630,6 +631,11 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
                               tooltip: _isHeatmapExpanded
                                   ? 'Minimize Section'
                                   : 'Expand Section',
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minWidth: 32,
+                                minHeight: 32,
+                              ),
                               visualDensity: VisualDensity.compact,
                             ),
                           ],
@@ -643,7 +649,7 @@ class _HeatmapExplorerViewState extends ConsumerState<HeatmapExplorerView> {
                     ],
                   ),
                   if (_isHeatmapExpanded) ...[
-                      const SizedBox(height: 12),
+                      const SizedBox(height: AppSpacing.xs),
                       _buildHeatmapGrid(),
                   ]
               ],

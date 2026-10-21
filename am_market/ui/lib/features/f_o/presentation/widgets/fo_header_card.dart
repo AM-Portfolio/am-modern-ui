@@ -13,12 +13,10 @@ import 'package:provider/provider.dart' as legacy_provider;
 class FoHeaderCard extends ConsumerStatefulWidget {
   const FoHeaderCard({
     required this.symbol,
-    this.onBack,
     super.key,
   });
 
   final String symbol;
-  final VoidCallback? onBack;
 
   @override
   ConsumerState<FoHeaderCard> createState() => _FoHeaderCardState();
@@ -173,9 +171,9 @@ class _FoHeaderCardState extends ConsumerState<FoHeaderCard> {
         final twoMetricRows = constraints.maxWidth < 360;
         return Padding(
           padding: EdgeInsets.fromLTRB(
-            AppSpacing.md,
+            isMobile ? AppSpacing.sm : AppSpacing.md,
             0,
-            AppSpacing.md,
+            isMobile ? AppSpacing.sm : AppSpacing.md,
             AppSpacing.sm,
           ),
           child: GlassCard(
@@ -316,39 +314,17 @@ class _FoHeaderCardState extends ConsumerState<FoHeaderCard> {
       showYLabels: !isMobile,
     );
     final star = MarketWatchlistStar(symbol: widget.symbol);
-    final back = widget.onBack == null
-        ? null
-        : IconButton(
-            icon: Icon(
-              Icons.arrow_back_rounded,
-              color: context.textPrimary,
-              size: isMobile ? AppTypeScale.h5 : AppTypeScale.h4,
-            ),
-            padding: EdgeInsets.zero,
-            visualDensity: VisualDensity.compact,
-            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-            onPressed: widget.onBack,
-          );
 
     if (isMobile) {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (back != null) ...[
-            back,
-            SizedBox(width: AppSpacing.xxs),
-          ],
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Expanded(child: nameText),
-                    star,
-                  ],
-                ),
-                SizedBox(height: AppSpacing.xs),
+                nameText,
+                SizedBox(height: AppSpacing.xxs),
                 chips,
                 SizedBox(height: AppSpacing.xs),
                 Row(
@@ -362,6 +338,7 @@ class _FoHeaderCardState extends ConsumerState<FoHeaderCard> {
               ],
             ),
           ),
+          star,
         ],
       );
     }
@@ -369,10 +346,6 @@ class _FoHeaderCardState extends ConsumerState<FoHeaderCard> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (back != null) ...[
-          back,
-          SizedBox(width: AppSpacing.xxs),
-        ],
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

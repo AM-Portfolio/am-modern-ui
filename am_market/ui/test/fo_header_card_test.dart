@@ -110,7 +110,6 @@ Future<void> _pumpHeader(
   Map<String, dynamic>? chain,
   List<dynamic> contracts = const [],
   MarketProvider? market,
-  VoidCallback? onBack,
   String symbol = 'NIFTY',
   ThemeData? theme,
 }) async {
@@ -129,7 +128,6 @@ Future<void> _pumpHeader(
           height: size.height,
           child: FoHeaderCard(
             symbol: symbol,
-            onBack: onBack ?? () {},
           ),
         ),
       ),
@@ -196,7 +194,7 @@ void main() {
         market: market,
       );
 
-      expect(find.byIcon(Icons.arrow_back_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_back_rounded), findsNothing);
       expect(find.byIcon(Icons.star_border_rounded), findsOneWidget);
       expect(find.text('493.4%'), findsNothing);
       expect(find.text('0.54'), findsNothing);

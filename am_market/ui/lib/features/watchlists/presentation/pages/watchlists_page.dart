@@ -229,7 +229,7 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
             ),
           ],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: AppSpacing.xs),
 
         // List of Watchlist Cards
         Expanded(
