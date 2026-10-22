@@ -841,7 +841,7 @@ void main() {
     expect(find.text('View Details →'), findsNothing);
   });
 
-  testWidgets('What-If shows compact After Simulation placeholder before run',
+  testWidgets('What-If shows shortcuts presets and Simulate before run',
       (tester) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -872,12 +872,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('After Simulation'), findsOneWidget);
-    expect(
-      find.text('Run simulation to see portfolio impact'),
-      findsOneWidget,
-    );
+    expect(find.text('TCS'), findsOneWidget);
+    expect(find.text('RELIANCE'), findsOneWidget);
+    expect(find.text('+1K'), findsOneWidget);
     expect(find.text('Simulate'), findsOneWidget);
+    expect(find.text('After Simulation'), findsNothing);
   });
 
   testWidgets('What-If rejects empty Simulate', (tester) async {
@@ -956,7 +955,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Modify Holding'));
+    await tester.tap(find.text('Modify'));
     await tester.pumpAndSettle();
     final fields = find.descendant(
       of: find.byType(PortfolioWhatIfCard),
@@ -1071,6 +1070,11 @@ void main() {
   });
 
   testWidgets('Stress card shows measured beta chips from API', (tester) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     final remote = _FakeStressRemote(
       const StressResult(
         portfolioId: 'p1',
@@ -1114,6 +1118,12 @@ void main() {
   });
 
   testWidgets('Stress rejects zero shock before API', (tester) async {
+    // Force web/desktop branch (≥600) so "Run custom" path stays unchanged.
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -1152,6 +1162,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
 
     expect(find.text('Run custom'), findsOneWidget);
+    expect(find.text('Apply'), findsNothing);
     final fields = find.byType(TextField);
     expect(fields, findsAtLeastNWidgets(2));
     await tester.enterText(fields.at(0), 'IT');
@@ -1188,6 +1199,299 @@ void main() {
     expect(isUsableIntelligenceSectorLabel('unknown'), isFalse);
     expect(isUsableIntelligenceSectorLabel('—'), isFalse);
     expect(isUsableIntelligenceSectorLabel('  '), isFalse);
+  });
+
+  testWidgets('Stress mobile shows NIFTY −10% primary and View all',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final remote = _FakeStressRemote(
+      const StressResult(
+        portfolioId: 'p1',
+        method: 'PORTFOLIO_BETA',
+        betaUsed: 1.0,
+        betaAssumed: false,
+        historyDays: 30,
+        scenarios: [
+          StressScenario(
+            id: 'NIFTY_DOWN_10',
+            pctImpact: -7.6,
+            absImpact: -66422,
+          ),
+          StressScenario(
+            id: 'NIFTY_DOWN_20',
+            pctImpact: -14.8,
+            absImpact: -132844,
+          ),
+        ],
+      ),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          portfolioRemoteDataSourceProvider.overrideWith((ref) async => remote),
+          portfolioIntelligenceProvider('p1').overrideWith(
+            (ref) async => const PortfolioIntelligence(
+              portfolioId: 'p1',
+              confidence: 0.9,
+            ),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: PortfolioStressCard(
+                portfolioId: 'p1',
+                initiallyExpanded: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+
+    expect(find.text('Apply'), findsOneWidget);
+    expect(find.text('Run custom'), findsNothing);
+    expect(find.textContaining('NIFTY'), findsWidgets);
+    expect(find.textContaining('-7.6%'), findsOneWidget);
+    expect(find.text('View all scenarios'), findsOneWidget);
+
+    await tester.tap(find.text('View all scenarios'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('NIFTY −20%'), findsOneWidget);
+  });
+
+  testWidgets('What-If shortcut and amount preset fill inputs', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          portfolioHoldingsProvider('p1').overrideWith(
+            (ref) async => PortfolioHoldings(
+              holdings: [
+                _holding(
+                  symbol: 'TCS',
+                  sector: 'IT',
+                  weight: 5,
+                  value: 50000,
+                ),
+              ],
+              lastUpdated: DateTime(2026, 1, 1),
+            ),
+          ),
+          portfolioIntelligenceProvider('p1').overrideWith(
+            (ref) async => const PortfolioIntelligence(portfolioId: 'p1'),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: PortfolioWhatIfCard(
+                portfolioId: 'p1',
+                initiallyExpanded: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('TCS'));
+    await tester.pump();
+    await tester.tap(find.text('+1K'));
+    await tester.pump();
+
+    final amountField = find.descendant(
+      of: find.byType(PortfolioWhatIfCard),
+      matching: find.widgetWithText(TextField, '1000'),
+    );
+    expect(amountField, findsOneWidget);
+  });
+
+  testWidgets('What-If Modify holding chip and weight preset', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          portfolioHoldingsProvider('p1').overrideWith(
+            (ref) async => PortfolioHoldings(
+              holdings: [
+                _holding(
+                  symbol: 'RELIANCE',
+                  sector: 'Energy',
+                  weight: 12.4,
+                  value: 200000,
+                ),
+              ],
+              lastUpdated: DateTime(2026, 1, 1),
+            ),
+          ),
+          portfolioIntelligenceProvider('p1').overrideWith(
+            (ref) async => const PortfolioIntelligence(portfolioId: 'p1'),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: PortfolioWhatIfCard(
+                portfolioId: 'p1',
+                initiallyExpanded: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Modify'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Target weight (%)'), findsWidgets);
+    await tester.tap(find.text('RELIANCE'));
+    await tester.pump();
+    // Autofill weight from holding when empty.
+    expect(find.text('12.4'), findsWidgets);
+
+    await tester.tap(find.text('+5'));
+    await tester.pump();
+    expect(find.text('5'), findsWidgets);
+  });
+
+  testWidgets('What-If Switch sector chips and move preset', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          portfolioHoldingsProvider('p1').overrideWith(
+            (ref) async => PortfolioHoldings(
+              holdings: [
+                _holding(symbol: 'TCS', sector: 'IT', weight: 10, value: 1),
+                _holding(
+                  symbol: 'HDFC',
+                  sector: 'Financial Services',
+                  weight: 8,
+                  value: 1,
+                ),
+              ],
+              lastUpdated: DateTime(2026, 1, 1),
+            ),
+          ),
+          portfolioIntelligenceProvider('p1').overrideWith(
+            (ref) async => const PortfolioIntelligence(portfolioId: 'p1'),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: PortfolioWhatIfCard(
+                portfolioId: 'p1',
+                initiallyExpanded: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Switch'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Move weight (%)'), findsWidgets);
+    expect(find.text('Pick sectors or search'), findsOneWidget);
+
+    await tester.tap(find.text('IT'));
+    await tester.pump();
+    await tester.tap(find.text('Financial Services'));
+    await tester.pump();
+    expect(find.text('Pick sectors or search'), findsNothing);
+
+    await tester.tap(find.text('+10'));
+    await tester.pump();
+    expect(find.text('10'), findsWidgets);
+  });
+
+  testWidgets('What-If fillHeight 430 band has no overflow after results',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final remote = _FakeWhatIfRemote(
+      const WhatIfResult(
+        mode: 'ADD_INVESTMENT',
+        before: WhatIfSnapshot(
+          healthScore: 66,
+          sectorWeights: {
+            'IT': 20.1,
+            'Financial Services': 18.5,
+            'Consumer Discretionary': 19.4,
+            'Others': 42.0,
+          },
+        ),
+        after: WhatIfSnapshot(
+          healthScore: 66.1,
+          sectorWeights: {
+            'IT': 20.4,
+            'Financial Services': 18.5,
+            'Consumer Discretionary': 19.3,
+            'Others': 41.8,
+          },
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          portfolioRemoteDataSourceProvider.overrideWith((ref) async => remote),
+          portfolioHoldingsProvider('p1').overrideWith(
+            (ref) async => PortfolioHoldings(
+              holdings: [
+                _holding(symbol: 'TCS', sector: 'IT', weight: 5, value: 1000000),
+              ],
+              lastUpdated: DateTime(2026, 1, 1),
+            ),
+          ),
+          portfolioIntelligenceProvider('p1').overrideWith(
+            (ref) async => const PortfolioIntelligence(portfolioId: 'p1'),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              height: 430,
+              width: 320,
+              child: PortfolioWhatIfCard(
+                portfolioId: 'p1',
+                initiallyExpanded: true,
+                fillHeight: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final fields = find.descendant(
+      of: find.byType(PortfolioWhatIfCard),
+      matching: find.byType(TextField),
+    );
+    await tester.enterText(fields.first, 'TCS');
+    await tester.enterText(fields.at(1), '1000');
+    await tester.ensureVisible(find.text('Simulate'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Simulate'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    await tester.ensureVisible(find.text('Simulation only — not saved'));
+    await tester.pumpAndSettle();
+    expect(find.text('Simulation only — not saved'), findsOneWidget);
+    expect(find.textContaining('66.0'), findsOneWidget);
   });
 
   testWidgets('Intelligence sheet Close pops dialog, keeps home', (tester) async {
@@ -1237,6 +1541,31 @@ class _FakeStressRemote extends Fake implements PortfolioRemoteDataSource {
     List<String>? presets,
     Map<String, dynamic>? custom,
   }) async {
+    return result;
+  }
+
+  @override
+  Future<List<IntelligenceSuggestItem>> getIntelligenceSuggest(
+    String portfolioId, {
+    required String context,
+    String query = '',
+    String? wire,
+    int limit = 8,
+  }) async {
+    return const [];
+  }
+}
+
+class _FakeWhatIfRemote extends Fake implements PortfolioRemoteDataSource {
+  _FakeWhatIfRemote(this.result);
+
+  final WhatIfResult result;
+
+  @override
+  Future<WhatIfResult> getPortfolioWhatIf(
+    String portfolioId,
+    Map<String, dynamic> body,
+  ) async {
     return result;
   }
 
