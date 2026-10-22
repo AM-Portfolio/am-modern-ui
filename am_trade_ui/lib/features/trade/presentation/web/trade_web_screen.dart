@@ -414,6 +414,20 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     final isPaperSelected =
         paper != null && _currentPortfolioId == paper.portfolioUuid;
 
+    // Drop shell selection that Trade does not own (e.g. deleted Portfolio-only ghost).
+    if (portfolios.isNotEmpty &&
+        _currentPortfolioId != null &&
+        _currentPortfolioId != 'all' &&
+        !portfolios.any((p) => p.id == _currentPortfolioId)) {
+      final ghostId = _currentPortfolioId!;
+      final fallback = portfolios.first;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.clearPortfolioSelectionIf(ghostId);
+        _onPortfolioSelected(fallback.id, fallback.name, autoSelect: true);
+      });
+    }
+
     // Automatically select the first portfolio if none is selected
     if (portfolios.isNotEmpty && _currentPortfolioId == null) {
       final defaultPortfolio = portfolios.first;

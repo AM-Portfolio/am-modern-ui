@@ -467,7 +467,11 @@ class _PortfolioMobileViewState extends State<PortfolioMobileView>
     );
 
     if (confirm == true && mounted) {
-      await context.read<PortfolioCubit>().deletePortfolio(portfolio.portfolioId);
+      final deletedId = portfolio.portfolioId;
+      await context.read<PortfolioCubit>().deletePortfolio(deletedId);
+      if (mounted) {
+        context.clearPortfolioSelectionIf(deletedId);
+      }
     }
   }
 
