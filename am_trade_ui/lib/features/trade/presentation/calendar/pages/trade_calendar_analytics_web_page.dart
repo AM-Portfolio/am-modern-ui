@@ -54,14 +54,16 @@ class TradeCalendarAnalyticsWebPage extends ConsumerStatefulWidget {
 
 class _TradeCalendarAnalyticsWebPageState extends ConsumerState<TradeCalendarAnalyticsWebPage>
     with TickerProviderStateMixin {
-  // Year selection
+  // Year/month — resolved from latest trade activity on init
   late int _selectedYear;
+  int _focusMonth = DateTime.now().month;
+  var _didResolveInitial = false;
 
   @override
   void initState() {
     super.initState();
 
-    // Initialize with current year
+    // Placeholder until latest-activity resolves (avoids flashing wrong year).
     _selectedYear = DateTime.now().year;
 
     // Initialize cubit after the frame is built
@@ -70,13 +72,19 @@ class _TradeCalendarAnalyticsWebPageState extends ConsumerState<TradeCalendarAna
     });
   }
 
-  /// Initialize trade calendar with optimal settings
+  /// Initialize trade calendar on the user's latest trade year/month.
   void _initializeTradeCalendar() async {
     final portfolioId = widget.portfolioId;
     final cubit = await ref.read(tradeCalendarCubitProvider(portfolioId).future);
-    
-    // Start in yearly view
-    cubit.navigateToYearly( portfolioId: widget.portfolioId, year: _selectedYear);
+
+    final target = await cubit.resolveLatestOpenTarget(portfolioId: widget.portfolioId);
+    if (!mounted) return;
+    setState(() {
+      _selectedYear = target.year;
+      _focusMonth = target.month;
+      _didResolveInitial = true;
+    });
+    await cubit.navigateToYearly(portfolioId: widget.portfolioId, year: target.year);
   }
 
   /// Handle date selection changes through Cubit
@@ -204,12 +212,13 @@ class _TradeCalendarAnalyticsWebPageState extends ConsumerState<TradeCalendarAna
               templateType: CalendarTemplateType.full,
               title: 'Trading Analytics Calendar',
               cardConfigs: cubit.getUniversalCardConfigs(),
+              enableCardView: false,
               dataProvider: TradeCalendarDataProvider(
                 portfolioId: widget.portfolioId,
-                mockData: _buildMockDataFromViewModel(cubit.currentViewModel),
               ),
               yearCalendarData: yearCalendarData,
               currentYear: _selectedYear,
+              initialMonth: _didResolveInitial ? _focusMonth : 1,
               showYearCalendar: true,
             ).animate().fadeIn(duration: 600.ms, delay: 200.ms).scale(curve: Curves.easeOutQuad),
           ),
@@ -313,37 +322,4 @@ class _TradeCalendarAnalyticsWebPageState extends ConsumerState<TradeCalendarAna
     ),
   );
 
-  /// Build mock data from view model for universal calendar data provider
-  Map<String, dynamic> _buildMockDataFromViewModel(TradeCalendarViewModel? viewModel) {
-    if (viewModel == null) {
-      return <String, List<Map<String, dynamic>>>{};
-    }
-
-    final mockData = <String, List<Map<String, dynamic>>>{};
-    final trades = <Map<String, dynamic>>[];
-
-    // Extract data from calendar data map
-    viewModel.calendarData.forEach((dateKey, cards) {
-      for (final card in cards) {
-        if (card is TradeCardData) {
-          trades.add({
-            'tradeId': dateKey.hashCode.toString(),
-            'portfolioId': widget.portfolioId,
-            'status': card.pnl >= 0 ? 'WIN' : 'LOSS',
-            'tradePositionType': 'LONG',
-            'entryInfo': {'quantity': 100, 'price': 50.0, 'fees': 2.0},
-            'exitInfo': {'quantity': 100, 'price': card.pnl >= 0 ? 55.0 : 45.0, 'fees': 2.0},
-            'metrics': {'totalPnL': card.pnl, 'returnPercent': card.pnl >= 0 ? 5.0 : -5.0},
-            'tradeDate': dateKey,
-            'tradeEndDate': dateKey,
-            'symbol': 'Multiple',
-            'description': 'Trade summary for $dateKey',
-          });
-        }
-      }
-    });
-
-    mockData[widget.portfolioId] = trades;
-    return mockData;
-  }
 }

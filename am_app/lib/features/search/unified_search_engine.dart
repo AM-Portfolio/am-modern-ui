@@ -153,7 +153,30 @@ class UnifiedSearchEngine {
                   i.category.toLowerCase().contains(q),
             )
             .toList();
-        final merged = [...securitiesItems, ...basketItems, ...actions];
+        var journalItems = <CommandItem>[];
+        if (query.length >= 2) {
+          for (final hit in JournalSearchBridge.searchLocal(query)) {
+            journalItems.add(
+              CommandItem(
+                title: hit.title,
+                subtitle: hit.subtitle,
+                icon: Icons.menu_book_outlined,
+                category: 'Journal',
+                onSelected: () {
+                  JournalSearchBridge.tryApply(query);
+                  JournalSearchBridge.focusEntry?.call(hit.id);
+                },
+              ),
+            );
+          }
+        }
+
+        final merged = [
+          ...journalItems,
+          ...securitiesItems,
+          ...basketItems,
+          ...actions,
+        ];
         merged.sort((a, b) {
           final ba = SearchContextRegistry.boost(context, a.category);
           final bb = SearchContextRegistry.boost(context, b.category);

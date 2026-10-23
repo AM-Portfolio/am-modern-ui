@@ -38,6 +38,7 @@ class JournalTemplateSelection {
     this.badgeLabel,
     this.quote,
     this.isBlank = false,
+    this.checkedItems = const {},
   });
 
   final String name;
@@ -56,6 +57,50 @@ class JournalTemplateSelection {
   final String? badgeLabel;
   final String? quote;
   final bool isBlank;
+
+  /// Checklist item texts the user pre-checked in the template dialog.
+  /// Carried into Quill as `list: checked` when applying.
+  final Set<String> checkedItems;
+
+  JournalTemplateSelection copyWith({
+    String? name,
+    String? description,
+    String? icon,
+    JournalTemplateCategory? category,
+    List<String>? tags,
+    String? planningSummary,
+    List<String>? checklistItems,
+    List<String>? fields,
+    List<String>? notePrompts,
+    String? focusLine,
+    List<JournalTemplateSection>? previewSections,
+    bool? recommended,
+    int? estimatedMinutes,
+    String? badgeLabel,
+    String? quote,
+    bool? isBlank,
+    Set<String>? checkedItems,
+  }) {
+    return JournalTemplateSelection(
+      name: name ?? this.name,
+      description: description ?? this.description,
+      icon: icon ?? this.icon,
+      category: category ?? this.category,
+      tags: tags ?? this.tags,
+      planningSummary: planningSummary ?? this.planningSummary,
+      checklistItems: checklistItems ?? this.checklistItems,
+      fields: fields ?? this.fields,
+      notePrompts: notePrompts ?? this.notePrompts,
+      focusLine: focusLine ?? this.focusLine,
+      previewSections: previewSections ?? this.previewSections,
+      recommended: recommended ?? this.recommended,
+      estimatedMinutes: estimatedMinutes ?? this.estimatedMinutes,
+      badgeLabel: badgeLabel ?? this.badgeLabel,
+      quote: quote ?? this.quote,
+      isBlank: isBlank ?? this.isBlank,
+      checkedItems: checkedItems ?? this.checkedItems,
+    );
+  }
 
   int get itemCount {
     if (previewSections.isNotEmpty) {
@@ -119,9 +164,10 @@ quill.Document buildTemplateDocument(JournalTemplateSelection template) {
   void blank() => ops.add({'insert': '\n'});
 
   void checklist(String text) {
+    final done = template.checkedItems.contains(text);
     ops.add({
       'insert': '$text\n',
-      'attributes': {'list': 'unchecked'},
+      'attributes': {'list': done ? 'checked' : 'unchecked'},
     });
   }
 
@@ -147,8 +193,17 @@ quill.Document buildTemplateDocument(JournalTemplateSelection template) {
   if (template.previewSections.isNotEmpty) {
     for (final section in template.previewSections) {
       header(section.title);
+      final prompts = section.title.toLowerCase().contains('prompt');
       for (final item in section.items) {
-        checklist(item);
+        if (prompts) {
+          ops.add({
+            'insert': '$item\n',
+            'attributes': {'italic': true},
+          });
+          blank();
+        } else {
+          checklist(item);
+        }
       }
       blank();
     }

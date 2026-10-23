@@ -69,8 +69,8 @@ class _BehaviorTrackingSectionState extends State<BehaviorTrackingSection>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final colors = context.colors;
+    final theme = Theme.of(context);
     final hasPlanningBehavior =
         widget.planningBehaviorController.text.trim().isNotEmpty;
     final hasMidBehavior = widget.midBehaviorController.text.trim().isNotEmpty;
@@ -86,35 +86,11 @@ class _BehaviorTrackingSectionState extends State<BehaviorTrackingSection>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Icon(
-              Icons.psychology_alt_outlined,
-              size: 18,
-              color: ModuleColors.trade,
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Text(
-              'Behavior & mood',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-                height: 1.1,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          'Track planning, mid-session, and end-of-day state',
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: colors.textSecondary,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
         DecoratedBox(
           decoration: BoxDecoration(
-            color: colors.cardSurface.withValues(alpha: 0.4),
-            borderRadius: AppRadii.input,
+            color: colors.surface.withValues(alpha: 0.45),
+            borderRadius: AppRadii.card,
+            border: Border.all(color: colors.border.withValues(alpha: 0.3)),
           ),
           child: TabBar(
             controller: _tabController,

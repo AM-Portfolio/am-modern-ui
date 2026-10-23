@@ -31,6 +31,7 @@ class UniversalCalendarTemplateFactory {
     Widget? customContent,
     Map<int, CalendarMonthData>? yearCalendarData,
     int? currentYear,
+    int? initialMonth,
   }) {
     CommonLogger.debug(
       'Creating display template - hasCustomContent: ${customContent != null}, '
@@ -46,6 +47,7 @@ class UniversalCalendarTemplateFactory {
       customContent: customContent,
       yearCalendarData: yearCalendarData,
       currentYear: currentYear,
+      initialMonth: initialMonth,
     );
   }
 
@@ -59,6 +61,7 @@ class UniversalCalendarTemplateFactory {
     Widget? customFooter,
     Map<int, CalendarMonthData>? yearCalendarData,
     int? currentYear,
+    int? initialMonth,
     bool showYearCalendar = false,
   }) {
     CommonLogger.debug(
@@ -76,6 +79,7 @@ class UniversalCalendarTemplateFactory {
         onSelectionChanged: onSelectionChanged,
         yearCalendarData: yearCalendarData,
         currentYear: currentYear,
+        initialMonth: initialMonth,
       );
     }
 
@@ -117,6 +121,7 @@ class UniversalCalendarTemplateFactory {
     Widget? customFooter,
     Map<int, CalendarMonthData>? yearCalendarData,
     int? currentYear,
+    int? initialMonth,
     bool showYearCalendar = false,
   }) {
     CommonLogger.debug('Creating calendar widget - showYearCalendar: $showYearCalendar', tag: 'TemplateFactory');
@@ -134,6 +139,7 @@ class UniversalCalendarTemplateFactory {
       customFooter: customFooter,
       yearCalendarData: yearCalendarData,
       currentYear: currentYear,
+      initialMonth: initialMonth,
       showYearCalendar: showYearCalendar,
     );
   }

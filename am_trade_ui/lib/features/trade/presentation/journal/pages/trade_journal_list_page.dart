@@ -102,7 +102,7 @@ class _TradeJournalListPageState extends ConsumerState<TradeJournalListPage> {
         String? error;
 
         state.maybeWhen(
-          loaded: (loadedEntries, s, status, folder, tags, q, setup) {
+          loaded: (loadedEntries, s, adherence, status, folder, tags, q, setup) {
             entries = loadedEntries;
             summary = s;
             statusFilter = status.isEmpty ? 'ALL' : status;
