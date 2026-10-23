@@ -624,7 +624,8 @@ class _PortfolioOverviewWidgetState
         ? PortfolioStressCard(
             key: ValueKey('stress_$portfolioId'),
             portfolioId: portfolioId,
-            initiallyExpanded: !isPhone,
+            // Always open so mobile users see scenarios without an extra tap.
+            initiallyExpanded: true,
             fillHeight: fillBottom,
           )
         : null;
@@ -632,7 +633,8 @@ class _PortfolioOverviewWidgetState
         ? PortfolioWhatIfCard(
             key: ValueKey('whatif_$portfolioId'),
             portfolioId: portfolioId,
-            initiallyExpanded: !isPhone,
+            // Always open so mobile users see the simulator without an extra tap.
+            initiallyExpanded: true,
             fillHeight: fillBottom,
           )
         : null;

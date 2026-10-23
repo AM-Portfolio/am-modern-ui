@@ -109,8 +109,11 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
     if (provider.allIndicesData.isEmpty) return;
 
     final pinnedSymbols =
-        provider.allIndicesData.take(6).map((e) => e.indexSymbol).toList();
-    unawaited(provider.ensureIndexSparklines(pinnedSymbols, range: '1W'));
+        provider.allIndicesData.take(12).map((e) => e.indexSymbol).toList();
+    unawaited(provider.ensureIndexSparklines(
+      pinnedSymbols,
+      range: provider.selectedIndicesTimeframe,
+    ));
 
     if (_preloadTimer == null && _preloadingQueue.isNotEmpty) {
       // Delay the start of background fetches by 2.0 seconds. This ensures that
@@ -346,8 +349,9 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
     _loadHistoricalData();
     _loadTopMovers();
     final pinnedSymbols =
-        provider.allIndicesData.take(6).map((e) => e.indexSymbol).toList();
-    _loadTimeframeOnDemand(pinnedSymbols, tf);
+        provider.allIndicesData.take(12).map((e) => e.indexSymbol).toList();
+    unawaited(provider.ensureIndexSparklines(pinnedSymbols, range: tf));
+    _loadTimeframeOnDemand(pinnedSymbols.take(6).toList(), tf);
   }
 
   /// Opens the All Indices panel (from the app bar chip on mobile).
@@ -385,57 +389,63 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
 
   /// [SIP Optimization] Opens the mobile bottom sheet and lazy-loads the base prices
   /// for all indices for the current timeframe so they display correct percentages.
-  void _showMobileAllIndicesBottomSheet(
-      BuildContext context, MarketProvider provider) {
+  Future<void> _showMobileAllIndicesBottomSheet(
+      BuildContext context, MarketProvider provider) async {
     final allSymbols = [
       ...provider.allIndicesData.map((e) => e.indexSymbol),
       ...provider.globalIndicesData.map((e) => e.indexSymbol),
     ];
     _loadTimeframeOnDemand(allSymbols, _selectedTimeframe);
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: context.glassOverlay(0.55),
-      builder: (context) {
-        return ListenableBuilder(
-          listenable: provider,
-          builder: (context, _) {
-            return Consumer(
-              builder: (context, ref, _) {
-                final tf = ref.watch(appTimeFrameProvider).code;
-                return DraggableScrollableSheet(
-                  initialChildSize: 0.75,
-                  minChildSize: 0.4,
-                  maxChildSize: 0.92,
-                  expand: false,
-                  builder: (context, scrollController) => AllIndicesBottomSheet(
-                    scrollController: scrollController,
-                    initialTimeframe: tf,
-                    indices: provider.allIndicesData,
-                    globalIndices: provider.globalIndicesData,
-                    availableIndices: provider.availableIndices,
-                    selectedIndexSymbol: selectedIndexForMovers,
-                    onNeedGlobal: () {
-                      if (provider.globalIndicesData.isEmpty) {
-                        provider.loadGlobalIndicesData();
-                      }
-                    },
-                    onIndexSelected: (data) {
-                      if (!provider.isGlobalSymbol(data.indexSymbol)) {
-                        _onDashboardIndexSelected(data);
-                      }
-                      Navigator.pop(context);
-                    },
-                  ),
-                );
-              },
-            );
-          },
-        );
-      },
-    );
+    GlobalBottomNavVisibility.pushModalLock();
+    try {
+      await showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        barrierColor: context.glassOverlay(0.55),
+        builder: (context) {
+          return ListenableBuilder(
+            listenable: provider,
+            builder: (context, _) {
+              return Consumer(
+                builder: (context, ref, _) {
+                  final tf = ref.watch(appTimeFrameProvider).code;
+                  return DraggableScrollableSheet(
+                    initialChildSize: 0.75,
+                    minChildSize: 0.4,
+                    maxChildSize: 0.92,
+                    expand: false,
+                    builder: (context, scrollController) =>
+                        AllIndicesBottomSheet(
+                      scrollController: scrollController,
+                      initialTimeframe: tf,
+                      indices: provider.allIndicesData,
+                      globalIndices: provider.globalIndicesData,
+                      availableIndices: provider.availableIndices,
+                      selectedIndexSymbol: selectedIndexForMovers,
+                      onNeedGlobal: () {
+                        if (provider.globalIndicesData.isEmpty) {
+                          provider.loadGlobalIndicesData();
+                        }
+                      },
+                      onIndexSelected: (data) {
+                        if (!provider.isGlobalSymbol(data.indexSymbol)) {
+                          _onDashboardIndexSelected(data);
+                        }
+                        Navigator.pop(context);
+                      },
+                    ),
+                  );
+                },
+              );
+            },
+          );
+        },
+      );
+    } finally {
+      GlobalBottomNavVisibility.popModalLock();
+    }
   }
 
   @override
@@ -668,128 +678,132 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
     }
   }
 
-  void _showCompareIndicesBottomSheet(
+  Future<void> _showCompareIndicesBottomSheet(
     BuildContext context,
     MarketProvider marketProvider,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            final source = _compareRegion == IndicesRegion.global
-                ? marketProvider.globalIndicesData
-                : marketProvider.allIndicesData;
-            final filtered = source.where((data) {
-              final q = _popoverSearchQuery.toLowerCase();
-              if (q.isEmpty) return true;
-              return data.indexSymbol.toLowerCase().contains(q) ||
-                  (data.indexName?.toLowerCase().contains(q) ?? false);
-            }).toList();
-            final accent = ModuleColors.market;
-            return SafeArea(
-              child: Padding(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.viewInsetsOf(context).bottom,
-                ),
-                child: SizedBox(
-                  height: MediaQuery.sizeOf(context).height * 0.65,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(height: 8),
-                      Center(
-                        child: Container(
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).dividerColor,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                        child: Text(
-                          'Compare Indices',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: TextField(
-                          decoration: InputDecoration(
-                            hintText: 'Search indices…',
-                            prefixIcon: const Icon(Icons.search, size: 20),
-                            isDense: true,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
+  ) async {
+    GlobalBottomNavVisibility.pushModalLock();
+    try {
+      await showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        builder: (sheetContext) {
+          return StatefulBuilder(
+            builder: (context, setSheetState) {
+              final source = _compareRegion == IndicesRegion.global
+                  ? marketProvider.globalIndicesData
+                  : marketProvider.allIndicesData;
+              final filtered = source.where((data) {
+                final q = _popoverSearchQuery.toLowerCase();
+                if (q.isEmpty) return true;
+                return data.indexSymbol.toLowerCase().contains(q) ||
+                    (data.indexName?.toLowerCase().contains(q) ?? false);
+              }).toList();
+              final accent = ModuleColors.market;
+              return SafeArea(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.viewInsetsOf(context).bottom,
+                  ),
+                  child: SizedBox(
+                    height: MediaQuery.sizeOf(context).height * 0.65,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: 8),
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).dividerColor,
+                              borderRadius: BorderRadius.circular(2),
                             ),
                           ),
-                          onChanged: (v) {
-                            setSheetState(() => _popoverSearchQuery = v);
-                          },
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: filtered.length,
-                          itemBuilder: (context, index) {
-                            final data = filtered[index];
-                            final selected = selectedIndicesForChart
-                                .contains(data.indexSymbol);
-                            return CheckboxListTile(
-                              dense: true,
-                              activeColor: accent,
-                              title: Text(data.indexSymbol),
-                              subtitle: data.indexName != null
-                                  ? Text(data.indexName!)
-                                  : null,
-                              value: selected,
-                              onChanged: (v) {
-                                setState(() {
-                                  if (v == true) {
-                                    if (!selectedIndicesForChart
-                                        .contains(data.indexSymbol)) {
-                                      selectedIndicesForChart = [
-                                        ...selectedIndicesForChart,
-                                        data.indexSymbol,
-                                      ];
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                          child: Text(
+                            'Compare Indices',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: TextField(
+                            decoration: InputDecoration(
+                              hintText: 'Search indices…',
+                              prefixIcon: const Icon(Icons.search, size: 20),
+                              isDense: true,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            onChanged: (v) {
+                              setSheetState(() => _popoverSearchQuery = v);
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Expanded(
+                          child: ListView.builder(
+                            itemCount: filtered.length,
+                            itemBuilder: (context, index) {
+                              final data = filtered[index];
+                              final selected = selectedIndicesForChart
+                                  .contains(data.indexSymbol);
+                              return CheckboxListTile(
+                                dense: true,
+                                activeColor: accent,
+                                title: Text(data.indexSymbol),
+                                subtitle: data.indexName != null
+                                    ? Text(data.indexName!)
+                                    : null,
+                                value: selected,
+                                onChanged: (v) {
+                                  setState(() {
+                                    if (v == true) {
+                                      if (!selectedIndicesForChart
+                                          .contains(data.indexSymbol)) {
+                                        selectedIndicesForChart = [
+                                          ...selectedIndicesForChart,
+                                          data.indexSymbol,
+                                        ];
+                                      }
+                                    } else {
+                                      selectedIndicesForChart =
+                                          List.from(selectedIndicesForChart)
+                                            ..remove(data.indexSymbol);
                                     }
-                                  } else {
-                                    selectedIndicesForChart =
-                                        List.from(selectedIndicesForChart)
-                                          ..remove(data.indexSymbol);
-                                  }
-                                });
-                                setSheetState(() {});
-                                _loadHistoricalData();
-                              },
-                            );
-                          },
+                                  });
+                                  setSheetState(() {});
+                                  _loadHistoricalData();
+                                },
+                              );
+                            },
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
-        );
-      },
-    ).whenComplete(() {
+              );
+            },
+          );
+        },
+      );
+    } finally {
+      GlobalBottomNavVisibility.popModalLock();
       if (mounted) setState(() => _popoverSearchQuery = '');
-    });
+    }
   }
 
   @override
@@ -816,6 +830,9 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
 
     // Main content
     final isMobile = MediaQuery.sizeOf(context).width < 768;
+    // Shared height so Indices Comparison + Top Movers bottoms align (web)
+    // and mobile shows 5 tiles without inner scroll.
+    final moversRowHeight = isMobile ? 460.0 : 420.0;
     final marketColor = ModuleColors.market;
     final scaffoldBg = context.colors.scaffoldBackground;
 
@@ -950,10 +967,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                     leftFlex: 2,
                     rightFlex: 1,
                     left: Container(
-                      height: isMobile
-                          ? (MediaQuery.sizeOf(context).height * 0.38)
-                              .clamp(380.0, 440.0)
-                          : 360,
+                      height: moversRowHeight,
                       padding: EdgeInsets.fromLTRB(
                         isMobile ? 10 : 14,
                         isMobile ? 8 : 10,
@@ -1010,7 +1024,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                       ),
                     ),
                       right: SizedBox(
-                        height: isMobile ? 320 : 360,
+                        height: moversRowHeight,
                         child: TopMoversWidgetV2(
                           gainers: topGainers,
                           losers: topLosers,

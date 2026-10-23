@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
@@ -72,6 +74,30 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
           ctrl.setLayout(ChartGridLayout.one);
           ctrl.setBottomMinimized(true);
         }
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant ChartWorkspacePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final nextSym = widget.initialSymbol?.trim();
+    final prevSym = oldWidget.initialSymbol?.trim();
+    final nextTf = widget.initialTimeframe?.trim();
+    final prevTf = oldWidget.initialTimeframe?.trim();
+    if (nextSym == null || nextSym.isEmpty) return;
+    if (nextSym == prevSym && nextTf == prevTf) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final ctrl = ref.read(chartTerminalProvider.notifier);
+      final current = ref.read(chartTerminalProvider).symbol.trim();
+      if (current.toUpperCase() != nextSym.toUpperCase()) {
+        unawaited(ctrl.selectSymbol(nextSym));
+      }
+      if (nextTf != null &&
+          nextTf.isNotEmpty &&
+          nextTf != prevTf) {
+        unawaited(ctrl.setTimeframe(ChartTimeframe.fromCode(nextTf)));
       }
     });
   }
@@ -160,23 +186,34 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
             child: Row(
               children: [
                 Expanded(
-                  child: LayoutBuilder(
+                  child: ValueListenableBuilder<double>(
+                    valueListenable: GlobalBottomNavVisibility.factor,
+                    builder: (context, navFactor, _) {
+                      return LayoutBuilder(
                     builder: (context, constraints) {
                       final maxH = constraints.maxHeight;
+                      // Lift chart/dock above floating bottom nav when it shows.
+                      final navInset = isMobile
+                          ? PlatformConstants.globalBottomNavReserve(context) *
+                              navFactor.clamp(0.0, 1.0)
+                          : 0.0;
+                      final layoutH =
+                          (maxH - navInset).clamp(100.0, maxH);
                       final isBottomVisible =
                           !_analysisFocus && !state.bottomMinimized;
                       final isBottomDockVisible =
                           !_analysisFocus && state.bottomMinimized;
-                      final dockH = isBottomDockVisible ? (isMobile ? 26.0 : 28.0) : 0.0;
+                      final dockH =
+                          isBottomDockVisible ? (isMobile ? 26.0 : 28.0) : 0.0;
                       final handleH = isBottomVisible ? 24.0 : 0.0;
                       final bottomH = isBottomVisible
                           ? _bottomHeight.clamp(
                               160.0,
-                              isMobile ? maxH * 0.5 : maxH * 0.7,
+                              isMobile ? layoutH * 0.5 : layoutH * 0.7,
                             )
                           : 0.0;
-                      final chartH =
-                          (maxH - bottomH - handleH - dockH).clamp(100.0, maxH);
+                      final chartH = (layoutH - bottomH - handleH - dockH)
+                          .clamp(100.0, layoutH);
 
                       final showDrawRail = !isMobile || _showMobileDrawRail;
 
@@ -202,14 +239,14 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
                                             !_drawRailExpanded);
                                       }
                                     },
-                                  onSelectTool: (t) => setState(() {
-                                    _drawTool = t;
-                                  }),
-                                  onClearAll: () => setState(() {
-                                    _clearDrawingsEpoch++;
-                                    _activeDrawingsCount = 0;
-                                  }),
-                                ),
+                                    onSelectTool: (t) => setState(() {
+                                      _drawTool = t;
+                                    }),
+                                    onClearAll: () => setState(() {
+                                      _clearDrawingsEpoch++;
+                                      _activeDrawingsCount = 0;
+                                    }),
+                                  ),
                                 Expanded(
                                   child: _ChartGrid(
                                     state: state,
@@ -230,11 +267,12 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
                           if (isBottomVisible) ...[
                             GestureDetector(
                               behavior: HitTestBehavior.opaque,
-                              onDoubleTap: () => ctrl.setBottomMinimized(true),
+                              onDoubleTap: () =>
+                                  ctrl.setBottomMinimized(true),
                               onVerticalDragUpdate: (d) {
                                 setState(() {
                                   _bottomHeight = (_bottomHeight - d.delta.dy)
-                                      .clamp(200.0, maxH * 0.7);
+                                      .clamp(200.0, layoutH * 0.7);
                                 });
                               },
                               child: MouseRegion(
@@ -380,7 +418,9 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
                                             ),
                                             const SizedBox(width: 3),
                                             Text(
-                                              isMobile ? 'Open' : 'Restore Panel',
+                                              isMobile
+                                                  ? 'Open'
+                                                  : 'Restore Panel',
                                               style: TextStyle(
                                                 fontSize: isMobile ? 10 : 11,
                                                 fontWeight: FontWeight.w700,
@@ -396,7 +436,10 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
                                 ),
                               ),
                             ),
+                          if (navInset > 0) SizedBox(height: navInset),
                         ],
+                      );
+                    },
                       );
                     },
                   ),

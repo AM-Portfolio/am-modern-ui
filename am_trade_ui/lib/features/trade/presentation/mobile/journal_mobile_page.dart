@@ -83,62 +83,75 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
     super.dispose();
   }
 
-  void _openNew(JournalCubit cubit) {
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.candlestick_chart),
-              title: const Text('Trade Journal'),
-              onTap: () {
-                Navigator.pop(ctx);
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => TradeJournalWorkflowPage(
-                      journalCubit: cubit,
-                      portfolioId: widget.portfolioId,
-                    ),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.notes),
-              title: const Text('Daily Note'),
-              onTap: () {
-                Navigator.pop(ctx);
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => SimpleJournalNotePage(
-                      journalCubit: cubit,
-                      entryType: 'DAILY',
-                    ),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.block),
-              title: const Text('Missed Trade'),
-              onTap: () {
-                Navigator.pop(ctx);
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => SimpleJournalNotePage(
-                      journalCubit: cubit,
-                      entryType: 'MISSED',
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
+  Future<void> _openNew(JournalCubit cubit) async {
+    // Hide the floating company nav while the sheet is open so options
+    // do not overlap Dashboard / Portfolio / Trade chrome.
+    GlobalBottomNavVisibility.pushModalLock();
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
-      ),
-    );
+        builder: (ctx) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: AppSpacing.sm),
+              ListTile(
+                leading: const Icon(Icons.candlestick_chart),
+                title: const Text('Trade Journal'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => TradeJournalWorkflowPage(
+                        journalCubit: cubit,
+                        portfolioId: widget.portfolioId,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.notes),
+                title: const Text('Daily Note'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => SimpleJournalNotePage(
+                        journalCubit: cubit,
+                        entryType: 'DAILY',
+                      ),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.block),
+                title: const Text('Missed Trade'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => SimpleJournalNotePage(
+                        journalCubit: cubit,
+                        entryType: 'MISSED',
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ],
+          ),
+        ),
+      );
+    } finally {
+      GlobalBottomNavVisibility.popModalLock();
+    }
   }
 
   String _tabLabel(_JournalMobileTab tab) => switch (tab) {

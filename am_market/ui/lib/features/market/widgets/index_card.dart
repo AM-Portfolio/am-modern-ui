@@ -40,7 +40,8 @@ class IndexCard extends StatelessWidget {
           }
         }
 
-        final isPositive = displayChange >= 0;
+        // One narrative: % sign and sparkline stroke use the same pChange.
+        final isPositive = displayPChange >= 0;
         final changeColor = isLoading
             ? MarketColors.textMuted(context)
             : (isPositive
@@ -49,8 +50,12 @@ class IndexCard extends StatelessWidget {
 
         final displayPChangeFormatted = displayPChange.abs().toStringAsFixed(2);
         final displayChangeFormatted = numberFormat.format(displayChange.abs());
-        final sparkline =
-            provider.indexSparklines[data.indexSymbol] ?? const <double>[];
+        final sparkline = provider.indexSparklines[data.indexSymbol] ??
+            provider.indexSparklines[data.indexSymbol.trim().toUpperCase()] ??
+            const <double>[];
+        final sparklineColor = sparkline.length >= 2
+            ? changeColor
+            : MarketColors.textMuted(context);
 
         return MouseRegion(
           cursor: SystemMouseCursors.click,
@@ -143,7 +148,7 @@ class IndexCard extends StatelessWidget {
                         ? CustomPaint(
                             painter: _IndexSparklinePainter(
                               data: sparkline,
-                              color: changeColor,
+                              color: sparklineColor,
                             ),
                           )
                         : (provider.isLoadingSparklines
@@ -153,7 +158,7 @@ class IndexCard extends StatelessWidget {
                                   height: 12,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 1.5,
-                                    color: changeColor.withValues(alpha: 0.5),
+                                    color: sparklineColor.withValues(alpha: 0.5),
                                   ),
                                 ),
                               )

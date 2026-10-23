@@ -5,6 +5,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_news_ui/am_news_ui.dart';
 
 import '../../providers/equity_insider_provider.dart';
+import '../widgets/equity_insider_header_card.dart';
 import '../widgets/equity_insider_hero.dart';
 import '../widgets/equity_insider_kpis.dart';
 import '../widgets/equity_insider_chart.dart';
@@ -198,9 +199,10 @@ class _FundamentalsBody extends ConsumerStatefulWidget {
 }
 
 class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
-  static const double _stickyHeroExtentDesktop = 120;
-  /// Compact mockup sticky bar (~logo + name/chips + LTP row).
-  static const double _stickyHeroExtentMobile = 92;
+  static const double _stickyHeroExtentDesktop = 96;
+  /// Three-band identity card + pin padding (xs on each edge).
+  static const double _stickyHeroExtentMobile =
+      EquityInsiderHeaderCard.mobileStickyPinExtent;
   static const double _stickyNavExtent = 44;
 
   final ScrollController _scrollController = ScrollController();

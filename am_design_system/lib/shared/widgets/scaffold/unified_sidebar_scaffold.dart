@@ -477,7 +477,7 @@ class _UnifiedSidebarScaffoldState extends State<UnifiedSidebarScaffold>
             mainAxisSize: MainAxisSize.max,
             children: [
               Text(
-                item.title,
+                item.displayTitle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,

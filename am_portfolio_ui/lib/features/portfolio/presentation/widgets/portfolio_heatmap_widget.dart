@@ -41,9 +41,9 @@ class PortfolioHeatmapUiConfig {
   final String subtitle;
   final String logTag;
 
-  /// Mobile configuration — List by default so every sector stays readable.
+  /// Mobile configuration — treemap by default (matches web).
   static const mobile = PortfolioHeatmapUiConfig(
-    defaultLayout: HeatmapLayoutType.list,
+    defaultLayout: HeatmapLayoutType.treemap,
     compactMode: true,
     showSelectors: true,
     templateType: UniversalTemplateType.compact,
@@ -53,6 +53,15 @@ class PortfolioHeatmapUiConfig {
     subtitle: '', // Completely removed the down side text
     logTag: 'PortfolioHeatmap.Mobile',
   );
+
+  /// Space so the treemap sits above the floating global bottom nav.
+  static double mobileBottomInset(
+    BuildContext context, {
+    double navFactor = 1,
+  }) {
+    final reserve = PlatformConstants.globalBottomNavReserve(context);
+    return 8.0 + reserve * navFactor.clamp(0.0, 1.0);
+  }
 
   /// Web configuration
   static const web = PortfolioHeatmapUiConfig(
@@ -431,35 +440,44 @@ class _PortfolioHeatmapWidgetState
         // ── MAIN HEATMAP (fills remaining tab height on mobile) ──
         if (widget.config.compactMode)
           Expanded(
-            child: UniversalHeatmapWidget(
-              investmentType: InvestmentType.portfolio,
-              heatmapData: displayData,
-              title: 'Heatmap',
-              subtitle: null,
-              config: _mapToWidgetConfig(customConfig),
-              showSelectors: true,
-              compactMode: widget.config.compactMode,
-              selectedTimeFrame: selectedTimeFrame,
-              selectedMetric: _selectedMetric,
-              selectedSector: _selectedSector,
-              selectedMarketCap: _selectedMarketCap,
-              selectedLayout: _selectedLayout,
-              onTilePressed: () {
-                CommonLogger.userAction(
-                  'Heatmap stock tile pressed',
-                  tag: '${widget.config.logTag}.Action',
-                );
-              },
-              onFiltersChanged: ({timeFrame, metric, sector, marketCap, layout}) {
-                _onFiltersChanged(
-                  timeFrame: timeFrame,
-                  metric: metric,
-                  sector: sector,
-                  marketCap: marketCap,
-                  layout: layout,
-                );
-              },
-              templateType: widget.config.templateType,
+            child: _padAboveBottomNav(
+              context,
+              child: UniversalHeatmapWidget(
+                investmentType: InvestmentType.portfolio,
+                heatmapData: displayData,
+                title: 'Heatmap',
+                subtitle: null,
+                config: _mapToWidgetConfig(customConfig),
+                showSelectors: true,
+                compactMode: widget.config.compactMode,
+                selectedTimeFrame: selectedTimeFrame,
+                selectedMetric: _selectedMetric,
+                selectedSector: _selectedSector,
+                selectedMarketCap: _selectedMarketCap,
+                selectedLayout: _selectedLayout,
+                onTilePressed: () {
+                  CommonLogger.userAction(
+                    'Heatmap stock tile pressed',
+                    tag: '${widget.config.logTag}.Action',
+                  );
+                },
+                onFiltersChanged: ({
+                  timeFrame,
+                  metric,
+                  sector,
+                  marketCap,
+                  layout,
+                }) {
+                  _onFiltersChanged(
+                    timeFrame: timeFrame,
+                    metric: metric,
+                    sector: sector,
+                    marketCap: marketCap,
+                    layout: layout,
+                  );
+                },
+                templateType: widget.config.templateType,
+              ),
             ),
           )
         else
@@ -845,6 +863,23 @@ class _PortfolioHeatmapWidgetState
           ),
         ],
       ),
+    );
+  }
+
+  Widget _padAboveBottomNav(BuildContext context, {required Widget child}) {
+    return ValueListenableBuilder<double>(
+      valueListenable: GlobalBottomNavVisibility.factor,
+      builder: (context, navFactor, _) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: PortfolioHeatmapUiConfig.mobileBottomInset(
+              context,
+              navFactor: navFactor,
+            ),
+          ),
+          child: child,
+        );
+      },
     );
   }
 

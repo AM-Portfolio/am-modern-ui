@@ -245,6 +245,24 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
   }
 
   @override
+  void didUpdateWidget(covariant _ChartTerminalBody oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final nextSym = widget.initialSymbol?.trim();
+    final prevSym = oldWidget.initialSymbol?.trim();
+    if (nextSym == null || nextSym.isEmpty) return;
+    if (nextSym == prevSym) return;
+    final current = ref.read(chartTerminalProvider).symbol.trim();
+    if (current.toUpperCase() == nextSym.toUpperCase()) return;
+    final existing = _currentTerminalCtrl;
+    if (existing != null) {
+      existing.selectSymbol(nextSym);
+    } else {
+      ref.read(chartTerminalProvider.notifier).selectSymbol(nextSym);
+    }
+    _syncFoSymbol(nextSym);
+  }
+
+  @override
   void dispose() {
     ChartSearchBridge.unbind();
     _marketProvider.dispose();
@@ -812,6 +830,9 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
               selected: _section,
               onSelected: (tag) {
                 setState(() => _section = tag);
+                if (tag == _ChartBottomSection.heatmap) {
+                  ctrl.setBottomMinimized(false);
+                }
                 if (_isFoSection(tag)) {
                   _syncFoSymbol(state.symbol);
                 }

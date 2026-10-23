@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:am_design_system/core/config/design_system_provider.dart';
 import 'package:am_design_system/core/theme/app_glassmorphism.dart';
 import 'package:am_design_system/core/theme/app_glassmorphism_v2.dart';
+import 'package:am_design_system/core/theme/color_extensions.dart';
 import 'package:am_design_system/core/utils/conditional_mouse_region.dart';
 
 
@@ -39,6 +40,19 @@ class GlassCard extends StatelessWidget {
     this.isGlowing = false,
   }) : super(key: key);
 
+  /// Fill alphas for the default themed glass (dark start/end, light start/end).
+  static const List<double> themedFillAlphaDark = [0.94, 0.88];
+  static const List<double> themedFillAlphaLight = [0.98, 0.94];
+
+  static List<Color> _themedFill(BuildContext context) {
+    final colors = context.colors;
+    final alpha = context.isDark ? themedFillAlphaDark : themedFillAlphaLight;
+    return [
+      colors.cardSurface.withValues(alpha: alpha[0]),
+      colors.surface.withValues(alpha: alpha[1]),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     // Get Design Config
@@ -47,7 +61,7 @@ class GlassCard extends StatelessWidget {
 
     // Determine decoration based on props
     BoxDecoration decoration;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = context.isDark;
     
     if (colorScheme != null) {
       // Use V2 Style
@@ -62,16 +76,17 @@ class GlassCard extends StatelessWidget {
       // Use Gradient Style
       decoration = AppGlassmorphism.glassCard(
         gradientColors: gradientColors,
-        borderColor: borderColor,
+        borderColor: borderColor ?? context.colors.border,
         borderWidth: borderWidth,
         blur: blur,
         borderRadius: effectiveRadius,
         isDark: isDark,
       );
     } else {
-      // Default Glass Style
+      // Default glass follows AppColorsTheme (Gold / OLED / Sky Blue / …).
       decoration = AppGlassmorphism.glassCard(
-        borderColor: borderColor,
+        gradientColors: _themedFill(context),
+        borderColor: borderColor ?? context.colors.border,
         borderWidth: borderWidth,
         blur: blur,
         borderRadius: effectiveRadius,

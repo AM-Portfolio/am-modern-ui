@@ -51,7 +51,7 @@ void main() {
   });
 
   group('MarketProvider.ensureIndexSparklines in-flight guard', () {
-    test('second call while in flight does not start another fetch', () async {
+    test('second call while in flight is queued then drained', () async {
       final provider = MarketProvider();
       var fetchCount = 0;
       final gate = Completer<void>();
@@ -80,6 +80,52 @@ void main() {
       await first;
       expect(provider.isLoadingSparklines, isFalse);
       expect(provider.indexSparklines['NIFTY 50'], isNotEmpty);
+    });
+
+    test('discards stale closes when timeframe changes mid-flight', () async {
+      final provider = MarketProvider();
+      final gate1w = Completer<void>();
+      final seenRanges = <String>[];
+
+      provider.debugHistoryBatchFetcher = (symbols, range) async {
+        seenRanges.add(range);
+        if (range == '1W') {
+          await gate1w.future;
+          return {
+            for (final s in symbols)
+              s: [
+                {'timestamp': 1, 'close': 100.0},
+                {'timestamp': 2, 'close': 110.0},
+              ],
+          };
+        }
+        return {
+          for (final s in symbols)
+            s: [
+              {'timestamp': 1, 'close': 200.0},
+              {'timestamp': 2, 'close': 201.0},
+            ],
+        };
+      };
+
+      final first = provider.ensureIndexSparklines(['NIFTY 50'], range: '1W');
+      await Future<void>.delayed(Duration.zero);
+      expect(provider.isLoadingSparklines, isTrue);
+
+      // Clear + bump generation synchronously; indices reload may hit network.
+      final tfFuture = provider.setIndicesTimeframe('1M');
+      await Future<void>.delayed(Duration.zero);
+      expect(provider.indexSparklines, isEmpty);
+
+      // Queue 1M while 1W is still in flight.
+      final queued = provider.ensureIndexSparklines(['NIFTY 50'], range: '1M');
+      gate1w.complete();
+      await first;
+      await queued;
+
+      expect(seenRanges, containsAll(['1W', '1M']));
+      expect(provider.indexSparklines['NIFTY 50'], [200.0, 201.0]);
+      await tfFuture;
     });
   });
 }

@@ -62,6 +62,8 @@ class TopMoversWidgetV2 extends StatelessWidget {
       headerAccent: headerAccent,
       headerTrailing: headerTrailing,
       scrollEmbedded: scrollEmbedded,
+      // Market fetches limit:5 — show all five (do not change DS default for Portfolio).
+      maxItemsPerColumn: 5,
     );
   }
 
