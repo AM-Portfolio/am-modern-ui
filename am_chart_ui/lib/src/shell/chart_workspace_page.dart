@@ -259,74 +259,49 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 10,
                                   ),
-                                  child: Row(
+                                  child: Stack(
+                                    alignment: Alignment.center,
                                     children: [
-                                      Icon(
-                                        Icons.view_agenda_outlined,
-                                        size: 13,
-                                        color: theme.hintColor.withValues(
-                                          alpha: 0.7,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Text(
-                                        'PANEL',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700,
-                                          letterSpacing: 0.8,
-                                          color: theme.hintColor.withValues(
-                                            alpha: 0.8,
-                                          ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Center(
-                                          child: Container(
-                                            width: 44,
-                                            height: 4,
-                                            decoration: BoxDecoration(
-                                              color: theme.hintColor.withValues(
-                                                alpha: 0.35,
+                                      Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.view_agenda_outlined,
+                                              size: 13,
+                                              color:
+                                                  theme.hintColor.withValues(
+                                                alpha: 0.7,
                                               ),
-                                              borderRadius:
-                                                  BorderRadius.circular(2),
                                             ),
-                                          ),
+                                            const SizedBox(width: 5),
+                                            Text(
+                                              'PANEL',
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w700,
+                                                letterSpacing: 0.8,
+                                                color:
+                                                    theme.hintColor.withValues(
+                                                  alpha: 0.8,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                      Tooltip(
-                                        message:
-                                            'Minimize bottom panel (Double-click to toggle)',
-                                        child: InkWell(
-                                          onTap: () =>
-                                              ctrl.setBottomMinimized(true),
-                                          borderRadius:
-                                              BorderRadius.circular(4),
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 2,
+                                      Center(
+                                        child: Container(
+                                          width: 44,
+                                          height: 4,
+                                          decoration: BoxDecoration(
+                                            color:
+                                                theme.hintColor.withValues(
+                                              alpha: 0.35,
                                             ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Text(
-                                                  'Minimize',
-                                                  style: TextStyle(
-                                                    fontSize: 11,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: theme.hintColor,
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 2),
-                                                Icon(
-                                                  Icons.keyboard_arrow_down,
-                                                  size: 16,
-                                                  color: theme.hintColor,
-                                                ),
-                                              ],
-                                            ),
+                                            borderRadius:
+                                                BorderRadius.circular(2),
                                           ),
                                         ),
                                       ),
@@ -776,7 +751,7 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
                   const SizedBox(width: 6),
                   _buildMobileTimeframeDropdown(context, state, ctrl),
                   const SizedBox(width: 6),
-                  _buildCompareButton(context, ctrl),
+                  _buildCompareButton(context, state, ctrl),
                   const SizedBox(width: 6),
                   _divider(theme),
                   const SizedBox(width: 6),
@@ -810,7 +785,6 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
     final theme = Theme.of(context);
     final state = widget.state;
     final ctrl = widget.ctrl;
-    final active = state.active;
     final showSearch = widget.showHeaderSearch;
 
     return Material(
@@ -833,40 +807,13 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
             const SizedBox(width: 8),
             _divider(theme),
             const SizedBox(width: 8),
-            ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 90, maxWidth: 220),
-              child: Text(
-                '${active.symbol} · ${active.exchange}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 15,
-                  letterSpacing: -0.2,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            if (state.layout == ChartGridLayout.one) ...[
-              const SizedBox(width: 8),
-              _buildPriceBadge(context, active),
-            ],
-            const SizedBox(width: 8),
-            _divider(theme),
-            const SizedBox(width: 8),
 
-            // Center: scrollable strip with OHLCV, Timeframes, Chart Type, Indicators, Compare, Tools
+            // Center: graph chart controls (Timeframes, Chart Type, Indicators, Compare, Tools)
             Expanded(
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    if (state.layout == ChartGridLayout.one) ...[
-                      _buildOhlcvStats(context, active),
-                      if (active.bars.isNotEmpty) ...[
-                        const SizedBox(width: 8),
-                        _divider(theme),
-                        const SizedBox(width: 8),
-                      ],
-                    ],
                     ..._buildTimeframePills(context, state, ctrl),
                     const SizedBox(width: 8),
                     _divider(theme),
@@ -875,7 +822,7 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
                     const SizedBox(width: 6),
                     _buildIndicatorsButton(context),
                     const SizedBox(width: 6),
-                    _buildCompareButton(context, ctrl),
+                    _buildCompareButton(context, state, ctrl),
                     const SizedBox(width: 8),
                     _divider(theme),
                     const SizedBox(width: 6),
@@ -987,155 +934,6 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
       height: 18,
       color: theme.dividerColor.withValues(alpha: 0.4),
     );
-  }
-
-  Widget _buildPriceBadge(BuildContext context, ChartPaneState active) {
-    double price = 0;
-    double change = 0;
-    double changePct = 0;
-
-    if (active.quote != null) {
-      price = active.quote!.last;
-      changePct = active.quote!.changePct;
-      if (active.bars.length > 1) {
-        final prev = active.bars[active.bars.length - 2].close;
-        change = price - prev;
-      }
-    } else if (active.bars.isNotEmpty) {
-      final last = active.bars.last;
-      price = last.close;
-      final prev = active.bars.length > 1
-          ? active.bars[active.bars.length - 2].close
-          : last.open;
-      change = price - prev;
-      changePct = prev > 0 ? (change / prev) * 100 : 0;
-    }
-
-    if (price == 0) return const SizedBox.shrink();
-
-    final isPositive = change >= 0;
-    final color =
-        isPositive ? context.marketPositive : context.marketNegative;
-
-    final isMobile = MediaQuery.sizeOf(context).width < 768;
-
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 6 : 7,
-        vertical: isMobile ? 2 : 3,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '₹${price.toStringAsFixed(2)}',
-            style: TextStyle(
-              fontSize: isMobile ? 12 : 13.5,
-              fontWeight: FontWeight.w800,
-              color: color,
-            ),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            isMobile
-                ? '(${isPositive ? '+' : ''}${changePct.toStringAsFixed(1)}%)'
-                : '${isPositive ? '+' : ''}${change.toStringAsFixed(2)} (${isPositive ? '+' : ''}${changePct.toStringAsFixed(2)}%)',
-            style: TextStyle(
-              fontSize: isMobile ? 11 : 12,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOhlcvStats(BuildContext context, ChartPaneState active) {
-    if (active.bars.isEmpty) return const SizedBox.shrink();
-    final theme = Theme.of(context);
-    final lastBar = active.bars.last;
-    final isUp = lastBar.close >= lastBar.open;
-    final color = isUp ? context.marketPositive : context.marketNegative;
-    final change = lastBar.close - lastBar.open;
-    final changePct =
-        lastBar.open > 0 ? (change / lastBar.open) * 100 : 0.0;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: theme.cardColor.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _ohlcItem('O', lastBar.open.toStringAsFixed(2), theme),
-          const SizedBox(width: 8),
-          _ohlcItem('H', lastBar.high.toStringAsFixed(2), theme),
-          const SizedBox(width: 8),
-          _ohlcItem('L', lastBar.low.toStringAsFixed(2), theme),
-          const SizedBox(width: 8),
-          _ohlcItem('C', lastBar.close.toStringAsFixed(2), theme,
-              valueColor: color),
-          const SizedBox(width: 8),
-          _ohlcItem(
-            'Chg',
-            '${change >= 0 ? '+' : ''}${change.toStringAsFixed(2)} (${changePct >= 0 ? '+' : ''}${changePct.toStringAsFixed(2)}%)',
-            theme,
-            valueColor: color,
-          ),
-          if (lastBar.volume > 0) ...[
-            const SizedBox(width: 8),
-            _ohlcItem('Vol', _formatVol(lastBar.volume), theme),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _ohlcItem(
-    String label,
-    String value,
-    ThemeData theme, {
-    Color? valueColor,
-  }) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11.5,
-            fontWeight: FontWeight.w700,
-            color: theme.hintColor,
-          ),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w700,
-            color: valueColor ?? theme.textTheme.bodyMedium?.color,
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _formatVol(double v) {
-    if (v >= 1e7) return '${(v / 1e7).toStringAsFixed(2)}Cr';
-    if (v >= 1e5) return '${(v / 1e5).toStringAsFixed(2)}L';
-    if (v >= 1e6) return '${(v / 1e6).toStringAsFixed(2)}M';
-    if (v >= 1e3) return '${(v / 1e3).toStringAsFixed(1)}K';
-    return v.toStringAsFixed(0);
   }
 
   Widget _buildMobileTimeframeDropdown(
@@ -1552,38 +1350,113 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
 
   Widget _buildCompareButton(
     BuildContext context,
+    ChartTerminalState state,
     ChartTerminalController ctrl,
   ) {
     final theme = Theme.of(context);
     final isMobile = MediaQuery.sizeOf(context).width < 768;
+    final activePane = state.active;
+    final compared = activePane.comparisonSymbols;
+    final hasComparisons = activePane.hasComparisons;
+    final currentSymbol = activePane.symbol.toUpperCase();
+
+    const benchmarks = <String, String>{
+      'NIFTY 50': 'NIFTY 50',
+      'BANKNIFTY': 'NIFTY BANK',
+      'SENSEX': 'BSE SENSEX',
+      'NIFTY IT': 'NIFTY IT',
+      'FINNIFTY': 'NIFTY FIN SERVICE',
+      'MIDCPNIFTY': 'NIFTY MIDCAP',
+    };
+
     return PopupMenuButton<String>(
-      tooltip: 'Compare with Benchmark',
-      onSelected: (sym) => ctrl.selectSymbol(sym),
+      tooltip: 'Compare with Benchmark / Overlay Symbol',
+      onSelected: (val) {
+        if (val == '__CLEAR__') {
+          ctrl.clearComparisons();
+        } else if (val == '__SEARCH__') {
+          _showAddComparisonDialog(context, ctrl, state);
+        } else {
+          ctrl.toggleComparison(val);
+        }
+      },
       itemBuilder: (context) => [
-        const PopupMenuItem(
+        const PopupMenuItem<String>(
           enabled: false,
           height: 26,
           child: Text(
-            'Benchmarks',
+            'Benchmarks & Overlay',
             style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
           ),
         ),
-        const PopupMenuItem(
-          value: 'NIFTY 50',
-          child: Text('NIFTY 50', style: TextStyle(fontSize: 12)),
+        for (final entry in benchmarks.entries) ...[
+          () {
+            final key = entry.key;
+            final label = entry.value;
+            final isCurrent = key.toUpperCase() == currentSymbol;
+            final isCompared =
+                compared.any((s) => s.toUpperCase() == key.toUpperCase());
+            return PopupMenuItem<String>(
+              value: key,
+              enabled: !isCurrent,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      isCurrent ? '$label (Current)' : label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight:
+                            isCompared ? FontWeight.w700 : FontWeight.w400,
+                        color: isCompared ? theme.colorScheme.primary : null,
+                      ),
+                    ),
+                  ),
+                  if (isCompared)
+                    Icon(
+                      Icons.check,
+                      size: 16,
+                      color: theme.colorScheme.primary,
+                    ),
+                ],
+              ),
+            );
+          }(),
+        ],
+        const PopupMenuDivider(),
+        const PopupMenuItem<String>(
+          value: '__SEARCH__',
+          child: Row(
+            children: [
+              Icon(Icons.search, size: 16),
+              SizedBox(width: 8),
+              Text(
+                'Search symbol to compare...',
+                style: TextStyle(fontSize: 12),
+              ),
+            ],
+          ),
         ),
-        const PopupMenuItem(
-          value: 'BANKNIFTY',
-          child: Text('NIFTY BANK', style: TextStyle(fontSize: 12)),
-        ),
-        const PopupMenuItem(
-          value: 'SENSEX',
-          child: Text('BSE SENSEX', style: TextStyle(fontSize: 12)),
-        ),
-        const PopupMenuItem(
-          value: 'NIFTY IT',
-          child: Text('NIFTY IT', style: TextStyle(fontSize: 12)),
-        ),
+        if (hasComparisons) ...[
+          const PopupMenuDivider(),
+          PopupMenuItem<String>(
+            value: '__CLEAR__',
+            child: Row(
+              children: [
+                Icon(Icons.close, size: 16, color: theme.colorScheme.error),
+                const SizedBox(width: 8),
+                Text(
+                  'Exit Comparison',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
       child: Container(
         padding: EdgeInsets.symmetric(
@@ -1591,25 +1464,142 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
           vertical: isMobile ? 3.5 : 5,
         ),
         decoration: BoxDecoration(
-          color: theme.cardColor.withValues(alpha: 0.6),
+          color: hasComparisons
+              ? theme.colorScheme.primary.withValues(alpha: 0.14)
+              : theme.cardColor.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(5),
-          border: Border.all(color: theme.dividerColor.withValues(alpha: 0.4)),
+          border: Border.all(
+            color: hasComparisons
+                ? theme.colorScheme.primary
+                : theme.dividerColor.withValues(alpha: 0.4),
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.add, size: isMobile ? 15 : 16, color: theme.colorScheme.primary),
+            Icon(
+              hasComparisons ? Icons.stacked_line_chart : Icons.add,
+              size: isMobile ? 15 : 16,
+              color: theme.colorScheme.primary,
+            ),
             const SizedBox(width: 4),
             Text(
-              'Compare',
+              hasComparisons ? 'Compare (${compared.length})' : 'Compare',
               style: TextStyle(
                 fontSize: isMobile ? 12 : 13,
                 fontWeight: FontWeight.w700,
+                color: hasComparisons ? theme.colorScheme.primary : null,
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  void _showAddComparisonDialog(
+    BuildContext context,
+    ChartTerminalController ctrl,
+    ChartTerminalState state,
+  ) {
+    final textCtrl = TextEditingController();
+    showDialog<void>(
+      context: context,
+      builder: (dialogCtx) {
+        final theme = Theme.of(dialogCtx);
+        return AlertDialog(
+          title: const Text(
+            'Compare Symbol',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextField(
+                controller: textCtrl,
+                autofocus: true,
+                textCapitalization: TextCapitalization.characters,
+                decoration: InputDecoration(
+                  hintText: 'Enter symbol (e.g. RELIANCE, TCS, INFY)',
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  isDense: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onSubmitted: (val) {
+                  final sym = val.trim().toUpperCase();
+                  if (sym.isNotEmpty) {
+                    ctrl.addComparison(sym);
+                    Navigator.of(dialogCtx).pop();
+                  }
+                },
+              ),
+              if (state.recentSearches.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                const Text(
+                  'Recent Symbols',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final sym in state.recentSearches.take(6))
+                      InkWell(
+                        onTap: () {
+                          ctrl.addComparison(sym);
+                          Navigator.of(dialogCtx).pop();
+                        },
+                        borderRadius: BorderRadius.circular(4),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.cardColor,
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: theme.dividerColor),
+                          ),
+                          child: Text(
+                            sym,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final sym = textCtrl.text.trim().toUpperCase();
+                if (sym.isNotEmpty) {
+                  ctrl.addComparison(sym);
+                  Navigator.of(dialogCtx).pop();
+                }
+              },
+              child: const Text('Add to Compare'),
+            ),
+          ],
+        );
+      },
     );
   }
 
