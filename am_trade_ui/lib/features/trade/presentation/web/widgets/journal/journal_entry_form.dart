@@ -1241,7 +1241,7 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
                               : Icons.radio_button_unchecked,
                           size: 18,
                           color: completed.contains(item)
-                              ? const Color(0xFF00B894)
+                              ? colors.statusSuccess
                               : colors.textSecondary,
                         ),
                         const SizedBox(width: AppSpacing.sm),

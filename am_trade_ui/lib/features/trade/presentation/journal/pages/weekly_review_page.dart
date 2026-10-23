@@ -268,8 +268,8 @@ class _WeeklyReviewPageState extends State<WeeklyReviewPage> {
               pnl == null
                   ? ModuleColors.trade
                   : (pnl >= 0
-                      ? const Color(0xFF00B894)
-                      : const Color(0xFFFF7675)),
+                      ? context.marketPositive
+                      : context.marketNegative),
               null,
             ),
             (
@@ -462,10 +462,10 @@ class _WeeklyHero extends StatelessWidget {
                             color: ModuleColors.trade,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.check_rounded,
                             size: 14,
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.onPrimary,
                           ),
                         ),
                       ),
@@ -682,7 +682,7 @@ class _ProcessChecklistCard extends StatelessWidget {
             Text(
               'All process items done for this week.',
               style: theme.textTheme.labelSmall?.copyWith(
-                color: const Color(0xFF00B894),
+                color: context.statusSuccess,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -711,9 +711,9 @@ class _ChecklistRow extends StatelessWidget {
 
     return InkWell(
       onTap: () => onChanged(!checked),
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadii.sm),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs * 2),
         child: Row(
           children: [
             SizedBox(
@@ -741,17 +741,17 @@ class _ChecklistRow extends StatelessWidget {
             if (checked)
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 3,
+                  horizontal: AppSpacing.sm,
+                  vertical: AppSpacing.xxs + 1,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF00B894).withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
+                  color: context.statusSuccess.withValues(alpha: 0.12),
+                  borderRadius: AppRadii.chip,
                 ),
                 child: Text(
                   'Completed',
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: const Color(0xFF00B894),
+                    color: context.statusSuccess,
                     fontWeight: FontWeight.w700,
                     fontSize: 10,
                   ),
@@ -914,8 +914,8 @@ class _CompletedTradesCard extends StatelessWidget {
                     pnlColor: e.postTradeReview?.actualPnl == null
                         ? colors.textSecondary
                         : (e.postTradeReview!.actualPnl! >= 0
-                            ? const Color(0xFF00B894)
-                            : const Color(0xFFFF7675)),
+                            ? context.marketPositive
+                            : context.marketNegative),
                     onOpen: () => onOpen(e),
                   ),
                   Divider(
@@ -1024,17 +1024,17 @@ class _TradeRow extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: (isBuy
-                                  ? const Color(0xFF00B894)
-                                  : const Color(0xFFFF7675))
+                                  ? context.marketPositive
+                                  : context.marketNegative)
                               .withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: AppRadii.chip,
                         ),
                         child: Text(
                           typeLabel,
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: isBuy
-                                ? const Color(0xFF00B894)
-                                : const Color(0xFFFF7675),
+                                ? context.marketPositive
+                                : context.marketNegative,
                             fontWeight: FontWeight.w700,
                           ),
                         ),

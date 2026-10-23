@@ -32,8 +32,8 @@ class JournalMetricsHeader extends StatelessWidget {
     final padV = compact ? AppSpacing.xs : AppSpacing.sm;
 
     final cards = hasTradeMetrics
-        ? _tradeCards(s, totalEntries)
-        : _diaryCards(s, totalEntries);
+        ? _tradeCards(context, s, totalEntries)
+        : _diaryCards(context, s, totalEntries);
 
     return AnimatedSize(
       duration: const Duration(milliseconds: 280),
@@ -58,7 +58,11 @@ class JournalMetricsHeader extends StatelessWidget {
     );
   }
 
-  List<Widget> _diaryCards(JournalSummaryDto? s, int totalEntries) {
+  List<Widget> _diaryCards(
+    BuildContext context,
+    JournalSummaryDto? s,
+    int totalEntries,
+  ) {
     final daysJournaled = entries
         .map((e) => DateTime(e.entryDate.year, e.entryDate.month, e.entryDate.day))
         .toSet()
@@ -89,13 +93,17 @@ class JournalMetricsHeader extends StatelessWidget {
         value: '$completed',
         subtitle: 'Status = completed',
         icon: Icons.check_circle_outline,
-        accent: const Color(0xFF00B894),
+        accent: context.statusSuccess,
         compact: compact,
       ),
     ];
   }
 
-  List<Widget> _tradeCards(JournalSummaryDto? s, int totalEntries) {
+  List<Widget> _tradeCards(
+    BuildContext context,
+    JournalSummaryDto? s,
+    int totalEntries,
+  ) {
     final tradeLike = s?.totalTrades ?? 0;
     final winRate = s?.winRate;
     final avgRr = s?.avgRR;
@@ -128,7 +136,7 @@ class JournalMetricsHeader extends StatelessWidget {
             ? 'Needs P&L on reviews'
             : '${winPct.toStringAsFixed(0)}% win rate',
         icon: Icons.trending_up_rounded,
-        accent: const Color(0xFF00B894),
+        accent: context.marketPositive,
         compact: compact,
       ),
       _CompactMetricCard(
@@ -138,7 +146,7 @@ class JournalMetricsHeader extends StatelessWidget {
             ? 'Needs P&L on reviews'
             : '${losePct.toStringAsFixed(0)}% of reviews',
         icon: Icons.trending_down_rounded,
-        accent: const Color(0xFFFF7675),
+        accent: context.marketNegative,
         compact: compact,
       ),
       _CompactMetricCard(
@@ -235,7 +243,7 @@ class _CompactMetricCard extends StatelessWidget {
             height: compact ? 32 : 36,
             decoration: BoxDecoration(
               color: accent.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(AppRadii.sm + 2),
             ),
             child: Icon(icon, size: compact ? 16 : 18, color: accent),
           ),

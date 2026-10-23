@@ -171,18 +171,22 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
     return raw;
   }
 
-  static ({String label, Color fg, Color bg})? outcomePill(JournalEntry entry) {
+  static ({String label, Color fg, Color bg})? outcomePill(
+    BuildContext context,
+    JournalEntry entry,
+  ) {
     final raw = entry.postTradeReview?.tradeOutcome?.trim();
     if (raw == null || raw.isEmpty) return null;
     final key = raw.toLowerCase();
+    final colors = context.colors;
     if (key.contains('profit') ||
         key.contains('win') ||
         key == 'green' ||
         key == 'positive') {
       return (
         label: 'Profitable',
-        fg: const Color(0xFF00B894),
-        bg: const Color(0xFF00B894).withValues(alpha: 0.16),
+        fg: colors.marketPositiveIndicator,
+        bg: colors.marketPositiveBg,
       );
     }
     if (key.contains('loss') ||
@@ -191,15 +195,15 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
         key == 'negative') {
       return (
         label: 'Loss',
-        fg: const Color(0xFFFF7675),
-        bg: const Color(0xFFFF7675).withValues(alpha: 0.16),
+        fg: colors.marketNegativeIndicator,
+        bg: colors.marketNegativeBg,
       );
     }
     if (key.contains('neutral') || key.contains('breakeven') || key == 'flat') {
       return (
         label: 'Neutral',
-        fg: const Color(0xFFB0B0B0),
-        bg: const Color(0xFF9E9E9E).withValues(alpha: 0.18),
+        fg: colors.textTertiary,
+        bg: colors.statusNeutral.withValues(alpha: 0.18),
       );
     }
     return (
@@ -216,7 +220,7 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
     final dateStr =
         DateFormat('EEE, MMM d, yyyy').format(widget.entry.entryDate);
     final title = displayTitle(widget.entry);
-    final outcome = outcomePill(widget.entry);
+    final outcome = outcomePill(context, widget.entry);
     final selected = widget.isSelected;
 
     return MouseRegion(
@@ -228,14 +232,17 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
             : _isHovered
                 ? colors.surface.withValues(alpha: 0.7)
                 : colors.surface.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadii.card,
         child: InkWell(
           onTap: widget.onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadii.card,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.md,
+            ),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppRadii.card,
               border: Border.all(
                 color: selected
                     ? ModuleColors.trade
@@ -253,7 +260,7 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
                     color: selected
                         ? ModuleColors.trade.withValues(alpha: 0.2)
                         : colors.cardSurface,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadii.sm),
                     border: Border.all(
                       color: colors.border.withValues(alpha: 0.25),
                     ),
@@ -266,7 +273,7 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
                         : colors.textSecondary,
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: AppSpacing.sm + 2),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -280,7 +287,7 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 3),
+                      const SizedBox(height: AppSpacing.xxs),
                       Text(
                         title,
                         maxLines: 2,
@@ -294,15 +301,15 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
                   ),
                 ),
                 if (outcome != null) ...[
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
+                      horizontal: AppSpacing.sm,
+                      vertical: AppSpacing.xxs,
                     ),
                     decoration: BoxDecoration(
                       color: outcome.bg,
-                      borderRadius: BorderRadius.circular(999),
+                      borderRadius: AppRadii.chip,
                     ),
                     child: Text(
                       outcome.label,

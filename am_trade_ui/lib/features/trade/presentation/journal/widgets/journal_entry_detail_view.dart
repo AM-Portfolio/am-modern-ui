@@ -73,7 +73,7 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFFF7675),
+              backgroundColor: ctx.statusError,
             ),
             child: const Text('Delete'),
           ),

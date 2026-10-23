@@ -101,7 +101,7 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
         context: context,
         backgroundColor: Theme.of(context).colorScheme.surface,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
         ),
         builder: (ctx) => SafeArea(
           child: Column(
