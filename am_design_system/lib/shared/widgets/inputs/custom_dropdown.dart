@@ -29,6 +29,8 @@ class CustomDropdown<T> extends StatefulWidget {
     this.enableGlass = false,
     this.menuMaxHeight = 300,
     this.menuMaxWidth,
+    this.leading,
+    this.trailingDivider = false,
   });
 
   /// Current selected value
@@ -91,6 +93,12 @@ class CustomDropdown<T> extends StatefulWidget {
   /// Max width of the open menu. When null, compact expanded triggers cap near
   /// the button width (not a full 280px panel).
   final double? menuMaxWidth;
+
+  /// Optional leading widget on the closed trigger (not copied into menu rows).
+  final Widget? leading;
+
+  /// Hairline before the chevron on the closed trigger.
+  final bool trailingDivider;
 
   @override
   State<CustomDropdown<T>> createState() => _CustomDropdownState<T>();
@@ -302,22 +310,36 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
       );
     }
 
+    final chevronColor = DropdownStyles.getIconColor(
+      context,
+      primaryColor: effectivePrimaryColor,
+      enabled: widget.enabled,
+    );
+
     Widget dropdownBody = Row(
       mainAxisSize: widget.isExpanded ? MainAxisSize.max : MainAxisSize.min,
       mainAxisAlignment: widget.isExpanded
           ? MainAxisAlignment.spaceBetween
           : MainAxisAlignment.start,
       children: [
+        if (widget.leading != null) ...[
+          widget.leading!,
+          const SizedBox(width: 4),
+        ],
         if (displayWidget != null)
           widget.isExpanded ? Expanded(child: displayWidget) : displayWidget,
         if (!widget.isExpanded) const SizedBox(width: 4),
+        if (widget.trailingDivider) ...[
+          Container(
+            width: 1,
+            height: widget.iconSize,
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            color: (widget.borderColor ?? chevronColor).withValues(alpha: 0.45),
+          ),
+        ],
         Icon(
           widget.icon ?? (_isOpen ? Icons.expand_less : Icons.expand_more),
-          color: DropdownStyles.getIconColor(
-            context,
-            primaryColor: effectivePrimaryColor,
-            enabled: widget.enabled,
-          ),
+          color: chevronColor,
           size: widget.iconSize,
         ),
       ],
@@ -400,7 +422,12 @@ extension DropdownItemHelper<T> on T {
     double fontSize = 14,
   }) => DropdownMenuItem<T>(
     value: this,
-    child: Text(text, style: TextStyle(fontSize: fontSize)),
+    child: Text(
+      text,
+      style: TextStyle(fontSize: fontSize),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    ),
   );
 }
 

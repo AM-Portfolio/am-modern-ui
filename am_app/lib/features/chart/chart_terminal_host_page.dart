@@ -245,6 +245,24 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
   }
 
   @override
+  void didUpdateWidget(covariant _ChartTerminalBody oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final nextSym = widget.initialSymbol?.trim();
+    final prevSym = oldWidget.initialSymbol?.trim();
+    if (nextSym == null || nextSym.isEmpty) return;
+    if (nextSym == prevSym) return;
+    final current = ref.read(chartTerminalProvider).symbol.trim();
+    if (current.toUpperCase() == nextSym.toUpperCase()) return;
+    final existing = _currentTerminalCtrl;
+    if (existing != null) {
+      existing.selectSymbol(nextSym);
+    } else {
+      ref.read(chartTerminalProvider.notifier).selectSymbol(nextSym);
+    }
+    _syncFoSymbol(nextSym);
+  }
+
+  @override
   void dispose() {
     ChartSearchBridge.unbind();
     _marketProvider.dispose();
@@ -290,12 +308,17 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
     }
   }
 
-  Widget _sectionBody(String symbol, {bool scrollable = true}) {
+  Widget _sectionBody(
+    String symbol, {
+    bool scrollable = true,
+    _ChartBottomSection? sectionOverride,
+  }) {
+    final effectiveSection = sectionOverride ?? _section;
     final selectedPortfolio = ref.watch(chartSelectedPortfolioProvider);
 
     if (selectedPortfolio != null && _sidebarTabController.index == 2) {
       Widget? portfolioBody;
-      switch (_section) {
+      switch (effectiveSection) {
         case _ChartBottomSection.holdings:
           return const SizedBox.shrink();
         case _ChartBottomSection.overview:
@@ -340,7 +363,7 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
     }
 
     Widget body;
-    switch (_section) {
+    switch (effectiveSection) {
       case _ChartBottomSection.holdings:
         // Rendered separately in bottomPanelBuilder.
         return const SizedBox.shrink();
@@ -404,8 +427,8 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
     if (!scrollable) return body;
 
     // Financials / Shareholding fill the bottom panel height (no dead scroll gap).
-    final fillPanel = _section == _ChartBottomSection.financials ||
-        _section == _ChartBottomSection.shareholding;
+    final fillPanel = effectiveSection == _ChartBottomSection.financials ||
+        effectiveSection == _ChartBottomSection.shareholding;
     if (fillPanel) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
@@ -426,31 +449,39 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
   }
 
   void _openFullView(String symbol) {
-    final tags = _getTags(symbol);
-    final match = tags.where((t) => t.$1 == _section);
-    final label = match.isNotEmpty ? match.first.$2 : 'Details';
     showDialog<void>(
       context: context,
       barrierDismissible: true,
       builder: (ctx) {
         return Dialog.fullscreen(
-          child: Scaffold(
-            appBar: AppBar(
-              title: Text(
-                _section == _ChartBottomSection.holdings
-                    ? label
-                    : '$label · ${symbol.trim().toUpperCase()}',
-              ),
-              leading: IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () => Navigator.of(ctx).pop(),
-              ),
-            ),
-            body: _section == _ChartBottomSection.holdings
-                ? ChartPortfolioHoldingsPanel(
-                    onSelectSymbol: (_) {},
-                  )
-                : _sectionBody(symbol, scrollable: true),
+          child: _MaximizedChartPanelDialog(
+            initialSection: _section,
+            symbol: symbol,
+            getTags: _getTags,
+            isIndexSymbol: _isIndexSymbol,
+            onSectionChanged: (newSection) {
+              setState(() => _section = newSection);
+            },
+            onSyncFoSymbol: (sym) {
+              if (_isFoSection(_section)) {
+                _syncFoSymbol(sym);
+              }
+            },
+            bodyBuilder: (dialogContext, section, sym) {
+              if (section == _ChartBottomSection.holdings) {
+                return ChartPortfolioHoldingsPanel(
+                  onSelectSymbol: (s) {
+                    _currentTerminalCtrl?.selectSymbol(s);
+                    _syncFoSymbol(s);
+                  },
+                );
+              }
+              return _sectionBody(
+                sym,
+                scrollable: true,
+                sectionOverride: section,
+              );
+            },
           ),
         );
       },
@@ -799,6 +830,9 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
               selected: _section,
               onSelected: (tag) {
                 setState(() => _section = tag);
+                if (tag == _ChartBottomSection.heatmap) {
+                  ctrl.setBottomMinimized(false);
+                }
                 if (_isFoSection(tag)) {
                   _syncFoSymbol(state.symbol);
                 }
@@ -993,3 +1027,265 @@ class _PortfolioCubitProvider extends ConsumerWidget {
     );
   }
 }
+
+/// Maximized fullscreen view for chart panel with all section tabs visible in the upper section.
+class _MaximizedChartPanelDialog extends ConsumerStatefulWidget {
+  const _MaximizedChartPanelDialog({
+    required this.initialSection,
+    required this.symbol,
+    required this.getTags,
+    required this.isIndexSymbol,
+    required this.onSectionChanged,
+    required this.onSyncFoSymbol,
+    required this.bodyBuilder,
+  });
+
+  final _ChartBottomSection initialSection;
+  final String symbol;
+  final List<(_ChartBottomSection, String)> Function(String symbol) getTags;
+  final bool Function(String symbol) isIndexSymbol;
+  final ValueChanged<_ChartBottomSection> onSectionChanged;
+  final void Function(String symbol) onSyncFoSymbol;
+  final Widget Function(
+    BuildContext context,
+    _ChartBottomSection section,
+    String symbol,
+  ) bodyBuilder;
+
+  @override
+  ConsumerState<_MaximizedChartPanelDialog> createState() =>
+      _MaximizedChartPanelDialogState();
+}
+
+class _MaximizedChartPanelDialogState
+    extends ConsumerState<_MaximizedChartPanelDialog> {
+  late _ChartBottomSection _currentSection;
+  String? _lastSymbol;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentSection = widget.initialSection;
+  }
+
+  void _selectSection(_ChartBottomSection section, String activeSymbol) {
+    if (_currentSection == section) return;
+    setState(() => _currentSection = section);
+    widget.onSectionChanged(section);
+    widget.onSyncFoSymbol(activeSymbol);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final terminalState = ref.watch(chartTerminalProvider);
+    final activeSymbol = terminalState.symbol.isNotEmpty
+        ? terminalState.symbol
+        : widget.symbol;
+
+    if (_lastSymbol != null && _lastSymbol != activeSymbol) {
+      _currentSection = _ChartBottomSection.overview;
+    }
+    _lastSymbol = activeSymbol;
+
+    final tags = widget.getTags(activeSymbol);
+    final validSection = tags.any((t) => t.$1 == _currentSection)
+        ? _currentSection
+        : (tags.isNotEmpty ? tags.first.$1 : _currentSection);
+
+    final theme = Theme.of(context);
+    final accent = theme.colorScheme.primary;
+    final muted = theme.colorScheme.onSurface.withValues(alpha: 0.55);
+    final border = theme.dividerColor.withValues(alpha: 0.45);
+    final isCompact = MediaQuery.sizeOf(context).width < 680;
+    final isIndex = widget.isIndexSymbol(activeSymbol);
+
+    Widget buildTabs() {
+      return ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        itemCount: tags.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 2),
+        itemBuilder: (context, i) {
+          final (tag, label) = tags[i];
+          final isActive = validSection == tag;
+          final color = isActive ? accent : muted;
+
+          return Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _selectSection(tag, activeSymbol),
+              borderRadius: BorderRadius.circular(8),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutCubic,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: isActive ? accent : Colors.transparent,
+                      width: 2.5,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(_ChartBottomSectionBar._iconFor(tag),
+                        size: 15, color: color),
+                    const SizedBox(width: 6),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight:
+                            isActive ? FontWeight.w700 : FontWeight.w500,
+                        color:
+                            isActive ? theme.colorScheme.onSurface : muted,
+                        letterSpacing: 0.15,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    }
+
+    Widget buildSymbolBadge() {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: accent.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: accent.withValues(alpha: 0.28),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isIndex ? Icons.show_chart : Icons.candlestick_chart,
+              size: 13,
+              color: accent,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              activeSymbol.trim().toUpperCase(),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: accent,
+                letterSpacing: 0.4,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    Widget header;
+    if (isCompact) {
+      header = DecoratedBox(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          border: Border(bottom: BorderSide(color: border)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: 44,
+              child: Row(
+                children: [
+                  IconButton(
+                    tooltip: 'Exit full view',
+                    iconSize: 20,
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  const SizedBox(width: 4),
+                  buildSymbolBadge(),
+                  const Spacer(),
+                  IconButton(
+                    tooltip: 'Exit full view',
+                    iconSize: 18,
+                    icon: Icon(Icons.close_fullscreen, color: muted),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  const SizedBox(width: 4),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            SizedBox(
+              height: 40,
+              child: buildTabs(),
+            ),
+          ],
+        ),
+      );
+    } else {
+      header = DecoratedBox(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          border: Border(bottom: BorderSide(color: border)),
+        ),
+        child: SizedBox(
+          height: 48,
+          child: Row(
+            children: [
+              IconButton(
+                tooltip: 'Exit full view',
+                iconSize: 20,
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              const SizedBox(width: 4),
+              buildSymbolBadge(),
+              const SizedBox(width: 10),
+              Container(
+                height: 22,
+                width: 1,
+                color: border,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: buildTabs(),
+              ),
+              IconButton(
+                tooltip: 'Exit full view',
+                iconSize: 18,
+                padding: EdgeInsets.zero,
+                constraints:
+                    const BoxConstraints(minWidth: 36, minHeight: 36),
+                icon: Icon(Icons.close_fullscreen, color: muted),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              const SizedBox(width: 6),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            header,
+            Expanded(
+              child: widget.bodyBuilder(context, validSection, activeSymbol),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

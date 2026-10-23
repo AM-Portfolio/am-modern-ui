@@ -120,10 +120,8 @@ class _FoPageState extends ConsumerState<FoPage> {
         children: [
           FoHeaderCard(
             symbol: symbol,
-            onBack: () {
-              ref.read(foActiveSymbolProvider.notifier).state = null;
-            },
           ),
+          SizedBox(height: AppSpacing.xs),
           TabBar(
             isScrollable: true,
             tabAlignment: TabAlignment.start,
