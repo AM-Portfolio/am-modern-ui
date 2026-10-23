@@ -15,6 +15,7 @@ class SyncQuickActionsControl extends StatelessWidget {
     this.showSubtitles = false,
     this.iconColor,
     this.iconSize = 22,
+    this.icon = Icons.more_vert,
     super.key,
   });
 
@@ -27,6 +28,7 @@ class SyncQuickActionsControl extends StatelessWidget {
   /// Defaults to [accentColor].
   final Color? iconColor;
   final double iconSize;
+  final IconData icon;
 
   void _open(BuildContext context) {
     GlobalBottomNavVisibility.suppressChromeTapReveal = true;
@@ -45,7 +47,7 @@ class SyncQuickActionsControl extends StatelessWidget {
       tooltip: 'Quick actions',
       onPressed: () => _open(context),
       icon: Icon(
-        Icons.more_vert,
+        icon,
         color: iconColor ?? accentColor,
         size: iconSize,
       ),

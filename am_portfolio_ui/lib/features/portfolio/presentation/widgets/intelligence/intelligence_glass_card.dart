@@ -52,13 +52,21 @@ class IntelligenceGlassCard extends StatelessWidget {
         Expanded(
           child: Text(
             title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
           ),
         ),
-        ?trailing,
+        if (trailing != null)
+          Flexible(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: trailing,
+            ),
+          ),
       ],
     );
 
@@ -211,10 +219,15 @@ InputDecoration intelligenceFieldDecoration(
   bool compact = false,
 }) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
+  final hintStyle = TextStyle(
+    color: context.colors.textTertiary,
+    fontSize: compact ? 13 : null,
+  );
   return InputDecoration(
     // Compact row: avoid floating label (needs ~56px) — use hint instead.
     labelText: compact ? null : label,
     hintText: compact ? (hint ?? label) : hint,
+    hintStyle: hintStyle,
     floatingLabelBehavior:
         compact ? FloatingLabelBehavior.never : FloatingLabelBehavior.auto,
     isDense: true,

@@ -1,4 +1,3 @@
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../../../shared/models/am_mover_item.dart';
 
@@ -150,41 +149,61 @@ class _AmMoverTileState extends State<AmMoverTile> {
               ),
             ),
 
-            // ── Price label ──────────────────────────────────────────────
-            Text(
-              widget.item.priceLabel,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
-                color: primaryText,
-              ),
-            ),
-            const SizedBox(width: 8),
-
-            // ── Percentage pill ──────────────────────────────────────────
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-              decoration: BoxDecoration(
-                color: pillBg,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: pillBorderColor, width: 1),
-                boxShadow: [
-                  BoxShadow(
-                    color: accentColor.withOpacity(_isHovered ? 0.35 : 0.15),
-                    blurRadius: 6,
-                    spreadRadius: -1,
+            // ── Price + % pill (flexible so narrow columns never overflow) ─
+            Flexible(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        widget.item.priceLabel,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                          color: primaryText,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: pillBg,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: pillBorderColor, width: 1),
+                      boxShadow: [
+                        BoxShadow(
+                          color: accentColor
+                              .withOpacity(_isHovered ? 0.35 : 0.15),
+                          blurRadius: 6,
+                          spreadRadius: -1,
+                        ),
+                      ],
+                    ),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        widget.item.formattedChangePercent,
+                        style: TextStyle(
+                          color: pillTextColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.2,
+                        ),
+                        maxLines: 1,
+                      ),
+                    ),
                   ),
                 ],
-              ),
-              child: Text(
-                widget.item.formattedChangePercent,
-                style: TextStyle(
-                  color: pillTextColor,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.2,
-                ),
               ),
             ),
           ],

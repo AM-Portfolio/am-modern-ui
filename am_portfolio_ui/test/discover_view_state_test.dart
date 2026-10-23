@@ -161,6 +161,22 @@ void main() {
       expect(limited.map((e) => e.etfIsin).toList(), ['D', 'B', 'C']);
     });
 
+    test('sortShortLabel matches global dropdown trigger copy', () {
+      expect(
+        const DiscoverViewState(sort: DiscoverSortMode.matchDesc).sortShortLabel,
+        'Recommended',
+      );
+      expect(
+        const DiscoverViewState(sort: DiscoverSortMode.returnDesc).sortShortLabel,
+        'Return',
+      );
+      expect(
+        const DiscoverViewState(sort: DiscoverSortMode.requiredAsc)
+            .sortShortLabel,
+        'Required ₹',
+      );
+    });
+
     test('formatters', () {
       expect(DiscoverViewState.formatReturn(null), '—');
       expect(DiscoverViewState.formatReturn(7.432), '+7.43%');

@@ -9,6 +9,7 @@ import '../../../providers/portfolio_intelligence_providers.dart';
 import '../../../providers/portfolio_providers.dart';
 import 'intelligence_glass_card.dart';
 import 'intelligence_suggest_search.dart';
+import 'portfolio_stress_mobile.dart';
 
 /// API preset id → display label. Impact / P&L always come from the stress API.
 const kStressPresets = <String, String>{
@@ -84,7 +85,8 @@ class PortfolioStressCard extends ConsumerStatefulWidget {
 
 class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
   final _sectorCtrl = TextEditingController();
-  final _shockCtrl = TextEditingController();
+  final _shockCtrl = TextEditingController(text: '-10');
+  final _shockFocus = FocusNode();
   bool _loading = false;
   bool _customLoading = false;
   String? _error;
@@ -101,13 +103,36 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
   int _warmRetries = 0;
   int _loadGeneration = 0;
   bool _pendingWarmRefetch = false;
+  bool _viewAllExpanded = false;
+  String _scenarioFilter = '';
 
   @override
   void initState() {
     super.initState();
+    _shockFocus.addListener(_ensureShockVisible);
+    _sectorCtrl.addListener(_onSectorFilterChanged);
     if (widget.initiallyExpanded) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _loadAllPresets());
     }
+  }
+
+  void _onSectorFilterChanged() {
+    final q = _sectorCtrl.text.trim();
+    if (q == _scenarioFilter) return;
+    setState(() => _scenarioFilter = q);
+  }
+
+  void _ensureShockVisible() {
+    if (!_shockFocus.hasFocus) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Scrollable.ensureVisible(
+        context,
+        alignment: 0.2,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   @override
@@ -115,7 +140,7 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.portfolioId == widget.portfolioId) return;
     _sectorCtrl.clear();
-    _shockCtrl.clear();
+    _shockCtrl.text = '-10';
     setState(() {
       _loading = false;
       _customLoading = false;
@@ -132,6 +157,8 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
       _warmRetries = 0;
       _pendingWarmRefetch = false;
       _loadGeneration++;
+      _viewAllExpanded = false;
+      _scenarioFilter = '';
     });
     if (widget.initiallyExpanded) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _loadAllPresets());
@@ -140,6 +167,9 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
 
   @override
   void dispose() {
+    _shockFocus.removeListener(_ensureShockVisible);
+    _sectorCtrl.removeListener(_onSectorFilterChanged);
+    _shockFocus.dispose();
     _sectorCtrl.dispose();
     _shockCtrl.dispose();
     super.dispose();
@@ -342,7 +372,47 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
 
     final narrow = MediaQuery.sizeOf(context).width < 600;
     final fill = widget.fillHeight && widget.initiallyExpanded;
-    final custom = _customPanel(context, narrow: narrow);
+
+    // Mobile redesign only — web/desktop keep custom panel + table.
+    if (narrow) {
+      final mobileBody = _buildMobileRedesign(context);
+      if (!widget.initiallyExpanded) {
+        return IntelligenceGlassCard(
+          title: 'Stress Test',
+          icon: Icons.bolt_rounded,
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+          minHeight: widget.minHeight,
+          trailing: _headerChips(context),
+          child: Theme(
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              initiallyExpanded: false,
+              tilePadding: EdgeInsets.zero,
+              childrenPadding: const EdgeInsets.only(bottom: 4),
+              onExpansionChanged: (open) {
+                if (open && !_loadedOnce) _loadAllPresets();
+              },
+              title: Text(
+                'Scenarios',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              children: [mobileBody],
+            ),
+          ),
+        );
+      }
+      return IntelligenceGlassCard(
+        title: 'Stress Test',
+        icon: Icons.bolt_rounded,
+        minHeight: widget.minHeight,
+        fillHeight: false,
+        scrollable: false,
+        trailing: _headerChips(context),
+        child: mobileBody,
+      );
+    }
+
+    final custom = _customPanel(context, narrow: false);
     final scenarios = _buildScenarios(context, scrollable: fill);
 
     if (!widget.initiallyExpanded) {
@@ -426,6 +496,32 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
     );
   }
 
+  Widget _buildMobileRedesign(BuildContext context) {
+    return StressMobileBody(
+      sectorCtrl: _sectorCtrl,
+      shockCtrl: _shockCtrl,
+      shockFocus: _shockFocus,
+      rows: _rows,
+      failed: _failed,
+      customRow: _customRow,
+      customFailed: _customFailed,
+      customLabel: _customScenarioLabel(),
+      loading: _loading,
+      customLoading: _customLoading,
+      error: _error,
+      viewAllExpanded: _viewAllExpanded,
+      scenarioFilter: _scenarioFilter,
+      presets: kStressPresets,
+      searchHandler: _searchStressSectors,
+      onApply: _runCustom,
+      onRetryLoad: _loadAllPresets,
+      onToggleViewAll: () =>
+          setState(() => _viewAllExpanded = !_viewAllExpanded),
+      onSectorSelected: (label) => setState(() => _sectorCtrl.text = label),
+      onShockChanged: () => setState(() {}),
+    );
+  }
+
   String? _bandLabel() {
     if (_betaAssumed == true) return 'Estimated';
     final b = _betaUsed;
@@ -450,21 +546,26 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
     );
     final betaLabel = chips.betaLabel;
     final estLabel = chips.estLabel;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _chip(
-          context,
-          betaLabel,
-          tooltip: _betaTooltipMessage(assumed: assumed, warming: warming),
-        ),
-        const SizedBox(width: 6),
-        _chip(
-          context,
-          estLabel,
-          tooltip: _estTooltipMessage(assumed: assumed, warming: warming),
-        ),
-      ],
+    // Scale down on narrow phones — long "Need ≥20d vs NIFTY" overflowed the header.
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerRight,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _chip(
+            context,
+            betaLabel,
+            tooltip: _betaTooltipMessage(assumed: assumed, warming: warming),
+          ),
+          const SizedBox(width: 6),
+          _chip(
+            context,
+            estLabel,
+            tooltip: _estTooltipMessage(assumed: assumed, warming: warming),
+          ),
+        ],
+      ),
     );
   }
 
@@ -517,6 +618,9 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
         ),
         child: Text(
           label,
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 fontWeight: FontWeight.w700,
                 color: ModuleColors.portfolio,
