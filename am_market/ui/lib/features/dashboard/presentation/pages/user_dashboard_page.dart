@@ -6,8 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart' hide Provider;
 import 'package:go_router/go_router.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
-import 'package:am_library/am_library.dart';
-import 'package:am_auth_ui/am_auth_ui.dart';
 import 'package:am_market_common/providers/market_provider.dart';
 import 'package:am_market_common/models/indices_region.dart';
 import 'package:am_market_common/models/market_data.dart';
@@ -129,7 +127,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
   /// [SIP Optimization] Recursively processes the preloading queue one timeframe at a time.
   /// Throttles API requests at a 1.5-second interval to prevent server thread exhaustion.
   Future<void> _preloadNextInQueue(List<String> symbols) async {
-    if (_preloadingQueue.isEmpty || !mounted) return;
+    if (_isPreloadingActive || _preloadingQueue.isEmpty || !mounted) return;
 
     // Retrieve the next timeframe from the queue
     final String nextTf = _preloadingQueue.first;
@@ -557,38 +555,6 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
       CommonLogger.error('Error loading top movers',
           tag: 'UserDashboardPage', error: e);
     }
-  }
-
-  Widget _dashboardSectionCard({
-    required bool isDark,
-    required Widget child,
-    EdgeInsetsGeometry? padding,
-    EdgeInsetsGeometry? margin,
-  }) {
-    return Container(
-      width: double.infinity,
-      margin: margin ?? EdgeInsets.zero,
-      padding: padding ?? const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isDark
-            ? context.colors.cardSurface.withValues(alpha: 0.60)
-            : context.colors.cardSurface.withValues(alpha: 0.90),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: context.colors.border.withValues(alpha: isDark ? 0.35 : 0.5),
-        ),
-        boxShadow: isDark
-            ? const []
-            : [
-                BoxShadow(
-                  color: context.shadow(0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-      ),
-      child: child,
-    );
   }
 
   /// Focus movers, heatmap, and comparison chart on the tapped index.
