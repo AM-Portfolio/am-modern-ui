@@ -1021,9 +1021,9 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Reading mode: full-width notes — skip the empty sidebar chrome.
+                    // Reading mode: stacked sections (checklist, notes, tags, attachments).
                     if (!_isEditMode && widget.entry != null)
-                      _buildLeftColumn(context)
+                      _buildReadLayout(context)
                     else if (isWide)
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1115,127 +1115,347 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       _midMood != null ||
       _endMood != null;
 
-  Widget _buildLeftColumn(BuildContext context) {
+  static const _defaultWeeklyChecklist = <String>[
+    'Reviewed all completed trades',
+    'Identified top mistake this week',
+    'Updated playbook / rules',
+    'Reviewed risk management',
+    'Set focus for next week',
+    'Reviewed journal & key learnings',
+  ];
+
+  Widget _buildReadLayout(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.colors;
+    final review = widget.entry!.postTradeReview;
+    final storedChecklist = review?.postChecklist ?? const <String>[];
+    final completed = review?.completedChecklistItems ?? const <String>[];
+    final lesson = review?.lessonLearned?.trim();
+    final entryType = (widget.entry!.entryType ?? '').toUpperCase();
+    final isWeekly = entryType == 'WEEKLY_REVIEW' ||
+        _titleController.text.toLowerCase().contains('weekly');
+    final checklist = storedChecklist.isNotEmpty
+        ? storedChecklist
+        : (isWeekly ? _defaultWeeklyChecklist : const <String>[]);
+    final title = _titleController.text.trim().isEmpty
+        ? 'Untitled entry'
+        : _titleController.text.trim();
+    final notesEmpty =
+        _quillController.document.toPlainText().trim().isEmpty &&
+            (lesson == null || lesson.isEmpty);
 
-    // Reader-first layout: title + notes dominate; hide empty chrome.
-    if (!_isEditMode && widget.entry != null) {
-      final review = widget.entry!.postTradeReview;
-      final checklist = review?.postChecklist ?? const <String>[];
-      final completed = review?.completedChecklistItems ?? const <String>[];
-      final lesson = review?.lessonLearned?.trim();
-      final isWeekly =
-          (widget.entry!.entryType ?? '').toUpperCase() == 'WEEKLY_REVIEW';
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    final tagsBlock = JournalFormSurface(
+      title: 'Tags',
+      leading: Icon(
+        Icons.local_offer_outlined,
+        size: 18,
+        color: ModuleColors.trade,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            _titleController.text.trim().isEmpty
-                ? 'Untitled entry'
-                : _titleController.text.trim(),
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w800,
-              height: 1.25,
-            ),
-          ),
-          if (isWeekly && checklist.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.md),
-            JournalFormSurface(
-              title: 'Process checklist',
-              subtitle: '${completed.length} / ${checklist.length} completed',
-              leading: Icon(
-                Icons.checklist_rounded,
-                size: 18,
-                color: ModuleColors.trade,
-              ),
-              child: Column(
-                children: [
-                  for (final item in checklist)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        children: [
-                          Icon(
-                            completed.contains(item)
-                                ? Icons.check_circle_rounded
-                                : Icons.radio_button_unchecked,
-                            size: 18,
-                            color: completed.contains(item)
-                                ? const Color(0xFF00B894)
-                                : colors.textSecondary,
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
-                            child: Text(
-                              item,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                decoration: completed.contains(item)
-                                    ? TextDecoration.lineThrough
-                                    : null,
-                                color: completed.contains(item)
-                                    ? colors.textSecondary
-                                    : null,
-                              ),
-                            ),
-                          ),
-                        ],
+          _buildAddTagsDropdown(theme, colors),
+          if (_selectedTags.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: [
+                for (final tag in _selectedTags)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: ModuleColors.trade.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: ModuleColors.trade.withValues(alpha: 0.4),
                       ),
                     ),
-                ],
-              ),
-            ),
-          ],
-          const SizedBox(height: AppSpacing.md),
-          JournalFormSurface(
-            title: isWeekly ? 'Notes / lessons' : 'Notes',
-            leading: Icon(
-              Icons.notes_rounded,
-              size: 18,
-              color: ModuleColors.trade,
-            ),
-            child: (lesson != null &&
-                    lesson.isNotEmpty &&
-                    _quillController.document.toPlainText().trim().isEmpty)
-                ? Padding(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    child: SelectableText(
-                      lesson,
-                      style: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
+                    child: Text(
+                      tag,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: ModuleColors.trade,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  )
-                : RichTextEditor(
-                    controller: _quillController,
-                    readOnly: true,
-                    minHeight: 320,
                   ),
-          ),
-          if (_hasBehaviorData) ...[
-            const SizedBox(height: AppSpacing.md),
-            JournalFormSurface(
-              title: 'Behavior & mood',
-              leading: Icon(
-                Icons.psychology_alt_outlined,
-                size: 18,
-                color: ModuleColors.trade,
-              ),
-              child: _buildBehaviorTracking(),
-            ),
-          ],
-          if (_relatedTradeIds.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              '${_relatedTradeIds.length} linked trade(s)',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colors.textSecondary,
-              ),
+              ],
             ),
           ],
         ],
-      );
-    }
+      ),
+    );
 
+    final attachmentsBlock = JournalFormSurface(
+      title: 'Attachments',
+      leading: Icon(
+        Icons.attach_file_rounded,
+        size: 18,
+        color: ModuleColors.trade,
+      ),
+      child: _imageUrls.isEmpty
+          ? _buildAttachmentDropHint(theme, colors)
+          : JournalAttachmentSection(
+              userId: widget.entry?.userId ?? '',
+              imageUrls: _imageUrls,
+              onAttachmentsChanged: (urls) =>
+                  setState(() => _imageUrls = urls),
+              featureName: 'journal',
+              isEditMode: false,
+              label: '',
+            ),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+            height: 1.25,
+          ),
+        ),
+        if (checklist.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.md),
+          JournalFormSurface(
+            title: 'Process checklist',
+            leading: Icon(
+              Icons.checklist_rounded,
+              size: 18,
+              color: ModuleColors.trade,
+            ),
+            child: Column(
+              children: [
+                for (final item in checklist)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(
+                      children: [
+                        Icon(
+                          completed.contains(item)
+                              ? Icons.check_circle_rounded
+                              : Icons.radio_button_unchecked,
+                          size: 18,
+                          color: completed.contains(item)
+                              ? const Color(0xFF00B894)
+                              : colors.textSecondary,
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: Text(
+                            item,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              decoration: completed.contains(item)
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                              color: completed.contains(item)
+                                  ? colors.textSecondary
+                                  : null,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: AppSpacing.md),
+        JournalFormSurface(
+          title: isWeekly ? 'Notes / lessons' : 'Notes',
+          leading: Icon(
+            Icons.notes_rounded,
+            size: 18,
+            color: ModuleColors.trade,
+          ),
+          child: notesEmpty
+              ? Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.lg,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.surface.withValues(alpha: 0.35),
+                    borderRadius: AppRadii.card,
+                    border: Border.all(
+                      color: colors.border.withValues(alpha: 0.28),
+                    ),
+                  ),
+                  child: Text(
+                    'No notes yet. Tap Edit to write your checklist and reflections.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colors.textSecondary,
+                      height: 1.5,
+                    ),
+                  ),
+                )
+              : (lesson != null &&
+                      lesson.isNotEmpty &&
+                      _quillController.document.toPlainText().trim().isEmpty)
+                  ? Padding(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      child: SelectableText(
+                        lesson,
+                        style:
+                            theme.textTheme.bodyLarge?.copyWith(height: 1.6),
+                      ),
+                    )
+                  : RichTextEditor(
+                      controller: _quillController,
+                      readOnly: true,
+                      minHeight: 180,
+                    ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth < 640) {
+              return Column(
+                children: [
+                  tagsBlock,
+                  const SizedBox(height: AppSpacing.md),
+                  attachmentsBlock,
+                ],
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: tagsBlock),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(child: attachmentsBlock),
+              ],
+            );
+          },
+        ),
+        if (_hasBehaviorData) ...[
+          const SizedBox(height: AppSpacing.md),
+          JournalFormSurface(
+            title: 'Behavior & mood',
+            leading: Icon(
+              Icons.psychology_alt_outlined,
+              size: 18,
+              color: ModuleColors.trade,
+            ),
+            child: _buildBehaviorTracking(),
+          ),
+        ],
+        if (_relatedTradeIds.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            '${_relatedTradeIds.length} linked trade(s)',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colors.textSecondary,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildAddTagsDropdown(ThemeData theme, dynamic colors) {
+    final catalog = [
+      'Weekly Review',
+      'Process',
+      'Breakout',
+      'Pullback',
+      'Intraday',
+      'Options',
+      'Swing',
+      'Scalp',
+    ];
+    final available =
+        catalog.where((t) => !_selectedTags.contains(t)).toList();
+
+    return PopupMenuButton<String>(
+      enabled: available.isNotEmpty,
+      tooltip: 'Add tags',
+      onSelected: (tag) {
+        setState(() => _selectedTags.add(tag));
+        _scheduleAutosave();
+      },
+      itemBuilder: (context) => [
+        for (final tag in available)
+          PopupMenuItem(value: tag, child: Text(tag)),
+      ],
+      child: Container(
+        height: 40,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: colors.surface.withValues(alpha: 0.45),
+          borderRadius: AppRadii.card,
+          border: Border.all(color: colors.border.withValues(alpha: 0.35)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Add tags...',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
+            ),
+            Icon(
+              Icons.keyboard_arrow_down_rounded,
+              size: 18,
+              color: colors.textSecondary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAttachmentDropHint(ThemeData theme, dynamic colors) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
+      decoration: BoxDecoration(
+        color: colors.surface.withValues(alpha: 0.3),
+        borderRadius: AppRadii.card,
+        border: Border.all(
+          color: colors.border.withValues(alpha: 0.55),
+          width: 1.2,
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.cloud_upload_outlined,
+            size: 28,
+            color: colors.textSecondary,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Drop images, charts, or screenshots',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Tap Edit to upload',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: colors.textSecondary.withValues(alpha: 0.8),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLeftColumn(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

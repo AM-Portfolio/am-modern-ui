@@ -54,7 +54,7 @@ class _JournalImportDialogState extends State<JournalImportDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Import from trades'),
+      title: const Text('Link trades as journal stubs'),
       content: SizedBox(
         width: 480,
         child: Column(
@@ -63,7 +63,8 @@ class _JournalImportDialogState extends State<JournalImportDialog> {
           children: [
             const Text(
               'Paste trade IDs (comma or newline separated). '
-              'Journal stubs will be created and linked to each trade.',
+              'Creates DRAFT journal stubs linked to each trade '
+              '(buy/sell/PnL copied once; not a CSV file import).',
             ),
             const SizedBox(height: 12),
             TextField(

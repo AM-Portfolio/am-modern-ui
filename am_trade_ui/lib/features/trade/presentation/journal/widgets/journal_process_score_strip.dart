@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../internal/data/dtos/journal_entry_dto.dart';
 import '../../../internal/domain/entities/journal_entry.dart';
 
-/// Thin process metrics row for the journal hub (streak, review rate, scores).
+/// Thin process metrics row for the journal hub (review rate, scores).
 class JournalProcessScoreStrip extends StatelessWidget {
   const JournalProcessScoreStrip({
     super.key,
@@ -18,36 +18,6 @@ class JournalProcessScoreStrip extends StatelessWidget {
   final JournalSummaryDto? summary;
   final JournalAdherenceDto? adherence;
   final bool compact;
-
-  static int computeJournalingStreak(List<JournalEntry> entries) {
-    final dayKeys = entries
-        .where((e) {
-          final t = (e.entryType ?? '').toUpperCase();
-          return t == 'DAILY' || t == 'SESSION';
-        })
-        .map(
-          (e) => DateTime(
-            e.entryDate.year,
-            e.entryDate.month,
-            e.entryDate.day,
-          ),
-        )
-        .toSet();
-    if (dayKeys.isEmpty) return 0;
-
-    var cursor = DateTime.now();
-    cursor = DateTime(cursor.year, cursor.month, cursor.day);
-    if (!dayKeys.contains(cursor)) {
-      cursor = cursor.subtract(const Duration(days: 1));
-    }
-
-    var streak = 0;
-    while (dayKeys.contains(cursor)) {
-      streak++;
-      cursor = cursor.subtract(const Duration(days: 1));
-    }
-    return streak;
-  }
 
   static double? fillsReviewedPercent(List<JournalEntry> entries) {
     var linked = 0;
@@ -87,7 +57,6 @@ class JournalProcessScoreStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.colors;
-    final streak = computeJournalingStreak(entries);
     final reviewPct = fillsReviewedPercent(entries);
     final process = compositeProcessScore(summary: summary, adherence: adherence);
 
@@ -114,13 +83,6 @@ class JournalProcessScoreStrip extends StatelessWidget {
         ),
         child: Row(
           children: [
-            _MetricChip(
-              icon: Icons.local_fire_department_outlined,
-              label: 'Streak',
-              value: streak == 0 ? '—' : '$streak d',
-              tooltip: 'Consecutive days with a daily or session log',
-            ),
-            _divider(colors),
             _MetricChip(
               icon: Icons.fact_check_outlined,
               label: 'Fills reviewed',

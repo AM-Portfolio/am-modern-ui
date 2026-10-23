@@ -80,7 +80,7 @@ class _TradeCalendarAnalyticsMobilePageState extends ConsumerState<TradeCalendar
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
-                      cubit.navigateToYearly( portfolioId: widget.portfolioId, year: _selectedYear);
+                      cubit.retryLoad(portfolioId: widget.portfolioId);
                     },
                     child: const Text('Retry'),
                   ),

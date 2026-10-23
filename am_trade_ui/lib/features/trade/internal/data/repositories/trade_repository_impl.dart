@@ -33,8 +33,8 @@ class TradeRepositoryImpl implements TradeRepository {
   // Stream controllers for real-time updates
   final StreamController<TradePortfolioList> _portfoliosController =
       StreamController<TradePortfolioList>.broadcast();
-  final StreamController<TradeHoldings> _holdingsController =
-      StreamController<TradeHoldings>.broadcast();
+  /// Per-portfolio holdings streams (avoids cross-portfolio contamination).
+  final Map<String, StreamController<TradeHoldings>> _holdingsControllers = {};
   final StreamController<TradeSummary> _summaryController =
       StreamController<TradeSummary>.broadcast();
   final StreamController<TradeCalendar> _calendarController =
@@ -44,10 +44,17 @@ class TradeRepositoryImpl implements TradeRepository {
 
   // Cache for the latest data
   TradePortfolioList? _cachedPortfolioList;
-  TradeHoldings? _cachedHoldings;
+  final Map<String, TradeHoldings> _cachedHoldingsByPortfolio = {};
   TradeSummary? _cachedSummary;
   TradeCalendar? _cachedCalendar;
   FavoriteFilterList? _cachedFilterList;
+
+  StreamController<TradeHoldings> _holdingsControllerFor(String portfolioId) {
+    return _holdingsControllers.putIfAbsent(
+      portfolioId,
+      () => StreamController<TradeHoldings>.broadcast(),
+    );
+  }
 
   @override
   Future<TradePortfolioList> getTradePortfolios() async {
@@ -92,15 +99,17 @@ class TradeRepositoryImpl implements TradeRepository {
     AppLogger.methodEntry(
       'getTradeHoldings',
       tag: 'TradeRepository',
-      params: {},
+      params: {'portfolioId': portfolioId},
     );
 
     try {
       final dto = await _remoteDataSource.getTradeHoldings(portfolioId);
       final holdings = TradeHoldingMapper.fromListDto(dto, portfolioId);
 
-      _cachedHoldings = holdings;
-      _holdingsController.add(holdings);
+      _cachedHoldingsByPortfolio[portfolioId] = holdings;
+      if (!_holdingsControllerFor(portfolioId).isClosed) {
+        _holdingsControllerFor(portfolioId).add(holdings);
+      }
 
       AppLogger.info('Trade holdings fetched successfully',
           tag: 'TradeRepository');
@@ -118,10 +127,11 @@ class TradeRepositoryImpl implements TradeRepository {
       AppLogger.methodExit('getTradeHoldings',
           tag: 'TradeRepository', result: 'error');
 
-      if (_cachedHoldings != null) {
-        AppLogger.info('Returning cached trade holdings',
+      final cached = _cachedHoldingsByPortfolio[portfolioId];
+      if (cached != null && cached.portfolioId == portfolioId) {
+        AppLogger.info('Returning cached trade holdings for $portfolioId',
             tag: 'TradeRepository');
-        return _cachedHoldings!;
+        return cached;
       }
 
       rethrow;
@@ -429,23 +439,25 @@ class TradeRepositoryImpl implements TradeRepository {
     AppLogger.methodEntry(
       'watchTradeHoldings',
       tag: 'TradeRepository',
-      params: {},
+      params: {'portfolioId': portfolioId},
     );
 
-    // Check if cache exists AND matches the requested portfolio
-    if (_cachedHoldings != null &&
-        _cachedHoldings!.portfolioId == portfolioId) {
-      Future.microtask(() => _holdingsController.add(_cachedHoldings!));
+    final controller = _holdingsControllerFor(portfolioId);
+    final cached = _cachedHoldingsByPortfolio[portfolioId];
+    if (cached != null && cached.portfolioId == portfolioId) {
+      Future.microtask(() {
+        if (!controller.isClosed) controller.add(cached);
+      });
     } else {
       getTradeHoldings(portfolioId).catchError((error) {
         AppLogger.error('Failed to fetch initial holdings for stream',
             tag: 'TradeRepository', error: error);
-        _holdingsController.addError(error);
+        if (!controller.isClosed) controller.addError(error);
         return TradeHoldings.empty('', portfolioId);
       });
     }
 
-    return _holdingsController.stream;
+    return controller.stream;
   }
 
   @override
@@ -696,11 +708,14 @@ class TradeRepositoryImpl implements TradeRepository {
     _stompClient?.unsubscribe('/user/queue/portfolio');
 
     _portfoliosController.close();
-    _holdingsController.close();
+    for (final c in _holdingsControllers.values) {
+      c.close();
+    }
+    _holdingsControllers.clear();
     _summaryController.close();
     _calendarController.close();
     _cachedPortfolioList = null;
-    _cachedHoldings = null;
+    _cachedHoldingsByPortfolio.clear();
     _cachedSummary = null;
     _cachedCalendar = null;
     _cachedFilterList = null;

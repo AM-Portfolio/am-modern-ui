@@ -63,13 +63,6 @@ class JournalMetricsHeader extends StatelessWidget {
         .map((e) => DateTime(e.entryDate.year, e.entryDate.month, e.entryDate.day))
         .toSet()
         .length;
-    final withMood = entries.where((e) {
-      if (e.behaviorPatternSummaries.any((b) => b.mood != null)) return true;
-      final cf = e.customFields;
-      return cf['planningMood'] != null ||
-          cf['midMood'] != null ||
-          cf['endMood'] != null;
-    }).length;
     final completed = s?.completedCount ??
         entries
             .where((e) => (e.journalStatus ?? '').toUpperCase() == 'COMPLETED')
@@ -89,14 +82,6 @@ class JournalMetricsHeader extends StatelessWidget {
         value: '$totalEntries',
         icon: Icons.menu_book_outlined,
         accent: ModuleColors.trade,
-        compact: compact,
-      ),
-      _CompactMetricCard(
-        title: 'With mood',
-        value: '$withMood',
-        subtitle: 'Behavior tracked',
-        icon: Icons.psychology_alt_outlined,
-        accent: ModuleColors.analytics,
         compact: compact,
       ),
       _CompactMetricCard(

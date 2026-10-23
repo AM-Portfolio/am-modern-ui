@@ -22,8 +22,6 @@ import '../models/journal_template_api_mapper.dart';
 import '../widgets/add_folder_dialog.dart';
 import '../widgets/journal_filter_bar.dart';
 import '../widgets/journal_import_dialog.dart';
-import '../widgets/journal_metrics_header.dart';
-import '../widgets/journal_process_score_strip.dart';
 import '../widgets/journal_three_column_layout.dart';
 import '../widgets/simple_template_dialog.dart';
 import 'journal_insights_page.dart';
@@ -288,17 +286,6 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
                               e,
                           orElse: () => _entries,
                         );
-                        final summary = state.maybeWhen(
-                          loaded: (e, s, adherence, status, folder, tags, q,
-                                  setup) =>
-                              s,
-                          orElse: () => null,
-                        );
-                        final adherence = state.maybeWhen(
-                          loaded: (e, s, a, status, folder, tags, q, setup) =>
-                              a,
-                          orElse: () => null,
-                        );
                         final loadError = state.maybeWhen(
                           error: (message) => message,
                           orElse: () => null,
@@ -362,18 +349,6 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             if (_tab == _JournalTab.entries) ...[
-                              JournalProcessScoreStrip(
-                                entries: filtered,
-                                summary: summary,
-                                adherence: adherence,
-                                compact: _composerOpen,
-                              ),
-                              JournalMetricsHeader(
-                                summary: summary,
-                                entries: filtered,
-                                entryCountOverride: filtered.length,
-                                compact: _composerOpen,
-                              ),
                               AnimatedSize(
                                 duration: const Duration(milliseconds: 280),
                                 curve: Curves.easeOutCubic,
@@ -405,6 +380,16 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
                                         sortOrder: _sortOrder,
                                         onSortChanged: (s) =>
                                             setState(() => _sortOrder = s),
+                                        searchQuery: state.maybeWhen(
+                                          loaded: (e, s, a, status, folder,
+                                                  tags, q, setup) =>
+                                              q,
+                                          orElse: () => '',
+                                        ),
+                                        onSearchChanged: (q) =>
+                                            journalCubit.setFilters(
+                                          searchQuery: q,
+                                        ),
                                         notebookFolders: folders,
                                         notebookTags: tags,
                                         availableOutcomes: _availableOutcomes(

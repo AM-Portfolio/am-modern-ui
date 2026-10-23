@@ -189,7 +189,7 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
           AnimatedContainer(
             duration: const Duration(milliseconds: 320),
             curve: Curves.easeOutCubic,
-            width: focusComposer ? 0 : 340,
+            width: focusComposer ? 0 : 320,
             child: focusComposer
                 ? const SizedBox.shrink()
                 : ClipRect(

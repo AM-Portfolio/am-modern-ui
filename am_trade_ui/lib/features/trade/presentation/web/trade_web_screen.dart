@@ -98,6 +98,8 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
   late SwipeNavigationController _swipeController;
   String? _currentPortfolioId;
   String? _currentPortfolioName;
+  /// When true, Journal loads across all portfolios (other tabs still need a book).
+  bool _journalAllPortfolios = false;
   late TextEditingController _symbolController;
   TradeDetails? _existingTradeToEdit;
 
@@ -277,17 +279,32 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         title: 'Journal',
         subtitle: 'Trade journal',
         icon: Icons.book_outlined,
-        page: JournalWebPage(
-          key: ValueKey('journal_${_currentPortfolioId}_$_journalInitialTab'),
-          portfolioId: _currentPortfolioId,
-          initialTab: _journalInitialTab ?? 'entries',
-          onOpenAnalysis: _openAnalysis,
-          onInitialTabApplied: () {
-            if (_journalInitialTab != null) {
-              setState(() => _journalInitialTab = null);
-            }
-          },
-        ),
+        page: _currentPortfolioId == null && !_journalAllPortfolios
+            ? PortfolioSelectionPrompt(
+                title: 'Journal',
+                icon: Icons.book_outlined,
+                onViewPortfolioList: () => _swipeController.navigateTo(0),
+                secondaryLabel: 'All portfolios',
+                onSecondary: () {
+                  setState(() {
+                    _journalAllPortfolios = true;
+                    _swipeController.updateItems(_buildNavigationItems());
+                  });
+                },
+              )
+            : JournalWebPage(
+                key: ValueKey(
+                    'journal_${_journalAllPortfolios ? 'all' : _currentPortfolioId}_$_journalInitialTab'),
+                portfolioId:
+                    _journalAllPortfolios ? null : _currentPortfolioId,
+                initialTab: _journalInitialTab ?? 'entries',
+                onOpenAnalysis: _openAnalysis,
+                onInitialTabApplied: () {
+                  if (_journalInitialTab != null) {
+                    setState(() => _journalInitialTab = null);
+                  }
+                },
+              ),
         accentColor: ModuleColors.trade,
       ),
 
@@ -385,6 +402,7 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     setState(() {
       _currentPortfolioId = portfolioId;
       _currentPortfolioName = portfolioName;
+      _journalAllPortfolios = false;
 
       // Update items to inject new portfolio ID
       _swipeController.updateItems(_buildNavigationItems());
@@ -413,6 +431,20 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
     Widget tree(List<TradePortfolioViewModel> portfolios, OmsWallet? paper) {
     final isPaperSelected =
         paper != null && _currentPortfolioId == paper.portfolioUuid;
+
+    // Drop shell selection that Trade does not own (e.g. deleted Portfolio-only ghost).
+    if (portfolios.isNotEmpty &&
+        _currentPortfolioId != null &&
+        _currentPortfolioId != 'all' &&
+        !portfolios.any((p) => p.id == _currentPortfolioId)) {
+      final ghostId = _currentPortfolioId!;
+      final fallback = portfolios.first;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.clearPortfolioSelectionIf(ghostId);
+        _onPortfolioSelected(fallback.id, fallback.name, autoSelect: true);
+      });
+    }
 
     // Automatically select the first portfolio if none is selected
     if (portfolios.isNotEmpty && _currentPortfolioId == null) {

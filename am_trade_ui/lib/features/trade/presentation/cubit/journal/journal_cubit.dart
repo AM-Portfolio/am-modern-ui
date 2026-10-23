@@ -37,7 +37,7 @@ class JournalCubit extends Cubit<JournalState> {
   JournalAdherenceDto? _adherence;
 
   /// Page size for hub lists. Callers needing more should use [fetchEntriesOnce] / load-more.
-  static const int defaultPageSize = 250;
+  static const int defaultPageSize = 500;
 
   Map<String, dynamic> _buildQuery() {
     final query = <String, dynamic>{
@@ -372,6 +372,19 @@ class JournalCubit extends Cubit<JournalState> {
       journalStatus: journalStatus,
       portfolioId: portfolioId ?? _portfolioId,
     );
+    // Widen hub date filter so stubs outside the prior range still appear.
+    if (created.isNotEmpty) {
+      DateTime? earliest;
+      for (final e in created) {
+        if (earliest == null || e.entryDate.isBefore(earliest)) {
+          earliest = e.entryDate;
+        }
+      }
+      if (earliest != null &&
+          (_startDate == null || earliest.isBefore(_startDate!))) {
+        _startDate = DateTime(earliest.year, earliest.month, earliest.day);
+      }
+    }
     if (reload) await loadJournalEntries();
     return created;
   }

@@ -55,6 +55,35 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
     );
   }
 
+  Future<void> _confirmDelete() async {
+    final entry = widget.entry;
+    if (entry == null) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete entry?'),
+        content: Text(
+          '“${entry.title.trim().isEmpty ? 'Untitled entry' : entry.title}” will be removed.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFFF7675),
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    await widget.cubit.removeJournalEntry(entry.id);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.entry == null) {
@@ -67,22 +96,15 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 88,
-                height: 88,
+                width: 72,
+                height: 72,
                 decoration: BoxDecoration(
                   color: ModuleColors.trade.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: ModuleColors.trade.withValues(alpha: 0.18),
-                      blurRadius: 28,
-                      spreadRadius: 2,
-                    ),
-                  ],
                 ),
                 child: Icon(
                   Icons.edit_note_rounded,
-                  size: 42,
+                  size: 34,
                   color: ModuleColors.trade,
                 ),
               ),
@@ -108,7 +130,8 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
       );
     }
 
-    final dateStr = DateFormat('EEE MMM dd, yyyy').format(widget.entry!.entryDate);
+    final dateStr =
+        DateFormat('EEE, MMM d, yyyy').format(widget.entry!.entryDate);
     final colors = context.colors;
     final editing = _formEditMode;
 
@@ -124,21 +147,21 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
               decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(
-                    color: colors.border.withValues(alpha: 0.35),
+                    color: colors.border.withValues(alpha: 0.28),
                   ),
                 ),
               ),
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.lg,
                 AppSpacing.sm + 2,
-                AppSpacing.md,
+                AppSpacing.sm,
                 AppSpacing.sm + 2,
               ),
               child: Row(
                 children: [
                   Icon(
                     Icons.calendar_today_outlined,
-                    size: 16,
+                    size: 15,
                     color: ModuleColors.trade,
                   ),
                   const SizedBox(width: AppSpacing.sm),
@@ -170,6 +193,36 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
                         setState(() => _formEditMode = true);
                       },
                     ),
+                  PopupMenuButton<String>(
+                    tooltip: 'More',
+                    icon: Icon(
+                      Icons.more_vert_rounded,
+                      color: colors.textSecondary,
+                      size: 20,
+                    ),
+                    onSelected: (value) async {
+                      switch (value) {
+                        case 'template':
+                          if (!editing) {
+                            _formKey.currentState?.enterEditMode();
+                            setState(() => _formEditMode = true);
+                          }
+                          await _showTemplateBrowser();
+                        case 'delete':
+                          await _confirmDelete();
+                      }
+                    },
+                    itemBuilder: (context) => const [
+                      PopupMenuItem(
+                        value: 'template',
+                        child: Text('Apply template'),
+                      ),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Text('Delete entry'),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -188,6 +241,6 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
           ),
         ],
       ),
-    ).animate().fadeIn(duration: 400.ms);
+    ).animate().fadeIn(duration: 280.ms);
   }
 }
