@@ -155,6 +155,7 @@ class _TradeJournalWorkflowPageState
         tradeDirection: _entry.tradeDirection,
         folderId: _entry.folderId,
         playbookId: _entry.playbookId,
+        portfolioId: widget.portfolioId ?? _entry.portfolioId,
         preTradePlan: _entry.preTradePlan,
         tradeExecution: _entry.tradeExecution,
         postTradeReview: _entry.postTradeReview,

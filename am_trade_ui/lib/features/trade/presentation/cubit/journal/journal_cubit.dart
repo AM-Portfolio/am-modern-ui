@@ -323,9 +323,22 @@ class JournalCubit extends Cubit<JournalState> {
           externalUrls: externalUrls,
         );
       }
+      // Enrich execution/review from TradeDetails when a tradeId is present.
+      JournalEntry result = saved;
+      final linkedId = tradeId ?? saved.tradeId;
+      if (linkedId != null &&
+          linkedId.isNotEmpty &&
+          result.id.isNotEmpty &&
+          !result.id.startsWith('temp-')) {
+        try {
+          result = await repository.linkTrade(result.id, linkedId);
+        } catch (_) {
+          // Keep saved entry if enrichment fails (ownership / missing trade).
+        }
+      }
       // Reload without an intermediate empty `success` state that drops entries.
       await loadJournalEntries();
-      return saved;
+      return result;
     } catch (e) {
       emit(JournalState.error(e.toString()));
       rethrow;

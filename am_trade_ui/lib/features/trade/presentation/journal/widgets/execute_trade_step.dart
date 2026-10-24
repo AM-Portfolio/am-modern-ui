@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../internal/domain/entities/journal_entry.dart';
+import '../../../presentation/models/trade_holding_view_model.dart';
+import '../../../providers/trade_internal_providers.dart';
 
-class ExecuteTradeStep extends StatelessWidget {
+class ExecuteTradeStep extends ConsumerStatefulWidget {
   const ExecuteTradeStep({
     super.key,
     required this.entry,
@@ -16,8 +19,73 @@ class ExecuteTradeStep extends StatelessWidget {
   final String? portfolioId;
   final Future<void> Function(String tradeId)? onLinkTrade;
 
+  @override
+  ConsumerState<ExecuteTradeStep> createState() => _ExecuteTradeStepState();
+}
+
+class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
+  List<TradeHoldingViewModel> _availableTrades = [];
+  var _loadingTrades = false;
+  String? _loadError;
+
+  JournalEntry get entry => widget.entry;
+  String? get portfolioId => widget.portfolioId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadPortfolioTrades());
+  }
+
+  @override
+  void didUpdateWidget(covariant ExecuteTradeStep oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.portfolioId != widget.portfolioId) {
+      _loadPortfolioTrades();
+    }
+  }
+
+  Future<void> _loadPortfolioTrades() async {
+    final pid = portfolioId;
+    if (pid == null || pid.isEmpty) {
+      setState(() {
+        _availableTrades = [];
+        _loadError = null;
+      });
+      return;
+    }
+    setState(() {
+      _loadingTrades = true;
+      _loadError = null;
+    });
+    try {
+      final now = DateTime.now();
+      final start = now.subtract(const Duration(days: 30));
+      final getRange =
+          await ref.read(getTradeCalendarByDateRangeProvider.future);
+      final calendar = await getRange(
+        pid,
+        startDate: start,
+        endDate: now,
+      );
+      if (!mounted) return;
+      setState(() {
+        _availableTrades =
+            TradeHoldingViewModel.fromEntityList(calendar.allTrades);
+        _loadingTrades = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _availableTrades = [];
+        _loadingTrades = false;
+        _loadError = e.toString();
+      });
+    }
+  }
+
   void _updateExec(TradeExecution exec, {String? content}) {
-    onUpdate(
+    widget.onUpdate(
       entry.copyWith(
         tradeExecution: exec,
         content: content ?? entry.content,
@@ -29,6 +97,15 @@ class ExecuteTradeStep extends StatelessWidget {
     );
   }
 
+  Future<void> _applyLink(String tradeId) async {
+    if (tradeId.isEmpty) return;
+    if (widget.onLinkTrade != null) {
+      await widget.onLinkTrade!(tradeId);
+    } else {
+      widget.onUpdate(entry.copyWith(tradeId: tradeId));
+    }
+  }
+
   Future<void> _showLinkDialog(BuildContext context) async {
     final controller = TextEditingController(text: entry.tradeId ?? '');
     final related = entry.relatedTradeIds;
@@ -37,21 +114,68 @@ class ExecuteTradeStep extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         title: const Text('Link Trade'),
         content: SizedBox(
-          width: 420,
+          width: 480,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Pick a related trade or paste a trade ID from the Trade module / Calendar.',
+                portfolioId == null || portfolioId!.isEmpty
+                    ? 'Paste a trade ID, or select a portfolio to browse recent fills.'
+                    : 'Pick a recent fill for this portfolio (includes paper when Paper is selected), or paste an ID.',
                 style: Theme.of(ctx).textTheme.bodySmall,
               ),
               const SizedBox(height: 12),
+              if (_loadingTrades)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                )
+              else if (_loadError != null)
+                Text(
+                  'Could not load trades: $_loadError',
+                  style: TextStyle(color: Theme.of(ctx).colorScheme.error),
+                )
+              else if (_availableTrades.isNotEmpty) ...[
+                Text(
+                  'Recent trades (30d)',
+                  style: Theme.of(ctx).textTheme.labelLarge,
+                ),
+                const SizedBox(height: 8),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 220),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: _availableTrades.length,
+                    itemBuilder: (context, i) {
+                      final t = _availableTrades[i];
+                      final subtitle = [
+                        if (t.symbol.isNotEmpty) t.symbol,
+                        if (t.tradeId.isNotEmpty) t.tradeId,
+                      ].join(' · ');
+                      return ListTile(
+                        dense: true,
+                        title: Text(
+                          t.symbol.isNotEmpty ? t.symbol : t.tradeId,
+                        ),
+                        subtitle: Text(
+                          subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: const Icon(Icons.link),
+                        onTap: () => Navigator.pop(ctx, t.tradeId),
+                      );
+                    },
+                  ),
+                ),
+                const Divider(),
+              ],
               if (related.isNotEmpty) ...[
                 Text('Related trades', style: Theme.of(ctx).textTheme.labelLarge),
                 const SizedBox(height: 8),
                 ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 160),
+                  constraints: const BoxConstraints(maxHeight: 120),
                   child: ListView(
                     shrinkWrap: true,
                     children: related
@@ -75,7 +199,7 @@ class ExecuteTradeStep extends StatelessWidget {
                   hintText: 'Paste tradeId',
                   border: OutlineInputBorder(),
                 ),
-                autofocus: related.isEmpty,
+                autofocus: _availableTrades.isEmpty && related.isEmpty,
               ),
             ],
           ),
@@ -85,6 +209,14 @@ class ExecuteTradeStep extends StatelessWidget {
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Cancel'),
           ),
+          if (portfolioId != null && portfolioId!.isNotEmpty)
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _loadPortfolioTrades();
+              },
+              child: const Text('Refresh'),
+            ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
             child: const Text('Link'),
@@ -93,11 +225,7 @@ class ExecuteTradeStep extends StatelessWidget {
       ),
     );
     if (tradeId == null || tradeId.isEmpty) return;
-    if (onLinkTrade != null) {
-      await onLinkTrade!(tradeId);
-    } else {
-      onUpdate(entry.copyWith(tradeId: tradeId));
-    }
+    await _applyLink(tradeId);
   }
 
   Future<void> _addAttachment(BuildContext context) async {
@@ -152,7 +280,7 @@ class ExecuteTradeStep extends StatelessWidget {
         uploadedAt: DateTime.now(),
       ),
     ];
-    onUpdate(entry.copyWith(attachments: next));
+    widget.onUpdate(entry.copyWith(attachments: next));
   }
 
   @override
@@ -171,7 +299,7 @@ class ExecuteTradeStep extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'Link a live trade and/or record execution snapshot.',
+          'Link a trade fill (paper or live) and/or record execution snapshot.',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -195,7 +323,7 @@ class ExecuteTradeStep extends StatelessWidget {
                     children: [
                       Text(
                         entry.tradeId == null
-                            ? 'Link Broker Execution'
+                            ? 'Link Trade Execution'
                             : 'Linked: ${entry.tradeId}',
                         style: Theme.of(context)
                             .textTheme
@@ -204,9 +332,12 @@ class ExecuteTradeStep extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        portfolioId == null
-                            ? 'Connect this journal to a TradeDetails record.'
-                            : 'Portfolio: $portfolioId',
+                        portfolioId == null || portfolioId!.isEmpty
+                            ? 'Select a portfolio (Paper book for OMS fills) to browse trades.'
+                            : _loadingTrades
+                                ? 'Loading recent trades…'
+                                : 'Portfolio: $portfolioId'
+                                    '${_availableTrades.isEmpty ? '' : ' · ${_availableTrades.length} recent'}',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ],
@@ -337,7 +468,7 @@ class ExecuteTradeStep extends StatelessWidget {
                   final next = entry.attachments
                       .where((x) => x.fileUrl != a.fileUrl)
                       .toList();
-                  onUpdate(entry.copyWith(attachments: next));
+                  widget.onUpdate(entry.copyWith(attachments: next));
                 },
               ),
             ),
