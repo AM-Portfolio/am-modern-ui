@@ -57,7 +57,6 @@ class _PortfolioHoldingsWidgetState
 
               // Sort holdings based on selected criteria
               final sortedHoldings = _sortHoldings(portfolioHoldings.holdings);
-              final priceLabel = portfolioHoldings.priceLabel;
 
               return RefreshIndicator(
                 onRefresh: () async {
@@ -111,6 +110,7 @@ class _PortfolioHoldingsWidgetState
                         ? holding.todayChangePercentage
                         : holding.totalGainLossPercentage;
                     final isPositive = changeValue >= 0;
+                    final compact = !holding.hasCostBasis;
 
                     return InvestmentCard.legacy(
                       symbol: holding.symbol,
@@ -123,6 +123,13 @@ class _PortfolioHoldingsWidgetState
                       changeValue: changeValue,
                       changePercent: changePercent,
                       isPositive: isPositive,
+                      padding: compact
+                          ? const EdgeInsets.fromLTRB(12, 8, 12, 8)
+                          : null,
+                      margin: compact
+                          ? const EdgeInsets.only(bottom: 6)
+                          : null,
+                      sectionGap: compact ? 2 : null,
                       onTap: () {
                         setState(() => _focusedSymbol = holding.symbol);
                         widget.onHoldingFocused?.call(holding.symbol);
@@ -134,7 +141,6 @@ class _PortfolioHoldingsWidgetState
                         changeValue,
                         changePercent,
                         isPositive,
-                        priceLabel,
                       ),
                     );
                   },
@@ -259,115 +265,141 @@ class _PortfolioHoldingsWidgetState
     double changeValue,
     double changePercent,
     bool isPositive,
-    String priceLabel,
-  ) => Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-      // Left: Investment details
-      Column(
+  ) {
+    final showCost = holding.hasCostBasis;
+    final qtyMeta = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          isPositive ? Icons.trending_up : Icons.trending_down,
+          color: isPositive ? context.marketPositive : context.marketNegative,
+          size: 12,
+        ),
+        if (showCost) ...[
+          const SizedBox(width: 2),
+          Text(
+            'Avg ${holding.avgPrice.toStringAsFixed(2)}',
+            style: TextStyle(color: context.textSecondary, fontSize: 12),
+          ),
+        ],
+        const SizedBox(width: 8),
+        Icon(
+          Icons.inventory_2_outlined,
+          color: context.textSecondary,
+          size: 12,
+        ),
+        const SizedBox(width: 2),
+        Text(
+          '${holding.quantity.toInt()}',
+          style: TextStyle(color: context.textSecondary, fontSize: 12),
+        ),
+      ],
+    );
+    final pnlText = Text(
+      _displayFormat == HoldingsDisplayFormat.value
+          ? '${isPositive ? '+' : ''}₹${changeValue.toStringAsFixed(2)}'
+          : '${isPositive ? '+' : ''}${changePercent.toStringAsFixed(2)}%',
+      style: TextStyle(
+        color: isPositive ? context.marketPositive : context.marketNegative,
+        fontWeight: FontWeight.bold,
+        fontSize: 14,
+      ),
+    );
+    final ltpText = Text(
+      holding.currentPrice.toStringAsFixed(2),
+      style: const TextStyle(
+        fontWeight: FontWeight.w500,
+        fontSize: 12,
+      ),
+    );
+    final brokerChips =
+        widget.portfolioId == 'all' && holding.brokerHoldings.isNotEmpty
+            ? Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Wrap(
+                  spacing: 4,
+                  children: holding.brokerHoldings.map<Widget>((b) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: ModuleColors.portfolio.withAlpha(25),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        b.brokerName,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: ModuleColors.portfolio,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              )
+            : null;
+    if (!showCost) {
+      return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Inv. ',
-                style: TextStyle(color: context.textSecondary, fontSize: 12),
+              qtyMeta,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  pnlText,
+                  const SizedBox(width: 8),
+                  ltpText,
+                ],
               ),
-              Text(
-                '₹${holding.investedAmount.toStringAsFixed(2)}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 12,
+            ],
+          ),
+          if (brokerChips != null) brokerChips,
+        ],
+      );
+    }
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  'Inv. ',
+                  style: TextStyle(color: context.textSecondary, fontSize: 12),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          Row(
-            children: [
-              Icon(
-                isPositive ? Icons.trending_up : Icons.trending_down,
-                color: isPositive ? context.marketPositive : context.marketNegative,
-                size: 12,
-              ),
-              const SizedBox(width: 2),
-              Text(
-                'Avg ${holding.avgPrice.toStringAsFixed(2)}',
-                style: TextStyle(color: context.textSecondary, fontSize: 12),
-              ),
-              const SizedBox(width: 8),
-              Icon(
-                Icons.inventory_2_outlined,
-                color: context.textSecondary,
-                size: 12,
-              ),
-              const SizedBox(width: 2),
-              Text(
-                '${holding.quantity.toInt()}',
-                style: TextStyle(color: context.textSecondary, fontSize: 12),
-              ),
-            ],
-          ),
-          if (widget.portfolioId == 'all' && holding.brokerHoldings.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 4,
-              children: holding.brokerHoldings.map<Widget>((b) {
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: ModuleColors.portfolio.withAlpha(25),
-                    borderRadius: BorderRadius.circular(4),
+                Text(
+                  '₹${holding.investedAmount.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 12,
                   ),
-                  child: Text(
-                    b.brokerName,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: ModuleColors.portfolio,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                );
-              }).toList(),
+                ),
+              ],
             ),
+            const SizedBox(height: 2),
+            qtyMeta,
+            if (brokerChips != null) brokerChips,
           ],
-        ],
-      ),
-      // Right: P&L and Current Price with format preference
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text(
-            _displayFormat == HoldingsDisplayFormat.value
-                ? '${isPositive ? '+' : ''}₹${changeValue.toStringAsFixed(2)}'
-                : '${isPositive ? '+' : ''}${changePercent.toStringAsFixed(2)}%',
-            style: TextStyle(
-              color: isPositive ? context.marketPositive : context.marketNegative,
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '$priceLabel ',
-                style: TextStyle(color: context.textSecondary, fontSize: 12),
-              ),
-              Text(
-                holding.currentPrice.toStringAsFixed(2),
-                style: const TextStyle(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    ],
-  );
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            pnlText,
+            const SizedBox(height: 2),
+            ltpText,
+          ],
+        ),
+      ],
+    );
+  }
 
   /// Sort holdings based on selected criteria
   List<dynamic> _sortHoldings(List<dynamic> holdings) {

@@ -68,9 +68,16 @@ class DashboardToolbar extends StatelessWidget {
             ),
           ),
         if (onOpenPaper != null)
-          PaperTradingNavChip(
-            onTap: onOpenPaper!,
-            compact: hideTfLeading,
+          Flexible(
+            fit: FlexFit.loose,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: PaperTradingNavChip(
+                onTap: onOpenPaper!,
+                compact: hideTfLeading,
+              ),
+            ),
           ),
         if (glass)
           const Spacer()
@@ -92,14 +99,14 @@ class DashboardToolbar extends StatelessWidget {
         if (onQuickAdd != null) ...[
           const SizedBox(width: AppSpacing.xs),
           _ToolbarIconWell(
-            icon: Icons.more_horiz,
+            icon: Icons.add_rounded,
             accent: accent,
             iconColor: iconColor,
-            tooltip: 'Quick actions',
+            tooltip: 'Sync portfolio',
             child: SyncQuickActionsControl(
               accentColor: accent,
               iconColor: iconColor,
-              icon: Icons.more_horiz,
+              icon: Icons.add_rounded,
               actions: buildGlobalAddMenuActions(onQuickAdd!),
               showSubtitles: false,
             ),

@@ -52,6 +52,7 @@ class CardLayoutBuilder extends HoldingsLayoutBuilder {
         final changeValue = getChangeValue(holding, changeType);
         final changePercent = getChangePercentage(holding, changeType);
         final isPositive = changeValue >= 0;
+        final compact = !holding.hasCostBasis;
 
         return InvestmentCard.legacy(
           symbol: holding.symbol,
@@ -64,6 +65,11 @@ class CardLayoutBuilder extends HoldingsLayoutBuilder {
           changeValue: changeValue,
           changePercent: changePercent,
           isPositive: isPositive,
+          padding: compact
+              ? const EdgeInsets.fromLTRB(12, 8, 12, 8)
+              : null,
+          margin: compact ? const EdgeInsets.only(bottom: 6) : null,
+          sectionGap: compact ? 2 : null,
           onTap: () => onHoldingTap?.call(holding),
           customBottomWidget: _buildBottomRow(
             context,
@@ -88,10 +94,71 @@ class CardLayoutBuilder extends HoldingsLayoutBuilder {
   ) {
     final muted = context.textTertiary;
     final pnl = isPositive ? context.marketPositive : context.marketNegative;
+    final showCost = holding.hasCostBasis;
+    final qtyMeta = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          isPositive ? Icons.trending_up : Icons.trending_down,
+          color: pnl,
+          size: 12,
+        ),
+        if (showCost) ...[
+          const SizedBox(width: 2),
+          Text(
+            'Avg ${holding.avgPrice.toStringAsFixed(2)}',
+            style: TextStyle(color: muted, fontSize: 12),
+          ),
+        ],
+        const SizedBox(width: 8),
+        Icon(
+          Icons.inventory_2_outlined,
+          color: muted,
+          size: 12,
+        ),
+        const SizedBox(width: 2),
+        Text(
+          '${holding.quantity.toInt()}',
+          style: TextStyle(color: muted, fontSize: 12),
+        ),
+      ],
+    );
+    final pnlText = Text(
+      displayFormat == HoldingsDisplayFormat.value
+          ? '${isPositive ? '+' : ''}${formatCurrency(changeValue)}'
+          : formatPercentage(changePercent),
+      style: TextStyle(
+        color: pnl,
+        fontWeight: FontWeight.bold,
+        fontSize: 14,
+      ),
+    );
+    final ltpText = Text(
+      holding.currentPrice.toStringAsFixed(2),
+      style: const TextStyle(
+        fontWeight: FontWeight.w500,
+        fontSize: 12,
+      ),
+    );
+    if (!showCost) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          qtyMeta,
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              pnlText,
+              const SizedBox(width: 8),
+              ltpText,
+            ],
+          ),
+        ],
+      );
+    }
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // Left: Investment details
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -111,47 +178,13 @@ class CardLayoutBuilder extends HoldingsLayoutBuilder {
               ],
             ),
             const SizedBox(height: 2),
-            Row(
-              children: [
-                Icon(
-                  isPositive ? Icons.trending_up : Icons.trending_down,
-                  color: pnl,
-                  size: 12,
-                ),
-                const SizedBox(width: 2),
-                Text(
-                  'Avg ${holding.avgPrice.toStringAsFixed(2)}',
-                  style: TextStyle(color: muted, fontSize: 12),
-                ),
-                const SizedBox(width: 8),
-                Icon(
-                  Icons.inventory_2_outlined,
-                  color: muted,
-                  size: 12,
-                ),
-                const SizedBox(width: 2),
-                Text(
-                  '${holding.quantity.toInt()}',
-                  style: TextStyle(color: muted, fontSize: 12),
-                ),
-              ],
-            ),
+            qtyMeta,
           ],
         ),
-        // Right: P&L and Current Price
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text(
-              displayFormat == HoldingsDisplayFormat.value
-                  ? '${isPositive ? '+' : ''}${formatCurrency(changeValue)}'
-                  : formatPercentage(changePercent),
-              style: TextStyle(
-                color: pnl,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-            ),
+            pnlText,
             const SizedBox(height: 2),
             Row(
               mainAxisSize: MainAxisSize.min,
@@ -160,13 +193,7 @@ class CardLayoutBuilder extends HoldingsLayoutBuilder {
                   'Live ',
                   style: TextStyle(color: muted, fontSize: 12),
                 ),
-                Text(
-                  holding.currentPrice.toStringAsFixed(2),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w500,
-                    fontSize: 12,
-                  ),
-                ),
+                ltpText,
               ],
             ),
           ],

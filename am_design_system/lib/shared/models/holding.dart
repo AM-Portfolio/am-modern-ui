@@ -28,6 +28,9 @@ class Holding {
     required this.currentPrice,
     required this.companyName,
   });
+
+  /// Mail/statement imports often have no invested amount or average price.
+  bool get hasCostBasis => investedAmount > 0 || avgPrice > 0;
 }
 
 enum HoldingsSortBy {

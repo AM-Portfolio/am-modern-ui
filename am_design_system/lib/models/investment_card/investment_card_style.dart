@@ -9,6 +9,7 @@ class InvestmentCardStyle {
     this.cardColor,
     this.leftAlignment = CrossAxisAlignment.start,
     this.rightAlignment = CrossAxisAlignment.end,
+    this.sectionGap = 12,
   });
   final EdgeInsets? padding;
   final EdgeInsets? margin;
@@ -16,6 +17,9 @@ class InvestmentCardStyle {
   final Color? cardColor;
   final CrossAxisAlignment leftAlignment;
   final CrossAxisAlignment rightAlignment;
+
+  /// Gap between the symbol/value row and the bottom metrics.
+  final double sectionGap;
 
   /// Default style for regular cards
   static const InvestmentCardStyle regular = InvestmentCardStyle(
@@ -37,6 +41,7 @@ class InvestmentCardStyle {
     Color? cardColor,
     CrossAxisAlignment? leftAlignment,
     CrossAxisAlignment? rightAlignment,
+    double? sectionGap,
   }) => InvestmentCardStyle(
     padding: padding ?? this.padding,
     margin: margin ?? this.margin,
@@ -44,5 +49,6 @@ class InvestmentCardStyle {
     cardColor: cardColor ?? this.cardColor,
     leftAlignment: leftAlignment ?? this.leftAlignment,
     rightAlignment: rightAlignment ?? this.rightAlignment,
+    sectionGap: sectionGap ?? this.sectionGap,
   );
 }
