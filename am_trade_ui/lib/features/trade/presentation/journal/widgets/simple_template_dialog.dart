@@ -12,8 +12,7 @@ export '../models/journal_template_catalog.dart'
         JournalTemplateSelection,
         JournalTemplateCatalog,
         JournalTemplateCategory,
-        JournalTemplateSection,
-        buildTemplateDocument;
+        JournalTemplateSection;
 
 /// Journal templates picker — prefers Playbooks API, falls back to local catalog.
 class EnhancedTemplateDialog extends ConsumerStatefulWidget {

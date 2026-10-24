@@ -1,5 +1,3 @@
-import 'package:flutter_quill/flutter_quill.dart' as quill;
-
 /// Preview / Quill section within a template (numbered block in the mockup).
 class JournalTemplateSection {
   const JournalTemplateSection({
@@ -59,7 +57,7 @@ class JournalTemplateSelection {
   final bool isBlank;
 
   /// Checklist item texts the user pre-checked in the template dialog.
-  /// Carried into Quill as `list: checked` when applying.
+  /// Applied as completed rows in the Checklist form section.
   final Set<String> checkedItems;
 
   JournalTemplateSelection copyWith({
@@ -113,10 +111,16 @@ class JournalTemplateSelection {
   }
 
   List<String> get effectiveChecklist {
-    if (previewSections.isNotEmpty) {
-      return previewSections.expand((s) => s.items).toList();
-    }
-    return checklistItems;
+    if (checklistItems.isNotEmpty) return checklistItems;
+    if (previewSections.isEmpty) return const [];
+    // Never treat "Prompts" / "Notes" preview blocks as checklist rows.
+    return previewSections
+        .where((s) {
+          final t = s.title.toLowerCase();
+          return !t.contains('prompt') && !t.contains('note');
+        })
+        .expand((s) => s.items)
+        .toList();
   }
 
   /// Plain preview text for accessibility / fallback.
@@ -140,106 +144,6 @@ class JournalTemplateSelection {
     }
     return buf.toString().trimRight();
   }
-}
-
-/// Builds a typed Quill document (headers + real checklists) from a template.
-quill.Document buildTemplateDocument(JournalTemplateSelection template) {
-  if (template.isBlank) {
-    return quill.Document();
-  }
-
-  final ops = <Map<String, dynamic>>[];
-
-  void header(String text, {int level = 2}) {
-    ops.add({
-      'insert': '$text\n',
-      'attributes': {'header': level},
-    });
-  }
-
-  void paragraph(String text) {
-    ops.add({'insert': '$text\n'});
-  }
-
-  void blank() => ops.add({'insert': '\n'});
-
-  void checklist(String text) {
-    final done = template.checkedItems.contains(text);
-    ops.add({
-      'insert': '$text\n',
-      'attributes': {'list': done ? 'checked' : 'unchecked'},
-    });
-  }
-
-  void fieldLine(String label) {
-    // Bold label + empty line to type into (no underscore blanks).
-    ops
-      ..add({
-        'insert': '$label\n',
-        'attributes': {'bold': true},
-      })
-      ..add({'insert': '\n'});
-  }
-
-  header(template.name, level: 1);
-  paragraph('Tip: check items as you go, then type under each field.');
-  blank();
-
-  if (template.focusLine != null && template.focusLine!.trim().isNotEmpty) {
-    paragraph(template.focusLine!);
-    blank();
-  }
-
-  if (template.previewSections.isNotEmpty) {
-    for (final section in template.previewSections) {
-      header(section.title);
-      final prompts = section.title.toLowerCase().contains('prompt');
-      for (final item in section.items) {
-        if (prompts) {
-          ops.add({
-            'insert': '$item\n',
-            'attributes': {'italic': true},
-          });
-          blank();
-        } else {
-          checklist(item);
-        }
-      }
-      blank();
-    }
-  } else if (template.checklistItems.isNotEmpty) {
-    header('Setup checklist');
-    for (final item in template.checklistItems) {
-      checklist(item);
-    }
-    blank();
-  }
-
-  if (template.fields.isNotEmpty) {
-    header('Trade details');
-    paragraph('Type your answers on the blank lines:');
-    blank();
-    for (final field in template.fields) {
-      fieldLine(field);
-    }
-  }
-
-  if (template.notePrompts.isNotEmpty) {
-    header('Notes');
-    for (final prompt in template.notePrompts) {
-      ops.add({
-        'insert': '$prompt\n',
-        'attributes': {'italic': true},
-      });
-      blank();
-    }
-  }
-
-  if (ops.isEmpty) {
-    ops.add({'insert': '\n'});
-  }
-
-  return quill.Document.fromJson(ops);
 }
 
 /// Built-in journal templates (aligned with seeded system playbooks + mockup).

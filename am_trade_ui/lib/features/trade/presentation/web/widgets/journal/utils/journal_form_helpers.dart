@@ -38,6 +38,10 @@ class JournalFormHelpers {
     required String endBehavior,
     required String? endMood,
     required String? endSentiment,
+    Map<String, String>? promptAnswers,
+    Map<String, String>? fieldAnswers,
+    List<String>? promptLabels,
+    List<String>? fieldLabels,
   }) => {
     // Planning phase
     if (planningBehavior.trim().isNotEmpty) 'planningBehavior': planningBehavior.trim(),
@@ -51,6 +55,40 @@ class JournalFormHelpers {
     if (endBehavior.trim().isNotEmpty) 'endBehavior': endBehavior.trim(),
     if (endMood != null) 'endMood': endMood,
     if (endSentiment != null) 'endSentiment': endSentiment,
+    if (promptLabels != null && promptLabels.isNotEmpty)
+      'notePromptLabels': promptLabels,
+    if (promptAnswers != null && promptAnswers.isNotEmpty)
+      'notePromptAnswers': promptAnswers,
+    if (fieldLabels != null && fieldLabels.isNotEmpty)
+      'templateFieldLabels': fieldLabels,
+    if (fieldAnswers != null && fieldAnswers.isNotEmpty)
+      'templateFieldAnswers': fieldAnswers,
   };
+
+  /// Reads a string→string map from customFields (API may decode as Map).
+  static Map<String, String> stringMapFromCustom(
+    Map<String, dynamic> customFields,
+    String key,
+  ) {
+    final raw = customFields[key];
+    if (raw is! Map) return {};
+    return {
+      for (final e in raw.entries)
+        if (e.key != null && '${e.key}'.trim().isNotEmpty)
+          '${e.key}': '${e.value ?? ''}',
+    };
+  }
+
+  static List<String> stringListFromCustom(
+    Map<String, dynamic> customFields,
+    String key,
+  ) {
+    final raw = customFields[key];
+    if (raw is! List) return const [];
+    return [
+      for (final e in raw)
+        if ('$e'.trim().isNotEmpty) '$e'.trim(),
+    ];
+  }
 }
 

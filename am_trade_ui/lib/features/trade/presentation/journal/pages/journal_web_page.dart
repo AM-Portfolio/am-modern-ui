@@ -164,16 +164,25 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
   }
 
   Future<void> _pickDateRange(JournalCubit cubit) async {
+    // Compact popup — Material showDateRangePicker takes over the full route on web.
     final initial = _dateRange ??
         DateTimeRange(
           start: DateTime.now().subtract(const Duration(days: 365)),
           end: DateTime.now(),
         );
-    final picked = await showDateRangePicker(
+    final picked = await showDialog<DateTimeRange>(
       context: context,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-      initialDateRange: initial,
+      barrierDismissible: true,
+      builder: (context) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: Theme.of(context).colorScheme.copyWith(
+                primary: ModuleColors.trade,
+              ),
+        ),
+        child: CompactDateRangePickerDialog(
+          initialDateRange: initial,
+        ),
+      ),
     );
     if (picked == null || !mounted) return;
     setState(() => _dateRange = picked);

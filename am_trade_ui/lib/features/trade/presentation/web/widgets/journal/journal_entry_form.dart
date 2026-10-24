@@ -101,6 +101,15 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
   bool _isEditMode = false; // View mode by default when editing existing entry
   String? _appliedTemplateName;
 
+  /// Template checklist / prompts live outside Quill so users don't clear placeholders.
+  List<String> _checklistItems = [];
+  final Set<String> _completedChecklistItems = {};
+  List<String> _notePrompts = [];
+  final Map<String, TextEditingController> _promptControllers = {};
+  List<String> _templateFields = [];
+  final Map<String, TextEditingController> _fieldControllers = {};
+  String? _templateFocusTip;
+
   bool get isEditMode => _isEditMode;
 
   void enterEditMode() => _setEditMode(true);
@@ -254,9 +263,132 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
 
     _tradeOverviewDate = widget.entry?.entryDate ?? DateTime.now();
 
+    _loadStructuredSectionsFromEntry();
+
     _disposeAllReviewRows();
     _syncReviewRows();
     _lastSavedFingerprint = _draftFingerprint();
+  }
+
+  void _loadStructuredSectionsFromEntry() {
+    final entry = widget.entry;
+    final review = entry?.postTradeReview;
+    final plan = entry?.preTradePlan;
+    final custom = entry?.customFields ?? {};
+
+    final checklist = <String>[];
+    if (review?.postChecklist.isNotEmpty == true) {
+      checklist.addAll(review!.postChecklist);
+    } else if (plan?.setupChecklist.isNotEmpty == true) {
+      checklist.addAll(plan!.setupChecklist);
+    }
+
+    final completed = <String>{
+      ...?review?.completedChecklistItems,
+      ...?plan?.confirmedChecklistItems,
+    };
+
+    final promptAnswers =
+        JournalFormHelpers.stringMapFromCustom(custom, 'notePromptAnswers');
+    final fieldAnswers =
+        JournalFormHelpers.stringMapFromCustom(custom, 'templateFieldAnswers');
+    final promptLabels =
+        JournalFormHelpers.stringListFromCustom(custom, 'notePromptLabels');
+    final fieldLabels =
+        JournalFormHelpers.stringListFromCustom(custom, 'templateFieldLabels');
+
+    // Prefer stored label order; fall back to answer keys for older entries.
+    final prompts = promptLabels.isNotEmpty
+        ? promptLabels
+        : promptAnswers.keys.toList();
+    final fields =
+        fieldLabels.isNotEmpty ? fieldLabels : fieldAnswers.keys.toList();
+
+    _replaceChecklist(checklist, completed: completed);
+    _notePrompts = prompts;
+    _replaceLabeledControllers(
+      _promptControllers,
+      prompts: prompts,
+      answers: promptAnswers,
+    );
+    _templateFields = fields;
+    _replaceLabeledControllers(
+      _fieldControllers,
+      prompts: fields,
+      answers: fieldAnswers,
+    );
+  }
+
+  void _replaceChecklist(
+    List<String> items, {
+    Set<String> completed = const {},
+  }) {
+    _checklistItems = List<String>.from(items);
+    _completedChecklistItems
+      ..clear()
+      ..addAll(completed.where(_checklistItems.contains));
+  }
+
+  void _replaceLabeledControllers(
+    Map<String, TextEditingController> target, {
+    required List<String> prompts,
+    Map<String, String> answers = const {},
+  }) {
+    for (final c in target.values) {
+      c.removeListener(_scheduleAutosave);
+      c.dispose();
+    }
+    target.clear();
+    for (final label in prompts) {
+      final t = label.trim();
+      if (t.isEmpty) continue;
+      final c = TextEditingController(text: answers[t] ?? '');
+      c.addListener(_scheduleAutosave);
+      target[t] = c;
+    }
+  }
+
+  Map<String, String> _answersFromControllers(
+    Map<String, TextEditingController> controllers,
+  ) =>
+      {
+        for (final e in controllers.entries)
+          if (e.value.text.trim().isNotEmpty) e.key: e.value.text.trim(),
+      };
+
+  void _clearStructuredSections() {
+    _replaceChecklist(const []);
+    _replaceLabeledControllers(_promptControllers, prompts: const []);
+    _notePrompts = [];
+    _replaceLabeledControllers(_fieldControllers, prompts: const []);
+    _templateFields = [];
+    _appliedTemplateName = null;
+    _templateFocusTip = null;
+  }
+
+  PostTradeReview? _buildPostTradeReviewForSave(JournalEntry? existing) {
+    final base = existing?.postTradeReview;
+    if (_checklistItems.isEmpty) {
+      return base;
+    }
+    final completed = _completedChecklistItems
+        .where(_checklistItems.contains)
+        .toList(growable: false);
+    if (base == null) {
+      return PostTradeReview(
+        postChecklist: _checklistItems,
+        completedChecklistItems: completed,
+      );
+    }
+    return base.copyWith(
+      postChecklist: _checklistItems,
+      completedChecklistItems: completed,
+    );
+  }
+
+  double? _checklistCompletionPct() {
+    if (_checklistItems.isEmpty) return null;
+    return (_completedChecklistItems.length / _checklistItems.length) * 100;
   }
 
   // ---------------------------------------------------------------------------
@@ -387,14 +519,29 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
           const TextSelection.collapsed(offset: 0),
           quill.ChangeSource.local,
         );
-        _appliedTemplateName = null;
+        _clearStructuredSections();
         _isEditMode = true;
         return;
       }
 
       _titleController.text = selection.name;
-      final doc = buildTemplateDocument(selection);
-      _quillController.document = doc;
+      // Checklist + prompts are form sections; Quill is free-form notes only.
+      _replaceChecklist(
+        selection.effectiveChecklist,
+        completed: selection.checkedItems,
+      );
+      _notePrompts = List<String>.from(selection.notePrompts);
+      _replaceLabeledControllers(
+        _promptControllers,
+        prompts: _notePrompts,
+      );
+      _templateFields = List<String>.from(selection.fields);
+      _replaceLabeledControllers(
+        _fieldControllers,
+        prompts: _templateFields,
+      );
+      // Notes start empty — checklist/prompts are separate sections above.
+      _quillController.document = quill.Document();
       _quillController.updateSelection(
         const TextSelection.collapsed(offset: 0),
         quill.ChangeSource.local,
@@ -410,6 +557,8 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       }
       _planningMood ??= 'focused';
       _appliedTemplateName = selection.name;
+      final tip = selection.focusLine?.trim();
+      _templateFocusTip = (tip != null && tip.isNotEmpty) ? tip : null;
       _isEditMode = true;
     });
     widget.onEditModeChanged?.call(true);
@@ -435,6 +584,14 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     _planningBehaviorController.dispose();
     _midBehaviorController.dispose();
     _endBehaviorController.dispose();
+    for (final c in _promptControllers.values) {
+      c.dispose();
+    }
+    _promptControllers.clear();
+    for (final c in _fieldControllers.values) {
+      c.dispose();
+    }
+    _fieldControllers.clear();
     _autosaveTimer?.cancel();
     for (final r in _reviewRows.values) {
       r.dispose();
@@ -476,6 +633,14 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     _entryDate.toIso8601String().split('T').first,
     _relatedTradeIds.join(','),
     (_selectedTags.toList()..sort()).join(','),
+    _checklistItems.join(','),
+    (_completedChecklistItems.toList()..sort()).join(','),
+    _answersFromControllers(_promptControllers).entries
+        .map((e) => '${e.key}=${e.value}')
+        .join('|'),
+    _answersFromControllers(_fieldControllers).entries
+        .map((e) => '${e.key}=${e.value}')
+        .join('|'),
   ].join('\u241F');
 
   bool get _draftHasContent =>
@@ -486,7 +651,10 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       _endBehaviorController.text.trim().isNotEmpty ||
       _planningMood != null ||
       _midMood != null ||
-      _endMood != null;
+      _endMood != null ||
+      _checklistItems.isNotEmpty ||
+      _answersFromControllers(_promptControllers).isNotEmpty ||
+      _answersFromControllers(_fieldControllers).isNotEmpty;
 
   /// Debounced (~20s) silent DRAFT save while composing a new entry.
   void _scheduleAutosave() {
@@ -560,7 +728,13 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       endBehavior: _endBehaviorController.text,
       endMood: _endMood,
       endSentiment: _endSentiment,
+      promptAnswers: _answersFromControllers(_promptControllers),
+      fieldAnswers: _answersFromControllers(_fieldControllers),
+      promptLabels: _notePrompts,
+      fieldLabels: _templateFields,
     );
+    final postTradeReview = _buildPostTradeReviewForSave(existing);
+    final checklistPct = _checklistCompletionPct();
     final behaviorPatternSummaries = _buildBehaviorPatternSummaries();
     final syncedAttachments = _syncedAttachmentsForBody();
     final syncedUrls = syncedAttachments?.map((a) => a.fileUrl).toList();
@@ -578,6 +752,8 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
         journalStatus: journalStatus,
         folderId: widget.defaultFolderId,
         portfolioId: _portfolioIdOrNull,
+        postTradeReview: postTradeReview,
+        checklistCompletionPct: checklistPct,
         behaviorPatternSummaries: behaviorPatternSummaries,
         relatedTradeIds: related,
         customFields: customFields,
@@ -601,7 +777,8 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       portfolioId: _portfolioIdOrNull ?? existing?.portfolioId,
       preTradePlan: existing?.preTradePlan,
       tradeExecution: existing?.tradeExecution,
-      postTradeReview: existing?.postTradeReview,
+      postTradeReview: postTradeReview,
+      checklistCompletionPct: checklistPct,
       tagIds: (existing?.tagIds.isEmpty ?? true) ? null : existing!.tagIds,
       chartUrls:
           (existing?.chartUrls.isEmpty ?? true) ? null : existing!.chartUrls,
@@ -933,7 +1110,7 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
             _syncedAttachmentUrls = {};
             _relatedTradeIds = [];
             _entryDate = DateTime.now();
-            _appliedTemplateName = null;
+            _clearStructuredSections();
             _disposeAllReviewRows();
             _lastSavedFingerprint = _draftFingerprint();
           });
@@ -1128,15 +1305,16 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     final theme = Theme.of(context);
     final colors = context.colors;
     final review = widget.entry!.postTradeReview;
-    final storedChecklist = review?.postChecklist ?? const <String>[];
-    final completed = review?.completedChecklistItems ?? const <String>[];
     final lesson = review?.lessonLearned?.trim();
     final entryType = (widget.entry!.entryType ?? '').toUpperCase();
     final isWeekly = entryType == 'WEEKLY_REVIEW' ||
         _titleController.text.toLowerCase().contains('weekly');
-    final checklist = storedChecklist.isNotEmpty
-        ? storedChecklist
+    final checklist = _checklistItems.isNotEmpty
+        ? _checklistItems
         : (isWeekly ? _defaultWeeklyChecklist : const <String>[]);
+    final completed = _completedChecklistItems.isNotEmpty
+        ? _completedChecklistItems
+        : (review?.completedChecklistItems ?? const <String>[]);
     final title = _titleController.text.trim().isEmpty
         ? 'Untitled entry'
         : _titleController.text.trim();
@@ -1223,6 +1401,9 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
           const SizedBox(height: AppSpacing.md),
           JournalFormSurface(
             title: 'Process checklist',
+            subtitle: completed.isEmpty
+                ? '${checklist.length} items'
+                : '${completed.where(checklist.contains).length}/${checklist.length} done',
             leading: Icon(
               Icons.checklist_rounded,
               size: 18,
@@ -1265,9 +1446,24 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
             ),
           ),
         ],
+        if (_notePrompts.isNotEmpty ||
+            _answersFromControllers(_promptControllers).isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.md),
+          JournalFormSurface(
+            title: 'Prompts',
+            subtitle: 'Guided reflection questions',
+            leading: Icon(
+              Icons.lightbulb_outline_rounded,
+              size: 18,
+              color: ModuleColors.trade,
+            ),
+            child: _buildPromptAnswersRead(theme, colors),
+          ),
+        ],
         const SizedBox(height: AppSpacing.md),
         JournalFormSurface(
           title: isWeekly ? 'Notes / lessons' : 'Notes',
+          subtitle: 'Free-form writing',
           leading: Icon(
             Icons.notes_rounded,
             size: 18,
@@ -1288,7 +1484,7 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
                     ),
                   ),
                   child: Text(
-                    'No notes yet. Tap Edit to write your checklist and reflections.',
+                    'No notes yet. Tap Edit to write reflections.',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colors.textSecondary,
                       height: 1.5,
@@ -1485,6 +1681,7 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
               ),
             ),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(
                   Icons.auto_awesome_outlined,
@@ -1493,22 +1690,88 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
-                  child: Text(
-                    'Template: $_appliedTemplateName',
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: ModuleColors.trade,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Template: $_appliedTemplateName',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: ModuleColors.trade,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (_templateFocusTip != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          _templateFocusTip!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: ModuleColors.trade.withValues(alpha: 0.9),
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ],
             ),
           ),
         ],
+        if (_checklistItems.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.md),
+          JournalFormSurface(
+            title: 'Checklist',
+            subtitle: _completedChecklistItems.isEmpty
+                ? 'Tap items as you confirm them'
+                : '${_completedChecklistItems.length}/${_checklistItems.length} done',
+            leading: Icon(
+              Icons.checklist_rounded,
+              size: 18,
+              color: ModuleColors.trade,
+            ),
+            child: _buildChecklistEditor(enabled: _isEditMode),
+          ),
+        ],
+        if (_notePrompts.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.md),
+          JournalFormSurface(
+            title: 'Prompts',
+            subtitle: 'Answer each question — labels stay fixed',
+            leading: Icon(
+              Icons.lightbulb_outline_rounded,
+              size: 18,
+              color: ModuleColors.trade,
+            ),
+            child: _buildLabeledFieldsEditor(
+              labels: _notePrompts,
+              controllers: _promptControllers,
+              enabled: _isEditMode,
+              hint: 'Write your answer…',
+            ),
+          ),
+        ],
+        if (_templateFields.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.md),
+          JournalFormSurface(
+            title: 'Trade details',
+            subtitle: 'Fill in the blanks — field names stay fixed',
+            leading: Icon(
+              Icons.tune_rounded,
+              size: 18,
+              color: ModuleColors.trade,
+            ),
+            child: _buildLabeledFieldsEditor(
+              labels: _templateFields,
+              controllers: _fieldControllers,
+              enabled: _isEditMode,
+              hint: 'Add details…',
+            ),
+          ),
+        ],
         const SizedBox(height: AppSpacing.md),
         JournalFormSurface(
           title: 'Notes',
-          subtitle: 'Checklist and free-form writing',
+          subtitle: 'Free-form writing',
           leading: Icon(
             Icons.notes_rounded,
             size: 18,
@@ -1517,7 +1780,7 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
           child: RichTextEditor(
             controller: _quillController,
             readOnly: !_isEditMode,
-            minHeight: 360,
+            minHeight: 280,
           ),
         ),
         const SizedBox(height: AppSpacing.md),
@@ -1531,6 +1794,155 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
           ),
           child: _buildBehaviorTracking(),
         ),
+      ],
+    );
+  }
+
+  Widget _buildChecklistEditor({required bool enabled}) {
+    final theme = Theme.of(context);
+    final colors = context.colors;
+    return Column(
+      children: [
+        for (final item in _checklistItems)
+          Material(
+            color: Colors.transparent,
+            child: CheckboxListTile(
+              value: _completedChecklistItems.contains(item),
+              onChanged: !enabled
+                  ? null
+                  : (v) {
+                      setState(() {
+                        if (v == true) {
+                          _completedChecklistItems.add(item);
+                        } else {
+                          _completedChecklistItems.remove(item);
+                        }
+                      });
+                      _scheduleAutosave();
+                    },
+              controlAffinity: ListTileControlAffinity.leading,
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              title: Text(
+                item,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  decoration: _completedChecklistItems.contains(item)
+                      ? TextDecoration.lineThrough
+                      : null,
+                  color: _completedChecklistItems.contains(item)
+                      ? colors.textSecondary
+                      : null,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildLabeledFieldsEditor({
+    required List<String> labels,
+    required Map<String, TextEditingController> controllers,
+    required bool enabled,
+    required String hint,
+  }) {
+    final theme = Theme.of(context);
+    final colors = context.colors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < labels.length; i++) ...[
+          if (i > 0) const SizedBox(height: AppSpacing.md),
+          Text(
+            labels[i],
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          TextFormField(
+            controller: controllers[labels[i]],
+            enabled: enabled,
+            maxLines: 3,
+            minLines: 2,
+            style: theme.textTheme.bodyMedium,
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                color: colors.textSecondary,
+                fontStyle: FontStyle.italic,
+              ),
+              filled: true,
+              fillColor: colors.surface.withValues(alpha: 0.45),
+              border: OutlineInputBorder(
+                borderRadius: AppRadii.card,
+                borderSide:
+                    BorderSide(color: colors.border.withValues(alpha: 0.35)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: AppRadii.card,
+                borderSide:
+                    BorderSide(color: colors.border.withValues(alpha: 0.35)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: AppRadii.card,
+                borderSide: BorderSide(
+                  color: ModuleColors.trade.withValues(alpha: 0.7),
+                ),
+              ),
+              disabledBorder: OutlineInputBorder(
+                borderRadius: AppRadii.card,
+                borderSide:
+                    BorderSide(color: colors.border.withValues(alpha: 0.2)),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildPromptAnswersRead(ThemeData theme, AppColorsTheme colors) {
+    final labels = _notePrompts.isNotEmpty
+        ? _notePrompts
+        : _answersFromControllers(_promptControllers).keys.toList();
+    if (labels.isEmpty) {
+      return Text(
+        'No prompt answers yet.',
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: colors.textSecondary,
+        ),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < labels.length; i++) ...[
+          if (i > 0) const SizedBox(height: AppSpacing.md),
+          Text(
+            labels[i],
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            (_promptControllers[labels[i]]?.text.trim().isNotEmpty ?? false)
+                ? _promptControllers[labels[i]]!.text.trim()
+                : '—',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: (_promptControllers[labels[i]]?.text.trim().isNotEmpty ??
+                      false)
+                  ? null
+                  : colors.textSecondary,
+              height: 1.45,
+            ),
+          ),
+        ],
       ],
     );
   }
