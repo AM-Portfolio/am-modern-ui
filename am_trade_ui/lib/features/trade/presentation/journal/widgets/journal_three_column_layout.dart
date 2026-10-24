@@ -56,6 +56,8 @@ class JournalThreeColumnLayout extends StatefulWidget {
 class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
   String? _selectedEntryId;
   bool _isCreatingNew = false;
+  /// Edit on an existing entry — same full-page chrome as Log Day.
+  bool _isEditingEntry = false;
   bool _useTradeWorkflow = false;
   GlobalKey<JournalEntryFormState> _newFormKey =
       GlobalKey<JournalEntryFormState>();
@@ -95,12 +97,14 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
       WidgetsBinding.instance.addPostFrameCallback((_) => _notifySelectedSymbol());
     }
     if (oldWidget.selectedFolder != widget.selectedFolder) {
-      _setCreating(false);
       setState(() {
         _useTradeWorkflow = false;
+        _isEditingEntry = false;
         _selectedEntryId =
             widget.entries.isNotEmpty ? widget.entries.first.id : null;
       });
+      _setCreating(false);
+      _notifyComposerOpen();
       WidgetsBinding.instance
           .addPostFrameCallback((_) => _notifySelectedSymbol());
       return;
@@ -122,15 +126,31 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
     widget.onSelectedSymbolChanged?.call(selected?.symbol);
   }
 
+  bool get _focusFullPage => _isCreatingNew || _isEditingEntry;
+
+  void _notifyComposerOpen() {
+    widget.onComposerOpenChanged?.call(_focusFullPage);
+  }
+
   void _setCreating(bool value) {
     if (_isCreatingNew == value) return;
-    setState(() => _isCreatingNew = value);
-    widget.onComposerOpenChanged?.call(value);
+    setState(() {
+      _isCreatingNew = value;
+      if (value) _isEditingEntry = false;
+    });
+    _notifyComposerOpen();
+  }
+
+  void _setEditingEntry(bool value) {
+    if (_isEditingEntry == value) return;
+    setState(() => _isEditingEntry = value);
+    _notifyComposerOpen();
   }
 
   void _startNewEntry({bool tradeWorkflow = false, bool clearTemplate = false}) {
     setState(() {
       _selectedEntryId = null;
+      _isEditingEntry = false;
       _useTradeWorkflow = tradeWorkflow;
       if (clearTemplate) _composerTemplate = null;
       _newFormKey = GlobalKey<JournalEntryFormState>();
@@ -143,6 +163,7 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
     setState(() {
       _useTradeWorkflow = false;
       _composerTemplate = null;
+      _isEditingEntry = false;
       _selectedEntryId = selectEntryId ??
           (widget.entries.isNotEmpty ? widget.entries.first.id : null);
     });
@@ -179,7 +200,7 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
     final colors = context.colors;
     final selectedEntry =
         widget.entries.where((e) => e.id == _selectedEntryId).firstOrNull;
-    final focusComposer = _isCreatingNew;
+    final focusFullPage = _focusFullPage;
 
     return ColoredBox(
       color: colors.surface,
@@ -189,8 +210,8 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
           AnimatedContainer(
             duration: const Duration(milliseconds: 320),
             curve: Curves.easeOutCubic,
-            width: focusComposer ? 0 : 320,
-            child: focusComposer
+            width: focusFullPage ? 0 : 320,
+            child: focusFullPage
                 ? const SizedBox.shrink()
                 : ClipRect(
                     child: JournalEntryListView(
@@ -206,8 +227,10 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
                         setState(() {
                           _selectedEntryId = entry.id;
                           _useTradeWorkflow = _isTradeLike(entry);
+                          _isEditingEntry = false;
                         });
                         _setCreating(false);
+                        _notifyComposerOpen();
                         widget.onSelectedSymbolChanged?.call(entry.symbol);
                       },
                       onLogDayPressed: () => _startNewEntry(
@@ -236,7 +259,9 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
                 key: ValueKey(
                   _isCreatingNew
                       ? 'composer'
-                      : (selectedEntry?.id ?? 'empty-detail'),
+                      : _isEditingEntry
+                          ? 'edit-${selectedEntry?.id ?? 'none'}'
+                          : (selectedEntry?.id ?? 'empty-detail'),
                 ),
                 child: _buildRightPane(colors, selectedEntry),
               ),
@@ -412,6 +437,7 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
       entry: selectedEntry,
       cubit: widget.journalCubit,
       portfolioId: widget.portfolioId,
+      onEditModeChanged: _setEditingEntry,
     );
   }
 }

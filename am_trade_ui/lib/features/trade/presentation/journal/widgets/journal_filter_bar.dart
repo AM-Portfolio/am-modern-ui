@@ -7,7 +7,8 @@ import '../models/journal_folder_filter.dart';
 
 enum JournalSortOrder { latestFirst, oldestFirst }
 
-/// Folder + tag / type / outcome / sort / search controls for the journal hub.
+/// Folder + tag / type / outcome / sort controls for the journal hub.
+/// Entry text search is global-app search only (no duplicate bar here).
 class JournalFilterBar extends StatefulWidget {
   const JournalFilterBar({
     required this.selectedFolder,
@@ -20,8 +21,8 @@ class JournalFilterBar extends StatefulWidget {
     required this.onOutcomeChanged,
     required this.sortOrder,
     required this.onSortChanged,
-    this.searchQuery = '',
-    this.onSearchChanged,
+    @Deprecated('Ignored — use global search') this.searchQuery = '',
+    @Deprecated('Ignored — use global search') this.onSearchChanged,
     this.notebookFolders = const [],
     this.notebookTags = const [],
     this.availableOutcomes = const [],
@@ -49,7 +50,6 @@ class JournalFilterBar extends StatefulWidget {
 }
 
 class _JournalFilterBarState extends State<JournalFilterBar> {
-  late final TextEditingController _searchController;
   static const _tradeTypes = <({String? value, String label})>[
     (value: null, label: 'All Trade Types'),
     (value: 'DAILY', label: 'Daily'),
@@ -57,27 +57,6 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
     (value: 'SESSION', label: 'Session'),
     (value: 'GENERAL', label: 'General'),
   ];
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController = TextEditingController(text: widget.searchQuery);
-  }
-
-  @override
-  void didUpdateWidget(covariant JournalFilterBar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.searchQuery != oldWidget.searchQuery &&
-        widget.searchQuery != _searchController.text) {
-      _searchController.text = widget.searchQuery;
-    }
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
 
   List<String> get _folderOptions {
     final builtIns = [
@@ -279,69 +258,6 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
             ),
           );
 
-          final searchField = SizedBox(
-            width: compact ? double.infinity : 220,
-            height: 44,
-            child: TextField(
-              controller: _searchController,
-              onChanged: (q) {
-                setState(() {});
-                widget.onSearchChanged?.call(q);
-              },
-              style: theme.textTheme.bodyMedium,
-              decoration: InputDecoration(
-                hintText: 'Search entries...',
-                hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                  color: colors.textSecondary,
-                ),
-                prefixIcon: Icon(
-                  Icons.search_rounded,
-                  size: 18,
-                  color: colors.textSecondary,
-                ),
-                suffixIcon: _searchController.text.isEmpty
-                    ? null
-                    : IconButton(
-                        tooltip: 'Clear',
-                        icon: Icon(
-                          Icons.close_rounded,
-                          size: 16,
-                          color: colors.textSecondary,
-                        ),
-                        onPressed: () {
-                          _searchController.clear();
-                          widget.onSearchChanged?.call('');
-                          setState(() {});
-                        },
-                      ),
-                filled: true,
-                fillColor: colors.cardSurface,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm,
-                  vertical: 0,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: AppRadii.card,
-                  borderSide: BorderSide(
-                    color: colors.border.withValues(alpha: 0.35),
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: AppRadii.card,
-                  borderSide: BorderSide(
-                    color: colors.border.withValues(alpha: 0.35),
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: AppRadii.card,
-                  borderSide: BorderSide(
-                    color: ModuleColors.trade.withValues(alpha: 0.7),
-                  ),
-                ),
-              ),
-            ),
-          );
-
           if (compact) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -362,10 +278,6 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
                     ],
                   ),
                 ),
-                if (widget.onSearchChanged != null) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  searchField,
-                ],
               ],
             );
           }
@@ -381,13 +293,7 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
               outcomeDrop,
               const SizedBox(width: AppSpacing.sm),
               sortDrop,
-              if (widget.onSearchChanged != null) ...[
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(child: Align(
-                  alignment: Alignment.centerRight,
-                  child: searchField,
-                )),
-              ],
+              const Spacer(),
             ],
           );
         },

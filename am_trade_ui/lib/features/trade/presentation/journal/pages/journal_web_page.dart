@@ -380,16 +380,6 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
                                         sortOrder: _sortOrder,
                                         onSortChanged: (s) =>
                                             setState(() => _sortOrder = s),
-                                        searchQuery: state.maybeWhen(
-                                          loaded: (e, s, a, status, folder,
-                                                  tags, q, setup) =>
-                                              q,
-                                          orElse: () => '',
-                                        ),
-                                        onSearchChanged: (q) =>
-                                            journalCubit.setFilters(
-                                          searchQuery: q,
-                                        ),
                                         notebookFolders: folders,
                                         notebookTags: tags,
                                         availableOutcomes: _availableOutcomes(

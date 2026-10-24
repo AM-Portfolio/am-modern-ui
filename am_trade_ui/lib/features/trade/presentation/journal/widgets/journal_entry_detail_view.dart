@@ -13,12 +13,15 @@ class JournalEntryDetailView extends StatefulWidget {
     required this.entry,
     required this.cubit,
     this.portfolioId = '',
+    this.onEditModeChanged,
     super.key,
   });
 
   final JournalEntry? entry;
   final JournalCubit cubit;
   final String portfolioId;
+  /// True while the entry form is in edit mode (parent expands to full page).
+  final ValueChanged<bool>? onEditModeChanged;
 
   @override
   State<JournalEntryDetailView> createState() => _JournalEntryDetailViewState();
@@ -29,12 +32,21 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
       GlobalKey<JournalEntryFormState>();
   var _formEditMode = false;
 
+  void _setFormEditMode(bool editing) {
+    if (_formEditMode == editing) return;
+    setState(() => _formEditMode = editing);
+    widget.onEditModeChanged?.call(editing);
+  }
+
   @override
   void didUpdateWidget(covariant JournalEntryDetailView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.entry?.id != widget.entry?.id) {
       _formKey = GlobalKey<JournalEntryFormState>();
-      _formEditMode = false;
+      if (_formEditMode) {
+        _formEditMode = false;
+        widget.onEditModeChanged?.call(false);
+      }
     }
   }
 
@@ -159,6 +171,20 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
               ),
               child: Row(
                 children: [
+                  if (editing) ...[
+                    IconButton(
+                      tooltip: 'Back to entries',
+                      onPressed: () {
+                        _formKey.currentState?.exitEditMode();
+                        _setFormEditMode(false);
+                      },
+                      icon: Icon(
+                        Icons.arrow_back_rounded,
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                  ],
                   Icon(
                     Icons.calendar_today_outlined,
                     size: 15,
@@ -166,11 +192,27 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
-                    child: Text(
-                      dateStr,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          editing ? 'Edit entry' : dateStr,
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                        ),
+                        if (editing) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            dateStr,
+                            style:
+                                Theme.of(context).textTheme.labelSmall?.copyWith(
+                                      color: colors.textSecondary,
+                                    ),
                           ),
+                        ],
+                      ],
                     ),
                   ),
                   if (editing)
@@ -190,7 +232,7 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
                       height: 32,
                       onPressed: () {
                         _formKey.currentState?.enterEditMode();
-                        setState(() => _formEditMode = true);
+                        _setFormEditMode(true);
                       },
                     ),
                   PopupMenuButton<String>(
@@ -205,7 +247,7 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
                         case 'template':
                           if (!editing) {
                             _formKey.currentState?.enterEditMode();
-                            setState(() => _formEditMode = true);
+                            _setFormEditMode(true);
                           }
                           await _showTemplateBrowser();
                         case 'delete':
@@ -228,15 +270,23 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
             ),
           ),
           Expanded(
-            child: JournalEntryForm(
-              key: _formKey,
-              cubit: widget.cubit,
-              portfolioId: widget.portfolioId,
-              entry: widget.entry,
-              onBrowseTemplates: _showTemplateBrowser,
-              onEditModeChanged: (editing) {
-                if (mounted) setState(() => _formEditMode = editing);
-              },
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: editing ? 1100 : double.infinity,
+                ),
+                child: JournalEntryForm(
+                  key: _formKey,
+                  cubit: widget.cubit,
+                  portfolioId: widget.portfolioId,
+                  entry: widget.entry,
+                  onBrowseTemplates: _showTemplateBrowser,
+                  onEditModeChanged: (isEditing) {
+                    if (mounted) _setFormEditMode(isEditing);
+                  },
+                ),
+              ),
             ),
           ),
         ],
