@@ -37,6 +37,8 @@ class ComparisonChartView extends StatelessWidget {
           preNormalizedPercent: config.preNormalizedPercent,
           initialShowAbsoluteValues: config.initialShowAbsoluteValues,
           accentColor: config.accentColor,
+          priceLookup: config.priceLookup,
+          changePctLookup: config.changePctLookup,
         ),
     };
 

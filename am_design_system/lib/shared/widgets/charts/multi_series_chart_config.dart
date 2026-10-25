@@ -29,7 +29,15 @@ class MultiSeriesChartConfig extends Equatable {
     this.preNormalizedPercent = false,
     this.initialShowAbsoluteValues = false,
     this.accentColor,
+    this.priceLookup,
+    this.changePctLookup,
   });
+
+  /// Optional lookup callback for the latest live price of a series symbol.
+  final double? Function(String symbol)? priceLookup;
+
+  /// Optional lookup callback for the percentage change of a series symbol.
+  final double? Function(String symbol)? changePctLookup;
 
   /// When null, [resolveSelectedSeries] uses [preferredSeriesOrder] + data labels.
   final List<String>? selectedSeries;
