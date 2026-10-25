@@ -62,13 +62,14 @@ void main() {
     final search = tester.getRect(find.byIcon(Icons.search_rounded));
     final paper = tester.getRect(find.byKey(const Key('dashboard-paper-chip')));
     final tf = tester.getRect(find.byType(GlobalTimeFrameBar));
-    final overflow = tester.getRect(find.byIcon(Icons.more_horiz));
+    final overflow = tester.getRect(find.byIcon(Icons.add_rounded));
 
     expect(search.left, lessThan(paper.left));
     expect(paper.left, lessThan(tf.left));
     expect(tf.left, lessThan(overflow.left));
     expect(paper.right, lessThanOrEqualTo(tf.left + 0.5));
-    expect(find.text('Try'), findsOneWidget);
+    expect(find.text('Paper Trade'), findsOneWidget);
+    expect(find.byIcon(Icons.add_rounded), findsWidgets);
 
     await tester.tap(find.byIcon(Icons.search_rounded));
     await tester.tap(find.byKey(const Key('dashboard-paper-chip')));
@@ -84,12 +85,11 @@ void main() {
     expect(find.text('Add Basket'), findsOneWidget);
   });
 
-  testWidgets('360 hides Paper Trading label and does not overflow',
+  testWidgets('360 shows Paper Trade label and does not overflow',
       (tester) async {
     await _pumpToolbar(tester, size: const Size(360, 800));
-    expect(find.text('Paper Trading'), findsNothing);
-    expect(find.text('Try'), findsOneWidget);
-    expect(tester.takeException(), isNull);
+    expect(find.text('Paper Trade'), findsOneWidget);
+    expect(find.text('Try'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -202,7 +202,7 @@ void main() {
   testWidgets('412 stays one line without overflow', (tester) async {
     await _pumpToolbar(tester, size: const Size(412, 844));
     expect(tester.takeException(), isNull);
-    expect(find.text('Try'), findsOneWidget);
+    expect(find.text('Paper Trade'), findsOneWidget);
     expect(find.byType(DashboardToolbar), findsOneWidget);
   });
 }

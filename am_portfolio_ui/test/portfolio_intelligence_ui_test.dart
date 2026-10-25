@@ -1,3 +1,4 @@
+import 'package:am_design_system/am_design_system.dart';
 import 'package:am_portfolio_ui/features/portfolio/internal/data/datasources/portfolio_remote_data_source.dart';
 import 'package:am_portfolio_ui/features/portfolio/internal/domain/entities/portfolio_analytics.dart';
 import 'package:am_portfolio_ui/features/portfolio/internal/domain/entities/portfolio_holding.dart';
@@ -8,6 +9,8 @@ import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intellig
 import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intelligence/portfolio_health_card.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intelligence/portfolio_risk_radar_card.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intelligence/portfolio_stress_card.dart';
+import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intelligence/portfolio_stress_catalog.dart';
+import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intelligence/portfolio_stress_mobile.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intelligence/portfolio_what_if_card.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intelligence/portfolio_xray_panel.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/movers_widget.dart';
@@ -1025,12 +1028,24 @@ void main() {
     expect(find.text('No holdings for this group'), findsNothing);
   });
 
-  test('stressBetaChipLabels assumed hides 1.00 on the β chip', () {
+  test('stressBetaChipLabels assumed shows 1.00 on the β chip', () {
     final chips = stressBetaChipLabels(
       assumed: true,
       warming: false,
       betaUsed: 1.0,
       historyDays: 0,
+    );
+    expect(chips.betaLabel, 'β 1.00');
+    expect(chips.estLabel, 'Need ≥20d vs NIFTY');
+  });
+
+  test('stressBetaChipLabels unresolved failed load shows em dash', () {
+    final chips = stressBetaChipLabels(
+      assumed: false,
+      warming: false,
+      betaUsed: null,
+      historyDays: null,
+      unresolved: true,
     );
     expect(chips.betaLabel, 'β —');
     expect(chips.estLabel, 'Need ≥20d vs NIFTY');
@@ -1117,32 +1132,33 @@ void main() {
     expect(find.text('Est. · 30d'), findsOneWidget);
   });
 
-  testWidgets('Stress rejects zero shock before API', (tester) async {
-    // Force web/desktop branch (≥600) so "Run custom" path stays unchanged.
+  testWidgets('Stress card shows assumed beta 1.00 from API', (tester) async {
     tester.view.physicalSize = const Size(1200, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
+    final remote = _FakeStressRemote(
+      const StressResult(
+        portfolioId: 'p1',
+        method: 'ASSUMED_ONE',
+        betaUsed: 1.0,
+        betaAssumed: true,
+        historyDays: 0,
+        benchmark: 'NIFTY50',
+        scenarios: [
+          StressScenario(id: 'NIFTY_DOWN_10', pctImpact: -10),
+        ],
+      ),
+    );
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          portfolioHoldingsProvider('p1').overrideWith(
-            (ref) async => PortfolioHoldings(
-              holdings: [
-                _holding(symbol: 'IT', sector: 'IT', weight: 10),
-              ],
-              lastUpdated: DateTime(2026, 1, 1),
-            ),
-          ),
+          portfolioRemoteDataSourceProvider.overrideWith((ref) async => remote),
           portfolioIntelligenceProvider('p1').overrideWith(
             (ref) async => const PortfolioIntelligence(
               portfolioId: 'p1',
-              xray: PortfolioXray(
-                sectorWeights: [XrayWeight(name: 'IT', weightPct: 10)],
-                industryWeights: [],
-                marketCapWeights: [],
-              ),
+              confidence: 0.4,
             ),
           ),
         ],
@@ -1160,17 +1176,93 @@ void main() {
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('β 1.00'), findsOneWidget);
+    expect(find.text('Need ≥20d vs NIFTY'), findsOneWidget);
+  });
 
-    expect(find.text('Run custom'), findsOneWidget);
-    expect(find.text('Apply'), findsNothing);
+  testWidgets('Stress failed POST still shows a beta chip', (tester) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final remote = _FakeStressRemote(
+      const StressResult(portfolioId: 'p1'),
+      failPresets: true,
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          portfolioRemoteDataSourceProvider.overrideWith((ref) async => remote),
+          portfolioIntelligenceProvider('p1').overrideWith(
+            (ref) async => const PortfolioIntelligence(
+              portfolioId: 'p1',
+              confidence: 0.9,
+            ),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: PortfolioStressCard(
+                portfolioId: 'p1',
+                initiallyExpanded: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+    expect(find.text('Could not load stress scenarios'), findsOneWidget);
+    expect(find.text('β —'), findsOneWidget);
+    expect(find.text('Need ≥20d vs NIFTY'), findsOneWidget);
+  });
+
+  testWidgets('Stress rejects zero shock before API', (tester) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final remote = _FakeStressRemote(_niftyStressResult());
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          portfolioRemoteDataSourceProvider.overrideWith((ref) async => remote),
+          portfolioIntelligenceProvider('p1').overrideWith(
+            (ref) async => const PortfolioIntelligence(
+              portfolioId: 'p1',
+              confidence: 0.9,
+            ),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: PortfolioStressCard(
+                portfolioId: 'p1',
+                initiallyExpanded: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+
+    expect(find.text('Apply'), findsOneWidget);
+    expect(find.text('Run custom'), findsNothing);
     final fields = find.byType(TextField);
     expect(fields, findsAtLeastNWidgets(2));
-    await tester.enterText(fields.at(0), 'IT');
     await tester.enterText(fields.at(1), '0');
-    await tester.tap(find.text('Run custom'));
+    await tester.tap(find.text('Apply'));
     await tester.pump();
 
     expect(find.text('Shock % must be non-zero'), findsOneWidget);
+    expect(remote.customPostCount, 0);
     FocusManager.instance.primaryFocus?.unfocus();
     await tester.pump(const Duration(milliseconds: 300));
   });
@@ -1201,34 +1293,147 @@ void main() {
     expect(isUsableIntelligenceSectorLabel('  '), isFalse);
   });
 
-  testWidgets('Stress mobile shows NIFTY −10% primary and View all',
+  test('scaleStressScenario is linear in shock', () {
+    final scaled = scaleStressScenario(
+      base: const StressScenario(
+        id: 'NIFTY_DOWN_10',
+        pctImpact: -7.6,
+        absImpact: -66422,
+        appliedShockPct: -10,
+      ),
+      shockPct: -15,
+      catalogDefault: -10,
+    );
+    expect(scaled, isNotNull);
+    expect(scaled!.pctImpact, closeTo(-11.4, 0.01));
+    expect(scaled.absImpact, closeTo(-99633, 1));
+    expect(scaled.appliedShockPct, -15);
+  });
+
+  test('stressApplyRoute never treats an index string as custom', () {
+    expect(stressApplyRoute('Nifty'), StressApplyRoute.nifty);
+    expect(stressApplyRoute('NIFTY 50'), StressApplyRoute.nifty);
+    expect(stressApplyRoute('SENSEX'), StressApplyRoute.sensex);
+    expect(stressApplyRoute('IT'), StressApplyRoute.it);
+    expect(stressApplyRoute('Energy'), StressApplyRoute.custom);
+  });
+
+  test('stressChipForQuery highlights the matching chip', () {
+    expect(
+      stressChipForQuery('SENSEX', current: kStressChipNifty),
+      kStressChipSensex,
+    );
+    expect(
+      stressChipForQuery('nifty 50', current: kStressChipSensex),
+      kStressChipNifty,
+    );
+    expect(stressChipForQuery('Energy', current: kStressChipNifty), isEmpty);
+    expect(
+      stressChipForQuery('', current: kStressChipNifty),
+      kStressChipNifty,
+    );
+  });
+
+  test('smartSearchOverlaySelection fills the visible sector label', () {
+    expect(
+      smartSearchOverlaySelection(
+        sectorMode: true,
+        symbol: 'NIFTY 50',
+        name: 'NIFTY 50',
+      ),
+      'NIFTY 50',
+    );
+    expect(
+      smartSearchOverlaySelection(
+        sectorMode: true,
+        symbol: 'IT',
+        name: 'IT  ·  2 holdings',
+      ),
+      'IT',
+    );
+    expect(
+      smartSearchOverlaySelection(
+        sectorMode: false,
+        symbol: 'HDFCBANK',
+        name: 'HDFC Bank',
+      ),
+      'HDFCBANK',
+    );
+  });
+
+  testWidgets('Stress 360/390 collapsed is one NIFTY row with Apply',
       (tester) async {
-    tester.view.physicalSize = const Size(390, 844);
+    for (final width in [360.0, 390.0]) {
+      tester.view.physicalSize = Size(width, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final remote = _FakeStressRemote(_viewAllStressResult());
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            portfolioRemoteDataSourceProvider.overrideWith(
+              (ref) async => remote,
+            ),
+            portfolioIntelligenceProvider('p1').overrideWith(
+              (ref) async => const PortfolioIntelligence(
+                portfolioId: 'p1',
+                confidence: 0.9,
+              ),
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: PortfolioStressCard(
+                  key: ValueKey('stress-$width'),
+                  portfolioId: 'p1',
+                  initiallyExpanded: true,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Apply'), findsOneWidget);
+      expect(find.text('Run custom'), findsNothing);
+      final applyBox = tester.getRect(find.text('Apply'));
+      final stepperBox = tester.getRect(find.byType(StressImpactStepper));
+      final cardBox = tester.getRect(find.byType(PortfolioStressCard));
+      expect((applyBox.center.dy - stepperBox.center.dy).abs(), lessThan(8));
+      expect(applyBox.left, greaterThan(stepperBox.right - 1));
+      expect(applyBox.width, lessThan(cardBox.width * 0.5));
+      expect(find.byType(StressScenarioRow), findsOneWidget);
+      expect(find.text('NIFTY −20%'), findsNothing);
+      expect(find.text('Market Crash 2008'), findsNothing);
+      expect(find.text('Market fall (%)'), findsNothing);
+      expect(find.text('Impact on Portfolio'), findsOneWidget);
+      expect(find.textContaining('-7.6%'), findsOneWidget);
+      expect(find.text('View all'), findsOneWidget);
+
+      await tester.tap(find.text('View all'));
+      await tester.pumpAndSettle();
+      expect(find.byType(StressScenarioRow), findsNWidgets(7));
+      expect(find.text('SENSEX'), findsWidgets);
+      expect(find.text('Global Financial Crisis'), findsOneWidget);
+      expect(find.text('NIFTY −20%'), findsNothing);
+      expect(find.byType(StressScenarioRow), findsNWidgets(7));
+    }
+  });
+
+  testWidgets('Stress 800 collapsed is one NIFTY row without table header',
+      (tester) async {
+    tester.view.physicalSize = const Size(800, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    final remote = _FakeStressRemote(
-      const StressResult(
-        portfolioId: 'p1',
-        method: 'PORTFOLIO_BETA',
-        betaUsed: 1.0,
-        betaAssumed: false,
-        historyDays: 30,
-        scenarios: [
-          StressScenario(
-            id: 'NIFTY_DOWN_10',
-            pctImpact: -7.6,
-            absImpact: -66422,
-          ),
-          StressScenario(
-            id: 'NIFTY_DOWN_20',
-            pctImpact: -14.8,
-            absImpact: -132844,
-          ),
-        ],
-      ),
-    );
+    final remote = _FakeStressRemote(_viewAllStressResult());
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -1255,15 +1460,479 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 80));
 
-    expect(find.text('Apply'), findsOneWidget);
-    expect(find.text('Run custom'), findsNothing);
-    expect(find.textContaining('NIFTY'), findsWidgets);
-    expect(find.textContaining('-7.6%'), findsOneWidget);
-    expect(find.text('View all scenarios'), findsOneWidget);
+    expect(find.byType(StressScenarioRow), findsOneWidget);
+    expect(find.text('View all'), findsOneWidget);
+    expect(find.text('Market fall (%)'), findsNothing);
+    expect(find.byType(StressTableHeader), findsNothing);
+    expect(find.text('Impact on Portfolio'), findsOneWidget);
+  });
 
-    await tester.tap(find.text('View all scenarios'));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('NIFTY −20%'), findsOneWidget);
+  testWidgets('Stress fillHeight 900 hides View all and shows catalog',
+      (tester) async {
+    tester.view.physicalSize = const Size(900, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final remote = _FakeStressRemote(_viewAllStressResult());
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          portfolioRemoteDataSourceProvider.overrideWith((ref) async => remote),
+          portfolioIntelligenceProvider('p1').overrideWith(
+            (ref) async => const PortfolioIntelligence(
+              portfolioId: 'p1',
+              confidence: 0.9,
+            ),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              height: 430,
+              child: PortfolioStressCard(
+                portfolioId: 'p1',
+                initiallyExpanded: true,
+                fillHeight: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+
+    expect(find.text('View all'), findsNothing);
+    expect(find.byType(StressScenarioRow), findsNWidgets(7));
+    expect(find.text('Global Financial Crisis'), findsOneWidget);
+  });
+
+  testWidgets('Stress 1200 shows table header and open catalog', (tester) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final remote = _FakeStressRemote(_viewAllStressResult());
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          portfolioRemoteDataSourceProvider.overrideWith((ref) async => remote),
+          portfolioIntelligenceProvider('p1').overrideWith(
+            (ref) async => const PortfolioIntelligence(
+              portfolioId: 'p1',
+              confidence: 0.9,
+            ),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: PortfolioStressCard(
+                portfolioId: 'p1',
+                initiallyExpanded: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+
+    expect(find.byType(StressTableHeader), findsOneWidget);
+    expect(find.text('Market fall (%)'), findsOneWidget);
+    expect(find.text('View all'), findsNothing);
+    expect(find.byType(StressScenarioRow), findsNWidgets(7));
+    expect(find.text('Global Financial Crisis'), findsOneWidget);
+    expect(find.text('NIFTY −20%'), findsNothing);
+  });
+
+  testWidgets('NIFTY Apply scales locally and never POSTs custom',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final remote = _FakeStressRemote(_niftyStressResult());
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          portfolioRemoteDataSourceProvider.overrideWith((ref) async => remote),
+          portfolioIntelligenceProvider('p1').overrideWith(
+            (ref) async => const PortfolioIntelligence(
+              portfolioId: 'p1',
+              confidence: 0.9,
+            ),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: PortfolioStressCard(
+                portfolioId: 'p1',
+                initiallyExpanded: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+
+    expect(find.textContaining('-7.6%'), findsOneWidget);
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(1), '-15');
+    await tester.tap(find.text('Apply'));
+    await tester.pump();
+    expect(remote.customPostCount, 0);
+    expect(find.textContaining('-11.4%'), findsOneWidget);
+
+    await tester.enterText(fields.at(1), '-20');
+    await tester.pump();
+    expect(find.textContaining('-11.4%'), findsOneWidget);
+    expect(find.textContaining('-15.2%'), findsNothing);
+
+    await tester.enterText(fields.at(0), 'Nifty');
+    await tester.tap(find.text('Apply'));
+    await tester.pump();
+    expect(remote.customPostCount, 0);
+    expect(remote.lastCustom, isNull);
+  });
+
+  testWidgets('Stress chip tap clears search so Apply follows the chip',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final remote = _FakeStressRemote(_niftyStressResult());
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          portfolioRemoteDataSourceProvider.overrideWith((ref) async => remote),
+          portfolioIntelligenceProvider('p1').overrideWith(
+            (ref) async => const PortfolioIntelligence(
+              portfolioId: 'p1',
+              confidence: 0.9,
+            ),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: PortfolioStressCard(
+                portfolioId: 'p1',
+                initiallyExpanded: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+
+    await tester.enterText(find.byType(TextField).first, 'Energy');
+    await tester.tap(find.widgetWithText(IntelligenceModeChip, 'NIFTY 50'));
+    await tester.pump();
+    expect(
+      tester.widget<TextField>(find.byType(TextField).first).controller?.text,
+      'NIFTY 50',
+    );
+    await tester.tap(find.text('Apply'));
+    await tester.pump();
+    expect(remote.customPostCount, 0);
+    expect(remote.lastCustom, isNull);
+  });
+
+  testWidgets('Typing SENSEX highlights the SENSEX chip', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final remote = _FakeStressRemote(_niftyStressResult());
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          portfolioRemoteDataSourceProvider.overrideWith((ref) async => remote),
+          portfolioIntelligenceProvider('p1').overrideWith(
+            (ref) async => const PortfolioIntelligence(
+              portfolioId: 'p1',
+              confidence: 0.9,
+            ),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: PortfolioStressCard(
+                portfolioId: 'p1',
+                initiallyExpanded: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+
+    await tester.enterText(find.byType(TextField).first, 'SENSEX');
+    await tester.pump();
+    final sensexChip = tester.widget<IntelligenceModeChip>(
+      find.widgetWithText(IntelligenceModeChip, 'SENSEX'),
+    );
+    expect(sensexChip.selected, isTrue);
+    final niftyChip = tester.widget<IntelligenceModeChip>(
+      find.widgetWithText(IntelligenceModeChip, 'NIFTY 50'),
+    );
+    expect(niftyChip.selected, isFalse);
+  });
+
+  testWidgets('Suggest tap writes SENSEX into the search field', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final remote = _FakeStressRemote(_niftyStressResult());
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          portfolioRemoteDataSourceProvider.overrideWith((ref) async => remote),
+          portfolioIntelligenceProvider('p1').overrideWith(
+            (ref) async => const PortfolioIntelligence(
+              portfolioId: 'p1',
+              confidence: 0.9,
+            ),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: PortfolioStressCard(
+                portfolioId: 'p1',
+                initiallyExpanded: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+
+    await tester.enterText(find.byType(TextField).first, 'sen');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    final overlayHit = find.descendant(
+      of: find.byType(ListView),
+      matching: find.text('SENSEX'),
+    );
+    expect(overlayHit, findsOneWidget);
+    await tester.tap(overlayHit);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(
+      tester.widget<TextField>(find.byType(TextField).first).controller?.text,
+      'SENSEX',
+    );
+  });
+
+  testWidgets('SENSEX Apply expands collapsed View all to show that row',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final remote = _FakeStressRemote(_viewAllStressResult());
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          portfolioRemoteDataSourceProvider.overrideWith((ref) async => remote),
+          portfolioIntelligenceProvider('p1').overrideWith(
+            (ref) async => const PortfolioIntelligence(
+              portfolioId: 'p1',
+              confidence: 0.9,
+            ),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: PortfolioStressCard(
+                portfolioId: 'p1',
+                initiallyExpanded: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+    expect(find.byType(StressScenarioRow), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(IntelligenceModeChip, 'SENSEX'));
+    await tester.pump();
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(1), '-15');
+    await tester.tap(find.text('Apply'));
+    await tester.pump();
+
+    expect(remote.customPostCount, 0);
+    expect(find.byType(StressScenarioRow), findsNWidgets(7));
+    expect(find.textContaining('-11.4%'), findsWidgets);
+  });
+
+  testWidgets('IT chip Apply scales loaded IT_DOWN_15 without custom POST',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final withIt = _FakeStressRemote(_viewAllStressResult());
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          portfolioRemoteDataSourceProvider.overrideWith((ref) async => withIt),
+          portfolioIntelligenceProvider('p1').overrideWith(
+            (ref) async => const PortfolioIntelligence(
+              portfolioId: 'p1',
+              confidence: 0.9,
+            ),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: PortfolioStressCard(
+                portfolioId: 'p1',
+                initiallyExpanded: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+    await tester.tap(find.widgetWithText(IntelligenceModeChip, 'IT'));
+    await tester.pump();
+    await tester.tap(find.text('Apply'));
+    await tester.pump();
+    expect(withIt.customPostCount, 0);
+  });
+
+  testWidgets('IT chip Apply POSTs custom sector IT when preset missing',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final withoutIt = _FakeStressRemote(_niftyStressResult());
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          portfolioRemoteDataSourceProvider.overrideWith(
+            (ref) async => withoutIt,
+          ),
+          portfolioIntelligenceProvider('p1').overrideWith(
+            (ref) async => const PortfolioIntelligence(
+              portfolioId: 'p1',
+              confidence: 0.9,
+            ),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: PortfolioStressCard(
+                portfolioId: 'p1',
+                initiallyExpanded: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+    await tester.tap(find.widgetWithText(IntelligenceModeChip, 'IT'));
+    await tester.pump();
+    await tester.tap(find.text('Apply'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+    expect(withoutIt.customPostCount, 1);
+    expect(withoutIt.lastCustom?['sector'], 'IT');
+    expect(find.textContaining('-2.2%'), findsOneWidget);
+  });
+
+  testWidgets('Search Apply pins sector on top and keeps NIFTY catalog',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final remote = _FakeStressRemote(_viewAllStressResult());
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          portfolioRemoteDataSourceProvider.overrideWith((ref) async => remote),
+          portfolioIntelligenceProvider('p1').overrideWith(
+            (ref) async => const PortfolioIntelligence(
+              portfolioId: 'p1',
+              confidence: 0.9,
+            ),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: PortfolioStressCard(
+                portfolioId: 'p1',
+                initiallyExpanded: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+
+    await tester.enterText(find.byType(TextField).first, 'Financial Services');
+    await tester.tap(find.text('Apply'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+
+    expect(remote.customPostCount, 1);
+    expect(remote.lastCustom?['sector'], 'Financial Services');
+    expect(find.byType(StressScenarioRow), findsNWidgets(8));
+    expect(find.textContaining('-2.2%'), findsOneWidget);
+    expect(find.textContaining('-7.6%'), findsWidgets);
+    final rows = find.byType(StressScenarioRow);
+    expect(
+      find.descendant(
+        of: rows.at(0),
+        matching: find.text('Financial Services'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: rows.at(1), matching: find.text('NIFTY 50')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('What-If shortcut and amount preset fill inputs', (tester) async {
@@ -1529,10 +2198,97 @@ void main() {
   });
 }
 
+StressResult _niftyStressResult() {
+  return const StressResult(
+    portfolioId: 'p1',
+    method: 'PORTFOLIO_BETA',
+    betaUsed: 1.0,
+    betaAssumed: false,
+    historyDays: 30,
+    scenarios: [
+      StressScenario(
+        id: 'NIFTY_DOWN_10',
+        pctImpact: -7.6,
+        absImpact: -66422,
+        appliedShockPct: -10,
+      ),
+    ],
+  );
+}
+
+StressResult _viewAllStressResult() {
+  return const StressResult(
+    portfolioId: 'p1',
+    method: 'PORTFOLIO_BETA',
+    betaUsed: 1.0,
+    betaAssumed: false,
+    historyDays: 30,
+    scenarios: [
+      StressScenario(
+        id: 'NIFTY_DOWN_10',
+        pctImpact: -7.6,
+        absImpact: -66422,
+        appliedShockPct: -10,
+      ),
+      StressScenario(
+        id: 'SENSEX_DOWN_10',
+        pctImpact: -7.6,
+        absImpact: -66422,
+        appliedShockPct: -10,
+      ),
+      StressScenario(
+        id: 'GFC_2008',
+        pctImpact: -42.6,
+        absImpact: -372000,
+        appliedShockPct: -56,
+      ),
+      StressScenario(
+        id: 'COVID_2020',
+        pctImpact: -28.9,
+        absImpact: -252000,
+        appliedShockPct: -38,
+      ),
+      StressScenario(
+        id: 'CHINA_2015',
+        pctImpact: -21.3,
+        absImpact: -186000,
+        appliedShockPct: -28,
+      ),
+      StressScenario(
+        id: 'INFLATION_2022',
+        pctImpact: -19.8,
+        absImpact: -173000,
+        appliedShockPct: -26,
+      ),
+      StressScenario(
+        id: 'ELECTION_2024',
+        pctImpact: -13.7,
+        absImpact: -119000,
+        appliedShockPct: -18,
+      ),
+      StressScenario(
+        id: 'BANKING_DOWN_20',
+        pctImpact: -6.0,
+        absImpact: -50000,
+        appliedShockPct: -20,
+      ),
+      StressScenario(
+        id: 'IT_DOWN_15',
+        pctImpact: -4.5,
+        absImpact: -38000,
+        appliedShockPct: -15,
+      ),
+    ],
+  );
+}
+
 class _FakeStressRemote extends Fake implements PortfolioRemoteDataSource {
-  _FakeStressRemote(this.result);
+  _FakeStressRemote(this.result, {this.failPresets = false});
 
   final StressResult result;
+  final bool failPresets;
+  int customPostCount = 0;
+  Map<String, dynamic>? lastCustom;
 
   @override
   Future<StressResult> getPortfolioStress(
@@ -1541,6 +2297,32 @@ class _FakeStressRemote extends Fake implements PortfolioRemoteDataSource {
     List<String>? presets,
     Map<String, dynamic>? custom,
   }) async {
+    if (failPresets && custom == null) {
+      throw Exception('stress down');
+    }
+    if (custom != null) {
+      customPostCount++;
+      lastCustom = custom;
+      final sector = '${custom['sector'] ?? 'CUSTOM'}';
+      final shock = (custom['shockPct'] as num?)?.toDouble() ?? -10;
+      final id =
+          'CUSTOM_${sector.trim().replaceAll(RegExp(r'\s+'), '_').toUpperCase()}';
+      return StressResult(
+        portfolioId: result.portfolioId,
+        method: result.method,
+        betaUsed: result.betaUsed,
+        betaAssumed: result.betaAssumed,
+        historyDays: result.historyDays,
+        scenarios: [
+          StressScenario(
+            id: id,
+            pctImpact: -2.2,
+            absImpact: -18825,
+            appliedShockPct: shock,
+          ),
+        ],
+      );
+    }
     return result;
   }
 

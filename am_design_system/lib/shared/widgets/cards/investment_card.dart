@@ -44,6 +44,7 @@ class InvestmentCard extends StatelessWidget {
     Widget? customBottomWidget,
     CrossAxisAlignment leftAlignment = CrossAxisAlignment.start,
     CrossAxisAlignment rightAlignment = CrossAxisAlignment.end,
+    double? sectionGap,
   }) : data = InvestmentData(
          symbol: symbol,
          name: name,
@@ -72,6 +73,7 @@ class InvestmentCard extends StatelessWidget {
          cardColor: cardColor,
          leftAlignment: leftAlignment,
          rightAlignment: rightAlignment,
+         sectionGap: sectionGap ?? 12,
        ),
        displayOptions = InvestmentDisplayOptions(
          showInvestmentDetails: showInvestmentDetails,
@@ -98,7 +100,7 @@ class InvestmentCard extends StatelessWidget {
         child: Column(
           children: [
             _buildTopRow(),
-            const SizedBox(height: 12),
+            SizedBox(height: style.sectionGap),
             if (config.additionalWidgets != null) ...[
               ...config.additionalWidgets!,
               const SizedBox(height: 8),
