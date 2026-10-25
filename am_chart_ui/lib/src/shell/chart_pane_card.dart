@@ -19,6 +19,7 @@ class ChartPaneCard extends ConsumerStatefulWidget {
     this.showIdentityStrip = false,
     this.drawTool = ChartDrawTool.none,
     this.clearDrawingsEpoch = 0,
+    this.hasLeftExpandHandle = false,
     this.onDrawingsCountChanged,
   });
 
@@ -30,6 +31,7 @@ class ChartPaneCard extends ConsumerStatefulWidget {
   final bool showIdentityStrip;
   final ChartDrawTool drawTool;
   final int clearDrawingsEpoch;
+  final bool hasLeftExpandHandle;
   final ValueChanged<int>? onDrawingsCountChanged;
 
   @override
@@ -131,7 +133,7 @@ class _ChartPaneCardState extends ConsumerState<ChartPaneCard> {
                   if (!widget.showIdentityStrip && !pane.hasComparisons)
                     Positioned(
                       top: 10,
-                      left: 12,
+                      left: widget.hasLeftExpandHandle ? 34 : 12,
                       child: IgnorePointer(
                         child: _ChartInGraphOverlay(
                           pane: pane,
