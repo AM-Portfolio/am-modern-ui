@@ -3,6 +3,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_ui/core/styles/market_theme_extension.dart';
 import 'package:am_market_ui/features/f_o/providers/fo_provider.dart';
 import 'package:am_market_ui/features/f_o/providers/option_chain_provider.dart';
+import 'package:am_market_ui/features/f_o/presentation/widgets/fo_expiry_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -15,8 +16,13 @@ enum OptionChainColumnGroup {
   const OptionChainColumnGroup(this.label);
 }
 
+enum _OptionSideFocus { calls, puts }
+
 class OptionChainView extends ConsumerStatefulWidget {
-  const OptionChainView({super.key});
+  const OptionChainView({super.key, this.showExpiryInToolbar = true});
+
+  /// The full mobile F&O page hosts its compact expiry control in the tab row.
+  final bool showExpiryInToolbar;
 
   @override
   ConsumerState<OptionChainView> createState() => _OptionChainViewState();
@@ -28,6 +34,8 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
   final List<OptionChainColumnGroup> _activeGroups = [];
   String? _lastAutoScrolledKey;
   String? _lastHorizontalCenterKey;
+  String? _lastFocusKey;
+  _OptionSideFocus? _focusedSide;
   final GlobalKey _spotLineKey = GlobalKey();
 
   static const double _rowItemHeight = 44.0;
@@ -59,6 +67,19 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
     });
   }
 
+  void _focusOptionSide(_OptionSideFocus side) {
+    setState(() => _focusedSide = side);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_horizontalScrollController.hasClients) return;
+      final position = _horizontalScrollController.position;
+      _horizontalScrollController.animateTo(
+        side == _OptionSideFocus.calls ? 0 : position.maxScrollExtent,
+        duration: AppAnimations.medium,
+        curve: AppAnimations.defaultCurve,
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -77,25 +98,33 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
             const SizedBox(height: 12),
             Text(
               'Failed to load Option Chain',
-              style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  color: colors.textPrimary, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
-            Text(err.toString(), style: TextStyle(color: colors.textSecondary, fontSize: 12)),
+            Text(err.toString(),
+                style: TextStyle(color: colors.textSecondary, fontSize: 12)),
           ],
         ),
       ),
       data: (data) {
         if (data == null || data.isEmpty) {
           return Center(
-            child: Text('No Option Chain data available', style: TextStyle(color: colors.textSecondary)),
+            child: Text('No Option Chain data available',
+                style: TextStyle(color: colors.textSecondary)),
           );
         }
 
-        final underlyingLtp = (data['underlyingLtp'] as num?)?.toDouble() ?? 0.0;
+        final underlyingLtp =
+            (data['underlyingLtp'] as num?)?.toDouble() ?? 0.0;
         final rawStrikes = (data['strikes'] as List<dynamic>?) ?? [];
-        final expiriesList = (data['expiries'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+        final expiriesList = (data['expiries'] as List<dynamic>?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            [];
         final currentExpiry = (data['expiry'] as String?) ?? '';
-        final activeExpiry = ref.watch(foSelectedExpiryProvider) ?? currentExpiry;
+        final activeExpiry =
+            ref.watch(foSelectedExpiryProvider) ?? currentExpiry;
 
         // Pre-calculate max OI for relative visual bar calculations
         double maxOi = 1.0;
@@ -111,8 +140,12 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
         // Determine spot price insertion index for Groww-style divider line
         int spotIndex = -1;
         for (int i = 0; i < rawStrikes.length - 1; i++) {
-          final s1 = (rawStrikes[i] as Map<String, dynamic>)['strikePrice'] as num? ?? 0.0;
-          final s2 = (rawStrikes[i + 1] as Map<String, dynamic>)['strikePrice'] as num? ?? 0.0;
+          final s1 =
+              (rawStrikes[i] as Map<String, dynamic>)['strikePrice'] as num? ??
+                  0.0;
+          final s2 = (rawStrikes[i + 1] as Map<String, dynamic>)['strikePrice']
+                  as num? ??
+              0.0;
           if (underlyingLtp >= s1 && underlyingLtp < s2) {
             spotIndex = i;
             break;
@@ -120,9 +153,15 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
         }
 
         final activeSymbol = ref.watch(foActiveSymbolProvider) ?? '';
-        final currentKey = '${activeSymbol}_${activeExpiry}_${rawStrikes.length}';
+        final currentKey =
+            '${activeSymbol}_${activeExpiry}_${rawStrikes.length}';
+        if (_lastFocusKey != currentKey) {
+          _lastFocusKey = currentKey;
+          _focusedSide = null;
+        }
 
-        final isMobileLayout = MediaQuery.sizeOf(context).width < AmBreakpoints.mobile;
+        final isMobileLayout =
+            MediaQuery.sizeOf(context).width < AmBreakpoints.mobile;
 
         // Auto-scroll to center on the Spot Price indicator upon load or key change
         if (_lastAutoScrolledKey != currentKey && spotIndex != -1) {
@@ -132,10 +171,12 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
             // Step 1: Instant mathematical jump to bring spotIndex into viewport
             const double itemHeight = _rowItemHeight;
             final double spotY = (spotIndex * itemHeight) + 52.0;
-            final double viewport = _scrollController.position.viewportDimension;
+            final double viewport =
+                _scrollController.position.viewportDimension;
             if (viewport > 0) {
               final double targetOffset = math.max(0.0, spotY - (viewport / 2));
-              final double maxScroll = _scrollController.position.maxScrollExtent;
+              final double maxScroll =
+                  _scrollController.position.maxScrollExtent;
               _scrollController.jumpTo(math.min(targetOffset, maxScroll));
             }
 
@@ -171,27 +212,42 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   // Dynamically compute width based on active column count
-                  final columnCount = 5 + (_activeGroups.contains(OptionChainColumnGroup.bidAsk) ? 4 : 0)
-                                        + (_activeGroups.contains(OptionChainColumnGroup.valuation) ? 6 : 0)
-                                        + (_activeGroups.contains(OptionChainColumnGroup.greeks) ? 4 : 0);
-                  // Mobile needs slightly wider LTP/strike slots so values are not clipped.
+                  final columnCount = 5 +
+                      (_activeGroups.contains(OptionChainColumnGroup.bidAsk)
+                          ? 4
+                          : 0) +
+                      (_activeGroups.contains(OptionChainColumnGroup.valuation)
+                          ? 6
+                          : 0) +
+                      (_activeGroups.contains(OptionChainColumnGroup.greeks)
+                          ? 4
+                          : 0);
+                  // Keep the core LTP / Strike / LTP focus band visible at the
+                  // spot-centered mobile scroll position. Optional columns can
+                  // still widen the table and remain horizontally scrollable.
                   final colUnit = isMobileLayout ? 92.0 : 80.0;
                   final minWidth = math.max(
-                    isMobileLayout ? 920.0 : 850.0,
+                    isMobileLayout ? 520.0 : 850.0,
                     columnCount * colUnit,
                   );
                   final contentWidth = math.max(minWidth, constraints.maxWidth);
-                  final needsHorizontalScroll = contentWidth > constraints.maxWidth;
+                  final needsHorizontalScroll =
+                      contentWidth > constraints.maxWidth;
 
-                  if (_activeGroups.isEmpty && _lastHorizontalCenterKey != currentKey) {
+                  if (_activeGroups.isEmpty &&
+                      _lastHorizontalCenterKey != currentKey) {
                     _lastHorizontalCenterKey = currentKey;
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (!_horizontalScrollController.hasClients) return;
-                      final viewport = _horizontalScrollController.position.viewportDimension;
-                      final maxScroll = _horizontalScrollController.position.maxScrollExtent;
+                      final viewport = _horizontalScrollController
+                          .position.viewportDimension;
+                      final maxScroll =
+                          _horizontalScrollController.position.maxScrollExtent;
                       if (viewport <= 0 || maxScroll <= 0) return;
-                      final targetOffset = math.max(0.0, (contentWidth - viewport) / 2);
-                      _horizontalScrollController.jumpTo(math.min(targetOffset, maxScroll));
+                      final targetOffset =
+                          math.max(0.0, (contentWidth - viewport) / 2);
+                      _horizontalScrollController
+                          .jumpTo(math.min(targetOffset, maxScroll));
                     });
                   }
 
@@ -199,7 +255,8 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
                   final rowPaddingV = isMobileLayout ? 6.0 : 10.0;
                   final headerPaddingV = isMobileLayout ? 6.0 : 10.0;
                   final showSwipeHint = needsHorizontalScroll;
-                  final tableHeight = constraints.maxHeight - (showSwipeHint ? 30.0 : 0.0);
+                  final tableHeight =
+                      constraints.maxHeight - (showSwipeHint ? 30.0 : 0.0);
 
                   return Column(
                     children: [
@@ -216,10 +273,17 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
                               child: Column(
                                 children: [
                                   Container(
-                                    padding: EdgeInsets.symmetric(horizontal: rowPaddingH, vertical: headerPaddingV),
-                                    color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                                    padding: EdgeInsets.symmetric(
+                                        horizontal: rowPaddingH,
+                                        vertical: headerPaddingV),
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .surfaceContainerHighest
+                                        .withValues(alpha: 0.3),
                                     child: Row(
-                                      children: _buildHeaderColumns(context, marketTheme, colors, isMobileLayout: isMobileLayout),
+                                      children: _buildHeaderColumns(
+                                          context, marketTheme, colors,
+                                          isMobileLayout: isMobileLayout),
                                     ),
                                   ),
                                   const Divider(height: 1),
@@ -228,14 +292,24 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
                                       controller: _scrollController,
                                       itemCount: rawStrikes.length,
                                       itemBuilder: (context, index) {
-                                        final strikeMap = rawStrikes[index] as Map<String, dynamic>;
-                                        final strikePrice = (strikeMap['strikePrice'] as num?)?.toDouble() ?? 0.0;
-                                        final callMap = (strikeMap['call'] as Map<String, dynamic>?) ?? {};
-                                        final putMap = (strikeMap['put'] as Map<String, dynamic>?) ?? {};
+                                        final strikeMap = rawStrikes[index]
+                                            as Map<String, dynamic>;
+                                        final strikePrice =
+                                            (strikeMap['strikePrice'] as num?)
+                                                    ?.toDouble() ??
+                                                0.0;
+                                        final callMap = (strikeMap['call']
+                                                as Map<String, dynamic>?) ??
+                                            {};
+                                        final putMap = (strikeMap['put']
+                                                as Map<String, dynamic>?) ??
+                                            {};
                                         return Column(
                                           children: [
                                             Container(
-                                              padding: EdgeInsets.symmetric(horizontal: rowPaddingH, vertical: rowPaddingV),
+                                              padding: EdgeInsets.symmetric(
+                                                  horizontal: rowPaddingH,
+                                                  vertical: rowPaddingV),
                                               child: Row(
                                                 children: _buildRowColumns(
                                                   context,
@@ -246,14 +320,23 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
                                                   maxOi,
                                                   colors,
                                                   marketTheme,
-                                                  isMobileLayout: isMobileLayout,
+                                                  isMobileLayout:
+                                                      isMobileLayout,
                                                 ),
                                               ),
                                             ),
                                             if (index == spotIndex)
-                                              _buildSpotPriceLine(context, underlyingLtp, colors, marketTheme, key: _spotLineKey)
+                                              _buildSpotPriceLine(
+                                                  context,
+                                                  underlyingLtp,
+                                                  colors,
+                                                  marketTheme,
+                                                  key: _spotLineKey)
                                             else
-                                              Divider(height: 1, indent: rowPaddingH, endIndent: rowPaddingH),
+                                              Divider(
+                                                  height: 1,
+                                                  indent: rowPaddingH,
+                                                  endIndent: rowPaddingH),
                                           ],
                                         );
                                       },
@@ -267,11 +350,13 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
                       ),
                       if (showSwipeHint)
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
                           child: Text(
                             'Swipe left or right to see more data',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: colors.textSecondary, fontSize: 11),
+                            style: TextStyle(
+                                color: colors.textSecondary, fontSize: 11),
                           ),
                         ),
                     ],
@@ -293,8 +378,17 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
     required String activeExpiry,
     required bool isMobileLayout,
   }) {
-    final toolbarColor = Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.15);
-    final expiryControl = _buildExpiryControl(context, colors, expiriesList, activeExpiry, fullWidth: isMobileLayout);
+    final toolbarColor = Theme.of(context)
+        .colorScheme
+        .surfaceContainerHighest
+        .withValues(alpha: 0.15);
+    final expiryControl = FoExpiryPicker(
+      expiries: expiriesList,
+      activeExpiry: activeExpiry,
+      onSelected: (expiry) =>
+          ref.read(foSelectedExpiryProvider.notifier).state = expiry,
+      fullWidth: isMobileLayout,
+    );
     const chipGroups = OptionChainColumnGroup.values;
 
     String chipLabel(OptionChainColumnGroup group, {required bool compact}) {
@@ -313,17 +407,20 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
       required String text,
       required Color accent,
       required bool expand,
+      VoidCallback? onTap,
+      bool selected = false,
     }) {
       final child = Container(
         alignment: Alignment.center,
         padding: EdgeInsets.symmetric(
           horizontal: expand ? 2 : 8,
-          vertical: 6,
+          vertical: expand ? 10 : 6,
         ),
         decoration: BoxDecoration(
-          color: accent.withValues(alpha: 0.12),
+          color: accent.withValues(alpha: selected ? 0.22 : 0.12),
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: accent.withValues(alpha: 0.35)),
+          border:
+              Border.all(color: accent.withValues(alpha: selected ? 1 : 0.35)),
         ),
         child: Text(
           text,
@@ -336,7 +433,12 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
           ),
         ),
       );
-      return child;
+      if (onTap == null) return child;
+      return Semantics(
+        button: true,
+        label: 'Show ${text.toLowerCase()} columns',
+        child: InkWell(onTap: onTap, child: child),
+      );
     }
 
     Widget compactToggle({
@@ -422,6 +524,8 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
               text: 'CALLS',
               accent: marketTheme.positive,
               expand: true,
+              selected: _focusedSide == _OptionSideFocus.calls,
+              onTap: () => _focusOptionSide(_OptionSideFocus.calls),
             ),
           ),
           const SizedBox(width: 3),
@@ -442,6 +546,8 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
               text: 'PUTS',
               accent: marketTheme.negative,
               expand: true,
+              selected: _focusedSide == _OptionSideFocus.puts,
+              onTap: () => _focusOptionSide(_OptionSideFocus.puts),
             ),
           ),
         ],
@@ -455,8 +561,10 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            expiryControl,
-            const SizedBox(height: 6),
+            if (widget.showExpiryInToolbar) ...[
+              expiryControl,
+              const SizedBox(height: 6),
+            ],
             mobileGroupRow(),
           ],
         ),
@@ -491,69 +599,6 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
     );
   }
 
-  Widget _buildExpiryControl(
-    BuildContext context,
-    AppColorsTheme colors,
-    List<String> expiriesList,
-    String activeExpiry, {
-    required bool fullWidth,
-  }) {
-    final dropdownValue = expiriesList.contains(activeExpiry)
-        ? activeExpiry
-        : (expiriesList.isNotEmpty ? expiriesList.first : activeExpiry);
-
-    final inner = expiriesList.isNotEmpty
-        ? DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: dropdownValue,
-              isExpanded: fullWidth,
-              icon: Padding(
-                padding: const EdgeInsets.only(left: 6.0),
-                child: Icon(Icons.calendar_today, size: 13, color: ModuleColors.market),
-              ),
-              isDense: true,
-              dropdownColor: colors.surface,
-              style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 12),
-              onChanged: (newExpiry) {
-                if (newExpiry != null) {
-                  ref.read(foSelectedExpiryProvider.notifier).state = newExpiry;
-                }
-              },
-              items: expiriesList.map((exp) {
-                return DropdownMenuItem<String>(
-                  value: exp,
-                  child: Text(_formatExpiryWithDte(exp), style: TextStyle(color: colors.textPrimary, fontSize: 12)),
-                );
-              }).toList(),
-            ),
-          )
-        : Row(
-            mainAxisSize: fullWidth ? MainAxisSize.max : MainAxisSize.min,
-            children: [
-              Icon(Icons.calendar_today, size: 13, color: ModuleColors.market),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  _formatExpiryWithDte(activeExpiry),
-                  style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 12),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          );
-
-    return Container(
-      width: fullWidth ? double.infinity : null,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: ModuleColors.market.withValues(alpha: 0.5)),
-      ),
-      child: inner,
-    );
-  }
-
   /// Builds the Groww-Style Spot Price Line Capsule Divider
   Widget _buildSpotPriceLine(
     BuildContext context,
@@ -567,7 +612,10 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Expanded(child: Container(height: 1.5, color: ModuleColors.market.withValues(alpha: 0.6))),
+          Expanded(
+              child: Container(
+                  height: 1.5,
+                  color: ModuleColors.market.withValues(alpha: 0.6))),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
             decoration: BoxDecoration(
@@ -605,7 +653,10 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
               ],
             ),
           ),
-          Expanded(child: Container(height: 1.5, color: ModuleColors.market.withValues(alpha: 0.6))),
+          Expanded(
+              child: Container(
+                  height: 1.5,
+                  color: ModuleColors.market.withValues(alpha: 0.6))),
         ],
       ),
     );
@@ -619,34 +670,53 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
   }) {
     final headerFont = isMobileLayout ? 11.0 : 11.0;
     final strikeHeaderFont = isMobileLayout ? 12.0 : 12.0;
-    TextStyle callStyle = TextStyle(color: marketTheme.positive, fontWeight: FontWeight.bold, fontSize: headerFont);
-    TextStyle putStyle = TextStyle(color: marketTheme.negative, fontWeight: FontWeight.bold, fontSize: headerFont);
-    TextStyle strikeStyle = TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: strikeHeaderFont);
+    TextStyle callStyle = TextStyle(
+        color: marketTheme.positive,
+        fontWeight: FontWeight.bold,
+        fontSize: headerFont);
+    TextStyle putStyle = TextStyle(
+        color: marketTheme.negative,
+        fontWeight: FontWeight.bold,
+        fontSize: headerFont);
+    TextStyle strikeStyle = TextStyle(
+        color: colors.textPrimary,
+        fontWeight: FontWeight.bold,
+        fontSize: strikeHeaderFont);
 
     final cols = <Widget>[];
 
     // --- CALLS SIDE ---
     // Core Call OI
-    cols.add(Expanded(flex: 2, child: Center(child: Text('CALL OI', style: callStyle))));
+    cols.add(Expanded(
+        flex: 2, child: Center(child: Text('CALL OI', style: callStyle))));
 
     // Optional Call Greeks
     if (_activeGroups.contains(OptionChainColumnGroup.greeks)) {
-      cols.add(Expanded(flex: 2, child: Center(child: Text('DELTA', style: callStyle))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text('THETA', style: callStyle))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text('IV', style: callStyle))));
+      cols.add(Expanded(
+          flex: 2, child: Center(child: Text('DELTA', style: callStyle))));
+      cols.add(Expanded(
+          flex: 2, child: Center(child: Text('THETA', style: callStyle))));
+      cols.add(Expanded(
+          flex: 2, child: Center(child: Text('IV', style: callStyle))));
     }
 
     // Optional Call Valuation
     if (_activeGroups.contains(OptionChainColumnGroup.valuation)) {
-      cols.add(Expanded(flex: 2, child: Center(child: Text('INT VAL', style: callStyle))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text('TIME VAL', style: callStyle))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text('BREAKEVEN %', style: callStyle))));
+      cols.add(Expanded(
+          flex: 2, child: Center(child: Text('INT VAL', style: callStyle))));
+      cols.add(Expanded(
+          flex: 2, child: Center(child: Text('TIME VAL', style: callStyle))));
+      cols.add(Expanded(
+          flex: 2,
+          child: Center(child: Text('BREAKEVEN %', style: callStyle))));
     }
 
     // Optional Call Depth
     if (_activeGroups.contains(OptionChainColumnGroup.bidAsk)) {
-      cols.add(Expanded(flex: 2, child: Center(child: Text('BID', style: callStyle))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text('ASK', style: callStyle))));
+      cols.add(Expanded(
+          flex: 2, child: Center(child: Text('BID', style: callStyle))));
+      cols.add(Expanded(
+          flex: 2, child: Center(child: Text('ASK', style: callStyle))));
     }
 
     // Core Call LTP
@@ -655,14 +725,15 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
       child: Center(
         child: FittedBox(
           fit: BoxFit.scaleDown,
-          child: Text(isMobileLayout ? 'LTP / CHG%' : 'LTP (CHG %)', style: callStyle),
+          child: Text(isMobileLayout ? 'LTP / CHG%' : 'LTP (CHG %)',
+              style: callStyle),
         ),
       ),
     ));
 
     // --- CENTER STRIKE ---
     cols.add(Expanded(
-      flex: isMobileLayout ? 3 : 2,
+      flex: 2,
       child: Center(child: Text('STRIKE', style: strikeStyle)),
     ));
 
@@ -673,33 +744,43 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
       child: Center(
         child: FittedBox(
           fit: BoxFit.scaleDown,
-          child: Text(isMobileLayout ? 'LTP / CHG%' : 'LTP (CHG %)', style: putStyle),
+          child: Text(isMobileLayout ? 'LTP / CHG%' : 'LTP (CHG %)',
+              style: putStyle),
         ),
       ),
     ));
 
     // Optional Put Depth
     if (_activeGroups.contains(OptionChainColumnGroup.bidAsk)) {
-      cols.add(Expanded(flex: 2, child: Center(child: Text('ASK', style: putStyle))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text('BID', style: putStyle))));
+      cols.add(Expanded(
+          flex: 2, child: Center(child: Text('ASK', style: putStyle))));
+      cols.add(Expanded(
+          flex: 2, child: Center(child: Text('BID', style: putStyle))));
     }
 
     // Optional Put Valuation
     if (_activeGroups.contains(OptionChainColumnGroup.valuation)) {
-      cols.add(Expanded(flex: 2, child: Center(child: Text('BREAKEVEN %', style: putStyle))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text('TIME VAL', style: putStyle))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text('INT VAL', style: putStyle))));
+      cols.add(Expanded(
+          flex: 2, child: Center(child: Text('BREAKEVEN %', style: putStyle))));
+      cols.add(Expanded(
+          flex: 2, child: Center(child: Text('TIME VAL', style: putStyle))));
+      cols.add(Expanded(
+          flex: 2, child: Center(child: Text('INT VAL', style: putStyle))));
     }
 
     // Optional Put Greeks
     if (_activeGroups.contains(OptionChainColumnGroup.greeks)) {
-      cols.add(Expanded(flex: 2, child: Center(child: Text('IV', style: putStyle))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text('THETA', style: putStyle))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text('DELTA', style: putStyle))));
+      cols.add(
+          Expanded(flex: 2, child: Center(child: Text('IV', style: putStyle))));
+      cols.add(Expanded(
+          flex: 2, child: Center(child: Text('THETA', style: putStyle))));
+      cols.add(Expanded(
+          flex: 2, child: Center(child: Text('DELTA', style: putStyle))));
     }
 
     // Core Put OI
-    cols.add(Expanded(flex: 2, child: Center(child: Text('PUT OI', style: putStyle))));
+    cols.add(Expanded(
+        flex: 2, child: Center(child: Text('PUT OI', style: putStyle))));
 
     return cols;
   }
@@ -721,34 +802,56 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
     // Call metrics
     final callLtp = (callMap['ltp'] as num?)?.toDouble() ?? 0.0;
     final callClose = (callMap['closePrice'] as num?)?.toDouble() ?? 0.0;
-    final callChgPct = callClose > 0 ? ((callLtp - callClose) / callClose) * 100 : 0.0;
+    final callChgPct =
+        callClose > 0 ? ((callLtp - callClose) / callClose) * 100 : 0.0;
     final callOi = (callMap['oi'] as num?)?.toDouble() ?? 0.0;
-    final callIv = ((callMap['greeks'] as Map<String, dynamic>?)?['iv'] as num?)?.toDouble() ?? 0.0;
+    final callIv = ((callMap['greeks'] as Map<String, dynamic>?)?['iv'] as num?)
+            ?.toDouble() ??
+        0.0;
     final callBid = (callMap['bidPrice'] as num?)?.toDouble() ?? 0.0;
     final callAsk = (callMap['askPrice'] as num?)?.toDouble() ?? 0.0;
-    final callDelta = ((callMap['greeks'] as Map<String, dynamic>?)?['delta'] as num?)?.toDouble() ?? 0.0;
-    final callTheta = ((callMap['greeks'] as Map<String, dynamic>?)?['theta'] as num?)?.toDouble() ?? 0.0;
+    final callDelta =
+        ((callMap['greeks'] as Map<String, dynamic>?)?['delta'] as num?)
+                ?.toDouble() ??
+            0.0;
+    final callTheta =
+        ((callMap['greeks'] as Map<String, dynamic>?)?['theta'] as num?)
+                ?.toDouble() ??
+            0.0;
 
     final callIntVal = math.max(0.0, underlyingLtp - strikePrice);
     final callTimeVal = math.max(0.0, callLtp - callIntVal);
     final callBreakeven = strikePrice + callLtp;
-    final callBreakevenPct = underlyingLtp > 0 ? ((callBreakeven - underlyingLtp) / underlyingLtp) * 100 : 0.0;
+    final callBreakevenPct = underlyingLtp > 0
+        ? ((callBreakeven - underlyingLtp) / underlyingLtp) * 100
+        : 0.0;
 
     // Put metrics
     final putLtp = (putMap['ltp'] as num?)?.toDouble() ?? 0.0;
     final putClose = (putMap['closePrice'] as num?)?.toDouble() ?? 0.0;
-    final putChgPct = putClose > 0 ? ((putLtp - putClose) / putClose) * 100 : 0.0;
+    final putChgPct =
+        putClose > 0 ? ((putLtp - putClose) / putClose) * 100 : 0.0;
     final putOi = (putMap['oi'] as num?)?.toDouble() ?? 0.0;
-    final putIv = ((putMap['greeks'] as Map<String, dynamic>?)?['iv'] as num?)?.toDouble() ?? 0.0;
+    final putIv = ((putMap['greeks'] as Map<String, dynamic>?)?['iv'] as num?)
+            ?.toDouble() ??
+        0.0;
     final putBid = (putMap['bidPrice'] as num?)?.toDouble() ?? 0.0;
     final putAsk = (putMap['askPrice'] as num?)?.toDouble() ?? 0.0;
-    final putDelta = ((putMap['greeks'] as Map<String, dynamic>?)?['delta'] as num?)?.toDouble() ?? 0.0;
-    final putTheta = ((putMap['greeks'] as Map<String, dynamic>?)?['theta'] as num?)?.toDouble() ?? 0.0;
+    final putDelta =
+        ((putMap['greeks'] as Map<String, dynamic>?)?['delta'] as num?)
+                ?.toDouble() ??
+            0.0;
+    final putTheta =
+        ((putMap['greeks'] as Map<String, dynamic>?)?['theta'] as num?)
+                ?.toDouble() ??
+            0.0;
 
     final putIntVal = math.max(0.0, strikePrice - underlyingLtp);
     final putTimeVal = math.max(0.0, putLtp - putIntVal);
     final putBreakeven = strikePrice - putLtp;
-    final putBreakevenPct = underlyingLtp > 0 ? ((underlyingLtp - putBreakeven) / underlyingLtp) * 100 : 0.0;
+    final putBreakevenPct = underlyingLtp > 0
+        ? ((underlyingLtp - putBreakeven) / underlyingLtp) * 100
+        : 0.0;
 
     final callOiRatio = (callOi / maxOi).clamp(0.0, 1.0);
     final putOiRatio = (putOi / maxOi).clamp(0.0, 1.0);
@@ -776,7 +879,9 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
                 ),
               ),
             ),
-            Text(callOi > 0 ? '${(callOi / 1000).toStringAsFixed(1)}k' : '-', style: TextStyle(color: colors.textSecondary, fontSize: cellFont)),
+            Text(callOi > 0 ? '${(callOi / 1000).toStringAsFixed(1)}k' : '-',
+                style:
+                    TextStyle(color: colors.textSecondary, fontSize: cellFont)),
           ],
         ),
       ),
@@ -784,22 +889,62 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
 
     // Call Greeks
     if (_activeGroups.contains(OptionChainColumnGroup.greeks)) {
-      cols.add(Expanded(flex: 2, child: Center(child: Text(callDelta != 0 ? callDelta.toStringAsFixed(2) : '-', style: TextStyle(color: colors.textPrimary, fontSize: cellFont)))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text(callTheta != 0 ? callTheta.toStringAsFixed(2) : '-', style: TextStyle(color: colors.textSecondary, fontSize: cellFont)))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text(callIv > 0 ? '${callIv.toStringAsFixed(1)}%' : '-', style: TextStyle(color: colors.textSecondary, fontSize: cellFont)))));
+      cols.add(Expanded(
+          flex: 2,
+          child: Center(
+              child: Text(callDelta != 0 ? callDelta.toStringAsFixed(2) : '-',
+                  style: TextStyle(
+                      color: colors.textPrimary, fontSize: cellFont)))));
+      cols.add(Expanded(
+          flex: 2,
+          child: Center(
+              child: Text(callTheta != 0 ? callTheta.toStringAsFixed(2) : '-',
+                  style: TextStyle(
+                      color: colors.textSecondary, fontSize: cellFont)))));
+      cols.add(Expanded(
+          flex: 2,
+          child: Center(
+              child: Text(callIv > 0 ? '${callIv.toStringAsFixed(1)}%' : '-',
+                  style: TextStyle(
+                      color: colors.textSecondary, fontSize: cellFont)))));
     }
 
     // Call Valuation
     if (_activeGroups.contains(OptionChainColumnGroup.valuation)) {
-      cols.add(Expanded(flex: 2, child: Center(child: Text('₹${callIntVal.toStringAsFixed(1)}', style: TextStyle(color: colors.textSecondary, fontSize: cellFont)))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text('₹${callTimeVal.toStringAsFixed(1)}', style: TextStyle(color: colors.textSecondary, fontSize: cellFont)))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text('${callBreakevenPct.toStringAsFixed(1)}%', style: TextStyle(color: colors.textPrimary, fontSize: cellFont)))));
+      cols.add(Expanded(
+          flex: 2,
+          child: Center(
+              child: Text('₹${callIntVal.toStringAsFixed(1)}',
+                  style: TextStyle(
+                      color: colors.textSecondary, fontSize: cellFont)))));
+      cols.add(Expanded(
+          flex: 2,
+          child: Center(
+              child: Text('₹${callTimeVal.toStringAsFixed(1)}',
+                  style: TextStyle(
+                      color: colors.textSecondary, fontSize: cellFont)))));
+      cols.add(Expanded(
+          flex: 2,
+          child: Center(
+              child: Text('${callBreakevenPct.toStringAsFixed(1)}%',
+                  style: TextStyle(
+                      color: colors.textPrimary, fontSize: cellFont)))));
     }
 
     // Call Depth
     if (_activeGroups.contains(OptionChainColumnGroup.bidAsk)) {
-      cols.add(Expanded(flex: 2, child: Center(child: Text(callBid > 0 ? '₹${callBid.toStringAsFixed(2)}' : '-', style: TextStyle(color: colors.textSecondary, fontSize: cellFont)))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text(callAsk > 0 ? '₹${callAsk.toStringAsFixed(2)}' : '-', style: TextStyle(color: colors.textSecondary, fontSize: cellFont)))));
+      cols.add(Expanded(
+          flex: 2,
+          child: Center(
+              child: Text(callBid > 0 ? '₹${callBid.toStringAsFixed(2)}' : '-',
+                  style: TextStyle(
+                      color: colors.textSecondary, fontSize: cellFont)))));
+      cols.add(Expanded(
+          flex: 2,
+          child: Center(
+              child: Text(callAsk > 0 ? '₹${callAsk.toStringAsFixed(2)}' : '-',
+                  style: TextStyle(
+                      color: colors.textSecondary, fontSize: cellFont)))));
     }
 
     // Call LTP & Chg %
@@ -828,7 +973,9 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
                     style: TextStyle(
                       color: callChgPct > 0
                           ? marketTheme.positive
-                          : (callChgPct < 0 ? marketTheme.negative : colors.textSecondary),
+                          : (callChgPct < 0
+                              ? marketTheme.negative
+                              : colors.textSecondary),
                       fontSize: chgFont,
                       fontWeight: FontWeight.bold,
                     ),
@@ -844,7 +991,7 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
     // --- CENTER STRIKE ---
     cols.add(
       Expanded(
-        flex: isMobileLayout ? 3 : 2,
+        flex: 2,
         child: Center(
           child: Container(
             padding: EdgeInsets.symmetric(
@@ -902,7 +1049,9 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
                     style: TextStyle(
                       color: putChgPct > 0
                           ? marketTheme.positive
-                          : (putChgPct < 0 ? marketTheme.negative : colors.textSecondary),
+                          : (putChgPct < 0
+                              ? marketTheme.negative
+                              : colors.textSecondary),
                       fontSize: chgFont,
                       fontWeight: FontWeight.bold,
                     ),
@@ -917,22 +1066,62 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
 
     // Put Depth
     if (_activeGroups.contains(OptionChainColumnGroup.bidAsk)) {
-      cols.add(Expanded(flex: 2, child: Center(child: Text(putAsk > 0 ? '₹${putAsk.toStringAsFixed(2)}' : '-', style: TextStyle(color: colors.textSecondary, fontSize: cellFont)))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text(putBid > 0 ? '₹${putBid.toStringAsFixed(2)}' : '-', style: TextStyle(color: colors.textSecondary, fontSize: cellFont)))));
+      cols.add(Expanded(
+          flex: 2,
+          child: Center(
+              child: Text(putAsk > 0 ? '₹${putAsk.toStringAsFixed(2)}' : '-',
+                  style: TextStyle(
+                      color: colors.textSecondary, fontSize: cellFont)))));
+      cols.add(Expanded(
+          flex: 2,
+          child: Center(
+              child: Text(putBid > 0 ? '₹${putBid.toStringAsFixed(2)}' : '-',
+                  style: TextStyle(
+                      color: colors.textSecondary, fontSize: cellFont)))));
     }
 
     // Put Valuation
     if (_activeGroups.contains(OptionChainColumnGroup.valuation)) {
-      cols.add(Expanded(flex: 2, child: Center(child: Text('${putBreakevenPct.toStringAsFixed(1)}%', style: TextStyle(color: colors.textPrimary, fontSize: cellFont)))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text('₹${putTimeVal.toStringAsFixed(1)}', style: TextStyle(color: colors.textSecondary, fontSize: cellFont)))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text('₹${putIntVal.toStringAsFixed(1)}', style: TextStyle(color: colors.textSecondary, fontSize: cellFont)))));
+      cols.add(Expanded(
+          flex: 2,
+          child: Center(
+              child: Text('${putBreakevenPct.toStringAsFixed(1)}%',
+                  style: TextStyle(
+                      color: colors.textPrimary, fontSize: cellFont)))));
+      cols.add(Expanded(
+          flex: 2,
+          child: Center(
+              child: Text('₹${putTimeVal.toStringAsFixed(1)}',
+                  style: TextStyle(
+                      color: colors.textSecondary, fontSize: cellFont)))));
+      cols.add(Expanded(
+          flex: 2,
+          child: Center(
+              child: Text('₹${putIntVal.toStringAsFixed(1)}',
+                  style: TextStyle(
+                      color: colors.textSecondary, fontSize: cellFont)))));
     }
 
     // Put Greeks
     if (_activeGroups.contains(OptionChainColumnGroup.greeks)) {
-      cols.add(Expanded(flex: 2, child: Center(child: Text(putIv > 0 ? '${putIv.toStringAsFixed(1)}%' : '-', style: TextStyle(color: colors.textSecondary, fontSize: cellFont)))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text(putTheta != 0 ? putTheta.toStringAsFixed(2) : '-', style: TextStyle(color: colors.textSecondary, fontSize: cellFont)))));
-      cols.add(Expanded(flex: 2, child: Center(child: Text(putDelta != 0 ? putDelta.toStringAsFixed(2) : '-', style: TextStyle(color: colors.textPrimary, fontSize: cellFont)))));
+      cols.add(Expanded(
+          flex: 2,
+          child: Center(
+              child: Text(putIv > 0 ? '${putIv.toStringAsFixed(1)}%' : '-',
+                  style: TextStyle(
+                      color: colors.textSecondary, fontSize: cellFont)))));
+      cols.add(Expanded(
+          flex: 2,
+          child: Center(
+              child: Text(putTheta != 0 ? putTheta.toStringAsFixed(2) : '-',
+                  style: TextStyle(
+                      color: colors.textSecondary, fontSize: cellFont)))));
+      cols.add(Expanded(
+          flex: 2,
+          child: Center(
+              child: Text(putDelta != 0 ? putDelta.toStringAsFixed(2) : '-',
+                  style: TextStyle(
+                      color: colors.textPrimary, fontSize: cellFont)))));
     }
 
     // Put OI
@@ -955,43 +1144,14 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
                 ),
               ),
             ),
-            Text(putOi > 0 ? '${(putOi / 1000).toStringAsFixed(1)}k' : '-', style: TextStyle(color: colors.textSecondary, fontSize: cellFont)),
+            Text(putOi > 0 ? '${(putOi / 1000).toStringAsFixed(1)}k' : '-',
+                style:
+                    TextStyle(color: colors.textSecondary, fontSize: cellFont)),
           ],
         ),
       ),
     );
 
     return cols;
-  }
-
-  String _formatExpiryLabel(String rawDate) {
-    if (rawDate.isEmpty) return 'Expiry';
-    try {
-      final parts = rawDate.split('-');
-      if (parts.length == 3) {
-        final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        final mIdx = int.tryParse(parts[1]);
-        if (mIdx != null && mIdx >= 1 && mIdx <= 12) {
-          return '${parts[2]} ${months[mIdx - 1]} ${parts[0]}';
-        }
-      }
-    } catch (_) {}
-    return rawDate;
-  }
-
-  String _formatExpiryWithDte(String rawDate) {
-    final label = _formatExpiryLabel(rawDate);
-    if (rawDate.isEmpty) return label;
-    try {
-      final parsed = DateTime.parse(rawDate);
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      final expDate = DateTime(parsed.year, parsed.month, parsed.day);
-      final diff = expDate.difference(today).inDays;
-      if (diff >= 0) {
-        return '$label ($diff Days)';
-      }
-    } catch (_) {}
-    return label;
   }
 }
