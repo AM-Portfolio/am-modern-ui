@@ -31,5 +31,30 @@ void main() {
       expect(index.hasValidPrice, isTrue);
       expect(index.suspended, isTrue);
     });
+
+    test('derives 1D change from lastPrice and pChange when change is 0', () {
+      final index = StockIndicesMarketData.fromJson({
+        'indexSymbol': 'HSI',
+        'metadata': {
+          'segment': 'GLOBAL',
+          'last': 23093.37,
+          'percChange': 0.69,
+        },
+      });
+
+      expect(index.change, greaterThan(150.0));
+      expect(index.pChange, 0.69);
+    });
+
+    test('derives 1D change from lastPrice and previousClose when change is 0', () {
+      final index = StockIndicesMarketData.fromJson({
+        'indexSymbol': 'DJI',
+        'lastPrice': 52318.06,
+        'previousClose': 52889.37,
+      });
+
+      expect(index.change, closeTo(-571.31, 0.01));
+      expect(index.pChange, closeTo(-1.08, 0.01));
+    });
   });
 }

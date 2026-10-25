@@ -65,16 +65,33 @@ class StockIndicesMarketData {
         ? json['metadata'] as Map<String, dynamic>
         : const <String, dynamic>{};
 
+    final lastPrice = _resolveLastPrice(json, metadata);
+    final prevClose =
+        _number(json['previousClose'] ?? metadata['previousClose']);
+    var pChange = _number(json['pChange'] ??
+        json['percentChange'] ??
+        metadata['percChange'] ??
+        metadata['percentChange']);
+    var change = _number(json['change'] ?? metadata['change']);
+
+    if (change == 0.0 && lastPrice > 0) {
+      if (prevClose > 0) {
+        change = lastPrice - prevClose;
+      } else if (pChange != 0) {
+        change = lastPrice - (lastPrice / (1 + (pChange / 100)));
+      }
+    }
+    if (pChange == 0.0 && prevClose > 0 && change != 0) {
+      pChange = (change / prevClose) * 100;
+    }
+
     return StockIndicesMarketData(
       indexSymbol: json['indexSymbol'] ?? 'Unknown',
       indexName:
           json['indexName'] as String? ?? metadata['indexName'] as String?,
-      lastPrice: _resolveLastPrice(json, metadata),
-      change: _number(json['change'] ?? metadata['change']),
-      pChange: _number(json['pChange'] ??
-          json['percentChange'] ??
-          metadata['percChange'] ??
-          metadata['percentChange']),
+      lastPrice: lastPrice,
+      change: change,
+      pChange: pChange,
       stocks: stocksList,
       suspended: json['suspended'] == true || metadata['suspended'] == true,
       segment: json['segment'] as String? ?? metadata['segment'] as String?,

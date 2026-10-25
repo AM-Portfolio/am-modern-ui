@@ -26,8 +26,13 @@ class DrawerIndexCard extends StatelessWidget {
     final isNonLiveGlobalQuote =
         data.isGlobal && data.suspended && data.hasValidPrice;
 
-    final isPositive = displayChange >= 0;
-    final sign = isPositive ? '+' : '';
+    final isPositive =
+        displayPChange != 0 ? displayPChange >= 0 : displayChange >= 0;
+    final sign = displayChange > 0
+        ? '+'
+        : (displayChange < 0
+            ? '-'
+            : (displayPChange > 0 ? '+' : (displayPChange < 0 ? '-' : '')));
     final accentColor = isGlobalWithoutPrice || isNonLiveGlobalQuote
         ? MarketColors.textMuted(context)
         : isPositive
@@ -108,8 +113,8 @@ class DrawerIndexCard extends StatelessWidget {
                               const SizedBox(width: 3),
                               Text(
                                 isPositive
-                                    ? '+${displayPChange.toStringAsFixed(2)}%'
-                                    : '${displayPChange.toStringAsFixed(2)}%',
+                                    ? '+${displayPChange.abs().toStringAsFixed(2)}%'
+                                    : '-${displayPChange.abs().toStringAsFixed(2)}%',
                                 style: TextStyle(
                                   fontSize: 10.0,
                                   color: accentColor,
@@ -145,7 +150,7 @@ class DrawerIndexCard extends StatelessWidget {
                         ? 'Last confirmed quote'
                         : (data.suspended
                             ? 'Suspended / no live ticks'
-                            : '$timeframe change: $sign${displayChange.toStringAsFixed(2)}')),
+                            : '$timeframe change: $sign${displayChange.abs().toStringAsFixed(2)}')),
                 style: TextStyle(
                   fontSize: isMobile ? 10 : 12,
                   color: data.suspended
