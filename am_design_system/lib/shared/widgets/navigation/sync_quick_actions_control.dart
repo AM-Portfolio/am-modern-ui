@@ -4,10 +4,10 @@ import 'floating_menu_action.dart';
 import 'global_bottom_nav_visibility.dart';
 import 'quick_actions_sheet.dart';
 
-/// more_vert control that opens the shared quick-actions sheet.
+/// Add (+) control that opens the shared quick-actions sheet (sync / add).
 ///
-/// Always icon-only (no Sync chip) so Dashboard / Trade / Portfolio share one
-/// top-nav pattern. Mobile sheets use [showSubtitles] false by default.
+/// Always icon-only so Dashboard / Trade / Portfolio share one top-nav
+/// pattern. Mobile sheets use [showSubtitles] false by default.
 class SyncQuickActionsControl extends StatelessWidget {
   const SyncQuickActionsControl({
     required this.accentColor,
@@ -15,7 +15,7 @@ class SyncQuickActionsControl extends StatelessWidget {
     this.showSubtitles = false,
     this.iconColor,
     this.iconSize = 22,
-    this.icon = Icons.more_vert,
+    this.icon = Icons.add_rounded,
     super.key,
   });
 
@@ -44,7 +44,7 @@ class SyncQuickActionsControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      tooltip: 'Quick actions',
+      tooltip: 'Sync portfolio',
       onPressed: () => _open(context),
       icon: Icon(
         icon,

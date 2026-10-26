@@ -42,11 +42,16 @@ class IndexCard extends StatelessWidget {
 
         // One narrative: % sign and sparkline stroke use the same pChange.
         final isPositive = displayPChange >= 0;
+        final isGlobalWithoutPrice = data.isGlobal && !data.hasValidPrice;
+        final isNonLiveGlobalQuote =
+            data.isGlobal && data.suspended && data.hasValidPrice;
         final changeColor = isLoading
             ? MarketColors.textMuted(context)
-            : (isPositive
-                ? MarketColors.positive(context)
-                : MarketColors.negative(context));
+            : (isGlobalWithoutPrice || isNonLiveGlobalQuote
+                ? MarketColors.textMuted(context)
+                : (isPositive
+                    ? MarketColors.positive(context)
+                    : MarketColors.negative(context)));
 
         final displayPChangeFormatted = displayPChange.abs().toStringAsFixed(2);
         final displayChangeFormatted = numberFormat.format(displayChange.abs());
@@ -74,12 +79,9 @@ class IndexCard extends StatelessWidget {
                 color: MarketColors.cardSurface(context),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: isSelected
-                      ? accent
-                      : MarketColors.borderDefault(context),
-                  width: isSelected
-                      ? 1.5
-                      : MarketColors.borderWidth(context),
+                  color:
+                      isSelected ? accent : MarketColors.borderDefault(context),
+                  width: isSelected ? 1.5 : MarketColors.borderWidth(context),
                 ),
                 boxShadow: isSelected
                     ? [
@@ -113,7 +115,11 @@ class IndexCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          isLoading ? '...' : numberFormat.format(data.lastPrice),
+                          isLoading
+                              ? '...'
+                              : (isGlobalWithoutPrice
+                                  ? '—'
+                                  : numberFormat.format(data.lastPrice)),
                           style: TextStyle(
                             fontSize: isMobile ? 14 : 16,
                             color: MarketColors.textPrimary(context),
@@ -127,7 +133,11 @@ class IndexCard extends StatelessWidget {
                         Text(
                           isLoading
                               ? 'Loading...'
-                              : '${isPositive ? '+' : '-'}$displayChangeFormatted (${isPositive ? '+' : '-'}$displayPChangeFormatted%$timeframeLabel)',
+                              : (isGlobalWithoutPrice
+                                  ? 'Quote pending'
+                                  : (isNonLiveGlobalQuote
+                                      ? 'Last confirmed quote'
+                                      : '${isPositive ? '+' : '-'}$displayChangeFormatted (${isPositive ? '+' : '-'}$displayPChangeFormatted%$timeframeLabel')),
                           style: TextStyle(
                             fontSize: isMobile ? 9.5 : 10.5,
                             color: changeColor,
@@ -158,7 +168,8 @@ class IndexCard extends StatelessWidget {
                                   height: 12,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 1.5,
-                                    color: sparklineColor.withValues(alpha: 0.5),
+                                    color:
+                                        sparklineColor.withValues(alpha: 0.5),
                                   ),
                                 ),
                               )
@@ -198,7 +209,8 @@ class _IndexSparklinePainter extends CustomPainter {
     final rangeY = maxVal - minVal;
 
     double getY(double val) =>
-        size.height * 0.12 + (size.height * 0.76) * (1 - ((val - minVal) / rangeY));
+        size.height * 0.12 +
+        (size.height * 0.76) * (1 - ((val - minVal) / rangeY));
 
     final path = Path()..moveTo(0, getY(data[0]));
     for (var i = 0; i < data.length - 1; i++) {

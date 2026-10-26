@@ -221,46 +221,64 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
                         children: [
                           SizedBox(
                             height: chartH,
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                            child: Stack(
                               children: [
-                                if (showDrawRail)
-                                  ChartDrawToolsRail(
-                                    expanded:
-                                        isMobile ? true : _drawRailExpanded,
-                                    activeTool: _drawTool,
-                                    drawingCount: _activeDrawingsCount,
-                                    onToggleExpanded: () {
-                                      if (isMobile) {
-                                        setState(() => _showMobileDrawRail =
-                                            !_showMobileDrawRail);
-                                      } else {
-                                        setState(() => _drawRailExpanded =
-                                            !_drawRailExpanded);
-                                      }
-                                    },
-                                    onSelectTool: (t) => setState(() {
-                                      _drawTool = t;
-                                    }),
-                                    onClearAll: () => setState(() {
-                                      _clearDrawingsEpoch++;
-                                      _activeDrawingsCount = 0;
-                                    }),
-                                  ),
-                                Expanded(
-                                  child: _ChartGrid(
-                                    state: state,
-                                    drawTool: _drawTool,
-                                    clearDrawingsEpoch: _clearDrawingsEpoch,
-                                    onDrawingsCountChanged: (n) {
-                                      if (_activeDrawingsCount != n) {
-                                        setState(
-                                          () => _activeDrawingsCount = n,
-                                        );
-                                      }
-                                    },
-                                  ),
+                                Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    if (showDrawRail)
+                                      ChartDrawToolsRail(
+                                        expanded: isMobile
+                                            ? true
+                                            : _drawRailExpanded,
+                                        activeTool: _drawTool,
+                                        drawingCount: _activeDrawingsCount,
+                                        onToggleExpanded: () {
+                                          if (isMobile) {
+                                            setState(() => _showMobileDrawRail =
+                                                !_showMobileDrawRail);
+                                          } else {
+                                            setState(() => _drawRailExpanded =
+                                                !_drawRailExpanded);
+                                          }
+                                        },
+                                        onSelectTool: (t) => setState(() {
+                                          _drawTool = t;
+                                        }),
+                                        onClearAll: () => setState(() {
+                                          _clearDrawingsEpoch++;
+                                          _activeDrawingsCount = 0;
+                                        }),
+                                      ),
+                                    Expanded(
+                                      child: _ChartGrid(
+                                        state: state,
+                                        drawTool: _drawTool,
+                                        clearDrawingsEpoch: _clearDrawingsEpoch,
+                                        hasLeftExpandHandle:
+                                            isMobile && !showDrawRail,
+                                        onDrawingsCountChanged: (n) {
+                                          if (_activeDrawingsCount != n) {
+                                            setState(
+                                              () => _activeDrawingsCount = n,
+                                            );
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ],
                                 ),
+                                if (isMobile && !_showMobileDrawRail)
+                                  Positioned(
+                                    left: 0,
+                                    top: 10,
+                                    child: _MobileDrawRailExpandButton(
+                                      onTap: () => setState(
+                                        () => _showMobileDrawRail = true,
+                                      ),
+                                    ),
+                                  ),
                               ],
                             ),
                           ),
@@ -608,11 +626,13 @@ class _ChartGrid extends StatelessWidget {
     required this.state,
     required this.drawTool,
     required this.clearDrawingsEpoch,
+    this.hasLeftExpandHandle = false,
     this.onDrawingsCountChanged,
   });
   final ChartTerminalState state;
   final ChartDrawTool drawTool;
   final int clearDrawingsEpoch;
+  final bool hasLeftExpandHandle;
   final ValueChanged<int>? onDrawingsCountChanged;
 
   @override
@@ -629,6 +649,7 @@ class _ChartGrid extends StatelessWidget {
       showIdentityStrip: multi,
       drawTool: drawTool,
       clearDrawingsEpoch: clearDrawingsEpoch,
+      hasLeftExpandHandle: hasLeftExpandHandle,
       onDrawingsCountChanged: onDrawingsCountChanged,
     );
 
@@ -710,110 +731,57 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
     final theme = Theme.of(context);
     final state = widget.state;
     final ctrl = widget.ctrl;
-    final active = state.active;
 
     return Material(
       elevation: 1,
       color: theme.colorScheme.surface,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 6, 8, 4),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    '${active.symbol} · ${active.exchange}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 14.5,
-                      letterSpacing: -0.2,
+      child: Container(
+        height: 38,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              if (widget.onOpenMobileSidebar != null) ...[
+                Tooltip(
+                  message: 'Watchlist & Indices',
+                  child: InkWell(
+                    onTap: widget.onOpenMobileSidebar,
+                    borderRadius: BorderRadius.circular(5),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 3.5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.cardColor.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(5),
+                        border: Border.all(
+                          color: theme.dividerColor.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.format_list_bulleted,
+                        size: 16,
+                        color: theme.colorScheme.primary,
+                      ),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                IconButton(
-                  tooltip: 'Watchlist & Indices',
-                  iconSize: 19,
-                  padding: EdgeInsets.zero,
-                  constraints:
-                      const BoxConstraints(minWidth: 32, minHeight: 32),
-                  icon: Icon(
-                    Icons.format_list_bulleted,
-                    color: theme.colorScheme.primary,
-                  ),
-                  onPressed: widget.onOpenMobileSidebar,
-                ),
-                if (widget.onToggleDrawRail != null)
-                  IconButton(
-                    tooltip: 'Drawing tools',
-                    iconSize: 18,
-                    padding: EdgeInsets.zero,
-                    constraints:
-                        const BoxConstraints(minWidth: 32, minHeight: 32),
-                    icon: Icon(
-                      widget.showDrawRail ? Icons.draw : Icons.draw_outlined,
-                      color: widget.showDrawRail
-                          ? theme.colorScheme.primary
-                          : theme.hintColor,
-                    ),
-                    onPressed: widget.onToggleDrawRail,
-                  ),
-                IconButton(
-                  tooltip: state.bottomMinimized
-                      ? 'Restore panel'
-                      : 'Minimize panel',
-                  iconSize: 18,
-                  padding: EdgeInsets.zero,
-                  constraints:
-                      const BoxConstraints(minWidth: 32, minHeight: 32),
-                  onPressed: ctrl.toggleBottomMinimized,
-                  icon: Icon(
-                    state.bottomMinimized
-                        ? Icons.splitscreen_outlined
-                        : Icons.splitscreen,
-                    color: state.bottomMinimized
-                        ? theme.hintColor
-                        : theme.colorScheme.primary,
-                  ),
-                ),
+                const SizedBox(width: 6),
               ],
-            ),
+              _buildChartTypeSelector(context, state, ctrl),
+              const SizedBox(width: 6),
+              _buildMobileTimeframeDropdown(context, state, ctrl),
+              const SizedBox(width: 6),
+              _buildCompareButton(context, state, ctrl),
+              const SizedBox(width: 6),
+              _divider(theme),
+              const SizedBox(width: 6),
+              _buildIndicatorsButton(context),
+            ],
           ),
-          const Divider(height: 1),
-          Container(
-            height: 38,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildChartTypeSelector(context, state, ctrl),
-                  const SizedBox(width: 6),
-                  _buildMobileTimeframeDropdown(context, state, ctrl),
-                  const SizedBox(width: 6),
-                  _buildCompareButton(context, state, ctrl),
-                  const SizedBox(width: 6),
-                  _divider(theme),
-                  const SizedBox(width: 6),
-                  _buildIndicatorsButton(context),
-                  const SizedBox(width: 4),
-                  IconButton(
-                    tooltip: 'Fit chart',
-                    iconSize: 18,
-                    padding: EdgeInsets.zero,
-                    constraints:
-                        const BoxConstraints(minWidth: 30, minHeight: 30),
-                    onPressed: ctrl.requestFit,
-                    icon: const Icon(Icons.fit_screen),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -1204,14 +1172,16 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
               size: isMobile ? 15 : 16,
               color: theme.colorScheme.primary,
             ),
-            const SizedBox(width: 5),
-            Text(
-              active.chartType.label,
-              style: TextStyle(
-                fontSize: isMobile ? 12 : 13,
-                fontWeight: FontWeight.w700,
+            if (!isMobile) ...[
+              const SizedBox(width: 5),
+              Text(
+                active.chartType.label,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
+            ],
             const SizedBox(width: 2),
             Icon(Icons.arrow_drop_down, size: isMobile ? 16 : 18, color: theme.hintColor),
           ],
@@ -1223,50 +1193,55 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
   Widget _buildIndicatorsButton(BuildContext context) {
     final theme = Theme.of(context);
     final isMobile = MediaQuery.sizeOf(context).width < 768;
-    return InkWell(
-      onTap: () => _showIndicatorsModal(context),
-      borderRadius: BorderRadius.circular(4),
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: isMobile ? 7 : 10,
-          vertical: isMobile ? 3.5 : 5,
-        ),
-        decoration: BoxDecoration(
-          color: theme.cardColor.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(5),
-          border: Border.all(color: theme.dividerColor.withValues(alpha: 0.4)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: isMobile ? 4 : 5,
-                vertical: 1.5,
-              ),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(3),
-              ),
-              child: Text(
-                'fx',
-                style: TextStyle(
-                  fontSize: isMobile ? 11 : 12,
-                  fontWeight: FontWeight.w800,
-                  fontStyle: FontStyle.italic,
-                  color: theme.colorScheme.primary,
+    return Tooltip(
+      message: 'Indicators & Studies',
+      child: InkWell(
+        onTap: () => _showIndicatorsModal(context),
+        borderRadius: BorderRadius.circular(4),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: isMobile ? 7 : 10,
+            vertical: isMobile ? 3.5 : 5,
+          ),
+          decoration: BoxDecoration(
+            color: theme.cardColor.withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(5),
+            border: Border.all(color: theme.dividerColor.withValues(alpha: 0.4)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 4 : 5,
+                  vertical: 1.5,
+                ),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                child: Text(
+                  'fx',
+                  style: TextStyle(
+                    fontSize: isMobile ? 11 : 12,
+                    fontWeight: FontWeight.w800,
+                    fontStyle: FontStyle.italic,
+                    color: theme.colorScheme.primary,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 5),
-            Text(
-              'Indicators',
-              style: TextStyle(
-                fontSize: isMobile ? 12 : 13,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
+              if (!isMobile) ...[
+                const SizedBox(width: 5),
+                Text(
+                  'Indicators',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
@@ -1525,15 +1500,27 @@ class _SlimTopBarState extends ConsumerState<_SlimTopBar> {
               size: isMobile ? 15 : 16,
               color: theme.colorScheme.primary,
             ),
-            const SizedBox(width: 4),
-            Text(
-              hasComparisons ? 'Compare (${compared.length})' : 'Compare',
-              style: TextStyle(
-                fontSize: isMobile ? 12 : 13,
-                fontWeight: FontWeight.w700,
-                color: hasComparisons ? theme.colorScheme.primary : null,
+            if (!isMobile) ...[
+              const SizedBox(width: 4),
+              Text(
+                hasComparisons ? 'Compare (${compared.length})' : 'Compare',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: hasComparisons ? theme.colorScheme.primary : null,
+                ),
               ),
-            ),
+            ] else if (hasComparisons) ...[
+              const SizedBox(width: 3),
+              Text(
+                '${compared.length}',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -1734,3 +1721,61 @@ class _MissingPane extends StatelessWidget {
     );
   }
 }
+
+class _MobileDrawRailExpandButton extends StatelessWidget {
+  const _MobileDrawRailExpandButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final bg = theme.colorScheme.surfaceContainerHighest;
+    final primary = theme.colorScheme.primary;
+    final edge = theme.dividerColor.withValues(alpha: 0.55);
+
+    return Tooltip(
+      message: 'Expand drawing tools',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: const BorderRadius.only(
+            topRight: Radius.circular(8),
+            bottomRight: Radius.circular(8),
+          ),
+          child: Container(
+            width: 26,
+            height: 34,
+            decoration: BoxDecoration(
+              color: bg.withValues(alpha: 0.95),
+              borderRadius: const BorderRadius.only(
+                topRight: Radius.circular(8),
+                bottomRight: Radius.circular(8),
+              ),
+              border: Border(
+                top: BorderSide(color: edge),
+                right: BorderSide(color: edge),
+                bottom: BorderSide(color: edge),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.25),
+                  blurRadius: 4,
+                  offset: const Offset(1, 1),
+                ),
+              ],
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              Icons.chevron_right,
+              size: 20,
+              color: primary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+

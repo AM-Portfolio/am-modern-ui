@@ -449,11 +449,18 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
   }
 
   void _openFullView(String symbol) {
+    PaperOmsCubit? cubit;
+    try {
+      cubit = context.read<PaperOmsCubit>();
+    } catch (_) {
+      cubit = null;
+    }
+
     showDialog<void>(
       context: context,
       barrierDismissible: true,
       builder: (ctx) {
-        return Dialog.fullscreen(
+        final dialog = Dialog.fullscreen(
           child: _MaximizedChartPanelDialog(
             initialSection: _section,
             symbol: symbol,
@@ -484,6 +491,13 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
             },
           ),
         );
+        if (cubit != null) {
+          return BlocProvider<PaperOmsCubit>.value(
+            value: cubit,
+            child: dialog,
+          );
+        }
+        return dialog;
       },
     );
   }
@@ -725,7 +739,7 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
       sidebarBuilder: (context, state, ctrl) {
         _currentTerminalCtrl = ctrl;
         final theme = Theme.of(context);
-        return Column(
+        final sidebarWidget = Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Material(
@@ -820,6 +834,21 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
             ),
           ],
         );
+
+        PaperOmsCubit? cubit;
+        try {
+          cubit = context.read<PaperOmsCubit>();
+        } catch (_) {
+          cubit = null;
+        }
+
+        if (cubit != null) {
+          return BlocProvider<PaperOmsCubit>.value(
+            value: cubit,
+            child: sidebarWidget,
+          );
+        }
+        return sidebarWidget;
       },
       bottomPanelBuilder: (context, state, ctrl) {
         return Column(

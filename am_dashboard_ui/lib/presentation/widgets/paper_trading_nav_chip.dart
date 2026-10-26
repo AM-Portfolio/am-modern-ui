@@ -1,7 +1,7 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
-/// Compact top-nav CTA: flask tile + "Paper Trading" + "Try" badge.
+/// Compact top-nav CTA: flask tile + "Paper Trade" (+ "Try" on wider widths).
 ///
 /// Opens the paper desk when tapped. Fits the Dashboard glass pill track.
 class PaperTradingNavChip extends StatelessWidget {
@@ -13,7 +13,7 @@ class PaperTradingNavChip extends StatelessWidget {
 
   final VoidCallback onTap;
 
-  /// Icon + "Try" only (very narrow widths).
+  /// Hide the "Try" badge on very narrow widths; "Paper Trade" always shows.
   final bool compact;
 
   static const double _height = AppComponentSizes.iconButtonSize;
@@ -75,42 +75,43 @@ class PaperTradingNavChip extends StatelessWidget {
                   color: onAccent,
                 ),
               ),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                'Paper Trade',
+                maxLines: 1,
+                style: TextStyle(
+                  color: context.textPrimary,
+                  fontSize: AppTypeScale.sm,
+                  fontWeight: FontWeight.w600,
+                  height: 1,
+                ),
+              ),
               if (!narrow) ...[
                 const SizedBox(width: AppSpacing.xs),
-                Text(
-                  'Paper Trading',
-                  style: TextStyle(
-                    color: context.textPrimary,
-                    fontSize: AppTypeScale.sm,
-                    fontWeight: FontWeight.w600,
-                    height: 1,
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xs + AppSpacing.xxs,
+                    vertical: AppSpacing.xxs,
+                  ),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: isDark ? 0.28 : 0.20),
+                    borderRadius: BorderRadius.circular(AppRadii.sm),
+                    border: Border.all(
+                      color: accent.withValues(alpha: 0.65),
+                    ),
+                  ),
+                  child: Text(
+                    'Try',
+                    style: TextStyle(
+                      color: isDark ? context.textPrimary : accent,
+                      fontSize: AppTypeScale.xs,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.3,
+                      height: 1,
+                    ),
                   ),
                 ),
               ],
-              const SizedBox(width: AppSpacing.xs),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.xs + AppSpacing.xxs,
-                  vertical: AppSpacing.xxs,
-                ),
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: isDark ? 0.28 : 0.20),
-                  borderRadius: BorderRadius.circular(AppRadii.sm),
-                  border: Border.all(
-                    color: accent.withValues(alpha: 0.65),
-                  ),
-                ),
-                child: Text(
-                  'Try',
-                  style: TextStyle(
-                    color: isDark ? context.textPrimary : accent,
-                    fontSize: AppTypeScale.xs,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.3,
-                    height: 1,
-                  ),
-                ),
-              ),
             ],
           ),
         ),

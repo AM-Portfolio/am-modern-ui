@@ -38,6 +38,10 @@ abstract class PortfolioHolding with _$PortfolioHolding implements Holding {
   /// Check if today's performance is positive
   bool get isTodayPositive => todayChange >= 0;
 
+  /// Mail/statement imports often have no invested amount or average price.
+  @override
+  bool get hasCostBasis => investedAmount > 0 || avgPrice > 0;
+
   /// Get the primary broker holding (with most quantity)
   BrokerHolding? get primaryBroker {
     if (brokerHoldings.isEmpty) return null;

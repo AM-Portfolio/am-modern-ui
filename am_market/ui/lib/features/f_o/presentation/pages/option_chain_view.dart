@@ -122,19 +122,6 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
         final activeSymbol = ref.watch(foActiveSymbolProvider) ?? '';
         final currentKey = '${activeSymbol}_${activeExpiry}_${rawStrikes.length}';
 
-        double atmStrikePrice = 0.0;
-        if (rawStrikes.isNotEmpty) {
-          var nearestDiff = double.infinity;
-          for (final item in rawStrikes) {
-            final sp = ((item as Map<String, dynamic>)['strikePrice'] as num?)?.toDouble() ?? 0.0;
-            final diff = (sp - underlyingLtp).abs();
-            if (diff < nearestDiff) {
-              nearestDiff = diff;
-              atmStrikePrice = sp;
-            }
-          }
-        }
-
         final isMobileLayout = MediaQuery.sizeOf(context).width < AmBreakpoints.mobile;
 
         // Auto-scroll to center on the Spot Price indicator upon load or key change
@@ -245,8 +232,6 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
                                         final strikePrice = (strikeMap['strikePrice'] as num?)?.toDouble() ?? 0.0;
                                         final callMap = (strikeMap['call'] as Map<String, dynamic>?) ?? {};
                                         final putMap = (strikeMap['put'] as Map<String, dynamic>?) ?? {};
-                                        final isAtmStrike = (strikePrice - atmStrikePrice).abs() < 0.001;
-
                                         return Column(
                                           children: [
                                             Container(
@@ -262,7 +247,6 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
                                                   colors,
                                                   marketTheme,
                                                   isMobileLayout: isMobileLayout,
-                                                  isAtmStrike: isAtmStrike,
                                                 ),
                                               ),
                                             ),
@@ -730,7 +714,6 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
     AppColorsTheme colors,
     MarketThemeExtension marketTheme, {
     required bool isMobileLayout,
-    required bool isAtmStrike,
   }) {
     final cellFont = isMobileLayout ? 11.0 : 12.0;
     final ltpFont = isMobileLayout ? 12.0 : 12.0;
@@ -869,30 +852,19 @@ class _OptionChainViewState extends ConsumerState<OptionChainView> {
               vertical: 4,
             ),
             decoration: BoxDecoration(
-              color: isAtmStrike
-                  ? ModuleColors.market.withValues(alpha: 0.12)
-                  : colors.surface,
+              color: colors.surface,
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
-                color: isAtmStrike ? ModuleColors.market : colors.border.withValues(alpha: 0.3),
-                width: isAtmStrike ? 1.5 : 1,
+                color: colors.border.withValues(alpha: 0.3),
+                width: 1,
               ),
-              boxShadow: isAtmStrike
-                  ? [
-                      BoxShadow(
-                        color: ModuleColors.market.withValues(alpha: 0.28),
-                        blurRadius: 8,
-                        spreadRadius: 0,
-                      ),
-                    ]
-                  : null,
             ),
             child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
                 strikePrice.toStringAsFixed(0),
                 style: TextStyle(
-                  color: isAtmStrike ? ModuleColors.market : colors.textPrimary,
+                  color: colors.textPrimary,
                   fontWeight: FontWeight.bold,
                   fontSize: ltpFont,
                 ),

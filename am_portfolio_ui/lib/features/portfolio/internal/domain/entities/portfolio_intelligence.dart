@@ -329,6 +329,26 @@ class StressScenario {
       note: json['note']?.toString(),
     );
   }
+
+  StressScenario copyWith({
+    String? id,
+    double? pctImpact,
+    double? absImpact,
+    double? matchedWeightPct,
+    int? matchedHoldings,
+    double? appliedShockPct,
+    String? note,
+  }) {
+    return StressScenario(
+      id: id ?? this.id,
+      pctImpact: pctImpact ?? this.pctImpact,
+      absImpact: absImpact ?? this.absImpact,
+      matchedWeightPct: matchedWeightPct ?? this.matchedWeightPct,
+      matchedHoldings: matchedHoldings ?? this.matchedHoldings,
+      appliedShockPct: appliedShockPct ?? this.appliedShockPct,
+      note: note ?? this.note,
+    );
+  }
 }
 
 class WhatIfResult {

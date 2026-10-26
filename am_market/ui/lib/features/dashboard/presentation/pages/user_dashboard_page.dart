@@ -796,6 +796,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
 
     // Main content
     final isMobile = MediaQuery.sizeOf(context).width < 768;
+    final chartHeight = isMobile ? 380.0 : 420.0;
     // Shared height so Indices Comparison + Top Movers bottoms align (web)
     // and mobile shows 5 tiles without inner scroll.
     final moversRowHeight = isMobile ? 460.0 : 420.0;
@@ -933,7 +934,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                     leftFlex: 2,
                     rightFlex: 1,
                     left: Container(
-                      height: moversRowHeight,
+                      height: chartHeight,
                       padding: EdgeInsets.fromLTRB(
                         isMobile ? 10 : 14,
                         isMobile ? 8 : 10,
@@ -965,6 +966,26 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                               isBarChart: isBarChart,
                               timeFrameCode: selectedTimeframe,
                               expandedChartPath: marketChartPath,
+                              priceLookup: (symbol) {
+                                for (final d in marketProvider.allIndicesData) {
+                                  if (d.indexSymbol.toUpperCase() == symbol.toUpperCase() ||
+                                      (d.indexName != null &&
+                                          d.indexName!.toUpperCase() == symbol.toUpperCase())) {
+                                    if (d.lastPrice > 0) return d.lastPrice;
+                                  }
+                                }
+                                return null;
+                              },
+                              changePctLookup: (symbol) {
+                                for (final d in marketProvider.allIndicesData) {
+                                  if (d.indexSymbol.toUpperCase() == symbol.toUpperCase() ||
+                                      (d.indexName != null &&
+                                          d.indexName!.toUpperCase() == symbol.toUpperCase())) {
+                                    if (d.lastPrice > 0) return d.pChange;
+                                  }
+                                }
+                                return null;
+                              },
                               legendTrailing: _buildChartToolbarControls(
                                 marketProvider,
                                 isMobile: isMobile,
@@ -1169,8 +1190,8 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                   onTap: () => setState(() => isBarChart = false),
                   child: Container(
                     padding: EdgeInsets.symmetric(
-                      horizontal: isMobile ? 6 : 8,
-                      vertical: isMobile ? 4 : 5,
+                      horizontal: isMobile ? 5 : 8,
+                      vertical: isMobile ? 3 : 5,
                     ),
                     decoration: BoxDecoration(
                       color: !isBarChart
@@ -1180,7 +1201,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                     ),
                     child: Icon(
                       Icons.show_chart,
-                      size: isMobile ? 15 : 16,
+                      size: isMobile ? 14 : 16,
                       color: !isBarChart
                           ? accent
                           : MarketColors.textMuted(context),
@@ -1194,8 +1215,8 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                   onTap: () => setState(() => isBarChart = true),
                   child: Container(
                     padding: EdgeInsets.symmetric(
-                      horizontal: isMobile ? 6 : 8,
-                      vertical: isMobile ? 4 : 5,
+                      horizontal: isMobile ? 5 : 8,
+                      vertical: isMobile ? 3 : 5,
                     ),
                     decoration: BoxDecoration(
                       color: isBarChart
@@ -1205,7 +1226,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                     ),
                     child: Icon(
                       Icons.bar_chart,
-                      size: isMobile ? 15 : 16,
+                      size: isMobile ? 14 : 16,
                       color: isBarChart
                           ? accent
                           : MarketColors.textMuted(context),
@@ -1216,7 +1237,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
             ],
           ),
         ),
-        const SizedBox(width: 6),
+        SizedBox(width: isMobile ? 4 : 6),
         // Add / Compare Indices Button (Anchored Popover on desktop; Sheet on mobile)
         CompositedTransformTarget(
           link: _popoverLink,
@@ -1585,7 +1606,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                 },
                 borderRadius: BorderRadius.circular(6),
                 child: Container(
-                  padding: const EdgeInsets.all(5),
+                  padding: EdgeInsets.all(isMobile ? 4 : 5),
                   decoration: BoxDecoration(
                     color: accent.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(6),
@@ -1600,7 +1621,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                     child: Icon(
                       Icons.add,
                       color: accent,
-                      size: 16,
+                      size: isMobile ? 14 : 16,
                     ),
                   ),
                 ),
