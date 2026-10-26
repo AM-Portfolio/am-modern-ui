@@ -4,6 +4,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_market_common/models/historical_performance_model.dart';
 import 'package:am_market_common/services/api_service.dart';
 import 'package:am_market_ui/core/styles/market_theme_extension.dart';
+import 'package:am_market_ui/features/market/widgets/market_colors.dart';
 import 'package:flutter/material.dart';
 
 /// Ten-year monthly returns for one dashboard index, never aggregate rankings.
@@ -89,7 +90,8 @@ class _SelectedIndexPerformanceMatrixState
     });
     try {
       final data = await (widget.fetchPerformance?.call(symbol) ??
-          (_api ??= ApiService()).fetchHistoricalPerformance(symbol, years: 10));
+          (_api ??= ApiService())
+              .fetchHistoricalPerformance(symbol, years: 10));
       if (!mounted ||
           generation != _requestGeneration ||
           symbol != widget.symbol) {
@@ -327,13 +329,18 @@ class _SelectedIndexPerformanceMatrixState
     bool total = false,
   }) {
     final colors = context.colors;
-    final base = value == null || value == 0
-        ? colors.cardSurface
-        : value > 0
-            ? context.marketTheme.positive
-            : context.marketTheme.negative;
-    final background =
-        value == null || value == 0 ? base : base.withValues(alpha: 0.55);
+    final isPositive = value != null && value > 0;
+    final isNegative = value != null && value < 0;
+    final base = isPositive
+        ? context.marketTheme.positive
+        : isNegative
+            ? context.marketTheme.negative
+            : colors.textSecondary;
+    final background = isPositive
+        ? MarketColors.positiveBg(context)
+        : isNegative
+            ? MarketColors.negativeBg(context)
+            : colors.cardSurface.withValues(alpha: 0.55);
     final formatted = value == null ? '-' : value.toStringAsFixed(decimals);
     return SizedBox(
       width: width,
@@ -348,8 +355,11 @@ class _SelectedIndexPerformanceMatrixState
             decoration: BoxDecoration(
               color: background,
               borderRadius: BorderRadius.circular(AppRadii.sm),
-              border:
-                  total ? Border.all(color: base.withValues(alpha: 0.7)) : null,
+              border: Border.all(
+                color: total
+                    ? base.withValues(alpha: 0.7)
+                    : base.withValues(alpha: 0.28),
+              ),
             ),
             child: Text(formatted,
                 style: TextStyle(

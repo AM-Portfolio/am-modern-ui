@@ -302,6 +302,7 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
     try {
       // Perform the priority fetch for the requested symbols
       await _loadBasePricesForTimeframe(symbols, tf);
+      if (!mounted) return;
 
       // If we fetched the main pinned symbols, mark this timeframe as loaded for them
       final pinnedSymbols = context
@@ -968,9 +969,11 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                               expandedChartPath: marketChartPath,
                               priceLookup: (symbol) {
                                 for (final d in marketProvider.allIndicesData) {
-                                  if (d.indexSymbol.toUpperCase() == symbol.toUpperCase() ||
+                                  if (d.indexSymbol.toUpperCase() ==
+                                          symbol.toUpperCase() ||
                                       (d.indexName != null &&
-                                          d.indexName!.toUpperCase() == symbol.toUpperCase())) {
+                                          d.indexName!.toUpperCase() ==
+                                              symbol.toUpperCase())) {
                                     if (d.lastPrice > 0) return d.lastPrice;
                                   }
                                 }
@@ -978,9 +981,11 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                               },
                               changePctLookup: (symbol) {
                                 for (final d in marketProvider.allIndicesData) {
-                                  if (d.indexSymbol.toUpperCase() == symbol.toUpperCase() ||
+                                  if (d.indexSymbol.toUpperCase() ==
+                                          symbol.toUpperCase() ||
                                       (d.indexName != null &&
-                                          d.indexName!.toUpperCase() == symbol.toUpperCase())) {
+                                          d.indexName!.toUpperCase() ==
+                                              symbol.toUpperCase())) {
                                     if (d.lastPrice > 0) return d.pChange;
                                   }
                                 }
@@ -1085,13 +1090,9 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                   ),
                   // Shown on all widths — section has its own mobile drum-roll layout.
                   const SizedBox(height: 12),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: MarketColors.cardSurface(context),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                          color: MarketColors.borderDefault(context)),
-                    ),
+                  GlassCard(
+                    padding: EdgeInsets.zero,
+                    borderRadius: 12,
                     child: SelectedIndexPerformanceMatrix(
                       symbol: selectedIndexForMovers,
                     ),
@@ -1227,9 +1228,8 @@ class UserDashboardPageState extends ConsumerState<UserDashboardPage>
                     child: Icon(
                       Icons.bar_chart,
                       size: isMobile ? 14 : 16,
-                      color: isBarChart
-                          ? accent
-                          : MarketColors.textMuted(context),
+                      color:
+                          isBarChart ? accent : MarketColors.textMuted(context),
                     ),
                   ),
                 ),

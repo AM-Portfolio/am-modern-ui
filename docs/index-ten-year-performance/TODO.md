@@ -18,3 +18,23 @@
 - [x] Audit changed production UI for zero new hardcoded colors and validate 599/600px responsive boundary in source/tests.
 - [ ] Verify expiry selection, chart embed, tab swipes, rapid switches, reduced motion, and 360/390px layouts.
 - [ ] Validate existing per-symbol response in Postman; deploy to preprod only when requested.
+- [x] User review of the glass treatment plan addendum before implementation.
+- [x] Replace the selected-index matrix dashboard wrapper with the shared theme-aware glass surface; align monthly/annual cell fills with heatmap semantic background tokens.
+- [ ] Verify desktop and 360/390px mobile presentation in light/dark themes; confirm data, scroll, loading, error, and empty states are unchanged.
+- [x] User review of the mobile Option Chain three-column initial viewport plan before implementation.
+- [x] Align first-load mobile Option Chain viewport to Calls LTP/change, Strike, and Puts LTP/change using computed column geometry; keep OI columns swipeable and preserve focus shortcuts.
+- [ ] Verify 360/390px, symbol/expiry refresh, optional-column toggles, manual swipe, Calls/Puts shortcuts, and desktop/tablet unchanged.
+- [x] User review of the mobile foreground Spot overlay and symmetric CALLS/PUTS toggle plan before implementation.
+- [x] Render the Spot line/pill above the horizontally moving Option Chain columns and track its vertical spot-row position.
+- [x] Add computed four-column CALLS/PUTS focus alignments; tapping the focused side again restores the three-column home alignment, while tapping the opposite side switches focus directly. Preserve manual swipe and chain-refresh behavior.
+- [ ] Verify foreground/scroll alignment, both side focus/return paths, opposite-side switching, optional columns, refresh races, no-spot states, 360/390px widths, and desktop/tablet unchanged.
+- [x] Replace the mobile Spot overlay's stale pre-centering coordinate with a final rendered-divider measurement; make Option Chain the explicit initial full-page F&O tab.
+- [ ] Verify equal top/bottom Spot-row visibility where the strike range permits, boundary behavior at the first/last strikes, and full-page F&O initial tab selection.
+- [x] Restore a shared mobile Option Chain row extent so STRIKE chips fit and initial Spot centering, foreground placement, and manual scrolling use the same geometry; verify with a phone-sized widget interaction test.
+- [x] User reviews the corrected mobile STRIKE-column plan and screenshots before implementation.
+- [x] Keep the STRIKE header and every strike value in the original vertical rows; paint them above side data and clamp their horizontal x-position to the left/right viewport edge when needed.
+- [x] Keep four-column side focus based on the current optional-group flex geometry and retain symmetric CALLS/PUTS return-home behavior with the pinned STRIKE presentation layer.
+- [ ] Inspect 360/390px home, Calls, Puts, manual/reverse swipe, vertical scroll, optional groups, text scale, symbol/expiry reload, and the desktop/tablet boundary.
+- [x] User review of the selected-underlying Futures Contracts filter plan before implementation.
+- [x] Add an underlying filter defaulted to the active F&O symbol, with an explicit All underlyings option separate from expiry filtering; verify exact matching against instrument metadata and aliases.
+- [ ] Verify symbol changes, expiry reset, missing/ambiguous metadata, empty states, selected-contract dependent panels, and compact mobile/desktop filter presentation.

@@ -180,3 +180,177 @@ Second pass for the original dashboard correction: Delivery 10/10, Design 10/10;
 Combined feature pass: Delivery 10/10, Design 10/10. Product 9.6, Architecture 9.5, Data/contracts 9.7, State/consistency 9.5, Reliability 9.4, Security 9.4, Observability 9.2, Testability 9.5, Operability 9.4, TODO/implementability 9.7; overall 9.6. Adversarial review: expiry remains owned by the existing provider, the shared animation has no palette, mobile alone opts into the compact control, a compact control still exposes the full date to assistive technology, swiping tabs drives visibility, chart embed keeps an expiry selector, and reduced motion avoids unnecessary travel. Demo data is explicitly illustrative.
 
 **Agent satisfied:** yes. Awaiting user review before implementation.
+
+## P1 addendum — glass treatment for dashboard monthly performance
+
+### Source and scope
+
+The user-provided Market Dashboard screenshot shows the index heatmap and the selected-index historical monthly performance one after the other, with different visual surface treatments. The request is to make the historical monthly performance widget feel glassmorphic and consistent with the heatmap. This is a presentation-only update to the existing dashboard widget. The ten-year selected-index request, response mapping, cell values, selection behavior, and Market Analysis page are outside this visual change.
+
+### Current system (verified)
+
+- `UserDashboardPage` currently wraps both `DashboardAnalysisHeatmapPanel` and `SelectedIndexPerformanceMatrix` in the same explicit `MarketColors.cardSurface` / `MarketColors.borderDefault` `Container` (`am_market/ui/lib/features/dashboard/presentation/pages/user_dashboard_page.dart`).
+- The monthly matrix paints each positive/negative return cell with `context.marketTheme.positive/negative` at alpha 0.55, while the dashboard heatmap uses the lighter semantic `MarketColors.positiveBg/negativeBg` fills and subtle accent borders (`selected_index_performance_matrix.dart`, `index_heatmap_panel.dart`, `market_colors.dart`). This makes the month matrix read as a solid block even though its outer wrapper is similar.
+- `am_design_system` exports `GlassCard`; its default variant derives its fill, border, and blur styling from the active theme (`am_design_system/lib/shared/widgets/display/glass_card.dart`). Reuse this existing component instead of introducing a new glass surface or raw palette values.
+- The matrix already handles desktop and narrow-screen layouts separately. The visual treatment should work at both sizes and under the active light/dark theme; existing mobile horizontal scrolling remains unchanged.
+
+### Implementation plan
+
+1. Replace only the dashboard's historical-performance flat wrapper with the existing theme-aware `GlassCard`, preserving the current spacing and matrix content. Avoid nesting a second card or changing the heatmap wrapper.
+2. Adjust monthly and annual-return cell fills to use the same semantic positive/negative background tokens as `IndexHeatmapTile`, with a theme-token border for definition. Keep neutral/unavailable cells theme-derived. Do not apply per-cell backdrop blur; there can be up to 130 cells, and the glass effect belongs on the section surface while the cells remain readable, efficient tints.
+3. Keep the current overall-return header colors, text hierarchy, 10-year data, loading/error/empty states, and scroll behavior intact. Do not add local color constants or hardcoded hex/`Colors.*` values.
+4. Compare the heatmap and monthly matrix together in dark and light theme at desktop and 360/390px mobile widths. Check that the card surface reads as glass, cell values remain legible, the annual-return emphasis remains clear, and horizontal scrolling still works.
+
+### Acceptance and verification
+
+| Case | Expected | Verification |
+|---|---|---|
+| Dashboard dark theme | Monthly widget has a translucent, bordered glass surface that visually belongs with the heatmap | Desktop and mobile visual check |
+| Dashboard light theme | Glass surface and return tints derive from light theme tokens with readable text | Theme visual check |
+| Positive / negative / neutral / missing cells | Heatmap-consistent semantic tints; no fabricated values or lost labels | Existing matrix widget test plus source review |
+| Responsive matrix | Existing year pinning, month scrolling, and 360/390px layout remain intact | Existing narrow-width widget coverage / visual check |
+| Data and selection | Selected symbol and all displayed returns are unchanged | Existing selection and response tests |
+
+**Architecture impact:** none. This reuses the existing dashboard widget, theme tokens, and design-system card; no API, data, provider, or navigation flow changes are proposed.
+
+**Plan status:** ready for user review; implementation has not started.
+
+## P1 addendum — filter Futures Contracts by selected underlying
+
+### Current behavior (verified)
+
+- `FoPage` stores the active F&O instrument in `foActiveSymbolProvider` and the header shows that selected symbol (`fo_page.dart`).
+- `futuresContractsProvider` sends the active symbol as a free-text `queries` value to `InstrumentSearchCriteria`, then returns the instrument-search results after quote enrichment (`futures_provider.dart`, `am_market/sdk/lib/market/model/instrument_search_criteria.dart`). The SDK documents this endpoint as semantic text search combined with filters, so the query is not an exact-underlying guarantee.
+- The visible contract table filters expired rows and the selected expiry month only. Its existing `All` chip means all expiry months; no filter checks `underlying_symbol`, `asset_symbol`, or the contract's exact trading symbol (`futures_contracts_table_widget.dart`). The supplied NIFTY 50 screenshot therefore shows cross-index results because unrelated returned results are not narrowed to the selected underlying.
+
+### Target behavior and implementation plan
+
+1. Add a separate **Underlying** filter to the Futures Contracts list. Its default is the active F&O symbol (for example, NIFTY 50); include an explicit **All underlyings** option for users who intentionally want the broader search results. Keep the existing expiry-month filter as a distinct control so `All expiries` cannot be confused with `All underlyings`.
+2. Filter from instrument metadata using a canonical underlying matcher: prefer explicit `underlying_symbol` / `asset_symbol` fields, then use a deliberate exact alias mapping or exact parsed contract root from `trading_symbol` when metadata is absent. Do not use substring matching (`NIFTY` would incorrectly match NIFTY 50, BANKNIFTY, NIFTYNXT50, FINNIFTY, and MIDCPNIFTY). Do not treat a broad search query as proof that a contract matches.
+3. Default/reset the underlying selection to the currently active F&O symbol when the user changes the symbol. Preserve the selected expiry filter only if its month/year still exists for the new underlying; otherwise reset expiry to all available expiries.
+4. Keep quote enrichment and contract selection intact. Selecting a row still drives the existing selected-contract details, chart, open-interest, depth, and margin views. The optional All-underlyings choice changes only the list scope and must not replace the active F&O symbol or header.
+5. On mobile, keep the underlying and expiry controls compact and distinct (for example, a small underlying selector plus the existing horizontally scrollable expiry pills); avoid adding a full-width filter row that pushes the contract list unnecessarily far down. On desktop, keep both filters clearly labeled.
+6. If the selected underlying has no matching contracts, show a selected-underlying-specific empty state with a way to switch to All underlyings. If contract metadata is insufficient to safely identify its underlying, exclude it from the selected-only results and keep it available under All underlyings.
+
+### Acceptance and verification
+
+| Case | Expected | Verification |
+|---|---|---|
+| Open F&O with NIFTY 50 selected | Futures list contains NIFTY 50 futures only; BANKNIFTY, NIFTYNXT50, FINNIFTY, MIDCPNIFTY are absent | Provider/widget regression test |
+| Select another index | List updates to that exact underlying and expiry choices match it | Provider/widget test |
+| Choose All underlyings | All valid search results return, still sorted and filtered by the expiry selection | Widget test |
+| Expiry filter | All/individual month behavior remains independent of underlying scope | Widget test |
+| Ambiguous or missing metadata | No unrelated contract leaks into selected-only results; broad mode remains inspectable | Unit test for canonical matching |
+| No futures for selected underlying | Clear empty state offers the All underlyings choice without clearing the page's active symbol | Widget test |
+| Selected contract and dependent panels | Row selection continues updating existing details and analytics | Regression test |
+| Mobile and desktop | Filters remain legible and compact; contract list stays usable at narrow widths | Responsive visual/layout check |
+
+**Architecture impact:** UI/provider filtering over the existing instrument-search response; no new endpoint or backend change is proposed. Confirm the actual populated underlying metadata fields in representative search results before finalizing the alias matcher.
+
+**Plan status:** ready for user review; implementation has not started.
+
+## P1 addendum — keep Spot visible during mobile side focus
+
+### Current behavior and screenshot intent
+
+- The spot-price line is built inside the horizontally scrolling table content (`_buildSpotPriceLine` in `option_chain_view.dart`). Horizontal focus therefore moves the line with the columns instead of keeping it at the viewport's foreground.
+- `_focusOptionSide` always scrolls to the corresponding extreme and records the selected side; tapping PUTS repeatedly does not return to the initial landing position.
+- The user wants the spot price to remain above the moving columns, like a foreground layer, while a focused view exposes four complete columns. Tapping the currently focused side again (CALLS or PUTS) should restore the normal first-open view. The earlier three-column home-view requirement remains the return target.
+
+### Target behavior and implementation plan
+
+1. Move the spot line/price pill out of the horizontally scrolling content and render it as a foreground overlay spanning the mobile table viewport. Tie its vertical position to the actual spot row and the vertical strike-list scroll, but keep its x-position fixed to the viewport. It must draw above table columns and ignore pointer input so horizontal and vertical swipes still reach the table.
+2. On the first CALLS or PUTS focus action, animate the horizontal viewport to a clean side-focused position that shows exactly four complete columns, with no partial neighboring column slivers. Keep the rest of the columns available by manual horizontal swipe. Compute the alignment from laid-out column widths and the active optional groups; do not use a fixed pixel offset. The existing Calls/Puts buttons remain shortcuts, not column filters.
+3. Make both side shortcuts symmetric toggles: tapping CALLS or PUTS focuses that side; tapping the currently focused side again clears focus and returns to the same three-column home alignment used on initial mobile load. Tapping the opposite side switches directly to its four-column focus. After a manual swipe, tapping the focused side again still returns home.
+4. Recompute and apply the home/side alignment once after a new symbol or expiry response lays out. Do not let asynchronous alignment override a later user drag, optional-column change, or a newer chain response. Keep current vertical spot centering and desktop/tablet behavior unchanged.
+5. Respect reduced-motion settings for the horizontal transition, avoid animating to an unattached/zero-extent controller, and clear focus state when the symbol/expiry key changes.
+
+### Acceptance and verification
+
+| Case | Expected | Verification |
+|---|---|---|
+| Mobile spot overlay | Spot line and pill stay above the columns and span the viewport during horizontal movement | 360/390px visual and scroll test |
+| Vertical strike scroll | Overlay tracks the spot row vertically and remains aligned to its strike location | Widget interaction test |
+| CALLS / PUTS first tap | Clean four-column focused viewport for the selected side; no adjacent partial columns | Widget/layout test |
+| Same-side second tap | Either CALLS or PUTS returns to the initial three-column home alignment | Widget test |
+| Opposite-side tap | Switches directly between Calls and Puts focus without an intermediate home snap | Widget test |
+| Manual horizontal swipe | Columns move under the spot overlay; swipe remains responsive | Widget interaction test |
+| Manual swipe, optional groups, and data refresh | Focus alignment uses current column geometry; same-side return works after a swipe; stale callbacks cannot snap the newer/manual position | Widget regression test |
+| Loading / empty / no spot row | No invalid overlay, stale spot pill, or scroll exception | Widget edge-state test |
+| Desktop/tablet | Existing spot-line/table layout and behavior remain unchanged | Responsive boundary check |
+
+**Plan status:** ready for user review; implementation has not started.
+
+## P1 addendum — clean three-column initial Option Chain viewport
+
+### Current behavior (verified)
+
+- On mobile, `OptionChainView` renders five default columns: Calls OI, Calls LTP/change, Strike, Puts LTP/change, and Puts OI. The initial minimum width is 520 logical pixels, and the scroll controller centers the whole table (`option_chain_view.dart`).
+- Since the centered viewport does not align with the three central columns' boundaries, the screenshot shows partial edges of Calls OI and Puts OI beside the desired quote/strike columns.
+- The existing mobile Calls and Puts shortcuts intentionally move to the table's leading and trailing edges. Manual horizontal swiping is also supported.
+
+### Target behavior and implementation plan
+
+1. On first display of a mobile option-chain response, position the horizontal viewport so it shows exactly these three default columns, edge-to-edge: **Calls LTP/change | Strike | Puts LTP/change**. Do not show slivers of either OI column.
+2. Calculate the start/end offsets from the actual laid-out column flex widths and row padding in the existing `LayoutBuilder`; do not hardcode pixel offsets. Size the default mobile table width as needed so the 4:2:4 flex span of the three target columns fills the viewport while preserving readable values. If an unusually narrow viewport cannot meet that and minimum readable widths simultaneously, retain the minimum column widths and let the table scroll.
+3. Keep Calls OI and Puts OI in the table and accessible by swipe and the existing Calls/Puts focus shortcuts. This is an initial viewport alignment change, not a data-column removal or filter.
+4. Apply the same three-column initial alignment on a new symbol/expiry response, once after layout. Do not re-snap after rebuilds, optional-column toggles, or manual scrolling. Preserve the current vertical spot-price centering.
+5. Limit the behavior to mobile/Android (`AmBreakpoints.mobile`). Desktop/tablet layout and starting position remain unchanged.
+
+### Acceptance and verification
+
+| Case | Expected | Verification |
+|---|---|---|
+| Initial mobile load, default columns | Only Calls LTP/change, Strike, and Puts LTP/change are visible; no OI slivers | 360/390px layout + visual check |
+| Symbol/expiry changes | View resets once to the same three-column band after the new chain lays out | Widget test |
+| Manual swipe / Calls / Puts shortcut | Other columns remain reachable; shortcuts still reach both ends | Existing interaction tests plus regression test |
+| Optional columns toggled | No automatic snap or loss of user scroll position | Widget test |
+| Desktop/tablet | Existing columns and initial position unchanged | Responsive boundary test |
+| Narrow width and text scale | No overflow; readable values with horizontal access if minimums require it | Layout/accessibility check |
+
+**Plan status:** ready for user review; implementation has not started.
+
+## P0 correction — sticky STRIKE column on mobile Option Chain
+
+### Source, scope, and coverage correction
+
+The user's latest mobile screenshots show the intended behavior: in the normal view, STRIKE sits between Calls and Puts; when the user scrolls toward Puts, the **entire STRIKE column** (header and every strike value) stays at the left edge; when scrolling toward Calls, it stays at the right edge. The existing plan covered only the Spot line and capsule. That coverage was **partial**. This is a mobile/Android presentation fix in `am_market/ui`, using the existing chain data and scroll controllers. The earlier plan for a foreground Spot line remains in place, but it does not satisfy this STRIKE requirement by itself.
+
+### Current system (verified)
+
+- `OptionChainView` places its header `Row` and strike-row `ListView.builder` together inside one horizontal `SingleChildScrollView` (`am_market/ui/lib/features/f_o/presentation/pages/option_chain_view.dart`). STRIKE is an `Expanded(flex: 2)` child in both `_buildHeaderColumns` and `_buildRowColumns`, so it leaves the screen with the other columns.
+- `_tableViewportKey` and `_horizontalScrollController` already identify the visible width and horizontal offset. The Spot line/capsule is a separate foreground child of the table `Stack`; it does not contain or pin strike values.
+- Mobile column geometry already uses the row's horizontal padding, total flex, optional group flex, and a side focus state. The sticky position must derive from those same values; a fixed pixel offset would drift when Bid/Ask, Valuation, or Greeks are enabled.
+
+### Intended interaction
+
+1. Home view: the STRIKE header and values remain in their normal central position between the Call and Put LTP columns. There is no sticky shadow while the natural column is fully visible.
+2. Scroll or tap PUTS: as soon as the natural STRIKE column would move beyond the left viewport edge, it remains fully visible at the **left** edge. Put columns move beneath it. The same behavior applies to a manual swipe, not only the PUTS shortcut.
+3. Scroll or tap CALLS: as soon as STRIKE would move beyond the right edge, it remains fully visible at the **right** edge. Call columns move beneath it.
+4. Reverse direction: STRIKE leaves the edge smoothly and returns to its natural position when that position comes back into view. The Spot line/capsule retains its current vertical spot-row alignment above the table.
+5. A side-focused viewport shows STRIKE plus up to three complete columns from that side, with no neighboring sliver. When fewer than three side columns exist, show the available real columns at readable width. A repeated CALLS or PUTS tap still returns to the three-column home view.
+
+### Small implementation design
+
+1. Keep the existing single vertical `ListView.builder` and horizontal `ScrollController`. In the mobile header and each visible row, reserve STRIKE's current two-flex-width slot in the `Row`, then paint its **single** header/cell widget last in that row's `Stack`. This gives it a higher paint order without introducing a second vertical list or duplicating strike semantics.
+2. From the already computed flex layout, let `unit = (contentWidth - 2 × rowPaddingH) / totalFlex`, `strikeWidth = 2 × unit`, and `naturalLeft = rowPaddingH + (6 + leftOptionalFlex) × unit - horizontalOffset`. The mobile viewport x-position is `clamp(naturalLeft, 0, viewportWidth - strikeWidth)`. Convert that x-position back to the scrolling row's coordinates for painting. Apply the same result to the header and every visible strike row.
+3. Recalculate only when horizontal offset, viewport width, or optional groups change. Give the pinned cell a theme-token surface, subtle border/shadow, and existing market accent so values underneath cannot show through. Keep the normal center state visually aligned with its original slot. The Spot line/capsule stays above the strike layer at the spot divider.
+4. Adjust the mobile side-focus offset/width calculation to include the pinned STRIKE width and three available side columns. Keep the desktop/tablet rendering path unchanged.
+
+### Failure and acceptance matrix
+
+| Case | Expected | Verification after approval |
+|---|---|---|
+| Home at 360/390px | Header and all strike values share the original center x-position; no duplicate cells | Mobile layout inspection |
+| Swipe to Puts | STRIKE clamps to left edge before disappearing; values remain aligned with their rows | Scroll interaction check |
+| Swipe to Calls | STRIKE clamps to right edge before disappearing | Scroll interaction check |
+| Swipe back | STRIKE re-enters the normal slot without a jump or ghost value | Scroll interaction check |
+| Bid/Ask, Valuation, Greeks | Clamp and four-column focus use current flex widths; no clipped labels or slivers | Layout check with each group |
+| Vertical strike scroll | Pinned values move with the original rows; Spot divider stays at its true strike boundary | Vertical/horizontal interaction check |
+| CALLS/PUTS second tap | Returns to the original home viewport with central STRIKE | Interaction check |
+| Symbol/expiry reload, empty rows, text scaling | No stale strike overlay, duplicate semantics, overflow, or controller exception | Widget/layout check |
+| Desktop/tablet | Existing five-column/default layout and scroll behavior | Responsive boundary check |
+
+**Theme and architecture:** use existing `context.colors`, `context.marketTheme`, and `ModuleColors.market` values; no new colors, endpoint, provider, or design-system primitive. The current data and scroll ownership stay within `OptionChainView`.
+
+**Plan status:** implemented locally. The responsive STRIKE presentation layer derives its position from the live horizontal offset and existing flex geometry; visual verification remains pending on the locally running mobile view.
