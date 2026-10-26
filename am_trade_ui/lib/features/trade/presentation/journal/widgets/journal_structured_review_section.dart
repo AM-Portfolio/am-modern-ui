@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../internal/domain/entities/journal_entry.dart';
+import 'journal_themed_dropdown.dart';
+import 'journal_workflow_field_theme.dart';
 
 /// Mutable per-trade mini review state used by Log Day.
 ///
@@ -182,17 +184,15 @@ class _MiniReviewRowTile extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xs),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: DropdownButtonFormField<String>(
+                child: JournalThemedDropdown<String>(
                   key: ValueKey('outcome-${row.tradeId}-${row.outcome}'),
-                  initialValue: row.outcome,
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Outcome',
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
+                  label: 'Outcome',
+                  value: row.outcome,
+                  hint: 'Select',
+                  enabled: isEditMode,
                   items: JournalStructuredReviewSection.outcomes
                       .map((o) => DropdownMenuItem(value: o, child: Text(o)))
                       .toList(),
@@ -206,17 +206,18 @@ class _MiniReviewRowTile extends StatelessWidget {
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
-                child: DropdownButtonFormField<String>(
+                child: JournalThemedDropdown<String>(
                   key: ValueKey('mistake-${row.tradeId}-${row.mistake}'),
-                  initialValue: row.mistake ?? 'NONE',
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Mistake',
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
+                  label: 'Mistake',
+                  value: row.mistake ?? 'NONE',
+                  enabled: isEditMode,
                   items: JournalStructuredReviewSection.mistakes
-                      .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+                      .map(
+                        (m) => DropdownMenuItem(
+                          value: m,
+                          child: Text(humanizeEnum(m)),
+                        ),
+                      )
                       .toList(),
                   onChanged: isEditMode
                       ? (v) {
@@ -244,11 +245,10 @@ class _MiniReviewRowTile extends StatelessWidget {
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'[-\d.]')),
                   ],
-                  decoration: const InputDecoration(
-                    labelText: 'P&L (optional)',
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
+                  decoration: journalWorkflowDecoration(
+                    context,
+                    label: 'P&L (optional)',
+                  ).copyWith(isDense: true),
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -258,11 +258,11 @@ class _MiniReviewRowTile extends StatelessWidget {
                   enabled: isEditMode,
                   maxLines: 2,
                   minLines: 1,
-                  decoration: const InputDecoration(
-                    labelText: 'Lesson',
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
+                  decoration: journalWorkflowDecoration(
+                    context,
+                    label: 'Lesson',
+                    alignLabelWithHint: true,
+                  ).copyWith(isDense: true),
                 ),
               ),
             ],

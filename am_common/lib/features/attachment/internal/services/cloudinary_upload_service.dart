@@ -114,7 +114,19 @@ class CloudinaryUploadService implements FileUploadService {
         tag: 'CloudinaryUpload',
       );
 
-      return result.url;
+      // Prefer HTTPS URL for embeds / Image.network.
+      final url = (result.secureUrl.trim().isNotEmpty)
+          ? result.secureUrl
+          : result.url;
+      if (url.trim().isEmpty ||
+          url.contains('via.placeholder.com') ||
+          url.contains('placeholder.com/150')) {
+        throw FileUploadException(
+          'Upload returned an invalid URL',
+          code: 'INVALID_UPLOAD_URL',
+        );
+      }
+      return url;
     } catch (e) {
       AppLogger.error(
         '❌ Upload failed with error: $e',

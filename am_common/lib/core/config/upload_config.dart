@@ -67,6 +67,45 @@ class UploadConfig {
   static bool isVideoExtension(String extension) =>
       allowedVideoTypes.contains(extension.toLowerCase());
 
+  /// Path extension from a URL/path (ignores query). Empty when missing/invalid.
+  static String extensionFromUrl(String url) {
+    final uri = Uri.tryParse(url);
+    final path = (uri != null && uri.path.isNotEmpty) ? uri.path : url;
+    final segments = path.split('/').where((s) => s.isNotEmpty).toList();
+    final last = segments.isNotEmpty ? segments.last : path;
+    final dot = last.lastIndexOf('.');
+    if (dot <= 0 || dot >= last.length - 1) return '';
+    final ext = last.substring(dot + 1).toLowerCase();
+    // Reject bogus "extensions" like "com/150" from host/path mishandling.
+    if (ext.contains('/') || ext.length > 5) return '';
+    return ext;
+  }
+
+  /// Stub / Phase-1 fake URLs that must never be shown as real attachments.
+  static bool isStubOrPlaceholderUrl(String url) {
+    final lower = url.toLowerCase();
+    return lower.contains('via.placeholder.com') ||
+        lower.contains('placeholder.com/150') ||
+        lower.contains('placehold.co') ||
+        lower == 'https://via.placeholder.com/150';
+  }
+
+  /// True when we should try [Image.network] for this URL.
+  /// Extension-less CDN / signed URLs still count as images unless clearly a doc/video.
+  static bool looksLikeImageUrl(String url) {
+    if (isStubOrPlaceholderUrl(url)) return false;
+    final ext = extensionFromUrl(url);
+    if (isImageExtension(ext)) return true;
+    if (isDocumentExtension(ext) || isVideoExtension(ext)) return false;
+    final uri = Uri.tryParse(url);
+    if (uri == null) return false;
+    if (uri.scheme != 'http' && uri.scheme != 'https' && uri.scheme != 'blob') {
+      return false;
+    }
+    // No usable extension — journal uploads often store bare CDN paths.
+    return ext.isEmpty;
+  }
+
   /// Get max file size in bytes for a specific type
   static int getMaxFileSizeBytes(String fileType) {
     if (isImageExtension(fileType)) {

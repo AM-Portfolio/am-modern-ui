@@ -1,9 +1,12 @@
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../internal/domain/entities/journal_entry.dart';
 import '../../../presentation/models/trade_holding_view_model.dart';
 import '../../../providers/trade_internal_providers.dart';
+import 'journal_form_surface.dart';
+import 'journal_workflow_field_theme.dart';
 
 class ExecuteTradeStep extends ConsumerStatefulWidget {
   const ExecuteTradeStep({
@@ -28,12 +31,27 @@ class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
   var _loadingTrades = false;
   String? _loadError;
 
+  late final TextEditingController _entryPrice;
+  late final TextEditingController _qty;
+  late final TextEditingController _broker;
+  late final TextEditingController _orderType;
+  late final TextEditingController _externalId;
+  late final TextEditingController _notes;
+
   JournalEntry get entry => widget.entry;
   String? get portfolioId => widget.portfolioId;
 
   @override
   void initState() {
     super.initState();
+    final exec = entry.tradeExecution ?? const TradeExecution();
+    _entryPrice =
+        TextEditingController(text: exec.actualEntryPrice?.toString() ?? '');
+    _qty = TextEditingController(text: exec.quantity?.toString() ?? '');
+    _broker = TextEditingController(text: exec.broker ?? '');
+    _orderType = TextEditingController(text: exec.orderType ?? '');
+    _externalId = TextEditingController(text: exec.externalOrderId ?? '');
+    _notes = TextEditingController(text: entry.content ?? exec.notes ?? '');
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadPortfolioTrades());
   }
 
@@ -43,6 +61,27 @@ class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
     if (oldWidget.portfolioId != widget.portfolioId) {
       _loadPortfolioTrades();
     }
+    if (oldWidget.entry.id != widget.entry.id ||
+        oldWidget.entry.updatedAt != widget.entry.updatedAt) {
+      final exec = entry.tradeExecution ?? const TradeExecution();
+      _entryPrice.text = exec.actualEntryPrice?.toString() ?? '';
+      _qty.text = exec.quantity?.toString() ?? '';
+      _broker.text = exec.broker ?? '';
+      _orderType.text = exec.orderType ?? '';
+      _externalId.text = exec.externalOrderId ?? '';
+      _notes.text = entry.content ?? exec.notes ?? '';
+    }
+  }
+
+  @override
+  void dispose() {
+    _entryPrice.dispose();
+    _qty.dispose();
+    _broker.dispose();
+    _orderType.dispose();
+    _externalId.dispose();
+    _notes.dispose();
+    super.dispose();
   }
 
   Future<void> _loadPortfolioTrades() async {
@@ -287,35 +326,25 @@ class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
   Widget build(BuildContext context) {
     final exec = entry.tradeExecution ?? const TradeExecution();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Trade Execution',
-          style: Theme.of(context)
-              .textTheme
-              .titleLarge
-              ?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Text(
+    return JournalFormSurface(
+      title: 'Trade Execution',
+      subtitle:
           'Link a trade fill (paper or live) and/or record execution snapshot.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-        ),
-        const SizedBox(height: 24),
-        Card(
-          elevation: 0,
-          color: Theme.of(context)
-              .colorScheme
-              .primaryContainer
-              .withValues(alpha: 0.35),
-          child: Padding(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
             padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: ModuleColors.trade.withValues(alpha: 0.1),
+              borderRadius: AppRadii.card,
+              border: Border.all(
+                color: ModuleColors.trade.withValues(alpha: 0.3),
+              ),
+            ),
             child: Row(
               children: [
-                Icon(Icons.link, color: Theme.of(context).colorScheme.primary),
+                Icon(Icons.link, color: ModuleColors.trade),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -350,130 +379,135 @@ class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
               ],
             ),
           ),
-        ),
-        const SizedBox(height: 24),
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                initialValue: exec.actualEntryPrice?.toString(),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Actual Entry Price',
-                  border: OutlineInputBorder(),
-                  prefixText: '₹ ',
-                ),
-                onChanged: (v) => _updateExec(
-                  exec.copyWith(actualEntryPrice: double.tryParse(v)),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _entryPrice,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration: journalWorkflowDecoration(
+                    context,
+                    label: 'Actual Entry Price',
+                    prefixText: '₹ ',
+                  ),
+                  onChanged: (v) => _updateExec(
+                    exec.copyWith(actualEntryPrice: double.tryParse(v)),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextFormField(
-                initialValue: exec.quantity?.toString(),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Quantity',
-                  border: OutlineInputBorder(),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextFormField(
+                  controller: _qty,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration: journalWorkflowDecoration(
+                    context,
+                    label: 'Quantity',
+                  ),
+                  onChanged: (v) =>
+                      _updateExec(exec.copyWith(quantity: double.tryParse(v))),
                 ),
-                onChanged: (v) =>
-                    _updateExec(exec.copyWith(quantity: double.tryParse(v))),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                initialValue: exec.broker,
-                decoration: const InputDecoration(
-                  labelText: 'Broker / Platform',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (v) => _updateExec(exec.copyWith(broker: v)),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextFormField(
-                initialValue: exec.orderType,
-                decoration: const InputDecoration(
-                  labelText: 'Order Type',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (v) => _updateExec(exec.copyWith(orderType: v)),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextFormField(
-                initialValue: exec.externalOrderId,
-                decoration: const InputDecoration(
-                  labelText: 'Order / Trade ID',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (v) =>
-                    _updateExec(exec.copyWith(externalOrderId: v)),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        TextFormField(
-          initialValue: entry.content ?? exec.notes,
-          maxLines: 6,
-          decoration: const InputDecoration(
-            labelText: 'Live Trade Notes',
-            border: OutlineInputBorder(),
-            alignLabelWithHint: true,
+            ],
           ),
-          onChanged: (v) => _updateExec(exec.copyWith(notes: v), content: v),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Text(
-              'Attachments',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _broker,
+                  decoration: journalWorkflowDecoration(
+                    context,
+                    label: 'Broker / Platform',
+                  ),
+                  onChanged: (v) => _updateExec(exec.copyWith(broker: v)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextFormField(
+                  controller: _orderType,
+                  decoration: journalWorkflowDecoration(
+                    context,
+                    label: 'Order Type',
+                  ),
+                  onChanged: (v) => _updateExec(exec.copyWith(orderType: v)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextFormField(
+                  controller: _externalId,
+                  decoration: journalWorkflowDecoration(
+                    context,
+                    label: 'Order / Trade ID',
+                  ),
+                  onChanged: (v) =>
+                      _updateExec(exec.copyWith(externalOrderId: v)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _notes,
+            maxLines: 6,
+            decoration: journalWorkflowDecoration(
+              context,
+              label: 'Live Trade Notes',
+              alignLabelWithHint: true,
             ),
-            const Spacer(),
-            OutlinedButton.icon(
-              onPressed: () => _addAttachment(context),
-              icon: const Icon(Icons.attach_file),
-              label: const Text('Add URL'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        if (entry.attachments.isEmpty)
-          const Text('No attachments yet.')
-        else
-          ...entry.attachments.map(
-            (a) => ListTile(
-              dense: true,
-              leading: const Icon(Icons.insert_drive_file_outlined),
-              title: Text(a.fileName),
-              subtitle: Text(a.fileUrl, maxLines: 1, overflow: TextOverflow.ellipsis),
-              trailing: IconButton(
-                icon: const Icon(Icons.delete_outline),
-                onPressed: () {
-                  final next = entry.attachments
-                      .where((x) => x.fileUrl != a.fileUrl)
-                      .toList();
-                  widget.onUpdate(entry.copyWith(attachments: next));
-                },
+            onChanged: (v) =>
+                _updateExec(exec.copyWith(notes: v), content: v),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Text(
+                'Attachments',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const Spacer(),
+              OutlinedButton.icon(
+                onPressed: () => _addAttachment(context),
+                icon: const Icon(Icons.attach_file),
+                label: const Text('Add URL'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (entry.attachments.isEmpty)
+            const Text('No attachments yet.')
+          else
+            ...entry.attachments.map(
+              (a) => ListTile(
+                dense: true,
+                leading: const Icon(Icons.insert_drive_file_outlined),
+                title: Text(a.fileName),
+                subtitle: Text(
+                  a.fileUrl,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () {
+                    final next = entry.attachments
+                        .where((x) => x.fileUrl != a.fileUrl)
+                        .toList();
+                    widget.onUpdate(entry.copyWith(attachments: next));
+                  },
+                ),
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }

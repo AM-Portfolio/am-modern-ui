@@ -54,6 +54,7 @@ dependencies:
 
   # Utils
   dartz: ^0.10.1
+  file_picker: ^8.0.0
 
 dev_dependencies:
   flutter_test:

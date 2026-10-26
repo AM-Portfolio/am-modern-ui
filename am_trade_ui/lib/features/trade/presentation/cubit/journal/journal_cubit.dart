@@ -205,6 +205,42 @@ class JournalCubit extends Cubit<JournalState> {
         orElse: () => const <JournalEntry>[],
       );
 
+  /// Fetch a single entry and merge it into the loaded list when present.
+  Future<JournalEntry?> loadEntryDetail(String entryId) async {
+    if (entryId.isEmpty || entryId.startsWith('temp-')) return null;
+    try {
+      final fresh = await getJournalEntries.getById(entryId);
+      state.maybeWhen(
+        loaded: (entries, summary, adherence, status, folder, tags, q, setup) {
+          final idx = entries.indexWhere((e) => e.id == entryId);
+          if (idx < 0) return;
+          final next = [...entries];
+          next[idx] = fresh;
+          emit(
+            JournalState.loaded(
+              entries: next,
+              summary: summary,
+              adherence: adherence,
+              statusFilter: status,
+              folderId: folder,
+              tagIds: tags,
+              searchQuery: q,
+              setupFilter: setup,
+            ),
+          );
+        },
+        orElse: () {},
+      );
+      return fresh;
+    } catch (e) {
+      AppLogger.warning(
+        'loadEntryDetail failed for $entryId: $e',
+        tag: 'JournalCubit',
+      );
+      return null;
+    }
+  }
+
   Future<void> loadEntriesByTrade(String tradeId) async {
     emit(const JournalState.loading());
     try {

@@ -11,6 +11,8 @@ class JournalEntryListView extends StatelessWidget {
     required this.selectedEntryId,
     required this.onEntrySelected,
     required this.onLogDayPressed,
+    this.onNewTradeJournalPressed,
+    this.onDeleteEntry,
     this.listTitle = 'Entries',
     this.emptyMessage = 'No journal entries yet.',
     this.emptySubtitle =
@@ -21,6 +23,9 @@ class JournalEntryListView extends StatelessWidget {
   final String? selectedEntryId;
   final ValueChanged<JournalEntry> onEntrySelected;
   final VoidCallback onLogDayPressed;
+  /// Opens Pre-Trade → Execute → Post-Trade workflow.
+  final VoidCallback? onNewTradeJournalPressed;
+  final ValueChanged<JournalEntry>? onDeleteEntry;
   final String listTitle;
   final String emptyMessage;
   final String emptySubtitle;
@@ -44,7 +49,7 @@ class JournalEntryListView extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
             child: Text(
-              '$listTitle (${entries.length})',
+              listTitle,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
@@ -52,13 +57,36 @@ class JournalEntryListView extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: AppButton(
-              text: 'Log day',
-              icon: Icons.add_rounded,
-              backgroundColor: ModuleColors.trade,
-              width: double.infinity,
-              height: 42,
-              onPressed: onLogDayPressed,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AppButton(
+                  text: 'Log day',
+                  icon: Icons.add_rounded,
+                  backgroundColor: ModuleColors.trade,
+                  width: double.infinity,
+                  height: 42,
+                  onPressed: onLogDayPressed,
+                ),
+                if (onNewTradeJournalPressed != null) ...[
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: onNewTradeJournalPressed,
+                    icon: const Icon(Icons.candlestick_chart_outlined, size: 18),
+                    label: const Text('New trade journal'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: ModuleColors.trade,
+                      side: BorderSide(
+                        color: ModuleColors.trade.withValues(alpha: 0.45),
+                      ),
+                      minimumSize: const Size.fromHeight(40),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppRadii.card,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
           Expanded(
@@ -77,6 +105,9 @@ class JournalEntryListView extends StatelessWidget {
                         entry: entry,
                         isSelected: entry.id == selectedEntryId,
                         onTap: () => onEntrySelected(entry),
+                        onDelete: onDeleteEntry == null
+                            ? null
+                            : () => onDeleteEntry!(entry),
                       );
                     },
                   ),
@@ -141,12 +172,14 @@ class JournalEntryItem extends StatefulWidget {
     required this.entry,
     required this.isSelected,
     required this.onTap,
+    this.onDelete,
     super.key,
   });
 
   final JournalEntry entry;
   final bool isSelected;
   final VoidCallback onTap;
+  final VoidCallback? onDelete;
 
   @override
   State<JournalEntryItem> createState() => _JournalEntryItemState();
@@ -155,20 +188,28 @@ class JournalEntryItem extends StatefulWidget {
 class _JournalEntryItemState extends State<JournalEntryItem> {
   bool _isHovered = false;
 
-  /// Short card title — mockup uses the trade/type name, not the long date suffix.
+  /// Short card title — prefer symbol, then cleaned title (no date suffix).
   static String displayTitle(JournalEntry entry) {
+    final symbol = entry.symbol?.trim();
+    if (symbol != null && symbol.isNotEmpty) return symbol;
+
     final raw = entry.title.trim();
     if (raw.isEmpty) return 'Untitled entry';
     final type = (entry.entryType ?? '').toUpperCase();
     if (type == 'WEEKLY_REVIEW' || raw.toLowerCase().startsWith('weekly')) {
       return 'Weekly review';
     }
+    var title = raw;
+    if (title.toLowerCase().startsWith('trade journal:')) {
+      title = title.substring('trade journal:'.length).trim();
+      if (title.isEmpty) title = raw;
+    }
     // Strip trailing "— 16 Oct 2026" style suffixes for cleaner cards.
-    final emDash = raw.indexOf('—');
-    if (emDash > 0) return raw.substring(0, emDash).trim();
-    final hyphen = RegExp(r'\s[-–]\s+\d').firstMatch(raw);
-    if (hyphen != null) return raw.substring(0, hyphen.start).trim();
-    return raw;
+    final emDash = title.indexOf('—');
+    if (emDash > 0) return title.substring(0, emDash).trim();
+    final hyphen = RegExp(r'\s[-–]\s+\d').firstMatch(title);
+    if (hyphen != null) return title.substring(0, hyphen.start).trim();
+    return title;
   }
 
   static ({String label, Color fg, Color bg})? outcomePill(
@@ -321,6 +362,25 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
                     ),
                   ),
                 ],
+                if (widget.onDelete != null)
+                  PopupMenuButton<String>(
+                    tooltip: 'More',
+                    padding: EdgeInsets.zero,
+                    icon: Icon(
+                      Icons.more_vert_rounded,
+                      size: 18,
+                      color: colors.textSecondary,
+                    ),
+                    onSelected: (value) {
+                      if (value == 'delete') widget.onDelete!();
+                    },
+                    itemBuilder: (context) => const [
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Text('Delete'),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),

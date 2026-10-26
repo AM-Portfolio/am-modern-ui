@@ -2,6 +2,7 @@
 import 'dart:html' as html;
 import 'dart:ui_web' as ui_web;
 
+import 'package:am_common/core/config/upload_config.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -28,18 +29,18 @@ class _UrlPreviewWidgetState extends State<UrlPreviewWidget> {
   }
 
   void _registerIframe() {
-    if (kIsWeb && !_iframeRegistered) {
-      // Register iframe factory for web
-      ui_web.platformViewRegistry.registerViewFactory(_iframeId, (int viewId) {
-        final iframe = html.IFrameElement()
-          ..src = widget.url
-          ..style.border = 'none'
-          ..style.width = '100%'
-          ..style.height = '100%';
-        return iframe;
-      });
-      _iframeRegistered = true;
-    }
+    if (!kIsWeb || _iframeRegistered) return;
+    if (UploadConfig.isStubOrPlaceholderUrl(widget.url)) return;
+    // Register iframe factory for web
+    ui_web.platformViewRegistry.registerViewFactory(_iframeId, (int viewId) {
+      final iframe = html.IFrameElement()
+        ..src = widget.url
+        ..style.border = 'none'
+        ..style.width = '100%'
+        ..style.height = '100%';
+      return iframe;
+    });
+    _iframeRegistered = true;
   }
 
   @override
@@ -59,20 +60,28 @@ class _UrlPreviewWidgetState extends State<UrlPreviewWidget> {
     );
   }
 
-  Widget _buildPreviewArea(ThemeData theme) => ClipRRect(
-    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-    child: Container(
-      height: 200,
-      width: double.infinity,
-      color: theme.colorScheme.surfaceContainerHighest,
-      child: Stack(
-        children: [
-          if (kIsWeb) HtmlElementView(viewType: _iframeId) else _buildImagePreview(theme),
-          _buildOpenIndicator(),
-        ],
+  Widget _buildPreviewArea(ThemeData theme) {
+    final isStub = UploadConfig.isStubOrPlaceholderUrl(widget.url);
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+      child: Container(
+        height: 200,
+        width: double.infinity,
+        color: theme.colorScheme.surfaceContainerHighest,
+        child: Stack(
+          children: [
+            if (isStub)
+              _buildErrorPlaceholder(theme)
+            else if (kIsWeb)
+              HtmlElementView(viewType: _iframeId)
+            else
+              _buildImagePreview(theme),
+            _buildOpenIndicator(),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 
   Widget _buildImagePreview(ThemeData theme) => Image.network(
     'https://image.thum.io/get/width/1200/crop/800/noanimate/${Uri.encodeComponent(widget.url)}',

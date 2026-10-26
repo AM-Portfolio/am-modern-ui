@@ -1,4 +1,5 @@
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_design_system/shared/widgets/navigation/step_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -19,15 +20,24 @@ class TradeJournalWorkflowPage extends ConsumerStatefulWidget {
     this.embedded = false,
     this.onEmbeddedDone,
     this.onEmbeddedCancel,
+    this.onEmbeddedDeleted,
+    this.startAtStep,
   });
 
   final JournalCubit journalCubit;
   final JournalEntry? initialEntry;
   final String? portfolioId;
+
   /// When true, render without Scaffold/AppBar for classic Entries pane.
   final bool embedded;
-  final ValueChanged<String>? onEmbeddedDone;
+
+  /// Called after save. [complete] is true only for Save Journal.
+  final void Function(String entryId, {required bool complete})? onEmbeddedDone;
   final VoidCallback? onEmbeddedCancel;
+  final VoidCallback? onEmbeddedDeleted;
+
+  /// Optional override for initial wizard step (e.g. Edit from completed → 2).
+  final int? startAtStep;
 
   @override
   ConsumerState<TradeJournalWorkflowPage> createState() =>
@@ -36,10 +46,12 @@ class TradeJournalWorkflowPage extends ConsumerStatefulWidget {
 
 class _TradeJournalWorkflowPageState
     extends ConsumerState<TradeJournalWorkflowPage> {
-  int _currentStep = 0;
+  late int _currentStep;
   late JournalEntry _entry;
   var _saving = false;
   var _isNew = true;
+
+  static const _stepLabels = ['Pre-Trade', 'Execute', 'Post-Trade'];
 
   static const _defaultChecklist = [
     'Trend aligned with setup',
@@ -52,16 +64,61 @@ class _TradeJournalWorkflowPageState
     'Plan written down',
   ];
 
+  static int stepFromStatus(String? status) {
+    switch ((status ?? 'DRAFT').toUpperCase()) {
+      case 'OPEN':
+        return 1;
+      case 'COMPLETED':
+        return 2;
+      case 'PLANNED':
+      case 'DRAFT':
+      default:
+        return 0;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    _isNew = widget.initialEntry == null;
-    _entry = widget.initialEntry ?? _createNewEntry();
-    final plan = _entry.preTradePlan ?? const PreTradePlan();
-    if (plan.setupChecklist.isEmpty) {
-      _entry = _entry.copyWith(
-        preTradePlan: plan.copyWith(setupChecklist: _defaultChecklist),
-      );
+    _hydrateFrom(widget.initialEntry, isNew: widget.initialEntry == null);
+  }
+
+  @override
+  void didUpdateWidget(covariant TradeJournalWorkflowPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final next = widget.initialEntry;
+    final prev = oldWidget.initialEntry;
+    if (next == null) return;
+    if (prev == null ||
+        prev.id != next.id ||
+        prev.updatedAt != next.updatedAt) {
+      _hydrateFrom(next, isNew: false, keepStep: prev?.id == next.id);
+    }
+  }
+
+  void _hydrateFrom(
+    JournalEntry? source, {
+    required bool isNew,
+    bool keepStep = false,
+  }) {
+    _isNew = isNew;
+    if (source == null) {
+      _entry = _createNewEntry();
+      _currentStep = widget.startAtStep ?? 0;
+      return;
+    }
+    var entry = source;
+    if (isNew) {
+      final plan = entry.preTradePlan ?? const PreTradePlan();
+      if (plan.setupChecklist.isEmpty) {
+        entry = entry.copyWith(
+          preTradePlan: plan.copyWith(setupChecklist: _defaultChecklist),
+        );
+      }
+    }
+    _entry = entry;
+    if (!keepStep) {
+      _currentStep = widget.startAtStep ?? stepFromStatus(entry.journalStatus);
     }
   }
 
@@ -114,6 +171,7 @@ class _TradeJournalWorkflowPageState
 
     return e.copyWith(
       setup: plan.setup ?? e.setup,
+      symbol: e.symbol,
       preTradePlan: plan.copyWith(
         plannedRiskAmount: risk ?? plan.plannedRiskAmount,
         plannedRRRatio: rr ?? plan.plannedRRRatio,
@@ -138,9 +196,14 @@ class _TradeJournalWorkflowPageState
         status = 'OPEN';
       }
 
-      final title = (_entry.symbol?.isNotEmpty ?? false)
-          ? '${_entry.symbol} ${_entry.setup ?? 'Trade'}'
-          : _entry.title;
+      final plan = _entry.preTradePlan;
+      final symbol = _entry.symbol?.trim().isNotEmpty == true
+          ? _entry.symbol!.trim()
+          : null;
+      final setup = (_entry.setup ?? plan?.setup)?.trim();
+      final title = (symbol != null && symbol.isNotEmpty)
+          ? '$symbol ${setup?.isNotEmpty == true ? setup : 'Trade'}'
+          : (_entry.title.trim().isNotEmpty ? _entry.title : 'New Trade');
 
       final saved = await widget.journalCubit.saveEntryFull(
         entryId: _isNew ? null : _entry.id,
@@ -150,8 +213,8 @@ class _TradeJournalWorkflowPageState
         tradeId: _entry.tradeId,
         entryType: _entry.entryType ?? 'TRADE_JOURNAL',
         journalStatus: status,
-        symbol: _entry.symbol,
-        setup: _entry.setup,
+        symbol: symbol,
+        setup: setup,
         tradeDirection: _entry.tradeDirection,
         folderId: _entry.folderId,
         playbookId: _entry.playbookId,
@@ -169,18 +232,18 @@ class _TradeJournalWorkflowPageState
         _isNew = false;
         _saving = false;
       });
-      if (complete) {
-        if (widget.embedded) {
-          widget.onEmbeddedDone?.call(saved.id);
-        } else {
-          Navigator.of(context).pop();
-        }
-      } else {
-        if (widget.embedded) {
-          widget.onEmbeddedDone?.call(saved.id);
-        }
+      if (widget.embedded) {
+        widget.onEmbeddedDone?.call(saved.id, complete: complete);
+      } else if (complete) {
+        Navigator.of(context).pop();
+      }
+      if (!complete && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Draft saved')),
+        );
+      } else if (complete && widget.embedded && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Journal saved')),
         );
       }
     } catch (e) {
@@ -205,92 +268,99 @@ class _TradeJournalWorkflowPageState
     }
   }
 
+  Future<void> _confirmDelete() async {
+    if (_isNew || _entry.id.startsWith('temp-')) {
+      widget.onEmbeddedCancel?.call();
+      return;
+    }
+    final title = JournalTradeHeader.displayTitle(_entry);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete journal?'),
+        content: Text('“$title” will be removed.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: ctx.statusError,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    await widget.journalCubit.removeJournalEntry(_entry.id);
+    if (!mounted) return;
+    if (widget.embedded) {
+      widget.onEmbeddedDeleted?.call();
+    } else {
+      Navigator.pop(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final wide = MediaQuery.sizeOf(context).width >= 1100;
-    final status = (_entry.journalStatus ?? 'DRAFT').toUpperCase();
+    final colors = context.colors;
 
     final body = Column(
       children: [
+        JournalTradeHeader(entry: _entry),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-          child: Row(
-            children: [
-              Chip(
-                label: Text(status),
-                backgroundColor: ModuleColors.trade.withValues(alpha: 0.2),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'PLANNED → OPEN → COMPLETED',
-                style: Theme.of(context).textTheme.labelSmall,
-              ),
-            ],
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.md,
+            AppSpacing.lg,
+            AppSpacing.sm,
+          ),
+          child: StepIndicator(
+            currentStep: _currentStep,
+            stepLabels: _stepLabels,
+            activeColor: ModuleColors.trade,
+            inactiveColor: colors.textSecondary,
           ),
         ),
-        JournalTradeHeader(entry: _entry),
         Expanded(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 3,
-                child: Stepper(
-                  type: StepperType.horizontal,
-                  currentStep: _currentStep,
-                  onStepTapped: (s) => setState(() => _currentStep = s),
-                  controlsBuilder: (context, details) => const SizedBox.shrink(),
-                  steps: [
-                    Step(
-                      title: const Text('Pre-Trade'),
-                      isActive: _currentStep >= 0,
-                      state: _currentStep > 0
-                          ? StepState.complete
-                          : StepState.editing,
-                      content: PreTradePlanStep(
-                        entry: _entry,
-                        onUpdate: _updateEntry,
-                      ),
-                    ),
-                    Step(
-                      title: const Text('Execute'),
-                      isActive: _currentStep >= 1,
-                      state: _currentStep > 1
-                          ? StepState.complete
-                          : (_currentStep == 1
-                              ? StepState.editing
-                              : StepState.indexed),
-                      content: ExecuteTradeStep(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.sm,
+              AppSpacing.lg,
+              AppSpacing.md,
+            ),
+            child: _currentStep == 0
+                ? PreTradePlanStep(
+                    key: ValueKey('pre-${_entry.id}-${_entry.updatedAt}'),
+                    entry: _entry,
+                    onUpdate: _updateEntry,
+                    applyDefaultChecklist: _isNew,
+                  )
+                : _currentStep == 1
+                    ? ExecuteTradeStep(
+                        key: ValueKey(
+                          'exec-${_entry.id}-${_entry.updatedAt}',
+                        ),
                         entry: _entry,
                         onUpdate: _updateEntry,
                         portfolioId: widget.portfolioId,
                         onLinkTrade: _linkTrade,
-                      ),
-                    ),
-                    Step(
-                      title: const Text('Post-Trade'),
-                      isActive: _currentStep >= 2,
-                      state: _currentStep == 2
-                          ? StepState.editing
-                          : StepState.indexed,
-                      content: PostTradeReviewStep(
+                      )
+                    : PostTradeReviewStep(
+                        key: ValueKey(
+                          'post-${_entry.id}-${_entry.updatedAt}',
+                        ),
                         entry: _entry,
                         onUpdate: _updateEntry,
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              if (wide)
-                SizedBox(
-                  width: 280,
-                  child: _HelpSidebar(step: _currentStep),
-                ),
-            ],
           ),
         ),
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.md),
           child: Row(
             children: [
               TextButton(
@@ -308,6 +378,14 @@ class _TradeJournalWorkflowPageState
                   onPressed: () => setState(() => _currentStep--),
                   child: const Text('Back'),
                 ),
+              if (!_isNew && !_entry.id.startsWith('temp-'))
+                TextButton(
+                  onPressed: _saving ? null : _confirmDelete,
+                  style: TextButton.styleFrom(
+                    foregroundColor: colors.statusError,
+                  ),
+                  child: const Text('Delete'),
+                ),
               const Spacer(),
               OutlinedButton(
                 onPressed: _saving ? null : () => _save(complete: false),
@@ -315,6 +393,9 @@ class _TradeJournalWorkflowPageState
               ),
               const SizedBox(width: 8),
               FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: ModuleColors.trade,
+                ),
                 onPressed: _saving
                     ? null
                     : () {
@@ -334,117 +415,21 @@ class _TradeJournalWorkflowPageState
 
     if (widget.embedded) {
       return ColoredBox(
-        color: Theme.of(context).scaffoldBackgroundColor,
+        color: colors.surface,
         child: body,
       );
     }
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: colors.surface,
       appBar: AppBar(
         title: const Text('Trade Journal'),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        actions: [
-          OutlinedButton(
-            onPressed: _saving ? null : () => _save(complete: false),
-            child: const Text('Save Draft'),
-          ),
-          const SizedBox(width: 8),
-          FilledButton(
-            onPressed: _saving
-                ? null
-                : () {
-                    if (_currentStep < 2) {
-                      setState(() => _currentStep++);
-                    } else {
-                      _save(complete: true);
-                    }
-                  },
-            child: Text(_currentStep == 2 ? 'Save Journal' : 'Next'),
-          ),
-          const SizedBox(width: 16),
-        ],
       ),
       body: body,
-    );
-  }
-}
-
-class _HelpSidebar extends StatelessWidget {
-  const _HelpSidebar({required this.step});
-
-  final int step;
-
-  @override
-  Widget build(BuildContext context) {
-    final tips = switch (step) {
-      0 => [
-          'Write the plan before you enter.',
-          'Checklist items become your adherence score.',
-          'R:R auto-calcs from entry, stop, and target.',
-        ],
-      1 => [
-          'Link a live trade to auto-fill prices.',
-          'Keep an execution snapshot even without a link.',
-          'Attach chart screenshots of the entry.',
-        ],
-      _ => [
-          'Grade execution honestly (1–10).',
-          'Tag the real mistake — that feeds Insights cost.',
-          'One clear lesson beats a long essay.',
-        ],
-    };
-
-    return Card(
-      margin: const EdgeInsets.all(16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              step == 0
-                  ? 'Pre-Trade Help'
-                  : step == 1
-                      ? 'Execute Help'
-                      : 'Post-Trade Help',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            ...tips.map(
-              (t) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('• '),
-                    Expanded(child: Text(t)),
-                  ],
-                ),
-              ),
-            ),
-            const Spacer(),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                'Pro tip: Save draft often. Status moves PLANNED → OPEN → COMPLETED as you advance.',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

@@ -247,6 +247,7 @@ class _TradeJournalListPageState extends ConsumerState<TradeJournalListPage> {
                 context: context,
                 builder: (_) => JournalImportDialog(
                   journalCubit: widget.journalCubit,
+                  portfolioId: widget.portfolioId,
                 ),
               );
             },

@@ -24,6 +24,7 @@ import 'widgets/trade_preview_dialog.dart';
 import '../../../journal/pages/trade_journal_workflow_page.dart';
 import '../../../journal/widgets/journal_form_surface.dart';
 import '../../../journal/widgets/journal_structured_review_section.dart';
+import '../../../journal/widgets/journal_themed_dropdown.dart';
 import '../../../journal/widgets/simple_template_dialog.dart';
 
 class JournalEntryForm extends ConsumerStatefulWidget {
@@ -739,8 +740,13 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     final syncedAttachments = _syncedAttachmentsForBody();
     final syncedUrls = syncedAttachments?.map((a) => a.fileUrl).toList();
     final related = _relatedTradeIds.isEmpty ? null : _relatedTradeIds;
-    final tradeId =
-        _tradeIdController.text.isEmpty ? null : _tradeIdController.text;
+    // Primary tradeId from linked fills (Today's trades); keep entry value if still set.
+    final tradeId = () {
+      if (related != null && related.isNotEmpty) return related.first;
+      final fromField = _tradeIdController.text.trim();
+      if (fromField.isNotEmpty) return fromField;
+      return widget.entry?.tradeId;
+    }();
 
     if (targetId == null) {
       final saved = await widget.cubit.addJournalEntry(
@@ -921,23 +927,11 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
         });
       }
     } catch (e) {
-      // Log error silently for debugging if needed but don't leak to console
-      // AppLogger.error('Error loading trades for period', error: e);
+      // Keep Trade Overview usable: empty state, no blocking error banner.
       if (mounted) {
         setState(() {
           _availableTrades = [];
         });
-      }
-
-      // Show error message to user
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to load trades: ${e.toString()}'),
-            backgroundColor: context.statusError,
-            duration: const Duration(seconds: 3),
-          ),
-        );
       }
     }
   }
@@ -1569,43 +1563,29 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     final available =
         catalog.where((t) => !_selectedTags.contains(t)).toList();
 
-    return PopupMenuButton<String>(
+    return JournalThemedDropdown<String>(
+      value: null,
+      hint: available.isEmpty ? 'All tags added' : 'Add tags...',
       enabled: available.isNotEmpty,
-      tooltip: 'Add tags',
-      onSelected: (tag) {
-        setState(() => _selectedTags.add(tag));
-        _scheduleAutosave();
-      },
-      itemBuilder: (context) => [
-        for (final tag in available)
-          PopupMenuItem(value: tag, child: Text(tag)),
-      ],
-      child: Container(
-        height: 40,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: colors.surface.withValues(alpha: 0.45),
-          borderRadius: AppRadii.card,
-          border: Border.all(color: colors.border.withValues(alpha: 0.35)),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Add tags...',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colors.textSecondary,
-                ),
+      items: available.isEmpty
+          ? const [
+              DropdownMenuItem(
+                value: '',
+                enabled: false,
+                child: Text('—'),
               ),
-            ),
-            Icon(
-              Icons.keyboard_arrow_down_rounded,
-              size: 18,
-              color: colors.textSecondary,
-            ),
-          ],
-        ),
-      ),
+            ]
+          : [
+              for (final tag in available)
+                DropdownMenuItem(value: tag, child: Text(tag)),
+            ],
+      onChanged: available.isEmpty
+          ? null
+          : (tag) {
+              if (tag == null || tag.isEmpty) return;
+              setState(() => _selectedTags.add(tag));
+              _scheduleAutosave();
+            },
     );
   }
 
@@ -2099,7 +2079,6 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
 
   Widget _buildOptionalFields() => OptionalFieldsSection(
     entryDate: _entryDate,
-    tradeIdController: _tradeIdController,
     urlController: _urlController,
     isEditMode: _isEditMode,
     isUrlExpanded: _isUrlExpanded,

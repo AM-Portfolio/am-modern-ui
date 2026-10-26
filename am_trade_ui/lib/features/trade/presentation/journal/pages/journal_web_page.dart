@@ -1,6 +1,5 @@
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
-import 'package:am_news_ui/am_news_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -60,11 +59,9 @@ _JournalTab _journalTabFromSlug(String slug) => switch (slug.toLowerCase()) {
 class _JournalWebPageState extends ConsumerState<JournalWebPage> {
   List<JournalEntry> _entries = const [];
   late _JournalTab _tab;
-  String _journalSymbol = '';
 
   String _selectedFolder = JournalFolderFilter.allNotes;
   String? _selectedTagId;
-  String? _selectedTradeType;
   String? _selectedOutcome;
   JournalSortOrder _sortOrder = JournalSortOrder.latestFirst;
   DateTimeRange? _dateRange;
@@ -159,7 +156,10 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
   Future<void> _import(JournalCubit cubit) async {
     await showDialog<void>(
       context: context,
-      builder: (_) => JournalImportDialog(journalCubit: cubit),
+      builder: (_) => JournalImportDialog(
+        journalCubit: cubit,
+        portfolioId: widget.portfolioId,
+      ),
     );
   }
 
@@ -199,20 +199,6 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
       notebookFolders: notebookFolders,
     );
 
-    if (_selectedTradeType != null && _selectedTradeType!.isNotEmpty) {
-      final want = _selectedTradeType!.toUpperCase();
-      list = list.where((e) {
-        final type = (e.entryType ?? '').toUpperCase();
-        if (want == 'GENERAL') {
-          return type == 'GENERAL' || type.isEmpty;
-        }
-        if (want == 'TRADE_NOTE') {
-          return JournalFolderFilter.isTradeLikeEntry(e);
-        }
-        return type == want;
-      }).toList();
-    }
-
     if (_selectedOutcome != null && _selectedOutcome!.isNotEmpty) {
       final want = _selectedOutcome!.toLowerCase();
       list = list.where((e) {
@@ -240,6 +226,33 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
     }
     final list = set.toList()..sort();
     return list;
+  }
+
+  /// Counts per folder option from the unfiltered hub list (before folder pick).
+  Map<String, int> _folderCounts(
+    List<JournalEntry> entries, {
+    List<NotebookItem> notebookFolders = const [],
+  }) {
+    final builtIns = [
+      JournalFolderFilter.allNotes,
+      JournalFolderFilter.tradeNotes,
+      JournalFolderFilter.dailyJournal,
+      JournalFolderFilter.sessionsRecap,
+    ];
+    final custom = notebookFolders
+        .map((f) => f.title)
+        .where((t) => t.trim().isNotEmpty)
+        .where((t) => !builtIns.contains(t))
+        .toSet();
+    final keys = [...builtIns, ...custom];
+    return {
+      for (final folder in keys)
+        folder: JournalFolderFilter.filter(
+          entries: entries,
+          folder: folder,
+          notebookFolders: notebookFolders,
+        ).length,
+    };
   }
 
   @override
@@ -378,10 +391,6 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
                                                 : [id],
                                           );
                                         },
-                                        selectedTradeType: _selectedTradeType,
-                                        onTradeTypeChanged: (t) => setState(
-                                          () => _selectedTradeType = t,
-                                        ),
                                         selectedOutcome: _selectedOutcome,
                                         onOutcomeChanged: (o) => setState(
                                           () => _selectedOutcome = o,
@@ -393,6 +402,10 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
                                         notebookTags: tags,
                                         availableOutcomes: _availableOutcomes(
                                           loadedEntries,
+                                        ),
+                                        folderCounts: _folderCounts(
+                                          loadedEntries,
+                                          notebookFolders: folders,
                                         ),
                                       ),
                               ),
@@ -444,15 +457,6 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
                                 ],
                               ),
                             ),
-                            if (_tab == _JournalTab.entries && !_composerOpen)
-                              Padding(
-                                padding:
-                                    const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                                child: SymbolNewsSection(
-                                  symbol: _journalSymbol,
-                                  surface: NewsUiSurface.tradeJournal,
-                                ),
-                              ),
                           ],
                         );
                       },
@@ -537,43 +541,6 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
                 ),
                 label: Text(
                   rangeLabel,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: theme.colorScheme.onSurface,
-                  side: BorderSide(
-                    color: colors.border.withValues(alpha: 0.4),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.sm,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: AppRadii.card,
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              OutlinedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Use the filter row below for tags, types, and outcomes.',
-                      ),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
-                icon: Icon(
-                  Icons.filter_list_rounded,
-                  size: 18,
-                  color: colors.textSecondary,
-                ),
-                label: Text(
-                  'Filters',
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -687,11 +654,6 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
       onPendingTemplateConsumed: () {
         if (_pendingPlaybook == null) return;
         setState(() => _pendingPlaybook = null);
-      },
-      onSelectedSymbolChanged: (symbol) {
-        final next = symbol?.trim() ?? '';
-        if (next == _journalSymbol) return;
-        setState(() => _journalSymbol = next);
       },
       onEntryCreated: (_) {
         // Log Day saved: refresh hub lists + Insights so the unlock is honest.

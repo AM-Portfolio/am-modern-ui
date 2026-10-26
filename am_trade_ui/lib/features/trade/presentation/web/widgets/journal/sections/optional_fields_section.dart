@@ -5,11 +5,11 @@ import '../components/journal_form_header.dart';
 import '../widgets/url_preview_widget_stub.dart'
     if (dart.library.html) '../widgets/url_preview_widget.dart';
 
-/// Section containing optional fields like date, trade ID, and URL
+/// Section containing optional fields like date and URL.
+/// Trade linking is owned by "Today's trades" — no free-text Trade ID field.
 class OptionalFieldsSection extends StatefulWidget {
   const OptionalFieldsSection({
     required this.entryDate,
-    required this.tradeIdController,
     required this.urlController,
     required this.isEditMode,
     required this.isUrlExpanded,
@@ -25,7 +25,6 @@ class OptionalFieldsSection extends StatefulWidget {
   });
 
   final DateTime entryDate;
-  final TextEditingController tradeIdController;
   final TextEditingController urlController;
   final bool isEditMode;
   final bool isUrlExpanded;
@@ -83,7 +82,6 @@ class _OptionalFieldsSectionState extends State<OptionalFieldsSection> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final hasTradeId = widget.tradeIdController.text.trim().isNotEmpty;
     final hasUrl = widget.urlController.text.trim().isNotEmpty;
     final hasWatchlist = _watchlistItems.isNotEmpty;
     final hasReflection = _reflectionController.text.trim().isNotEmpty;
@@ -96,10 +94,6 @@ class _OptionalFieldsSectionState extends State<OptionalFieldsSection> {
           isEditMode: widget.isEditMode,
           onDateSelect: widget.onDateSelect,
         ),
-        if (widget.isEditMode || hasTradeId) ...[
-          const SizedBox(height: AppSpacing.md),
-          _buildTradeIdField(theme),
-        ],
         if (widget.isEditMode || hasUrl) ...[
           const SizedBox(height: AppSpacing.md),
           InkWell(
@@ -179,27 +173,6 @@ class _OptionalFieldsSectionState extends State<OptionalFieldsSection> {
       ],
     );
   }
-
-  Widget _buildTradeIdField(ThemeData theme) => Container(
-    decoration: BoxDecoration(
-      border: Border.all(color: theme.dividerColor.withOpacity(0.5)),
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: TextFormField(
-      controller: widget.tradeIdController,
-      decoration: const InputDecoration(
-        labelText: 'Trade ID (optional)',
-        floatingLabelBehavior: FloatingLabelBehavior.always,
-        floatingLabelAlignment: FloatingLabelAlignment.start,
-        hintText: 'Optional',
-        prefixIcon: const Icon(Icons.tag, size: 18),
-        border: InputBorder.none,
-        enabledBorder: InputBorder.none,
-        focusedBorder: InputBorder.none,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      ),
-    ),
-  );
 
   Widget _buildUrlField(ThemeData theme) {
     final hasUrl = widget.urlController.text.trim().isNotEmpty;

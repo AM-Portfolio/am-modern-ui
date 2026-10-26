@@ -4,10 +4,14 @@ import 'package:flutter/material.dart';
 import '../../../internal/domain/entities/notebook_item.dart';
 import '../../../internal/domain/entities/notebook_tag.dart';
 import '../models/journal_folder_filter.dart';
+import 'journal_themed_dropdown.dart';
 
 enum JournalSortOrder { latestFirst, oldestFirst }
 
-/// Folder + tag / type / outcome / sort controls for the journal hub.
+/// Folder + tag / outcome / sort controls for the journal hub.
+///
+/// Entry-type filtering is owned by [selectedFolder] (Trade notes / Daily /
+/// Sessions) — a separate "trade type" dropdown was redundant and often blank.
 /// Entry text search is global-app search only (no duplicate bar here).
 class JournalFilterBar extends StatefulWidget {
   const JournalFilterBar({
@@ -15,8 +19,6 @@ class JournalFilterBar extends StatefulWidget {
     required this.onFolderChanged,
     required this.selectedTagId,
     required this.onTagChanged,
-    required this.selectedTradeType,
-    required this.onTradeTypeChanged,
     required this.selectedOutcome,
     required this.onOutcomeChanged,
     required this.sortOrder,
@@ -26,6 +28,7 @@ class JournalFilterBar extends StatefulWidget {
     this.notebookFolders = const [],
     this.notebookTags = const [],
     this.availableOutcomes = const [],
+    this.folderCounts = const {},
     super.key,
   });
 
@@ -33,8 +36,6 @@ class JournalFilterBar extends StatefulWidget {
   final ValueChanged<String> onFolderChanged;
   final String? selectedTagId;
   final ValueChanged<String?> onTagChanged;
-  final String? selectedTradeType;
-  final ValueChanged<String?> onTradeTypeChanged;
   final String? selectedOutcome;
   final ValueChanged<String?> onOutcomeChanged;
   final JournalSortOrder sortOrder;
@@ -45,19 +46,14 @@ class JournalFilterBar extends StatefulWidget {
   final List<NotebookTag> notebookTags;
   final List<String> availableOutcomes;
 
+  /// Per-folder entry counts (keys = [JournalFolderFilter] / custom titles).
+  final Map<String, int> folderCounts;
+
   @override
   State<JournalFilterBar> createState() => _JournalFilterBarState();
 }
 
 class _JournalFilterBarState extends State<JournalFilterBar> {
-  static const _tradeTypes = <({String? value, String label})>[
-    (value: null, label: 'All Trade Types'),
-    (value: 'DAILY', label: 'Daily'),
-    (value: 'TRADE_NOTE', label: 'Trade note'),
-    (value: 'SESSION', label: 'Session'),
-    (value: 'GENERAL', label: 'General'),
-  ];
-
   List<String> get _folderOptions {
     final builtIns = [
       JournalFolderFilter.allNotes,
@@ -90,11 +86,90 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
-    final theme = Theme.of(context);
     final folderValue = _folderOptions.contains(widget.selectedFolder)
         ? widget.selectedFolder
         : JournalFolderFilter.allNotes;
+
+    String folderLabel(String folder) {
+      final title = JournalFolderFilter.listTitle(folder);
+      final n = widget.folderCounts[folder];
+      if (n == null) return title;
+      return '$title ($n)';
+    }
+
+    final folderDrop = JournalThemedDropdown<String>(
+      width: 168,
+      value: folderValue,
+      items: _folderOptions
+          .map(
+            (f) => DropdownMenuItem(
+              value: f,
+              child: Text(folderLabel(f)),
+            ),
+          )
+          .toList(),
+      onChanged: (v) {
+        if (v != null) widget.onFolderChanged(v);
+      },
+    );
+
+    final tagDrop = JournalThemedDropdown<String?>(
+      width: 140,
+      value: _safeTagId,
+      hint: 'All Tags',
+      items: [
+        const DropdownMenuItem<String?>(
+          value: null,
+          child: Text('All Tags'),
+        ),
+        ...widget.notebookTags
+            .where((t) => t.id != null && t.id!.isNotEmpty)
+            .map(
+              (t) => DropdownMenuItem<String?>(
+                value: t.id,
+                child: Text(t.name),
+              ),
+            ),
+      ],
+      onChanged: widget.onTagChanged,
+    );
+
+    final outcomeDrop = JournalThemedDropdown<String?>(
+      width: 150,
+      value: _safeOutcome,
+      hint: 'All Outcomes',
+      items: [
+        const DropdownMenuItem<String?>(
+          value: null,
+          child: Text('All Outcomes'),
+        ),
+        ...widget.availableOutcomes.map(
+          (o) => DropdownMenuItem<String?>(
+            value: o,
+            child: Text(o),
+          ),
+        ),
+      ],
+      onChanged: widget.onOutcomeChanged,
+    );
+
+    final sortDrop = JournalThemedDropdown<JournalSortOrder>(
+      width: 140,
+      value: widget.sortOrder,
+      items: const [
+        DropdownMenuItem(
+          value: JournalSortOrder.latestFirst,
+          child: Text('Latest First'),
+        ),
+        DropdownMenuItem(
+          value: JournalSortOrder.oldestFirst,
+          child: Text('Oldest First'),
+        ),
+      ],
+      onChanged: (v) {
+        if (v != null) widget.onSortChanged(v);
+      },
+    );
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -107,170 +182,17 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
         builder: (context, constraints) {
           final compact = constraints.maxWidth < 900;
 
-          final folderDrop = _DropdownShell(
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: folderValue,
-                isDense: true,
-                icon: Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  color: colors.textSecondary,
-                  size: 20,
-                ),
-                dropdownColor: colors.cardSurface,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-                items: _folderOptions
-                    .map(
-                      (f) => DropdownMenuItem(
-                        value: f,
-                        child: Text(JournalFolderFilter.listTitle(f)),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (v) {
-                  if (v != null) widget.onFolderChanged(v);
-                },
-              ),
-            ),
-          );
-
-          final tagDrop = _DropdownShell(
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String?>(
-                value: _safeTagId,
-                isDense: true,
-                hint: Text(
-                  'All Tags',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colors.textSecondary,
-                  ),
-                ),
-                icon: Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  color: colors.textSecondary,
-                  size: 20,
-                ),
-                dropdownColor: colors.cardSurface,
-                items: [
-                  const DropdownMenuItem<String?>(
-                    value: null,
-                    child: Text('All Tags'),
-                  ),
-                  ...widget.notebookTags
-                      .where((t) => t.id != null && t.id!.isNotEmpty)
-                      .map(
-                        (t) => DropdownMenuItem<String?>(
-                          value: t.id,
-                          child: Text(t.name),
-                        ),
-                      ),
-                ],
-                onChanged: widget.onTagChanged,
-              ),
-            ),
-          );
-
-          final typeDrop = _DropdownShell(
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String?>(
-                value: widget.selectedTradeType,
-                isDense: true,
-                icon: Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  color: colors.textSecondary,
-                  size: 20,
-                ),
-                dropdownColor: colors.cardSurface,
-                items: _tradeTypes
-                    .map(
-                      (t) => DropdownMenuItem<String?>(
-                        value: t.value,
-                        child: Text(t.label),
-                      ),
-                    )
-                    .toList(),
-                onChanged: widget.onTradeTypeChanged,
-              ),
-            ),
-          );
-
-          final outcomeDrop = _DropdownShell(
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String?>(
-                value: _safeOutcome,
-                isDense: true,
-                hint: Text(
-                  'All Outcomes',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colors.textSecondary,
-                  ),
-                ),
-                icon: Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  color: colors.textSecondary,
-                  size: 20,
-                ),
-                dropdownColor: colors.cardSurface,
-                items: [
-                  const DropdownMenuItem<String?>(
-                    value: null,
-                    child: Text('All Outcomes'),
-                  ),
-                  ...widget.availableOutcomes.map(
-                    (o) => DropdownMenuItem<String?>(
-                      value: o,
-                      child: Text(o),
-                    ),
-                  ),
-                ],
-                onChanged: widget.onOutcomeChanged,
-              ),
-            ),
-          );
-
-          final sortDrop = _DropdownShell(
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<JournalSortOrder>(
-                value: widget.sortOrder,
-                isDense: true,
-                icon: Icon(
-                  Icons.sort_rounded,
-                  color: colors.textSecondary,
-                  size: 18,
-                ),
-                dropdownColor: colors.cardSurface,
-                items: const [
-                  DropdownMenuItem(
-                    value: JournalSortOrder.latestFirst,
-                    child: Text('Latest First'),
-                  ),
-                  DropdownMenuItem(
-                    value: JournalSortOrder.oldestFirst,
-                    child: Text('Oldest First'),
-                  ),
-                ],
-                onChanged: (v) {
-                  if (v != null) widget.onSortChanged(v);
-                },
-              ),
-            ),
-          );
-
           if (compact) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                folderDrop,
+                Align(alignment: Alignment.centerLeft, child: folderDrop),
                 const SizedBox(height: AppSpacing.sm),
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
                       tagDrop,
-                      const SizedBox(width: AppSpacing.sm),
-                      typeDrop,
                       const SizedBox(width: AppSpacing.sm),
                       outcomeDrop,
                       const SizedBox(width: AppSpacing.sm),
@@ -288,8 +210,6 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
               const SizedBox(width: AppSpacing.sm),
               tagDrop,
               const SizedBox(width: AppSpacing.sm),
-              typeDrop,
-              const SizedBox(width: AppSpacing.sm),
               outcomeDrop,
               const SizedBox(width: AppSpacing.sm),
               sortDrop,
@@ -298,28 +218,6 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
           );
         },
       ),
-    );
-  }
-}
-
-class _DropdownShell extends StatelessWidget {
-  const _DropdownShell({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return Container(
-      height: 44,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: colors.cardSurface,
-        borderRadius: AppRadii.card,
-        border: Border.all(color: colors.border.withValues(alpha: 0.35)),
-      ),
-      child: child,
     );
   }
 }
