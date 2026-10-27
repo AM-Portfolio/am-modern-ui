@@ -46,8 +46,10 @@ class SearchNavigationHandler {
         // Baskets keep portfolio discover navigation (handled via ETF path).
         context.go('/app/market/$sym');
         return;
-      case SearchContext.market:
       case SearchContext.portfolio:
+        openHolding(sym);
+        return;
+      case SearchContext.market:
       case SearchContext.trade:
       case SearchContext.dashboard:
       case SearchContext.other:
@@ -55,6 +57,25 @@ class SearchNavigationHandler {
         ChartSearchBridge.selectSymbol?.call(sym);
         context.go(AppRoutes.chartWorkspacePath(symbol: sym));
     }
+  }
+
+  /// Stay on Portfolio Holdings and show only [symbol].
+  void openHolding(String symbol) {
+    final sym = symbol.trim().toUpperCase();
+    if (sym.isEmpty) return;
+    String? location;
+    try {
+      location = GoRouterState.of(context).matchedLocation;
+    } catch (_) {}
+    final id = ShareUrlBuilder.portfolioIdFromLocation(location ?? '') ??
+        context.selectedPortfolioId ??
+        'all';
+    context.go(
+      Uri(
+        path: AppRoutes.portfolioPath(id, 'holdings'),
+        queryParameters: {'q': sym},
+      ).toString(),
+    );
   }
 
   void openEtfOrBasket(EtfSearchResult result) {

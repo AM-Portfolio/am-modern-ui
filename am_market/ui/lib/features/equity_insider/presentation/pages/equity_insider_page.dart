@@ -5,10 +5,10 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_news_ui/am_news_ui.dart';
 
 import '../../providers/equity_insider_provider.dart';
-import '../widgets/equity_insider_header_card.dart';
 import '../widgets/equity_insider_hero.dart';
 import '../widgets/equity_insider_kpis.dart';
 import '../widgets/equity_insider_chart.dart';
+import '../widgets/equity_insider_desktop_pair.dart';
 import '../widgets/equity_insider_financials.dart';
 import '../widgets/equity_insider_shareholding.dart';
 import '../widgets/equity_insider_peers.dart';
@@ -199,10 +199,9 @@ class _FundamentalsBody extends ConsumerStatefulWidget {
 }
 
 class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
-  static const double _stickyHeroExtentDesktop = 96;
-  /// Three-band identity card + pin padding (xs on each edge).
-  static const double _stickyHeroExtentMobile =
-      EquityInsiderHeaderCard.mobileStickyPinExtent;
+  static const double _stickyHeroExtentDesktop = 120;
+  /// Compact mockup sticky bar (~logo + name/chips + LTP row).
+  static const double _stickyHeroExtentMobile = 92;
   static const double _stickyNavExtent = 44;
 
   final ScrollController _scrollController = ScrollController();
@@ -291,11 +290,13 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
     required Widget child,
     GlobalKey? sectionKey,
     bool isMobile = false,
+    Key? testKey,
   }) {
     return Container(
       key: sectionKey,
       child: GlassCard(
-        padding: EdgeInsets.all(isMobile ? 12 : 24),
+        key: testKey,
+        padding: EdgeInsets.all(isMobile ? 12 : AppSpacing.md),
         child: child,
       ),
     );
@@ -306,8 +307,16 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
     return LayoutBuilder(
           builder: (context, constraints) {
             final isMobile = constraints.maxWidth < 800;
+            final peersCompact = constraints.maxWidth < AmBreakpoints.tablet;
+            final shareholdingAsync =
+                ref.watch(fundamentalShareholdingProvider(widget.symbol));
+            final hasShareholding = shareholdingAsync.maybeWhen(
+              data: (rows) => rows != null && rows.isNotEmpty,
+              orElse: () => true,
+            );
             final stickyHeroExtent =
                 isMobile ? _stickyHeroExtentMobile : _stickyHeroExtentDesktop;
+            final sectionGap = isMobile ? 12.0 : AppSpacing.md;
             final bottomPad = isMobile
                 ? PlatformConstants.globalBottomNavReserve(context) + 32
                 : 32.0;
@@ -367,7 +376,7 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(
                       isMobile ? 12 : 16,
-                      isMobile ? 12 : 14,
+                      isMobile ? 12 : 16,
                       isMobile ? 12 : 16,
                       bottomPad,
                     ),
@@ -381,42 +390,40 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                             sectionKey: _sectionKeys[0],
                             context: context,
                             isMobile: isMobile,
+                            testKey: const Key('ei-kpis-card'),
                             child: EquityInsiderKpis(symbol: widget.symbol),
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: sectionGap),
                           _buildSectionCard(
                             sectionKey: _sectionKeys[1],
                             context: context,
                             isMobile: isMobile,
+                            testKey: const Key('ei-chart-card'),
                             child: EquityInsiderChart(symbol: widget.symbol),
                           ),
                         ] else ...[
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                flex: 60,
-                                child: _buildSectionCard(
-                                  sectionKey: _sectionKeys[0],
-                                  context: context,
-                                  isMobile: false,
-                                  child: EquityInsiderKpis(symbol: widget.symbol),
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                flex: 40,
-                                child: _buildSectionCard(
-                                  sectionKey: _sectionKeys[1],
-                                  context: context,
-                                  isMobile: false,
-                                  child: EquityInsiderChart(symbol: widget.symbol),
-                                ),
-                              ),
-                            ],
+                          EquityInsiderDesktopPair(
+                            matchHeight: false,
+                            matchFromRight: true,
+                            fallbackHeight: 362,
+                            gap: AppSpacing.md,
+                            left: _buildSectionCard(
+                              sectionKey: _sectionKeys[0],
+                              context: context,
+                              isMobile: false,
+                              testKey: const Key('ei-kpis-card'),
+                              child: EquityInsiderKpis(symbol: widget.symbol),
+                            ),
+                            right: _buildSectionCard(
+                              sectionKey: _sectionKeys[1],
+                              context: context,
+                              isMobile: false,
+                              testKey: const Key('ei-chart-card'),
+                              child: EquityInsiderChart(symbol: widget.symbol),
+                            ),
                           ),
                         ],
-                        SizedBox(height: isMobile ? 12 : 14),
+                        SizedBox(height: sectionGap),
 
                         // Row 2: Financial Performance (Left 60%) + Shareholding Pattern (Right 40%)
                         if (isMobile) ...[
@@ -424,42 +431,50 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                             sectionKey: _sectionKeys[2],
                             context: context,
                             isMobile: isMobile,
+                            testKey: const Key('ei-financials-card'),
                             child: EquityInsiderFinancials(symbol: widget.symbol),
                           ),
-                          SizedBox(height: isMobile ? 10 : 14),
-                          _buildSectionCard(
-                            sectionKey: _sectionKeys[3],
-                            context: context,
-                            isMobile: isMobile,
-                            child: EquityInsiderShareholding(symbol: widget.symbol),
+                          if (hasShareholding) ...[
+                            SizedBox(height: sectionGap),
+                            _buildSectionCard(
+                              sectionKey: _sectionKeys[3],
+                              context: context,
+                              isMobile: isMobile,
+                              testKey: const Key('ei-shareholding-card'),
+                              child: EquityInsiderShareholding(
+                                symbol: widget.symbol,
+                              ),
+                            ),
+                          ],
+                        ] else if (hasShareholding) ...[
+                          EquityInsiderDesktopPair(
+                            matchHeight: false,
+                            gap: AppSpacing.md,
+                            left: _buildSectionCard(
+                              sectionKey: _sectionKeys[2],
+                              context: context,
+                              isMobile: false,
+                              testKey: const Key('ei-financials-card'),
+                              child: EquityInsiderFinancials(symbol: widget.symbol),
+                            ),
+                            right: _buildSectionCard(
+                              sectionKey: _sectionKeys[3],
+                              context: context,
+                              isMobile: false,
+                              testKey: const Key('ei-shareholding-card'),
+                              child: EquityInsiderShareholding(symbol: widget.symbol),
+                            ),
                           ),
                         ] else ...[
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                flex: 60,
-                                child: _buildSectionCard(
-                                  sectionKey: _sectionKeys[2],
-                                  context: context,
-                                  isMobile: false,
-                                  child: EquityInsiderFinancials(symbol: widget.symbol),
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                flex: 40,
-                                child: _buildSectionCard(
-                                  sectionKey: _sectionKeys[3],
-                                  context: context,
-                                  isMobile: false,
-                                  child: EquityInsiderShareholding(symbol: widget.symbol),
-                                ),
-                              ),
-                            ],
+                          _buildSectionCard(
+                            sectionKey: _sectionKeys[2],
+                            context: context,
+                            isMobile: false,
+                            testKey: const Key('ei-financials-card'),
+                            child: EquityInsiderFinancials(symbol: widget.symbol),
                           ),
                         ],
-                        SizedBox(height: isMobile ? 10 : 14),
+                        SizedBox(height: sectionGap),
 
                         // Row 3: Full-width Peer Comparison Section
                         if (widget.showPeers) ...[
@@ -470,9 +485,10 @@ class _FundamentalsBodyState extends ConsumerState<_FundamentalsBody> {
                             child: EquityInsiderPeers(
                               symbol: widget.symbol,
                               onPeerSelected: widget.onSelectSymbol,
+                              compact: peersCompact,
                             ),
                           ),
-                          SizedBox(height: isMobile ? 10 : 14),
+                          SizedBox(height: sectionGap),
                         ],
                         _buildSectionCard(
                           sectionKey: _sectionKeys[_newsKeyIndex],

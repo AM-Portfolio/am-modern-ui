@@ -102,6 +102,9 @@ abstract class PortfolioHoldings with _$PortfolioHoldings {
     return 'As of $datePart $hh:$mm';
   }
 
+  /// True when any holding has invested amount or average price.
+  bool get hasCostBasis => holdingsHaveCostBasis(holdings);
+
   /// Check if portfolio is empty
   bool get isEmpty => holdings.isEmpty;
 
@@ -161,4 +164,21 @@ abstract class PortfolioHoldings with _$PortfolioHoldings {
   /// Filter holdings by sector
   List<PortfolioHolding> getHoldingsBySector(String sector) =>
       holdings.where((holding) => holding.sector == sector).toList();
+}
+
+/// True when any holding has invested amount or average price.
+bool holdingsHaveCostBasis(Iterable<PortfolioHolding> holdings) =>
+    holdings.any((h) => h.hasCostBasis);
+
+/// Hide Invested / Total Return only after holdings are in and none have
+/// cost, and the summary principal is also zero. Empty holdings (still
+/// loading) must not look like a mail book.
+bool overviewShowsCostMetrics({
+  required double investmentValue,
+  required double totalInvested,
+  required Iterable<PortfolioHolding> holdings,
+}) {
+  if (investmentValue > 0 || totalInvested > 0) return true;
+  if (holdings.isEmpty) return true;
+  return holdingsHaveCostBasis(holdings);
 }

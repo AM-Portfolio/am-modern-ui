@@ -8,6 +8,7 @@ import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intellig
 import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intelligence/intelligence_sector_label.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intelligence/portfolio_health_card.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intelligence/portfolio_risk_radar_card.dart';
+import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intelligence/portfolio_stress_beta_info.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intelligence/portfolio_stress_card.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intelligence/portfolio_stress_catalog.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/widgets/intelligence/portfolio_stress_mobile.dart';
@@ -1071,6 +1072,80 @@ void main() {
     );
     expect(chips.betaLabel, 'β —');
     expect(chips.estLabel, 'Est. · hist');
+  });
+
+  test('How we calculate copy matches chip math', () {
+    expect(
+      StressBetaHowWeCalculate.impactExample(
+        betaUsed: 1.2,
+        equityWeightPct: 70,
+        historyDays: 40,
+        assumed: false,
+      ),
+      contains('-8.4%'),
+    );
+    expect(StressBetaHowWeCalculate.formula, contains('NIFTY 50'));
+    expect(
+      StressBetaHowWeCalculate.chipTooltip(
+        assumed: false,
+        warming: false,
+        benchmark: 'NIFTY50',
+        betaUsed: 1.2,
+        historyDays: 40,
+      ),
+      contains('40 trading days'),
+    );
+  });
+
+  testWidgets('Stress info opens How we calculate sheet', (tester) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final remote = _FakeStressRemote(
+      const StressResult(
+        portfolioId: 'p1',
+        method: 'PORTFOLIO_BETA',
+        betaUsed: 1.2,
+        betaAssumed: false,
+        historyDays: 40,
+        equityWeightPct: 70,
+        benchmark: 'NIFTY50',
+        scenarios: [
+          StressScenario(id: 'NIFTY_DOWN_10', pctImpact: -8.4),
+        ],
+      ),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          portfolioRemoteDataSourceProvider.overrideWith((ref) async => remote),
+          portfolioIntelligenceProvider('p1').overrideWith(
+            (ref) async => const PortfolioIntelligence(
+              portfolioId: 'p1',
+              confidence: 0.9,
+            ),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: PortfolioStressCard(
+                portfolioId: 'p1',
+                initiallyExpanded: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(find.byIcon(Icons.info_outline_rounded));
+    await tester.pumpAndSettle();
+    expect(find.text(StressBetaHowWeCalculate.title), findsWidgets);
+    expect(find.textContaining('of the whole portfolio'), findsOneWidget);
   });
 
   test('stressBetaChipLabels warming', () {

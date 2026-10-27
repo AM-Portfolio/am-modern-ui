@@ -8,6 +8,7 @@ import '../../../providers/portfolio_intelligence_providers.dart';
 import '../../../providers/portfolio_providers.dart';
 import 'intelligence_glass_card.dart';
 import 'intelligence_suggest_search.dart';
+import 'portfolio_stress_beta_info.dart';
 import 'portfolio_stress_catalog.dart';
 import 'portfolio_stress_mobile.dart';
 
@@ -98,6 +99,7 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
   bool? _betaAssumed;
   int? _historyDays;
   String? _benchmark;
+  double? _equityWeightPct;
   int _warmRetries = 0;
   int _loadGeneration = 0;
   bool _pendingWarmRefetch = false;
@@ -145,6 +147,7 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
       _betaAssumed = null;
       _historyDays = null;
       _benchmark = null;
+      _equityWeightPct = null;
       _warmRetries = 0;
       _pendingWarmRefetch = false;
       _loadGeneration++;
@@ -247,6 +250,7 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
         _betaAssumed = result.betaAssumed;
         _historyDays = result.historyDays;
         _benchmark = result.benchmark;
+        _equityWeightPct = result.equityWeightPct;
         _loadedOnce = true;
         _loading = false;
         if (next.isEmpty) {
@@ -515,9 +519,14 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
           _chip(
             context,
             chips.betaLabel,
-            tooltip: _betaTooltipMessage(
+            tooltip: StressBetaHowWeCalculate.chipTooltip(
               assumed: assumed || unresolved,
               warming: warming && !unresolved,
+              benchmark: (_benchmark != null && _benchmark!.trim().isNotEmpty)
+                  ? _benchmark!.trim()
+                  : 'NIFTY50',
+              betaUsed: _betaUsed,
+              historyDays: _historyDays,
             ),
           ),
           const SizedBox(width: 6),
@@ -529,31 +538,23 @@ class _PortfolioStressCardState extends ConsumerState<PortfolioStressCard> {
               warming: warming && !unresolved,
             ),
           ),
+          IconButton(
+            tooltip: StressBetaHowWeCalculate.title,
+            visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+            icon: const Icon(Icons.info_outline_rounded, size: 16),
+            onPressed: () => showStressBetaHowWeCalculate(
+              context,
+              assumed: assumed || unresolved,
+              betaUsed: _betaUsed,
+              historyDays: _historyDays,
+              equityWeightPct: _equityWeightPct,
+            ),
+          ),
         ],
       ),
     );
-  }
-
-  String _betaTooltipMessage({required bool assumed, required bool warming}) {
-    final bench = (_benchmark != null && _benchmark!.trim().isNotEmpty)
-        ? _benchmark!.trim()
-        : 'NIFTY50';
-    if (warming) {
-      return 'Measuring portfolio beta vs $bench…';
-    }
-    if (assumed) {
-      return 'β assumed 1.00 — need ≥20 aligned daily returns vs $bench.\n'
-          'Formula: β = Cov(r_p, r_m) / Var(r_m)\n'
-          'Index presets use this proxy until history warms.';
-    }
-    final b = _betaUsed;
-    final days = _historyDays;
-    final daysPart =
-        (days != null && days > 0) ? '$days trading days' : 'available history';
-    final betaStr = b == null ? '—' : b.toStringAsFixed(2);
-    return 'β = Cov(r_p, r_m) / Var(r_m) on daily returns\n'
-        'This book: β $betaStr vs $bench ($daysPart)\n'
-        'Index shocks scale ≈ shock% × β; sector custom uses β 1.0.';
   }
 
   String _estTooltipMessage({required bool assumed, required bool warming}) {

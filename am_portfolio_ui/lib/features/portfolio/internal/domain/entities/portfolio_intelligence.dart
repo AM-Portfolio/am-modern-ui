@@ -267,6 +267,7 @@ class StressResult {
     this.benchmark,
     this.historyDays,
     this.betaAssumed,
+    this.equityWeightPct,
   });
 
   final String portfolioId;
@@ -277,6 +278,7 @@ class StressResult {
   final String? benchmark;
   final int? historyDays;
   final bool? betaAssumed;
+  final double? equityWeightPct;
 
   factory StressResult.fromJson(Map<String, dynamic> json) {
     final raw = json['scenarios'];
@@ -295,6 +297,7 @@ class StressResult {
       benchmark: json['benchmark']?.toString(),
       historyDays: _asInt(json['historyDays']),
       betaAssumed: _asBetaAssumed(json['betaAssumed'], json['method']?.toString()),
+      equityWeightPct: _asDouble(json['equityWeightPct']),
     );
   }
 }

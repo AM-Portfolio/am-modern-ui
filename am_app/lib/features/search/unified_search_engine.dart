@@ -6,10 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'adapters/basket_catalog_search_adapter.dart';
 import 'adapters/etf_basket_search_adapter.dart';
+import 'adapters/holdings_search_adapter.dart';
 import 'adapters/securities_search_adapter.dart';
 import 'search_context.dart';
 import 'search_context_registry.dart';
 import 'search_navigation.dart';
+import 'search_relevance.dart';
 
 class UnifiedSearchSnapshot {
   const UnifiedSearchSnapshot({
@@ -33,14 +35,17 @@ class UnifiedSearchEngine {
     SecuritiesSearchAdapter? securities,
     EtfBasketSearchAdapter? etfBasket,
     BasketCatalogSearchAdapter? catalog,
+    HoldingsSearchAdapter? holdings,
     this.debounce = const Duration(milliseconds: 180),
   })  : _securities = securities ?? SecuritiesSearchAdapter(),
         _etfBasket = etfBasket ?? EtfBasketSearchAdapter(),
-        _catalog = catalog ?? BasketCatalogSearchAdapter();
+        _catalog = catalog ?? BasketCatalogSearchAdapter(),
+        _holdings = holdings ?? HoldingsSearchAdapter();
 
   final SecuritiesSearchAdapter _securities;
   final EtfBasketSearchAdapter _etfBasket;
   final BasketCatalogSearchAdapter _catalog;
+  final HoldingsSearchAdapter _holdings;
   final Duration debounce;
 
   Timer? _timer;
@@ -132,15 +137,41 @@ class UnifiedSearchEngine {
       final nav = SearchNavigationHandler(navContext, container: container);
       final secCategory =
           (context == SearchContext.equityInsider ||
-                  context == SearchContext.paper)
+                  context == SearchContext.paper ||
+                  context == SearchContext.portfolio)
               ? 'STOCKS'
               : 'ALL';
 
       var securitiesItems = <CommandItem>[];
       var basketItems = <CommandItem>[];
+      var holdingItems = <CommandItem>[];
       var securitiesDone = false;
       var basketsDone = !wantBaskets;
       String? lastError;
+
+      if (context == SearchContext.portfolio) {
+        holdingItems = _holdings
+            .matching(
+              query: query,
+              container: container,
+              navContext: navContext,
+            )
+            .map(
+              (h) => CommandItem(
+                title: h.symbol,
+                subtitle: h.companyName.trim().isEmpty
+                    ? 'Holding'
+                    : 'Holding · ${h.companyName}',
+                icon: Icons.account_balance_wallet_outlined,
+                category: 'Portfolio',
+                onSelected: () {
+                  rememberSymbol(h.symbol);
+                  nav.openSecurity(h.symbol, context);
+                },
+              ),
+            )
+            .toList();
+      }
 
       void emit({required bool loading, String? error}) {
         if (id != _requestId) return;
@@ -171,21 +202,38 @@ class UnifiedSearchEngine {
           }
         }
 
-        final merged = [
+        final holdingSymbols = holdingItems
+            .map((h) => h.title.trim().toUpperCase())
+            .toSet();
+        final marketDeduped = securitiesItems.where(
+          (i) => !holdingSymbols.contains(i.title.trim().toUpperCase()),
+        );
+        final merged = <CommandItem>[
           ...journalItems,
-          ...securitiesItems,
+          ...holdingItems,
+          ...marketDeduped,
           ...basketItems,
           ...actions,
         ];
-        merged.sort((a, b) {
-          final ba = SearchContextRegistry.boost(context, a.category);
-          final bb = SearchContextRegistry.boost(context, b.category);
-          if (ba != bb) return bb.compareTo(ba);
-          return a.title.compareTo(b.title);
+        final ranked = List<CommandItem>.generate(merged.length, (i) => merged[i]);
+        ranked.sort((a, b) {
+          return SearchRelevance.compare(
+            context: context,
+            query: query,
+            aCategory: a.category,
+            aTitle: a.title,
+            aSubtitle: a.subtitle,
+            aIndex: merged.indexOf(a),
+            bCategory: b.category,
+            bTitle: b.title,
+            bSubtitle: b.subtitle,
+            bIndex: merged.indexOf(b),
+            recents: recentSymbols,
+          );
         });
         onResult(
           UnifiedSearchSnapshot(
-            items: merged,
+            items: ranked.take(SearchRelevance.resultCap).toList(),
             query: query,
             requestId: id,
             isLoading: loading,
@@ -371,6 +419,24 @@ class UnifiedSearchEngine {
             icon: Icons.candlestick_chart,
             category: 'Market',
             onSelected: () => nav.openSecurity(sym, SearchContext.fo),
+          ),
+        );
+      }
+    }
+
+    if (context == SearchContext.portfolio) {
+      for (final h in _holdings
+          .cached(container: container, navContext: navContext)
+          .take(8)) {
+        out.add(
+          CommandItem(
+            title: h.symbol,
+            subtitle: h.companyName.trim().isEmpty
+                ? 'Holding'
+                : 'Holding · ${h.companyName}',
+            icon: Icons.account_balance_wallet_outlined,
+            category: 'Portfolio',
+            onSelected: () => nav.openSecurity(h.symbol, context),
           ),
         );
       }

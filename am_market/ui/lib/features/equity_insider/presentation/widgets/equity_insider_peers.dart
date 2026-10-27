@@ -11,11 +11,13 @@ import 'equity_insider_peers_columns.dart';
 class EquityInsiderPeers extends ConsumerStatefulWidget {
   final String symbol;
   final ValueChanged<String>? onPeerSelected;
+  final bool compact;
 
   const EquityInsiderPeers({
     super.key,
     required this.symbol,
     this.onPeerSelected,
+    this.compact = false,
   });
 
   @override
@@ -87,64 +89,59 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
             final sortedPeers = _getSortedPeers(peers, activeCols);
             final double maxRoe = peers.fold(0.0, (m, p) => max(m, p.roe ?? 0.0));
 
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                final width = constraints.maxWidth;
-                final isCompactMobile = width < AmBreakpoints.mobile;
-
-                if (isCompactMobile) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            _buildSortTab('Price', 'currentPrice'),
-                            const SizedBox(width: 8),
-                            ..._compactMobileSortColumns(activeCols).map(
-                              (col) => Padding(
-                                padding: const EdgeInsets.only(left: 8),
-                                child: _buildSortTab(col.label, col.key),
-                              ),
-                            ),
-                          ],
+            if (widget.compact) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildSortTab('Price', 'currentPrice'),
+                        const SizedBox(width: 8),
+                        ..._compactMobileSortColumns(activeCols).map(
+                          (col) => Padding(
+                            padding: const EdgeInsets.only(left: 8),
+                            child: _buildSortTab(col.label, col.key),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildCompactMobilePeersTable(context, sortedPeers, activeCols),
-                    ],
-                  );
-                }
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildCompactMobilePeersTable(context, sortedPeers, activeCols),
+                ],
+              );
+            }
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          _buildSortTab('Price', 'currentPrice'),
-                          const SizedBox(width: 8),
-                          _buildSortTab('Day Chg', 'dayChangePercent'),
-                          ...activeCols.map((col) => Padding(
-                                padding: const EdgeInsets.only(left: 8),
-                                child: _buildSortTab(col.label, col.key),
-                              )),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    AmAdaptiveTableCardView<CompetitorPeer>(
-                      items: sortedPeers,
-                      breakpoint: 800.0,
-                      spacing: 10.0,
-                      tableBuilder: (context, items) => _buildDesktopTable(context, items, maxRoe, activeCols),
-                      cardBuilder: (context, peer, index) => _buildMobilePeerCard(context, peer, maxRoe, activeCols),
-                    ),
-                  ],
-                );
-              },
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildSortTab('Price', 'currentPrice'),
+                      const SizedBox(width: 8),
+                      _buildSortTab('Day Chg', 'dayChangePercent'),
+                      ...activeCols.map((col) => Padding(
+                            padding: const EdgeInsets.only(left: 8),
+                            child: _buildSortTab(col.label, col.key),
+                          )),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                AmAdaptiveTableCardView<CompetitorPeer>(
+                  items: sortedPeers,
+                  breakpoint: 800.0,
+                  spacing: 10.0,
+                  tableBuilder: (context, items) =>
+                      _buildDesktopTable(context, items, maxRoe, activeCols),
+                  cardBuilder: (context, peer, index) =>
+                      _buildMobilePeerCard(context, peer, maxRoe, activeCols),
+                ),
+              ],
             );
           },
           loading: () => const Padding(
@@ -774,7 +771,7 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
       borderRadius: BorderRadius.circular(6),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
           color: isActive ? ModuleColors.market : context.cardColor,
           border: Border.all(
@@ -785,7 +782,7 @@ class _EquityInsiderPeersState extends ConsumerState<EquityInsiderPeers> {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
             color: isActive
                 ? context.colors.actionPrimaryFg

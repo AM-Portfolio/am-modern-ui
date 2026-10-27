@@ -106,12 +106,17 @@ mixin ShellSearchOps on State<AppShell> {
   List<common.CommandItem> _emptySearchSuggestions() {
     final searchCtx = _searchContext;
     final seed = _seedActionItems(context);
+    ProviderContainer? container;
+    try {
+      container = ProviderScope.containerOf(context, listen: false);
+    } catch (_) {}
     List<common.CommandItem> items = seed;
     _searchEngine.query(
       rawQuery: '',
       context: searchCtx,
       navContext: context,
       seedActions: seed,
+      container: container,
       onResult: (snap) {
         if (!snap.isLoading) items = snap.items;
       },

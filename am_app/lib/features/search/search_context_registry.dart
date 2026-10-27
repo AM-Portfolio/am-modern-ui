@@ -115,7 +115,7 @@ class SearchContextRegistry {
       case SearchContext.chart:
         return 'Search chart symbols…';
       case SearchContext.portfolio:
-        return 'Search portfolios & baskets…';
+        return 'Search holdings & baskets…';
       case SearchContext.market:
         return 'Search markets & symbols…';
       case SearchContext.trade:

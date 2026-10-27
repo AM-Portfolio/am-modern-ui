@@ -102,6 +102,63 @@ void main() {
     );
   });
 
+  test('holdingsHaveCostBasis is false only for Dhan-style books', () {
+    expect(holdingsHaveCostBasis(const []), isFalse);
+    expect(
+      holdingsHaveCostBasis([
+        _holding(symbol: 'MAIL', investedAmount: 0, avgPrice: 0, quantity: 5),
+      ]),
+      isFalse,
+    );
+    expect(
+      holdingsHaveCostBasis([
+        _holding(symbol: 'TCS', investedAmount: 1000, avgPrice: 10, quantity: 5),
+        _holding(symbol: 'MAIL', investedAmount: 0, avgPrice: 0, quantity: 5),
+      ]),
+      isTrue,
+    );
+  });
+
+  test('overviewShowsCostMetrics does not hide cards while holdings are empty',
+      () {
+    expect(
+      overviewShowsCostMetrics(
+        investmentValue: 0,
+        totalInvested: 0,
+        holdings: const [],
+      ),
+      isTrue,
+    );
+    expect(
+      overviewShowsCostMetrics(
+        investmentValue: 863000,
+        totalInvested: 863000,
+        holdings: const [],
+      ),
+      isTrue,
+    );
+    expect(
+      overviewShowsCostMetrics(
+        investmentValue: 0,
+        totalInvested: 0,
+        holdings: [
+          _holding(symbol: 'MAIL', investedAmount: 0, avgPrice: 0, quantity: 5),
+        ],
+      ),
+      isFalse,
+    );
+    expect(
+      overviewShowsCostMetrics(
+        investmentValue: 50000,
+        totalInvested: 50000,
+        holdings: [
+          _holding(symbol: 'TCS', investedAmount: 50000, avgPrice: 250, quantity: 4),
+        ],
+      ),
+      isTrue,
+    );
+  });
+
   test('page-level holdings stamp still formats As of', () {
     final holdings = PortfolioHoldings(
       holdings: const [],
