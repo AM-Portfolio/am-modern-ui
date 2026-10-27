@@ -12,13 +12,10 @@ class PostTradeReviewStep extends StatefulWidget {
     super.key,
     required this.entry,
     required this.onUpdate,
-    this.identityHeader,
   });
 
   final JournalEntry entry;
   final ValueChanged<JournalEntry> onUpdate;
-  /// Compact symbol / status strip inside the Post-Trade card.
-  final Widget? identityHeader;
 
   @override
   State<PostTradeReviewStep> createState() => _PostTradeReviewStepState();
@@ -130,13 +127,13 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
   }
 
   Widget _dropdown<T>({
-    required String label,
+    required String placeholder,
     required T? value,
     required List<DropdownMenuItem<T>> items,
     required ValueChanged<T?> onChanged,
   }) {
     return JournalThemedDropdown<T>(
-      label: label,
+      hint: placeholder,
       value: value,
       items: items,
       onChanged: onChanged,
@@ -146,13 +143,13 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
   }
 
   Widget _autoBox({
-    required String label,
+    required String placeholder,
     required String value,
     Color? valueColor,
   }) {
     final theme = Theme.of(context);
     return InputDecorator(
-      decoration: journalWorkflowDecoration(context, label: label),
+      decoration: journalWorkflowDecoration(context, hintText: placeholder),
       child: Text(
         value,
         style: theme.textTheme.bodyLarge?.copyWith(
@@ -165,7 +162,7 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
 
   Widget _field({
     required TextEditingController controller,
-    required String label,
+    required String placeholder,
     required ValueChanged<String> onChanged,
     String? prefixText,
     TextInputType? keyboardType,
@@ -179,7 +176,7 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
       maxLines: maxLines,
       decoration: journalWorkflowDecoration(
         context,
-        label: label,
+        hintText: placeholder,
         prefixText: prefixText,
         alignLabelWithHint: maxLines > 1,
       ),
@@ -194,19 +191,13 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
     final theme = Theme.of(context);
 
     return JournalFormSurface(
-      title: 'Post-Trade Review',
-      subtitle: 'Capture outcome, grade execution, and lock the lesson.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (widget.identityHeader != null) ...[
-            widget.identityHeader!,
-            _gap(),
-          ],
           _row(
             _field(
               controller: _exit,
-              label: 'Actual exit price',
+              placeholder: 'Actual exit price',
               prefixText: '₹ ',
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
@@ -215,7 +206,7 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
               ),
             ),
             _autoBox(
-              label: 'P&L (auto)',
+              placeholder: 'P&L (auto)',
               value: review.actualPnl == null
                   ? '—'
                   : review.actualPnl!.toStringAsFixed(2),
@@ -229,13 +220,13 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
           _gap(),
           _row(
             _autoBox(
-              label: 'R multiple (auto)',
+              placeholder: 'R multiple (auto)',
               value: review.actualRMultiple == null
                   ? '—'
                   : '${review.actualRMultiple!.toStringAsFixed(2)} R',
             ),
             _dropdown<String>(
-              label: 'Followed stop loss?',
+              placeholder: 'Followed stop loss?',
               value: review.followedStopLoss,
               items: const [
                 DropdownMenuItem(value: 'Yes', child: Text('Yes')),
@@ -249,7 +240,7 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
           _gap(),
           _row(
             _dropdown<String>(
-              label: 'Followed target?',
+              placeholder: 'Followed target?',
               value: review.followedTarget,
               items: const [
                 DropdownMenuItem(value: 'Full', child: Text('Full')),
@@ -260,7 +251,7 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
                   _updateReview(review.copyWith(followedTarget: v)),
             ),
             _dropdown<String>(
-              label: 'Mistake category',
+              placeholder: 'Mistake category',
               value: review.mistakeCategory ?? 'NONE',
               items: _mistakes
                   .map(
@@ -277,7 +268,7 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
           _gap(),
           _row(
             _dropdown<int>(
-              label: 'Execution score',
+              placeholder: 'Execution score',
               value: review.executionScore ?? 7,
               items: List.generate(
                 10,
@@ -290,7 +281,7 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
                   _updateReview(review.copyWith(executionScore: v)),
             ),
             _dropdown<String>(
-              label: 'Emotional state',
+              placeholder: 'Emotional state',
               value: review.emotionalState ?? 'CALM',
               items: _emotions
                   .map(
@@ -308,14 +299,14 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
           _row(
             _field(
               controller: _wentWell,
-              label: 'What went well?',
+              placeholder: 'What went well?',
               maxLines: 3,
               onChanged: (v) =>
                   _updateReview(review.copyWith(whatWentWell: v)),
             ),
             _field(
               controller: _improve,
-              label: 'What could be improved?',
+              placeholder: 'What could be improved?',
               maxLines: 3,
               onChanged: (v) =>
                   _updateReview(review.copyWith(whatCouldBeImproved: v)),
@@ -324,7 +315,7 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
           _gap(),
           _field(
             controller: _lesson,
-            label: 'Lesson learned',
+            placeholder: 'Lesson learned',
             maxLines: 3,
             onChanged: (v) =>
                 _updateReview(review.copyWith(lessonLearned: v)),

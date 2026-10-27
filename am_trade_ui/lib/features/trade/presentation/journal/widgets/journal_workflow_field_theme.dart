@@ -2,9 +2,12 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
 /// Shared input chrome for structured trade workflow steps.
+///
+/// Prefer [hintText] as the only title (no floating label). Pass [label] only
+/// when a floating label is intentionally needed.
 InputDecoration journalWorkflowDecoration(
   BuildContext context, {
-  required String label,
+  String? label,
   String? prefixText,
   String? hintText,
   bool alignLabelWithHint = false,
@@ -12,11 +15,15 @@ InputDecoration journalWorkflowDecoration(
   final colors = context.colors;
   final theme = Theme.of(context);
   final radius = BorderRadius.circular(AppRadii.md);
+  final hasFloatingLabel = label != null && label.trim().isNotEmpty;
   return InputDecoration(
-    labelText: label,
+    labelText: hasFloatingLabel ? label : null,
     prefixText: prefixText,
     hintText: hintText,
     alignLabelWithHint: alignLabelWithHint,
+    floatingLabelBehavior: hasFloatingLabel
+        ? FloatingLabelBehavior.auto
+        : FloatingLabelBehavior.never,
     filled: true,
     fillColor: colors.cardSurface,
     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),

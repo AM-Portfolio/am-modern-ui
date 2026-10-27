@@ -13,14 +13,11 @@ class PreTradePlanStep extends StatefulWidget {
     required this.entry,
     required this.onUpdate,
     this.applyDefaultChecklist = false,
-    this.identityHeader,
   });
 
   final JournalEntry entry;
   final ValueChanged<JournalEntry> onUpdate;
   final bool applyDefaultChecklist;
-  /// Compact symbol / status strip inside the Pre-Trade card (avoids hero chrome).
-  final Widget? identityHeader;
 
   @override
   State<PreTradePlanStep> createState() => _PreTradePlanStepState();
@@ -130,7 +127,7 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
 
   Widget _field({
     required TextEditingController controller,
-    required String label,
+    required String placeholder,
     required ValueChanged<String> onChanged,
     String? prefixText,
     TextInputType? keyboardType,
@@ -142,7 +139,7 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
       keyboardType: keyboardType,
       decoration: journalWorkflowDecoration(
         context,
-        label: label,
+        hintText: placeholder,
         prefixText: prefixText,
       ),
       onChanged: onChanged,
@@ -160,78 +157,70 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
     final colors = context.colors;
     final theme = Theme.of(context);
 
-    final symbolInHeader =
-        widget.identityHeader != null &&
-        (widget.entry.symbol?.trim().isNotEmpty ?? false);
-
     final hasNotes = (_setupDesc.text.trim().isNotEmpty) ||
         (_rationale.text.trim().isNotEmpty);
 
-    final directionBlock = Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'Direction',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: colors.textSecondary,
+    final isDark = theme.brightness == Brightness.dark;
+    final accent = ModuleColors.trade;
+    final directionBlock = SegmentedButton<String>(
+      showSelectedIcon: false,
+      style: ButtonStyle(
+        visualDensity: VisualDensity.standard,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        textStyle: WidgetStatePropertyAll(
+          theme.textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 6),
-        SegmentedButton<String>(
-          style: ButtonStyle(
-            visualDensity: VisualDensity.standard,
-            textStyle: WidgetStatePropertyAll(
-              theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          segments: const [
-            ButtonSegment(value: 'LONG', label: Text('Long')),
-            ButtonSegment(value: 'SHORT', label: Text('Short')),
-          ],
-          selected: {direction},
-          onSelectionChanged: (s) => _updatePlan(plan, direction: s.first),
+        backgroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return accent;
+          return colors.cardSurface;
+        }),
+        foregroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return theme.colorScheme.onPrimary;
+          }
+          return colors.textSecondary;
+        }),
+        side: WidgetStatePropertyAll(
+          BorderSide(color: colors.border.withValues(alpha: isDark ? 0.45 : 0.4)),
         ),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.md)),
+        ),
+      ),
+      segments: const [
+        ButtonSegment(value: 'LONG', label: Text('Long')),
+        ButtonSegment(value: 'SHORT', label: Text('Short')),
       ],
+      selected: {direction},
+      onSelectionChanged: (s) => _updatePlan(plan, direction: s.first),
     );
 
     return JournalFormSurface(
-      title: 'Pre-Trade Plan',
-      subtitle: 'Pick from the list, or Custom… for your own.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (widget.identityHeader != null) ...[
-            widget.identityHeader!,
-            _gap(),
-          ],
-          if (!symbolInHeader)
-            _row(
-              _field(
-                controller: _symbol,
-                label: 'Symbol *',
-                onChanged: (v) => _updatePlan(plan, symbol: v),
-              ),
-              directionBlock,
-            )
-          else
-            Align(alignment: Alignment.centerLeft, child: directionBlock),
+          _row(
+            _field(
+              controller: _symbol,
+              placeholder: 'Symbol *',
+              onChanged: (v) => _updatePlan(plan, symbol: v),
+            ),
+            directionBlock,
+          ),
           _gap(),
           _row(
             JournalPresetOrCustomField(
               label: 'Strategy',
               presets: JournalPreTradePresets.strategies,
               value: plan.strategy,
-              hint: 'Select strategy',
               onChanged: (v) => _updatePlan(plan.copyWith(strategy: v)),
             ),
             JournalPresetOrCustomField(
               label: 'Setup',
               presets: JournalPreTradePresets.setups,
               value: plan.setup ?? widget.entry.setup,
-              hint: 'Select setup',
               onChanged: (v) => _updatePlan(plan.copyWith(setup: v)),
             ),
           ),
@@ -240,14 +229,13 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
             label: 'Market context',
             presets: JournalPreTradePresets.marketContexts,
             value: plan.marketContext,
-            hint: 'Select context',
             onChanged: (v) => _updatePlan(plan.copyWith(marketContext: v)),
           ),
           _gap(),
           _row(
             _field(
               controller: _entryPrice,
-              label: 'Planned entry',
+              placeholder: 'Planned entry',
               prefixText: '₹ ',
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
@@ -257,7 +245,7 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
             ),
             _field(
               controller: _stop,
-              label: 'Planned stop',
+              placeholder: 'Planned stop',
               prefixText: '₹ ',
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
@@ -270,7 +258,7 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
           _row(
             _field(
               controller: _target,
-              label: 'Planned target',
+              placeholder: 'Planned target',
               prefixText: '₹ ',
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
@@ -280,7 +268,7 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
             ),
             _field(
               controller: _qty,
-              label: 'Quantity',
+              placeholder: 'Quantity',
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
               onChanged: (v) => _updatePlan(
@@ -333,7 +321,7 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
                     style: theme.textTheme.bodyLarge,
                     decoration: journalWorkflowDecoration(
                       context,
-                      label: 'Setup description',
+                      hintText: 'Setup description',
                       alignLabelWithHint: true,
                     ),
                     onChanged: (v) =>
@@ -345,7 +333,7 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
                     style: theme.textTheme.bodyLarge,
                     decoration: journalWorkflowDecoration(
                       context,
-                      label: 'Entry rationale',
+                      hintText: 'Entry rationale',
                       alignLabelWithHint: true,
                     ),
                     onChanged: (v) =>

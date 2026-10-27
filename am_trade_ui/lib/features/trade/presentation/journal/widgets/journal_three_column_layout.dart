@@ -118,7 +118,7 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
     if (oldWidget.selectedFolder != widget.selectedFolder) {
       if (canFocus) {
         // Prefer import/search focus over "first in folder".
-        _applyFocusEntry(focusId!);
+        _applyFocusEntry(focusId);
       } else {
         setState(() {
           _useTradeWorkflow = false;
@@ -138,7 +138,7 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
     }
     if ((focusChanged || entriesChanged) && canFocus) {
       // Close New Trade / Log Day composer so imported stubs are visible.
-      _applyFocusEntry(focusId!);
+      _applyFocusEntry(focusId);
     }
     if (_isCreatingNew) return;
     final stillVisible = widget.entries.any((e) => e.id == _selectedEntryId);
@@ -344,7 +344,7 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
           AnimatedContainer(
             duration: const Duration(milliseconds: 320),
             curve: Curves.easeOutCubic,
-            width: focusFullPage ? 0 : 400,
+            width: focusFullPage ? 0 : 320,
             child: focusFullPage
                 ? const SizedBox.shrink()
                 : ClipRect(
@@ -352,7 +352,10 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
                       entries: widget.entries,
                       selectedEntryId: _selectedEntryId,
                       showListTitle: false,
-                      width: 400,
+                      width: 320,
+                      createMode: _isCreatingNew
+                          ? _useTradeWorkflow
+                          : (_forceTradeEdit ? true : null),
                       filterSlot: widget.listFilterSlot,
                       emptyMessage: JournalFolderFilter.emptyMessage(
                         widget.selectedFolder,

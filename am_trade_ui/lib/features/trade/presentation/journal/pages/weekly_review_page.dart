@@ -320,19 +320,6 @@ class _WeeklyReviewPageState extends State<WeeklyReviewPage> {
           onOpen: _openFullReview,
           onRefresh: _loadWeek,
         ),
-        const SizedBox(height: AppSpacing.xl),
-        Align(
-          alignment: Alignment.centerRight,
-          child: AppButton(
-            text: 'Save weekly review',
-            icon: Icons.save_outlined,
-            type: AppButtonType.primary,
-            backgroundColor: ModuleColors.trade,
-            onPressed: _saving ? null : _saveWeeklyReview,
-            isLoading: _saving,
-            height: 40,
-          ),
-        ),
       ],
     );
   }
@@ -360,132 +347,85 @@ class _WeeklyHero extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = context.colors;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: colors.cardSurface,
-        borderRadius: AppRadii.card,
-        border: Border.all(color: colors.border.withValues(alpha: 0.35)),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            colors.cardSurface,
-            ModuleColors.trade.withValues(alpha: 0.08),
-          ],
-        ),
+    return JournalFormSurface(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md + AppSpacing.xs,
+        vertical: AppSpacing.md,
       ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final showDecor = constraints.maxWidth >= 720;
-          return Row(
-            children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: ModuleColors.trade.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(14),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Weekly review',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-                child: Icon(
-                  Icons.calendar_month_rounded,
-                  color: ModuleColors.trade,
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Weekly Review',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
+                const SizedBox(height: 6),
+                InkWell(
+                  onTap: onPickRange,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                      vertical: AppSpacing.xxs + 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: ModuleColors.trade.withValues(alpha: 0.12),
+                      borderRadius: AppRadii.chip,
+                      border: Border.all(
+                        color: ModuleColors.trade.withValues(alpha: 0.35),
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    InkWell(
-                      onTap: onPickRange,
-                      borderRadius: BorderRadius.circular(6),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              weekLabel,
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                color: ModuleColors.trade,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              Icons.expand_more_rounded,
-                              size: 18,
-                              color: ModuleColors.trade,
-                            ),
-                          ],
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.calendar_month_rounded,
+                          size: 16,
+                          color: ModuleColors.trade,
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Guided process review for your last trading week.',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (showDecor) ...[
-                const SizedBox(width: AppSpacing.md),
-                Opacity(
-                  opacity: 0.9,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Icon(
-                        Icons.assignment_outlined,
-                        size: 72,
-                        color: ModuleColors.trade.withValues(alpha: 0.22),
-                      ),
-                      Positioned(
-                        right: 0,
-                        bottom: 4,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
+                        const SizedBox(width: 6),
+                        Text(
+                          weekLabel,
+                          style: theme.textTheme.labelLarge?.copyWith(
                             color: ModuleColors.trade,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.check_rounded,
-                            size: 14,
-                            color: Theme.of(context).colorScheme.onPrimary,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                      ),
-                    ],
+                        Icon(
+                          Icons.expand_more_rounded,
+                          size: 18,
+                          color: ModuleColors.trade,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Check process, write lessons, save one weekly entry.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colors.textSecondary,
                   ),
                 ),
               ],
-              const SizedBox(width: AppSpacing.md),
-              AppButton(
-                text: 'Save',
-                icon: Icons.save_outlined,
-                type: AppButtonType.primary,
-                backgroundColor: ModuleColors.trade,
-                onPressed: saving ? null : onSave,
-                isLoading: saving,
-                height: 36,
-              ),
-            ],
-          );
-        },
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          AppButton(
+            text: 'Save',
+            icon: Icons.save_outlined,
+            type: AppButtonType.primary,
+            backgroundColor: ModuleColors.trade,
+            onPressed: saving ? null : onSave,
+            isLoading: saving,
+            height: 40,
+          ),
+        ],
       ),
     );
   }
@@ -785,68 +725,57 @@ class _NotesLessonsCard extends StatelessWidget {
 
     return JournalFormSurface(
       title: 'Notes / lessons',
-      subtitle:
-          'Write your key takeaways, what went well, what didn’t, and what to improve.',
       leading: Icon(
         Icons.lightbulb_outline_rounded,
         size: 18,
         color: ModuleColors.trade,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TextField(
-            controller: controller,
-            maxLines: 10,
-            minLines: 8,
-            maxLength: maxLength,
-            maxLengthEnforcement: MaxLengthEnforcement.enforced,
-            buildCounter: (
-              context, {
-              required currentLength,
-              required isFocused,
-              maxLength,
-            }) =>
-                const SizedBox.shrink(),
-            decoration: InputDecoration(
-              hintText: 'Write your weekly thoughts here...',
-              hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                color: colors.textSecondary.withValues(alpha: 0.7),
-              ),
-              filled: true,
-              fillColor: colors.surface.withValues(alpha: 0.45),
-              border: OutlineInputBorder(
-                borderRadius: AppRadii.card,
-                borderSide: BorderSide(
-                  color: colors.border.withValues(alpha: 0.35),
-                ),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: AppRadii.card,
-                borderSide: BorderSide(
-                  color: colors.border.withValues(alpha: 0.35),
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: AppRadii.card,
-                borderSide: BorderSide(
-                  color: ModuleColors.trade.withValues(alpha: 0.7),
-                ),
-              ),
-              contentPadding: const EdgeInsets.all(AppSpacing.md),
-              alignLabelWithHint: true,
+      trailing: Text(
+        '$len/$maxLength',
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: colors.textSecondary,
+        ),
+      ),
+      child: TextField(
+        controller: controller,
+        maxLines: 10,
+        minLines: 8,
+        maxLength: maxLength,
+        maxLengthEnforcement: MaxLengthEnforcement.enforced,
+        buildCounter: (
+          context, {
+          required currentLength,
+          required isFocused,
+          maxLength,
+        }) =>
+            const SizedBox.shrink(),
+        decoration: InputDecoration(
+          hintText:
+              'Key takeaways — what went well, what didn’t, what to improve…',
+          hintStyle: theme.textTheme.bodyMedium?.copyWith(
+            color: colors.textTertiary,
+          ),
+          filled: true,
+          fillColor: colors.cardSurface,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadii.md),
+            borderSide: BorderSide(
+              color: colors.border.withValues(alpha: 0.35),
             ),
           ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              '$len/$maxLength',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: colors.textSecondary,
-              ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadii.md),
+            borderSide: BorderSide(
+              color: colors.border.withValues(alpha: 0.35),
             ),
           ),
-        ],
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadii.md),
+            borderSide: BorderSide(color: ModuleColors.trade, width: 1.5),
+          ),
+          contentPadding: const EdgeInsets.all(AppSpacing.md),
+          alignLabelWithHint: true,
+        ),
       ),
     );
   }
@@ -875,20 +804,21 @@ class _CompletedTradesCard extends StatelessWidget {
     final pnlFmt = NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
 
     return JournalFormSurface(
-      title: 'Completed trades this week (${entries.length})',
-      subtitle: 'Journal entries marked completed in the selected range',
+      title: 'Completed this week (${entries.length})',
       leading: Icon(
         Icons.candlestick_chart_outlined,
         size: 18,
         color: ModuleColors.trade,
       ),
-      trailing: TextButton(
+      trailing: IconButton(
+        tooltip: 'Refresh',
         onPressed: onRefresh,
-        style: TextButton.styleFrom(
-          foregroundColor: ModuleColors.trade,
-          visualDensity: VisualDensity.compact,
+        visualDensity: VisualDensity.compact,
+        icon: Icon(
+          Icons.refresh_rounded,
+          color: ModuleColors.trade,
+          size: 20,
         ),
-        child: const Text('Refresh'),
       ),
       child: entries.isEmpty
           ? Padding(

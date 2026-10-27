@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../internal/domain/entities/journal_entry.dart';
 import '../../../presentation/models/trade_holding_view_model.dart';
 import '../../../providers/trade_internal_providers.dart';
+import '../../web/widgets/journal/components/journal_attachment_section.dart';
+import '../../web/widgets/journal/utils/journal_form_helpers.dart';
 import 'journal_form_surface.dart';
 import 'journal_preset_or_custom_field.dart';
 import 'journal_workflow_field_theme.dart';
@@ -16,15 +18,12 @@ class ExecuteTradeStep extends ConsumerStatefulWidget {
     required this.onUpdate,
     this.portfolioId,
     this.onLinkTrade,
-    this.identityHeader,
   });
 
   final JournalEntry entry;
   final ValueChanged<JournalEntry> onUpdate;
   final String? portfolioId;
   final Future<void> Function(String tradeId)? onLinkTrade;
-  /// Compact symbol / status strip inside the Execute card.
-  final Widget? identityHeader;
 
   @override
   ConsumerState<ExecuteTradeStep> createState() => _ExecuteTradeStepState();
@@ -95,7 +94,7 @@ class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
 
   Widget _field({
     required TextEditingController controller,
-    required String label,
+    required String placeholder,
     required ValueChanged<String> onChanged,
     String? prefixText,
     TextInputType? keyboardType,
@@ -109,7 +108,7 @@ class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
       maxLines: maxLines,
       decoration: journalWorkflowDecoration(
         context,
-        label: label,
+        hintText: placeholder,
         prefixText: prefixText,
         alignLabelWithHint: maxLines > 1,
       ),
@@ -300,59 +299,10 @@ class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
     await _applyLink(tradeId);
   }
 
-  Future<void> _addAttachment(BuildContext context) async {
-    final nameCtrl = TextEditingController();
-    final urlCtrl = TextEditingController();
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add attachment URL'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(
-                labelText: 'File name',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: urlCtrl,
-              decoration: const InputDecoration(
-                labelText: 'URL',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Add'),
-          ),
-        ],
-      ),
-    );
-    if (ok != true) return;
-    final name = nameCtrl.text.trim();
-    final url = urlCtrl.text.trim();
-    if (name.isEmpty || url.isEmpty) return;
-    final next = [
-      ...entry.attachments,
-      JournalAttachment(
-        fileName: name,
-        fileUrl: url,
-        fileType: 'image',
-        uploadedAt: DateTime.now(),
-      ),
-    ];
-    widget.onUpdate(entry.copyWith(attachments: next));
+  void _onAttachmentsChanged(List<String> urls) {
+    final attachments =
+        JournalFormHelpers.convertImageUrlsToAttachments(urls);
+    widget.onUpdate(entry.copyWith(attachments: attachments));
   }
 
   @override
@@ -360,19 +310,13 @@ class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
     final exec = entry.tradeExecution ?? const TradeExecution();
     final theme = Theme.of(context);
     final colors = context.colors;
+    final imageUrls = entry.attachments.map((a) => a.fileUrl).toList();
 
     return JournalFormSurface(
-      title: 'Trade Execution',
-      subtitle:
-          'Link a fill and/or record the snapshot — pick presets where you can.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (widget.identityHeader != null) ...[
-            widget.identityHeader!,
-            _gap(),
-          ],
-          // Inspiration: instrument summary | linked-trade card on one row.
+          // Instrument | linked-trade card on one row.
           _row(
             Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -508,7 +452,7 @@ class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
           _row(
             _field(
               controller: _entryPrice,
-              label: 'Actual entry price',
+              placeholder: 'Actual entry price',
               prefixText: '₹ ',
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
@@ -518,7 +462,7 @@ class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
             ),
             _field(
               controller: _qty,
-              label: 'Quantity',
+              placeholder: 'Quantity',
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
               onChanged: (v) =>
@@ -531,142 +475,41 @@ class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
               label: 'Broker / platform',
               presets: JournalPreTradePresets.brokers,
               value: exec.broker,
-              hint: 'Select broker',
               onChanged: (v) => _updateExec(exec.copyWith(broker: v)),
             ),
             JournalPresetOrCustomField(
               label: 'Order type',
               presets: JournalPreTradePresets.orderTypes,
               value: exec.orderType,
-              hint: 'Select order type',
               onChanged: (v) => _updateExec(exec.copyWith(orderType: v)),
             ),
           ),
           _gap(),
           _field(
             controller: _externalId,
-            label: 'Order / trade ID',
+            placeholder: 'Order / trade ID',
             onChanged: (v) =>
                 _updateExec(exec.copyWith(externalOrderId: v)),
           ),
           _gap(),
           _field(
             controller: _notes,
-            label: 'Live trade notes',
+            placeholder: 'Live trade notes',
             maxLines: 4,
             onChanged: (v) =>
                 _updateExec(exec.copyWith(notes: v), content: v),
           ),
           _gap(),
-          Text(
-            'Attachments',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colors.textSecondary,
-              fontWeight: FontWeight.w600,
-            ),
+          JournalAttachmentSection(
+            userId: entry.userId,
+            imageUrls: imageUrls,
+            onAttachmentsChanged: _onAttachmentsChanged,
+            featureName: 'journal',
+            isEditMode: true,
+            label: 'Attachments',
           ),
-          const SizedBox(height: 6),
-          Material(
-            color: colors.cardSurface.withValues(alpha: 0.55),
-            borderRadius: BorderRadius.circular(AppRadii.md),
-            child: InkWell(
-              onTap: () => _addAttachment(context),
-              borderRadius: BorderRadius.circular(AppRadii.md),
-              child: CustomPaint(
-                painter: _DashedBorderPainter(
-                  color: colors.border.withValues(alpha: 0.55),
-                  radius: AppRadii.md,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 28,
-                    horizontal: 16,
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.cloud_upload_outlined,
-                        size: 28,
-                        color: colors.textSecondary,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Drop chart screenshots here, or click to add a URL',
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          if (entry.attachments.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            ...entry.attachments.map(
-              (a) => ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.insert_drive_file_outlined),
-                title: Text(a.fileName, style: theme.textTheme.bodyMedium),
-                subtitle: Text(
-                  a.fileUrl,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall,
-                ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () {
-                    final next = entry.attachments
-                        .where((x) => x.fileUrl != a.fileUrl)
-                        .toList();
-                    widget.onUpdate(entry.copyWith(attachments: next));
-                  },
-                ),
-              ),
-            ),
-          ],
         ],
       ),
     );
   }
-}
-
-class _DashedBorderPainter extends CustomPainter {
-  _DashedBorderPainter({required this.color, required this.radius});
-
-  final Color color;
-  final double radius;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-    final rrect = RRect.fromRectAndRadius(
-      Offset.zero & size,
-      Radius.circular(radius),
-    );
-    final path = Path()..addRRect(rrect);
-    const dash = 6.0;
-    const gap = 4.0;
-    for (final metric in path.computeMetrics()) {
-      var distance = 0.0;
-      while (distance < metric.length) {
-        final next = distance + dash;
-        canvas.drawPath(
-          metric.extractPath(distance, next.clamp(0, metric.length)),
-          paint,
-        );
-        distance = next + gap;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _DashedBorderPainter oldDelegate) =>
-      oldDelegate.color != color || oldDelegate.radius != radius;
 }

@@ -320,18 +320,6 @@ class _TradeJournalWorkflowPageState
   Widget build(BuildContext context) {
     final colors = context.colors;
 
-    final title = JournalTradeHeader.displayTitle(_entry);
-    final showIdentity = (_entry.symbol?.trim().isNotEmpty == true) ||
-        (title.isNotEmpty && title != 'New Trade' && title != 'Untitled') ||
-        !_isNew;
-    final identity = showIdentity
-        ? JournalTradeHeader(
-            entry: _entry,
-            compact: true,
-            showStatus: true,
-          )
-        : null;
-
     final body = Column(
       children: [
         Padding(
@@ -367,7 +355,6 @@ class _TradeJournalWorkflowPageState
                         entry: _entry,
                         onUpdate: _updateEntry,
                         applyDefaultChecklist: _isNew && !_readOnly,
-                        identityHeader: identity,
                       )
                     : _currentStep == 1
                         ? ExecuteTradeStep(
@@ -378,7 +365,6 @@ class _TradeJournalWorkflowPageState
                             onUpdate: _updateEntry,
                             portfolioId: widget.portfolioId,
                             onLinkTrade: _readOnly ? null : _linkTrade,
-                            identityHeader: identity,
                           )
                         : PostTradeReviewStep(
                             key: ValueKey(
@@ -386,7 +372,6 @@ class _TradeJournalWorkflowPageState
                             ),
                             entry: _entry,
                             onUpdate: _updateEntry,
-                            identityHeader: identity,
                           ),
               ),
             ),

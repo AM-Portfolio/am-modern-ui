@@ -87,9 +87,9 @@ class _JournalPresetOrCustomFieldState
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         JournalThemedDropdown<String>(
-          label: widget.label,
           value: _dropdownValue,
-          hint: widget.hint ?? 'Select…',
+          // Title lives in the field as the hint (no external label).
+          hint: widget.hint ?? widget.label,
           height: widget.height,
           fontSize: 15,
           items: [
@@ -134,8 +134,7 @@ class _JournalPresetOrCustomFieldState
             style: Theme.of(context).textTheme.bodyMedium,
             decoration: journalWorkflowDecoration(
               context,
-              label: 'Custom ${widget.label.toLowerCase()}',
-              hintText: widget.customHint,
+              hintText: 'Custom ${widget.label.toLowerCase()}',
             ),
             onChanged: (t) {
               final trimmed = t.trim();
