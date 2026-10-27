@@ -31,6 +31,7 @@ class ChartWorkspacePage extends ConsumerStatefulWidget {
     this.sidebarWidth = 300,
     this.bottomPanelHeight = 320,
     this.showHeaderSearch = true,
+    this.accentColor,
   });
 
   final String? initialSymbol;
@@ -44,6 +45,9 @@ class ChartWorkspacePage extends ConsumerStatefulWidget {
 
   /// When true, shows a search icon that opens Global Omnisearch (no local symbol field).
   final bool showHeaderSearch;
+
+  /// Optional module accent color override (defaults to [ModuleColors.market]).
+  final Color? accentColor;
 
   @override
   ConsumerState<ChartWorkspacePage> createState() => _ChartWorkspacePageState();
@@ -102,40 +106,43 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
     });
   }
 
-  void _openMobileSidebar(Widget sidebar) {
+  void _openMobileSidebar(Widget sidebar, ThemeData themedData) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         final theme = Theme.of(ctx);
-        return Container(
-          height: MediaQuery.of(ctx).size.height * 0.78,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            boxShadow: [
-              BoxShadow(
-                color: context.shadow(0.35),
-                blurRadius: 16,
-                offset: const Offset(0, -4),
-              ),
-            ],
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            children: [
-              Container(
-                margin: const EdgeInsets.only(top: 8, bottom: 4),
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: theme.hintColor.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(2),
+        return Theme(
+          data: themedData,
+          child: Container(
+            height: MediaQuery.of(ctx).size.height * 0.78,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              boxShadow: [
+                BoxShadow(
+                  color: context.shadow(0.35),
+                  blurRadius: 16,
+                  offset: const Offset(0, -4),
                 ),
-              ),
-              Expanded(child: sidebar),
-            ],
+              ],
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 8, bottom: 4),
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: theme.hintColor.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Expanded(child: sidebar),
+              ],
+            ),
           ),
         );
       },
@@ -149,6 +156,13 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
     final theme = Theme.of(context);
     final isMobile = MediaQuery.sizeOf(context).width < 768;
 
+    final effectiveAccent = widget.accentColor ?? ModuleColors.market;
+    final themedData = theme.copyWith(
+      colorScheme: theme.colorScheme.copyWith(
+        primary: effectiveAccent,
+      ),
+    );
+
     ref.listen(chartTerminalProvider.select((s) => s.activePaneIndex), (
       prev,
       next,
@@ -158,30 +172,36 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
       }
     });
 
-    final sidebar =
-        widget.sidebarBuilder?.call(context, state, ctrl) ??
-        const _MissingPane(label: 'Watchlist — host did not provide pane');
-    final bottom =
-        widget.bottomPanelBuilder?.call(context, state, ctrl) ??
-        const _MissingPane(
-          label: 'Fundamentals / F&O — host did not provide pane',
-        );
+    return Theme(
+      data: themedData,
+      child: Builder(
+        builder: (themedContext) {
+          final sidebar =
+              widget.sidebarBuilder?.call(themedContext, state, ctrl) ??
+              const _MissingPane(label: 'Watchlist — host did not provide pane');
+          final bottom =
+              widget.bottomPanelBuilder?.call(themedContext, state, ctrl) ??
+              const _MissingPane(
+                label: 'Fundamentals / F&O — host did not provide pane',
+              );
 
-    return Scaffold(
-      body: Column(
-        children: [
-          _SlimTopBar(
-            state: state,
-            ctrl: ctrl,
-            analysisFocus: _analysisFocus,
-            showHeaderSearch: widget.showHeaderSearch,
-            onToggleFocus: () =>
-                setState(() => _analysisFocus = !_analysisFocus),
-            onOpenMobileSidebar: () => _openMobileSidebar(sidebar),
-            onToggleDrawRail: () =>
-                setState(() => _showMobileDrawRail = !_showMobileDrawRail),
-            showDrawRail: _showMobileDrawRail,
-          ),
+          return Scaffold(
+            body: Column(
+              children: [
+                _SlimTopBar(
+                  state: state,
+                  ctrl: ctrl,
+                  analysisFocus: _analysisFocus,
+                  showHeaderSearch: widget.showHeaderSearch,
+                  onToggleFocus: () =>
+                      setState(() => _analysisFocus = !_analysisFocus),
+                  onOpenMobileSidebar: () =>
+                      _openMobileSidebar(sidebar, themedData),
+                  onToggleDrawRail: () => setState(
+                    () => _showMobileDrawRail = !_showMobileDrawRail,
+                  ),
+                  showDrawRail: _showMobileDrawRail,
+                ),
           Expanded(
             child: Row(
               children: [
@@ -618,6 +638,9 @@ class _ChartWorkspacePageState extends ConsumerState<ChartWorkspacePage> {
         ],
       ),
     );
+  },
+),
+);
   }
 }
 

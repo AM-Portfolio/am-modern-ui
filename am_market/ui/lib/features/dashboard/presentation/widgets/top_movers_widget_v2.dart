@@ -70,11 +70,15 @@ class TopMoversWidgetV2 extends StatelessWidget {
   /// Maps [TopMoverStock] → [AmMoverItem].
   /// Centralised here so any field-name change in [TopMoverStock] is caught
   /// in one place and not scattered across multiple widget files.
-  static AmMoverItem _toAmItem(TopMoverStock s) => AmMoverItem(
-        symbol: s.symbol,
-        subtitle: s.companyName.isNotEmpty ? s.companyName : null,
-        price: s.lastPrice,
-        priceLabel: '₹${s.lastPrice.toStringAsFixed(2)}',
-        changePercent: s.changePercent,
-      );
+  static AmMoverItem _toAmItem(TopMoverStock s) {
+    final hasDistinctName = s.companyName.trim().isNotEmpty &&
+        s.companyName.trim().toUpperCase() != s.symbol.trim().toUpperCase();
+    return AmMoverItem(
+      symbol: s.symbol,
+      subtitle: hasDistinctName ? s.companyName : null,
+      price: s.lastPrice,
+      priceLabel: '₹${s.lastPrice.toStringAsFixed(2)}',
+      changePercent: s.changePercent,
+    );
+  }
 }

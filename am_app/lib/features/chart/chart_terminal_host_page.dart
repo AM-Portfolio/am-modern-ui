@@ -736,6 +736,7 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
       sidebarWidth: 300,
       bottomPanelHeight: 360,
       showHeaderSearch: true,
+      accentColor: ModuleColors.market,
       sidebarBuilder: (context, state, ctrl) {
         _currentTerminalCtrl = ctrl;
         final theme = Theme.of(context);

@@ -548,6 +548,7 @@ class _TradeHoldingsAdvancedTemplateState
                 Icon(
                   _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
                   size: 14,
+                  color: _accent,
                 ),
             ],
           ),
@@ -693,7 +694,7 @@ class _TradeHoldingsAdvancedTemplateState
         height: 32,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Theme.of(context).primaryColor.withOpacity(0.8), Theme.of(context).primaryColor.withOpacity(0.4)],
+            colors: [_accent.withValues(alpha: 0.85), _accent.withValues(alpha: 0.45)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -813,12 +814,12 @@ class _TradeHoldingsAdvancedTemplateState
     final muted = context.textSecondary;
     final cardSurface = theme.cardSurface;
     final cardBorder = isExpanded
-        ? pnlColor.withValues(alpha: 0.45)
+        ? _accent.withValues(alpha: 0.55)
         : theme.border;
     final avatarLetter = holding.displaySymbol.isNotEmpty
         ? holding.displaySymbol.substring(0, 1).toUpperCase()
         : '?';
-    final currentPriceColor = context.statusWarning;
+    final currentPriceColor = _accent;
 
     return Material(
       color: Colors.transparent,
@@ -860,13 +861,13 @@ class _TradeHoldingsAdvancedTemplateState
                       height: AppComponentSizes.iconButtonSize,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: pnlColor.withValues(alpha: 0.22),
+                        color: _accent.withValues(alpha: 0.16),
                         borderRadius: BorderRadius.circular(AppRadii.sm),
                       ),
                       child: Text(
                         avatarLetter,
                         style: TextStyle(
-                          color: context.textPrimary,
+                          color: _accent,
                           fontWeight: FontWeight.bold,
                           fontSize: AppTypeScale.lg,
                         ),
@@ -1367,7 +1368,7 @@ class _TradeHoldingsAdvancedTemplateState
         return context.marketNegative;
       case 'ACTIVE':
       case 'OPEN':
-        return context.statusInfo;
+        return _accent;
       case 'BREAKEVEN':
         return context.statusWarning;
       default:
