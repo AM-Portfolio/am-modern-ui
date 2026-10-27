@@ -4,6 +4,11 @@ import 'multi_index_chart.dart';
 import 'multi_series_chart_config.dart';
 import 'multi_series_chart_data.dart';
 
+export 'multi_index_chart.dart'
+    show
+        kComparisonChartHeaderRowHeight,
+        kComparisonChartToolbarControlWidth;
+
 /// Single public entry point for time-series comparison charts.
 class ComparisonChartView extends StatelessWidget {
   const ComparisonChartView({
@@ -30,6 +35,7 @@ class ComparisonChartView extends StatelessWidget {
           timeFrameCode: config.timeFrameCode,
           headerLeading: config.headerLeading,
           legendTrailing: config.legendTrailing,
+          showUnitToggle: config.showUnitToggle,
           showExpandButton: config.showExpandButton,
           onOpenExpanded: config.onOpenExpanded,
           expandedChartPath: config.expandedChartPath,

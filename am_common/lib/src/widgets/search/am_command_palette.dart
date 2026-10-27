@@ -202,6 +202,13 @@ class _AmCommandPaletteState extends State<AmCommandPalette> {
     _applyCategoryFilter();
   }
 
+  void _activateFirstResult() {
+    if (_filteredItems.isEmpty) return;
+    final item = _filteredItems.first;
+    Navigator.of(context).pop();
+    item.onSelected();
+  }
+
   Widget _buildHighlightedText(String text, String query, TextStyle style, Color highlightColor) {
     if (query.isEmpty) return Text(text, style: style);
 
@@ -289,7 +296,9 @@ class _AmCommandPaletteState extends State<AmCommandPalette> {
                           child: TextField(
                             controller: _controller,
                             focusNode: _focusNode,
+                            textInputAction: TextInputAction.search,
                             onChanged: _onQueryChanged,
+                            onSubmitted: (_) => _activateFirstResult(),
                             style: TextStyle(
                               fontSize: 18,
                               color: context.colors.textPrimary,

@@ -324,6 +324,11 @@ class _MobileGlobalSearchOverlayState extends State<MobileGlobalSearchOverlay>
                 controller: _controller,
                 focusNode: _focusNode,
                 onChanged: _runLive,
+                onSubmitted: (_) {
+                  final visible = _filtered;
+                  if (visible.isEmpty) return;
+                  _select(visible.first);
+                },
                 cursorColor: accent,
                 textInputAction: TextInputAction.search,
                 style: TextStyle(

@@ -34,7 +34,7 @@ class MoversDetailModal extends StatelessWidget {
           backgroundColor: Colors.transparent,
           insetPadding: const EdgeInsets.all(24),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 800, maxHeight: 700),
+            constraints: const BoxConstraints(maxWidth: 980, maxHeight: 720),
             child: _ModalContainer(movers: movers),
           ),
         ),
@@ -48,54 +48,11 @@ class MoversDetailModal extends StatelessWidget {
   }
 }
 
-class _ModalContainer extends StatefulWidget {
+class _ModalContainer extends StatelessWidget {
   final Movers movers;
   final ScrollController? scrollController;
 
   const _ModalContainer({required this.movers, this.scrollController});
-
-  @override
-  State<_ModalContainer> createState() => _ModalContainerState();
-}
-
-class _ModalContainerState extends State<_ModalContainer> {
-  int _selectedTab = 0; // 0 for Gainers, 1 for Losers
-
-  Widget _buildTabButton(BuildContext context, String title, bool isSelected, VoidCallback onTap) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        decoration: BoxDecoration(
-          color: isSelected
-              ? (isDark ? const Color(0xFF1D283A) : context.cardColor)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: isSelected && !isDark
-              ? [
-                  BoxShadow(
-                    color: context.shadow(0.05),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  )
-                ]
-              : null,
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          title,
-          style: TextStyle(
-            color: isSelected
-                ? ds.ModuleColors.portfolio
-                : Theme.of(context).colorScheme.onSurfaceVariant,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            fontSize: 14,
-          ),
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -181,122 +138,22 @@ class _ModalContainerState extends State<_ModalContainer> {
                 ),
               ),
               const Divider(height: 1, thickness: 1),
-              
-              if (isMobile)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 16), // Added 16px bottom padding
-                  child: Container(
-                    height: 40,
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: context.glassOverlay(isDark ? 0.05 : 0.03),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _buildTabButton(
-                            context,
-                            'Gainers',
-                            _selectedTab == 0,
-                            () => setState(() => _selectedTab = 0),
-                          ),
-                        ),
-                        Expanded(
-                          child: _buildTabButton(
-                            context,
-                            'Losers',
-                            _selectedTab == 1,
-                            () => setState(() => _selectedTab = 1),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              
-              // ── Content ──
               Flexible(
                 child: SingleChildScrollView(
-                  controller: widget.scrollController,
-                  padding: EdgeInsets.fromLTRB(24, isMobile ? 8 : 24, 24, 24), // Reduced top padding on mobile since we added it to the tabs
-                  child: isMobile 
-                    ? _buildColumn(
-                        context, 
-                        _selectedTab == 0 ? 'Gainers' : 'Losers', 
-                        _selectedTab == 0 ? widget.movers.topGainers : widget.movers.topLosers, 
-                        _selectedTab == 0
-                      )
-                    : Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: _buildColumn(context, 'Gainers', widget.movers.topGainers, true),
-                          ),
-                          const SizedBox(width: 24),
-                          Expanded(
-                            child: _buildColumn(context, 'Losers', widget.movers.topLosers, false),
-                          ),
-                        ],
-                      ),
+                  controller: scrollController,
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                  child: MoversPanelContent(
+                    movers: movers,
+                    compact: isMobile,
+                    maxRows: 10,
+                    forceTabs: true,
+                  ),
                 ),
               ),
             ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildColumn(
-    BuildContext context,
-    String title,
-    List<Stock> stocks,
-    bool isGainers,
-  ) {
-    final color = isGainers ? ds.AppColors.profit : ds.AppColors.loss;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(
-              isGainers ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-              color: color,
-              size: 18,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              '$title (${stocks.length})',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: color,
-                  ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        if (stocks.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 40.0),
-            child: Center(
-              child: Text(
-                'No ${isGainers ? 'gainers' : 'losers'} found',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          )
-        else
-          ...stocks.take(10).map(
-            (stock) => Padding(
-              padding: const EdgeInsets.only(bottom: 12.0),
-              child: MoverTile(stock: stock, isGainer: isGainers),
-            ),
-          ),
-      ],
     );
   }
 }

@@ -22,6 +22,7 @@ class MultiSeriesChartConfig extends Equatable {
     this.timeFrameCode,
     this.headerLeading,
     this.legendTrailing,
+    this.showUnitToggle = true,
     this.showExpandButton = true,
     this.onOpenExpanded,
     this.expandedChartPath,
@@ -60,6 +61,9 @@ class MultiSeriesChartConfig extends Equatable {
   /// Trailing control beside legend (e.g. add-series popup).
   final Widget? legendTrailing;
 
+  /// When false, hide the built-in % / 123 toggle (host can render its own).
+  final bool showUnitToggle;
+
   final bool showExpandButton;
   final VoidCallback? onOpenExpanded;
 
@@ -92,6 +96,7 @@ class MultiSeriesChartConfig extends Equatable {
         isBarChart,
         height,
         timeFrameCode,
+        showUnitToggle,
         showExpandButton,
         expandedChartPath,
         showEndValuePills,

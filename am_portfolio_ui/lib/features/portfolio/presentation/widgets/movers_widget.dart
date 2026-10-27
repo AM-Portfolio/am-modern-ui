@@ -1,10 +1,12 @@
-import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
+import 'package:flutter/material.dart';
+
 import '../../internal/domain/entities/portfolio_analytics.dart';
 import 'intelligence/intelligence_glass_card.dart';
+import 'movers_tabs.dart';
+import 'movers_tile.dart';
 
-/// Top movers panel — Gainers left, Losers right (day change vs previous close).
-/// Each tile uses the Stitch design: colored squircle arrow + ticker + price + pill badge.
+/// Top movers panel — compact arrow tiles; Today / P&L / Cost grouped views.
 class MoversWidget extends StatefulWidget {
   const MoversWidget({
     super.key,
@@ -15,24 +17,25 @@ class MoversWidget extends StatefulWidget {
     this.compact = false,
     this.fillHeight = false,
     this.onRetry,
+    this.maxRows = 5,
   });
   final Movers? movers;
   final bool isLoading;
   final String? error;
   final ValueChanged<Movers>? onViewAll;
-  /// When true, use Gainers|Losers tabs and fewer rows (Overview intel layout).
+  /// When true, use Gainers|Losers tabs and denser padding (Overview intel).
   final bool compact;
   /// Stretch to peer row height on Overview bottom band.
   final bool fillHeight;
   final VoidCallback? onRetry;
+  /// Overview shows 5; See Top 10 shows 10.
+  final int maxRows;
 
   @override
   State<MoversWidget> createState() => _MoversWidgetState();
 }
 
 class _MoversWidgetState extends State<MoversWidget> {
-  bool _showGainers = true;
-
   @override
   Widget build(BuildContext context) {
     final showSeeAll = widget.onViewAll != null &&
@@ -54,8 +57,7 @@ class _MoversWidgetState extends State<MoversWidget> {
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                backgroundColor:
-                    ModuleColors.portfolio.withValues(alpha: 0.1),
+                backgroundColor: ModuleColors.portfolio.withValues(alpha: 0.1),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -125,9 +127,7 @@ class _MoversWidgetState extends State<MoversWidget> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.data_usage_outlined,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurfaceVariant,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   size: widget.compact ? 32 : 48),
               const SizedBox(height: 8),
               Text('No movers data available',
@@ -140,93 +140,109 @@ class _MoversWidgetState extends State<MoversWidget> {
       );
     }
 
-    final useTabs =
-        widget.compact || MediaQuery.of(context).size.width < 600;
+    return MoversPanelContent(
+      movers: widget.movers!,
+      compact: widget.compact,
+      maxRows: widget.maxRows,
+    );
+  }
+}
+
+/// Gainers/Losers + metric chips + tiles. Shared by Overview and See Top 10.
+class MoversPanelContent extends StatefulWidget {
+  const MoversPanelContent({
+    super.key,
+    required this.movers,
+    this.compact = false,
+    this.maxRows = 5,
+    this.forceTabs = false,
+  });
+
+  final Movers movers;
+  final bool compact;
+  final int maxRows;
+  /// Modal always uses tabs even on a wide dialog.
+  final bool forceTabs;
+
+  @override
+  State<MoversPanelContent> createState() => _MoversPanelContentState();
+}
+
+class _MoversPanelContentState extends State<MoversPanelContent> {
+  bool _showGainers = true;
+  MoverMetric _metric = MoverMetric.today;
+
+  @override
+  Widget build(BuildContext context) {
+    final useTabs = widget.forceTabs ||
+        widget.compact ||
+        MediaQuery.of(context).size.width < 600;
+    final movers = widget.movers;
+    final list = _showGainers ? movers.topGainers : movers.topLosers;
+
+    final chips = MoversMetricChips(
+      selected: _metric,
+      onSelect: (m) => setState(() => _metric = m),
+    );
 
     if (useTabs) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: context.colors.marketBorderDefault.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => setState(() => _showGainers = true),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        color: _showGainers ? ModuleColors.portfolio.withValues(alpha: 0.15) : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Center(
-                        child: Text(
-                          'Gainers (${widget.movers!.topGainers.length})',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: _showGainers ? FontWeight.bold : FontWeight.w500,
-                            color: _showGainers ? ModuleColors.portfolio : Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => setState(() => _showGainers = false),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        color: !_showGainers ? context.colors.marketNegativeIndicator.withValues(alpha: 0.15) : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Center(
-                        child: Text(
-                          'Losers (${widget.movers!.topLosers.length})',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: !_showGainers ? FontWeight.bold : FontWeight.w500,
-                            color: !_showGainers ? context.colors.marketNegativeIndicator : Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          MoversGainersLosersTabs(
+            showGainers: _showGainers,
+            gainersCount: movers.topGainers.length,
+            losersCount: movers.topLosers.length,
+            onSelectGainers: () => setState(() => _showGainers = true),
+            onSelectLosers: () => setState(() => _showGainers = false),
           ),
-          SizedBox(height: widget.compact ? 12 : 20),
+          SizedBox(height: widget.compact ? 6 : 12),
+          chips,
+          SizedBox(height: widget.compact ? 8 : 16),
           AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            child: _showGainers
-                ? _buildColumn(context, 'Gainers', widget.movers!.topGainers, true)
-                : _buildColumn(context, 'Losers', widget.movers!.topLosers, false),
+            duration: const Duration(milliseconds: 250),
+            child: KeyedSubtree(
+              key: ValueKey(_showGainers),
+              child: _buildColumn(
+                context,
+                _showGainers ? 'Gainers' : 'Losers',
+                list,
+                _showGainers,
+              ),
+            ),
           ),
         ],
       );
     }
 
-    return Row(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Expanded(
-          child:
-              _buildColumn(context, 'Gainers', widget.movers!.topGainers, true),
-        ),
-        const SizedBox(width: 20),
-        Expanded(
-          child:
-              _buildColumn(context, 'Losers', widget.movers!.topLosers, false),
+        chips,
+        const SizedBox(height: 16),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _buildColumn(
+                context,
+                'Gainers',
+                movers.topGainers,
+                true,
+              ),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: _buildColumn(
+                context,
+                'Losers',
+                movers.topLosers,
+                false,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -241,9 +257,8 @@ class _MoversWidgetState extends State<MoversWidget> {
     final color = isGainers
         ? ModuleColors.portfolio
         : context.colors.marketNegativeIndicator;
-    const take = 5;
-    final hideTitle = widget.compact; // tabs already label Gainers/Losers
-    final shown = stocks.take(take).toList();
+    final hideTitle = widget.compact || widget.forceTabs;
+    final shown = stocks.take(widget.maxRows).toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -272,7 +287,8 @@ class _MoversWidgetState extends State<MoversWidget> {
         if (!hideTitle) const SizedBox(height: 12),
         if (stocks.isEmpty)
           Padding(
-            padding: EdgeInsets.symmetric(vertical: widget.compact ? 12.0 : 20.0),
+            padding:
+                EdgeInsets.symmetric(vertical: widget.compact ? 12.0 : 20.0),
             child: Center(
               child: Text(
                 'No ${isGainers ? 'gainers' : 'losers'} today',
@@ -287,10 +303,15 @@ class _MoversWidgetState extends State<MoversWidget> {
             ),
           )
         else ...[
-          ...shown.map(
-            (stock) => MoverTile(stock: stock, isGainer: isGainers),
+          ...shown.asMap().entries.map(
+            (e) => MoverTile(
+              stock: e.value,
+              isGainer: isGainers,
+              metric: _metric,
+              isLast: e.key == shown.length - 1,
+            ),
           ),
-          if (widget.compact && stocks.length < take)
+          if (widget.compact && stocks.length < widget.maxRows)
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
@@ -302,158 +323,6 @@ class _MoversWidgetState extends State<MoversWidget> {
             ),
         ],
       ],
-    );
-  }
-}
-
-class MoverTile extends StatefulWidget {
-  final Stock stock;
-  final bool isGainer;
-  const MoverTile({super.key, required this.stock, required this.isGainer});
-
-  @override
-  State<MoverTile> createState() => _MoverTileState();
-}
-
-class _MoverTileState extends State<MoverTile> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-
-    final stock = widget.stock;
-    final isPositive = stock.changeAmount != 0
-        ? stock.changeAmount > 0
-        : (stock.changePercent != 0
-            ? stock.changePercent > 0
-            : widget.isGainer);
-    final color = isPositive ? context.colors.marketPositiveIndicator : context.colors.marketNegativeIndicator;
-
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOutCubic,
-        margin: const EdgeInsets.only(bottom: 8),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-        transform: _hovered
-            ? (Matrix4.diagonal3Values(1.015, 1.015, 1.0))
-            : Matrix4.identity(),
-        decoration: BoxDecoration(
-          color: _hovered
-              ? color.withValues(alpha: 0.08)
-              : context.colors.surface.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: _hovered
-                ? color.withValues(alpha: 0.35)
-                : color.withValues(alpha: 0.12),
-            width: 1,
-          ),
-          boxShadow: _hovered
-              ? [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.12),
-                    blurRadius: 12,
-                    spreadRadius: -2,
-                  ),
-                ]
-              : [],
-        ),
-        child: Row(
-          children: [
-            // ── Squircle directional icon ──
-            Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(7),
-              ),
-              child: Icon(
-                isPositive
-                    ? Icons.arrow_upward_rounded
-                    : Icons.arrow_downward_rounded,
-                size: 14,
-                color: color,
-              ),
-            ),
-            const SizedBox(width: 8),
-
-            // ── Ticker ──
-            Expanded(
-              child: Text(
-                stock.symbol,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                    ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-
-            // ── Price & Contribution ──
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '₹${stock.lastPrice.toStringAsFixed(2)}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                ),
-                Text(
-                  stock.formattedChangeAmount,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                    color: color,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(width: 8),
-
-            // ── Percentage pill with glow ──
-            Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 7, vertical: 3),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: color.withValues(alpha: 0.35),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.2),
-                    blurRadius: 6,
-                    spreadRadius: -1,
-                  ),
-                ],
-              ),
-              child: Text(
-                stock.changePercent.abs() < 0.005
-                    ? '0.00%'
-                    : '${stock.changePercent >= 0 ? '+' : ''}${stock.changePercent.toStringAsFixed(2)}%',
-                style: TextStyle(
-                  color: color,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.2,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
