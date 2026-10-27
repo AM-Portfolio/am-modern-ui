@@ -12,7 +12,6 @@ class IpoKpiStatsBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeFilter = ref.watch(ipoFilterStateProvider).statusFilter;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -155,7 +154,6 @@ class IpoKpiStatsBar extends ConsumerWidget {
   }
 
   Widget _buildDivider(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       height: 36,
       width: 1,

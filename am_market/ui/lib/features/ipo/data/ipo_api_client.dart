@@ -65,4 +65,28 @@ class IpoApiClient {
       throw Exception('Failed to load IPO details: ${response.statusCode}');
     }
   }
+
+  Future<IpoCalendarMonthDto> getIpoCalendarMonth(int year, int month) async {
+    final response = await _client.invokeAPI(
+      '/v1/market-data/ipo/calendar',
+      'GET',
+      [
+        QueryParam('year', year.toString()),
+        QueryParam('month', month.toString()),
+      ],
+      null,
+      {},
+      {},
+      null,
+    );
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final jsonResponse = json.decode(response.body);
+      final data = jsonResponse is Map<String, dynamic>
+          ? (jsonResponse['data'] ?? jsonResponse)
+          : jsonResponse;
+      return IpoCalendarMonthDto.fromJson(data as Map<String, dynamic>);
+    } else {
+      throw Exception('Failed to load IPO calendar: ${response.statusCode}');
+    }
+  }
 }
