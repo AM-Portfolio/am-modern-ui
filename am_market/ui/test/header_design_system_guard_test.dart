@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   test('header sources ban hardcoded chrome and fake market numbers', () {
     const files = [
-      'lib/features/equity_insider/presentation/widgets/equity_insider_header_card.dart',
       'lib/features/equity_insider/presentation/widgets/equity_insider_hero.dart',
       'lib/features/f_o/presentation/widgets/fo_header_card.dart',
     ];

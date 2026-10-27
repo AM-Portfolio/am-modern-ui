@@ -1,5 +1,7 @@
 import 'package:am_common/am_common.dart';
+import 'package:am_market_ui/features/equity_insider/providers/equity_insider_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -79,5 +81,65 @@ void main() {
 
       expect(find.text('chart:INFY'), findsOneWidget);
     }
+  });
+
+  testWidgets('equity insider openSecurity sets active symbol on same route',
+      (tester) async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final router = chartRouter();
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final ctx = tester.element(find.text('dash'));
+    SearchNavigationHandler(ctx, container: container)
+        .openSecurity('tcs', SearchContext.equityInsider);
+    await tester.pumpAndSettle();
+
+    expect(container.read(equityInsiderActiveSymbolProvider), 'TCS');
+    expect(find.textContaining('equity-insider'), findsOneWidget);
+  });
+
+  testWidgets('portfolio openSecurity stays on holdings filtered to symbol',
+      (tester) async {
+    final router = GoRouter(
+      initialLocation: '/app/portfolio/holdings',
+      routes: [
+        GoRoute(
+          path: '/app/portfolio/:id/:tab',
+          builder: (_, state) => Scaffold(
+            body: Text(
+              '${state.pathParameters['id']}/${state.pathParameters['tab']}:${state.uri.queryParameters['q']}',
+            ),
+          ),
+        ),
+        GoRoute(
+          path: '/app/portfolio/:tab',
+          builder: (_, state) => Scaffold(
+            body: Text('legacy/${state.pathParameters['tab']}'),
+          ),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      PortfolioSelectionScope(
+        initialPortfolioId: 'p1',
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final ctx = tester.element(find.text('legacy/holdings'));
+    SearchNavigationHandler(ctx).openSecurity('irfc', SearchContext.portfolio);
+    await tester.pumpAndSettle();
+
+    expect(find.text('p1/holdings:IRFC'), findsOneWidget);
+    expect(find.textContaining('chart:'), findsNothing);
   });
 }

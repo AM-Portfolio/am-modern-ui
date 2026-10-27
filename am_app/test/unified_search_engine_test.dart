@@ -1,11 +1,15 @@
 import 'dart:async';
 
 import 'package:am_common/am_common.dart';
+import 'package:am_market_ui/features/equity_insider/providers/equity_insider_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:am_app/features/search/adapters/basket_catalog_search_adapter.dart';
 import 'package:am_app/features/search/adapters/etf_basket_search_adapter.dart';
+import 'package:am_app/features/search/adapters/holdings_search_adapter.dart';
 import 'package:am_app/features/search/adapters/securities_search_adapter.dart';
 import 'package:am_app/features/search/search_context.dart';
 import 'package:am_app/features/search/unified_search_engine.dart';
@@ -273,6 +277,256 @@ void main() {
     );
     expect(titles.indexOf('Gold'), lessThan(titles.indexOf('GOLD')));
 
+    engine.dispose();
+  });
+
+  testWidgets('equity insider empty suggestion tap writes active symbol',
+      (tester) async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final engine = UnifiedSearchEngine(
+      debounce: Duration.zero,
+      securities: _FakeSecurities((_) async => const []),
+      etfBasket: _FakeEtf((_) async => const []),
+    );
+
+    final router = GoRouter(
+      initialLocation: '/app/market/equity-insider',
+      routes: [
+        GoRoute(
+          path: '/app/market/:tab',
+          builder: (_, state) => Scaffold(
+            body: Text(state.pathParameters['tab'] ?? ''),
+          ),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    List<CommandItem>? items;
+    engine.query(
+      rawQuery: '',
+      context: SearchContext.equityInsider,
+      navContext: tester.element(find.text('equity-insider')),
+      seedActions: const [],
+      container: container,
+      onResult: (snap) => items = snap.items,
+    );
+    await tester.pump();
+
+    expect(items, isNotNull);
+    final tcs = items!.firstWhere((i) => i.title == 'TCS');
+    tcs.onSelected();
+    expect(container.read(equityInsiderActiveSymbolProvider), 'TCS');
+    engine.dispose();
+  });
+
+  testWidgets('pnb ranks exact PNB first in equity insider and market',
+      (tester) async {
+    const hits = [
+      SecuritiesHit(symbol: '810PNB24', name: 'PNB 8.15% SR LXVI'),
+      SecuritiesHit(symbol: 'PNBGILTS', name: 'PNB GILTS LTD'),
+      SecuritiesHit(symbol: 'PNB', name: 'PUNJAB NATIONAL BANK'),
+      SecuritiesHit(symbol: '830PNBPERP', name: 'PNB 8.30% PERPETUAL'),
+    ];
+    final engine = UnifiedSearchEngine(
+      debounce: Duration.zero,
+      securities: _FakeSecurities((_) async => hits),
+      etfBasket: _FakeEtf((_) async => const []),
+    );
+    final navKey = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navKey,
+        home: const Scaffold(body: SizedBox()),
+      ),
+    );
+
+    for (final ctx in [SearchContext.equityInsider, SearchContext.market]) {
+      UnifiedSearchSnapshot? last;
+      engine.query(
+        rawQuery: 'pnb',
+        context: ctx,
+        navContext: navKey.currentContext!,
+        seedActions: const [],
+        onResult: (snap) => last = snap,
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1));
+      await tester.pump();
+      expect(last, isNotNull);
+      expect(last!.items.first.title, 'PNB');
+    }
+    engine.dispose();
+  });
+
+  testWidgets('nifty ranks exact NIFTY first in F&O', (tester) async {
+    final engine = UnifiedSearchEngine(
+      debounce: Duration.zero,
+      securities: _FakeSecurities(
+        (_) async => const [
+          SecuritiesHit(symbol: 'NIFTY24APR', name: 'NIFTY 24 APR'),
+          SecuritiesHit(symbol: 'NIFTYBEES', name: 'Nippon Nifty BeES'),
+          SecuritiesHit(symbol: 'NIFTY', name: 'NIFTY 50'),
+        ],
+      ),
+      etfBasket: _FakeEtf((_) async => const []),
+    );
+    final navKey = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navKey,
+        home: const Scaffold(body: SizedBox()),
+      ),
+    );
+    UnifiedSearchSnapshot? last;
+    engine.query(
+      rawQuery: 'nifty',
+      context: SearchContext.fo,
+      navContext: navKey.currentContext!,
+      seedActions: const [],
+      onResult: (snap) => last = snap,
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1));
+    await tester.pump();
+    expect(last!.items.first.title, 'NIFTY');
+    engine.dispose();
+  });
+
+  testWidgets('portfolio irfc ranks holding before market bonds',
+      (tester) async {
+    final engine = UnifiedSearchEngine(
+      debounce: Duration.zero,
+      securities: _FakeSecurities(
+        (_) async => const [
+          SecuritiesHit(symbol: '687IRFC32', name: 'IRFC 6.87% 14-4-32'),
+          SecuritiesHit(symbol: '695IRFC36', name: 'IRFC 6.95% 24-11-36'),
+          SecuritiesHit(symbol: 'IRFC', name: 'INDIAN RAILWAY FINANCE'),
+        ],
+      ),
+      etfBasket: _FakeEtf((_) async => const []),
+      catalog: _catalogWithGold(),
+      holdings: HoldingsSearchAdapter(
+        debugHoldings: () => const [
+          HoldingsHit(
+            symbol: 'IRFC',
+            name: 'IRFC',
+            companyName: 'INDIAN RAILWAY FINANCE CORPORATION',
+          ),
+        ],
+      ),
+    );
+    final navKey = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navKey,
+        home: const Scaffold(body: SizedBox()),
+      ),
+    );
+    UnifiedSearchSnapshot? last;
+    engine.query(
+      rawQuery: 'irfc',
+      context: SearchContext.portfolio,
+      navContext: navKey.currentContext!,
+      seedActions: const [],
+      onResult: (snap) => last = snap,
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1));
+    await tester.pump();
+    expect(last!.items.first.title, 'IRFC');
+    expect(last!.items.first.category, 'Portfolio');
+    expect(last!.items.where((i) => i.title == 'IRFC').length, 1);
+    expect(last!.items.any((i) => i.title == '687IRFC32'), isTrue);
+    engine.dispose();
+  });
+
+  testWidgets('portfolio empty query suggests cached holdings', (tester) async {
+    final engine = UnifiedSearchEngine(
+      debounce: Duration.zero,
+      securities: _FakeSecurities((_) async => const []),
+      etfBasket: _FakeEtf((_) async => const []),
+      catalog: _catalogWithGold(),
+      holdings: HoldingsSearchAdapter(
+        debugHoldings: () => const [
+          HoldingsHit(
+            symbol: 'IRFC',
+            name: 'IRFC',
+            companyName: 'INDIAN RAILWAY FINANCE CORPORATION',
+          ),
+        ],
+      ),
+    );
+    final navKey = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navKey,
+        home: const Scaffold(body: SizedBox()),
+      ),
+    );
+    List<CommandItem>? items;
+    engine.query(
+      rawQuery: '',
+      context: SearchContext.portfolio,
+      navContext: navKey.currentContext!,
+      seedActions: const [],
+      onResult: (snap) => items = snap.items,
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(items!.any((i) => i.title == 'IRFC' && i.category == 'Portfolio'),
+        isTrue);
+    engine.dispose();
+  });
+
+  testWidgets('equity insider irfc does not inject holdings', (tester) async {
+    final engine = UnifiedSearchEngine(
+      debounce: Duration.zero,
+      securities: _FakeSecurities(
+        (_) async => const [
+          SecuritiesHit(symbol: '687IRFC32', name: 'IRFC bond'),
+          SecuritiesHit(symbol: 'IRFC', name: 'INDIAN RAILWAY FINANCE'),
+        ],
+      ),
+      etfBasket: _FakeEtf((_) async => const []),
+      holdings: HoldingsSearchAdapter(
+        debugHoldings: () => const [
+          HoldingsHit(
+            symbol: 'IRFC',
+            name: 'IRFC',
+            companyName: 'INDIAN RAILWAY',
+          ),
+        ],
+      ),
+    );
+    final navKey = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navKey,
+        home: const Scaffold(body: SizedBox()),
+      ),
+    );
+    UnifiedSearchSnapshot? last;
+    engine.query(
+      rawQuery: 'irfc',
+      context: SearchContext.equityInsider,
+      navContext: navKey.currentContext!,
+      seedActions: const [],
+      onResult: (snap) => last = snap,
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1));
+    await tester.pump();
+    expect(last!.items.any((i) => i.category == 'Portfolio'), isFalse);
+    expect(last!.items.first.title, 'IRFC');
     engine.dispose();
   });
 }

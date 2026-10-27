@@ -3,6 +3,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_news_ui/am_news_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../providers/portfolio_providers.dart';
 import '../mappers/advanced_holding_row_mapper.dart';
@@ -24,6 +25,11 @@ class PortfolioHoldingsWebPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final activePortfolioId = context.selectedPortfolioId ?? portfolioId;
     final holdingsAsync = ref.watch(portfolioHoldingsProvider(activePortfolioId));
+    String symbolQuery = '';
+    try {
+      symbolQuery =
+          GoRouterState.of(context).uri.queryParameters['q']?.trim() ?? '';
+    } catch (_) {}
 
     return holdingsAsync.when(
       loading: () => AdvancedHoldingsTemplate(
@@ -55,6 +61,7 @@ class PortfolioHoldingsWebPage extends ConsumerWidget {
                 accentColor: ModuleColors.portfolio,
                 priceFreshnessLabel: portfolioHoldings.priceLabel,
                 viewOnly: true,
+                initialSearchQuery: symbolQuery,
                 onRefresh: () => ref
                     .invalidate(portfolioHoldingsProvider(activePortfolioId)),
               ),

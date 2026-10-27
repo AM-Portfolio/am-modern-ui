@@ -14,6 +14,7 @@ import 'multi_series_chart_data.dart';
 import '../zoom/app_zoom_scroll_guard.dart';
 
 const double kComparisonChartHeaderRowHeight = 36.0;
+const double kComparisonChartToolbarControlWidth = 72.0;
 
 /// Wins the gesture arena against parent [PageView] / scroll navigators so
 /// vertical drags on the chart do not switch Market Data pages.
@@ -69,6 +70,7 @@ class MultiIndexChart extends StatefulWidget {
   final String? timeFrameCode;
   final Widget? headerLeading;
   final Widget? legendTrailing;
+  final bool showUnitToggle;
   final bool showExpandButton;
   final VoidCallback? onOpenExpanded;
   final String? expandedChartPath;
@@ -98,6 +100,7 @@ class MultiIndexChart extends StatefulWidget {
     this.timeFrameCode,
     this.headerLeading,
     this.legendTrailing,
+    this.showUnitToggle = true,
     this.showExpandButton = true,
     this.onOpenExpanded,
     this.expandedChartPath,
@@ -503,6 +506,9 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     // Automatically fallback to Percentage Mode on Bar Chart view
     if (widget.isBarChart) {
       _showAbsoluteValues = false;
+    } else if (widget.initialShowAbsoluteValues !=
+        oldWidget.initialShowAbsoluteValues) {
+      _showAbsoluteValues = widget.initialShowAbsoluteValues;
     }
 
     final dataChanged = widget.chartData != oldWidget.chartData ||
@@ -510,8 +516,10 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
         widget.selectedIndices != oldWidget.selectedIndices ||
         widget.isBarChart != oldWidget.isBarChart ||
         widget.timeFrameCode != oldWidget.timeFrameCode;
+    final absoluteChanged = !widget.isBarChart &&
+        widget.initialShowAbsoluteValues != oldWidget.initialShowAbsoluteValues;
 
-    if (dataChanged) {
+    if (dataChanged || absoluteChanged) {
       _prepareDataAndRecalculate(resetViewport: true);
     }
   }
@@ -1103,6 +1111,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
           _buildCompactToolbar(context)
         else
           SizedBox(
+            width: double.infinity,
             height: kComparisonChartHeaderRowHeight,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -1112,8 +1121,10 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                   const SizedBox(width: 8),
                   widget.legendTrailing!,
                 ],
-                const SizedBox(width: 8),
-                _buildUnitToggle(context),
+                if (_showBuiltInUnitToggle) ...[
+                  const SizedBox(width: 8),
+                  _buildUnitToggle(context),
+                ],
                 if (widget.showExpandButton) ...[
                   const SizedBox(width: 8),
                   _buildExpandButton(context),
@@ -1156,9 +1167,14 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     );
   }
 
-  /// Compact phones: unified single row with scrollable legend (symbol + price) on left, controls on right.
+  bool get _showBuiltInUnitToggle =>
+      widget.showUnitToggle && !widget.preNormalizedPercent;
+
+  /// Compact phones: unified single row with scrollable legend on the left
+  /// and % / trailing controls on the right.
   Widget _buildCompactToolbar(BuildContext context) {
     return SizedBox(
+      width: double.infinity,
       height: 32,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -1166,8 +1182,10 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
           Expanded(
             child: _buildLegend(context, scrollable: true),
           ),
-          const SizedBox(width: 6),
-          _buildUnitToggle(context, compact: true),
+          if (_showBuiltInUnitToggle) ...[
+            const SizedBox(width: 6),
+            _buildUnitToggle(context, compact: true),
+          ],
           if (widget.legendTrailing != null) ...[
             const SizedBox(width: 4),
             widget.legendTrailing!,
@@ -1182,44 +1200,52 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
   }
 
   Widget _buildUnitToggle(BuildContext context, {bool compact = false}) {
-    if (widget.preNormalizedPercent) {
+    if (!_showBuiltInUnitToggle) {
       return const SizedBox.shrink();
     }
-    return Container(
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: (Theme.of(context).brightness == Brightness.dark)
-            ? Colors.white.withOpacity(0.05)
-            : Colors.black.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildToggleSegment(
-            label: '%',
-            isSelected: !_showAbsoluteValues,
-            compact: compact,
-            onTap: () {
-              setState(() {
-                _showAbsoluteValues = false;
-                _prepareDataAndRecalculate(resetViewport: true);
-              });
-            },
-          ),
-          _buildToggleSegment(
-            label: '123',
-            isSelected: _showAbsoluteValues,
-            isEnabled: !widget.isBarChart,
-            compact: compact,
-            onTap: () {
-              setState(() {
-                _showAbsoluteValues = true;
-                _prepareDataAndRecalculate(resetViewport: true);
-              });
-            },
-          ),
-        ],
+    return SizedBox(
+      key: const Key('comparison-chart-unit-toggle'),
+      width: kComparisonChartToolbarControlWidth,
+      height: kComparisonChartHeaderRowHeight,
+      child: Container(
+        padding: const EdgeInsets.all(2),
+        decoration: BoxDecoration(
+          color: (Theme.of(context).brightness == Brightness.dark)
+              ? Colors.white.withOpacity(0.05)
+              : Colors.black.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: _buildToggleSegment(
+                label: '%',
+                isSelected: !_showAbsoluteValues,
+                compact: compact,
+                onTap: () {
+                  setState(() {
+                    _showAbsoluteValues = false;
+                    _prepareDataAndRecalculate(resetViewport: true);
+                  });
+                },
+              ),
+            ),
+            Expanded(
+              child: _buildToggleSegment(
+                label: '123',
+                isSelected: _showAbsoluteValues,
+                isEnabled: !widget.isBarChart,
+                compact: compact,
+                onTap: () {
+                  setState(() {
+                    _showAbsoluteValues = true;
+                    _prepareDataAndRecalculate(resetViewport: true);
+                  });
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1305,23 +1331,23 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
           message: !isEnabled && label == '123'
               ? 'Absolute mode is not supported on Bar Charts'
               : '',
-          child: GestureDetector(
-            onTap: onTap,
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: compact ? 6 : 10,
-                vertical: compact ? 4 : 6,
-              ),
-              decoration: BoxDecoration(
-                color: bgColor,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                label,
-                style: TextStyle(
-                  color: color,
-                  fontSize: compact ? 10 : 11,
-                  fontWeight: FontWeight.bold,
+          child: SizedBox.expand(
+            child: GestureDetector(
+              onTap: onTap,
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: compact ? 10 : 11,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),

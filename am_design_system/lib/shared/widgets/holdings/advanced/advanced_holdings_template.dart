@@ -22,6 +22,7 @@ class AdvancedHoldingsTemplate extends StatefulWidget {
     this.accentColor,
     this.priceFreshnessLabel,
     this.viewOnly = true,
+    this.initialSearchQuery = '',
   });
 
   final List<AdvancedHoldingRow> holdings;
@@ -37,6 +38,9 @@ class AdvancedHoldingsTemplate extends StatefulWidget {
   /// When true (default), no edit affordances — portfolio embed mode.
   final bool viewOnly;
 
+  /// Seed the symbol/company filter (Global Search `?q=`).
+  final String initialSearchQuery;
+
   @override
   State<AdvancedHoldingsTemplate> createState() =>
       _AdvancedHoldingsTemplateState();
@@ -51,6 +55,7 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
   late AnimationController _refreshController;
   String _viewMode = 'table';
   String _filterStatus = 'all';
+  late final TextEditingController _searchController;
   String _searchQuery = '';
 
   Color get _accent => widget.accentColor ?? ModuleColors.portfolio;
@@ -59,6 +64,8 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
   void initState() {
     super.initState();
     _sortedHoldings = List.from(widget.holdings);
+    _searchQuery = widget.initialSearchQuery;
+    _searchController = TextEditingController(text: _searchQuery);
     _refreshController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
@@ -67,6 +74,7 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
 
   @override
   void dispose() {
+    _searchController.dispose();
     _refreshController.dispose();
     super.dispose();
   }
@@ -79,6 +87,13 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
       if (_sortColumnIndex != null) {
         _applySort(_sortColumnIndex!, _sortAscending);
       }
+    }
+    if (widget.initialSearchQuery != oldWidget.initialSearchQuery) {
+      _searchQuery = widget.initialSearchQuery;
+      if (_searchController.text != _searchQuery) {
+        _searchController.text = _searchQuery;
+      }
+      _currentPage = 0;
     }
   }
 
@@ -322,6 +337,7 @@ class _AdvancedHoldingsTemplateState extends State<AdvancedHoldingsTemplate>
               width: 240,
               height: 36,
               child: TextField(
+                controller: _searchController,
                 onChanged: (value) => setState(() {
                   _searchQuery = value;
                   _currentPage = 0;
