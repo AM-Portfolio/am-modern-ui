@@ -10,9 +10,8 @@ enum JournalSortOrder { latestFirst, oldestFirst }
 
 /// Folder + tag / outcome / sort controls for the journal hub.
 ///
-/// Entry-type filtering is owned by [selectedFolder] (Trade notes / Daily /
-/// Sessions) — a separate "trade type" dropdown was redundant and often blank.
-/// Entry text search is global-app search only (no duplicate bar here).
+/// Prefer [embeddedInList] so filters live in the entries rail (inspiration
+/// layout) instead of a full-width strip above the detail pane.
 class JournalFilterBar extends StatefulWidget {
   const JournalFilterBar({
     required this.selectedFolder,
@@ -23,12 +22,13 @@ class JournalFilterBar extends StatefulWidget {
     required this.onOutcomeChanged,
     required this.sortOrder,
     required this.onSortChanged,
-    @Deprecated('Ignored — use global search') this.searchQuery = '',
-    @Deprecated('Ignored — use global search') this.onSearchChanged,
+    @Deprecated('Ignored — use list search / global search') this.searchQuery = '',
+    @Deprecated('Ignored — use list search / global search') this.onSearchChanged,
     this.notebookFolders = const [],
     this.notebookTags = const [],
     this.availableOutcomes = const [],
     this.folderCounts = const {},
+    this.embeddedInList = false,
     super.key,
   });
 
@@ -45,9 +45,10 @@ class JournalFilterBar extends StatefulWidget {
   final List<NotebookItem> notebookFolders;
   final List<NotebookTag> notebookTags;
   final List<String> availableOutcomes;
-
-  /// Per-folder entry counts (keys = [JournalFolderFilter] / custom titles).
   final Map<String, int> folderCounts;
+
+  /// Compact pill row for the left entries panel.
+  final bool embeddedInList;
 
   @override
   State<JournalFilterBar> createState() => _JournalFilterBarState();
@@ -97,14 +98,36 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
       return '$title ($n)';
     }
 
-    final folderDrop = JournalThemedDropdown<String>(
-      width: 168,
+    final height = widget.embeddedInList ? 34.0 : 40.0;
+    final fontSize = widget.embeddedInList ? 12.0 : 13.0;
+
+    JournalThemedDropdown<T> pillDrop<T>({
+      required List<DropdownMenuItem<T>> items,
+      required ValueChanged<T?>? onChanged,
+      T? value,
+      String? hint,
+      double? width,
+    }) {
+      return JournalThemedDropdown<T>(
+        value: value,
+        hint: hint,
+        items: items,
+        onChanged: onChanged,
+        height: height,
+        fontSize: fontSize,
+        width: width,
+        compact: widget.embeddedInList,
+      );
+    }
+
+    final folderDrop = pillDrop<String>(
+      width: widget.embeddedInList ? null : 168,
       value: folderValue,
       items: _folderOptions
           .map(
             (f) => DropdownMenuItem(
               value: f,
-              child: Text(folderLabel(f)),
+              child: Text(folderLabel(f), overflow: TextOverflow.ellipsis),
             ),
           )
           .toList(),
@@ -113,8 +136,8 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
       },
     );
 
-    final tagDrop = JournalThemedDropdown<String?>(
-      width: 140,
+    final tagDrop = pillDrop<String?>(
+      width: widget.embeddedInList ? null : 140,
       value: _safeTagId,
       hint: 'All Tags',
       items: [
@@ -127,15 +150,15 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
             .map(
               (t) => DropdownMenuItem<String?>(
                 value: t.id,
-                child: Text(t.name),
+                child: Text(t.name, overflow: TextOverflow.ellipsis),
               ),
             ),
       ],
       onChanged: widget.onTagChanged,
     );
 
-    final outcomeDrop = JournalThemedDropdown<String?>(
-      width: 150,
+    final outcomeDrop = pillDrop<String?>(
+      width: widget.embeddedInList ? null : 150,
       value: _safeOutcome,
       hint: 'All Outcomes',
       items: [
@@ -146,15 +169,15 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
         ...widget.availableOutcomes.map(
           (o) => DropdownMenuItem<String?>(
             value: o,
-            child: Text(o),
+            child: Text(o, overflow: TextOverflow.ellipsis),
           ),
         ),
       ],
       onChanged: widget.onOutcomeChanged,
     );
 
-    final sortDrop = JournalThemedDropdown<JournalSortOrder>(
-      width: 140,
+    final sortDrop = pillDrop<JournalSortOrder>(
+      width: widget.embeddedInList ? null : 140,
       value: widget.sortOrder,
       items: const [
         DropdownMenuItem(
@@ -171,6 +194,30 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
       },
     );
 
+    if (widget.embeddedInList) {
+      // Two rows × two pills — readable without crowding the rail.
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(child: folderDrop),
+              const SizedBox(width: 8),
+              Expanded(child: tagDrop),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(child: outcomeDrop),
+              const SizedBox(width: 8),
+              Expanded(child: sortDrop),
+            ],
+          ),
+        ],
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.lg,
@@ -181,7 +228,6 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final compact = constraints.maxWidth < 900;
-
           if (compact) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -203,7 +249,6 @@ class _JournalFilterBarState extends State<JournalFilterBar> {
               ],
             );
           }
-
           return Row(
             children: [
               folderDrop,

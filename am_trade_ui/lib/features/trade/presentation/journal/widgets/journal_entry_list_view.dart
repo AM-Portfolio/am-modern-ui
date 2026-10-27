@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../internal/domain/entities/journal_entry.dart';
+import 'journal_trade_header.dart';
 
+/// Left rail: create actions, optional filters, entry cards.
 class JournalEntryListView extends StatelessWidget {
   const JournalEntryListView({
     super.key,
@@ -14,9 +16,12 @@ class JournalEntryListView extends StatelessWidget {
     this.onNewTradeJournalPressed,
     this.onDeleteEntry,
     this.listTitle = 'Entries',
+    this.showListTitle = true,
     this.emptyMessage = 'No journal entries yet.',
     this.emptySubtitle =
         'Start documenting your trades to unlock powerful insights.',
+    this.filterSlot,
+    this.width = 400,
   });
 
   final List<JournalEntry> entries;
@@ -27,8 +32,13 @@ class JournalEntryListView extends StatelessWidget {
   final VoidCallback? onNewTradeJournalPressed;
   final ValueChanged<JournalEntry>? onDeleteEntry;
   final String listTitle;
+  final bool showListTitle;
   final String emptyMessage;
   final String emptySubtitle;
+
+  /// Inspiration layout: folder / tag / outcome / sort in one row.
+  final Widget? filterSlot;
+  final double width;
 
   @override
   Widget build(BuildContext context) {
@@ -36,9 +46,9 @@ class JournalEntryListView extends StatelessWidget {
     final colors = context.colors;
 
     return Container(
-      width: 320,
+      width: width,
       decoration: BoxDecoration(
-        color: colors.cardSurface.withValues(alpha: 0.35),
+        color: colors.cardSurface.withValues(alpha: 0.4),
         border: Border(
           right: BorderSide(color: colors.border.withValues(alpha: 0.28)),
         ),
@@ -46,17 +56,18 @@ class JournalEntryListView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
-            child: Text(
-              listTitle,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
+          if (showListTitle)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+              child: Text(
+                listTitle,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
-          ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            padding: EdgeInsets.fromLTRB(14, showListTitle ? 0 : 14, 14, 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -70,21 +81,20 @@ class JournalEntryListView extends StatelessWidget {
                 ),
                 if (onNewTradeJournalPressed != null) ...[
                   const SizedBox(height: 8),
-                  OutlinedButton.icon(
+                  AppButton(
+                    text: 'New trade journal',
+                    icon: Icons.candlestick_chart_outlined,
+                    type: AppButtonType.secondary,
+                    isOutlined: true,
+                    backgroundColor: ModuleColors.trade,
+                    width: double.infinity,
+                    height: 40,
                     onPressed: onNewTradeJournalPressed,
-                    icon: const Icon(Icons.candlestick_chart_outlined, size: 18),
-                    label: const Text('New trade journal'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: ModuleColors.trade,
-                      side: BorderSide(
-                        color: ModuleColors.trade.withValues(alpha: 0.45),
-                      ),
-                      minimumSize: const Size.fromHeight(40),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: AppRadii.card,
-                      ),
-                    ),
                   ),
+                ],
+                if (filterSlot != null) ...[
+                  const SizedBox(height: 12),
+                  filterSlot!,
                 ],
               ],
             ),
@@ -131,33 +141,31 @@ class _EmptyListState extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.colors;
-
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               Icons.menu_book_outlined,
-              size: 28,
-              color: ModuleColors.trade.withValues(alpha: 0.85),
+              size: 36,
+              color: colors.textTertiary,
             ),
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: 12),
             Text(
               message,
               textAlign: TextAlign.center,
               style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: 6),
             Text(
               subtitle,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: colors.textSecondary,
-                height: 1.4,
               ),
             ),
           ],
@@ -169,11 +177,11 @@ class _EmptyListState extends StatelessWidget {
 
 class JournalEntryItem extends StatefulWidget {
   const JournalEntryItem({
+    super.key,
     required this.entry,
     required this.isSelected,
     required this.onTap,
     this.onDelete,
-    super.key,
   });
 
   final JournalEntry entry;
@@ -188,28 +196,36 @@ class JournalEntryItem extends StatefulWidget {
 class _JournalEntryItemState extends State<JournalEntryItem> {
   bool _isHovered = false;
 
-  /// Short card title — prefer symbol, then cleaned title (no date suffix).
-  static String displayTitle(JournalEntry entry) {
-    final symbol = entry.symbol?.trim();
-    if (symbol != null && symbol.isNotEmpty) return symbol;
-
-    final raw = entry.title.trim();
-    if (raw.isEmpty) return 'Untitled entry';
+  /// Draft / Open chip for trade stubs that have no outcome yet.
+  static ({String label, Color fg, Color bg})? statusChip(
+    BuildContext context,
+    JournalEntry entry,
+  ) {
     final type = (entry.entryType ?? '').toUpperCase();
-    if (type == 'WEEKLY_REVIEW' || raw.toLowerCase().startsWith('weekly')) {
-      return 'Weekly review';
+    final isTrade = type == 'TRADE_JOURNAL' ||
+        type == 'PRE_PLAN' ||
+        type == 'POST_REVIEW' ||
+        (entry.tradeId != null && entry.tradeId!.trim().isNotEmpty);
+    if (!isTrade) return null;
+    final status = (entry.journalStatus ?? 'DRAFT').toUpperCase();
+    final colors = context.colors;
+    switch (status) {
+      case 'DRAFT':
+      case 'PLANNED':
+        return (
+          label: 'Draft',
+          fg: ModuleColors.trade,
+          bg: ModuleColors.trade.withValues(alpha: 0.16),
+        );
+      case 'OPEN':
+        return (
+          label: 'Open',
+          fg: colors.statusWarning,
+          bg: colors.statusWarning.withValues(alpha: 0.16),
+        );
+      default:
+        return null;
     }
-    var title = raw;
-    if (title.toLowerCase().startsWith('trade journal:')) {
-      title = title.substring('trade journal:'.length).trim();
-      if (title.isEmpty) title = raw;
-    }
-    // Strip trailing "— 16 Oct 2026" style suffixes for cleaner cards.
-    final emDash = title.indexOf('—');
-    if (emDash > 0) return title.substring(0, emDash).trim();
-    final hyphen = RegExp(r'\s[-–]\s+\d').firstMatch(title);
-    if (hyphen != null) return title.substring(0, hyphen.start).trim();
-    return title;
   }
 
   static ({String label, Color fg, Color bg})? outcomePill(
@@ -260,8 +276,10 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
     final colors = context.colors;
     final dateStr =
         DateFormat('EEE, MMM d, yyyy').format(widget.entry.entryDate);
-    final title = displayTitle(widget.entry);
+    final title = JournalTradeHeader.displayTitle(widget.entry);
     final outcome = outcomePill(context, widget.entry);
+    final statusPill =
+        outcome == null ? statusChip(context, widget.entry) : null;
     final selected = widget.isSelected;
 
     return MouseRegion(
@@ -277,44 +295,11 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
         child: InkWell(
           onTap: widget.onTap,
           borderRadius: AppRadii.card,
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.md,
-            ),
-            decoration: BoxDecoration(
-              borderRadius: AppRadii.card,
-              border: Border.all(
-                color: selected
-                    ? ModuleColors.trade
-                    : colors.border.withValues(alpha: 0.28),
-                width: selected ? 1.5 : 1,
-              ),
-            ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? ModuleColors.trade.withValues(alpha: 0.2)
-                        : colors.cardSurface,
-                    borderRadius: BorderRadius.circular(AppRadii.sm),
-                    border: Border.all(
-                      color: colors.border.withValues(alpha: 0.25),
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.description_outlined,
-                    size: 17,
-                    color: selected
-                        ? ModuleColors.trade
-                        : colors.textSecondary,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm + 2),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -322,46 +307,41 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
                       Text(
                         dateStr,
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: selected
-                              ? ModuleColors.trade
-                              : colors.textSecondary,
-                          fontWeight: FontWeight.w600,
+                          color: colors.textTertiary,
                         ),
                       ),
-                      const SizedBox(height: AppSpacing.xxs),
+                      const SizedBox(height: 4),
                       Text(
                         title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodyMedium?.copyWith(
+                        style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w700,
-                          height: 1.25,
                         ),
                       ),
+                      if (outcome != null || statusPill != null) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: (outcome ?? statusPill)!.bg,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            (outcome ?? statusPill)!.label,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: (outcome ?? statusPill)!.fg,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
-                if (outcome != null) ...[
-                  const SizedBox(width: AppSpacing.sm),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
-                      vertical: AppSpacing.xxs,
-                    ),
-                    decoration: BoxDecoration(
-                      color: outcome.bg,
-                      borderRadius: AppRadii.chip,
-                    ),
-                    child: Text(
-                      outcome.label,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: outcome.fg,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ),
-                ],
                 if (widget.onDelete != null)
                   PopupMenuButton<String>(
                     tooltip: 'More',
@@ -369,12 +349,12 @@ class _JournalEntryItemState extends State<JournalEntryItem> {
                     icon: Icon(
                       Icons.more_vert_rounded,
                       size: 18,
-                      color: colors.textSecondary,
+                      color: colors.textTertiary,
                     ),
-                    onSelected: (value) {
-                      if (value == 'delete') widget.onDelete!();
+                    onSelected: (v) {
+                      if (v == 'delete') widget.onDelete?.call();
                     },
-                    itemBuilder: (context) => const [
+                    itemBuilder: (_) => const [
                       PopupMenuItem(
                         value: 'delete',
                         child: Text('Delete'),

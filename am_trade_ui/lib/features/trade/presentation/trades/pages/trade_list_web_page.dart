@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../journal_providers.dart';
 import '../../../providers/trade_internal_providers.dart';
+import '../../journal/utils/journal_this_trade.dart';
 import '../../models/trade_holding_view_model.dart';
 import 'trade_detail_view_page.dart';
 
@@ -25,6 +27,25 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
   TradeHoldingViewModel? _selectedTrade;
   bool _isListVisible = true;
   bool _hasInitializedSelection = false;
+  String? _journalingTradeId;
+
+  Future<void> _journalThis(TradeHoldingViewModel holding) async {
+    if (_journalingTradeId != null) return;
+    setState(() => _journalingTradeId = holding.tradeId);
+    try {
+      final cubit = await ref.read(journalCubitProvider.future);
+      if (!mounted) return;
+      await openJournalThisTrade(
+        context,
+        cubit: cubit,
+        tradeId: holding.tradeId,
+        portfolioId: widget.portfolioId,
+        holding: holding,
+      );
+    } finally {
+      if (mounted) setState(() => _journalingTradeId = null);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,6 +96,7 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
                       _selectedTrade = selected;
                     });
                   },
+                  onJournalThis: _journalThis,
                 );
               }
 
@@ -302,6 +324,25 @@ class _TradeListWebPageState extends ConsumerState<TradeListWebPage> {
                       child: Text(
                         holding.displayStatus.toUpperCase(),
                         style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: statusColor.withOpacity(0.7)),
+                      ),
+                    ),
+                    SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        icon: _journalingTradeId == holding.tradeId
+                            ? const SizedBox(
+                                width: 12,
+                                height: 12,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.menu_book_outlined, size: 16),
+                        tooltip: 'Journal this',
+                        color: statusColor.withOpacity(0.7),
+                        onPressed: _journalingTradeId != null
+                            ? null
+                            : () => _journalThis(holding),
                       ),
                     ),
                     if (widget.onNavigateToChart != null) ...[

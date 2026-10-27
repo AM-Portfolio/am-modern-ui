@@ -12,7 +12,6 @@ import '../pages/trade_journal_workflow_page.dart';
 import 'journal_entry_detail_view.dart';
 import 'journal_entry_list_view.dart';
 import 'simple_template_dialog.dart';
-import 'trade_journal_detail_view.dart';
 
 /// Two-column journal workspace: entries list | detail / create.
 /// Folder filtering is owned by the parent (filter bar).
@@ -29,6 +28,7 @@ class JournalThreeColumnLayout extends StatefulWidget {
     this.onComposerOpenChanged,
     this.focusEntryId,
     this.onEntryCreated,
+    this.listFilterSlot,
     super.key,
   });
 
@@ -37,6 +37,9 @@ class JournalThreeColumnLayout extends StatefulWidget {
   final NotebookCubit notebookCubit;
   final String selectedFolder;
   final String portfolioId;
+
+  /// Filters rendered inside the entries rail (inspiration layout).
+  final Widget? listFilterSlot;
 
   /// When set (e.g. from Playbooks), open Log Day and apply this template once.
   final JournalTemplateSelection? pendingTemplate;
@@ -105,31 +108,37 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
         widget.onPendingTemplateConsumed?.call();
       });
     }
-    if (widget.focusEntryId != null &&
-        widget.focusEntryId != oldWidget.focusEntryId &&
-        widget.entries.any((e) => e.id == widget.focusEntryId)) {
-      setState(() {
-        _selectedEntryId = widget.focusEntryId;
-        _forceTradeEdit = false;
-        _forceTradeEditStep = null;
-      });
-      WidgetsBinding.instance.addPostFrameCallback((_) => _notifySelectedSymbol());
-    }
+    final focusId = widget.focusEntryId;
+    final focusChanged =
+        focusId != null && focusId != oldWidget.focusEntryId;
+    final entriesChanged = widget.entries != oldWidget.entries;
+    final canFocus = focusId != null &&
+        widget.entries.any((e) => e.id == focusId);
+
     if (oldWidget.selectedFolder != widget.selectedFolder) {
-      setState(() {
-        _useTradeWorkflow = false;
-        _forceTradeEdit = false;
-        _forceTradeEditStep = null;
-        _hydratedEntry = null;
-        _isEditingEntry = false;
-        _selectedEntryId =
-            widget.entries.isNotEmpty ? widget.entries.first.id : null;
-      });
-      _setCreating(false);
-      _notifyComposerOpen();
-      WidgetsBinding.instance
-          .addPostFrameCallback((_) => _notifySelectedSymbol());
+      if (canFocus) {
+        // Prefer import/search focus over "first in folder".
+        _applyFocusEntry(focusId!);
+      } else {
+        setState(() {
+          _useTradeWorkflow = false;
+          _forceTradeEdit = false;
+          _forceTradeEditStep = null;
+          _hydratedEntry = null;
+          _isEditingEntry = false;
+          _selectedEntryId =
+              widget.entries.isNotEmpty ? widget.entries.first.id : null;
+        });
+        _setCreating(false);
+        _notifyComposerOpen();
+        WidgetsBinding.instance
+            .addPostFrameCallback((_) => _notifySelectedSymbol());
+      }
       return;
+    }
+    if ((focusChanged || entriesChanged) && canFocus) {
+      // Close New Trade / Log Day composer so imported stubs are visible.
+      _applyFocusEntry(focusId!);
     }
     if (_isCreatingNew) return;
     final stillVisible = widget.entries.any((e) => e.id == _selectedEntryId);
@@ -164,8 +173,33 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
     widget.onSelectedSymbolChanged?.call(_selectedEntry?.symbol);
   }
 
-  /// Never collapse the entries rail — Log Day and New trade journal both keep
-  /// the list visible so users can switch or compare while writing.
+  /// Select [entryId], exit any open composer, show the entries rail again.
+  void _applyFocusEntry(String entryId) {
+    if (!mounted) return;
+    final already =
+        _selectedEntryId == entryId && !_isCreatingNew && !_useTradeWorkflow;
+    if (already && !_forceTradeEdit) {
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _notifySelectedSymbol());
+      return;
+    }
+    setState(() {
+      _selectedEntryId = entryId;
+      _isCreatingNew = false;
+      _useTradeWorkflow = false;
+      _forceTradeEdit = false;
+      _forceTradeEditStep = null;
+      _hydratedEntry = null;
+      _isEditingEntry = false;
+      _composerTemplate = null;
+    });
+    _notifyComposerOpen();
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _notifySelectedSymbol());
+  }
+
+  /// Always keep the entries rail (same as Log Day). Trade Pre/Execute/Post
+  /// shares the right pane; collapsing the list felt like the sidebar vanished.
   bool get _focusFullPage => false;
 
   void _notifyComposerOpen() {
@@ -310,14 +344,16 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
           AnimatedContainer(
             duration: const Duration(milliseconds: 320),
             curve: Curves.easeOutCubic,
-            width: focusFullPage ? 0 : 320,
+            width: focusFullPage ? 0 : 400,
             child: focusFullPage
                 ? const SizedBox.shrink()
                 : ClipRect(
                     child: JournalEntryListView(
                       entries: widget.entries,
                       selectedEntryId: _selectedEntryId,
-                      listTitle: 'Entries',
+                      showListTitle: false,
+                      width: 400,
+                      filterSlot: widget.listFilterSlot,
                       emptyMessage: JournalFolderFilter.emptyMessage(
                         widget.selectedFolder,
                       ).split('\n').first,
@@ -352,14 +388,14 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
                 );
               },
               child: KeyedSubtree(
+                // Do not key on _isEditingEntry — remounting on Edit forces a
+                // second click before the form actually enters edit mode.
                 key: ValueKey(
                   _isCreatingNew
-                      ? 'composer'
+                      ? 'composer-${_useTradeWorkflow ? 'trade' : 'day'}'
                       : _forceTradeEdit
                           ? 'trade-edit-${selectedEntry?.id ?? 'none'}'
-                          : _isEditingEntry
-                              ? 'edit-${selectedEntry?.id ?? 'none'}'
-                              : (selectedEntry?.id ?? 'empty-detail'),
+                          : (selectedEntry?.id ?? 'empty-detail'),
                 ),
                 child: _buildRightPane(colors, selectedEntry),
               ),
@@ -402,31 +438,15 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
         JournalFolderFilter.shouldOpenTradeWorkflow(selectedEntry)) {
       final completed =
           JournalFolderFilter.isCompletedTradeJournal(selectedEntry);
-      final showWizard = _forceTradeEdit || !completed;
-
-      if (!showWizard) {
-        return TradeJournalDetailView(
-          key: ValueKey('trade-detail-${selectedEntry.id}'),
-          entry: selectedEntry,
-          onEdit: () {
-            setState(() {
-              _forceTradeEdit = true;
-              _forceTradeEditStep = 2;
-            });
-          },
-          onDelete: () => _confirmAndDelete(selectedEntry),
-        );
-      }
-
+      // Same Pre/Execute/Post template for saved journals; completed starts locked.
       return TradeJournalWorkflowPage(
-        key: ValueKey(
-          'wf-${selectedEntry.id}-${_forceTradeEdit ? 'edit' : 'flow'}',
-        ),
+        key: ValueKey('wf-${selectedEntry.id}'),
         journalCubit: widget.journalCubit,
         initialEntry: selectedEntry,
         portfolioId: widget.portfolioId,
         embedded: true,
-        startAtStep: _forceTradeEditStep,
+        initialReadOnly: completed && !_forceTradeEdit,
+        startAtStep: _forceTradeEditStep ?? (completed ? 2 : null),
         onEmbeddedDone: (entryId, {required bool complete}) {
           setState(() {
             _selectedEntryId = entryId;
@@ -435,6 +455,7 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
               _forceTradeEditStep = null;
             }
           });
+          _notifyComposerOpen();
           widget.onEntryCreated?.call(entryId);
         },
         onEmbeddedCancel: () {
@@ -442,6 +463,7 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
             _forceTradeEdit = false;
             _forceTradeEditStep = null;
           });
+          _notifyComposerOpen();
         },
         onEmbeddedDeleted: () {
           setState(() {
@@ -450,6 +472,7 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
             _forceTradeEdit = false;
             _forceTradeEditStep = null;
           });
+          _notifyComposerOpen();
         },
       );
     }

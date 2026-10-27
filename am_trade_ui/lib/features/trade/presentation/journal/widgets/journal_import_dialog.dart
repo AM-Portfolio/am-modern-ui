@@ -185,15 +185,14 @@ class _JournalImportDialogState extends ConsumerState<JournalImportDialog>
       _error = null;
     });
     try {
+      // Parent hub owns reload + upsert so stubs aren't wiped by a second fetch.
       final created = await widget.journalCubit.createFromTrades(
         ids,
         portfolioId: _portfolioId,
+        reload: false,
       );
       if (!mounted) return;
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Created ${created.length} journal stubs')),
-      );
+      Navigator.pop(context, created);
     } catch (e) {
       if (!mounted) return;
       setState(() {

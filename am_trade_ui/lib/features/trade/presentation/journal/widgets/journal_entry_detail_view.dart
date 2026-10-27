@@ -231,8 +231,14 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
                       backgroundColor: ModuleColors.trade,
                       height: 32,
                       onPressed: () {
+                        // Enter form edit first, then notify parent (avoid
+                        // remount races wiping edit mode on the same frame).
                         _formKey.currentState?.enterEditMode();
-                        _setFormEditMode(true);
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (!mounted) return;
+                          _formKey.currentState?.enterEditMode();
+                          _setFormEditMode(true);
+                        });
                       },
                     ),
                   PopupMenuButton<String>(
@@ -269,24 +275,17 @@ class _JournalEntryDetailViewState extends State<JournalEntryDetailView> {
               ),
             ),
           ),
+          // Fill the pane on every screen width — no centered maxWidth gutter.
           Expanded(
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: editing ? 1100 : double.infinity,
-                ),
-                child: JournalEntryForm(
-                  key: _formKey,
-                  cubit: widget.cubit,
-                  portfolioId: widget.portfolioId,
-                  entry: widget.entry,
-                  onBrowseTemplates: _showTemplateBrowser,
-                  onEditModeChanged: (isEditing) {
-                    if (mounted) _setFormEditMode(isEditing);
-                  },
-                ),
-              ),
+            child: JournalEntryForm(
+              key: _formKey,
+              cubit: widget.cubit,
+              portfolioId: widget.portfolioId,
+              entry: widget.entry,
+              onBrowseTemplates: _showTemplateBrowser,
+              onEditModeChanged: (isEditing) {
+                if (mounted) _setFormEditMode(isEditing);
+              },
             ),
           ),
         ],

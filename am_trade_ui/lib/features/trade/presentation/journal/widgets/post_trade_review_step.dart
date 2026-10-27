@@ -12,10 +12,13 @@ class PostTradeReviewStep extends StatefulWidget {
     super.key,
     required this.entry,
     required this.onUpdate,
+    this.identityHeader,
   });
 
   final JournalEntry entry;
   final ValueChanged<JournalEntry> onUpdate;
+  /// Compact symbol / status strip inside the Post-Trade card.
+  final Widget? identityHeader;
 
   @override
   State<PostTradeReviewStep> createState() => _PostTradeReviewStepState();
@@ -113,6 +116,19 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
     );
   }
 
+  Widget _gap() => const SizedBox(height: 14);
+
+  Widget _row(Widget left, Widget right) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: left),
+        const SizedBox(width: 14),
+        Expanded(child: right),
+      ],
+    );
+  }
+
   Widget _dropdown<T>({
     required String label,
     required T? value,
@@ -125,7 +141,49 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
       items: items,
       onChanged: onChanged,
       height: 48,
-      fontSize: 14,
+      fontSize: 15,
+    );
+  }
+
+  Widget _autoBox({
+    required String label,
+    required String value,
+    Color? valueColor,
+  }) {
+    final theme = Theme.of(context);
+    return InputDecorator(
+      decoration: journalWorkflowDecoration(context, label: label),
+      child: Text(
+        value,
+        style: theme.textTheme.bodyLarge?.copyWith(
+          color: valueColor,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  Widget _field({
+    required TextEditingController controller,
+    required String label,
+    required ValueChanged<String> onChanged,
+    String? prefixText,
+    TextInputType? keyboardType,
+    int maxLines = 1,
+  }) {
+    final theme = Theme.of(context);
+    return TextFormField(
+      controller: controller,
+      style: theme.textTheme.bodyLarge,
+      keyboardType: keyboardType,
+      maxLines: maxLines,
+      decoration: journalWorkflowDecoration(
+        context,
+        label: label,
+        prefixText: prefixText,
+        alignLabelWithHint: maxLines > 1,
+      ),
+      onChanged: onChanged,
     );
   }
 
@@ -133,195 +191,150 @@ class _PostTradeReviewStepState extends State<PostTradeReviewStep> {
   Widget build(BuildContext context) {
     final review = widget.entry.postTradeReview ?? const PostTradeReview();
     final colors = context.colors;
+    final theme = Theme.of(context);
 
     return JournalFormSurface(
       title: 'Post-Trade Review',
       subtitle: 'Capture outcome, grade execution, and lock the lesson.',
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _exit,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: journalWorkflowDecoration(
-                    context,
-                    label: 'Actual Exit Price',
-                    prefixText: '₹ ',
-                  ),
-                  onChanged: (v) => _updateReview(
-                    review.copyWith(actualExitPrice: double.tryParse(v)),
-                  ),
-                ),
+          if (widget.identityHeader != null) ...[
+            widget.identityHeader!,
+            _gap(),
+          ],
+          _row(
+            _field(
+              controller: _exit,
+              label: 'Actual exit price',
+              prefixText: '₹ ',
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (v) => _updateReview(
+                review.copyWith(actualExitPrice: double.tryParse(v)),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: InputDecorator(
-                  decoration: journalWorkflowDecoration(
-                    context,
-                    label: 'P&L (auto)',
-                  ),
-                  child: Text(
-                    review.actualPnl == null
-                        ? '—'
-                        : review.actualPnl!.toStringAsFixed(2),
-                    style: TextStyle(
-                      color: (review.actualPnl ?? 0) >= 0
-                          ? context.statusSuccess
-                          : context.statusError,
-                      fontWeight: FontWeight.bold,
+            ),
+            _autoBox(
+              label: 'P&L (auto)',
+              value: review.actualPnl == null
+                  ? '—'
+                  : review.actualPnl!.toStringAsFixed(2),
+              valueColor: review.actualPnl == null
+                  ? null
+                  : (review.actualPnl! >= 0
+                      ? context.statusSuccess
+                      : context.statusError),
+            ),
+          ),
+          _gap(),
+          _row(
+            _autoBox(
+              label: 'R multiple (auto)',
+              value: review.actualRMultiple == null
+                  ? '—'
+                  : '${review.actualRMultiple!.toStringAsFixed(2)} R',
+            ),
+            _dropdown<String>(
+              label: 'Followed stop loss?',
+              value: review.followedStopLoss,
+              items: const [
+                DropdownMenuItem(value: 'Yes', child: Text('Yes')),
+                DropdownMenuItem(value: 'No', child: Text('No')),
+                DropdownMenuItem(value: 'Partial', child: Text('Partial')),
+              ],
+              onChanged: (v) =>
+                  _updateReview(review.copyWith(followedStopLoss: v)),
+            ),
+          ),
+          _gap(),
+          _row(
+            _dropdown<String>(
+              label: 'Followed target?',
+              value: review.followedTarget,
+              items: const [
+                DropdownMenuItem(value: 'Full', child: Text('Full')),
+                DropdownMenuItem(value: 'Partial', child: Text('Partial')),
+                DropdownMenuItem(value: 'None', child: Text('None')),
+              ],
+              onChanged: (v) =>
+                  _updateReview(review.copyWith(followedTarget: v)),
+            ),
+            _dropdown<String>(
+              label: 'Mistake category',
+              value: review.mistakeCategory ?? 'NONE',
+              items: _mistakes
+                  .map(
+                    (m) => DropdownMenuItem(
+                      value: m,
+                      child: Text(humanizeEnum(m)),
                     ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: InputDecorator(
-                  decoration: journalWorkflowDecoration(
-                    context,
-                    label: 'R Multiple (auto)',
-                  ),
-                  child: Text(
-                    review.actualRMultiple == null
-                        ? '—'
-                        : '${review.actualRMultiple!.toStringAsFixed(2)} R',
-                  ),
-                ),
-              ),
-            ],
+                  )
+                  .toList(),
+              onChanged: (v) =>
+                  _updateReview(review.copyWith(mistakeCategory: v)),
+            ),
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _dropdown<String>(
-                  label: 'Followed Stop Loss?',
-                  value: review.followedStopLoss,
-                  items: const [
-                    DropdownMenuItem(value: 'Yes', child: Text('Yes')),
-                    DropdownMenuItem(value: 'No', child: Text('No')),
-                    DropdownMenuItem(value: 'Partial', child: Text('Partial')),
-                  ],
-                  onChanged: (v) =>
-                      _updateReview(review.copyWith(followedStopLoss: v)),
+          _gap(),
+          _row(
+            _dropdown<int>(
+              label: 'Execution score',
+              value: review.executionScore ?? 7,
+              items: List.generate(
+                10,
+                (i) => DropdownMenuItem(
+                  value: i + 1,
+                  child: Text('${i + 1} / 10'),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _dropdown<String>(
-                  label: 'Followed Target?',
-                  value: review.followedTarget,
-                  items: const [
-                    DropdownMenuItem(value: 'Full', child: Text('Full')),
-                    DropdownMenuItem(value: 'Partial', child: Text('Partial')),
-                    DropdownMenuItem(value: 'None', child: Text('None')),
-                  ],
-                  onChanged: (v) =>
-                      _updateReview(review.copyWith(followedTarget: v)),
-                ),
-              ),
-            ],
+              onChanged: (v) =>
+                  _updateReview(review.copyWith(executionScore: v)),
+            ),
+            _dropdown<String>(
+              label: 'Emotional state',
+              value: review.emotionalState ?? 'CALM',
+              items: _emotions
+                  .map(
+                    (m) => DropdownMenuItem(
+                      value: m,
+                      child: Text(humanizeEnum(m)),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (v) =>
+                  _updateReview(review.copyWith(emotionalState: v)),
+            ),
           ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _wentWell,
-            maxLines: 3,
-            decoration: journalWorkflowDecoration(
-              context,
+          _gap(),
+          _row(
+            _field(
+              controller: _wentWell,
               label: 'What went well?',
-              alignLabelWithHint: true,
+              maxLines: 3,
+              onChanged: (v) =>
+                  _updateReview(review.copyWith(whatWentWell: v)),
             ),
-            onChanged: (v) =>
-                _updateReview(review.copyWith(whatWentWell: v)),
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _improve,
-            maxLines: 3,
-            decoration: journalWorkflowDecoration(
-              context,
+            _field(
+              controller: _improve,
               label: 'What could be improved?',
-              alignLabelWithHint: true,
+              maxLines: 3,
+              onChanged: (v) =>
+                  _updateReview(review.copyWith(whatCouldBeImproved: v)),
             ),
-            onChanged: (v) =>
-                _updateReview(review.copyWith(whatCouldBeImproved: v)),
           ),
-          const SizedBox(height: 16),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: _dropdown<String>(
-                  label: 'Mistake Category',
-                  value: review.mistakeCategory ?? 'NONE',
-                  items: _mistakes
-                      .map(
-                        (m) => DropdownMenuItem(
-                          value: m,
-                          child: Text(humanizeEnum(m)),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (v) =>
-                      _updateReview(review.copyWith(mistakeCategory: v)),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _dropdown<int>(
-                  label: 'Execution Score',
-                  value: review.executionScore ?? 7,
-                  items: List.generate(
-                    10,
-                    (i) => DropdownMenuItem(
-                      value: i + 1,
-                      child: Text('${i + 1} / 10'),
-                    ),
-                  ),
-                  onChanged: (v) =>
-                      _updateReview(review.copyWith(executionScore: v)),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _dropdown<String>(
-                  label: 'Emotional State',
-                  value: review.emotionalState ?? 'CALM',
-                  items: _emotions
-                      .map(
-                        (m) => DropdownMenuItem(
-                          value: m,
-                          child: Text(humanizeEnum(m)),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (v) =>
-                      _updateReview(review.copyWith(emotionalState: v)),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
+          _gap(),
+          _field(
             controller: _lesson,
+            label: 'Lesson learned',
             maxLines: 3,
-            decoration: journalWorkflowDecoration(
-              context,
-              label: 'Lesson Learned',
-              alignLabelWithHint: true,
-            ),
             onChanged: (v) =>
                 _updateReview(review.copyWith(lessonLearned: v)),
           ),
           const SizedBox(height: 8),
           Text(
             'Saving the journal on this step marks it Completed.',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: colors.textSecondary,
-                ),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colors.textSecondary,
+            ),
           ),
         ],
       ),

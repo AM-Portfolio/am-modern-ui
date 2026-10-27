@@ -11,12 +11,13 @@ class JournalThemedDropdown<T> extends StatelessWidget {
     this.value,
     this.hint,
     this.label,
-    this.height = 40,
-    this.fontSize = 13,
+    this.height = 44,
+    this.fontSize = 14,
     this.width,
     this.menuMaxWidth,
     this.menuMaxHeight = 280,
     this.enabled = true,
+    this.compact = false,
   });
 
   final T? value;
@@ -31,44 +32,48 @@ class JournalThemedDropdown<T> extends StatelessWidget {
   final double menuMaxHeight;
   final bool enabled;
 
-  /// Match [AppRadii.input] / form fields in the journal hub.
-  static double get _radius => AppRadii.md;
+  /// Tighter padding / radius for list-rail filter pills.
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final theme = Theme.of(context);
+    final radius = compact ? AppRadii.sm : AppRadii.md;
+    final hPad = compact ? 10.0 : 12.0;
 
-    final dropdown = CustomDropdown<T>(
-      value: value,
-      hint: hint,
-      items: items,
-      onChanged: enabled ? onChanged : null,
-      enabled: enabled,
-      height: height,
-      isExpanded: true,
-      fontSize: fontSize,
-      iconSize: 18,
-      borderRadius: _radius,
-      primaryColor: ModuleColors.trade,
-      backgroundColor: colors.cardSurface.withValues(alpha: 0.65),
-      borderColor: colors.border.withValues(alpha: 0.35),
-      textColor: colors.textPrimary,
-      menuMaxHeight: menuMaxHeight,
-      menuMaxWidth: menuMaxWidth ?? width,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-      icon: Icons.keyboard_arrow_down_rounded,
-    );
+    Widget buildDropdown({double? resolvedMenuWidth}) {
+      return CustomDropdown<T>(
+        value: value,
+        hint: hint,
+        items: items,
+        onChanged: enabled ? onChanged : null,
+        enabled: enabled,
+        height: height,
+        isExpanded: true,
+        fontSize: fontSize,
+        iconSize: compact ? 16 : 18,
+        borderRadius: radius,
+        primaryColor: ModuleColors.trade,
+        backgroundColor: colors.cardSurface,
+        borderColor: colors.border.withValues(alpha: compact ? 0.55 : 0.45),
+        textColor: colors.textPrimary,
+        menuMaxHeight: menuMaxHeight,
+        menuMaxWidth: menuMaxWidth ?? resolvedMenuWidth,
+        contentPadding: EdgeInsets.symmetric(horizontal: hPad),
+        icon: Icons.keyboard_arrow_down_rounded,
+      );
+    }
 
-    Widget child = dropdown;
-    if (label != null && label!.trim().isNotEmpty) {
-      child = Column(
+    Widget labeled(Widget dropdown) {
+      if (label == null || label!.trim().isEmpty) return dropdown;
+      return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             label!,
-            style: theme.textTheme.labelMedium?.copyWith(
+            style: theme.textTheme.bodyMedium?.copyWith(
               color: colors.textSecondary,
               fontWeight: FontWeight.w600,
             ),
@@ -79,9 +84,23 @@ class JournalThemedDropdown<T> extends StatelessWidget {
       );
     }
 
-    if (width != null) {
-      return SizedBox(width: width, child: child);
-    }
+    final child = width != null
+        ? labeled(
+            SizedBox(
+              width: width,
+              child: buildDropdown(resolvedMenuWidth: width),
+            ),
+          )
+        : LayoutBuilder(
+            builder: (context, constraints) {
+              final w =
+                  constraints.maxWidth.isFinite && constraints.maxWidth > 0
+                      ? constraints.maxWidth
+                      : null;
+              return labeled(buildDropdown(resolvedMenuWidth: w));
+            },
+          );
+
     return child;
   }
 }

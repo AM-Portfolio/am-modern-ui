@@ -424,18 +424,74 @@ class JournalCubit extends Cubit<JournalState> {
     // Widen hub date filter so stubs outside the prior range still appear.
     if (created.isNotEmpty) {
       DateTime? earliest;
+      DateTime? latest;
       for (final e in created) {
         if (earliest == null || e.entryDate.isBefore(earliest)) {
           earliest = e.entryDate;
+        }
+        if (latest == null || e.entryDate.isAfter(latest)) {
+          latest = e.entryDate;
         }
       }
       if (earliest != null &&
           (_startDate == null || earliest.isBefore(_startDate!))) {
         _startDate = DateTime(earliest.year, earliest.month, earliest.day);
       }
+      if (latest != null) {
+        // Inclusive calendar day (+1 so same-day / timed stubs stay in range).
+        final endDay = DateTime(latest.year, latest.month, latest.day)
+            .add(const Duration(days: 1));
+        if (_endDate == null || endDay.isAfter(_endDate!)) {
+          _endDate = endDay;
+        }
+      }
     }
     if (reload) await loadJournalEntries();
+    // Guarantee stubs appear even if the list query filtered them out
+    // (date/portfolio race). Call again after any later reload.
+    upsertEntries(created);
     return created;
+  }
+
+  /// Prepend / replace entries in the current loaded list (no network).
+  void upsertEntries(List<JournalEntry> incoming) {
+    if (incoming.isEmpty) return;
+    state.maybeWhen(
+      loaded: (entries, summary, adherence, status, folder, tags, q, setup) {
+        final byId = {for (final e in entries) e.id: e};
+        for (final e in incoming) {
+          byId[e.id] = e;
+        }
+        final merged = byId.values.toList()
+          ..sort((a, b) => b.entryDate.compareTo(a.entryDate));
+        emit(
+          JournalState.loaded(
+            entries: merged,
+            summary: summary,
+            adherence: adherence,
+            statusFilter: status,
+            folderId: folder,
+            tagIds: tags,
+            searchQuery: q,
+            setupFilter: setup,
+          ),
+        );
+      },
+      orElse: () {
+        emit(
+          JournalState.loaded(
+            entries: List<JournalEntry>.from(incoming),
+            summary: _summary,
+            adherence: _adherence,
+            statusFilter: _statusFilter,
+            folderId: _folderId,
+            tagIds: _tagIds,
+            searchQuery: _searchQuery,
+            setupFilter: _setupFilter,
+          ),
+        );
+      },
+    );
   }
 
   DateTime get effectiveStart => _startDate ?? _defaultStart;

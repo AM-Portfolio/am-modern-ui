@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../internal/domain/entities/journal_entry.dart';
 import '../utils/journal_calc_helper.dart';
 import 'journal_form_surface.dart';
+import 'journal_preset_or_custom_field.dart';
 import 'journal_workflow_field_theme.dart';
 
 class PreTradePlanStep extends StatefulWidget {
@@ -12,11 +13,14 @@ class PreTradePlanStep extends StatefulWidget {
     required this.entry,
     required this.onUpdate,
     this.applyDefaultChecklist = false,
+    this.identityHeader,
   });
 
   final JournalEntry entry;
   final ValueChanged<JournalEntry> onUpdate;
   final bool applyDefaultChecklist;
+  /// Compact symbol / status strip inside the Pre-Trade card (avoids hero chrome).
+  final Widget? identityHeader;
 
   @override
   State<PreTradePlanStep> createState() => _PreTradePlanStepState();
@@ -35,13 +39,10 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
   ];
 
   late final TextEditingController _symbol;
-  late final TextEditingController _strategy;
-  late final TextEditingController _setup;
   late final TextEditingController _entryPrice;
   late final TextEditingController _stop;
   late final TextEditingController _target;
   late final TextEditingController _qty;
-  late final TextEditingController _market;
   late final TextEditingController _setupDesc;
   late final TextEditingController _rationale;
 
@@ -50,14 +51,11 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
     super.initState();
     final plan = widget.entry.preTradePlan ?? const PreTradePlan();
     _symbol = TextEditingController(text: widget.entry.symbol ?? '');
-    _strategy = TextEditingController(text: plan.strategy ?? '');
-    _setup = TextEditingController(text: plan.setup ?? widget.entry.setup ?? '');
     _entryPrice =
         TextEditingController(text: plan.plannedEntryPrice?.toString() ?? '');
     _stop = TextEditingController(text: plan.plannedStopLoss?.toString() ?? '');
     _target = TextEditingController(text: plan.plannedTarget?.toString() ?? '');
     _qty = TextEditingController(text: plan.plannedQuantity?.toString() ?? '');
-    _market = TextEditingController(text: plan.marketContext ?? '');
     _setupDesc = TextEditingController(text: plan.setupDescription ?? '');
     _rationale = TextEditingController(text: plan.entryRationale ?? '');
   }
@@ -69,13 +67,10 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
         oldWidget.entry.updatedAt != widget.entry.updatedAt) {
       final plan = widget.entry.preTradePlan ?? const PreTradePlan();
       _symbol.text = widget.entry.symbol ?? '';
-      _strategy.text = plan.strategy ?? '';
-      _setup.text = plan.setup ?? widget.entry.setup ?? '';
       _entryPrice.text = plan.plannedEntryPrice?.toString() ?? '';
       _stop.text = plan.plannedStopLoss?.toString() ?? '';
       _target.text = plan.plannedTarget?.toString() ?? '';
       _qty.text = plan.plannedQuantity?.toString() ?? '';
-      _market.text = plan.marketContext ?? '';
       _setupDesc.text = plan.setupDescription ?? '';
       _rationale.text = plan.entryRationale ?? '';
     }
@@ -84,13 +79,10 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
   @override
   void dispose() {
     _symbol.dispose();
-    _strategy.dispose();
-    _setup.dispose();
     _entryPrice.dispose();
     _stop.dispose();
     _target.dispose();
     _qty.dispose();
-    _market.dispose();
     _setupDesc.dispose();
     _rationale.dispose();
     super.dispose();
@@ -123,6 +115,40 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
   PreTradePlan get _plan =>
       widget.entry.preTradePlan ?? const PreTradePlan();
 
+  Widget _gap() => const SizedBox(height: 14);
+
+  Widget _row(Widget left, Widget right) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: left),
+        const SizedBox(width: 14),
+        Expanded(child: right),
+      ],
+    );
+  }
+
+  Widget _field({
+    required TextEditingController controller,
+    required String label,
+    required ValueChanged<String> onChanged,
+    String? prefixText,
+    TextInputType? keyboardType,
+  }) {
+    final theme = Theme.of(context);
+    return TextFormField(
+      controller: controller,
+      style: theme.textTheme.bodyLarge,
+      keyboardType: keyboardType,
+      decoration: journalWorkflowDecoration(
+        context,
+        label: label,
+        prefixText: prefixText,
+      ),
+      onChanged: onChanged,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final plan = _plan;
@@ -131,193 +157,218 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
         : (widget.applyDefaultChecklist ? _defaultChecklist : const <String>[]);
     final confirmed = [...plan.confirmedChecklistItems];
     final direction = (widget.entry.tradeDirection ?? 'LONG').toUpperCase();
+    final colors = context.colors;
+    final theme = Theme.of(context);
+
+    final symbolInHeader =
+        widget.identityHeader != null &&
+        (widget.entry.symbol?.trim().isNotEmpty ?? false);
+
+    final hasNotes = (_setupDesc.text.trim().isNotEmpty) ||
+        (_rationale.text.trim().isNotEmpty);
+
+    final directionBlock = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Direction',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: colors.textSecondary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 6),
+        SegmentedButton<String>(
+          style: ButtonStyle(
+            visualDensity: VisualDensity.standard,
+            textStyle: WidgetStatePropertyAll(
+              theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          segments: const [
+            ButtonSegment(value: 'LONG', label: Text('Long')),
+            ButtonSegment(value: 'SHORT', label: Text('Short')),
+          ],
+          selected: {direction},
+          onSelectionChanged: (s) => _updatePlan(plan, direction: s.first),
+        ),
+      ],
+    );
 
     return JournalFormSurface(
       title: 'Pre-Trade Plan',
-      subtitle: 'Define setup, risk, and checklist before you enter.',
+      subtitle: 'Pick from the list, or Custom… for your own.',
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _symbol,
-                  decoration: journalWorkflowDecoration(
-                    context,
-                    label: 'Symbol *',
-                  ),
-                  onChanged: (v) => _updatePlan(plan, symbol: v),
-                ),
+          if (widget.identityHeader != null) ...[
+            widget.identityHeader!,
+            _gap(),
+          ],
+          if (!symbolInHeader)
+            _row(
+              _field(
+                controller: _symbol,
+                label: 'Symbol *',
+                onChanged: (v) => _updatePlan(plan, symbol: v),
               ),
-              const SizedBox(width: 16),
-              SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(value: 'LONG', label: Text('Long')),
-                  ButtonSegment(value: 'SHORT', label: Text('Short')),
-                ],
-                selected: {direction},
-                onSelectionChanged: (s) =>
-                    _updatePlan(plan, direction: s.first),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _strategy,
-                  decoration: journalWorkflowDecoration(
-                    context,
-                    label: 'Strategy',
-                  ),
-                  onChanged: (v) => _updatePlan(plan.copyWith(strategy: v)),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: TextFormField(
-                  controller: _setup,
-                  decoration: journalWorkflowDecoration(
-                    context,
-                    label: 'Setup',
-                  ),
-                  onChanged: (v) => _updatePlan(plan.copyWith(setup: v)),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _entryPrice,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: journalWorkflowDecoration(
-                    context,
-                    label: 'Planned Entry',
-                    prefixText: '₹ ',
-                  ),
-                  onChanged: (v) => _updatePlan(
-                    plan.copyWith(plannedEntryPrice: double.tryParse(v)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  controller: _stop,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: journalWorkflowDecoration(
-                    context,
-                    label: 'Planned Stop',
-                    prefixText: '₹ ',
-                  ),
-                  onChanged: (v) => _updatePlan(
-                    plan.copyWith(plannedStopLoss: double.tryParse(v)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  controller: _target,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: journalWorkflowDecoration(
-                    context,
-                    label: 'Planned Target',
-                    prefixText: '₹ ',
-                  ),
-                  onChanged: (v) => _updatePlan(
-                    plan.copyWith(plannedTarget: double.tryParse(v)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  controller: _qty,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: journalWorkflowDecoration(
-                    context,
-                    label: 'Quantity',
-                  ),
-                  onChanged: (v) => _updatePlan(
-                    plan.copyWith(plannedQuantity: double.tryParse(v)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 16,
-            children: [
-              Chip(
-                label: Text(
-                  'Planned Risk: ${plan.plannedRiskAmount?.toStringAsFixed(2) ?? '—'}',
-                ),
-              ),
-              Chip(
-                label: Text(
-                  'Planned R:R: ${plan.plannedRRRatio?.toStringAsFixed(2) ?? '—'}',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _market,
-            decoration: journalWorkflowDecoration(
-              context,
-              label: 'Market Context',
+              directionBlock,
+            )
+          else
+            Align(alignment: Alignment.centerLeft, child: directionBlock),
+          _gap(),
+          _row(
+            JournalPresetOrCustomField(
+              label: 'Strategy',
+              presets: JournalPreTradePresets.strategies,
+              value: plan.strategy,
+              hint: 'Select strategy',
+              onChanged: (v) => _updatePlan(plan.copyWith(strategy: v)),
             ),
+            JournalPresetOrCustomField(
+              label: 'Setup',
+              presets: JournalPreTradePresets.setups,
+              value: plan.setup ?? widget.entry.setup,
+              hint: 'Select setup',
+              onChanged: (v) => _updatePlan(plan.copyWith(setup: v)),
+            ),
+          ),
+          _gap(),
+          JournalPresetOrCustomField(
+            label: 'Market context',
+            presets: JournalPreTradePresets.marketContexts,
+            value: plan.marketContext,
+            hint: 'Select context',
             onChanged: (v) => _updatePlan(plan.copyWith(marketContext: v)),
           ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _setupDesc,
-            maxLines: 3,
-            decoration: journalWorkflowDecoration(
-              context,
-              label: 'Setup Description',
-              alignLabelWithHint: true,
+          _gap(),
+          _row(
+            _field(
+              controller: _entryPrice,
+              label: 'Planned entry',
+              prefixText: '₹ ',
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (v) => _updatePlan(
+                plan.copyWith(plannedEntryPrice: double.tryParse(v)),
+              ),
             ),
-            onChanged: (v) =>
-                _updatePlan(plan.copyWith(setupDescription: v)),
+            _field(
+              controller: _stop,
+              label: 'Planned stop',
+              prefixText: '₹ ',
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (v) => _updatePlan(
+                plan.copyWith(plannedStopLoss: double.tryParse(v)),
+              ),
+            ),
           ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _rationale,
-            maxLines: 3,
-            decoration: journalWorkflowDecoration(
-              context,
-              label: 'Entry Rationale',
-              alignLabelWithHint: true,
+          _gap(),
+          _row(
+            _field(
+              controller: _target,
+              label: 'Planned target',
+              prefixText: '₹ ',
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (v) => _updatePlan(
+                plan.copyWith(plannedTarget: double.tryParse(v)),
+              ),
             ),
-            onChanged: (v) => _updatePlan(plan.copyWith(entryRationale: v)),
+            _field(
+              controller: _qty,
+              label: 'Quantity',
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (v) => _updatePlan(
+                plan.copyWith(plannedQuantity: double.tryParse(v)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 10,
+            runSpacing: 8,
+            children: [
+              Chip(
+                label: Text(
+                  'Risk: ${plan.plannedRiskAmount?.toStringAsFixed(2) ?? '—'}',
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+              Chip(
+                label: Text(
+                  'R:R: ${plan.plannedRRRatio?.toStringAsFixed(2) ?? '—'}',
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+            ],
+          ),
+          Theme(
+            data: theme.copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              initiallyExpanded: hasNotes,
+              tilePadding: EdgeInsets.zero,
+              childrenPadding: const EdgeInsets.only(bottom: 4),
+              title: Text(
+                'Notes (optional)',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              subtitle: Text(
+                'Setup description & rationale',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
+              children: [
+                _row(
+                  TextFormField(
+                    controller: _setupDesc,
+                    maxLines: 3,
+                    style: theme.textTheme.bodyLarge,
+                    decoration: journalWorkflowDecoration(
+                      context,
+                      label: 'Setup description',
+                      alignLabelWithHint: true,
+                    ),
+                    onChanged: (v) =>
+                        _updatePlan(plan.copyWith(setupDescription: v)),
+                  ),
+                  TextFormField(
+                    controller: _rationale,
+                    maxLines: 3,
+                    style: theme.textTheme.bodyLarge,
+                    decoration: journalWorkflowDecoration(
+                      context,
+                      label: 'Entry rationale',
+                      alignLabelWithHint: true,
+                    ),
+                    onChanged: (v) =>
+                        _updatePlan(plan.copyWith(entryRationale: v)),
+                  ),
+                ),
+              ],
+            ),
           ),
           if (checklist.isNotEmpty) ...[
-            const SizedBox(height: 24),
-            Text(
-              'Setup Checklist',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ),
             const SizedBox(height: 8),
+            Text(
+              'Setup checklist',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 4),
             ...checklist.map((item) {
               final checked = confirmed.contains(item);
               return CheckboxListTile(
                 value: checked,
-                title: Text(item),
+                title: Text(item, style: theme.textTheme.bodyMedium),
                 controlAffinity: ListTileControlAffinity.leading,
                 contentPadding: EdgeInsets.zero,
                 onChanged: (v) {
@@ -337,12 +388,12 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
               );
             }),
           ] else if (!widget.applyDefaultChecklist) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             Text(
               'No checklist saved for this plan.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: context.colors.textSecondary,
-                  ),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colors.textSecondary,
+              ),
             ),
           ],
         ],

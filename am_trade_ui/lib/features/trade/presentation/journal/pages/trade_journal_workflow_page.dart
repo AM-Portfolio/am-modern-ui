@@ -22,6 +22,7 @@ class TradeJournalWorkflowPage extends ConsumerStatefulWidget {
     this.onEmbeddedCancel,
     this.onEmbeddedDeleted,
     this.startAtStep,
+    this.initialReadOnly = false,
   });
 
   final JournalCubit journalCubit;
@@ -39,6 +40,9 @@ class TradeJournalWorkflowPage extends ConsumerStatefulWidget {
   /// Optional override for initial wizard step (e.g. Edit from completed → 2).
   final int? startAtStep;
 
+  /// Same Pre/Execute/Post template, fields locked until user taps Edit.
+  final bool initialReadOnly;
+
   @override
   ConsumerState<TradeJournalWorkflowPage> createState() =>
       _TradeJournalWorkflowPageState();
@@ -50,6 +54,7 @@ class _TradeJournalWorkflowPageState
   late JournalEntry _entry;
   var _saving = false;
   var _isNew = true;
+  late bool _readOnly;
 
   static const _stepLabels = ['Pre-Trade', 'Execute', 'Post-Trade'];
 
@@ -80,18 +85,24 @@ class _TradeJournalWorkflowPageState
   @override
   void initState() {
     super.initState();
+    _readOnly = widget.initialReadOnly;
     _hydrateFrom(widget.initialEntry, isNew: widget.initialEntry == null);
   }
 
   @override
   void didUpdateWidget(covariant TradeJournalWorkflowPage oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.initialReadOnly != oldWidget.initialReadOnly &&
+        widget.initialEntry?.id == oldWidget.initialEntry?.id) {
+      _readOnly = widget.initialReadOnly;
+    }
     final next = widget.initialEntry;
     final prev = oldWidget.initialEntry;
     if (next == null) return;
     if (prev == null ||
         prev.id != next.id ||
         prev.updatedAt != next.updatedAt) {
+      _readOnly = widget.initialReadOnly;
       _hydrateFrom(next, isNew: false, keepStep: prev?.id == next.id);
     }
   }
@@ -108,13 +119,14 @@ class _TradeJournalWorkflowPageState
       return;
     }
     var entry = source;
-    if (isNew) {
-      final plan = entry.preTradePlan ?? const PreTradePlan();
-      if (plan.setupChecklist.isEmpty) {
-        entry = entry.copyWith(
-          preTradePlan: plan.copyWith(setupChecklist: _defaultChecklist),
-        );
-      }
+    // Prefill default checklist on blank stubs (new temp or createFromTrades DRAFT).
+    final status = (entry.journalStatus ?? '').toUpperCase();
+    final plan = entry.preTradePlan ?? const PreTradePlan();
+    if (plan.setupChecklist.isEmpty &&
+        (isNew || status == 'DRAFT' || status == 'PLANNED')) {
+      entry = entry.copyWith(
+        preTradePlan: plan.copyWith(setupChecklist: _defaultChecklist),
+      );
     }
     _entry = entry;
     if (!keepStep) {
@@ -308,55 +320,76 @@ class _TradeJournalWorkflowPageState
   Widget build(BuildContext context) {
     final colors = context.colors;
 
+    final title = JournalTradeHeader.displayTitle(_entry);
+    final showIdentity = (_entry.symbol?.trim().isNotEmpty == true) ||
+        (title.isNotEmpty && title != 'New Trade' && title != 'Untitled') ||
+        !_isNew;
+    final identity = showIdentity
+        ? JournalTradeHeader(
+            entry: _entry,
+            compact: true,
+            showStatus: true,
+          )
+        : null;
+
     final body = Column(
       children: [
-        JournalTradeHeader(entry: _entry),
         Padding(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.lg,
-            AppSpacing.md,
-            AppSpacing.lg,
             AppSpacing.sm,
+            AppSpacing.lg,
+            AppSpacing.xs,
           ),
           child: StepIndicator(
             currentStep: _currentStep,
             stepLabels: _stepLabels,
             activeColor: ModuleColors.trade,
             inactiveColor: colors.textSecondary,
+            compact: true,
           ),
         ),
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.sm,
-              AppSpacing.lg,
-              AppSpacing.md,
-            ),
-            child: _currentStep == 0
-                ? PreTradePlanStep(
-                    key: ValueKey('pre-${_entry.id}-${_entry.updatedAt}'),
-                    entry: _entry,
-                    onUpdate: _updateEntry,
-                    applyDefaultChecklist: _isNew,
-                  )
-                : _currentStep == 1
-                    ? ExecuteTradeStep(
-                        key: ValueKey(
-                          'exec-${_entry.id}-${_entry.updatedAt}',
-                        ),
+          child: IgnorePointer(
+            ignoring: _readOnly,
+            child: Opacity(
+              opacity: _readOnly ? 0.92 : 1,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.xs,
+                  AppSpacing.lg,
+                  AppSpacing.md,
+                ),
+                child: _currentStep == 0
+                    ? PreTradePlanStep(
+                        key: ValueKey('pre-${_entry.id}-${_entry.updatedAt}'),
                         entry: _entry,
                         onUpdate: _updateEntry,
-                        portfolioId: widget.portfolioId,
-                        onLinkTrade: _linkTrade,
+                        applyDefaultChecklist: _isNew && !_readOnly,
+                        identityHeader: identity,
                       )
-                    : PostTradeReviewStep(
-                        key: ValueKey(
-                          'post-${_entry.id}-${_entry.updatedAt}',
-                        ),
-                        entry: _entry,
-                        onUpdate: _updateEntry,
-                      ),
+                    : _currentStep == 1
+                        ? ExecuteTradeStep(
+                            key: ValueKey(
+                              'exec-${_entry.id}-${_entry.updatedAt}',
+                            ),
+                            entry: _entry,
+                            onUpdate: _updateEntry,
+                            portfolioId: widget.portfolioId,
+                            onLinkTrade: _readOnly ? null : _linkTrade,
+                            identityHeader: identity,
+                          )
+                        : PostTradeReviewStep(
+                            key: ValueKey(
+                              'post-${_entry.id}-${_entry.updatedAt}',
+                            ),
+                            entry: _entry,
+                            onUpdate: _updateEntry,
+                            identityHeader: identity,
+                          ),
+              ),
+            ),
           ),
         ),
         Padding(
@@ -371,14 +404,14 @@ class _TradeJournalWorkflowPageState
                     Navigator.pop(context);
                   }
                 },
-                child: const Text('Cancel'),
+                child: Text(_readOnly ? 'Close' : 'Cancel'),
               ),
               if (_currentStep > 0)
                 TextButton(
                   onPressed: () => setState(() => _currentStep--),
                   child: const Text('Back'),
                 ),
-              if (!_isNew && !_entry.id.startsWith('temp-'))
+              if (!_readOnly && !_isNew && !_entry.id.startsWith('temp-'))
                 TextButton(
                   onPressed: _saving ? null : _confirmDelete,
                   style: TextButton.styleFrom(
@@ -387,26 +420,43 @@ class _TradeJournalWorkflowPageState
                   child: const Text('Delete'),
                 ),
               const Spacer(),
-              OutlinedButton(
-                onPressed: _saving ? null : () => _save(complete: false),
-                child: const Text('Save Draft'),
-              ),
-              const SizedBox(width: 8),
-              FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: ModuleColors.trade,
+              if (_readOnly) ...[
+                if (_currentStep < 2)
+                  OutlinedButton(
+                    onPressed: () => setState(() => _currentStep++),
+                    child: const Text('Next'),
+                  ),
+                const SizedBox(width: 8),
+                FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: ModuleColors.trade,
+                  ),
+                  onPressed: () => setState(() => _readOnly = false),
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  label: const Text('Edit'),
                 ),
-                onPressed: _saving
-                    ? null
-                    : () {
-                        if (_currentStep < 2) {
-                          setState(() => _currentStep++);
-                        } else {
-                          _save(complete: true);
-                        }
-                      },
-                child: Text(_currentStep == 2 ? 'Save Journal' : 'Next'),
-              ),
+              ] else ...[
+                OutlinedButton(
+                  onPressed: _saving ? null : () => _save(complete: false),
+                  child: const Text('Save Draft'),
+                ),
+                const SizedBox(width: 8),
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: ModuleColors.trade,
+                  ),
+                  onPressed: _saving
+                      ? null
+                      : () {
+                          if (_currentStep < 2) {
+                            setState(() => _currentStep++);
+                          } else {
+                            _save(complete: true);
+                          }
+                        },
+                  child: Text(_currentStep == 2 ? 'Save Journal' : 'Next'),
+                ),
+              ],
             ],
           ),
         ),

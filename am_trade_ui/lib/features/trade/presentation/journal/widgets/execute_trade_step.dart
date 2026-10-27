@@ -6,6 +6,7 @@ import '../../../internal/domain/entities/journal_entry.dart';
 import '../../../presentation/models/trade_holding_view_model.dart';
 import '../../../providers/trade_internal_providers.dart';
 import 'journal_form_surface.dart';
+import 'journal_preset_or_custom_field.dart';
 import 'journal_workflow_field_theme.dart';
 
 class ExecuteTradeStep extends ConsumerStatefulWidget {
@@ -15,12 +16,15 @@ class ExecuteTradeStep extends ConsumerStatefulWidget {
     required this.onUpdate,
     this.portfolioId,
     this.onLinkTrade,
+    this.identityHeader,
   });
 
   final JournalEntry entry;
   final ValueChanged<JournalEntry> onUpdate;
   final String? portfolioId;
   final Future<void> Function(String tradeId)? onLinkTrade;
+  /// Compact symbol / status strip inside the Execute card.
+  final Widget? identityHeader;
 
   @override
   ConsumerState<ExecuteTradeStep> createState() => _ExecuteTradeStepState();
@@ -33,8 +37,6 @@ class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
 
   late final TextEditingController _entryPrice;
   late final TextEditingController _qty;
-  late final TextEditingController _broker;
-  late final TextEditingController _orderType;
   late final TextEditingController _externalId;
   late final TextEditingController _notes;
 
@@ -48,8 +50,6 @@ class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
     _entryPrice =
         TextEditingController(text: exec.actualEntryPrice?.toString() ?? '');
     _qty = TextEditingController(text: exec.quantity?.toString() ?? '');
-    _broker = TextEditingController(text: exec.broker ?? '');
-    _orderType = TextEditingController(text: exec.orderType ?? '');
     _externalId = TextEditingController(text: exec.externalOrderId ?? '');
     _notes = TextEditingController(text: entry.content ?? exec.notes ?? '');
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadPortfolioTrades());
@@ -66,8 +66,6 @@ class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
       final exec = entry.tradeExecution ?? const TradeExecution();
       _entryPrice.text = exec.actualEntryPrice?.toString() ?? '';
       _qty.text = exec.quantity?.toString() ?? '';
-      _broker.text = exec.broker ?? '';
-      _orderType.text = exec.orderType ?? '';
       _externalId.text = exec.externalOrderId ?? '';
       _notes.text = entry.content ?? exec.notes ?? '';
     }
@@ -77,11 +75,46 @@ class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
   void dispose() {
     _entryPrice.dispose();
     _qty.dispose();
-    _broker.dispose();
-    _orderType.dispose();
     _externalId.dispose();
     _notes.dispose();
     super.dispose();
+  }
+
+  Widget _gap() => const SizedBox(height: 14);
+
+  Widget _row(Widget left, Widget right) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: left),
+        const SizedBox(width: 14),
+        Expanded(child: right),
+      ],
+    );
+  }
+
+  Widget _field({
+    required TextEditingController controller,
+    required String label,
+    required ValueChanged<String> onChanged,
+    String? prefixText,
+    TextInputType? keyboardType,
+    int maxLines = 1,
+  }) {
+    final theme = Theme.of(context);
+    return TextFormField(
+      controller: controller,
+      style: theme.textTheme.bodyLarge,
+      keyboardType: keyboardType,
+      maxLines: maxLines,
+      decoration: journalWorkflowDecoration(
+        context,
+        label: label,
+        prefixText: prefixText,
+        alignLabelWithHint: maxLines > 1,
+      ),
+      onChanged: onChanged,
+    );
   }
 
   Future<void> _loadPortfolioTrades() async {
@@ -325,175 +358,263 @@ class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
   @override
   Widget build(BuildContext context) {
     final exec = entry.tradeExecution ?? const TradeExecution();
+    final theme = Theme.of(context);
+    final colors = context.colors;
 
     return JournalFormSurface(
       title: 'Trade Execution',
       subtitle:
-          'Link a trade fill (paper or live) and/or record execution snapshot.',
+          'Link a fill and/or record the snapshot — pick presets where you can.',
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: ModuleColors.trade.withValues(alpha: 0.1),
-              borderRadius: AppRadii.card,
-              border: Border.all(
-                color: ModuleColors.trade.withValues(alpha: 0.3),
-              ),
-            ),
-            child: Row(
+          if (widget.identityHeader != null) ...[
+            widget.identityHeader!,
+            _gap(),
+          ],
+          // Inspiration: instrument summary | linked-trade card on one row.
+          _row(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Icon(Icons.link, color: ModuleColors.trade),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                Text(
+                  'Instrument',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.cardSurface,
+                    borderRadius: BorderRadius.circular(AppRadii.md),
+                    border: Border.all(
+                      color: colors.border.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Row(
                     children: [
-                      Text(
-                        entry.tradeId == null
-                            ? 'Link Trade Execution'
-                            : 'Linked: ${entry.tradeId}',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
+                      Icon(
+                        Icons.search_rounded,
+                        size: 18,
+                        color: colors.textSecondary,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        portfolioId == null || portfolioId!.isEmpty
-                            ? 'Select a portfolio (Paper book for OMS fills) to browse trades.'
-                            : _loadingTrades
-                                ? 'Loading recent trades…'
-                                : 'Portfolio: $portfolioId'
-                                    '${_availableTrades.isEmpty ? '' : ' · ${_availableTrades.length} recent'}',
-                        style: Theme.of(context).textTheme.bodyMedium,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          (entry.symbol?.trim().isNotEmpty == true)
+                              ? entry.symbol!.trim()
+                              : 'No symbol yet',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: ModuleColors.trade.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          (entry.tradeDirection ?? 'LONG').toUpperCase(),
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: ModuleColors.trade,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
-                FilledButton.tonal(
-                  onPressed: () => _showLinkDialog(context),
-                  child: Text(entry.tradeId == null ? 'Link Trade' : 'Change'),
+              ],
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Linked to',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: ModuleColors.trade.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppRadii.md),
+                    border: Border.all(
+                      color: ModuleColors.trade.withValues(alpha: 0.35),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.link, color: ModuleColors.trade, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          entry.tradeId == null
+                              ? 'No fill linked'
+                              : entry.tradeId!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => _showLinkDialog(context),
+                        style: TextButton.styleFrom(
+                          foregroundColor: ModuleColors.trade,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text(
+                          entry.tradeId == null ? 'Link' : 'Change',
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (portfolioId != null && portfolioId!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      _loadingTrades
+                          ? 'Loading fills…'
+                          : '${_availableTrades.length} recent in portfolio',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: colors.textTertiary,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _entryPrice,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: journalWorkflowDecoration(
-                    context,
-                    label: 'Actual Entry Price',
-                    prefixText: '₹ ',
-                  ),
-                  onChanged: (v) => _updateExec(
-                    exec.copyWith(actualEntryPrice: double.tryParse(v)),
-                  ),
-                ),
+          _gap(),
+          _row(
+            _field(
+              controller: _entryPrice,
+              label: 'Actual entry price',
+              prefixText: '₹ ',
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (v) => _updateExec(
+                exec.copyWith(actualEntryPrice: double.tryParse(v)),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  controller: _qty,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: journalWorkflowDecoration(
-                    context,
-                    label: 'Quantity',
-                  ),
-                  onChanged: (v) =>
-                      _updateExec(exec.copyWith(quantity: double.tryParse(v))),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _broker,
-                  decoration: journalWorkflowDecoration(
-                    context,
-                    label: 'Broker / Platform',
-                  ),
-                  onChanged: (v) => _updateExec(exec.copyWith(broker: v)),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  controller: _orderType,
-                  decoration: journalWorkflowDecoration(
-                    context,
-                    label: 'Order Type',
-                  ),
-                  onChanged: (v) => _updateExec(exec.copyWith(orderType: v)),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  controller: _externalId,
-                  decoration: journalWorkflowDecoration(
-                    context,
-                    label: 'Order / Trade ID',
-                  ),
-                  onChanged: (v) =>
-                      _updateExec(exec.copyWith(externalOrderId: v)),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _notes,
-            maxLines: 6,
-            decoration: journalWorkflowDecoration(
-              context,
-              label: 'Live Trade Notes',
-              alignLabelWithHint: true,
             ),
+            _field(
+              controller: _qty,
+              label: 'Quantity',
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (v) =>
+                  _updateExec(exec.copyWith(quantity: double.tryParse(v))),
+            ),
+          ),
+          _gap(),
+          _row(
+            JournalPresetOrCustomField(
+              label: 'Broker / platform',
+              presets: JournalPreTradePresets.brokers,
+              value: exec.broker,
+              hint: 'Select broker',
+              onChanged: (v) => _updateExec(exec.copyWith(broker: v)),
+            ),
+            JournalPresetOrCustomField(
+              label: 'Order type',
+              presets: JournalPreTradePresets.orderTypes,
+              value: exec.orderType,
+              hint: 'Select order type',
+              onChanged: (v) => _updateExec(exec.copyWith(orderType: v)),
+            ),
+          ),
+          _gap(),
+          _field(
+            controller: _externalId,
+            label: 'Order / trade ID',
+            onChanged: (v) =>
+                _updateExec(exec.copyWith(externalOrderId: v)),
+          ),
+          _gap(),
+          _field(
+            controller: _notes,
+            label: 'Live trade notes',
+            maxLines: 4,
             onChanged: (v) =>
                 _updateExec(exec.copyWith(notes: v), content: v),
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Text(
-                'Attachments',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const Spacer(),
-              OutlinedButton.icon(
-                onPressed: () => _addAttachment(context),
-                icon: const Icon(Icons.attach_file),
-                label: const Text('Add URL'),
-              ),
-            ],
+          _gap(),
+          Text(
+            'Attachments',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          const SizedBox(height: 8),
-          if (entry.attachments.isEmpty)
-            const Text('No attachments yet.')
-          else
+          const SizedBox(height: 6),
+          Material(
+            color: colors.cardSurface.withValues(alpha: 0.55),
+            borderRadius: BorderRadius.circular(AppRadii.md),
+            child: InkWell(
+              onTap: () => _addAttachment(context),
+              borderRadius: BorderRadius.circular(AppRadii.md),
+              child: CustomPaint(
+                painter: _DashedBorderPainter(
+                  color: colors.border.withValues(alpha: 0.55),
+                  radius: AppRadii.md,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 28,
+                    horizontal: 16,
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.cloud_upload_outlined,
+                        size: 28,
+                        color: colors.textSecondary,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Drop chart screenshots here, or click to add a URL',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          if (entry.attachments.isNotEmpty) ...[
+            const SizedBox(height: 8),
             ...entry.attachments.map(
               (a) => ListTile(
-                dense: true,
+                contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.insert_drive_file_outlined),
-                title: Text(a.fileName),
+                title: Text(a.fileName, style: theme.textTheme.bodyMedium),
                 subtitle: Text(
                   a.fileUrl,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall,
                 ),
                 trailing: IconButton(
                   icon: const Icon(Icons.delete_outline),
@@ -506,8 +627,46 @@ class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
                 ),
               ),
             ),
+          ],
         ],
       ),
     );
   }
+}
+
+class _DashedBorderPainter extends CustomPainter {
+  _DashedBorderPainter({required this.color, required this.radius});
+
+  final Color color;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+    final rrect = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      Radius.circular(radius),
+    );
+    final path = Path()..addRRect(rrect);
+    const dash = 6.0;
+    const gap = 4.0;
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        final next = distance + dash;
+        canvas.drawPath(
+          metric.extractPath(distance, next.clamp(0, metric.length)),
+          paint,
+        );
+        distance = next + gap;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedBorderPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.radius != radius;
 }

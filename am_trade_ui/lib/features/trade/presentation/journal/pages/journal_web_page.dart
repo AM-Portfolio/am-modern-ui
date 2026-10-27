@@ -78,7 +78,8 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
     final now = DateTime.now();
     _dateRange = DateTimeRange(
       start: DateTime(now.year - 1, now.month, now.day),
-      end: DateTime(now.year, now.month, now.day),
+      // End exclusive-safe: include all of today.
+      end: DateTime(now.year, now.month, now.day).add(const Duration(days: 1)),
     );
     AppLogger.info('Initializing Journal Web Page', tag: 'JournalWebPage');
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -154,11 +155,74 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
   }
 
   Future<void> _import(JournalCubit cubit) async {
-    await showDialog<void>(
+    final created = await showDialog<List<JournalEntry>>(
       context: context,
       builder: (_) => JournalImportDialog(
         journalCubit: cubit,
         portfolioId: widget.portfolioId,
+      ),
+    );
+    if (!mounted || created == null || created.isEmpty) return;
+
+    // Wide date window so trade-dated stubs are not clipped by hub range.
+    var start = DateTime(DateTime.now().year - 10, 1, 1);
+    var end = DateTime.now().add(const Duration(days: 2));
+    for (final e in created) {
+      final day = DateTime(e.entryDate.year, e.entryDate.month, e.entryDate.day);
+      if (day.isBefore(start)) start = day;
+      final dayEnd = day.add(const Duration(days: 1));
+      if (dayEnd.isAfter(end)) end = dayEnd;
+    }
+
+    // Apply filters without racing a fire-and-forget reload past upsert.
+    cubit.setFilters(
+      startDate: start,
+      endDate: end,
+      tagIds: const [],
+      status: 'ALL',
+      searchQuery: '',
+      reload: false,
+    );
+    await cubit.loadJournalEntries();
+    if (!mounted) return;
+    // Reload can omit DRAFT stubs (date/portfolio edge cases) — force them in
+    // *after* the network list lands.
+    cubit.upsertEntries(created);
+
+    if (!mounted) return;
+    setState(() {
+      _selectedFolder = JournalFolderFilter.tradeNotes;
+      _selectedOutcome = null;
+      _selectedTagId = null;
+      _composerOpen = false;
+      _dateRange = DateTimeRange(start: start, end: end);
+      _focusEntryId = null;
+      _tab = _JournalTab.entries;
+      final byId = {for (final e in _entries) e.id: e};
+      for (final e in created) {
+        byId[e.id] = e;
+      }
+      _entries = byId.values.toList()
+        ..sort((a, b) => b.entryDate.compareTo(a.entryDate));
+    });
+    if (!mounted) return;
+    setState(() => _focusEntryId = created.first.id);
+
+    final labels = created
+        .map((e) {
+          final s = e.symbol?.trim();
+          if (s != null && s.isNotEmpty) return s;
+          return e.title.trim().isEmpty ? 'Trade' : e.title.trim();
+        })
+        .take(6)
+        .join(', ');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Journal stubs in Trade Notes: $labels'
+          '${created.length > 6 ? ' +${created.length - 6} more' : ''}',
+        ),
+        duration: const Duration(seconds: 5),
       ),
     );
   }
@@ -367,95 +431,49 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
                           notebookFolders: folders,
                         );
 
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                        // Filters live in the entries rail (not a full-width strip).
+                        return IndexedStack(
+                          index: _tab.index,
                           children: [
-                            if (_tab == _JournalTab.entries) ...[
-                              AnimatedSize(
-                                duration: const Duration(milliseconds: 280),
-                                curve: Curves.easeOutCubic,
-                                alignment: Alignment.topCenter,
-                                child: _composerOpen
-                                    ? const SizedBox(width: double.infinity)
-                                    : JournalFilterBar(
-                                        selectedFolder: _selectedFolder,
-                                        onFolderChanged: (folder) => setState(
-                                          () => _selectedFolder = folder,
-                                        ),
-                                        selectedTagId: _selectedTagId,
-                                        onTagChanged: (id) {
-                                          setState(() => _selectedTagId = id);
-                                          journalCubit.setFilters(
-                                            tagIds: id == null
-                                                ? <String>[]
-                                                : [id],
-                                          );
-                                        },
-                                        selectedOutcome: _selectedOutcome,
-                                        onOutcomeChanged: (o) => setState(
-                                          () => _selectedOutcome = o,
-                                        ),
-                                        sortOrder: _sortOrder,
-                                        onSortChanged: (s) =>
-                                            setState(() => _sortOrder = s),
-                                        notebookFolders: folders,
-                                        notebookTags: tags,
-                                        availableOutcomes: _availableOutcomes(
-                                          loadedEntries,
-                                        ),
-                                        folderCounts: _folderCounts(
-                                          loadedEntries,
-                                          notebookFolders: folders,
-                                        ),
-                                      ),
-                              ),
-                            ],
-                            Expanded(
-                              child: IndexedStack(
-                                index: _tab.index,
-                                children: [
-                                  _buildEntries(
-                                    journalCubit,
-                                    notebookCubit,
-                                    filtered,
-                                  ),
-                                  TemplateBrowserPage(
-                                    embedded: true,
-                                    onTemplateSelected: (template) async {
-                                      if (!mounted) return;
-                                      setState(() {
-                                        _pendingPlaybook =
-                                            journalTemplateToSelection(
-                                          template,
-                                        );
-                                        _tab = _JournalTab.entries;
-                                      });
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            'Opening Log Day with "${template.name}"',
-                                          ),
-                                          backgroundColor: ModuleColors.trade,
-                                          behavior: SnackBarBehavior.floating,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  JournalInsightsPage(
-                                    key: _insightsKey,
-                                    journalCubit: journalCubit,
-                                    startDate: _dateRange?.start,
-                                    endDate: _dateRange?.end,
-                                    onReviewTrades: () => setState(
-                                      () => _tab = _JournalTab.entries,
+                            _buildEntries(
+                              journalCubit,
+                              notebookCubit,
+                              filtered,
+                              folders: folders,
+                              tags: tags,
+                              loadedEntries: loadedEntries,
+                            ),
+                            TemplateBrowserPage(
+                              embedded: true,
+                              onTemplateSelected: (template) async {
+                                if (!mounted) return;
+                                setState(() {
+                                  _pendingPlaybook =
+                                      journalTemplateToSelection(template);
+                                  _tab = _JournalTab.entries;
+                                });
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Opening Log Day with "${template.name}"',
                                     ),
+                                    backgroundColor: ModuleColors.trade,
+                                    behavior: SnackBarBehavior.floating,
                                   ),
-                                  WeeklyReviewPage(
-                                    journalCubit: journalCubit,
-                                  ),
-                                ],
+                                );
+                              },
+                            ),
+                            JournalInsightsPage(
+                              key: _insightsKey,
+                              journalCubit: journalCubit,
+                              startDate: _dateRange?.start,
+                              endDate: _dateRange?.end,
+                              onReviewTrades: () => setState(
+                                () => _tab = _JournalTab.entries,
                               ),
+                            ),
+                            WeeklyReviewPage(
+                              journalCubit: journalCubit,
                             ),
                           ],
                         );
@@ -532,36 +550,54 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-              OutlinedButton.icon(
-                onPressed: () => _pickDateRange(cubit),
-                icon: Icon(
-                  Icons.calendar_today_outlined,
-                  size: 16,
-                  color: colors.textSecondary,
-                ),
-                label: Text(
-                  rangeLabel,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: theme.colorScheme.onSurface,
+              Material(
+                color: colors.cardSurface,
+                shape: RoundedRectangleBorder(
+                  borderRadius: AppRadii.card,
                   side: BorderSide(
-                    color: colors.border.withValues(alpha: 0.4),
+                    color: colors.border.withValues(alpha: 0.45),
                   ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.sm,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: AppRadii.card,
+                ),
+                child: InkWell(
+                  onTap: () => _pickDateRange(cubit),
+                  borderRadius: AppRadii.card,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: 10,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.calendar_today_outlined,
+                          size: 16,
+                          color: ModuleColors.trade,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          rangeLabel,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
               const SizedBox(width: AppSpacing.xs),
               PopupMenuButton<_HeaderMenuAction>(
                 tooltip: 'More',
+                color: colors.cardSurface,
+                surfaceTintColor: Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: AppRadii.card,
+                  side: BorderSide(
+                    color: colors.border.withValues(alpha: 0.45),
+                  ),
+                ),
                 icon: Icon(
                   Icons.more_horiz_rounded,
                   color: colors.textSecondary,
@@ -642,8 +678,11 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
   Widget _buildEntries(
     JournalCubit journalCubit,
     NotebookCubit notebookCubit,
-    List<JournalEntry> filteredEntries,
-  ) {
+    List<JournalEntry> filteredEntries, {
+    required List<NotebookItem> folders,
+    required List<NotebookTag> tags,
+    required List<JournalEntry> loadedEntries,
+  }) {
     return JournalThreeColumnLayout(
       entries: filteredEntries,
       journalCubit: journalCubit,
@@ -665,6 +704,29 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
         setState(() => _composerOpen = open);
       },
       focusEntryId: _focusEntryId,
+      listFilterSlot: JournalFilterBar(
+        embeddedInList: true,
+        selectedFolder: _selectedFolder,
+        onFolderChanged: (folder) => setState(() => _selectedFolder = folder),
+        selectedTagId: _selectedTagId,
+        onTagChanged: (id) {
+          setState(() => _selectedTagId = id);
+          journalCubit.setFilters(
+            tagIds: id == null ? <String>[] : [id],
+          );
+        },
+        selectedOutcome: _selectedOutcome,
+        onOutcomeChanged: (o) => setState(() => _selectedOutcome = o),
+        sortOrder: _sortOrder,
+        onSortChanged: (s) => setState(() => _sortOrder = s),
+        notebookFolders: folders,
+        notebookTags: tags,
+        availableOutcomes: _availableOutcomes(loadedEntries),
+        folderCounts: _folderCounts(
+          loadedEntries,
+          notebookFolders: folders,
+        ),
+      ),
     );
   }
 

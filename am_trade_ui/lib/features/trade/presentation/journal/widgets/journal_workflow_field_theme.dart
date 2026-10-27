@@ -6,16 +6,30 @@ InputDecoration journalWorkflowDecoration(
   BuildContext context, {
   required String label,
   String? prefixText,
+  String? hintText,
   bool alignLabelWithHint = false,
 }) {
   final colors = context.colors;
-  final radius = BorderRadius.circular(10);
+  final theme = Theme.of(context);
+  final radius = BorderRadius.circular(AppRadii.md);
   return InputDecoration(
     labelText: label,
     prefixText: prefixText,
+    hintText: hintText,
     alignLabelWithHint: alignLabelWithHint,
     filled: true,
-    fillColor: colors.cardSurface.withValues(alpha: 0.55),
+    fillColor: colors.cardSurface,
+    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+    labelStyle: theme.textTheme.bodyMedium?.copyWith(
+      color: colors.textSecondary,
+    ),
+    floatingLabelStyle: theme.textTheme.bodyMedium?.copyWith(
+      color: ModuleColors.trade,
+      fontWeight: FontWeight.w600,
+    ),
+    hintStyle: theme.textTheme.bodyMedium?.copyWith(
+      color: colors.textTertiary,
+    ),
     border: OutlineInputBorder(
       borderRadius: radius,
       borderSide: BorderSide(color: colors.border.withValues(alpha: 0.4)),

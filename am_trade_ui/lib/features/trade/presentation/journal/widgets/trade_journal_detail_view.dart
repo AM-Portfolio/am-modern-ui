@@ -33,7 +33,6 @@ class TradeJournalDetailView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          JournalTradeHeader(entry: entry),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(
@@ -42,18 +41,16 @@ class TradeJournalDetailView extends StatelessWidget {
                 AppSpacing.lg,
                 AppSpacing.xl,
               ),
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 960),
-                  child: Column(
+              child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      JournalTradeHeader(entry: entry, compact: true),
+                      const SizedBox(height: AppSpacing.md),
                       Row(
                         children: [
                           Text(
                             'Trade journal',
-                            style: theme.textTheme.titleMedium?.copyWith(
+                            style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -234,9 +231,7 @@ class TradeJournalDetailView extends StatelessWidget {
                           ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
+                ],
               ),
             ),
           ),

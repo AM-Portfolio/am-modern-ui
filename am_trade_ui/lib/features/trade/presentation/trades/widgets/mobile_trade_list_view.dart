@@ -6,10 +6,12 @@ import 'package:flutter_animate/flutter_animate.dart';
 class MobileTradeListView extends StatelessWidget {
   final List<TradeHoldingViewModel> holdings;
   final Function(TradeHoldingViewModel) onSelectTrade;
+  final Function(TradeHoldingViewModel)? onJournalThis;
 
   const MobileTradeListView({
     required this.holdings,
     required this.onSelectTrade,
+    this.onJournalThis,
     super.key,
   });
 
@@ -260,7 +262,24 @@ class MobileTradeListView extends StatelessWidget {
                        const SizedBox(height: 2),
                        Text("Qty: ${_formatCompactQty(holding.quantity)}", style: TextStyle(color: context.textSecondary, fontSize: 11)),
                     ],
-                 )
+                 ),
+                 if (onJournalThis != null) ...[
+                   const SizedBox(width: 4),
+                   IconButton(
+                     icon: Icon(
+                       Icons.menu_book_outlined,
+                       size: 20,
+                       color: context.textSecondary,
+                     ),
+                     tooltip: 'Journal this',
+                     onPressed: () => onJournalThis!(holding),
+                     padding: EdgeInsets.zero,
+                     constraints: const BoxConstraints(
+                       minWidth: 36,
+                       minHeight: 36,
+                     ),
+                   ),
+                 ],
               ],
            ),
         ),
