@@ -31,13 +31,17 @@ class _TemplateFormBuilderState extends ConsumerState<TemplateFormBuilder> {
     super.initState();
     // Initialize controllers for text fields
     for (final field in widget.template.fields) {
-      if (field.fieldType.value == 'TEXT' || field.fieldType.value == 'TEXTAREA') {
+      final type = field.fieldType.value;
+      if (type == 'TEXT' || type == 'TEXTAREA') {
         _controllers[field.fieldId] = TextEditingController(
           text: field.defaultValue ?? '',
         );
       }
-      // Set default values
-      if (field.defaultValue != null) {
+      // Always seed checkboxes so untouched boxes are sent as false
+      // (otherwise required CHECKBOX fields are omitted → server errors).
+      if (type == 'CHECKBOX') {
+        _fieldValues[field.fieldId] = field.defaultValue == 'true';
+      } else if (field.defaultValue != null) {
         _fieldValues[field.fieldId] = field.defaultValue;
       }
     }

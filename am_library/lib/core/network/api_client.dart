@@ -177,6 +177,21 @@ class ApiClient {
           if (errorData['detail'] is Map) {
             message = errorData['detail'].toString();
           }
+          // Surface field-level validation (e.g. createdBy @NotBlank) in the UI.
+          final errors = errorData['errors'];
+          if (errors is List && errors.isNotEmpty) {
+            final fields = errors.map((e) {
+              if (e is Map) {
+                final field = e['field'] ?? e['name'] ?? '';
+                final msg = e['message'] ?? e['defaultMessage'] ?? e.toString();
+                return field.toString().isEmpty ? msg.toString() : '$field: $msg';
+              }
+              return e.toString();
+            }).join('; ');
+            if (fields.isNotEmpty) {
+              message = '$message ($fields)';
+            }
+          }
         } else if (errorData is String && errorData.isNotEmpty) {
           message = errorData;
         }

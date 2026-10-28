@@ -30,7 +30,8 @@ class JournalAttachmentSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SharedAttachmentSection(
-    userId: userId.isNotEmpty ? userId : (imageUrls.isNotEmpty ? 'journal' : ''),
+    // Cloudinary folder metadata — never block upload on empty userId (new drafts).
+    userId: userId.isNotEmpty ? userId : 'journal',
     imageUrls: imageUrls,
     onAttachmentsChanged: onAttachmentsChanged,
     featureName: featureName,

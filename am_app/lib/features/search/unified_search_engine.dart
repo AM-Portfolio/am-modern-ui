@@ -184,6 +184,24 @@ class UnifiedSearchEngine {
                   i.category.toLowerCase().contains(q),
             )
             .toList();
+        var journalItems = <CommandItem>[];
+        if (query.length >= 2) {
+          for (final hit in JournalSearchBridge.searchLocal(query)) {
+            journalItems.add(
+              CommandItem(
+                title: hit.title,
+                subtitle: hit.subtitle,
+                icon: Icons.menu_book_outlined,
+                category: 'Journal',
+                onSelected: () {
+                  JournalSearchBridge.tryApply(query);
+                  JournalSearchBridge.focusEntry?.call(hit.id);
+                },
+              ),
+            );
+          }
+        }
+
         final holdingSymbols = holdingItems
             .map((h) => h.title.trim().toUpperCase())
             .toSet();
@@ -191,6 +209,7 @@ class UnifiedSearchEngine {
           (i) => !holdingSymbols.contains(i.title.trim().toUpperCase()),
         );
         final merged = <CommandItem>[
+          ...journalItems,
           ...holdingItems,
           ...marketDeduped,
           ...basketItems,

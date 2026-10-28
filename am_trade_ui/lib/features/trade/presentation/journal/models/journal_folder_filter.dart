@@ -144,8 +144,61 @@ class JournalFolderFilter {
     return e.relatedTradeIds.isNotEmpty;
   }
 
-  /// Trade-discipline entries open the Pre/Execute/Post workflow.
+  /// Folder filter: trade notes, linked trades, structured journals.
   static bool isTradeLikeEntry(JournalEntry e) => _isTradeNote(e);
+
+  /// True when the entry has structured pre/execute/post fields filled.
+  static bool hasStructuredTradeData(JournalEntry e) {
+    final plan = e.preTradePlan;
+    if (plan != null) {
+      if (plan.plannedEntryPrice != null ||
+          plan.plannedStopLoss != null ||
+          plan.plannedTarget != null ||
+          (plan.strategy?.trim().isNotEmpty ?? false) ||
+          (plan.setupDescription?.trim().isNotEmpty ?? false) ||
+          (plan.entryRationale?.trim().isNotEmpty ?? false) ||
+          plan.setupChecklist.isNotEmpty ||
+          plan.confirmedChecklistItems.isNotEmpty) {
+        return true;
+      }
+    }
+    final exec = e.tradeExecution;
+    if (exec != null) {
+      if (exec.actualEntryPrice != null ||
+          exec.quantity != null ||
+          (exec.notes?.trim().isNotEmpty ?? false) ||
+          (exec.broker?.trim().isNotEmpty ?? false)) {
+        return true;
+      }
+    }
+    final review = e.postTradeReview;
+    if (review != null) {
+      if (review.actualExitPrice != null ||
+          review.executionScore != null ||
+          (review.lessonLearned?.trim().isNotEmpty ?? false) ||
+          (review.whatWentWell?.trim().isNotEmpty ?? false) ||
+          (review.whatCouldBeImproved?.trim().isNotEmpty ?? false)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Detail routing only — Log Day / TRADE_NOTE must not open the wizard.
+  static bool shouldOpenTradeWorkflow(JournalEntry e) {
+    final type = (e.entryType ?? '').toUpperCase();
+    if (type == 'TRADE_JOURNAL' ||
+        type == 'PRE_PLAN' ||
+        type == 'POST_REVIEW') {
+      return true;
+    }
+    return hasStructuredTradeData(e);
+  }
+
+  static bool isCompletedTradeJournal(JournalEntry e) {
+    return shouldOpenTradeWorkflow(e) &&
+        (e.journalStatus ?? '').toUpperCase() == 'COMPLETED';
+  }
 
   static bool _isDaily(JournalEntry e) {
     final type = (e.entryType ?? '').toUpperCase();

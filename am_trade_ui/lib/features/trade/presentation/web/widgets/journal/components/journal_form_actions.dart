@@ -9,6 +9,7 @@ class JournalFormActions extends StatelessWidget {
     required this.onSubmit,
     required this.onToggleEditMode,
     required this.onCancel,
+    this.onBrowseTemplates,
     super.key,
   });
 
@@ -18,45 +19,48 @@ class JournalFormActions extends StatelessWidget {
   final VoidCallback onSubmit;
   final VoidCallback onToggleEditMode;
   final VoidCallback? onCancel;
+  /// Quiet secondary action — replaces the old gold header "Use template".
+  final VoidCallback? onBrowseTemplates;
 
   @override
   Widget build(BuildContext context) {
+    // View mode: Edit lives in the detail header — no sticky footer chrome.
     if (!isEditMode && !isNewEntry) {
-      return Align(
-        alignment: Alignment.centerRight,
-        child: AppButton(
-          text: 'Edit Journal',
-          icon: Icons.edit_outlined,
-          backgroundColor: ModuleColors.trade,
-          onPressed: onToggleEditMode,
-          height: 44,
-        ),
-      );
+      return const SizedBox.shrink();
     }
 
     return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        if (!isNewEntry && onCancel != null) ...[
+        if (onBrowseTemplates != null)
+          AppButton(
+            text: 'Template',
+            icon: Icons.auto_awesome_outlined,
+            type: AppButtonType.secondary,
+            isOutlined: true,
+            backgroundColor: ModuleColors.trade,
+            onPressed: onBrowseTemplates,
+            height: 36,
+          ),
+        const Spacer(),
+        if (onCancel != null) ...[
           AppButton(
             text: 'Cancel',
             type: AppButtonType.secondary,
             isOutlined: true,
-            icon: Icons.close,
             onPressed: onCancel,
-            height: 44,
+            height: 36,
           ),
           const SizedBox(width: AppSpacing.sm),
         ],
         AppButton(
           text: isSubmitting
               ? 'Saving...'
-              : (isNewEntry ? 'Create Journal' : 'Update Journal'),
-          icon: isNewEntry ? Icons.add_rounded : Icons.save_outlined,
+              : (isNewEntry ? 'Save entry' : 'Update entry'),
+          icon: isNewEntry ? Icons.check_rounded : Icons.save_outlined,
           backgroundColor: ModuleColors.trade,
           isLoading: isSubmitting,
           onPressed: isSubmitting ? null : onSubmit,
-          height: 44,
+          height: 36,
         ),
       ],
     );

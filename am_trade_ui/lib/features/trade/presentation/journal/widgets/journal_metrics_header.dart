@@ -1,85 +1,252 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../../../internal/data/dtos/journal_entry_dto.dart';
+import '../../../internal/domain/entities/journal_entry.dart';
 
 class JournalMetricsHeader extends StatelessWidget {
   const JournalMetricsHeader({
     super.key,
     this.summary,
-    this.onOpenAnalysis,
+    this.entries = const [],
+    this.entryCountOverride,
+    this.compact = false,
   });
 
   final JournalSummaryDto? summary;
-  final VoidCallback? onOpenAnalysis;
+  final List<JournalEntry> entries;
+  final int? entryCountOverride;
+
+  /// Tighter vertical footprint while Log Day / compose is open.
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final s = summary;
-    final pnl = s?.totalPnl;
+    final totalEntries = entryCountOverride ?? entries.length;
+    final hasTradeMetrics = (s?.winRate != null && (s?.totalTrades ?? 0) > 0) ||
+        (s?.avgRR != null) ||
+        ((s?.totalPnl ?? 0) != 0);
+
+    final gap = compact ? AppSpacing.sm : AppSpacing.md;
+    final padV = compact ? AppSpacing.xs : AppSpacing.sm;
+
+    final cards = hasTradeMetrics
+        ? _tradeCards(context, s, totalEntries)
+        : _diaryCards(context, s, totalEntries);
+
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.topCenter,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          padV,
+          AppSpacing.lg,
+          padV,
+        ),
+        child: Row(
+          children: [
+            for (var i = 0; i < cards.length; i++) ...[
+              if (i > 0) SizedBox(width: gap),
+              Expanded(child: cards[i]),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _diaryCards(
+    BuildContext context,
+    JournalSummaryDto? s,
+    int totalEntries,
+  ) {
+    final daysJournaled = entries
+        .map((e) => DateTime(e.entryDate.year, e.entryDate.month, e.entryDate.day))
+        .toSet()
+        .length;
+    final completed = s?.completedCount ??
+        entries
+            .where((e) => (e.journalStatus ?? '').toUpperCase() == 'COMPLETED')
+            .length;
+
+    return [
+      _CompactMetricCard(
+        title: 'Days journaled',
+        value: '$daysJournaled',
+        subtitle: totalEntries == 0 ? 'Log a day to start' : '$totalEntries notes',
+        icon: Icons.edit_calendar_outlined,
+        accent: ModuleColors.trade,
+        compact: compact,
+      ),
+      _CompactMetricCard(
+        title: 'Total entries',
+        value: '$totalEntries',
+        icon: Icons.menu_book_outlined,
+        accent: ModuleColors.trade,
+        compact: compact,
+      ),
+      _CompactMetricCard(
+        title: 'Completed',
+        value: '$completed',
+        subtitle: 'Status = completed',
+        icon: Icons.check_circle_outline,
+        accent: context.statusSuccess,
+        compact: compact,
+      ),
+    ];
+  }
+
+  List<Widget> _tradeCards(
+    BuildContext context,
+    JournalSummaryDto? s,
+    int totalEntries,
+  ) {
+    final tradeLike = s?.totalTrades ?? 0;
     final winRate = s?.winRate;
     final avgRr = s?.avgRR;
-    final pnlFmt = NumberFormat.currency(symbol: '₹ ', decimalDigits: 0);
 
-    StatType pnlType = StatType.neutral;
-    if (pnl != null) {
-      pnlType = pnl >= 0 ? StatType.positive : StatType.negative;
+    int? profitable;
+    int? losing;
+    double? winPct;
+    double? losePct;
+    if (winRate != null && tradeLike > 0) {
+      final normalized = winRate <= 1 ? winRate : winRate / 100;
+      winPct = normalized * 100;
+      losePct = (1 - normalized) * 100;
+      profitable = (tradeLike * normalized).round();
+      losing = (tradeLike - profitable).clamp(0, tradeLike);
     }
 
-    StatType winType = StatType.neutral;
-    if (winRate != null) {
-      final pct = winRate * (winRate <= 1 ? 100 : 1);
-      winType = pct >= 50 ? StatType.positive : StatType.negative;
-    }
+    return [
+      _CompactMetricCard(
+        title: 'Trade reviews',
+        value: '$tradeLike',
+        subtitle: '$totalEntries journal rows',
+        icon: Icons.candlestick_chart_outlined,
+        accent: ModuleColors.trade,
+        compact: compact,
+      ),
+      _CompactMetricCard(
+        title: 'Profitable',
+        value: profitable == null ? '—' : '$profitable',
+        subtitle: winPct == null
+            ? 'Needs P&L on reviews'
+            : '${winPct.toStringAsFixed(0)}% win rate',
+        icon: Icons.trending_up_rounded,
+        accent: context.marketPositive,
+        compact: compact,
+      ),
+      _CompactMetricCard(
+        title: 'Losing',
+        value: losing == null ? '—' : '$losing',
+        subtitle: losePct == null
+            ? 'Needs P&L on reviews'
+            : '${losePct.toStringAsFixed(0)}% of reviews',
+        icon: Icons.trending_down_rounded,
+        accent: context.marketNegative,
+        compact: compact,
+      ),
+      _CompactMetricCard(
+        title: 'Avg. R:R',
+        value: avgRr == null ? '—' : avgRr.toStringAsFixed(2),
+        icon: Icons.history_rounded,
+        accent: ModuleColors.trade,
+        compact: compact,
+      ),
+    ];
+  }
+}
 
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.md),
+class _CompactMetricCard extends StatelessWidget {
+  const _CompactMetricCard({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.accent,
+    required this.compact,
+    this.subtitle,
+  });
+
+  final String title;
+  final String value;
+  final String? subtitle;
+  final IconData icon;
+  final Color accent;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = context.colors;
+    final pad = compact ? AppSpacing.sm : AppSpacing.sm + AppSpacing.xs;
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: pad,
+      ),
+      decoration: BoxDecoration(
+        color: colors.cardSurface,
+        borderRadius: AppRadii.card,
+        border: Border.all(color: colors.border.withValues(alpha: 0.3)),
+      ),
       child: Row(
         children: [
           Expanded(
-            child: AmStatCard(
-              title: 'Total Trades',
-              value: '${s?.totalTrades ?? 0}',
-              type: StatType.neutral,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: colors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+                SizedBox(height: compact ? 2 : 4),
+                Text(
+                  value,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    fontSize: compact ? 18 : 22,
+                    color: accent == ModuleColors.trade
+                        ? theme.colorScheme.onSurface
+                        : accent,
+                    height: 1.1,
+                  ),
+                ),
+                if (subtitle != null && !compact) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: accent.withValues(alpha: 0.9),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: AmStatCard(
-              title: 'Win Rate',
-              value: winRate == null
-                  ? '—'
-                  : '${(winRate * (winRate <= 1 ? 100 : 1)).toStringAsFixed(0)}%',
-              type: winType,
+          Container(
+            width: compact ? 32 : 36,
+            height: compact ? 32 : 36,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppRadii.sm + 2),
             ),
+            child: Icon(icon, size: compact ? 16 : 18, color: accent),
           ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: AmStatCard(
-              title: 'Avg R:R',
-              value: avgRr == null ? '—' : avgRr.toStringAsFixed(2),
-              type: StatType.accent,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: AmStatCard(
-              title: 'Net P&L',
-              value: pnl == null ? '—' : pnlFmt.format(pnl),
-              type: pnlType,
-            ),
-          ),
-          if (onOpenAnalysis != null) ...[
-            const SizedBox(width: AppSpacing.md),
-            AppButton(
-              text: 'Open Analysis',
-              type: AppButtonType.text,
-              onPressed: onOpenAnalysis,
-              height: 40,
-              textColor: ModuleColors.trade,
-            ),
-          ],
         ],
       ),
     );

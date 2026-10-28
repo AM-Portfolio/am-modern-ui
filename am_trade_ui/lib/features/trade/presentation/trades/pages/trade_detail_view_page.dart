@@ -85,6 +85,7 @@ class _TradeDetailViewPageState extends ConsumerState<TradeDetailViewPage> {
                           tradeId: widget.trade.tradeId,
                           portfolioId: widget.portfolioId,
                           symbol: widget.trade.symbol,
+                          holding: widget.trade,
                         ),
                         const SizedBox(height: 12),
 

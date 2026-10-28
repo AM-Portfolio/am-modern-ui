@@ -52,7 +52,6 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = isDark ?? Theme.of(context).brightness == Brightness.dark;
     final colors = context.colors;
     final effectiveAccent = accentColor ?? ModuleColors.portfolio;
 
@@ -184,7 +183,7 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  color: isDarkMode ? Colors.transparent : colors.cardSurface,
+                  color: cardBgColor,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: idleFieldBorder),
                 ),
@@ -205,7 +204,7 @@ class SharedPortfolioSelector<T> extends StatelessWidget {
                     Icon(
                       Icons.keyboard_arrow_down,
                       size: 18,
-                      color: subTextColor,
+                      color: effectiveAccent.withValues(alpha: 0.85),
                     ),
                   ],
                 ),

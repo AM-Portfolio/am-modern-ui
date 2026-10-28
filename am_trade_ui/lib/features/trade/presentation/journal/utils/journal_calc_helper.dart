@@ -15,6 +15,7 @@ class JournalCalcHelper {
   }
 
   /// Reward:risk ratio = |target - entry| / |entry - stop|.
+  /// Stored as a single number (e.g. `2.0` for display `2:1`).
   static double? plannedRRRatio({
     required double? entry,
     required double? stop,
@@ -25,6 +26,44 @@ class JournalCalcHelper {
     if (risk == 0) return null;
     final reward = (target - entry).abs();
     return reward / risk;
+  }
+
+  /// Format stored R:R (reward per 1R) as `2:1` / `2.5:1`.
+  static String formatRrRatio(double? ratio) {
+    if (ratio == null || ratio <= 0 || ratio.isNaN || ratio.isInfinite) {
+      return '';
+    }
+    final reward = trimRrNumber(ratio);
+    return '$reward:1';
+  }
+
+  /// Parse `2:1`, `3:2`, or bare `2` / `2.5` into stored reward-per-1R.
+  static double? parseRrRatio(String raw) {
+    final text = raw.trim().replaceAll(' ', '');
+    if (text.isEmpty) return null;
+
+    if (text.contains(':')) {
+      final parts = text.split(':');
+      if (parts.length != 2) return null;
+      final reward = double.tryParse(parts[0]);
+      final risk = double.tryParse(parts[1]);
+      if (reward == null || risk == null || risk == 0) return null;
+      if (reward <= 0) return null;
+      return reward / risk;
+    }
+
+    final bare = double.tryParse(text);
+    if (bare == null || bare <= 0) return null;
+    return bare;
+  }
+
+  /// Pretty-print a ratio side (`2`, `2.5`, `1.33`).
+  static String trimRrNumber(double value) {
+    if (value == value.roundToDouble()) {
+      return value.toInt().toString();
+    }
+    final fixed = value.toStringAsFixed(2);
+    return fixed.replaceFirst(RegExp(r'\.?0+$'), '');
   }
 
   /// P&amp;L from entry/exit prices and direction.

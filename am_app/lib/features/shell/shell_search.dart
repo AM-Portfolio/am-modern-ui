@@ -73,6 +73,11 @@ mixin ShellSearchOps on State<AppShell> {
     String query,
     void Function(List<common.CommandItem> items, {bool isLoading}) emit,
   ) async {
+    final path = Uri.parse(_currentLocation).path;
+    if (path.contains('/journal') && common.JournalSearchBridge.isBound) {
+      common.JournalSearchBridge.tryApply(query);
+    }
+
     ProviderContainer? container;
     try {
       container = ProviderScope.containerOf(context, listen: false);

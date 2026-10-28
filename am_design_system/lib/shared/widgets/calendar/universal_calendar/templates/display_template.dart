@@ -19,6 +19,7 @@ class CalendarDisplayTemplate extends StatelessWidget {
     this.customContent,
     this.yearCalendarData,
     this.currentYear,
+    this.initialMonth,
   });
 
   final DisplayConfig config;
@@ -28,6 +29,7 @@ class CalendarDisplayTemplate extends StatelessWidget {
   final Widget? customContent;
   final Map<int, CalendarMonthData>? yearCalendarData;
   final int? currentYear;
+  final int? initialMonth;
 
   @override
   Widget build(BuildContext context) {
@@ -65,6 +67,7 @@ class CalendarDisplayTemplate extends StatelessWidget {
     return YearCalendarWidget(
       year: currentYear!,
       monthsData: yearCalendarData!,
+      initialMonth: initialMonth,
       config: YearCalendarConfig(
         compactMode: config.compactMode,
         onDayTap: (date, data) {

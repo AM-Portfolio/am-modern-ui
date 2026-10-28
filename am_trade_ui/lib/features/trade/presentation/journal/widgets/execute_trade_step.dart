@@ -1,8 +1,17 @@
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../internal/domain/entities/journal_entry.dart';
+import '../../../presentation/models/trade_holding_view_model.dart';
+import '../../../providers/trade_internal_providers.dart';
+import '../../web/widgets/journal/components/journal_attachment_section.dart';
+import '../../web/widgets/journal/utils/journal_form_helpers.dart';
+import 'journal_form_surface.dart';
+import 'journal_preset_or_custom_field.dart';
+import 'journal_workflow_field_theme.dart';
 
-class ExecuteTradeStep extends StatelessWidget {
+class ExecuteTradeStep extends ConsumerStatefulWidget {
   const ExecuteTradeStep({
     super.key,
     required this.entry,
@@ -16,8 +25,138 @@ class ExecuteTradeStep extends StatelessWidget {
   final String? portfolioId;
   final Future<void> Function(String tradeId)? onLinkTrade;
 
+  @override
+  ConsumerState<ExecuteTradeStep> createState() => _ExecuteTradeStepState();
+}
+
+class _ExecuteTradeStepState extends ConsumerState<ExecuteTradeStep> {
+  List<TradeHoldingViewModel> _availableTrades = [];
+  var _loadingTrades = false;
+  String? _loadError;
+
+  late final TextEditingController _entryPrice;
+  late final TextEditingController _qty;
+  late final TextEditingController _externalId;
+  late final TextEditingController _notes;
+
+  JournalEntry get entry => widget.entry;
+  String? get portfolioId => widget.portfolioId;
+
+  @override
+  void initState() {
+    super.initState();
+    final exec = entry.tradeExecution ?? const TradeExecution();
+    _entryPrice =
+        TextEditingController(text: exec.actualEntryPrice?.toString() ?? '');
+    _qty = TextEditingController(text: exec.quantity?.toString() ?? '');
+    _externalId = TextEditingController(text: exec.externalOrderId ?? '');
+    _notes = TextEditingController(text: entry.content ?? exec.notes ?? '');
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadPortfolioTrades());
+  }
+
+  @override
+  void didUpdateWidget(covariant ExecuteTradeStep oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.portfolioId != widget.portfolioId) {
+      _loadPortfolioTrades();
+    }
+    if (oldWidget.entry.id != widget.entry.id ||
+        oldWidget.entry.updatedAt != widget.entry.updatedAt) {
+      final exec = entry.tradeExecution ?? const TradeExecution();
+      _entryPrice.text = exec.actualEntryPrice?.toString() ?? '';
+      _qty.text = exec.quantity?.toString() ?? '';
+      _externalId.text = exec.externalOrderId ?? '';
+      _notes.text = entry.content ?? exec.notes ?? '';
+    }
+  }
+
+  @override
+  void dispose() {
+    _entryPrice.dispose();
+    _qty.dispose();
+    _externalId.dispose();
+    _notes.dispose();
+    super.dispose();
+  }
+
+  Widget _gap() => const SizedBox(height: 14);
+
+  Widget _row(Widget left, Widget right) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: left),
+        const SizedBox(width: 14),
+        Expanded(child: right),
+      ],
+    );
+  }
+
+  Widget _field({
+    required TextEditingController controller,
+    required String placeholder,
+    required ValueChanged<String> onChanged,
+    String? prefixText,
+    TextInputType? keyboardType,
+    int maxLines = 1,
+  }) {
+    final theme = Theme.of(context);
+    return TextFormField(
+      controller: controller,
+      style: theme.textTheme.bodyLarge,
+      keyboardType: keyboardType,
+      maxLines: maxLines,
+      decoration: journalWorkflowDecoration(
+        context,
+        hintText: placeholder,
+        prefixText: prefixText,
+        alignLabelWithHint: maxLines > 1,
+      ),
+      onChanged: onChanged,
+    );
+  }
+
+  Future<void> _loadPortfolioTrades() async {
+    final pid = portfolioId;
+    if (pid == null || pid.isEmpty) {
+      setState(() {
+        _availableTrades = [];
+        _loadError = null;
+      });
+      return;
+    }
+    setState(() {
+      _loadingTrades = true;
+      _loadError = null;
+    });
+    try {
+      final now = DateTime.now();
+      final start = now.subtract(const Duration(days: 30));
+      final getRange =
+          await ref.read(getTradeCalendarByDateRangeProvider.future);
+      final calendar = await getRange(
+        pid,
+        startDate: start,
+        endDate: now,
+      );
+      if (!mounted) return;
+      setState(() {
+        _availableTrades =
+            TradeHoldingViewModel.fromEntityList(calendar.allTrades);
+        _loadingTrades = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _availableTrades = [];
+        _loadingTrades = false;
+        _loadError = e.toString();
+      });
+    }
+  }
+
   void _updateExec(TradeExecution exec, {String? content}) {
-    onUpdate(
+    widget.onUpdate(
       entry.copyWith(
         tradeExecution: exec,
         content: content ?? entry.content,
@@ -29,6 +168,15 @@ class ExecuteTradeStep extends StatelessWidget {
     );
   }
 
+  Future<void> _applyLink(String tradeId) async {
+    if (tradeId.isEmpty) return;
+    if (widget.onLinkTrade != null) {
+      await widget.onLinkTrade!(tradeId);
+    } else {
+      widget.onUpdate(entry.copyWith(tradeId: tradeId));
+    }
+  }
+
   Future<void> _showLinkDialog(BuildContext context) async {
     final controller = TextEditingController(text: entry.tradeId ?? '');
     final related = entry.relatedTradeIds;
@@ -37,21 +185,68 @@ class ExecuteTradeStep extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         title: const Text('Link Trade'),
         content: SizedBox(
-          width: 420,
+          width: 480,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Pick a related trade or paste a trade ID from the Trade module / Calendar.',
+                portfolioId == null || portfolioId!.isEmpty
+                    ? 'Paste a trade ID, or select a portfolio to browse recent fills.'
+                    : 'Pick a recent fill for this portfolio (includes paper when Paper is selected), or paste an ID.',
                 style: Theme.of(ctx).textTheme.bodySmall,
               ),
               const SizedBox(height: 12),
+              if (_loadingTrades)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                )
+              else if (_loadError != null)
+                Text(
+                  'Could not load trades: $_loadError',
+                  style: TextStyle(color: Theme.of(ctx).colorScheme.error),
+                )
+              else if (_availableTrades.isNotEmpty) ...[
+                Text(
+                  'Recent trades (30d)',
+                  style: Theme.of(ctx).textTheme.labelLarge,
+                ),
+                const SizedBox(height: 8),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 220),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: _availableTrades.length,
+                    itemBuilder: (context, i) {
+                      final t = _availableTrades[i];
+                      final subtitle = [
+                        if (t.symbol.isNotEmpty) t.symbol,
+                        if (t.tradeId.isNotEmpty) t.tradeId,
+                      ].join(' · ');
+                      return ListTile(
+                        dense: true,
+                        title: Text(
+                          t.symbol.isNotEmpty ? t.symbol : t.tradeId,
+                        ),
+                        subtitle: Text(
+                          subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: const Icon(Icons.link),
+                        onTap: () => Navigator.pop(ctx, t.tradeId),
+                      );
+                    },
+                  ),
+                ),
+                const Divider(),
+              ],
               if (related.isNotEmpty) ...[
                 Text('Related trades', style: Theme.of(ctx).textTheme.labelLarge),
                 const SizedBox(height: 8),
                 ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 160),
+                  constraints: const BoxConstraints(maxHeight: 120),
                   child: ListView(
                     shrinkWrap: true,
                     children: related
@@ -75,7 +270,7 @@ class ExecuteTradeStep extends StatelessWidget {
                   hintText: 'Paste tradeId',
                   border: OutlineInputBorder(),
                 ),
-                autofocus: related.isEmpty,
+                autofocus: _availableTrades.isEmpty && related.isEmpty,
               ),
             ],
           ),
@@ -85,6 +280,14 @@ class ExecuteTradeStep extends StatelessWidget {
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Cancel'),
           ),
+          if (portfolioId != null && portfolioId!.isNotEmpty)
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _loadPortfolioTrades();
+              },
+              child: const Text('Refresh'),
+            ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
             child: const Text('Link'),
@@ -93,256 +296,220 @@ class ExecuteTradeStep extends StatelessWidget {
       ),
     );
     if (tradeId == null || tradeId.isEmpty) return;
-    if (onLinkTrade != null) {
-      await onLinkTrade!(tradeId);
-    } else {
-      onUpdate(entry.copyWith(tradeId: tradeId));
-    }
+    await _applyLink(tradeId);
   }
 
-  Future<void> _addAttachment(BuildContext context) async {
-    final nameCtrl = TextEditingController();
-    final urlCtrl = TextEditingController();
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add attachment URL'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(
-                labelText: 'File name',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: urlCtrl,
-              decoration: const InputDecoration(
-                labelText: 'URL',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Add'),
-          ),
-        ],
-      ),
-    );
-    if (ok != true) return;
-    final name = nameCtrl.text.trim();
-    final url = urlCtrl.text.trim();
-    if (name.isEmpty || url.isEmpty) return;
-    final next = [
-      ...entry.attachments,
-      JournalAttachment(
-        fileName: name,
-        fileUrl: url,
-        fileType: 'image',
-        uploadedAt: DateTime.now(),
-      ),
-    ];
-    onUpdate(entry.copyWith(attachments: next));
+  void _onAttachmentsChanged(List<String> urls) {
+    final attachments =
+        JournalFormHelpers.convertImageUrlsToAttachments(urls);
+    widget.onUpdate(entry.copyWith(attachments: attachments));
   }
 
   @override
   Widget build(BuildContext context) {
     final exec = entry.tradeExecution ?? const TradeExecution();
+    final theme = Theme.of(context);
+    final colors = context.colors;
+    final imageUrls = entry.attachments.map((a) => a.fileUrl).toList();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Trade Execution',
-          style: Theme.of(context)
-              .textTheme
-              .titleLarge
-              ?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Link a live trade and/or record execution snapshot.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-        ),
-        const SizedBox(height: 24),
-        Card(
-          elevation: 0,
-          color: Theme.of(context)
-              .colorScheme
-              .primaryContainer
-              .withValues(alpha: 0.35),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
+    return JournalFormSurface(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Instrument | linked-trade card on one row.
+          _row(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Icon(Icons.link, color: Theme.of(context).colorScheme.primary),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                Text(
+                  'Instrument',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.cardSurface,
+                    borderRadius: BorderRadius.circular(AppRadii.md),
+                    border: Border.all(
+                      color: colors.border.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Row(
                     children: [
-                      Text(
-                        entry.tradeId == null
-                            ? 'Link Broker Execution'
-                            : 'Linked: ${entry.tradeId}',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
+                      Icon(
+                        Icons.search_rounded,
+                        size: 18,
+                        color: colors.textSecondary,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        portfolioId == null
-                            ? 'Connect this journal to a TradeDetails record.'
-                            : 'Portfolio: $portfolioId',
-                        style: Theme.of(context).textTheme.bodyMedium,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          (entry.symbol?.trim().isNotEmpty == true)
+                              ? entry.symbol!.trim()
+                              : 'No symbol yet',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: ModuleColors.trade.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          (entry.tradeDirection ?? 'LONG').toUpperCase(),
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: ModuleColors.trade,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
-                FilledButton.tonal(
-                  onPressed: () => _showLinkDialog(context),
-                  child: Text(entry.tradeId == null ? 'Link Trade' : 'Change'),
+              ],
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Linked to',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: ModuleColors.trade.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppRadii.md),
+                    border: Border.all(
+                      color: ModuleColors.trade.withValues(alpha: 0.35),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.link, color: ModuleColors.trade, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          entry.tradeId == null
+                              ? 'No fill linked'
+                              : entry.tradeId!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => _showLinkDialog(context),
+                        style: TextButton.styleFrom(
+                          foregroundColor: ModuleColors.trade,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text(
+                          entry.tradeId == null ? 'Link' : 'Change',
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (portfolioId != null && portfolioId!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      _loadingTrades
+                          ? 'Loading fills…'
+                          : '${_availableTrades.length} recent in portfolio',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: colors.textTertiary,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
-        ),
-        const SizedBox(height: 24),
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                initialValue: exec.actualEntryPrice?.toString(),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Actual Entry Price',
-                  border: OutlineInputBorder(),
-                  prefixText: '₹ ',
-                ),
-                onChanged: (v) => _updateExec(
-                  exec.copyWith(actualEntryPrice: double.tryParse(v)),
-                ),
+          _gap(),
+          _row(
+            _field(
+              controller: _entryPrice,
+              placeholder: 'Actual entry price',
+              prefixText: '₹ ',
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (v) => _updateExec(
+                exec.copyWith(actualEntryPrice: double.tryParse(v)),
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextFormField(
-                initialValue: exec.quantity?.toString(),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Quantity',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (v) =>
-                    _updateExec(exec.copyWith(quantity: double.tryParse(v))),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                initialValue: exec.broker,
-                decoration: const InputDecoration(
-                  labelText: 'Broker / Platform',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (v) => _updateExec(exec.copyWith(broker: v)),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextFormField(
-                initialValue: exec.orderType,
-                decoration: const InputDecoration(
-                  labelText: 'Order Type',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (v) => _updateExec(exec.copyWith(orderType: v)),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextFormField(
-                initialValue: exec.externalOrderId,
-                decoration: const InputDecoration(
-                  labelText: 'Order / Trade ID',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (v) =>
-                    _updateExec(exec.copyWith(externalOrderId: v)),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        TextFormField(
-          initialValue: entry.content ?? exec.notes,
-          maxLines: 6,
-          decoration: const InputDecoration(
-            labelText: 'Live Trade Notes',
-            border: OutlineInputBorder(),
-            alignLabelWithHint: true,
-          ),
-          onChanged: (v) => _updateExec(exec.copyWith(notes: v), content: v),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Text(
-              'Attachments',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const Spacer(),
-            OutlinedButton.icon(
-              onPressed: () => _addAttachment(context),
-              icon: const Icon(Icons.attach_file),
-              label: const Text('Add URL'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        if (entry.attachments.isEmpty)
-          const Text('No attachments yet.')
-        else
-          ...entry.attachments.map(
-            (a) => ListTile(
-              dense: true,
-              leading: const Icon(Icons.insert_drive_file_outlined),
-              title: Text(a.fileName),
-              subtitle: Text(a.fileUrl, maxLines: 1, overflow: TextOverflow.ellipsis),
-              trailing: IconButton(
-                icon: const Icon(Icons.delete_outline),
-                onPressed: () {
-                  final next = entry.attachments
-                      .where((x) => x.fileUrl != a.fileUrl)
-                      .toList();
-                  onUpdate(entry.copyWith(attachments: next));
-                },
-              ),
+            _field(
+              controller: _qty,
+              placeholder: 'Quantity',
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (v) =>
+                  _updateExec(exec.copyWith(quantity: double.tryParse(v))),
             ),
           ),
-      ],
+          _gap(),
+          _row(
+            JournalPresetOrCustomField(
+              label: 'Broker / platform',
+              presets: JournalPreTradePresets.brokers,
+              value: exec.broker,
+              onChanged: (v) => _updateExec(exec.copyWith(broker: v)),
+            ),
+            JournalPresetOrCustomField(
+              label: 'Order type',
+              presets: JournalPreTradePresets.orderTypes,
+              value: exec.orderType,
+              onChanged: (v) => _updateExec(exec.copyWith(orderType: v)),
+            ),
+          ),
+          _gap(),
+          _field(
+            controller: _externalId,
+            placeholder: 'Order / trade ID',
+            onChanged: (v) =>
+                _updateExec(exec.copyWith(externalOrderId: v)),
+          ),
+          _gap(),
+          _field(
+            controller: _notes,
+            placeholder: 'Live trade notes',
+            maxLines: 4,
+            onChanged: (v) =>
+                _updateExec(exec.copyWith(notes: v), content: v),
+          ),
+          _gap(),
+          JournalAttachmentSection(
+            userId: entry.userId,
+            imageUrls: imageUrls,
+            onAttachmentsChanged: _onAttachmentsChanged,
+            featureName: 'journal',
+            isEditMode: true,
+            label: 'Attachments',
+          ),
+        ],
+      ),
     );
   }
 }

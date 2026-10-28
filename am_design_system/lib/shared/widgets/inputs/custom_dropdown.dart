@@ -138,15 +138,18 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
     final theme = Theme.of(context);
     final origin = renderBox.localToGlobal(Offset.zero);
     final screenWidth = MediaQuery.sizeOf(context).width;
-    // Pin menu to the right of the button when near the screen edge so
-    // long labels are not clipped off-screen.
-    final alignEnd = origin.dx + size.width > screenWidth * 0.62;
-    // Cap default at 280 for wide fields; compact expanded triggers stay near
-    // the button so 1D/1W menus are not half-screen wide.
+    // Wide expanded form fields: open under the left edge (right-pin looks
+    // detached on journal / full-width triggers). Compact chips still pin end
+    // when near the screen edge so labels are not clipped.
+    final alignEnd = size.width < 200 &&
+        origin.dx + size.width > screenWidth * 0.62;
+    // Prefer caller cap; else match wide expanded triggers; compact → 280.
     final defaultCap = widget.menuMaxWidth ??
-        (widget.isExpanded && size.width < 160
-            ? math.max(size.width, 120.0)
-            : 280.0);
+        (widget.isExpanded && size.width >= 160
+            ? size.width
+            : (widget.isExpanded && size.width < 160
+                ? math.max(size.width, 120.0)
+                : 280.0));
     final maxMenuWidth = math.min(screenWidth - 24, defaultCap);
     // Never allow minWidth > maxWidth (wide expanded fields used to crash).
     final preferredMin = widget.isExpanded

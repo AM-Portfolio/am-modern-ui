@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
+
+import '../../../../journal_providers.dart';
+import '../../../journal/utils/journal_this_trade.dart';
 import '../../../models/trade_holding_view_model.dart';
 
 class ModernTradeHeader extends ConsumerStatefulWidget {
@@ -24,6 +27,25 @@ class ModernTradeHeader extends ConsumerStatefulWidget {
 }
 
 class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> {
+  var _journaling = false;
+
+  Future<void> _journalThis() async {
+    if (_journaling) return;
+    setState(() => _journaling = true);
+    try {
+      final cubit = await ref.read(journalCubitProvider.future);
+      if (!mounted) return;
+      await openJournalThisTrade(
+        context,
+        cubit: cubit,
+        tradeId: widget.trade.tradeId,
+        portfolioId: widget.portfolioId,
+        holding: widget.trade,
+      );
+    } finally {
+      if (mounted) setState(() => _journaling = false);
+    }
+  }
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
@@ -206,11 +228,33 @@ class _ModernTradeHeaderState extends ConsumerState<ModernTradeHeader> {
             ),
             const SizedBox(width: 16),
 
-            // Right: Action button
-            IconButton(
-              icon: const Icon(Icons.more_horiz),
-              onPressed: () {},
-              color: context.colors.textPrimary,
+            // Right: overflow actions
+            PopupMenuButton<String>(
+              icon: Icon(
+                Icons.more_horiz,
+                color: context.colors.textPrimary,
+              ),
+              tooltip: 'More actions',
+              onSelected: (value) {
+                if (value == 'journal') _journalThis();
+              },
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                  value: 'journal',
+                  enabled: !_journaling,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.menu_book_outlined,
+                        size: 18,
+                        color: context.colors.textPrimary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(_journaling ? 'Opening…' : 'Journal this'),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ),
