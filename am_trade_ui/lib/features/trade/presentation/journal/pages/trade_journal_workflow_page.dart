@@ -45,16 +45,18 @@ class TradeJournalWorkflowPage extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<TradeJournalWorkflowPage> createState() =>
-      _TradeJournalWorkflowPageState();
+      TradeJournalWorkflowPageState();
 }
 
-class _TradeJournalWorkflowPageState
+class TradeJournalWorkflowPageState
     extends ConsumerState<TradeJournalWorkflowPage> {
   late int _currentStep;
   late JournalEntry _entry;
   var _saving = false;
   var _isNew = true;
   late bool _readOnly;
+  /// True after local edits since last successful Save Draft / Save Journal.
+  var _dirty = false;
 
   static const _stepLabels = ['Pre-Trade', 'Execute', 'Post-Trade'];
 
@@ -152,7 +154,62 @@ class _TradeJournalWorkflowPageState
   }
 
   void _updateEntry(JournalEntry updated) {
-    setState(() => _entry = _recalc(updated));
+    setState(() {
+      _entry = _recalc(updated);
+      _dirty = true;
+    });
+  }
+
+  bool get hasUnsavedChanges => !_readOnly && _dirty && !_saving;
+
+  /// Public for parent shell (list selection / mode toggle) leave guards.
+  Future<bool> confirmLeaveIfUnsaved() async {
+    if (!hasUnsavedChanges) return true;
+    final action = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Unsaved journal'),
+        content: const Text(
+          'Your journal may be lost if you leave now. '
+          'Save it as a draft, or save completely.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'stay'),
+            child: const Text('Keep editing'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'discard'),
+            child: const Text('Discard'),
+          ),
+          OutlinedButton(
+            onPressed: () => Navigator.pop(ctx, 'draft'),
+            child: const Text('Save draft'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: ModuleColors.trade,
+            ),
+            onPressed: () => Navigator.pop(ctx, 'complete'),
+            child: const Text('Save completely'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return false;
+    switch (action) {
+      case 'discard':
+        return true;
+      case 'draft':
+        await _save(complete: false);
+        return !_dirty;
+      case 'complete':
+        await _save(complete: true);
+        return !_dirty;
+      case 'stay':
+      default:
+        return false;
+    }
   }
 
   JournalEntry _recalc(JournalEntry e) {
@@ -160,16 +217,19 @@ class _TradeJournalWorkflowPageState
     final exec = e.tradeExecution ?? const TradeExecution();
     final review = e.postTradeReview ?? const PostTradeReview();
 
-    final risk = JournalCalcHelper.plannedRiskAmount(
+    // Prefer values already on the plan (user-edited Risk / R:R); fill gaps only.
+    final calcRisk = JournalCalcHelper.plannedRiskAmount(
       entry: plan.plannedEntryPrice,
       stop: plan.plannedStopLoss,
       quantity: plan.plannedQuantity ?? exec.quantity,
     );
-    final rr = JournalCalcHelper.plannedRRRatio(
+    final calcRr = JournalCalcHelper.plannedRRRatio(
       entry: plan.plannedEntryPrice,
       stop: plan.plannedStopLoss,
       target: plan.plannedTarget,
     );
+    final risk = plan.plannedRiskAmount ?? calcRisk;
+    final rr = plan.plannedRRRatio ?? calcRr;
     final pnl = JournalCalcHelper.actualPnl(
       entryPrice: exec.actualEntryPrice ?? plan.plannedEntryPrice,
       exitPrice: review.actualExitPrice,
@@ -178,15 +238,15 @@ class _TradeJournalWorkflowPageState
     );
     final rMult = JournalCalcHelper.actualRMultiple(
       pnl: pnl,
-      plannedRisk: risk ?? plan.plannedRiskAmount,
+      plannedRisk: risk,
     );
 
     return e.copyWith(
       setup: plan.setup ?? e.setup,
       symbol: e.symbol,
       preTradePlan: plan.copyWith(
-        plannedRiskAmount: risk ?? plan.plannedRiskAmount,
-        plannedRRRatio: rr ?? plan.plannedRRRatio,
+        plannedRiskAmount: risk,
+        plannedRRRatio: rr,
       ),
       postTradeReview: review.copyWith(
         actualPnl: pnl ?? review.actualPnl,
@@ -217,7 +277,8 @@ class _TradeJournalWorkflowPageState
           ? '$symbol ${setup?.isNotEmpty == true ? setup : 'Trade'}'
           : (_entry.title.trim().isNotEmpty ? _entry.title : 'New Trade');
 
-      final saved = await widget.journalCubit.saveEntryFull(
+      final localAttachments = List<JournalAttachment>.from(_entry.attachments);
+      var saved = await widget.journalCubit.saveEntryFull(
         entryId: _isNew ? null : _entry.id,
         title: title,
         content: _entry.content,
@@ -234,15 +295,29 @@ class _TradeJournalWorkflowPageState
         preTradePlan: _entry.preTradePlan,
         tradeExecution: _entry.tradeExecution,
         postTradeReview: _entry.postTradeReview,
-        attachments: _entry.attachments,
+        attachments: localAttachments,
         relatedTradeIds: _entry.relatedTradeIds,
         tagIds: _entry.tagIds,
       );
+      // If create/update dropped attachments, persist via addAttachment API.
+      final savedUrls = saved.attachments.map((a) => a.fileUrl).toSet();
+      for (final a in localAttachments) {
+        if (a.fileUrl.isEmpty || savedUrls.contains(a.fileUrl)) continue;
+        try {
+          saved = await widget.journalCubit.addAttachment(saved.id, a);
+        } catch (_) {
+          // Keep local URL visible even if sync fails this pass.
+        }
+      }
+      if (saved.attachments.isEmpty && localAttachments.isNotEmpty) {
+        saved = saved.copyWith(attachments: localAttachments);
+      }
       if (!mounted) return;
       setState(() {
         _entry = saved;
         _isNew = false;
         _saving = false;
+        _dirty = false;
       });
       if (widget.embedded) {
         widget.onEmbeddedDone?.call(saved.id, complete: complete);
@@ -349,27 +424,25 @@ class _TradeJournalWorkflowPageState
                   AppSpacing.lg,
                   AppSpacing.md,
                 ),
+                // Stable step keys — remounting on entry id change (temp→real)
+                // disposed AttachmentPicker and wiped visible uploads.
                 child: _currentStep == 0
                     ? PreTradePlanStep(
-                        key: ValueKey('pre-${_entry.id}-${_entry.updatedAt}'),
+                        key: const ValueKey('pre-step'),
                         entry: _entry,
                         onUpdate: _updateEntry,
                         applyDefaultChecklist: _isNew && !_readOnly,
                       )
                     : _currentStep == 1
                         ? ExecuteTradeStep(
-                            key: ValueKey(
-                              'exec-${_entry.id}-${_entry.updatedAt}',
-                            ),
+                            key: const ValueKey('exec-step'),
                             entry: _entry,
                             onUpdate: _updateEntry,
                             portfolioId: widget.portfolioId,
                             onLinkTrade: _readOnly ? null : _linkTrade,
                           )
                         : PostTradeReviewStep(
-                            key: ValueKey(
-                              'post-${_entry.id}-${_entry.updatedAt}',
-                            ),
+                            key: const ValueKey('post-step'),
                             entry: _entry,
                             onUpdate: _updateEntry,
                           ),
@@ -382,10 +455,20 @@ class _TradeJournalWorkflowPageState
           child: Row(
             children: [
               TextButton(
-                onPressed: () {
+                onPressed: () async {
+                  if (_readOnly) {
+                    if (widget.embedded) {
+                      widget.onEmbeddedCancel?.call();
+                    } else {
+                      Navigator.pop(context);
+                    }
+                    return;
+                  }
+                  final leave = await confirmLeaveIfUnsaved();
+                  if (!leave || !mounted) return;
                   if (widget.embedded) {
                     widget.onEmbeddedCancel?.call();
-                  } else {
+                  } else if (context.mounted) {
                     Navigator.pop(context);
                   }
                 },
@@ -448,10 +531,25 @@ class _TradeJournalWorkflowPageState
       ],
     );
 
+    final wrapped = PopScope(
+      canPop: _readOnly || !_dirty,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final leave = await confirmLeaveIfUnsaved();
+        if (!leave || !mounted) return;
+        if (widget.embedded) {
+          widget.onEmbeddedCancel?.call();
+        } else if (context.mounted) {
+          Navigator.of(context).maybePop();
+        }
+      },
+      child: body,
+    );
+
     if (widget.embedded) {
       return ColoredBox(
         color: colors.surface,
-        child: body,
+        child: wrapped,
       );
     }
 
@@ -461,10 +559,15 @@ class _TradeJournalWorkflowPageState
         title: const Text('Trade Journal'),
         leading: IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () async {
+            final leave = await confirmLeaveIfUnsaved();
+            if (leave && mounted && context.mounted) {
+              Navigator.of(context).pop();
+            }
+          },
         ),
       ),
-      body: body,
+      body: wrapped,
     );
   }
 }

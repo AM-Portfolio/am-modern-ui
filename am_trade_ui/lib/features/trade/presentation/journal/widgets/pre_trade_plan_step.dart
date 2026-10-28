@@ -5,6 +5,9 @@ import '../../../internal/domain/entities/journal_entry.dart';
 import '../utils/journal_calc_helper.dart';
 import 'journal_form_surface.dart';
 import 'journal_preset_or_custom_field.dart';
+import 'journal_risk_amount_field.dart';
+import 'journal_rr_ratio_taker.dart';
+import 'journal_symbol_suggest_field.dart';
 import 'journal_workflow_field_theme.dart';
 
 class PreTradePlanStep extends StatefulWidget {
@@ -42,6 +45,12 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
   late final TextEditingController _qty;
   late final TextEditingController _setupDesc;
   late final TextEditingController _rationale;
+  late final TextEditingController _risk;
+
+  /// When true, keep the user's Risk / R:R instead of overwriting from prices.
+  var _riskManual = false;
+  var _rrManual = false;
+  double? _rrValue;
 
   @override
   void initState() {
@@ -55,6 +64,17 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
     _qty = TextEditingController(text: plan.plannedQuantity?.toString() ?? '');
     _setupDesc = TextEditingController(text: plan.setupDescription ?? '');
     _rationale = TextEditingController(text: plan.entryRationale ?? '');
+    _risk = TextEditingController(
+      text: plan.plannedRiskAmount?.toStringAsFixed(2) ?? '',
+    );
+    _rrValue = plan.plannedRRRatio;
+    _riskManual = false;
+    _rrManual = false;
+    _syncDerivedFields(
+      plan,
+      forceRisk: _risk.text.isEmpty,
+      forceRr: _rrValue == null,
+    );
   }
 
   @override
@@ -70,6 +90,15 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
       _qty.text = plan.plannedQuantity?.toString() ?? '';
       _setupDesc.text = plan.setupDescription ?? '';
       _rationale.text = plan.entryRationale ?? '';
+      _riskManual = false;
+      _rrManual = false;
+      _risk.text = plan.plannedRiskAmount?.toStringAsFixed(2) ?? '';
+      _rrValue = plan.plannedRRRatio;
+      _syncDerivedFields(
+        plan,
+        forceRisk: _risk.text.isEmpty,
+        forceRr: _rrValue == null,
+      );
     }
   }
 
@@ -82,20 +111,56 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
     _qty.dispose();
     _setupDesc.dispose();
     _rationale.dispose();
+    _risk.dispose();
     super.dispose();
   }
 
+  void _syncDerivedFields(
+    PreTradePlan plan, {
+    required bool forceRisk,
+    required bool forceRr,
+  }) {
+    if (forceRisk) {
+      final risk = JournalCalcHelper.plannedRiskAmount(
+        entry: plan.plannedEntryPrice,
+        stop: plan.plannedStopLoss,
+        quantity: plan.plannedQuantity,
+      );
+      final next = risk?.toStringAsFixed(2) ?? '';
+      if (_risk.text != next) _risk.text = next;
+    }
+    if (forceRr) {
+      _rrValue = JournalCalcHelper.plannedRRRatio(
+        entry: plan.plannedEntryPrice,
+        stop: plan.plannedStopLoss,
+        target: plan.plannedTarget,
+      );
+    }
+  }
+
   void _updatePlan(PreTradePlan plan, {String? symbol, String? direction}) {
-    final risk = JournalCalcHelper.plannedRiskAmount(
-      entry: plan.plannedEntryPrice,
-      stop: plan.plannedStopLoss,
-      quantity: plan.plannedQuantity,
-    );
-    final rr = JournalCalcHelper.plannedRRRatio(
-      entry: plan.plannedEntryPrice,
-      stop: plan.plannedStopLoss,
-      target: plan.plannedTarget,
-    );
+    if (!_riskManual || !_rrManual) {
+      _syncDerivedFields(
+        plan,
+        forceRisk: !_riskManual,
+        forceRr: !_rrManual,
+      );
+    }
+    final risk = _riskManual
+        ? double.tryParse(_risk.text.trim())
+        : JournalCalcHelper.plannedRiskAmount(
+            entry: plan.plannedEntryPrice,
+            stop: plan.plannedStopLoss,
+            quantity: plan.plannedQuantity,
+          );
+    final rr = _rrManual
+        ? _rrValue
+        : JournalCalcHelper.plannedRRRatio(
+            entry: plan.plannedEntryPrice,
+            stop: plan.plannedStopLoss,
+            target: plan.plannedTarget,
+          );
+    if (!_rrManual) _rrValue = rr;
     widget.onUpdate(
       widget.entry.copyWith(
         symbol: symbol ?? widget.entry.symbol,
@@ -202,10 +267,11 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _row(
-            _field(
+            JournalSymbolSuggestField(
               controller: _symbol,
-              placeholder: 'Symbol *',
-              onChanged: (v) => _updatePlan(plan, symbol: v),
+              hintText: 'Symbol * — search stocks, ETFs…',
+              onChanged: (v) => _updatePlan(_plan, symbol: v),
+              onSelected: (hit) => _updatePlan(_plan, symbol: hit.symbol),
             ),
             directionBlock,
           ),
@@ -280,18 +346,26 @@ class _PreTradePlanStepState extends State<PreTradePlanStep> {
           Wrap(
             spacing: 10,
             runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Chip(
-                label: Text(
-                  'Risk: ${plan.plannedRiskAmount?.toStringAsFixed(2) ?? '—'}',
-                  style: theme.textTheme.bodyMedium,
-                ),
+              JournalRiskAmountField(
+                controller: _risk,
+                onChanged: (v) {
+                  _riskManual = true;
+                  _updatePlan(
+                    plan.copyWith(plannedRiskAmount: double.tryParse(v)),
+                  );
+                },
               ),
-              Chip(
-                label: Text(
-                  'R:R: ${plan.plannedRRRatio?.toStringAsFixed(2) ?? '—'}',
-                  style: theme.textTheme.bodyMedium,
-                ),
+              JournalRrRatioTaker(
+                value: _rrValue ?? plan.plannedRRRatio,
+                onChanged: (v) {
+                  setState(() {
+                    _rrManual = true;
+                    _rrValue = v;
+                  });
+                  _updatePlan(plan.copyWith(plannedRRRatio: v));
+                },
               ),
             ],
           ),

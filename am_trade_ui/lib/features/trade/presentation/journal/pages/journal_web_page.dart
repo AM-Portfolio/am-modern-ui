@@ -69,6 +69,8 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
   JournalTemplateSelection? _pendingPlaybook;
   final GlobalKey<JournalInsightsPageState> _insightsKey =
       GlobalKey<JournalInsightsPageState>();
+  final GlobalKey<TemplateBrowserPageState> _playbooksKey =
+      GlobalKey<TemplateBrowserPageState>();
   String? _focusEntryId;
 
   @override
@@ -444,6 +446,7 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
                               loadedEntries: loadedEntries,
                             ),
                             TemplateBrowserPage(
+                              key: _playbooksKey,
                               embedded: true,
                               onTemplateSelected: (template) async {
                                 if (!mounted) return;
@@ -544,6 +547,41 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
               ),
             ],
             const Spacer(),
+            if (_tab == _JournalTab.playbooks) ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      tooltip: (_playbooksKey.currentState?.isGridView ?? true)
+                          ? 'List View'
+                          : 'Grid View',
+                      icon: Icon(
+                        (_playbooksKey.currentState?.isGridView ?? true)
+                            ? Icons.view_list
+                            : Icons.grid_view,
+                        color: colors.textSecondary,
+                      ),
+                      onPressed: () {
+                        _playbooksKey.currentState?.toggleGridView();
+                        setState(() {});
+                      },
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    AppButton(
+                      text: 'Create Template',
+                      type: AppButtonType.primary,
+                      icon: Icons.add,
+                      backgroundColor: ModuleColors.trade,
+                      height: 36,
+                      onPressed: () =>
+                          _playbooksKey.currentState?.openCreateTemplate(),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             if (_tab == _JournalTab.entries) ...[
               Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.sm),

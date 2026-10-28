@@ -24,7 +24,6 @@ import 'widgets/trade_preview_dialog.dart';
 import '../../../journal/pages/trade_journal_workflow_page.dart';
 import '../../../journal/widgets/journal_form_surface.dart';
 import '../../../journal/widgets/journal_structured_review_section.dart';
-import '../../../journal/widgets/journal_themed_dropdown.dart';
 import '../../../journal/widgets/simple_template_dialog.dart';
 
 class JournalEntryForm extends ConsumerStatefulWidget {
@@ -642,6 +641,7 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     _answersFromControllers(_fieldControllers).entries
         .map((e) => '${e.key}=${e.value}')
         .join('|'),
+    _imageUrls.join(','),
   ].join('\u241F');
 
   bool get _draftHasContent =>
@@ -654,8 +654,15 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       _midMood != null ||
       _endMood != null ||
       _checklistItems.isNotEmpty ||
+      _imageUrls.isNotEmpty ||
       _answersFromControllers(_promptControllers).isNotEmpty ||
       _answersFromControllers(_fieldControllers).isNotEmpty;
+
+  bool get _hasUnsavedChanges =>
+      _draftHasContent && _draftFingerprint() != _lastSavedFingerprint;
+
+  /// Public for parent shell (list selection / mode toggle) leave guards.
+  bool get hasUnsavedChanges => _hasUnsavedChanges;
 
   /// Debounced (~20s) silent DRAFT save while composing a new entry.
   void _scheduleAutosave() {
@@ -675,10 +682,103 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     try {
       final id = await _persistDayEntry(journalStatus: 'DRAFT');
       _draftEntryId = id;
+      try {
+        await _syncNewAttachments(id);
+      } catch (_) {
+        // Attachment retry happens on explicit Save.
+      }
       _lastSavedFingerprint = fingerprint;
       if (mounted) setState(() => _lastDraftSavedAt = DateTime.now());
     } catch (_) {
       // Silent: the explicit Save surfaces real errors.
+    }
+  }
+
+  Future<void> _saveDraftExplicit() async {
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
+    try {
+      try {
+        await _autosaveFuture;
+      } catch (_) {}
+      final id = await _persistDayEntry(journalStatus: 'DRAFT');
+      _draftEntryId = id;
+      await _syncNewAttachments(id);
+      _lastSavedFingerprint = _draftFingerprint();
+      if (mounted) {
+        setState(() => _lastDraftSavedAt = DateTime.now());
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Draft saved')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save draft: $e'),
+            backgroundColor: context.statusError,
+          ),
+        );
+      }
+      rethrow;
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  /// Warn before discarding unsaved journal work.
+  /// Returns true if the caller should proceed with leave/discard.
+  Future<bool> confirmLeaveIfUnsaved() async {
+    if (!_hasUnsavedChanges || _isSubmitting) return true;
+    final action = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Unsaved journal'),
+        content: const Text(
+          'Your journal may be lost if you leave now. '
+          'Save it as a draft, or save completely.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'stay'),
+            child: const Text('Keep editing'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'discard'),
+            child: const Text('Discard'),
+          ),
+          OutlinedButton(
+            onPressed: () => Navigator.pop(ctx, 'draft'),
+            child: const Text('Save draft'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: ModuleColors.trade,
+            ),
+            onPressed: () => Navigator.pop(ctx, 'complete'),
+            child: const Text('Save completely'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return false;
+    switch (action) {
+      case 'discard':
+        return true;
+      case 'draft':
+        try {
+          await _saveDraftExplicit();
+          return true;
+        } catch (_) {
+          return false;
+        }
+      case 'complete':
+        await _submit();
+        // Leave only if save cleared unsaved state.
+        return !_hasUnsavedChanges;
+      case 'stay':
+      default:
+        return false;
     }
   }
 
@@ -1174,53 +1274,63 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
   }
 
   @override
-  Widget build(BuildContext context) => Form(
-    key: _formKey,
-    child: LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 720;
-        return Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  AppSpacing.md,
-                  AppSpacing.lg,
-                  AppSpacing.md,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Same input template for view + edit; fields lock via _isEditMode.
-                    if (isWide)
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(flex: 5, child: _buildLeftColumn(context)),
-                          const SizedBox(width: AppSpacing.lg),
-                          Expanded(flex: 3, child: _buildRightColumn()),
-                        ],
-                      )
-                    else
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _buildLeftColumn(context),
-                          const SizedBox(height: AppSpacing.lg),
-                          _buildRightColumn(),
-                        ],
-                      ),
-                  ],
+  Widget build(BuildContext context) => PopScope(
+    canPop: !_hasUnsavedChanges,
+    onPopInvokedWithResult: (didPop, _) async {
+      if (didPop) return;
+      final leave = await confirmLeaveIfUnsaved();
+      if (leave && mounted && context.mounted) {
+        Navigator.of(context).maybePop();
+      }
+    },
+    child: Form(
+      key: _formKey,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth > 720;
+          return Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Same input template for view + edit; fields lock via _isEditMode.
+                      if (isWide)
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(flex: 5, child: _buildLeftColumn(context)),
+                            const SizedBox(width: AppSpacing.lg),
+                            Expanded(flex: 3, child: _buildRightColumn()),
+                          ],
+                        )
+                      else
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildLeftColumn(context),
+                            const SizedBox(height: AppSpacing.lg),
+                            _buildRightColumn(),
+                          ],
+                        ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            // Sticky bar only while composing / editing — view mode uses header Edit.
-            if (_isEditMode || widget.entry == null)
-              _buildStickyActions(context),
-          ],
-        );
-      },
+              // Sticky bar only while composing / editing — view mode uses header Edit.
+              if (_isEditMode || widget.entry == null)
+                _buildStickyActions(context),
+            ],
+          );
+        },
+      ),
     ),
   );
 
@@ -1262,7 +1372,10 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
               isNewEntry: widget.entry == null,
               onSubmit: _submit,
               onToggleEditMode: () => _setEditMode(!_isEditMode),
-              onCancel: () {
+              onBrowseTemplates: _isEditMode ? browseTemplates : null,
+              onCancel: () async {
+                final leave = await confirmLeaveIfUnsaved();
+                if (!leave || !mounted) return;
                 if (widget.entry == null) {
                   widget.onCancelCreate?.call();
                   return;
@@ -1532,47 +1645,6 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     );
   }
 
-  Widget _buildPromptAnswersRead(ThemeData theme, AppColorsTheme colors) {
-    final labels = _notePrompts.isNotEmpty
-        ? _notePrompts
-        : _answersFromControllers(_promptControllers).keys.toList();
-    if (labels.isEmpty) {
-      return Text(
-        'No prompt answers yet.',
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: colors.textSecondary,
-        ),
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (var i = 0; i < labels.length; i++) ...[
-          if (i > 0) const SizedBox(height: AppSpacing.md),
-          Text(
-            labels[i],
-            style: theme.textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            (_promptControllers[labels[i]]?.text.trim().isNotEmpty ?? false)
-                ? _promptControllers[labels[i]]!.text.trim()
-                : '—',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: (_promptControllers[labels[i]]?.text.trim().isNotEmpty ??
-                      false)
-                  ? null
-                  : colors.textSecondary,
-              height: 1.45,
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
   Widget _buildTitleField() {
     final theme = Theme.of(context);
     final colors = context.colors;
@@ -1715,7 +1787,10 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
         child: JournalAttachmentSection(
           userId: widget.entry?.userId ?? '',
           imageUrls: _imageUrls,
-          onAttachmentsChanged: (urls) => setState(() => _imageUrls = urls),
+          onAttachmentsChanged: (urls) {
+            setState(() => _imageUrls = urls);
+            _scheduleAutosave();
+          },
           featureName: 'journal',
           isEditMode: _isEditMode,
         ),

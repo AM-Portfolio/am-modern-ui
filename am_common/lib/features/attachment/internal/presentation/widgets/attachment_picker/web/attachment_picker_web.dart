@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:html' as html;
+import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -61,12 +62,38 @@ class _AttachmentPickerWebState extends ConsumerState<AttachmentPickerWeb> {
       '🎬 AttachmentPickerWeb initState',
       tag: 'AttachmentPickerWeb',
     );
+    _hydrateFromInitialUrls(widget.initialUrls);
+  }
+
+  @override
+  void didUpdateWidget(covariant AttachmentPickerWeb oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_listEquals(oldWidget.initialUrls, widget.initialUrls)) {
+      // Parent persisted / reloaded attachments — resync without dropping
+      // in-flight uploads (keep local items whose URLs are still present).
+      final incoming = widget.initialUrls.toSet();
+      final localUploaded = _attachments
+          .where((a) => a.isUploaded && a.uploadedUrl != null)
+          .map((a) => a.uploadedUrl!)
+          .toSet();
+      if (!_setEquals(incoming, localUploaded) && !_isUploading) {
+        setState(() {
+          _attachments
+            ..clear()
+            ..addAll(widget.initialUrls.map(AttachmentItem.uploaded));
+        });
+      }
+    }
+  }
+
+  void _hydrateFromInitialUrls(List<String> urls) {
     AppLogger.debug(
-      '📋 Initial URLs count: ${widget.initialUrls.length}',
+      '📋 Initial URLs count: ${urls.length}',
       tag: 'AttachmentPickerWeb',
     );
-    for (var i = 0; i < widget.initialUrls.length; i++) {
-      final url = widget.initialUrls[i];
+    _attachments.clear();
+    for (var i = 0; i < urls.length; i++) {
+      final url = urls[i];
       AppLogger.debug('  [$i] URL: $url', tag: 'AttachmentPickerWeb');
       _attachments.add(AttachmentItem.uploaded(url));
     }
@@ -75,6 +102,18 @@ class _AttachmentPickerWebState extends ConsumerState<AttachmentPickerWeb> {
       tag: 'AttachmentPickerWeb',
     );
   }
+
+  bool _listEquals(List<String> a, List<String> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  bool _setEquals(Set<String> a, Set<String> b) =>
+      a.length == b.length && a.containsAll(b);
 
   @override
   Widget build(BuildContext context) {
@@ -362,6 +401,8 @@ class _AttachmentPickerWebState extends ConsumerState<AttachmentPickerWeb> {
           result = await FilePicker.platform.pickFiles(
             type: FileType.image,
             allowMultiple: _attachments.length + 1 < widget.maxAttachments,
+            // Web has no filesystem path — bytes are required for upload.
+            withData: true,
           );
           break;
         case AttachmentType.document:
@@ -369,17 +410,20 @@ class _AttachmentPickerWebState extends ConsumerState<AttachmentPickerWeb> {
             type: FileType.custom,
             allowedExtensions: UploadConfig.allowedDocumentTypes,
             allowMultiple: _attachments.length + 1 < widget.maxAttachments,
+            withData: true,
           );
           break;
         case AttachmentType.video:
           result = await FilePicker.platform.pickFiles(
             type: FileType.video,
             allowMultiple: _attachments.length + 1 < widget.maxAttachments,
+            withData: true,
           );
           break;
         case AttachmentType.any:
           result = await FilePicker.platform.pickFiles(
             allowMultiple: _attachments.length + 1 < widget.maxAttachments,
+            withData: true,
           );
           break;
       }
@@ -389,13 +433,19 @@ class _AttachmentPickerWebState extends ConsumerState<AttachmentPickerWeb> {
       for (final file in result.files) {
         if (_attachments.length >= widget.maxAttachments) break;
 
+        final bytes = file.bytes;
+        if (bytes == null || bytes.isEmpty) {
+          _showError(
+            'Browser did not provide file bytes for ${file.name}. Try again.',
+          );
+          continue;
+        }
+
         final pending = PendingAttachment(
           fileName: file.name,
           filePath: null,
-          fileBytes: file.bytes,
-          previewUrl: file.bytes != null
-              ? _createBlobUrl(file.bytes!, file.name)
-              : null,
+          fileBytes: bytes,
+          previewUrl: _createBlobUrl(bytes, file.name),
         );
 
         await _handlePickedFile(pending);
@@ -411,12 +461,17 @@ class _AttachmentPickerWebState extends ConsumerState<AttachmentPickerWeb> {
 
       final reader = html.FileReader();
       reader.onLoadEnd.listen((e) async {
-        final bytes = reader.result! as List<int>;
+        final raw = reader.result;
+        if (raw is! List<int>) {
+          _showError('Could not read dropped file ${file.name}');
+          return;
+        }
+        final bytes = Uint8List.fromList(raw);
         final pending = PendingAttachment(
           fileName: file.name,
           filePath: null,
-          fileBytes: bytes as dynamic,
-          previewUrl: _createBlobUrl(bytes as dynamic, file.name),
+          fileBytes: bytes,
+          previewUrl: _createBlobUrl(bytes, file.name),
         );
 
         await _handlePickedFile(pending);
@@ -469,9 +524,11 @@ class _AttachmentPickerWebState extends ConsumerState<AttachmentPickerWeb> {
     AppLogger.debug('📝 Filename: ${pending.fileName}', tag: 'WebUpload');
     AppLogger.debug('📂 Feature: ${widget.featureName}', tag: 'WebUpload');
 
-    if (pending.fileBytes == null) {
+    if (pending.fileBytes == null || pending.fileBytes!.isEmpty) {
       AppLogger.error('❌ Error: No file data available', tag: 'WebUpload');
-      _showError('No file data available');
+      _showError(
+        'Could not read that file in the browser. Try a smaller image or another browser.',
+      );
       return;
     }
 
@@ -480,9 +537,14 @@ class _AttachmentPickerWebState extends ConsumerState<AttachmentPickerWeb> {
       tag: 'WebUpload',
     );
 
+    // Show local blob preview immediately so the user sees the attachment
+    // before Cloudinary returns.
     setState(() {
       _isUploading = true;
       _uploadProgress = 0.0;
+      if (!_attachments.any((a) => a.pendingAttachment == pending)) {
+        _attachments.add(AttachmentItem.pending(pending));
+      }
     });
 
     try {
@@ -519,7 +581,15 @@ class _AttachmentPickerWebState extends ConsumerState<AttachmentPickerWeb> {
 
       if (mounted) {
         setState(() {
-          _attachments.add(AttachmentItem.uploaded(url));
+          final index = _attachments.indexWhere(
+            (a) => a.pendingAttachment == pending,
+          );
+          final uploaded = AttachmentItem.uploaded(url);
+          if (index != -1) {
+            _attachments[index] = uploaded;
+          } else {
+            _attachments.add(uploaded);
+          }
           _uploadProgress = 1.0;
         });
 
@@ -529,10 +599,20 @@ class _AttachmentPickerWebState extends ConsumerState<AttachmentPickerWeb> {
       }
     } on FileUploadException catch (e) {
       AppLogger.error('❌ FileUploadException: ${e.message}', tag: 'WebUpload');
+      if (mounted) {
+        setState(() {
+          _attachments.removeWhere((a) => a.pendingAttachment == pending);
+        });
+      }
       _showError(e.message);
     } catch (e) {
       AppLogger.error('❌ Unexpected error: $e', tag: 'WebUpload');
       AppLogger.debug('🔍 Error type: ${e.runtimeType}', tag: 'WebUpload');
+      if (mounted) {
+        setState(() {
+          _attachments.removeWhere((a) => a.pendingAttachment == pending);
+        });
+      }
       _showError('Error: $e');
     } finally {
       if (mounted) {

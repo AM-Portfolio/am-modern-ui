@@ -2,6 +2,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
 import '../../../internal/domain/entities/journal_entry.dart';
+import '../utils/journal_calc_helper.dart';
 import 'journal_form_surface.dart';
 import 'journal_trade_header.dart';
 
@@ -27,6 +28,7 @@ class TradeJournalDetailView extends StatelessWidget {
     final review = entry.postTradeReview;
     final pnl = review?.actualPnl;
     final rMult = review?.actualRMultiple;
+    final plannedRrLabel = JournalCalcHelper.formatRrRatio(plan?.plannedRRRatio);
 
     return ColoredBox(
       color: colors.surface,
@@ -140,7 +142,7 @@ class TradeJournalDetailView extends StatelessWidget {
                             _kv(
                               context,
                               'Planned R:R',
-                              plan?.plannedRRRatio?.toStringAsFixed(2),
+                              plannedRrLabel.isEmpty ? null : plannedRrLabel,
                             ),
                             _kv(context, 'Market context', plan?.marketContext),
                             _kv(

@@ -4,18 +4,27 @@ import '../../../../../internal/domain/entities/journal_entry.dart';
 class JournalFormHelpers {
   /// Convert image URLs to JournalAttachment objects
   static List<JournalAttachment> convertImageUrlsToAttachments(List<String> imageUrls) => imageUrls.map((url) {
-    final fileName = url.split('/').last.split('?').first;
+    final path = Uri.tryParse(url)?.path ?? url;
+    final segments = path.split('/').where((s) => s.isNotEmpty).toList();
+    final fileName = segments.isNotEmpty ? segments.last : 'attachment';
     return JournalAttachment(
-      fileName: fileName,
+      fileName: fileName.contains('.') ? fileName : '$fileName.jpg',
       fileUrl: url,
       fileType: _getFileTypeFromUrl(url),
-      uploadedAt: DateTime.now(),
+      // Omit uploadedAt — ISO-8601 with Z can break Java LocalDateTime on create.
+      uploadedAt: null,
     );
   }).toList();
 
   /// Get file MIME type from URL extension
   static String? _getFileTypeFromUrl(String url) {
-    final extension = url.split('.').last.split('?').first.toLowerCase();
+    final path = Uri.tryParse(url)?.path ?? url;
+    final segments = path.split('/').where((s) => s.isNotEmpty).toList();
+    final last = segments.isNotEmpty ? segments.last : '';
+    final dot = last.lastIndexOf('.');
+    final extension = (dot > 0 && dot < last.length - 1)
+        ? last.substring(dot + 1).toLowerCase()
+        : '';
     const imageTypes = {
       'jpg': 'image/jpeg',
       'jpeg': 'image/jpeg',
@@ -24,6 +33,10 @@ class JournalFormHelpers {
       'webp': 'image/webp',
       'svg': 'image/svg+xml',
     };
+    if (extension.isEmpty || extension.length > 5 || extension.contains('/')) {
+      // Cloudinary / CDN paths often omit extensions — treat as image.
+      return 'image/jpeg';
+    }
     return imageTypes[extension] ?? 'image/$extension';
   }
 

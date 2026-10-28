@@ -132,6 +132,8 @@ class JournalTemplateCubit extends Cubit<JournalTemplateState> {
       );
 
       emit(JournalTemplateError(e.toString()));
+      // Don't leave Playbooks stuck on a create error — restore the grid.
+      await loadTemplates();
     }
   }
 

@@ -9,6 +9,7 @@ class JournalFormActions extends StatelessWidget {
     required this.onSubmit,
     required this.onToggleEditMode,
     required this.onCancel,
+    this.onBrowseTemplates,
     super.key,
   });
 
@@ -18,6 +19,8 @@ class JournalFormActions extends StatelessWidget {
   final VoidCallback onSubmit;
   final VoidCallback onToggleEditMode;
   final VoidCallback? onCancel;
+  /// Quiet secondary action — replaces the old gold header "Use template".
+  final VoidCallback? onBrowseTemplates;
 
   @override
   Widget build(BuildContext context) {
@@ -27,8 +30,18 @@ class JournalFormActions extends StatelessWidget {
     }
 
     return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
       children: [
+        if (onBrowseTemplates != null)
+          AppButton(
+            text: 'Template',
+            icon: Icons.auto_awesome_outlined,
+            type: AppButtonType.secondary,
+            isOutlined: true,
+            backgroundColor: ModuleColors.trade,
+            onPressed: onBrowseTemplates,
+            height: 36,
+          ),
+        const Spacer(),
         if (onCancel != null) ...[
           AppButton(
             text: 'Cancel',

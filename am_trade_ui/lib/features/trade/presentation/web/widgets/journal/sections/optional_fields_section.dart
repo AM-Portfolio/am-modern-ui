@@ -1,6 +1,7 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../journal/widgets/journal_symbol_suggest_field.dart';
 import '../components/journal_form_header.dart';
 import '../widgets/url_preview_widget_stub.dart'
     if (dart.library.html) '../widgets/url_preview_widget.dart';
@@ -61,14 +62,16 @@ class _OptionalFieldsSectionState extends State<OptionalFieldsSection> {
     super.dispose();
   }
 
-  void _addWatchlistItem() {
-    final item = _watchlistController.text.trim();
+  void _addWatchlistItem([String? raw]) {
+    final item = (raw ?? _watchlistController.text).trim().toUpperCase();
     if (item.isNotEmpty && !_watchlistItems.contains(item)) {
       setState(() {
         _watchlistItems.add(item);
         _watchlistController.clear();
       });
       widget.onWatchlistChanged?.call(_watchlistItems);
+    } else {
+      _watchlistController.clear();
     }
   }
 
@@ -227,24 +230,41 @@ class _OptionalFieldsSectionState extends State<OptionalFieldsSection> {
           ],
         ),
         const SizedBox(height: 12),
-        // Watchlist input row
+        // Watchlist input row — securities / ETF recommendations
         Row(
           children: [
             Expanded(
-              child: TextField(
+              child: JournalSymbolSuggestField(
                 controller: _watchlistController,
+                enabled: widget.isEditMode,
+                hintText: 'Search stocks, ETFs, indices…',
+                clearOnSelect: true,
                 decoration: InputDecoration(
-                  hintText: 'Add stock symbol (e.g., AAPL, NIFTY50)',
-                  prefixIcon: Icon(Icons.search, size: 18, color: theme.colorScheme.secondary),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  hintText: 'Search stocks, ETFs, indices…',
+                  prefixIcon: Icon(
+                    Icons.search,
+                    size: 18,
+                    color: theme.colorScheme.secondary,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   isDense: true,
+                  filled: true,
+                  fillColor: theme.colorScheme.surface,
                 ),
-                onSubmitted: (_) => _addWatchlistItem(),
+                onSelected: (hit) => _addWatchlistItem(hit.symbol),
               ),
             ),
             const SizedBox(width: 8),
-            IconButton.filled(onPressed: _addWatchlistItem, icon: const Icon(Icons.add)),
+            IconButton.filled(
+              onPressed: widget.isEditMode ? () => _addWatchlistItem() : null,
+              icon: const Icon(Icons.add),
+            ),
           ],
         ),
         // Watchlist items
