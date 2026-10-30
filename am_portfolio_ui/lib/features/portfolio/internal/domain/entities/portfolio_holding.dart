@@ -170,15 +170,32 @@ abstract class PortfolioHoldings with _$PortfolioHoldings {
 bool holdingsHaveCostBasis(Iterable<PortfolioHolding> holdings) =>
     holdings.any((h) => h.hasCostBasis);
 
-/// Hide Invested / Total Return only after holdings are in and none have
-/// cost, and the summary principal is also zero. Empty holdings (still
-/// loading) must not look like a mail book.
+/// Show Avg / Invested / P&L columns when the book has any cost basis.
+bool showHoldingsCostColumns(Iterable<PortfolioHolding> holdings) =>
+    holdingsHaveCostBasis(holdings);
+
+/// Mixed books: drop zero-cost rows. All-zero-cost (mail) books: keep all rows.
+List<PortfolioHolding> visibleHoldingsForCostPolicy(
+  Iterable<PortfolioHolding> holdings,
+) {
+  final list = holdings.toList(growable: false);
+  if (list.isEmpty) return const [];
+  if (!holdingsHaveCostBasis(list)) return list;
+  return list.where((h) => h.hasCostBasis).toList(growable: false);
+}
+
+/// Hide Invested / Total Return when the summary principal is zero and
+/// holdings either are still loading or have no cost basis. Positive
+/// principal (broker books) keeps the cost cards even while holdings load
+/// so the strip does not flash 2→4. Zero principal while loading stays at
+/// two cards so Dhan/mail books do not flash 4→2.
 bool overviewShowsCostMetrics({
   required double investmentValue,
   required double totalInvested,
   required Iterable<PortfolioHolding> holdings,
+  bool isHoldingsLoading = false,
 }) {
   if (investmentValue > 0 || totalInvested > 0) return true;
-  if (holdings.isEmpty) return true;
+  if (isHoldingsLoading || holdings.isEmpty) return false;
   return holdingsHaveCostBasis(holdings);
 }

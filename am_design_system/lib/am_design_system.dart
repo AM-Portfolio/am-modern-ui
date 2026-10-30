@@ -185,6 +185,7 @@ export 'shared/widgets/selectors/shared_portfolio_selector.dart';
 export 'shared/widgets/feedback/shimmer_loading.dart';
 export 'shared/widgets/feedback/error_widget.dart';
 export 'shared/widgets/feedback/animated_page_transition.dart';
+export 'shared/widgets/feedback/am_submarine_reveal.dart';
 export 'shared/widgets/feedback/animated_list_item.dart';
 export 'shared/widgets/feedback/am_session_status_view.dart';
 export 'shared/widgets/feedback/demo_account_badge.dart';

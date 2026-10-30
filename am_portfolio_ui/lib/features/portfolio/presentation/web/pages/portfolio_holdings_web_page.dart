@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../internal/domain/entities/portfolio_holding.dart';
 import '../../../providers/portfolio_providers.dart';
 import '../mappers/advanced_holding_row_mapper.dart';
 
@@ -46,10 +47,10 @@ class PortfolioHoldingsWebPage extends ConsumerWidget {
             ref.invalidate(portfolioHoldingsProvider(activePortfolioId)),
       ),
       data: (portfolioHoldings) {
-        final rows =
-            mapPortfolioHoldingsToAdvancedRows(portfolioHoldings.holdings);
+        final visible = visibleHoldingsForCostPolicy(portfolioHoldings.holdings);
+        final rows = mapPortfolioHoldingsToAdvancedRows(visible);
         final symbols = [
-          for (final h in portfolioHoldings.holdings) h.symbol,
+          for (final h in visible) h.symbol,
         ];
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -61,6 +62,8 @@ class PortfolioHoldingsWebPage extends ConsumerWidget {
                 accentColor: ModuleColors.portfolio,
                 priceFreshnessLabel: portfolioHoldings.priceLabel,
                 viewOnly: true,
+                showCostColumns:
+                    showHoldingsCostColumns(portfolioHoldings.holdings),
                 initialSearchQuery: symbolQuery,
                 onRefresh: () => ref
                     .invalidate(portfolioHoldingsProvider(activePortfolioId)),

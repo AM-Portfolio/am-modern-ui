@@ -138,6 +138,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
   late final Widget _dashboardPage = const UserDashboardPage();
   final GlobalKey<EquityInsiderPageState> _equityInsiderKey =
       GlobalKey<EquityInsiderPageState>();
+  final GlobalKey<FoPageState> _foPageKey = GlobalKey<FoPageState>();
 
   static const _staticTitleToSlug = {
     'Paper': 'paper',
@@ -284,6 +285,12 @@ class _MarketContentState extends ConsumerState<MarketContent> {
       if (!mounted) return;
       final currentTitle = _swipeController.currentItem.title;
 
+      if (currentTitle == 'Futures & Options') {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _foPageKey.currentState?.resetToOptionChain();
+        });
+      }
+
       // Guests cannot land on Paper via swipe — bounce back + dialog.
       if (currentTitle == 'Paper') {
         final auth = context.read<AuthCubit>().state;
@@ -376,9 +383,9 @@ class _MarketContentState extends ConsumerState<MarketContent> {
             ? ''
             : _swipeController
                 .items[_swipeController.currentIndex.clamp(
-                  0,
-                  _swipeController.items.length - 1,
-                )]
+                0,
+                _swipeController.items.length - 1,
+              )]
                 .title;
         // Market Analysis / Heatmap: use Global Search from shell only.
         final hideSearchPin = selectedTitle == 'Heatmap' ||
@@ -782,7 +789,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         title: 'Futures & Options',
         subtitle: 'Futures and Options',
         icon: Icons.candlestick_chart_rounded,
-        page: wrap(const FoPage()),
+        page: wrap(FoPage(key: _foPageKey)),
         accentColor: accentColor,
       ),
       if (isIpoEnabled)
@@ -911,7 +918,7 @@ class _MarketContentState extends ConsumerState<MarketContent> {
         title: 'Futures & Options',
         subtitle: 'F&O contracts & chain',
         icon: Icons.candlestick_chart_rounded,
-        page: wrap(const FoPage()),
+        page: wrap(FoPage(key: _foPageKey)),
         accentColor: accentColor,
       ),
       if (isIpoEnabled)

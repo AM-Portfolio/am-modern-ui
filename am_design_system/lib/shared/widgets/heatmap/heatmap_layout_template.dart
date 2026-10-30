@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/module/module_config.dart';
 import '../../../../core/theme/color_extensions.dart';
 import '../../../../core/utils/common_logger.dart';
 import '../../models/heatmap.dart';
@@ -15,6 +16,7 @@ class HeatmapLayoutTemplate extends StatelessWidget {
     this.title,
     this.subtitle,
     this.icon,
+    this.accentColor,
     this.showHeader = true,
     this.showLegend = true,
     this.showSelectors = true,
@@ -31,6 +33,8 @@ class HeatmapLayoutTemplate extends StatelessWidget {
   final String? title;
   final String? subtitle;
   final IconData? icon;
+  /// Module brand accent for the header icon (e.g. [ModuleColors.portfolio]).
+  final Color? accentColor;
   final bool showHeader;
   final bool showLegend;
   final bool showSelectors;
@@ -143,7 +147,7 @@ class HeatmapLayoutTemplate extends StatelessWidget {
         if (icon != null) ...[
           Icon(
             icon,
-            color: Theme.of(context).primaryColor,
+            color: accentColor ?? ModuleColors.portfolio,
             size: compactHeader ? 20 : 24,
           ),
           SizedBox(width: compactHeader ? 8 : 8),

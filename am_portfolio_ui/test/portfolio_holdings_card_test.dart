@@ -44,6 +44,7 @@ Future<void> _pumpHoldings(
   WidgetTester tester, {
   required List<PortfolioHolding> holdings,
   DateTime? asOf,
+  bool expandFilters = false,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -68,6 +69,15 @@ Future<void> _pumpHoldings(
   );
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 50));
+  if (expandFilters) {
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(PortfolioHoldingsWidget)),
+    );
+    container
+        .read(mobileHoldingsFiltersExpandedProvider.notifier)
+        .set(true);
+    await tester.pumpAndSettle();
+  }
 }
 
 void main() {
@@ -119,21 +129,53 @@ void main() {
     );
   });
 
-  test('overviewShowsCostMetrics does not hide cards while holdings are empty',
+  test('visibleHoldingsForCostPolicy drops zero-cost only in mixed books', () {
+    final mailOnly = [
+      _holding(symbol: 'MAIL', investedAmount: 0, avgPrice: 0, quantity: 5),
+      _holding(symbol: 'ZERO', investedAmount: 0, avgPrice: 0, quantity: 2),
+    ];
+    expect(showHoldingsCostColumns(mailOnly), isFalse);
+    expect(
+      visibleHoldingsForCostPolicy(mailOnly).map((h) => h.symbol).toList(),
+      ['MAIL', 'ZERO'],
+    );
+
+    final mixed = [
+      _holding(symbol: 'TCS', investedAmount: 1000, avgPrice: 10, quantity: 5),
+      _holding(symbol: 'MAIL', investedAmount: 0, avgPrice: 0, quantity: 5),
+    ];
+    expect(showHoldingsCostColumns(mixed), isTrue);
+    expect(
+      visibleHoldingsForCostPolicy(mixed).map((h) => h.symbol).toList(),
+      ['TCS'],
+    );
+  });
+
+  test('overviewShowsCostMetrics hides cost cards while zero-principal loads',
       () {
     expect(
       overviewShowsCostMetrics(
         investmentValue: 0,
         totalInvested: 0,
         holdings: const [],
+        isHoldingsLoading: true,
       ),
-      isTrue,
+      isFalse,
+    );
+    expect(
+      overviewShowsCostMetrics(
+        investmentValue: 0,
+        totalInvested: 0,
+        holdings: const [],
+      ),
+      isFalse,
     );
     expect(
       overviewShowsCostMetrics(
         investmentValue: 863000,
         totalInvested: 863000,
         holdings: const [],
+        isHoldingsLoading: true,
       ),
       isTrue,
     );
@@ -183,7 +225,7 @@ void main() {
     expect(source.contains('summary.priceLabel'), isTrue);
   });
 
-  testWidgets('holdings cards drop per-row As of and hide zero cost',
+  testWidgets('holdings cards hide zero-cost rows in mixed books',
       (tester) async {
     await _pumpHoldings(
       tester,
@@ -204,22 +246,7 @@ void main() {
     );
 
     expect(find.textContaining('As of'), findsNothing);
-    expect(find.textContaining('2026-10-21'), findsNothing);
-    expect(find.textContaining('17:38'), findsNothing);
-
-    final mailCard = _cardFor('MAIL');
-    expect(
-      find.descendant(of: mailCard, matching: find.textContaining('Inv.')),
-      findsNothing,
-    );
-    expect(
-      find.descendant(of: mailCard, matching: find.textContaining('Avg')),
-      findsNothing,
-    );
-    expect(
-      find.descendant(of: mailCard, matching: find.text('7')),
-      findsOneWidget,
-    );
+    expect(find.text('MAIL'), findsNothing);
 
     final tcsCard = _cardFor('TCS');
     expect(
@@ -234,19 +261,39 @@ void main() {
       find.descendant(of: tcsCard, matching: find.text('4')),
       findsOneWidget,
     );
+  });
 
-    final mailH = tester.getSize(mailCard).height;
-    final tcsH = tester.getSize(tcsCard).height;
-    expect(mailH, lessThan(tcsH));
-    final qtyDy = tester
-        .getCenter(find.descendant(of: mailCard, matching: find.text('7')))
-        .dy;
-    final pnlDy = tester
-        .getCenter(
-          find.descendant(of: mailCard, matching: find.text('+₹1.20')),
-        )
-        .dy;
-    expect((qtyDy - pnlDy).abs(), lessThan(8));
+  testWidgets('all-zero-cost book keeps rows and hides avg labels',
+      (tester) async {
+    await _pumpHoldings(
+      tester,
+      holdings: [
+        _holding(
+          symbol: 'MAIL',
+          investedAmount: 0,
+          avgPrice: 0,
+          quantity: 7,
+        ),
+        _holding(
+          symbol: 'ZERO',
+          investedAmount: 0,
+          avgPrice: 0,
+          quantity: 3,
+        ),
+      ],
+    );
+
+    expect(find.text('MAIL'), findsOneWidget);
+    expect(find.text('ZERO'), findsOneWidget);
+    final mailCard = _cardFor('MAIL');
+    expect(
+      find.descendant(of: mailCard, matching: find.textContaining('Avg')),
+      findsNothing,
+    );
+    expect(
+      find.descendant(of: mailCard, matching: find.textContaining('Inv.')),
+      findsNothing,
+    );
   });
 
   testWidgets('mobile holdings shows Sector/Industry filters and filters list',
@@ -255,6 +302,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(480, 844));
     await _pumpHoldings(
       tester,
+      expandFilters: true,
       holdings: [
         _holding(
           symbol: 'TCS',
@@ -274,7 +322,6 @@ void main() {
 
     expect(find.text('Sector'), findsOneWidget);
     expect(find.text('Industry'), findsOneWidget);
-    expect(find.text('Profit'), findsOneWidget);
 
     await tester.tap(find.text('Sector'));
     await tester.pumpAndSettle();

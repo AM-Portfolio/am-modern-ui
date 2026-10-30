@@ -39,6 +39,10 @@ class SectorHeatmapConverter {
   /// Compact nested treemap: keep this many stocks per sector; fold the rest.
   static const int compactMaxStocksPerSector = 15;
 
+  /// Wide web nested overview — still capped so Flutter Web does not lock up
+  /// painting hundreds of nested leaf tiles in one frame.
+  static const int webMaxStocksPerSector = 20;
+
   static bool isExcludedFromRanking(String name) {
     final n = name.trim().toLowerCase();
     return n == 'other' ||

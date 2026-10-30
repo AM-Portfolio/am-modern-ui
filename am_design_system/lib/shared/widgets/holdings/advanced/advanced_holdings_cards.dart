@@ -15,11 +15,13 @@ class AdvancedHoldingsCards extends StatelessWidget {
     required this.isDarkChrome,
     super.key,
     this.onRowTap,
+    this.showCostColumns = true,
   });
 
   final List<AdvancedHoldingRow> holdings;
   final bool isDarkChrome;
   final ValueChanged<AdvancedHoldingRow>? onRowTap;
+  final bool showCostColumns;
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +53,7 @@ class AdvancedHoldingsCards extends StatelessWidget {
                       index: i,
                       isDarkChrome: isDarkChrome,
                       onRowTap: onRowTap,
+                      showCostColumns: showCostColumns,
                     ),
                   ),
               ],
@@ -68,12 +71,14 @@ class _Card extends StatelessWidget {
     required this.index,
     required this.isDarkChrome,
     this.onRowTap,
+    this.showCostColumns = true,
   });
 
   final AdvancedHoldingRow holding;
   final int index;
   final bool isDarkChrome;
   final ValueChanged<AdvancedHoldingRow>? onRowTap;
+  final bool showCostColumns;
 
   @override
   Widget build(BuildContext context) {
@@ -206,28 +211,30 @@ class _Card extends StatelessWidget {
                         color: titleColor,
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.sm,
-                        vertical: AppSpacing.xs,
-                      ),
-                      decoration: BoxDecoration(
-                        color: pnlColor.withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(AppRadii.xs),
-                        border: Border.all(
-                          color: pnlColor.withValues(alpha: 0.35),
+                    if (showCostColumns) ...[
+                      const SizedBox(width: AppSpacing.sm),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm,
+                          vertical: AppSpacing.xs,
+                        ),
+                        decoration: BoxDecoration(
+                          color: pnlColor.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(AppRadii.xs),
+                          border: Border.all(
+                            color: pnlColor.withValues(alpha: 0.35),
+                          ),
+                        ),
+                        child: Text(
+                          holding.displayProfitLossPercentage,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: AppTypeScale.sm,
+                            color: pnlColor,
+                          ),
                         ),
                       ),
-                      child: Text(
-                        holding.displayProfitLossPercentage,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: AppTypeScale.sm,
-                          color: pnlColor,
-                        ),
-                      ),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -239,15 +246,17 @@ class _Card extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    Expanded(
-                      child: _quickMetric(
-                        context,
-                        'Avg',
-                        holding.displayAvgPrice,
-                        titleColor,
+                    if (showCostColumns) ...[
+                      Expanded(
+                        child: _quickMetric(
+                          context,
+                          'Avg',
+                          holding.displayAvgPrice,
+                          titleColor,
+                        ),
                       ),
-                    ),
-                    _metricDivider(theme.divider),
+                      _metricDivider(theme.divider),
+                    ],
                     Expanded(
                       child: _quickMetric(
                         context,
@@ -265,15 +274,17 @@ class _Card extends StatelessWidget {
                         titleColor,
                       ),
                     ),
-                    _metricDivider(theme.divider),
-                    Expanded(
-                      child: _quickMetric(
-                        context,
-                        'P&L',
-                        holding.displayProfitLoss,
-                        pnlColor,
+                    if (showCostColumns) ...[
+                      _metricDivider(theme.divider),
+                      Expanded(
+                        child: _quickMetric(
+                          context,
+                          'P&L',
+                          holding.displayProfitLoss,
+                          pnlColor,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),

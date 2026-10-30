@@ -55,12 +55,12 @@ class PortfolioHeatmapUiConfig {
   );
 
   /// Space so the treemap sits above the floating global bottom nav.
-  static double mobileBottomInset(
-    BuildContext context, {
-    double navFactor = 1,
-  }) {
-    final reserve = PlatformConstants.globalBottomNavReserve(context);
-    return 8.0 + reserve * navFactor.clamp(0.0, 1.0);
+  ///
+  /// Always reserves the full nav height on compact — tying inset to
+  /// [GlobalBottomNavVisibility.factor] collapsed padding when the nav hid on
+  /// scroll, so sector tiles painted under the bar when it returned.
+  static double mobileBottomInset(BuildContext context) {
+    return 8.0 + PlatformConstants.globalBottomNavReserve(context);
   }
 
   /// Web configuration — tight padding so the treemap uses the page width/height.
@@ -109,6 +109,9 @@ class _PortfolioHeatmapWidgetState
   int _heatmapLoadGeneration = 0;
   /// Full nested tiles before compact budget — used for sector drill-down.
   List<HeatmapTileData> _fullOverviewTiles = const [];
+
+  /// Height of the pinned Sector / Market Cap / Layout row on mobile.
+  static const double _mobilePinnedFiltersH = 52;
 
   late final ValueChanged<HeatmapTileData?> _onTileHover;
   late final ValueChanged<HeatmapTileData> _onTileSelect;
@@ -270,7 +273,8 @@ class _PortfolioHeatmapWidgetState
     });
     ref.watch(appTimeFrameProvider);
 
-    // Compact + wide: fill the tab viewport (no double-height scroll slab).
+    // Mobile: scroll KPIs away; pinned filters + mosaic fill one tab.
+    // Web: fill the tab (unchanged).
     return LayoutBuilder(
       builder: (context, constraints) {
         final viewportH = constraints.maxHeight.isFinite
@@ -281,7 +285,7 @@ class _PortfolioHeatmapWidgetState
           height: viewportH,
           child: Padding(
             padding: widget.config.padding,
-            child: _buildHeatmapContent(),
+            child: _buildHeatmapContent(mobileViewportH: viewportH),
           ),
         );
       },
@@ -290,7 +294,7 @@ class _PortfolioHeatmapWidgetState
 
   /// Main heatmap content with state handling using dual cubit approach.
   /// Live summary ticks update KPI strip via PortfolioCubit; do not full-reload tiles.
-  Widget _buildHeatmapContent() =>
+  Widget _buildHeatmapContent({required double mobileViewportH}) =>
       BlocBuilder<PortfolioHeatmapCubit, PortfolioHeatmapState>(
         builder: (context, state) {
           CommonLogger.debug(
@@ -298,12 +302,15 @@ class _PortfolioHeatmapWidgetState
             tag: '${widget.config.logTag}.State',
           );
 
-          return _buildStateWidget(state);
+          return _buildStateWidget(state, mobileViewportH: mobileViewportH);
         },
       );
 
   /// Routes to appropriate widget based on current state
-  Widget _buildStateWidget(PortfolioHeatmapState state) {
+  Widget _buildStateWidget(
+    PortfolioHeatmapState state, {
+    required double mobileViewportH,
+  }) {
     if (state is PortfolioHeatmapLoading) {
       return _buildLoadingWidget(state);
     }
@@ -313,7 +320,7 @@ class _PortfolioHeatmapWidgetState
     }
 
     if (state is PortfolioHeatmapLoaded) {
-      return _buildLoadedWidget(state);
+      return _buildLoadedWidget(state, mobileViewportH: mobileViewportH);
     }
 
     if (state is PortfolioHeatmapEmpty) {
@@ -373,7 +380,10 @@ class _PortfolioHeatmapWidgetState
   }
 
   /// Builds loaded state UI with heatmap
-  Widget _buildLoadedWidget(PortfolioHeatmapLoaded state) {
+  Widget _buildLoadedWidget(
+    PortfolioHeatmapLoaded state, {
+    required double mobileViewportH,
+  }) {
     final selectedTimeFrame = ref.watch(appTimeFrameProvider);
     CommonLogger.info(
       'Showing heatmap: ${state.heatmapData.tiles.length} tiles',
@@ -402,11 +412,13 @@ class _PortfolioHeatmapWidgetState
         layoutType: _selectedLayout,
         showLayoutSelector: widget.config.compactMode ? true : null,
         nestedSectors: useNested,
-        // Compact: solid fills (cheap paint). Wide web: glass / liquid tiles.
-        solidFills: widget.config.compactMode,
+        // Nested overview always uses solid fills — glass/blur per leaf freezes
+        // Flutter Web on large books. Drill-down / flat layouts can stay richer.
+        solidFills: widget.config.compactMode || useNested,
       ),
       interactions: baseInteractions.copyWith(
-        enableHoverEffects: !widget.config.compactMode,
+        // Hover on every nested leaf is expensive; keep for flat/drill only.
+        enableHoverEffects: !widget.config.compactMode && !useNested,
       ),
       selectors: baseSelectors.copyWith(
         selectorLayout:
@@ -418,7 +430,8 @@ class _PortfolioHeatmapWidgetState
       ),
     );
 
-    // Drill-down: flat children. Wide nested: full bands. Compact nested: budget.
+    // Drill-down: flat children (full sector). Nested overview: always budget —
+    // uncapped web books paint hundreds of leaves and lock the page.
     var workingTiles = convertedHeatmapData.tiles
         .map((t) => t is HeatmapTileData ? t : HeatmapTileData.fromEntity(t))
         .toList();
@@ -428,9 +441,13 @@ class _PortfolioHeatmapWidgetState
       workingTiles = _drillDownTile!.children!
           .map((t) => t is HeatmapTileData ? t : HeatmapTileData.fromEntity(t))
           .toList();
-    } else if (useNested && widget.config.compactMode) {
-      workingTiles =
-          SectorHeatmapConverter.applyCompactTreemapBudget(workingTiles);
+    } else if (useNested) {
+      workingTiles = SectorHeatmapConverter.applyCompactTreemapBudget(
+        workingTiles,
+        maxStocksPerSector: widget.config.compactMode
+            ? SectorHeatmapConverter.compactMaxStocksPerSector
+            : SectorHeatmapConverter.webMaxStocksPerSector,
+      );
     }
 
     workingTiles = workingTiles.map((tile) {
@@ -545,17 +562,51 @@ class _PortfolioHeatmapWidgetState
           ),
         );
 
-    // Compact: KPIs + Expanded mosaic (fills remaining viewport once).
+    // Mobile only: scroll past KPIs → filters pin → mosaic fills the rest of
+    // the tab (exactly one screen — not a second full-viewport stack).
+    // Taps inside filters/mosaic must not reveal the floating bottom nav.
     if (widget.config.compactMode) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildSummaryCardsRow(),
-          const SizedBox(height: 8),
-          Expanded(
-            child: _padAboveBottomNav(
-              context,
-              child: heatmapBody(showSelectors: true),
+      final scheme = Theme.of(context).colorScheme;
+      // Pinned filters + mosaic == one tab. Using full viewportH here used to
+      // stack a second screen under the filters after KPIs scrolled away.
+      final mapH =
+          (mobileViewportH - _mobilePinnedFiltersH).clamp(240.0, 4000.0);
+      return CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildSummaryCardsRow(),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _PinnedHeatmapFiltersDelegate(
+              height: _mobilePinnedFiltersH,
+              background: scheme.surface,
+              child: Listener(
+                behavior: HitTestBehavior.opaque,
+                onPointerDown: (_) => _suppressBottomNavOnHeatmapTap(),
+                child: _buildMobilePinnedFilters(context),
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: mapH,
+              width: double.infinity,
+              child: Listener(
+                behavior: HitTestBehavior.opaque,
+                onPointerDown: (_) => _suppressBottomNavOnHeatmapTap(),
+                child: _padAboveBottomNav(
+                  context,
+                  child: heatmapBody(showSelectors: false),
+                ),
+              ),
             ),
           ),
         ],
@@ -994,6 +1045,67 @@ class _PortfolioHeatmapWidgetState
     );
   }
 
+  /// Mobile pinned Sector / Market Cap / Layout row (full width).
+  Widget _buildMobilePinnedFilters(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(2, 6, 2, 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: CustomDropdown<SectorType>(
+              value: _selectedSector ?? SectorType.all,
+              items: SectorType.values
+                  .map((item) => item.toDropdownItem(
+                        text: item.displayName,
+                        icon: Icons.category_outlined,
+                      ))
+                  .toList(),
+              onChanged: (val) {
+                if (val != null) _onFiltersChanged(sector: val);
+              },
+              isExpanded: true,
+              primaryColor: ModuleColors.portfolio,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: CustomDropdown<MarketCapType>(
+              value: _selectedMarketCap ?? MarketCapType.all,
+              items: MarketCapType.values
+                  .map((item) => item.toDropdownItem(
+                        text: item.displayName,
+                        icon: Icons.pie_chart_outline,
+                      ))
+                  .toList(),
+              onChanged: (val) {
+                if (val != null) _onFiltersChanged(marketCap: val);
+              },
+              isExpanded: true,
+              primaryColor: ModuleColors.portfolio,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: CustomDropdown<HeatmapLayoutType>(
+              value: _selectedLayout,
+              items: HeatmapLayoutType.values
+                  .map((item) => item.toDropdownItem(
+                        text: item.displayName,
+                        icon: Icons.grid_view_outlined,
+                      ))
+                  .toList(),
+              onChanged: (val) {
+                if (val != null) _onFiltersChanged(layout: val);
+              },
+              isExpanded: true,
+              primaryColor: ModuleColors.portfolio,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 
 
   /// Builds empty state UI
@@ -1063,20 +1175,18 @@ class _PortfolioHeatmapWidgetState
   }
 
   Widget _padAboveBottomNav(BuildContext context, {required Widget child}) {
-    return ValueListenableBuilder<double>(
-      valueListenable: GlobalBottomNavVisibility.factor,
-      builder: (context, navFactor, _) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: PortfolioHeatmapUiConfig.mobileBottomInset(
-              context,
-              navFactor: navFactor,
-            ),
-          ),
-          child: child,
-        );
-      },
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: PortfolioHeatmapUiConfig.mobileBottomInset(context),
+      ),
+      child: child,
     );
+  }
+
+  /// Heatmap taps must not flash the floating company bottom nav.
+  void _suppressBottomNavOnHeatmapTap() {
+    GlobalBottomNavVisibility.suppressChromeTapReveal = true;
+    GlobalBottomNavVisibility.requestHide();
   }
 
   /// Handles filter changes from heatmap selectors
@@ -1136,5 +1246,44 @@ class _PortfolioHeatmapWidgetState
       ),
     );
     */
+  }
+}
+
+/// Pins Sector / Market Cap / Layout filters while the mobile heatmap scrolls.
+class _PinnedHeatmapFiltersDelegate extends SliverPersistentHeaderDelegate {
+  _PinnedHeatmapFiltersDelegate({
+    required this.height,
+    required this.background,
+    required this.child,
+  });
+
+  final double height;
+  final Color background;
+  final Widget child;
+
+  @override
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Material(
+      color: background,
+      elevation: overlapsContent ? 2 : 0,
+      child: SizedBox(height: height, width: double.infinity, child: child),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _PinnedHeatmapFiltersDelegate oldDelegate) {
+    return height != oldDelegate.height ||
+        background != oldDelegate.background ||
+        child != oldDelegate.child;
   }
 }
