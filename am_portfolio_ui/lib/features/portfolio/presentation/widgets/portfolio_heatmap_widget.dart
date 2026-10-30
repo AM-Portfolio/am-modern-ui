@@ -109,6 +109,10 @@ class _PortfolioHeatmapWidgetState
   int _heatmapLoadGeneration = 0;
   /// Full nested tiles before compact budget — used for sector drill-down.
   List<HeatmapTileData> _fullOverviewTiles = const [];
+  /// Mobile tab viewport — heatmap slab height after KPIs scroll away.
+  double _mobileViewportH = 0;
+
+  static const double _mobilePinnedFiltersH = 52;
 
   late final ValueChanged<HeatmapTileData?> _onTileHover;
   late final ValueChanged<HeatmapTileData> _onTileSelect;
@@ -270,13 +274,16 @@ class _PortfolioHeatmapWidgetState
     });
     ref.watch(appTimeFrameProvider);
 
-    // One viewport: KPIs + mosaic share the tab. Do not stack a second
-    // full-screen mosaic under the KPIs (that caused the "stuck/stacked" page).
+    // Mobile: scroll KPIs away; pinned filters + screen-tall mosaic.
+    // Web: fill the tab (unchanged).
     return LayoutBuilder(
       builder: (context, constraints) {
         final viewportH = constraints.maxHeight.isFinite
             ? constraints.maxHeight
             : MediaQuery.sizeOf(context).height;
+        if (widget.config.compactMode) {
+          _mobileViewportH = viewportH;
+        }
         return SizedBox(
           width: constraints.maxWidth,
           height: viewportH,
@@ -553,18 +560,49 @@ class _PortfolioHeatmapWidgetState
           ),
         );
 
-    // Compact: KPIs take intrinsic height; mosaic fills the rest of the tab
-    // (above a stable bottom-nav reserve). No second full-screen scroll slab.
+    // Mobile only: scroll past KPIs → filters pin → heatmap = full screen.
+    // Taps inside the mosaic must not reveal the floating bottom nav.
     if (widget.config.compactMode) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildSummaryCardsRow(),
-          const SizedBox(height: 8),
-          Expanded(
-            child: _padAboveBottomNav(
-              context,
-              child: heatmapBody(showSelectors: true),
+      final viewportH = _mobileViewportH > 0
+          ? _mobileViewportH
+          : MediaQuery.sizeOf(context).height;
+      final scheme = Theme.of(context).colorScheme;
+      return CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildSummaryCardsRow(),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _PinnedHeatmapFiltersDelegate(
+              height: _mobilePinnedFiltersH,
+              background: scheme.surface,
+              child: Listener(
+                behavior: HitTestBehavior.opaque,
+                onPointerDown: (_) => _suppressBottomNavOnHeatmapTap(),
+                child: _buildMobilePinnedFilters(context),
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: viewportH,
+              width: double.infinity,
+              child: Listener(
+                behavior: HitTestBehavior.opaque,
+                onPointerDown: (_) => _suppressBottomNavOnHeatmapTap(),
+                child: _padAboveBottomNav(
+                  context,
+                  child: heatmapBody(showSelectors: false),
+                ),
+              ),
             ),
           ),
         ],
@@ -1003,6 +1041,67 @@ class _PortfolioHeatmapWidgetState
     );
   }
 
+  /// Mobile pinned Sector / Market Cap / Layout row (full width).
+  Widget _buildMobilePinnedFilters(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(2, 6, 2, 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: CustomDropdown<SectorType>(
+              value: _selectedSector ?? SectorType.all,
+              items: SectorType.values
+                  .map((item) => item.toDropdownItem(
+                        text: item.displayName,
+                        icon: Icons.category_outlined,
+                      ))
+                  .toList(),
+              onChanged: (val) {
+                if (val != null) _onFiltersChanged(sector: val);
+              },
+              isExpanded: true,
+              primaryColor: ModuleColors.portfolio,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: CustomDropdown<MarketCapType>(
+              value: _selectedMarketCap ?? MarketCapType.all,
+              items: MarketCapType.values
+                  .map((item) => item.toDropdownItem(
+                        text: item.displayName,
+                        icon: Icons.pie_chart_outline,
+                      ))
+                  .toList(),
+              onChanged: (val) {
+                if (val != null) _onFiltersChanged(marketCap: val);
+              },
+              isExpanded: true,
+              primaryColor: ModuleColors.portfolio,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: CustomDropdown<HeatmapLayoutType>(
+              value: _selectedLayout,
+              items: HeatmapLayoutType.values
+                  .map((item) => item.toDropdownItem(
+                        text: item.displayName,
+                        icon: Icons.grid_view_outlined,
+                      ))
+                  .toList(),
+              onChanged: (val) {
+                if (val != null) _onFiltersChanged(layout: val);
+              },
+              isExpanded: true,
+              primaryColor: ModuleColors.portfolio,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 
 
   /// Builds empty state UI
@@ -1080,6 +1179,12 @@ class _PortfolioHeatmapWidgetState
     );
   }
 
+  /// Heatmap taps must not flash the floating company bottom nav.
+  void _suppressBottomNavOnHeatmapTap() {
+    GlobalBottomNavVisibility.suppressChromeTapReveal = true;
+    GlobalBottomNavVisibility.requestHide();
+  }
+
   /// Handles filter changes from heatmap selectors
   void _onFiltersChanged({
     TimeFrame? timeFrame,
@@ -1137,5 +1242,44 @@ class _PortfolioHeatmapWidgetState
       ),
     );
     */
+  }
+}
+
+/// Pins Sector / Market Cap / Layout filters while the mobile heatmap scrolls.
+class _PinnedHeatmapFiltersDelegate extends SliverPersistentHeaderDelegate {
+  _PinnedHeatmapFiltersDelegate({
+    required this.height,
+    required this.background,
+    required this.child,
+  });
+
+  final double height;
+  final Color background;
+  final Widget child;
+
+  @override
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Material(
+      color: background,
+      elevation: overlapsContent ? 2 : 0,
+      child: SizedBox(height: height, width: double.infinity, child: child),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _PinnedHeatmapFiltersDelegate oldDelegate) {
+    return height != oldDelegate.height ||
+        background != oldDelegate.background ||
+        child != oldDelegate.child;
   }
 }
