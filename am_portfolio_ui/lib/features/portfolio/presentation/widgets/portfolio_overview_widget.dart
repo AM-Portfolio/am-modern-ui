@@ -379,6 +379,7 @@ class _PortfolioOverviewWidgetState
                                     summary: loaded.summary,
                                     holdings: loaded.holdings,
                                     isPhone: isPhone,
+                                    isHoldingsLoading: loaded.isHoldingsLoading,
                                     compact: isPhone || isTablet,
                                     glowBorder: !isPhone,
                                     animate: !isPhone,

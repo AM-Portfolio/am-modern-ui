@@ -147,6 +147,7 @@ extension _AdvancedHoldingsHeaderBuilder on _AdvancedHoldingsTemplateState {
       );
 
   /// Grouped `[All | Profit | Loss]` — same chrome as view toggle.
+  /// Profit/Loss omitted when [showCostColumns] is false (mail zero-cost books).
   Widget _buildStatusPills() {
     return SizedBox(
       height: _controlHeight,
@@ -167,30 +168,32 @@ extension _AdvancedHoldingsHeaderBuilder on _AdvancedHoldingsTemplateState {
                 ),
               ),
             ),
-            _buildSegmentButton(
-              selected: _filterStatus == 'profit',
-              accent: context.marketPositive,
-              onTap: () => _onFilterStatusChanged('profit'),
-              child: Text(
-                'Profit',
-                style: _segmentLabelStyle(
-                  selected: _filterStatus == 'profit',
-                  accent: context.marketPositive,
+            if (widget.showCostColumns) ...[
+              _buildSegmentButton(
+                selected: _filterStatus == 'profit',
+                accent: context.marketPositive,
+                onTap: () => _onFilterStatusChanged('profit'),
+                child: Text(
+                  'Profit',
+                  style: _segmentLabelStyle(
+                    selected: _filterStatus == 'profit',
+                    accent: context.marketPositive,
+                  ),
                 ),
               ),
-            ),
-            _buildSegmentButton(
-              selected: _filterStatus == 'loss',
-              accent: context.marketNegative,
-              onTap: () => _onFilterStatusChanged('loss'),
-              child: Text(
-                'Loss',
-                style: _segmentLabelStyle(
-                  selected: _filterStatus == 'loss',
-                  accent: context.marketNegative,
+              _buildSegmentButton(
+                selected: _filterStatus == 'loss',
+                accent: context.marketNegative,
+                onTap: () => _onFilterStatusChanged('loss'),
+                child: Text(
+                  'Loss',
+                  style: _segmentLabelStyle(
+                    selected: _filterStatus == 'loss',
+                    accent: context.marketNegative,
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ),

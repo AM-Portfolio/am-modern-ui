@@ -742,6 +742,37 @@ void main() {
       expect(kids.last.children, isNull);
       expect(kids.last.metadata?['mergedStockTail'], isTrue);
       expect(kids.last.metadata?['stockCount'], 5);
+
+      final fatSector = [
+        HeatmapTileData(
+          id: 'fin2',
+          name: 'Financial Services',
+          displayName: 'Finance',
+          weightage: 50,
+          performance: 1.0,
+          value: 50000,
+          children: List.generate(
+            28,
+            (i) => HeatmapTileData(
+              id: 'w$i',
+              name: 'WEB$i',
+              displayName: 'WEB$i',
+              weightage: 28.0 - i,
+              performance: 0.1,
+              value: 1000,
+              metadata: const {'type': 'stock'},
+            ),
+          ),
+        ),
+      ];
+      final webBudgeted = SectorHeatmapConverter.applyCompactTreemapBudget(
+        fatSector,
+        maxStocksPerSector: SectorHeatmapConverter.webMaxStocksPerSector,
+      );
+      final webKids = webBudgeted.first.children!;
+      expect(webKids.length, 21); // top 20 + Other leaf
+      expect(webKids.last.name, SectorHeatmapConverter.otherStocksName);
+      expect(webKids.last.metadata?['stockCount'], 8);
     });
 
     test('Top/Weakest ignore flat sectors when non-flat exist', () {

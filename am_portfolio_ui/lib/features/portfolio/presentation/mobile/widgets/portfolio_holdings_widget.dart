@@ -82,10 +82,13 @@ class _PortfolioHoldingsWidgetState
                 tag: 'PortfolioHoldingsWidget',
               );
 
-              final allHoldings = portfolioHoldings.holdings
+              final rawHoldings = portfolioHoldings.holdings
                   .cast<PortfolioHolding>()
                   .toList();
-              final filtered = _filterHoldings(allHoldings);
+              final allHoldings = visibleHoldingsForCostPolicy(rawHoldings);
+              final showCost = showHoldingsCostColumns(rawHoldings);
+              final filtered =
+                  _filterHoldings(allHoldings, showCostColumns: showCost);
               final sortedHoldings = _sortHoldings(filtered);
 
               return Column(
@@ -357,10 +360,15 @@ class _PortfolioHoldingsWidgetState
     );
   }
 
-  List<PortfolioHolding> _filterHoldings(List<PortfolioHolding> holdings) {
+  List<PortfolioHolding> _filterHoldings(
+    List<PortfolioHolding> holdings, {
+    required bool showCostColumns,
+  }) {
     return holdings.where((h) {
-      if (_statusFilter == 'profit' && !h.isProfitable) return false;
-      if (_statusFilter == 'loss' && h.isProfitable) return false;
+      if (showCostColumns) {
+        if (_statusFilter == 'profit' && !h.isProfitable) return false;
+        if (_statusFilter == 'loss' && h.isProfitable) return false;
+      }
       if (_selectedSector != 'All' && h.sector.trim() != _selectedSector) {
         return false;
       }
