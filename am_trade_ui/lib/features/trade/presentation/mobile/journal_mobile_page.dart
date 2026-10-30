@@ -49,6 +49,21 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
   Timer? _fabHideTimer;
   late _JournalMobileTab _tab;
 
+  bool get _weeklyReviewEnabled =>
+      ref.watch(journalWeeklyReviewEnabledProvider);
+
+  List<_JournalMobileTab> get _visibleTabs => [
+        _JournalMobileTab.entries,
+        _JournalMobileTab.playbooks,
+        _JournalMobileTab.insights,
+        if (_weeklyReviewEnabled) _JournalMobileTab.weekly,
+      ];
+
+  _JournalMobileTab get _activeTab =>
+      (_tab == _JournalMobileTab.weekly && !_weeklyReviewEnabled)
+          ? _JournalMobileTab.entries
+          : _tab;
+
   @override
   void initState() {
     super.initState();
@@ -197,7 +212,7 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
       ],
     );
 
-    final fab = _tab == _JournalMobileTab.entries
+    final fab = _activeTab == _JournalMobileTab.entries
         ? AnimatedScale(
             duration: const Duration(milliseconds: 400),
             scale: _showFab ? 1.0 : 0.0,
@@ -243,11 +258,11 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
         ),
         child: Row(
           children: [
-            for (final tab in _JournalMobileTab.values) ...[
+            for (final tab in _visibleTabs) ...[
               if (tab.index > 0) const SizedBox(width: AppSpacing.sm),
               ChoiceChip(
                 label: Text(_tabLabel(tab)),
-                selected: _tab == tab,
+                selected: _activeTab == tab,
                 onSelected: (_) {
                   setState(() => _tab = tab);
                   if (tab == _JournalMobileTab.entries) {
@@ -265,7 +280,7 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
 
   Widget _buildTabBody(JournalCubit cubit) {
     return IndexedStack(
-      index: _tab.index,
+      index: _activeTab.index,
       children: [
         _buildEntries(cubit),
         TemplateBrowserPage(

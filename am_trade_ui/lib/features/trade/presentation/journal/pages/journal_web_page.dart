@@ -60,6 +60,22 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
   List<JournalEntry> _entries = const [];
   late _JournalTab _tab;
 
+  bool get _weeklyReviewEnabled =>
+      ref.watch(journalWeeklyReviewEnabledProvider);
+
+  List<_JournalTab> get _visibleTabs => [
+        _JournalTab.entries,
+        _JournalTab.playbooks,
+        _JournalTab.insights,
+        if (_weeklyReviewEnabled) _JournalTab.weekly,
+      ];
+
+  /// Weekly stays in the enum for IndexedStack; fall back when flag is off.
+  _JournalTab get _activeTab =>
+      (_tab == _JournalTab.weekly && !_weeklyReviewEnabled)
+          ? _JournalTab.entries
+          : _tab;
+
   String _selectedFolder = JournalFolderFilter.allNotes;
   String? _selectedTagId;
   String? _selectedOutcome;
@@ -378,12 +394,13 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
                           error: (message) => message,
                           orElse: () => null,
                         );
+                        final activeTab = _activeTab;
                         final isInitialLoading = state.maybeWhen(
                               loading: () => true,
                               orElse: () => false,
                             ) &&
                             loadedEntries.isEmpty &&
-                            _tab == _JournalTab.entries;
+                            activeTab == _JournalTab.entries;
 
                         if (isInitialLoading) {
                           return Center(
@@ -395,7 +412,7 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
 
                         if (loadError != null &&
                             loadedEntries.isEmpty &&
-                            _tab == _JournalTab.entries) {
+                            activeTab == _JournalTab.entries) {
                           return Center(
                             child: Padding(
                               padding: const EdgeInsets.all(AppSpacing.lg),
@@ -435,7 +452,7 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
 
                         // Filters live in the entries rail (not a full-width strip).
                         return IndexedStack(
-                          index: _tab.index,
+                          index: activeTab.index,
                           children: [
                             _buildEntries(
                               journalCubit,
@@ -530,11 +547,11 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            for (final tab in _JournalTab.values) ...[
+            for (final tab in _visibleTabs) ...[
               if (tab.index > 0) const SizedBox(width: AppSpacing.md),
               _JournalHeaderTab(
                 label: _tabLabel(tab),
-                selected: _tab == tab,
+                selected: _activeTab == tab,
                 onTap: () {
                   setState(() => _tab = tab);
                   if (tab == _JournalTab.entries) {
@@ -547,7 +564,7 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
               ),
             ],
             const Spacer(),
-            if (_tab == _JournalTab.playbooks) ...[
+            if (_activeTab == _JournalTab.playbooks) ...[
               Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                 child: Row(
@@ -582,7 +599,7 @@ class _JournalWebPageState extends ConsumerState<JournalWebPage> {
                 ),
               ),
             ],
-            if (_tab == _JournalTab.entries) ...[
+            if (_activeTab == _JournalTab.entries) ...[
               Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                 child: Row(

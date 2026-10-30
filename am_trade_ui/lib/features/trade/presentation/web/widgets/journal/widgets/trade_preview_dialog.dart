@@ -5,7 +5,9 @@ import 'package:intl/intl.dart';
 import '../../../../models/trade_holding_view_model.dart';
 import 'trade_overview_selector.dart';
 
-/// Dialog to preview and select trades for a given date/period
+/// Dialog to preview and select trades for a given date/period.
+///
+/// Theme-only: [context.colors], [AppRadii], [AppSpacing], Trade accent.
 class TradePreviewDialog extends StatefulWidget {
   const TradePreviewDialog({
     required this.date,
@@ -27,6 +29,9 @@ class TradePreviewDialog extends StatefulWidget {
 class _TradePreviewDialogState extends State<TradePreviewDialog> {
   late Set<String> _selectedIds;
 
+  Color _accent(BuildContext context) =>
+      ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade;
+
   @override
   void initState() {
     super.initState();
@@ -35,98 +40,128 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final colors = context.colors;
-    final accent = ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade;
-    final periodText = _getPeriodText();
+    final accent = _accent(context);
+    final periodText = _getPeriodText(context);
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: colors.cardSurface,
+      shape: RoundedRectangleBorder(borderRadius: AppRadii.dialog),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 800, maxHeight: 700),
         child: Column(
           children: [
-            // Header
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.12),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                color: accent.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(AppRadii.xl),
+                ),
               ),
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(AppSpacing.sm),
                     decoration: BoxDecoration(
-                      color: accent.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      color: accent.withValues(alpha: 0.12),
+                      borderRadius: AppRadii.button,
                     ),
                     child: Icon(Icons.analytics, color: accent, size: 24),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Trades for $periodText',
-                          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                          style: context.text.sectionTitle(compact: true).copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: colors.textPrimary,
+                              ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: AppSpacing.xxs),
                         Text(
-                          '${widget.trades.length} trade${widget.trades.length != 1 ? 's' : ''} • ${_selectedIds.length} selected',
-                          style: theme.textTheme.bodySmall?.copyWith(color: colors.textSecondary),
+                          '${widget.trades.length} trade'
+                          '${widget.trades.length != 1 ? 's' : ''} · '
+                          '${_selectedIds.length} selected',
+                          style: context.text.caption(compact: true).copyWith(
+                                color: colors.textSecondary,
+                              ),
                         ),
                       ],
                     ),
                   ),
-                  IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.of(context).pop()),
+                  IconButton(
+                    icon: Icon(Icons.close, color: colors.textSecondary),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
                 ],
               ),
             ),
-
-            // Trade List
             Expanded(
               child: widget.trades.isEmpty
-                  ? _buildEmptyState(theme, colors)
+                  ? _buildEmptyState(context)
                   : ListView.separated(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(AppSpacing.md),
                       itemCount: widget.trades.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(height: AppSpacing.sm),
                       itemBuilder: (context, index) {
                         final trade = widget.trades[index];
-                        final isSelected = _selectedIds.contains(trade.tradeId);
-                        return _buildTradeCard(theme, colors, accent, trade, isSelected);
+                        final isSelected =
+                            _selectedIds.contains(trade.tradeId);
+                        return _buildTradeCard(
+                          context,
+                          trade,
+                          isSelected,
+                          accent,
+                        );
                       },
                     ),
             ),
-
-            // Actions
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: colors.divider)),
+                border: Border(
+                  top: BorderSide(
+                    color: colors.border.withValues(alpha: 0.35),
+                  ),
+                ),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  TextButton.icon(
+                  AppButton(
+                    text: 'Clear All',
+                    type: AppButtonType.text,
+                    icon: Icons.clear_all,
                     onPressed: _selectedIds.isEmpty
                         ? null
-                        : () {
-                            setState(() => _selectedIds.clear());
-                          },
-                    icon: const Icon(Icons.clear_all, size: 18),
-                    label: const Text('Clear All'),
+                        : () => setState(() => _selectedIds.clear()),
+                    height: 36,
+                    textColor: colors.textSecondary,
                   ),
                   Row(
                     children: [
-                      OutlinedButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
-                      const SizedBox(width: 12),
-                      FilledButton.icon(
-                        onPressed: () => Navigator.of(context).pop(_selectedIds.toList()),
-                        icon: const Icon(Icons.check, size: 18),
-                        label: Text('Link ${_selectedIds.length} Trade${_selectedIds.length != 1 ? 's' : ''}'),
+                      AppButton(
+                        text: 'Cancel',
+                        type: AppButtonType.secondary,
+                        isOutlined: true,
+                        onPressed: () => Navigator.of(context).pop(),
+                        height: 36,
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      AppButton(
+                        text:
+                            'Link ${_selectedIds.length} Trade${_selectedIds.length != 1 ? 's' : ''}',
+                        type: AppButtonType.primary,
+                        icon: Icons.check,
+                        backgroundColor: accent,
+                        onPressed: () =>
+                            Navigator.of(context).pop(_selectedIds.toList()),
+                        height: 36,
                       ),
                     ],
                   ),
@@ -139,54 +174,69 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
     );
   }
 
-  String _getPeriodText() {
+  String _getPeriodText(BuildContext context) {
+    final locale = Localizations.localeOf(context).toString();
     switch (widget.periodType) {
       case TradePeriodType.daily:
-        return DateFormat('MMM dd, yyyy').format(widget.date);
+        return DateFormat('MMM dd, yyyy', locale).format(widget.date);
       case TradePeriodType.weekly:
-        final weekStart = widget.date.subtract(Duration(days: widget.date.weekday - 1));
+        final weekStart = widget.date
+            .subtract(Duration(days: widget.date.weekday - 1));
         final weekEnd = weekStart.add(const Duration(days: 6));
-        return 'Week of ${DateFormat('MMM dd').format(weekStart)} - ${DateFormat('MMM dd, yyyy').format(weekEnd)}';
+        return 'Week of ${DateFormat('MMM dd', locale).format(weekStart)} - '
+            '${DateFormat('MMM dd, yyyy', locale).format(weekEnd)}';
       case TradePeriodType.monthly:
-        return DateFormat('MMMM yyyy').format(widget.date);
+        return DateFormat('MMMM yyyy', locale).format(widget.date);
       case TradePeriodType.yearly:
-        return 'Year ${DateFormat('yyyy').format(widget.date)}';
+        return 'Year ${DateFormat('yyyy', locale).format(widget.date)}';
     }
   }
 
-  Widget _buildEmptyState(ThemeData theme, AppColorsTheme colors) => Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(Icons.inbox_outlined, size: 64, color: colors.textSecondary.withValues(alpha: 0.5)),
-        const SizedBox(height: 16),
-        Text(
-          'No trades found for this period',
-          style: theme.textTheme.titleMedium?.copyWith(color: colors.textSecondary),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Try selecting a different date or period',
-          style: theme.textTheme.bodySmall?.copyWith(color: colors.textSecondary.withValues(alpha: 0.7)),
-        ),
-      ],
-    ),
-  );
+  Widget _buildEmptyState(BuildContext context) {
+    final colors = context.colors;
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.inbox_outlined,
+            size: 64,
+            color: colors.textSecondary.withValues(alpha: 0.5),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            'No trades found for this period',
+            style: context.text.sectionTitle(compact: true).copyWith(
+                  color: colors.textSecondary,
+                ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Try selecting a different date or period',
+            style: context.text.caption(compact: true).copyWith(
+                  color: colors.textSecondary.withValues(alpha: 0.8),
+                ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildTradeCard(
-    ThemeData theme,
-    AppColorsTheme colors,
-    Color accent,
+    BuildContext context,
     TradeHoldingViewModel trade,
     bool isSelected,
+    Color accent,
   ) {
+    final colors = context.colors;
     final profitLoss = trade.profitLoss ?? 0.0;
     final profitLossPercentage = trade.profitLossPercentage ?? 0.0;
     final isProfitable = profitLoss >= 0;
     final statusColor = _getStatusColor(context, trade.status);
+    final locale = Localizations.localeOf(context).toString();
 
     return Material(
-      color: Colors.transparent,
+      color: colors.cardSurface.withValues(alpha: 0),
       child: InkWell(
         onTap: () {
           setState(() {
@@ -197,22 +247,26 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
             }
           });
         },
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadii.input,
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
             border: Border.all(
-              color: isSelected ? accent : colors.border,
+              color: isSelected
+                  ? accent
+                  : colors.border.withValues(alpha: 0.45),
               width: isSelected ? 2 : 1,
             ),
-            borderRadius: BorderRadius.circular(12),
-            color: isSelected ? accent.withValues(alpha: 0.08) : colors.surface,
+            borderRadius: AppRadii.input,
+            color: isSelected
+                ? accent.withValues(alpha: 0.08)
+                : colors.surface.withValues(alpha: 0.55),
           ),
           child: Row(
             children: [
-              // Checkbox
               Checkbox(
                 value: isSelected,
+                activeColor: accent,
                 onChanged: (value) {
                   setState(() {
                     if (value == true) {
@@ -223,128 +277,153 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
                   });
                 },
               ),
-              const SizedBox(width: 12),
-
-              // Trade Info
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        // Symbol
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.sm,
+                            vertical: AppSpacing.xxs,
+                          ),
                           decoration: BoxDecoration(
-                            color: colors.cardSurface,
-                            borderRadius: BorderRadius.circular(6),
+                            color: accent.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(AppRadii.xs),
                           ),
                           child: Text(
                             trade.symbol,
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: colors.textPrimary,
-                            ),
+                            style: context.text.label(compact: true).copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: accent,
+                                ),
                           ),
                         ),
-                        const SizedBox(width: 8),
-
-                        // Status
+                        const SizedBox(width: AppSpacing.sm),
                         if (trade.status != null)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.sm - AppSpacing.xxs,
+                              vertical: AppSpacing.xxs,
+                            ),
                             decoration: BoxDecoration(
                               color: statusColor.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+                              borderRadius:
+                                  BorderRadius.circular(AppRadii.xs),
+                              border: Border.all(
+                                color: statusColor.withValues(alpha: 0.3),
+                              ),
                             ),
                             child: Text(
                               trade.status!.replaceAll('_', ' '),
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: statusColor,
-                                fontWeight: FontWeight.w600,
-                                fontSize: AppTypeScale.xs,
-                              ),
+                              style:
+                                  context.text.caption(compact: true).copyWith(
+                                        color: statusColor,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: AppTypeScale.xs,
+                                      ),
                             ),
                           ),
-
                         const Spacer(),
-
-                        // Position Type
                         if (trade.tradePositionType != null)
-                          Chip(
-                            label: Text(
-                              trade.tradePositionType!,
-                              style: const TextStyle(fontSize: AppTypeScale.xs, fontWeight: FontWeight.w600),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.sm,
+                              vertical: AppSpacing.xxs,
                             ),
-                            padding: EdgeInsets.zero,
-                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            visualDensity: VisualDensity.compact,
-                            backgroundColor: trade.tradePositionType == 'LONG'
-                                ? context.statusSuccess.withValues(alpha: 0.15)
-                                : context.statusError.withValues(alpha: 0.15),
-                            side: BorderSide(
+                            decoration: BoxDecoration(
                               color: trade.tradePositionType == 'LONG'
-                                  ? context.statusSuccess.withValues(alpha: 0.3)
-                                  : context.statusError.withValues(alpha: 0.3),
+                                  ? context.statusSuccess.withValues(alpha: 0.15)
+                                  : context.statusError.withValues(alpha: 0.15),
+                              borderRadius: AppRadii.button,
+                              border: Border.all(
+                                color: trade.tradePositionType == 'LONG'
+                                    ? context.statusSuccess
+                                        .withValues(alpha: 0.3)
+                                    : context.statusError
+                                        .withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Text(
+                              trade.tradePositionType!,
+                              style:
+                                  context.text.caption(compact: true).copyWith(
+                                        fontSize: AppTypeScale.xs,
+                                        fontWeight: FontWeight.w600,
+                                        color: trade.tradePositionType == 'LONG'
+                                            ? context.statusSuccess
+                                            : context.statusError,
+                                      ),
                             ),
                           ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-
-                    // Trade details
+                    const SizedBox(height: AppSpacing.sm),
                     Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
+                      spacing: AppSpacing.sm,
+                      runSpacing: AppSpacing.xs,
                       children: [
                         if (trade.entryTimestamp != null)
                           _buildDetailChip(
-                            theme,
-                            colors,
+                            context,
                             Icons.calendar_today,
-                            DateFormat('MMM dd, yyyy').format(trade.entryTimestamp!),
+                            DateFormat('MMM dd, yyyy', locale)
+                                .format(trade.entryTimestamp!),
                           ),
-                        _buildDetailChip(theme, colors, Icons.shopping_cart, 'Qty: ${trade.quantity ?? 0}'),
-                        _buildDetailChip(theme, colors, Icons.currency_rupee, trade.entryPrice?.toStringAsFixed(2) ?? '0.00'),
+                        _buildDetailChip(
+                          context,
+                          Icons.shopping_cart,
+                          'Qty: ${trade.quantity ?? 0}',
+                        ),
+                        _buildDetailChip(
+                          context,
+                          Icons.currency_rupee,
+                          trade.entryPrice?.toStringAsFixed(2) ?? '0.00',
+                        ),
                         if (trade.exitPrice != null)
-                          _buildDetailChip(theme, colors, Icons.exit_to_app, trade.exitPrice!.toStringAsFixed(2)),
+                          _buildDetailChip(
+                            context,
+                            Icons.exit_to_app,
+                            trade.exitPrice!.toStringAsFixed(2),
+                          ),
                       ],
                     ),
                   ],
                 ),
               ),
-
-              const SizedBox(width: 12),
-
-              // P&L
+              const SizedBox(width: AppSpacing.md),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm + AppSpacing.xxs,
+                  vertical: AppSpacing.sm,
+                ),
                 decoration: BoxDecoration(
                   color: isProfitable
                       ? context.statusSuccess.withValues(alpha: 0.1)
                       : context.statusError.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppRadii.button,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
                       '${isProfitable ? '+' : ''}${profitLoss.toStringAsFixed(2)}',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: isProfitable
-                            ? context.statusSuccess
-                            : context.statusError,
-                      ),
+                      style: context.text.label(compact: true).copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: isProfitable
+                                ? context.statusSuccess
+                                : context.statusError,
+                          ),
                     ),
                     Text(
                       '${isProfitable ? '+' : ''}${profitLossPercentage.toStringAsFixed(2)}%',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: isProfitable
-                            ? context.statusSuccess
-                            : context.statusError,
-                      ),
+                      style: context.text.caption(compact: true).copyWith(
+                            color: isProfitable
+                                ? context.statusSuccess
+                                : context.statusError,
+                          ),
                     ),
                   ],
                 ),
@@ -356,27 +435,36 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
     );
   }
 
-  Widget _buildDetailChip(ThemeData theme, AppColorsTheme colors, IconData icon, String label) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-    decoration: BoxDecoration(
-      color: colors.cardSurface.withValues(alpha: 0.5),
-      borderRadius: BorderRadius.circular(6),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 12, color: colors.textSecondary),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: theme.textTheme.labelSmall?.copyWith(fontSize: AppTypeScale.xs, color: colors.textSecondary),
-        ),
-      ],
-    ),
-  );
+  Widget _buildDetailChip(BuildContext context, IconData icon, String label) {
+    final colors = context.colors;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm - AppSpacing.xxs,
+        vertical: AppSpacing.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: colors.surface.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(AppRadii.xs),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: colors.textSecondary),
+          const SizedBox(width: AppSpacing.xxs),
+          Text(
+            label,
+            style: context.text.caption(compact: true).copyWith(
+                  fontSize: AppTypeScale.xs,
+                  color: colors.textSecondary,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Color _getStatusColor(BuildContext context, String? status) {
-    if (status == null) return context.textSecondary;
+    if (status == null) return context.colors.textSecondary;
 
     switch (status.toUpperCase()) {
       case 'WIN':
@@ -386,7 +474,7 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
       case 'BREAK_EVEN':
         return context.statusWarning;
       default:
-        return ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade;
+        return _accent(context);
     }
   }
 }
