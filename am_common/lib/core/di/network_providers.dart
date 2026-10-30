@@ -10,7 +10,9 @@ final appConfigProvider = FutureProvider<AppConfig>((ref) async {
 
 final apiClientProvider = FutureProvider<ApiClient>((ref) async {
   final config = await ref.watch(appConfigProvider.future);
-  return ApiClient(baseUrl: config.api.baseUrl);
+  // Shared client is used by portfolio list/holdings/summary — must be the
+  // portfolio gateway path, not analysis (`config.api.baseUrl`).
+  return ApiClient(baseUrl: config.api.portfolio.baseUrl);
 });
 
 final gmailApiConfigProvider = FutureProvider<GmailApiConfig>((ref) async {

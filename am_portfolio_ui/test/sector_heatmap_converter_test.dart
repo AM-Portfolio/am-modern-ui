@@ -467,6 +467,91 @@ void main() {
       expect(finance.value, closeTo(50000, 0.01));
     });
 
+    test('giant Unknown value mass falls back to named allocation sectors', () {
+      // Prod UI: Unknown ≈85% of book; Top/Weakest still show real sectors.
+      final heatmap = Heatmap(
+        sectors: [
+          _sector(
+            name: 'Unknown',
+            changePercent: 0.5,
+            totalValue: 753000,
+            stocks: [
+              _stock(
+                symbol: 'TITAN',
+                sector: 'Unknown',
+                changePercent: 2.2,
+                marketValue: 40000,
+              ),
+              _stock(
+                symbol: 'TCS',
+                sector: 'Unknown',
+                changePercent: -3.2,
+                marketValue: 120000,
+              ),
+              _stock(
+                symbol: 'HDFCBANK',
+                sector: 'Unknown',
+                changePercent: 1.1,
+                marketValue: 90000,
+              ),
+            ],
+          ),
+          _sector(
+            name: 'Consumer Discretionary',
+            changePercent: 2.58,
+            totalValue: 50000,
+            stocks: [
+              _stock(
+                symbol: 'TITAN',
+                sector: 'Consumer Discretionary',
+                changePercent: 2.58,
+                marketValue: 50000,
+              ),
+            ],
+          ),
+          _sector(
+            name: 'Information Technology',
+            changePercent: -3.26,
+            totalValue: 40000,
+          ),
+        ],
+      );
+      final allocation = SectorAllocation(
+        sectorWeights: [
+          SectorWeight(
+            sectorName: 'Consumer Discretionary',
+            weightPercentage: 35,
+            marketCap: 350000,
+            topStocks: const ['TITAN'],
+          ),
+          SectorWeight(
+            sectorName: 'Information Technology',
+            weightPercentage: 30,
+            marketCap: 300000,
+            topStocks: const ['TCS'],
+          ),
+          SectorWeight(
+            sectorName: 'Financial Services',
+            weightPercentage: 35,
+            marketCap: 350000,
+            topStocks: const ['HDFCBANK'],
+          ),
+        ],
+        industryWeights: const [],
+      );
+
+      final data = SectorHeatmapConverter.convertToHeatmapData(
+        heatmap: heatmap,
+        sectorAllocation: allocation,
+        showSubCards: false,
+      );
+      final names = data.tiles.map((t) => t.name).toSet();
+      expect(names.contains('Unknown'), isFalse);
+      expect(names.contains('Consumer Discretionary'), isTrue);
+      expect(names.contains('Information Technology'), isTrue);
+      expect(names.contains('Financial Services'), isTrue);
+    });
+
     test('prod-like zero-value heatmap sectors use allocation fallback', () {
       // Mirrors PROD: many sector names but only ~2 have totalValue > 0 (~5.7% mass).
       final heatmap = Heatmap(
@@ -629,6 +714,66 @@ void main() {
       final summary = SectorHeatmapConverter.resolveSectorSummary(tiles: tiles);
       expect(summary.topSector, 'Financial Services');
       expect(summary.worstSector, 'Energy');
+    });
+
+    test('keeps full Consumer Discretionary label and sector holdings meta', () {
+      final heatmap = Heatmap(
+        sectors: [
+          _sector(
+            name: 'Consumer Discretionary',
+            changePercent: 1.2,
+            totalValue: 250000,
+            stocks: [
+              Stock(
+                symbol: 'TITAN',
+                companyName: 'Titan',
+                lastPrice: 100,
+                changeAmount: 1,
+                changePercent: 1.2,
+                sector: 'Consumer Discretionary',
+                marketValue: 150000,
+                quantity: 10,
+              ),
+              Stock(
+                symbol: 'ASIANPAINT',
+                companyName: 'Asian Paints',
+                lastPrice: 100,
+                changeAmount: 0.5,
+                changePercent: 0.5,
+                sector: 'Consumer Discretionary',
+                marketValue: 100000,
+                quantity: 5,
+              ),
+            ],
+          ),
+          _sector(
+            name: 'Energy',
+            changePercent: -0.5,
+            totalValue: 50000,
+            stocks: [
+              _stock(
+                symbol: 'ONGC',
+                sector: 'Energy',
+                changePercent: -0.5,
+                marketValue: 50000,
+              ),
+            ],
+          ),
+        ],
+      );
+
+      final data = SectorHeatmapConverter.convertToHeatmapData(
+        heatmap: heatmap,
+        showSubCards: false,
+      );
+      final consumer = data.tiles
+          .firstWhere((t) => t.name == 'Consumer Discretionary');
+
+      expect(consumer.displayName, 'Consumer Discretionary');
+      expect(consumer.displayName.contains('...'), isFalse);
+      expect(consumer.value, closeTo(250000, 0.01));
+      expect(consumer.metadata?['holdingsCount'], 2);
+      expect(consumer.metadata?['totalQuantity'], closeTo(15, 0.01));
     });
   });
 }

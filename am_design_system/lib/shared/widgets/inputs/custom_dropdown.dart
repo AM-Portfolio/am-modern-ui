@@ -31,6 +31,7 @@ class CustomDropdown<T> extends StatefulWidget {
     this.menuMaxWidth,
     this.leading,
     this.trailingDivider = false,
+    this.selectedItemBuilder,
   });
 
   /// Current selected value
@@ -99,6 +100,10 @@ class CustomDropdown<T> extends StatefulWidget {
 
   /// Hairline before the chevron on the closed trigger.
   final bool trailingDivider;
+
+  /// Optional closed-trigger content. When set, replaces the selected item’s
+  /// [DropdownMenuItem.child] on the trigger only (menu rows unchanged).
+  final Widget Function(BuildContext context, T? value)? selectedItemBuilder;
 
   @override
   State<CustomDropdown<T>> createState() => _CustomDropdownState<T>();
@@ -290,7 +295,9 @@ class _CustomDropdownState<T> extends State<CustomDropdown<T>> {
     final effectivePrimaryColor = widget.primaryColor ?? theme.primaryColor;
 
     Widget? displayWidget;
-    if (widget.value != null) {
+    if (widget.selectedItemBuilder != null) {
+      displayWidget = widget.selectedItemBuilder!(context, widget.value);
+    } else if (widget.value != null) {
       final selectedItem = widget.items.cast<DropdownMenuItem<T>?>().firstWhere(
         (item) => item?.value == widget.value,
         orElse: () => null,

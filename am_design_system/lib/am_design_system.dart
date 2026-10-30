@@ -137,6 +137,8 @@ export 'shared/widgets/heatmap/configs/layout_config.dart';
 export 'shared/widgets/heatmap/configs/selector_config.dart';
 export 'shared/widgets/heatmap/configs/visual_config.dart';
 export 'shared/widgets/heatmap/loaders/heatmap_skeleton_loader.dart';
+export 'shared/widgets/heatmap/heatmap_interaction_scope.dart';
+export 'shared/widgets/heatmap/heatmap_tile_inspector.dart';
 export 'shared/widgets/heatmap/templates/mobile_heatmap_defaults.dart';
 export 'shared/widgets/heatmap/templates/web_heatmap_defaults.dart';
 

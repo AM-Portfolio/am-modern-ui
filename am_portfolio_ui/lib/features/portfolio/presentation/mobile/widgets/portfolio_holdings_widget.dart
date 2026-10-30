@@ -5,6 +5,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_news_ui/am_news_ui.dart';
 import '../../../internal/domain/entities/portfolio_holding.dart';
 import '../../../providers/portfolio_providers.dart';
+import 'portfolio_holdings_mobile_filters.dart';
 
 /// Portfolio holdings widget with comprehensive display controller at bottom
 class PortfolioHoldingsWidget extends ConsumerStatefulWidget {
@@ -32,6 +33,32 @@ class _PortfolioHoldingsWidgetState
   HoldingsSortBy _sortBy = HoldingsSortBy.symbol;
   bool _sortAscending = true;
   String? _focusedSymbol;
+  String _statusFilter = 'all'; // all | profit | loss (no mobile UI; stays all)
+  String _selectedSector = 'All';
+  String _selectedIndustry = 'All';
+
+  void _syncActiveFiltersFlag() {
+    final active = _selectedSector != 'All' || _selectedIndustry != 'All';
+    final current = ref.read(mobileHoldingsHasActiveFiltersProvider);
+    if (current != active) {
+      ref.read(mobileHoldingsHasActiveFiltersProvider.notifier).set(active);
+    }
+  }
+
+  @override
+  void activate() {
+    super.activate();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _syncActiveFiltersFlag();
+    });
+  }
+
+  @override
+  void deactivate() {
+    // Clear sticky accent when holdings leaves the tree / tab.
+    ref.read(mobileHoldingsHasActiveFiltersProvider.notifier).set(false);
+    super.deactivate();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,96 +82,169 @@ class _PortfolioHoldingsWidgetState
                 tag: 'PortfolioHoldingsWidget',
               );
 
-              // Sort holdings based on selected criteria
-              final sortedHoldings = _sortHoldings(portfolioHoldings.holdings);
+              final allHoldings = portfolioHoldings.holdings
+                  .cast<PortfolioHolding>()
+                  .toList();
+              final filtered = _filterHoldings(allHoldings);
+              final sortedHoldings = _sortHoldings(filtered);
 
-              return RefreshIndicator(
-                onRefresh: () async {
-                  // Invalidate the appropriate provider based on portfolioId
-                  if (widget.portfolioId != null) {
-                    ref.invalidate(
-                      portfolioHoldingsProvider(widget.portfolioId!),
-                    );
-                  } else {
-                    ref.invalidate(portfolioHoldingsProvider(''));
-                  }
-                },
-                child: ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                  itemCount: sortedHoldings.length +
-                      (widget.showNewsSection ? 1 : 0),
-                  itemBuilder: (context, index) {
-                    if (index >= sortedHoldings.length) {
-                      final focused = _focusedSymbol?.trim() ?? '';
-                      if (focused.isNotEmpty) {
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8, bottom: 8),
-                          child: SymbolNewsSection(
-                            symbol: focused,
-                            surface: NewsUiSurface.portfolioHoldings,
-                            embedInScroll: true,
-                          ),
-                        );
+              return Column(
+                children: [
+                  PortfolioHoldingsMobileFilters(
+                    allHoldings: allHoldings,
+                    filteredCount: filtered.length,
+                    selectedSector: _selectedSector,
+                    selectedIndustry: _selectedIndustry,
+                    onSectorChanged: (v) => setState(() {
+                      _selectedSector = v;
+                      if (_selectedIndustry != 'All') {
+                        final industries = <String>{};
+                        for (final h in allHoldings) {
+                          if (v != 'All' && h.sector.trim() != v) continue;
+                          final i = h.industry.trim();
+                          if (i.isNotEmpty) industries.add(i);
+                        }
+                        if (!industries.contains(_selectedIndustry)) {
+                          _selectedIndustry = 'All';
+                        }
                       }
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 8, bottom: 8),
-                        child: HoldingsNewsSection(
-                          symbols: [
-                            for (final h in sortedHoldings)
-                              (h as PortfolioHolding).symbol,
-                          ],
-                          surface: NewsUiSurface.portfolioHoldings,
-                          embedInScroll: true,
-                        ),
-                      );
-                    }
-
-                    final holding = sortedHoldings[index];
-
-                    // Calculate values based on selected change type
-                    final changeValue = _changeType == HoldingsChangeType.daily
-                        ? holding.todayChange
-                        : holding.totalGainLoss;
-                    final changePercent =
-                        _changeType == HoldingsChangeType.daily
-                        ? holding.todayChangePercentage
-                        : holding.totalGainLossPercentage;
-                    final isPositive = changeValue >= 0;
-                    final compact = !holding.hasCostBasis;
-
-                    return InvestmentCard.legacy(
-                      symbol: holding.symbol,
-                      name: holding.companyName,
-                      currentValue: holding.currentValue,
-                      investedAmount: holding.investedAmount,
-                      avgPrice: holding.avgPrice,
-                      quantity: holding.quantity.toInt(),
-                      currentPrice: holding.currentPrice,
-                      changeValue: changeValue,
-                      changePercent: changePercent,
-                      isPositive: isPositive,
-                      padding: compact
-                          ? const EdgeInsets.fromLTRB(12, 8, 12, 8)
-                          : null,
-                      margin: compact
-                          ? const EdgeInsets.only(bottom: 6)
-                          : null,
-                      sectionGap: compact ? 2 : null,
-                      onTap: () {
-                        setState(() => _focusedSymbol = holding.symbol);
-                        widget.onHoldingFocused?.call(holding.symbol);
+                      _syncActiveFiltersFlag();
+                    }),
+                    onIndustryChanged: (v) => setState(() {
+                      _selectedIndustry = v;
+                      _syncActiveFiltersFlag();
+                    }),
+                    onReset: _resetFilters,
+                  ),
+                  Expanded(
+                    child: RefreshIndicator(
+                      onRefresh: () async {
+                        if (widget.portfolioId != null) {
+                          ref.invalidate(
+                            portfolioHoldingsProvider(widget.portfolioId!),
+                          );
+                        } else {
+                          ref.invalidate(portfolioHoldingsProvider(''));
+                        }
                       },
-                      // Custom display based on format preference
-                      customBottomWidget: _buildCustomBottomRow(
-                        context,
-                        holding,
-                        changeValue,
-                        changePercent,
-                        isPositive,
-                      ),
-                    );
-                  },
-                ),
+                      child: sortedHoldings.isEmpty
+                          ? ListView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              children: [
+                                SizedBox(
+                                  height:
+                                      MediaQuery.sizeOf(context).height * 0.25,
+                                ),
+                                Icon(
+                                  Icons.filter_alt_off_outlined,
+                                  size: 40,
+                                  color: context.textTertiary,
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'No holdings match these filters',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: context.textSecondary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: _resetFilters,
+                                  child: const Text('Clear filters'),
+                                ),
+                              ],
+                            )
+                          : ListView.builder(
+                              padding:
+                                  const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                              itemCount: sortedHoldings.length +
+                                  (widget.showNewsSection ? 1 : 0),
+                              itemBuilder: (context, index) {
+                                if (index >= sortedHoldings.length) {
+                                  final focused = _focusedSymbol?.trim() ?? '';
+                                  if (focused.isNotEmpty) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(
+                                        top: 8,
+                                        bottom: 8,
+                                      ),
+                                      child: SymbolNewsSection(
+                                        symbol: focused,
+                                        surface:
+                                            NewsUiSurface.portfolioHoldings,
+                                        embedInScroll: true,
+                                      ),
+                                    );
+                                  }
+                                  return Padding(
+                                    padding: const EdgeInsets.only(
+                                      top: 8,
+                                      bottom: 8,
+                                    ),
+                                    child: HoldingsNewsSection(
+                                      symbols: [
+                                        for (final h in sortedHoldings)
+                                          h.symbol,
+                                      ],
+                                      surface:
+                                          NewsUiSurface.portfolioHoldings,
+                                      embedInScroll: true,
+                                    ),
+                                  );
+                                }
+
+                                final holding = sortedHoldings[index];
+                                final changeValue =
+                                    _changeType == HoldingsChangeType.daily
+                                        ? holding.todayChange
+                                        : holding.totalGainLoss;
+                                final changePercent =
+                                    _changeType == HoldingsChangeType.daily
+                                        ? holding.todayChangePercentage
+                                        : holding.totalGainLossPercentage;
+                                final isPositive = changeValue >= 0;
+                                final compact = !holding.hasCostBasis;
+
+                                return InvestmentCard.legacy(
+                                  symbol: holding.symbol,
+                                  name: holding.companyName,
+                                  currentValue: holding.currentValue,
+                                  investedAmount: holding.investedAmount,
+                                  avgPrice: holding.avgPrice,
+                                  quantity: holding.quantity.toInt(),
+                                  currentPrice: holding.currentPrice,
+                                  changeValue: changeValue,
+                                  changePercent: changePercent,
+                                  isPositive: isPositive,
+                                  padding: compact
+                                      ? const EdgeInsets.fromLTRB(
+                                          12, 8, 12, 8)
+                                      : null,
+                                  margin: compact
+                                      ? const EdgeInsets.only(bottom: 6)
+                                      : null,
+                                  sectionGap: compact ? 2 : null,
+                                  onTap: () {
+                                    setState(
+                                      () => _focusedSymbol = holding.symbol,
+                                    );
+                                    widget.onHoldingFocused
+                                        ?.call(holding.symbol);
+                                  },
+                                  customBottomWidget: _buildCustomBottomRow(
+                                    context,
+                                    holding,
+                                    changeValue,
+                                    changePercent,
+                                    isPositive,
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                  ),
+                ],
               );
             },
             loading: () {
@@ -177,7 +277,6 @@ class _PortfolioHoldingsWidgetState
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () {
-                        // Invalidate the appropriate provider based on portfolioId
                         if (widget.portfolioId != null) {
                           ref.invalidate(
                             portfolioHoldingsProvider(widget.portfolioId!),
@@ -256,6 +355,30 @@ class _PortfolioHoldingsWidgetState
         ),
       ],
     );
+  }
+
+  List<PortfolioHolding> _filterHoldings(List<PortfolioHolding> holdings) {
+    return holdings.where((h) {
+      if (_statusFilter == 'profit' && !h.isProfitable) return false;
+      if (_statusFilter == 'loss' && h.isProfitable) return false;
+      if (_selectedSector != 'All' && h.sector.trim() != _selectedSector) {
+        return false;
+      }
+      if (_selectedIndustry != 'All' &&
+          h.industry.trim() != _selectedIndustry) {
+        return false;
+      }
+      return true;
+    }).toList();
+  }
+
+  void _resetFilters() {
+    setState(() {
+      _statusFilter = 'all';
+      _selectedSector = 'All';
+      _selectedIndustry = 'All';
+    });
+    _syncActiveFiltersFlag();
   }
 
   /// Build custom bottom row with display format preference
@@ -402,11 +525,12 @@ class _PortfolioHoldingsWidgetState
   }
 
   /// Sort holdings based on selected criteria
-  List<dynamic> _sortHoldings(List<dynamic> holdings) {
-    final sortedList = List.from(holdings);
+  List<PortfolioHolding> _sortHoldings(List<PortfolioHolding> holdings) {
+    final sortedList = List<PortfolioHolding>.from(holdings);
 
     sortedList.sort((a, b) {
-      dynamic valueA, valueB;
+      late final Comparable valueA;
+      late final Comparable valueB;
 
       switch (_sortBy) {
         case HoldingsSortBy.symbol:
@@ -438,13 +562,7 @@ class _PortfolioHoldingsWidgetState
           valueB = 0;
       }
 
-      int comparison;
-      if (valueA is String && valueB is String) {
-        comparison = valueA.compareTo(valueB);
-      } else {
-        comparison = (valueA as num).compareTo(valueB as num);
-      }
-
+      final comparison = valueA.compareTo(valueB);
       return _sortAscending ? comparison : -comparison;
     });
 

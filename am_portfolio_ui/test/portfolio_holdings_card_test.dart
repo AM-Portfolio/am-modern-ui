@@ -248,4 +248,40 @@ void main() {
         .dy;
     expect((qtyDy - pnlDy).abs(), lessThan(8));
   });
+
+  testWidgets('mobile holdings shows Sector/Industry filters and filters list',
+      (tester) async {
+    // Wide enough for PortfolioDisplayController; filters still use the compact strip.
+    await tester.binding.setSurfaceSize(const Size(480, 844));
+    await _pumpHoldings(
+      tester,
+      holdings: [
+        _holding(
+          symbol: 'TCS',
+          investedAmount: 1000,
+          avgPrice: 250,
+          quantity: 4,
+        ).copyWith(sector: 'IT', industry: 'Software'),
+        _holding(
+          symbol: 'TMCV',
+          investedAmount: 800,
+          avgPrice: 200,
+          quantity: 2,
+        ).copyWith(sector: 'Auto', industry: 'EV'),
+      ],
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sector'), findsOneWidget);
+    expect(find.text('Industry'), findsOneWidget);
+    expect(find.text('Profit'), findsOneWidget);
+
+    await tester.tap(find.text('Sector'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('IT').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('TCS'), findsWidgets);
+    expect(find.text('TMCV'), findsNothing);
+  });
 }

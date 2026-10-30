@@ -31,6 +31,7 @@ class UniversalHeatmapWidget extends StatelessWidget {
     this.selectedSector,
     this.selectedMarketCap,
     this.selectedLayout,
+    this.customHeader,
   });
 
   /// Investment type (portfolio, index, mutual funds, ETF)
@@ -89,6 +90,9 @@ class UniversalHeatmapWidget extends StatelessWidget {
   final MarketCapType? selectedMarketCap;
   /// Currently selected layout
   final HeatmapLayoutType? selectedLayout;
+
+  /// When set, replaces the default card title/subtitle header.
+  final Widget? customHeader;
 
   @override
   Widget build(BuildContext context) {
@@ -199,6 +203,7 @@ class UniversalHeatmapWidget extends StatelessWidget {
       selectorWidget: selectorTemplate,
       customTitle: title,
       customSubtitle: subtitle,
+      customHeader: customHeader,
     );
   }
 }

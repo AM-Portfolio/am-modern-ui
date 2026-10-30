@@ -153,9 +153,20 @@ class ApiClient {
         if (response.body.isEmpty) {
           return parser(null);
         }
+        // Flutter web-server / gateway SPA shells return HTML with 200 for
+        // unknown paths (e.g. missing `/portfolio` prefix). Surface that
+        // clearly instead of a raw FormatException.
+        final trimmed = response.body.trimLeft();
+        if (trimmed.startsWith('<')) {
+          throw ApiException(
+            'Unexpected HTML from API (wrong base URL or gateway SPA fallback)',
+            statusCode: response.statusCode,
+          );
+        }
         final dynamic data = jsonDecode(response.body);
         return parser(data);
       } catch (e) {
+        if (e is ApiException) rethrow;
         AppLogger.error('❌ JSON parsing failed', tag: 'ApiClient', error: e);
         rethrow;
       }

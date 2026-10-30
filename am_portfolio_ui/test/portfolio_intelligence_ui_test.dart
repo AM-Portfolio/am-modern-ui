@@ -81,7 +81,7 @@ void main() {
     expect(intelligenceDonutColor(8), IntelligenceDonut.palette.first);
   });
 
-  testWidgets('Movers compact shows counts and See Top 10 when data exists',
+  testWidgets('Movers compact shows counts and Value/Percentage toggle',
       (tester) async {
     final movers = Movers(
       topGainers: [
@@ -107,7 +107,6 @@ void main() {
       ],
     );
 
-    var opened = false;
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -115,7 +114,6 @@ void main() {
             child: MoversWidget(
               movers: movers,
               compact: true,
-              onViewAll: (_) => opened = true,
             ),
           ),
         ),
@@ -123,14 +121,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Gainers (4)'), findsOneWidget);
-    expect(find.text('Losers (1)'), findsOneWidget);
-    expect(find.text('See Top 10'), findsOneWidget);
+    expect(find.text('Gainers'), findsOneWidget);
+    expect(find.text('Losers'), findsOneWidget);
+    expect(find.text('See Top 10'), findsNothing);
+    expect(find.text('Value'), findsOneWidget);
+    expect(find.text('Percentage'), findsOneWidget);
     expect(find.textContaining('Only 4 holdings moved today'), findsOneWidget);
-
-    await tester.tap(find.text('See Top 10'));
-    await tester.pump();
-    expect(opened, isTrue);
   });
 
   testWidgets('X-Ray shows Sector/Industry/Cap/Class tabs', (tester) async {
@@ -521,12 +517,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Top Movers'), findsOneWidget);
-    expect(find.text('Gainers (2)'), findsOneWidget);
-    expect(find.text('Losers (1)'), findsOneWidget);
+    expect(find.text('Gainers'), findsOneWidget);
+    expect(find.text('Losers'), findsOneWidget);
     expect(find.text('AAA'), findsOneWidget);
     expect(find.text('CCC'), findsNothing);
 
-    await tester.tap(find.text('Losers (1)'));
+    await tester.tap(find.text('Losers'));
     await tester.pumpAndSettle();
     expect(find.text('CCC'), findsOneWidget);
   });
