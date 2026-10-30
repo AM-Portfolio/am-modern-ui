@@ -144,6 +144,9 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
   /// Attachment URLs already persisted on the server (via addAttachment / loaded entry).
   Set<String> _syncedAttachmentUrls = {};
 
+  /// Synced URLs the user removed during this edit session — late hydrate must not re-add them.
+  final Set<String> _removedAttachmentUrls = {};
+
   @override
   void initState() {
     super.initState();
@@ -187,6 +190,7 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       _lastDraftSavedAt = null;
       _isEditMode = widget.entry == null;
       _appliedTemplateName = null;
+      _removedAttachmentUrls.clear();
       _initFormFields();
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
@@ -199,6 +203,7 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
     // Same entry hydrated from getById (list row → full) — pull attachments
     // without resetting edit mode / draft state. Also merge while editing so
     // Edit-before-hydrate does not leave Supporting Evidence empty for Save.
+    // Do not re-add URLs the user already removed in this edit session.
     if (widget.entry != null) {
       final nextUrls = widget.entry!.attachments.isNotEmpty
           ? widget.entry!.attachments.map((a) => a.fileUrl).toList()
@@ -208,12 +213,16 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
           if (!_isEditMode) {
             _imageUrls = nextUrls;
             _syncedAttachmentUrls = nextUrls.toSet();
+            _removedAttachmentUrls.clear();
           } else {
+            final keptServer = nextUrls
+                .where((u) => !_removedAttachmentUrls.contains(u))
+                .toList();
             final pending = _imageUrls
                 .where((u) => !_syncedAttachmentUrls.contains(u))
                 .where((u) => !nextUrls.contains(u))
                 .toList();
-            _imageUrls = [...nextUrls, ...pending];
+            _imageUrls = [...keptServer, ...pending];
             _syncedAttachmentUrls = nextUrls.toSet();
           }
         });
@@ -293,7 +302,9 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       _imageUrls = [];
     }
 
-    _syncedAttachmentUrls = widget.entry == null ? <String>{} : _imageUrls.toSet();
+    _syncedAttachmentUrls =
+        widget.entry == null ? <String>{} : _imageUrls.toSet();
+    _removedAttachmentUrls.clear();
 
     _relatedTradeIds = List.from(widget.entry?.relatedTradeIds ?? const []);
 
@@ -1249,6 +1260,7 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
             _selectedTags.clear();
             _imageUrls = [];
             _syncedAttachmentUrls = {};
+            _removedAttachmentUrls.clear();
             _relatedTradeIds = [];
             _entryDate = DateTime.now();
             _clearStructuredSections();
@@ -1765,7 +1777,13 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
         userId: widget.entry?.userId ?? '',
         imageUrls: _imageUrls,
         onAttachmentsChanged: (urls) {
-          setState(() => _imageUrls = urls);
+          setState(() {
+            for (final u in _syncedAttachmentUrls) {
+              if (!urls.contains(u)) _removedAttachmentUrls.add(u);
+            }
+            _removedAttachmentUrls.removeWhere(urls.contains);
+            _imageUrls = urls;
+          });
           _scheduleAutosave();
         },
         featureName: 'journal',

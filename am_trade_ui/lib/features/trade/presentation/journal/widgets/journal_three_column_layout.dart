@@ -77,6 +77,10 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
   /// Fresh entity from getById — preferred over list row until list catches up.
   JournalEntry? _hydratedEntry;
 
+  /// Single-flight hydrate: ignore stale responses; skip parallel getById for same id.
+  int _hydrateRequestId = 0;
+  String? _hydrateInFlightId;
+
   GlobalKey<JournalEntryFormState> _newFormKey =
       GlobalKey<JournalEntryFormState>();
   final GlobalKey<TradeJournalWorkflowPageState> _newTradeWorkflowKey =
@@ -221,10 +225,18 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
   Future<void> _hydrateSelectedEntry() async {
     final id = _selectedEntryId;
     if (!mounted || id == null || _isCreatingNew) return;
-    final fresh = await widget.journalCubit.loadEntryDetail(id);
-    if (!mounted || fresh == null) return;
-    if (_selectedEntryId != id) return;
-    setState(() => _hydratedEntry = fresh);
+    // Avoid stampede on fast list refreshes / re-taps while one load is in flight.
+    if (_hydrateInFlightId == id) return;
+    final requestId = ++_hydrateRequestId;
+    _hydrateInFlightId = id;
+    try {
+      final fresh = await widget.journalCubit.loadEntryDetail(id);
+      if (!mounted || requestId != _hydrateRequestId) return;
+      if (_selectedEntryId != id || fresh == null) return;
+      setState(() => _hydratedEntry = fresh);
+    } finally {
+      if (_hydrateInFlightId == id) _hydrateInFlightId = null;
+    }
   }
 
   /// Select [entryId], exit any open composer, show the entries rail again.

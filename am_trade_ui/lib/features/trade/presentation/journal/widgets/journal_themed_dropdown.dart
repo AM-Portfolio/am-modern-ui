@@ -1,6 +1,8 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
+import '../../web/widgets/journal/utils/journal_field_decoration.dart';
+
 /// Journal-hub [CustomDropdown] styled from [AppColorsTheme] (card / border / text)
 /// with trade accent for chevron and selection — matches [JournalFormSurface].
 class JournalThemedDropdown<T> extends StatelessWidget {
@@ -18,6 +20,8 @@ class JournalThemedDropdown<T> extends StatelessWidget {
     this.menuMaxHeight = 280,
     this.enabled = true,
     this.compact = false,
+    /// Put [label] on the outline border (mobile). Default stacks label above.
+    this.floatingLabel = false,
   });
 
   final T? value;
@@ -31,16 +35,22 @@ class JournalThemedDropdown<T> extends StatelessWidget {
   final double? menuMaxWidth;
   final double menuMaxHeight;
   final bool enabled;
-
-  /// Tighter padding / radius for list-rail filter pills.
   final bool compact;
+  final bool floatingLabel;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final theme = Theme.of(context);
-    final radius = compact ? AppRadii.sm : AppRadii.md;
-    final hPad = compact ? 10.0 : 12.0;
+    final accent =
+        ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade;
+    // CustomDropdown takes a double radius (md matches AppRadii.input).
+    const radius = AppRadii.md;
+    final hPad = AppSpacing.sm + AppSpacing.xs;
+    final useFloating =
+        floatingLabel && label != null && label!.trim().isNotEmpty;
+    // Match JournalFieldDecoration fill — not opaque white cardSurface.
+    final fieldFill = colors.surface.withValues(alpha: 0.45);
+    final clear = colors.cardSurface.withValues(alpha: 0);
 
     Widget buildDropdown({double? resolvedMenuWidth}) {
       return CustomDropdown<T>(
@@ -49,14 +59,18 @@ class JournalThemedDropdown<T> extends StatelessWidget {
         items: items,
         onChanged: enabled ? onChanged : null,
         enabled: enabled,
-        height: height,
+        height: useFloating ? (height - AppSpacing.xs) : height,
         isExpanded: true,
         fontSize: fontSize,
-        iconSize: compact ? 16 : 18,
+        iconSize: AppSpacing.md,
         borderRadius: radius,
-        primaryColor: ModuleColors.trade,
-        backgroundColor: colors.cardSurface,
-        borderColor: colors.border.withValues(alpha: compact ? 0.55 : 0.45),
+        primaryColor: accent,
+        // Trigger clear inside floating outline; menu stays opaque.
+        backgroundColor: useFloating ? clear : fieldFill,
+        menuBackgroundColor: colors.cardSurface,
+        borderColor: useFloating
+            ? clear
+            : colors.border.withValues(alpha: 0.4),
         textColor: colors.textPrimary,
         menuMaxHeight: menuMaxHeight,
         menuMaxWidth: menuMaxWidth ?? resolvedMenuWidth,
@@ -67,18 +81,33 @@ class JournalThemedDropdown<T> extends StatelessWidget {
 
     Widget labeled(Widget dropdown) {
       if (label == null || label!.trim().isEmpty) return dropdown;
+      if (useFloating) {
+        return InputDecorator(
+          isEmpty: value == null,
+          decoration: JournalFieldDecoration.borderLabel(
+            context,
+            label: label!,
+            // Keep inner trigger flush so hint/value stay vertically centered.
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.xs,
+              vertical: AppSpacing.xxs,
+            ),
+          ),
+          child: dropdown,
+        );
+      }
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             label!,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colors.textSecondary,
-              fontWeight: FontWeight.w600,
-            ),
+            style: context.text.body(compact: true).copyWith(
+                  color: colors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.sm - AppSpacing.xxs),
           dropdown,
         ],
       );
