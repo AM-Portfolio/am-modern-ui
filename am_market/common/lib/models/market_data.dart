@@ -142,6 +142,28 @@ class StockData {
     this.companyName,
   });
 
+  StockData copyWith({
+    String? symbol,
+    double? lastPrice,
+    double? change,
+    double? pChange,
+    double? open,
+    double? dayHigh,
+    double? dayLow,
+    String? companyName,
+  }) {
+    return StockData(
+      symbol: symbol ?? this.symbol,
+      companyName: companyName ?? this.companyName,
+      lastPrice: lastPrice ?? this.lastPrice,
+      change: change ?? this.change,
+      pChange: pChange ?? this.pChange,
+      open: open ?? this.open,
+      dayHigh: dayHigh ?? this.dayHigh,
+      dayLow: dayLow ?? this.dayLow,
+    );
+  }
+
   factory StockData.fromJson(Map<String, dynamic> json) {
     return StockData(
       symbol: json['symbol'] ?? '',
