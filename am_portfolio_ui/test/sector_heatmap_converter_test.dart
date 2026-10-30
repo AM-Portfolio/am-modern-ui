@@ -684,6 +684,66 @@ void main() {
       expect(names.contains('Financial Services'), isTrue);
     });
 
+    test('compact budget merges small sectors and caps stocks per sector', () {
+      final stockChildren = List.generate(
+        20,
+        (i) => HeatmapTileData(
+          id: 's$i',
+          name: 'SYM$i',
+          displayName: 'SYM$i',
+          weightage: 20.0 - i,
+          performance: 0.1 * i,
+          value: 1000.0 * (20 - i),
+          metadata: const {'type': 'stock'},
+        ),
+      );
+      final tiles = [
+        HeatmapTileData(
+          id: 'fin',
+          name: 'Financial Services',
+          displayName: 'Finance',
+          weightage: 50,
+          performance: 1.0,
+          value: 50000,
+          children: stockChildren,
+        ),
+        HeatmapTileData(
+          id: 'tiny',
+          name: 'Utilities',
+          displayName: 'Utilities',
+          weightage: 2,
+          performance: -1.0,
+          value: 2000,
+          children: [
+            HeatmapTileData(
+              id: 'u1',
+              name: 'UTIL1',
+              displayName: 'UTIL1',
+              weightage: 2,
+              performance: -1.0,
+              value: 2000,
+              metadata: const {'type': 'stock'},
+            ),
+          ],
+        ),
+      ];
+
+      final budgeted =
+          SectorHeatmapConverter.applyCompactTreemapBudget(tiles);
+      final names = budgeted.map((t) => t.name).toSet();
+      expect(names.contains('Other (<3%)'), isTrue);
+      expect(names.contains('Utilities'), isFalse);
+
+      final finance =
+          budgeted.firstWhere((t) => t.name == 'Financial Services');
+      final kids = finance.children!;
+      expect(kids.length, 16); // top 15 + Other leaf
+      expect(kids.last.name, SectorHeatmapConverter.otherStocksName);
+      expect(kids.last.children, isNull);
+      expect(kids.last.metadata?['mergedStockTail'], isTrue);
+      expect(kids.last.metadata?['stockCount'], 5);
+    });
+
     test('Top/Weakest ignore flat sectors when non-flat exist', () {
       final tiles = [
         HeatmapTileData(

@@ -8,11 +8,9 @@ class HeatmapTileInspector extends StatelessWidget {
   const HeatmapTileInspector({
     required this.tile,
     super.key,
-    this.onDismiss,
   });
 
   final HeatmapTileData tile;
-  final VoidCallback? onDismiss;
 
   static const _bg = Color(0xFF161A22);
   static const _border = Color(0xFF2A3140);
@@ -45,7 +43,7 @@ class HeatmapTileInspector extends StatelessWidget {
       child: SizedBox(
         height: 40,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(8, 0, 4, 0),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -127,16 +125,6 @@ class HeatmapTileInspector extends StatelessWidget {
                   ),
                 ),
               ),
-              if (onDismiss != null)
-                InkWell(
-                  onTap: onDismiss,
-                  borderRadius: BorderRadius.circular(12),
-                  child: const SizedBox(
-                    width: 26,
-                    height: 26,
-                    child: Icon(Icons.close, size: 13, color: Colors.white38),
-                  ),
-                ),
             ],
           ),
         ),

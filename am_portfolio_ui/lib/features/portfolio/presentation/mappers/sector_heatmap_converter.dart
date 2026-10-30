@@ -34,7 +34,10 @@ class SectorHeatmapConverter {
 
   static const String unknownTileName = 'Unknown';
   static const String otherSmallWeightName = 'Other (<3%)';
+  static const String otherStocksName = 'Other';
   static const double smallWeightThresholdPercent = 3.0;
+  /// Compact nested treemap: keep this many stocks per sector; fold the rest.
+  static const int compactMaxStocksPerSector = 15;
 
   static bool isExcludedFromRanking(String name) {
     final n = name.trim().toLowerCase();
@@ -770,6 +773,77 @@ class SectorHeatmapConverter {
     // Sort sectors by weightage descending (largest sectors first)
     tiles.sort((a, b) => b.weightage.compareTo(a.weightage));
     return tiles;
+  }
+
+  /// Compact nested overview only: small-sector merge + per-sector stock cap.
+  /// Drill-down / list / grid should keep the unbudgeted tile list.
+  static List<HeatmapTileData> applyCompactTreemapBudget(
+    List<HeatmapTileData> source, {
+    int maxStocksPerSector = compactMaxStocksPerSector,
+  }) {
+    final merged = mergeSmallWeightTilesForTreemap(source);
+    if (maxStocksPerSector <= 0) return merged;
+    return merged
+        .map((sector) => _limitSectorChildren(sector, maxStocksPerSector))
+        .toList();
+  }
+
+  static HeatmapTileData _limitSectorChildren(
+    HeatmapTileData sector,
+    int maxStocksPerSector,
+  ) {
+    final raw = sector.children;
+    if (raw == null || raw.length <= maxStocksPerSector) return sector;
+
+    final children = raw
+        .map((c) => c is HeatmapTileData ? c : HeatmapTileData.fromEntity(c))
+        .toList()
+      ..sort((a, b) => b.weightage.compareTo(a.weightage));
+
+    final keep = children.take(maxStocksPerSector).toList();
+    final rest = children.skip(maxStocksPerSector).toList();
+    if (rest.isEmpty) return sector;
+
+    final combinedWeight = rest.fold<double>(0, (s, t) => s + t.weightage);
+    final combinedValue = rest.fold<double>(0, (s, t) => s + (t.value ?? 0));
+    final avgPerformance = combinedWeight > 0
+        ? rest.fold<double>(0, (s, t) => s + t.performance * t.weightage) /
+            combinedWeight
+        : 0.0;
+
+    // Leaf tile (no children) so nested mode does not spawn another sector panel.
+    keep.add(
+      HeatmapTileData(
+        id: '${sector.id}_other_stocks',
+        name: otherStocksName,
+        displayName: otherStocksName,
+        weightage: combinedWeight,
+        performance: avgPerformance,
+        value: combinedValue,
+        metadata: {
+          'type': 'stock',
+          'mergedStockTail': true,
+          'stockCount': rest.length,
+          'sectorName': sector.name,
+        },
+      ),
+    );
+
+    return HeatmapTileData(
+      id: sector.id,
+      name: sector.name,
+      displayName: sector.displayName,
+      weightage: sector.weightage,
+      performance: sector.performance,
+      value: sector.value,
+      metadata: sector.metadata,
+      children: keep,
+      customColor: sector.customColor,
+      icon: sector.icon,
+      imageUrl: sector.imageUrl,
+      onTap: sector.onTap,
+      customWidgets: sector.customWidgets,
+    );
   }
 
   /// Merges sectors under [smallWeightThresholdPercent] into Other (<3%).

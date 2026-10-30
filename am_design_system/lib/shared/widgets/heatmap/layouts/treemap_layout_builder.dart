@@ -127,20 +127,12 @@ class TreemapLayoutBuilder extends HeatmapLayoutBuilder {
       rects,
     );
 
-    // Clamp every rectangle to stay strictly within the canvas (safety net).
+    // Widget canvas = 100%: gap + integer snap must stay strictly inside bounds.
     final nested = data.configuration.effectiveLayout.nestedSectors;
     final widgets = <Widget>[];
     for (var i = 0; i < rects.length && i < normalised.length; i++) {
-      final r = rects[i]
-          .withGap(gap)
-          .clamped(width, height)
-          .pixelSnapped()
-          .clamped(width, height);
-      if (r.width <= 0 || r.height <= 0) continue; // Skip only if physically 0
-      // Final guard: never let left+width exceed the canvas (debug overflow).
-      if (r.left + r.width > width + 0.01 || r.top + r.height > height + 0.01) {
-        continue;
-      }
+      final r = rects[i].withGap(gap).fitInside(width, height);
+      if (r.width < 1 || r.height < 1) continue;
 
       final tile = normalised[i].tile;
       final hasChildren =
@@ -152,34 +144,37 @@ class TreemapLayoutBuilder extends HeatmapLayoutBuilder {
           top: r.top,
           width: r.width,
           height: r.height,
-          child: SizedBox(
-            width: r.width,
-            height: r.height,
-            child: ClipRect(
-              child: hasChildren
-                  ? _NestedSectorPanel(
-                      key: ValueKey(tile.id),
-                      tile: tile,
-                      data: data,
-                      width: r.width,
-                      height: r.height,
-                      gap: childGap ?? gap,
-                      onTilePressed: onTilePressed,
-                      customTileBuilder: customTileBuilder,
-                      selectedMetric: selectedMetric,
-                      builder: this,
-                    )
-                  : _HoverTile(
-                      key: ValueKey(tile.id),
-                      tile: tile,
-                      data: data,
-                      width: r.width,
-                      height: r.height,
-                      onTilePressed: onTilePressed,
-                      customTileBuilder: customTileBuilder,
-                      selectedMetric: selectedMetric,
-                      builder: this,
-                    ),
+          child: RepaintBoundary(
+            child: SizedBox(
+              width: r.width,
+              height: r.height,
+              child: ClipRect(
+                clipBehavior: Clip.hardEdge,
+                child: hasChildren
+                    ? _NestedSectorPanel(
+                        key: ValueKey(tile.id),
+                        tile: tile,
+                        data: data,
+                        width: r.width,
+                        height: r.height,
+                        gap: childGap ?? gap,
+                        onTilePressed: onTilePressed,
+                        customTileBuilder: customTileBuilder,
+                        selectedMetric: selectedMetric,
+                        builder: this,
+                      )
+                    : _HoverTile(
+                        key: ValueKey(tile.id),
+                        tile: tile,
+                        data: data,
+                        width: r.width,
+                        height: r.height,
+                        onTilePressed: onTilePressed,
+                        customTileBuilder: customTileBuilder,
+                        selectedMetric: selectedMetric,
+                        builder: this,
+                      ),
+              ),
             ),
           ),
         ),
@@ -388,14 +383,19 @@ class _NestedSectorPanelState extends State<_NestedSectorPanel> {
     final amount = widget.tile.value;
     final quantity = _asDouble(meta['totalQuantity']);
     final wide = widget.width >= 150;
-    // Cap header so short cells cannot TOP-overflow the Positioned slot.
+    // Border is inside the Positioned box — size chrome from the inner area.
+    const borderW = 1.5;
+    final innerW = max(0.0, widget.width - borderW * 2);
+    final innerH = max(0.0, widget.height - borderW * 2);
     final idealHeader = wide ? 32.0 : 40.0;
-    final headerH =
-        min(idealHeader, max(0.0, widget.height - 4.0));
+    // Keep header + body within innerH so Column never yellow-stripes.
+    final headerH = innerH < 20
+        ? 0.0
+        : min(idealHeader, max(0.0, innerH * 0.45)).clamp(0.0, innerH - 8.0);
     final children = widget.tile.children!
         .map((c) => c is HeatmapTileData ? c : HeatmapTileData.fromEntity(c))
         .toList();
-    final bodyH = (widget.height - headerH).clamp(0.0, widget.height);
+    final bodyH = max(0.0, innerH - headerH);
     final colors = context.colors;
     final accent = Theme.of(context).colorScheme.primary;
     final scope = HeatmapInteractionScope.maybeOf(context);
@@ -417,142 +417,170 @@ class _NestedSectorPanelState extends State<_NestedSectorPanel> {
         : colors.surface;
     final titleColor = colors.textPrimary;
     final metaColor = colors.textSecondary;
-    // Fixed width avoids layout jitter when hover strengthens the rim.
-    const borderW = 1.5;
     final borderColor =
         _focused ? accent.withValues(alpha: 0.9) : borderIdle;
 
+    final hoverOn = widget.data.configuration.enableHoverEffects;
     // SizedBox.expand + ClipRRect: never ask for more than the Positioned slot.
-    // Parent MouseRegion stays focused while pointer moves across child stocks.
+    // Hover chrome only when enableHoverEffects (wide web); compact = tap only.
+    final panelBody = ClipRRect(
+      borderRadius: BorderRadius.circular(_radius - 0.5),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (headerH >= 16)
+            Material(
+              color: headerBg,
+              child: InkWell(
+                onTap: () {
+                  if (scope?.onSectorDrill != null) {
+                    scope!.onSectorDrill!(widget.tile);
+                    return;
+                  }
+                  (widget.tile.onTap ?? widget.onTilePressed)?.call();
+                },
+                child: SizedBox(
+                  height: headerH,
+                  width: double.infinity,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          color: colors.divider
+                              .withValues(alpha: isDark ? 0.9 : 1),
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Container(
+                          width: 2,
+                          color: accent.withValues(
+                            alpha: _focused ? 0.75 : 0.35,
+                          ),
+                        ),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            child: wide
+                                ? _buildWideHeader(
+                                    label,
+                                    amount,
+                                    quantity,
+                                    titleColor,
+                                    metaColor,
+                                  )
+                                : _buildCompactHeader(
+                                    label,
+                                    amount,
+                                    quantity,
+                                    titleColor,
+                                    metaColor,
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          if (bodyH > 8)
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  _bodyInset,
+                  _bodyInset,
+                  _bodyInset,
+                  _bodyInset,
+                ),
+                child: ClipRect(
+                  child: LayoutBuilder(
+                    builder: (context, bodyConstraints) {
+                      final bw = bodyConstraints.maxWidth.floorToDouble();
+                      final bh = bodyConstraints.maxHeight.floorToDouble();
+                      if (!bw.isFinite ||
+                          !bh.isFinite ||
+                          bw < 4 ||
+                          bh < 4) {
+                        return const SizedBox.shrink();
+                      }
+                      return Stack(
+                        clipBehavior: Clip.hardEdge,
+                        fit: StackFit.expand,
+                        children: widget.builder._buildSquarifiedWidgets(
+                          context,
+                          widget.data,
+                          children,
+                          bw,
+                          bh,
+                          gap: widget.gap,
+                          onTilePressed: widget.onTilePressed,
+                          customTileBuilder: widget.customTileBuilder,
+                          selectedMetric: widget.selectedMetric,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+
+    final panel = SizedBox(
+      width: widget.width,
+      height: widget.height,
+      child: _sectorPanelShell(
+        hoverOn: hoverOn,
+        borderColor: borderColor,
+        borderW: borderW,
+        panelFill: panelFill,
+        child: panelBody,
+      ),
+    );
+
+    if (!hoverOn) return panel;
     return MouseRegion(
       onEnter: (_) => setState(() => _focused = true),
       onExit: (_) => setState(() => _focused = false),
       cursor: SystemMouseCursors.click,
-      child: SizedBox.expand(
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
-          curve: Curves.easeOut,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(_radius),
-            border: Border.all(color: borderColor, width: borderW),
-            color: panelFill,
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(_radius - 0.5),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (headerH >= 16)
-                  Material(
-                    color: headerBg,
-                    child: InkWell(
-                      onTap: () {
-                        if (scope?.onSectorDrill != null) {
-                          scope!.onSectorDrill!(widget.tile);
-                          return;
-                        }
-                        (widget.tile.onTap ?? widget.onTilePressed)?.call();
-                      },
-                      child: SizedBox(
-                        height: headerH,
-                        width: double.infinity,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(
-                                color: colors.divider
-                                    .withValues(alpha: isDark ? 0.9 : 1),
-                                width: 1,
-                              ),
-                            ),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // Subtle primary rail — card identity without sector hues.
-                              Container(
-                                width: 2,
-                                color: accent.withValues(
-                                  alpha: _focused ? 0.75 : 0.35,
-                                ),
-                              ),
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  child: wide
-                                      ? _buildWideHeader(
-                                          label,
-                                          amount,
-                                          quantity,
-                                          titleColor,
-                                          metaColor,
-                                        )
-                                      : _buildCompactHeader(
-                                          label,
-                                          amount,
-                                          quantity,
-                                          titleColor,
-                                          metaColor,
-                                        ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                if (bodyH > 8)
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        _bodyInset,
-                        _bodyInset,
-                        _bodyInset,
-                        _bodyInset,
-                      ),
-                      child: ClipRect(
-                        child: LayoutBuilder(
-                          builder: (context, bodyConstraints) {
-                            final bw =
-                                bodyConstraints.maxWidth.floorToDouble();
-                            final bh =
-                                bodyConstraints.maxHeight.floorToDouble();
-                            if (!bw.isFinite ||
-                                !bh.isFinite ||
-                                bw < 4 ||
-                                bh < 4) {
-                              return const SizedBox.shrink();
-                            }
-                            return Stack(
-                              clipBehavior: Clip.hardEdge,
-                              fit: StackFit.expand,
-                              children:
-                                  widget.builder._buildSquarifiedWidgets(
-                                context,
-                                widget.data,
-                                children,
-                                bw,
-                                bh,
-                                gap: widget.gap,
-                                onTilePressed: widget.onTilePressed,
-                                customTileBuilder: widget.customTileBuilder,
-                                selectedMetric: widget.selectedMetric,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
+      child: panel,
+    );
+  }
+
+  Widget _sectorPanelShell({
+    required bool hoverOn,
+    required Color borderColor,
+    required double borderW,
+    required Color panelFill,
+    required Widget child,
+  }) {
+    final decoration = BoxDecoration(
+      borderRadius: BorderRadius.circular(_radius),
+      border: Border.all(color: borderColor, width: borderW),
+      color: panelFill,
+    );
+    // clipBehavior: paint + layout stay inside the Positioned slot (no stripes).
+    if (hoverOn) {
+      return AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        curve: Curves.easeOut,
+        clipBehavior: Clip.hardEdge,
+        decoration: decoration,
+        child: child,
+      );
+    }
+    return Container(
+      clipBehavior: Clip.hardEdge,
+      decoration: decoration,
+      child: child,
     );
   }
 
@@ -583,22 +611,22 @@ class _NestedSectorPanelState extends State<_NestedSectorPanel> {
             ),
           ),
         ),
+        // Value / qty / chevron stay flush on the right of the header.
         if (stats.isNotEmpty) ...[
-          const SizedBox(width: 6),
-          Flexible(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerRight,
-              child: Text(
-                stats,
-                maxLines: 1,
-                softWrap: false,
-                style: TextStyle(
-                  color: metaColor,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  height: 1.1,
-                ),
+          const SizedBox(width: 8),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: Text(
+              stats,
+              maxLines: 1,
+              softWrap: false,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: metaColor,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                height: 1.1,
               ),
             ),
           ),
@@ -646,11 +674,12 @@ class _NestedSectorPanelState extends State<_NestedSectorPanel> {
         if (stats.isNotEmpty)
           FittedBox(
             fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
+            alignment: Alignment.centerRight,
             child: Text(
               stats,
               maxLines: 1,
               softWrap: false,
+              textAlign: TextAlign.right,
               style: TextStyle(
                 color: metaColor,
                 fontSize: 9,
@@ -721,6 +750,7 @@ class _HoverTileState extends State<_HoverTile> {
   @override
   Widget build(BuildContext context) {
     final solid = widget.data.configuration.effectiveLayout.solidFills;
+    final hoverOn = widget.data.configuration.enableHoverEffects;
     // Always performance-tint so gain/loss reads clearly in glass mode.
     var tileColor = widget.builder.getPerformanceColor(
       context,
@@ -728,7 +758,7 @@ class _HoverTileState extends State<_HoverTile> {
     );
     final colors = context.colors;
     final isDark = context.isDark;
-    if (_hovered) {
+    if (hoverOn && _hovered) {
       // Lift with theme ink — never brand FG (washes gold/pink over green/red).
       tileColor = Color.lerp(
         tileColor,
@@ -748,10 +778,26 @@ class _HoverTileState extends State<_HoverTile> {
         child: widget.customTileBuilder!(widget.tile),
       );
     } else {
-      content = _buildTileCard(context, tileColor, textColor, solid: solid);
+      content = _buildTileCard(
+        context,
+        tileColor,
+        textColor,
+        solid: solid,
+        animate: hoverOn,
+      );
     }
 
-    // Hover on all platforms — brighten + rim (no scale: scale caused right overflow).
+    final tappable = GestureDetector(
+      onTap: () => _handleTap(scope),
+      onLongPress: () => scope?.onTileSelect?.call(widget.tile),
+      child: content,
+    );
+
+    // Compact / mobile: tap + long-press only (enableHoverEffects false).
+    if (!hoverOn) {
+      return SizedBox.expand(child: tappable);
+    }
+
     return SizedBox.expand(
       child: MouseRegion(
         onEnter: (_) {
@@ -763,11 +809,7 @@ class _HoverTileState extends State<_HoverTile> {
           scope?.onTileHover?.call(null);
         },
         cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          onTap: () => _handleTap(scope),
-          onLongPress: () => scope?.onTileSelect?.call(widget.tile),
-          child: content,
-        ),
+        child: tappable,
       ),
     );
   }
@@ -785,81 +827,97 @@ class _HoverTileState extends State<_HoverTile> {
     Color tileColor,
     Color textColor, {
     required bool solid,
+    required bool animate,
   }) {
     final w = widget.width;
     final h = widget.height;
     final colors = context.colors;
     final isDark = context.isDark;
     final radius = solid ? 2.0 : 6.0;
+    final hovered = animate && _hovered;
     // Theme ink for glass sheen — not actionPrimaryFg (brand wash → gold/pink tiles).
     final sheen = colors.textPrimary;
     // Module / theme primary only on hover rim (chrome), not tile fill.
     final moduleAccent = Theme.of(context).colorScheme.primary;
     final topSheen = sheen.withValues(
-      alpha: _hovered ? (isDark ? 0.14 : 0.22) : (isDark ? 0.08 : 0.16),
+      alpha: hovered ? (isDark ? 0.14 : 0.22) : (isDark ? 0.08 : 0.16),
     );
-    final edge = _hovered
+    final edge = hovered
         ? moduleAccent.withValues(alpha: isDark ? 0.75 : 0.65)
         : (solid
             ? tileColor.withValues(alpha: 0.15)
             : colors.border.withValues(alpha: isDark ? 0.45 : 0.60));
 
-    // Fill the slot exactly — no shadow (shadow paint looked like right-edge bleed).
-    final card = AnimatedContainer(
-      duration: const Duration(milliseconds: 120),
-      curve: Curves.easeOut,
-      width: double.infinity,
-      height: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: solid
-              ? [
-                  tileColor.withValues(alpha: 0.98),
-                  tileColor.withValues(alpha: 0.88),
-                ]
-              : [
-                  Color.lerp(tileColor, sheen, isDark ? 0.10 : 0.06)!
-                      .withValues(alpha: isDark ? 0.78 : 0.55),
-                  tileColor.withValues(alpha: isDark ? 0.48 : 0.30),
-                ],
-        ),
-        borderRadius: BorderRadius.circular(radius),
-        border: Border.all(
-          color: edge,
-          width: solid ? 0.5 : 1.0,
-        ),
+    final decoration = BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: solid
+            ? [
+                tileColor.withValues(alpha: 0.98),
+                tileColor.withValues(alpha: 0.88),
+              ]
+            : [
+                Color.lerp(tileColor, sheen, isDark ? 0.10 : 0.06)!
+                    .withValues(alpha: isDark ? 0.78 : 0.55),
+                tileColor.withValues(alpha: isDark ? 0.48 : 0.30),
+              ],
       ),
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(
+        color: edge,
+        width: solid ? 0.5 : 1.0,
+      ),
+    );
+
+    final stack = Stack(
+      fit: StackFit.expand,
       clipBehavior: Clip.hardEdge,
-      child: Stack(
-        fit: StackFit.expand,
-        clipBehavior: Clip.hardEdge,
-        children: [
-          Align(
-            alignment: Alignment.topCenter,
-            child: Container(
-              height: (h * 0.38).clamp(6.0, 30.0),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    topSheen,
-                    topSheen.withValues(alpha: 0),
-                  ],
-                ),
+      children: [
+        Align(
+          alignment: Alignment.topCenter,
+          child: Container(
+            height: (h * 0.38).clamp(6.0, 30.0),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  topSheen,
+                  topSheen.withValues(alpha: 0),
+                ],
               ),
             ),
           ),
-          if (_hovered)
-            ColoredBox(
-              color: sheen.withValues(alpha: isDark ? 0.06 : 0.08),
-            ),
-          _buildInnerContent(w, h, textColor, isDark, solid: solid),
-        ],
-      ),
+        ),
+        if (hovered)
+          ColoredBox(
+            color: sheen.withValues(alpha: isDark ? 0.06 : 0.08),
+          ),
+        _buildInnerContent(w, h, textColor, isDark, solid: solid),
+      ],
     );
+
+    final Widget card;
+    if (animate) {
+      card = AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        width: double.infinity,
+        height: double.infinity,
+        clipBehavior: Clip.hardEdge,
+        decoration: decoration,
+        child: stack,
+      );
+    } else {
+      card = Container(
+        width: double.infinity,
+        height: double.infinity,
+        clipBehavior: Clip.hardEdge,
+        decoration: decoration,
+        child: stack,
+      );
+    }
 
     if (solid || kIsWeb) return card;
     return ClipRect(
@@ -882,12 +940,12 @@ class _HoverTileState extends State<_HoverTile> {
         : widget.tile.name;
     final isStock = widget.tile.metadata?['type'] == 'stock';
     final value = widget.tile.value;
-    final showName = w >= 44 && h >= 28;
-    final showPct = w >= 28 && h >= 22;
-    // Amount + %: prefer whenever the tile has room (solid mosaic included).
-    final showAmount = value != null && value > 0 && w >= 52 && h >= 40;
+    // Color-only below these sizes — avoids Column yellow-stripe in tiny cells.
+    final showName = w >= 48 && h >= 32;
+    final showPct = w >= 36 && h >= 26;
+    final showAmount = value != null && value > 0 && w >= 56 && h >= 44;
     final showMonogram = solid && isStock && w >= 72 && h >= 72;
-    final showWeight = !solid && h > 52;
+    final showWeight = !solid && h > 56;
     final nameMaxLines = h > 70 ? 2 : 1;
 
     final nameFontSize = _adaptiveFontSize(w, h, _FontRole.name);
@@ -905,8 +963,8 @@ class _HoverTileState extends State<_HoverTile> {
 
     Widget content = Padding(
       padding: EdgeInsets.symmetric(
-        horizontal: w > 120 ? 8 : 3,
-        vertical: h > 80 ? 8 : 3,
+        horizontal: w > 120 ? 8 : 2,
+        vertical: h > 80 ? 8 : 2,
       ),
       child: FittedBox(
         fit: BoxFit.scaleDown,
@@ -989,7 +1047,8 @@ class _HoverTileState extends State<_HoverTile> {
       ),
     );
 
-    return content;
+    // Always clip — never report flex overflow outside the allocation cell.
+    return ClipRect(child: SizedBox.expand(child: content));
   }
 
   double _adaptiveFontSize(double w, double h, _FontRole role) {
@@ -1046,6 +1105,7 @@ class _Rect {
   /// Shrink by [gap] / 2 on each side so tiles have visual separation.
   /// Never force a min size that would push past the original right/bottom.
   _Rect withGap(double gap) {
+    if (gap <= 0) return this;
     final half = gap / 2;
     return _Rect(
       left: left + half,
@@ -1067,8 +1127,26 @@ class _Rect {
     return _Rect(left: l, top: t, width: w, height: h);
   }
 
+  /// Integer edges that never expand past the canvas (fixes right/bottom stripes).
+  ///
+  /// Uses floor on origin and clamps the far edge to [maxW]/[maxH] so allocation
+  /// partitions stay inside the heatmap widget (100% of available area).
+  _Rect fitInside(double maxW, double maxH) {
+    if (maxW <= 1 || maxH <= 1) {
+      return const _Rect(left: 0, top: 0, width: 0, height: 0);
+    }
+    final l = left.floorToDouble().clamp(0.0, maxW);
+    final t = top.floorToDouble().clamp(0.0, maxH);
+    // Far edge: never round *up* past the canvas (round caused +1px overflow).
+    final r = min((left + width).floorToDouble(), maxW);
+    final b = min((top + height).floorToDouble(), maxH);
+    final w = max(0.0, r - l);
+    final h = max(0.0, b - t);
+    return _Rect(left: l, top: t, width: w, height: h);
+  }
+
   /// Round both edges so neighbors share a pixel line (no floor/ceil hairlines).
-  /// Parent [clamped] still keeps rects inside the canvas.
+  /// Prefer [fitInside] for layout — this can expand a rect by ~0.5px per edge.
   _Rect pixelSnapped() {
     final l = left.roundToDouble();
     final t = top.roundToDouble();

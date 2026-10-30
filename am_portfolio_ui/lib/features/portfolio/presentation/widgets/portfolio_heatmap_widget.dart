@@ -104,10 +104,15 @@ class _PortfolioHeatmapWidgetState
   MarketCapType? _selectedMarketCap;
   late HeatmapLayoutType _selectedLayout;
   HeatmapTileData? _drillDownTile;
-  HeatmapTileData? _inspectedTile;
+  final ValueNotifier<HeatmapTileData?> _inspectedTile =
+      ValueNotifier<HeatmapTileData?>(null);
   int _heatmapLoadGeneration = 0;
-  /// Tab viewport height — mobile heatmap block matches one full screen.
-  double _mobileViewportH = 0;
+  /// Full nested tiles before compact budget — used for sector drill-down.
+  List<HeatmapTileData> _fullOverviewTiles = const [];
+
+  late final ValueChanged<HeatmapTileData?> _onTileHover;
+  late final ValueChanged<HeatmapTileData> _onTileSelect;
+  late final ValueChanged<HeatmapTileData> _onSectorDrill;
 
   @override
   void initState() {
@@ -116,6 +121,9 @@ class _PortfolioHeatmapWidgetState
     // Initialize with config defaults
     _selectedMetric = MetricType.changePercent;
     _selectedLayout = widget.config.defaultLayout;
+    _onTileHover = _handleTileHover;
+    _onTileSelect = _handleTileSelect;
+    _onSectorDrill = _handleSectorDrill;
 
     CommonLogger.info(
       'PortfolioHeatmapWidget initialized',
@@ -128,6 +136,50 @@ class _PortfolioHeatmapWidgetState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _loadHeatmapData();
     });
+  }
+
+  @override
+  void dispose() {
+    _inspectedTile.dispose();
+    super.dispose();
+  }
+
+  void _handleTileHover(HeatmapTileData? tile) {
+    if (!mounted) return;
+    if (tile == null) {
+      if (_inspectedTile.value != null) _inspectedTile.value = null;
+      return;
+    }
+    if (tile.metadata?['type'] != 'stock') return;
+    _inspectedTile.value = tile;
+  }
+
+  void _handleTileSelect(HeatmapTileData tile) {
+    if (!mounted) return;
+    if (tile.metadata?['type'] != 'stock') return;
+    _inspectedTile.value = tile;
+  }
+
+  void _handleSectorDrill(HeatmapTileData tile) {
+    if (!mounted) return;
+    final full = _lookupFullSectorTile(tile);
+    final hasChildren = full.children != null && full.children!.isNotEmpty;
+    if (!hasChildren) return;
+    CommonLogger.userAction(
+      'Heatmap sector drill: ${full.name}',
+      tag: '${widget.config.logTag}.Action',
+    );
+    setState(() {
+      _drillDownTile = full;
+      _inspectedTile.value = null;
+    });
+  }
+
+  HeatmapTileData _lookupFullSectorTile(HeatmapTileData tile) {
+    for (final t in _fullOverviewTiles) {
+      if (t.id == tile.id || t.name == tile.name) return t;
+    }
+    return tile;
   }
 
   @override
@@ -218,33 +270,19 @@ class _PortfolioHeatmapWidgetState
     });
     ref.watch(appTimeFrameProvider);
 
-    // Web: fill the tab. Mobile: scroll page; heatmap block = one screen tall.
+    // Compact + wide: fill the tab viewport (no double-height scroll slab).
     return LayoutBuilder(
       builder: (context, constraints) {
         final viewportH = constraints.maxHeight.isFinite
             ? constraints.maxHeight
             : MediaQuery.sizeOf(context).height;
-        if (widget.config.compactMode) {
-          _mobileViewportH = viewportH;
-        }
-        final content = Padding(
-          padding: widget.config.padding,
-          child: _buildHeatmapContent(),
-        );
-        if (widget.config.compactMode) {
-          return SizedBox(
-            width: constraints.maxWidth,
-            height: viewportH,
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: content,
-            ),
-          );
-        }
         return SizedBox(
           width: constraints.maxWidth,
           height: viewportH,
-          child: content,
+          child: Padding(
+            padding: widget.config.padding,
+            child: _buildHeatmapContent(),
+          ),
         );
       },
     );
@@ -351,6 +389,8 @@ class _PortfolioHeatmapWidgetState
         const LayoutConfig();
     final useNested =
         _drillDownTile == null && _selectedLayout == HeatmapLayoutType.treemap;
+    final baseInteractions = convertedHeatmapData.configuration.interactions ??
+        const InteractionConfig();
     final customConfig = convertedHeatmapData.configuration.copyWith(
       display: (convertedHeatmapData.configuration.display ??
               const DisplayConfig())
@@ -362,8 +402,11 @@ class _PortfolioHeatmapWidgetState
         layoutType: _selectedLayout,
         showLayoutSelector: widget.config.compactMode ? true : null,
         nestedSectors: useNested,
-        // Glass / liquid tiles (translucent fills + soft edge).
-        solidFills: false,
+        // Compact: solid fills (cheap paint). Wide web: glass / liquid tiles.
+        solidFills: widget.config.compactMode,
+      ),
+      interactions: baseInteractions.copyWith(
+        enableHoverEffects: !widget.config.compactMode,
       ),
       selectors: baseSelectors.copyWith(
         selectorLayout:
@@ -375,16 +418,19 @@ class _PortfolioHeatmapWidgetState
       ),
     );
 
-    // Drill-down: flat children. Overview nested mosaic: keep all sectors
-    // (no Other-merge) so TradingView-style bands stay complete.
+    // Drill-down: flat children. Wide nested: full bands. Compact nested: budget.
     var workingTiles = convertedHeatmapData.tiles
         .map((t) => t is HeatmapTileData ? t : HeatmapTileData.fromEntity(t))
         .toList();
+    _fullOverviewTiles = workingTiles;
 
     if (_drillDownTile != null && _drillDownTile!.children != null) {
       workingTiles = _drillDownTile!.children!
           .map((t) => t is HeatmapTileData ? t : HeatmapTileData.fromEntity(t))
           .toList();
+    } else if (useNested && widget.config.compactMode) {
+      workingTiles =
+          SectorHeatmapConverter.applyCompactTreemapBudget(workingTiles);
     }
 
     workingTiles = workingTiles.map((tile) {
@@ -407,9 +453,10 @@ class _PortfolioHeatmapWidgetState
             'Heatmap drill-down: ${tile.name}',
             tag: '${widget.config.logTag}.Action',
           );
+          final full = _lookupFullSectorTile(tile);
           setState(() {
-            _drillDownTile = tile;
-            _inspectedTile = null;
+            _drillDownTile = full;
+            _inspectedTile.value = null;
           });
         },
         customWidgets: tile.customWidgets,
@@ -422,37 +469,9 @@ class _PortfolioHeatmapWidgetState
     );
 
     Widget heatmapBody({required bool showSelectors}) => HeatmapInteractionScope(
-          onTileHover: (tile) {
-            if (!mounted) return;
-            // Only stocks drive the docked inspector; null clears on mouse leave.
-            if (tile == null) {
-              if (_inspectedTile != null) {
-                setState(() => _inspectedTile = null);
-              }
-              return;
-            }
-            if (tile.metadata?['type'] != 'stock') return;
-            setState(() => _inspectedTile = tile);
-          },
-          onTileSelect: (tile) {
-            if (!mounted) return;
-            if (tile.metadata?['type'] != 'stock') return;
-            setState(() => _inspectedTile = tile);
-          },
-          onSectorDrill: (tile) {
-            if (!mounted) return;
-            final hasChildren =
-                tile.children != null && tile.children!.isNotEmpty;
-            if (!hasChildren) return;
-            CommonLogger.userAction(
-              'Heatmap sector drill: ${tile.name}',
-              tag: '${widget.config.logTag}.Action',
-            );
-            setState(() {
-              _drillDownTile = tile;
-              _inspectedTile = null;
-            });
-          },
+          onTileHover: _onTileHover,
+          onTileSelect: _onTileSelect,
+          onSectorDrill: _onSectorDrill,
           child: Stack(
             clipBehavior: Clip.hardEdge,
             children: [
@@ -501,43 +520,39 @@ class _PortfolioHeatmapWidgetState
                   templateType: widget.config.templateType,
                 ),
               ),
-              if (_inspectedTile != null)
-                Positioned(
-                  left: 12,
-                  right: 12,
-                  bottom: widget.config.compactMode ? 8 : 12,
-                  child: Align(
-                    alignment: Alignment.bottomCenter,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        maxWidth: 460,
-                        maxHeight: 44,
-                      ),
-                      child: HeatmapTileInspector(
-                        tile: _inspectedTile!,
-                        onDismiss: () =>
-                            setState(() => _inspectedTile = null),
-                      ),
-                    ),
+              Positioned(
+                left: 12,
+                right: 12,
+                bottom: widget.config.compactMode ? 8 : 12,
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: ValueListenableBuilder<HeatmapTileData?>(
+                    valueListenable: _inspectedTile,
+                    builder: (context, tile, _) {
+                      if (tile == null) return const SizedBox.shrink();
+                      return ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxWidth: 460,
+                          maxHeight: 44,
+                        ),
+                        child: HeatmapTileInspector(tile: tile),
+                      );
+                    },
                   ),
                 ),
+              ),
             ],
           ),
         );
 
-    // Mobile: scroll past KPIs; heatmap block height = one full tab screen.
+    // Compact: KPIs + Expanded mosaic (fills remaining viewport once).
     if (widget.config.compactMode) {
-      final mapH = _mobileViewportH > 0
-          ? _mobileViewportH
-          : MediaQuery.sizeOf(context).height;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildSummaryCardsRow(),
           const SizedBox(height: 8),
-          SizedBox(
-            height: mapH,
-            width: double.infinity,
+          Expanded(
             child: _padAboveBottomNav(
               context,
               child: heatmapBody(showSelectors: true),
@@ -640,7 +655,7 @@ class _PortfolioHeatmapWidgetState
         InkWell(
           onTap: () => setState(() {
             _drillDownTile = null;
-            _inspectedTile = null;
+            _inspectedTile.value = null;
           }),
           borderRadius: BorderRadius.circular(16),
           child: Padding(
@@ -1080,7 +1095,7 @@ class _PortfolioHeatmapWidgetState
     // Update local state; clear drill/inspector so mosaic stays consistent.
     setState(() {
       _drillDownTile = null;
-      _inspectedTile = null;
+      _inspectedTile.value = null;
       if (metric != null) _selectedMetric = metric;
       if (sector != null) _selectedSector = sector;
       if (marketCap != null) _selectedMarketCap = marketCap;

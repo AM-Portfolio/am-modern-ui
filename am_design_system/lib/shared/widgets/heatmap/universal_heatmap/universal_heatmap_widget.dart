@@ -98,25 +98,6 @@ class UniversalHeatmapWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final buildStartTime = DateTime.now();
 
-    // Log widget initialization
-    CommonLogger.info(
-      'UniversalHeatmapWidget build started for ${investmentType.toString()}',
-      tag: 'UniversalHeatmapWidget',
-    );
-
-    CommonLogger.debug(
-      'Widget config: showSelectors=$showSelectors, '
-      'title=$title, compactMode=$compactMode, isLoading=$isLoading, '
-      'hasError=${error != null}, templateType=${templateType.name}',
-      tag: 'UniversalHeatmapWidget',
-    );
-
-    // Log complete heatmap data as JSON string
-    CommonLogger.debug(
-      'Complete HeatmapData JSON: ${heatmapData.toJsonString()}',
-      tag: 'UniversalHeatmapWidget.HeatmapData',
-    );
-
     var effectiveConfig =
         config ??
         UniversalHeatmapConfigManager.getBasicConfig(
@@ -135,14 +116,15 @@ class UniversalHeatmapWidget extends StatelessWidget {
       heatmapData,
     );
 
-    // Log build completion with performance metrics
-    final buildDuration = DateTime.now().difference(buildStartTime);
-    CommonLogger.info(
-      'UniversalHeatmapWidget build completed in ${buildDuration.inMilliseconds}ms - '
-      'Investment: ${investmentType.name}, Template: ${templateType.name}, '
-      'Tiles: ${heatmapData.tiles.length}, Config: ${effectiveConfig.layoutType}',
-      tag: 'UniversalHeatmapWidget.Performance',
-    );
+    assert(() {
+      final buildDuration = DateTime.now().difference(buildStartTime);
+      CommonLogger.debug(
+        'UniversalHeatmapWidget build ${buildDuration.inMilliseconds}ms '
+        'tiles=${heatmapData.tiles.length} layout=${effectiveConfig.layoutType}',
+        tag: 'UniversalHeatmapWidget.Performance',
+      );
+      return true;
+    }());
 
     return widget;
   }
@@ -153,12 +135,6 @@ class UniversalHeatmapWidget extends StatelessWidget {
     ui_config.HeatmapConfig effectiveConfig,
     HeatmapData heatmapData,
   ) {
-    CommonLogger.debug(
-      'Building universal template: layout=${effectiveConfig.layoutType}, '
-      'tiles=${heatmapData.tiles.length}, isLoading=$isLoading',
-      tag: 'UniversalHeatmapWidget.Template',
-    );
-
     final data = heatmapData;
 
     // 1. Create Display Template (handles tile rendering)
@@ -172,11 +148,6 @@ class UniversalHeatmapWidget extends StatelessWidget {
           selectedSector: selectedSector,
           selectedMetric: selectedMetric,
         );
-
-    CommonLogger.debug(
-      'Display template created with layout=${effectiveConfig.layoutType}',
-      tag: 'UniversalHeatmapWidget.Template',
-    );
 
     // 2. Create Selector Template (handles filter UI)
     final selectorTemplate = (showSelectors ?? true)
