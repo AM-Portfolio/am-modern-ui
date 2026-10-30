@@ -71,6 +71,20 @@ final tradeMetricsMobileEnabledProvider = Provider<bool>((ref) {
   }
 });
 
+/// Journal Weekly Review tab (web + mobile).
+/// Defaults OFF — enable via GrowthBook `journal-weekly-review-enabled`.
+final journalWeeklyReviewEnabledProvider = Provider<bool>((ref) {
+  try {
+    ref.watch(featureFlagsReadyProvider);
+    return ref.watch(featureFlagServiceProvider).isOn(
+          FeatureFlagKeys.journalWeeklyReviewEnabled,
+          defaultValue: false,
+        );
+  } catch (_) {
+    return false;
+  }
+});
+
 final securityAlertBannerEnabledProvider = Provider<bool>((ref) {
   return ref.watch(
     featureFlagProvider(FeatureFlagKeys.securityAlertBannerEnabled),
