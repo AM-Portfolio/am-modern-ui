@@ -197,15 +197,25 @@ class JournalEntryFormState extends ConsumerState<JournalEntryForm> {
       return;
     }
     // Same entry hydrated from getById (list row → full) — pull attachments
-    // without resetting edit mode / draft state.
-    if (widget.entry != null && !_isEditMode) {
+    // without resetting edit mode / draft state. Also merge while editing so
+    // Edit-before-hydrate does not leave Supporting Evidence empty for Save.
+    if (widget.entry != null) {
       final nextUrls = widget.entry!.attachments.isNotEmpty
           ? widget.entry!.attachments.map((a) => a.fileUrl).toList()
           : List<String>.from(widget.entry!.imageUrls);
       if (!_listEquals(_imageUrls, nextUrls)) {
         setState(() {
-          _imageUrls = nextUrls;
-          _syncedAttachmentUrls = nextUrls.toSet();
+          if (!_isEditMode) {
+            _imageUrls = nextUrls;
+            _syncedAttachmentUrls = nextUrls.toSet();
+          } else {
+            final pending = _imageUrls
+                .where((u) => !_syncedAttachmentUrls.contains(u))
+                .where((u) => !nextUrls.contains(u))
+                .toList();
+            _imageUrls = [...nextUrls, ...pending];
+            _syncedAttachmentUrls = nextUrls.toSet();
+          }
         });
       }
     }

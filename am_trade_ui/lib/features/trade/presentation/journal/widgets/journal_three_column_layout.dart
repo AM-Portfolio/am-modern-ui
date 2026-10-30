@@ -120,7 +120,10 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
     if (widget.entries.isNotEmpty) {
       _selectedEntryId = widget.entries.first.id;
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) => _notifySelectedSymbol());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _notifySelectedSymbol();
+      _hydrateSelectedEntry();
+    });
   }
 
   @override
@@ -164,6 +167,7 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
         _setCreating(false);
         _notifyComposerOpen();
         _notifySelectedSymbol();
+        await _hydrateSelectedEntry();
       });
       return;
     }
@@ -172,6 +176,7 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
       _applyFocusEntry(focusId);
     }
     if (_isCreatingNew) return;
+    var needsHydrate = false;
     final stillVisible = widget.entries.any((e) => e.id == _selectedEntryId);
     if (!stillVisible) {
       setState(() {
@@ -181,6 +186,7 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
         _forceTradeEditStep = null;
         _hydratedEntry = null;
       });
+      needsHydrate = _selectedEntryId != null;
     } else if (_hydratedEntry != null &&
         _hydratedEntry!.id == _selectedEntryId) {
       final listRow =
@@ -188,9 +194,16 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
       if (listRow != null &&
           !listRow.updatedAt.isBefore(_hydratedEntry!.updatedAt)) {
         _hydratedEntry = null;
+        needsHydrate = true;
       }
+    } else if (_selectedEntryId != null &&
+        (_hydratedEntry == null || _hydratedEntry!.id != _selectedEntryId)) {
+      needsHydrate = true;
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) => _notifySelectedSymbol());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _notifySelectedSymbol();
+      if (needsHydrate) _hydrateSelectedEntry();
+    });
   }
 
   JournalEntry? get _selectedEntry {
@@ -204,14 +217,26 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
     widget.onSelectedSymbolChanged?.call(_selectedEntry?.symbol);
   }
 
+  /// Full getById for the current selection (list rows often omit attachments).
+  Future<void> _hydrateSelectedEntry() async {
+    final id = _selectedEntryId;
+    if (!mounted || id == null || _isCreatingNew) return;
+    final fresh = await widget.journalCubit.loadEntryDetail(id);
+    if (!mounted || fresh == null) return;
+    if (_selectedEntryId != id) return;
+    setState(() => _hydratedEntry = fresh);
+  }
+
   /// Select [entryId], exit any open composer, show the entries rail again.
   Future<void> _applyFocusEntry(String entryId) async {
     if (!mounted) return;
     final already =
         _selectedEntryId == entryId && !_isCreatingNew && !_useTradeWorkflow;
+    final alreadyHydrated = _hydratedEntry?.id == entryId;
     if (already && !_forceTradeEdit) {
       WidgetsBinding.instance
           .addPostFrameCallback((_) => _notifySelectedSymbol());
+      if (!alreadyHydrated) await _hydrateSelectedEntry();
       return;
     }
     if (!await _guardUnsavedLeave()) return;
@@ -229,6 +254,7 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
     _notifyComposerOpen();
     WidgetsBinding.instance
         .addPostFrameCallback((_) => _notifySelectedSymbol());
+    await _hydrateSelectedEntry();
   }
 
   /// Always keep the entries rail (same as Log Day). Trade Pre/Execute/Post
@@ -312,32 +338,31 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
           (widget.entries.isNotEmpty ? widget.entries.first.id : null);
     });
     _setCreating(false);
+    await _hydrateSelectedEntry();
   }
 
   Future<void> _onEntrySelected(JournalEntry entry) async {
-    if (_selectedEntryId == entry.id && !_isCreatingNew && !_forceTradeEdit) {
-      return;
+    final sameSelected =
+        _selectedEntryId == entry.id && !_isCreatingNew && !_forceTradeEdit;
+    final alreadyHydrated = _hydratedEntry?.id == entry.id;
+    // Re-tap of the selected row: still hydrate if we only have the list row.
+    if (sameSelected && alreadyHydrated) return;
+    if (!sameSelected) {
+      if (!await _guardUnsavedLeave()) return;
+      if (!mounted) return;
+      setState(() {
+        _selectedEntryId = entry.id;
+        _useTradeWorkflow = false;
+        _forceTradeEdit = false;
+        _forceTradeEditStep = null;
+        _hydratedEntry = null;
+        _isEditingEntry = false;
+      });
+      _setCreating(false);
+      _notifyComposerOpen();
+      widget.onSelectedSymbolChanged?.call(entry.symbol);
     }
-    if (!await _guardUnsavedLeave()) return;
-    if (!mounted) return;
-    setState(() {
-      _selectedEntryId = entry.id;
-      _useTradeWorkflow = false;
-      _forceTradeEdit = false;
-      _forceTradeEditStep = null;
-      _hydratedEntry = null;
-      _isEditingEntry = false;
-    });
-    _setCreating(false);
-    _notifyComposerOpen();
-    widget.onSelectedSymbolChanged?.call(entry.symbol);
-
-    // Always hydrate full entity — list rows often omit/ lag attachments,
-    // so Log Day view/edit would show empty Supporting Evidence otherwise.
-    final fresh = await widget.journalCubit.loadEntryDetail(entry.id);
-    if (!mounted || fresh == null) return;
-    if (_selectedEntryId != entry.id) return;
-    setState(() => _hydratedEntry = fresh);
+    await _hydrateSelectedEntry();
   }
 
   Future<void> _confirmAndDelete(JournalEntry entry) async {
