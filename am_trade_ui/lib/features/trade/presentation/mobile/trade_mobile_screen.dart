@@ -267,7 +267,7 @@ class _TradeMobileScreenState extends ConsumerState<TradeMobileScreen> {
               ),
               if (ref.watch(tradeMetricsMobileEnabledProvider))
                 SecondarySidebarItem(
-                  title: 'Metrics',
+                  title: 'Analysis',
                   icon: Icons.analytics_outlined,
                   isSelected: _selectedView == MobileTradeViewType.analysis,
                   accentColor: ModuleColors.trade,

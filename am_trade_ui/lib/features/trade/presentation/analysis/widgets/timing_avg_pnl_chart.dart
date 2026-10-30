@@ -109,7 +109,7 @@ class TimingAvgPnlChart extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           border: Border.all(color: context.statusError.withValues(alpha: 0.5)),
-                          borderRadius: BorderRadius.circular(AppRadii.md),
+                          borderRadius: AppRadii.input,
                         ),
                         child: Text(
                           'Weakest: ${weakest.label}',
@@ -139,7 +139,7 @@ class TimingAvgPnlChart extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           border: Border.all(color: context.statusSuccess.withValues(alpha: 0.5)),
-                          borderRadius: BorderRadius.circular(AppRadii.md),
+                          borderRadius: AppRadii.input,
                         ),
                         child: Text(
                           'Best: ${best.label}',
@@ -167,7 +167,6 @@ class TimingAvgPnlChart extends StatelessWidget {
   }
 
   BarChartData _chartData(BuildContext context) {
-    final theme = Theme.of(context);
     final colors = context.colors;
     final success = context.statusSuccess;
     final error = context.statusError;
@@ -188,7 +187,7 @@ class TimingAvgPnlChart extends StatelessWidget {
             return BarTooltipItem(
               '${b.label}\n₹${b.avgPnl.toStringAsFixed(0)}',
               context.text.caption().copyWith(
-                color: theme.colorScheme.onInverseSurface,
+                color: colors.actionPrimaryFg,
                 fontWeight: FontWeight.w600,
               ),
             );
@@ -272,7 +271,7 @@ class TimingAvgPnlChart extends StatelessWidget {
               BarChartRodData(
                 toY: buckets[i].avgPnl == 0 ? (pad * 0.015) : buckets[i].avgPnl,
                 width: buckets.length > 12 ? 6 : 10,
-                borderRadius: BorderRadius.circular(AppRadii.xs),
+                borderRadius: BorderRadius.all(Radius.circular(AppRadii.xs)),
                 color: buckets[i].trades == 0
                     ? colors.border.withValues(alpha: 0.35)
                     : (buckets[i].avgPnl >= 0 ? success : error),
