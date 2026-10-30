@@ -6,6 +6,7 @@ import '../dtos/trade_calendar_dto.dart';
 import '../dtos/trade_controller_dtos.dart';
 import '../dtos/trade_holding_dto.dart';
 import '../dtos/trade_portfolio_dto.dart';
+import '../portfolio_book_merge.dart';
 import '../dtos/trade_portfolio_summary_dto.dart';
 import '../../domain/enums/trade_directions.dart';
 import '../../domain/enums/trade_statuses.dart';
@@ -80,6 +81,30 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
   /// Only when config says so — never inject mock-pf-001 against dig/prod just because kDebugMode.
   final bool _useMockData;
 
+  /// Broker and email books live on the portfolio list, not the trade summary.
+  /// A failed portfolio call leaves the trade rows in place.
+  Future<TradePortfolioListDto> _mergePortfolioServiceBooks(
+    TradePortfolioListDto trade,
+  ) async {
+    final portfolio = _portfolioConfig;
+    if (portfolio == null || portfolio.baseUrl.isEmpty) return trade;
+    try {
+      final uri = _buildUri(portfolio.baseUrl, '/v1/portfolios/list');
+      final books = await _apiClient.get<List<TradePortfolioDto>>(
+        uri,
+        parser: parsePortfolioServiceBooks,
+      );
+      return mergePortfolioBooks(trade, books);
+    } catch (e) {
+      AppLogger.warning(
+        'Portfolio list unavailable; trade books only',
+        tag: 'TradeRemoteDataSource',
+        error: e,
+      );
+      return trade;
+    }
+  }
+
   /// Helper to safely build URI avoiding double slashes
   String _buildUri(String baseUrl, String resource) {
     final cleanBase = baseUrl.endsWith('/')
@@ -96,9 +121,12 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
 
     try {
       // Trade API: GET /v1/portfolio-summary/by-owner — owner from JWT (UserContext).
-      // Do not append userId: /by-owner/{id} is a different fallback endpoint (single summary).
-      final fullUri =
-          _buildUri(_tradeConfig.baseUrl, _tradeConfig.portfolioListResource);
+      // includePaper keeps PAPER books (Paper OMS test) so Calendar and Analysis
+      // can use that trade id. Do not append userId: /by-owner/{id} is a
+      // different fallback endpoint (single summary).
+      final fullUri = withIncludePaper(
+        _buildUri(_tradeConfig.baseUrl, _tradeConfig.portfolioListResource),
+      );
 
       final response = await _apiClient.get<TradePortfolioListDto>(
         fullUri,
@@ -132,12 +160,14 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
         },
       );
 
+      final merged = await _mergePortfolioServiceBooks(response);
+
       AppLogger.info('Trade portfolios fetched successfully from API',
           tag: 'TradeRemoteDataSource');
       AppLogger.methodExit('getTradePortfolios',
           tag: 'TradeRemoteDataSource', result: 'success');
 
-      return response;
+      return merged;
     } catch (e) {
       AppLogger.error(
         'Failed to fetch trade portfolios',

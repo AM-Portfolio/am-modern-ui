@@ -9,9 +9,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
+
 import 'chart_portfolio_holdings_panel.dart';
 import 'chart_portfolio_sidebar.dart';
 import 'market_sdk_chart_providers.dart';
+import 'portfolio_wealth_chart_provider.dart';
 
 enum _ChartBottomSection {
   holdings,
@@ -30,7 +33,7 @@ enum _ChartBottomSection {
 
 /// Chart terminal host: live market OHLC, watchlist + portfolio sidebar,
 /// EI section tags (no hero / no Charts) + F&O bottom strip.
-class ChartTerminalHostPage extends ConsumerWidget {
+class ChartTerminalHostPage extends ConsumerStatefulWidget {
   const ChartTerminalHostPage({
     super.key,
     this.initialSymbol,
@@ -40,34 +43,52 @@ class ChartTerminalHostPage extends ConsumerWidget {
   final String? initialSymbol;
   final String? initialTimeframe;
 
-  static final _liveHistorical = MarketSdkHistoricalProvider();
-  static final _liveMarket = MarketSdkMarketDataProvider();
+  @override
+  ConsumerState<ChartTerminalHostPage> createState() =>
+      _ChartTerminalHostPageState();
+}
+
+class _ChartTerminalHostPageState extends ConsumerState<ChartTerminalHostPage> {
+  late final MarketSdkHistoricalProvider _marketHistorical;
+  late final PortfolioWealthHistoricalProvider _historical;
+  late final MarketSdkMarketDataProvider _market;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    _marketHistorical = MarketSdkHistoricalProvider();
+    _market = MarketSdkMarketDataProvider();
+    _historical = PortfolioWealthHistoricalProvider(
+      market: _marketHistorical,
+      getPortfolioClient: () => ref.read(portfolioApiClientProvider.future),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final omsAsync = ref.watch(paperOmsCubitProvider);
 
-    // Nested scope forces live Market SDK providers for this route only.
+    // Nested scope forces live Market SDK + portfolio-wealth providers.
     return ProviderScope(
       overrides: [
-        chartHistoricalProvider.overrideWithValue(_liveHistorical),
-        chartMarketProvider.overrideWithValue(_liveMarket),
+        chartHistoricalProvider.overrideWithValue(_historical),
+        chartMarketProvider.overrideWithValue(_market),
       ],
       child: omsAsync.when(
         loading: () => const Scaffold(
           body: Center(child: CircularProgressIndicator()),
         ),
         error: (e, _) => _ChartTerminalBody(
-          initialSymbol: initialSymbol,
-          initialTimeframe: initialTimeframe,
+          initialSymbol: widget.initialSymbol,
+          initialTimeframe: widget.initialTimeframe,
           paperEnabled: false,
         ),
         data: (cubit) {
           return BlocProvider<PaperOmsCubit>.value(
             value: cubit,
             child: _ChartTerminalBody(
-              initialSymbol: initialSymbol,
-              initialTimeframe: initialTimeframe,
+              initialSymbol: widget.initialSymbol,
+              initialTimeframe: widget.initialTimeframe,
               paperEnabled: cubit.state.wallet != null,
             ),
           );
@@ -288,6 +309,20 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
     if (mounted && MediaQuery.sizeOf(context).width < 768 && Navigator.of(context).canPop()) {
       Navigator.of(context).maybePop();
     }
+  }
+
+  /// Load portfolio wealth into the main terminal (same feed as Portfolio section).
+  Future<void> _loadPortfolioWealthChart(ChartSelectedPortfolio sel) async {
+    if (sel.isPaper) return;
+    final ctrl = ref.read(chartTerminalProvider.notifier);
+    await ctrl.selectSymbol(
+      PortfolioWealthHistoricalProvider.encodePortfolioSymbol(
+        sel.id,
+        name: sel.name,
+      ),
+      exchange: 'PORTFOLIO',
+      timeframe: ChartTimeframe.d1,
+    );
   }
 
   Widget _sectionBody(String symbol, {bool scrollable = true}) {
@@ -776,7 +811,11 @@ class _ChartTerminalBodyState extends ConsumerState<_ChartTerminalBody>
                   _buildIndicesSidebarTab(context, state, ctrl),
                   ChartPortfolioSidebar(
                     paperEnabled: widget.paperEnabled,
-                    onPortfolioSelected: (_) {
+                    onPortfolioSelected: (sel) {
+                      // Always load on tap (incl. re-tap of already-selected Dhan).
+                      // Provider listen covers first selection; this covers re-tap
+                      // and races where INDIA VIX reload would otherwise win.
+                      _loadPortfolioWealthChart(sel);
                       setState(() => _section = _ChartBottomSection.holdings);
                       if (MediaQuery.sizeOf(context).width < 768 &&
                           Navigator.of(context).canPop()) {

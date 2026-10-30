@@ -5,6 +5,7 @@ import 'package:am_dashboard_ui/presentation/layout/dashboard_layout_store.dart'
 import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_timeframe_provider.dart';
 import 'package:am_dashboard_ui/presentation/providers/has_demo_portfolio_provider.dart';
+import 'package:am_dashboard_ui/presentation/widgets/dashboard_portfolio_selector.dart';
 import 'package:am_dashboard_ui/presentation/widgets/paper_trading_nav_chip.dart';
 import 'package:am_common/am_common.dart';
 import '../shared/widgets/glass_card.dart';
@@ -185,6 +186,8 @@ class _DashboardMobileScreenState
                   PaperTradingNavChip(onTap: widget.onOpenPaper!),
                   const SizedBox(width: 6),
                 ],
+                DashboardPortfolioSelector(userId: widget.userId),
+                const SizedBox(width: 6),
                 const GlobalTimeFrameBar(
                   variant: GlobalTimeFrameVariant.dropdown,
                 ),

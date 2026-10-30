@@ -9,6 +9,8 @@
 | Target env | preprod |
 | Branch | feature/overview-chart-timeframe-sync |
 
+**Chart SoT (three-service wiring, data points, draw.io):** [am-portfolio/docs/feature-portfolio-chart/](../../../am-portfolio/docs/feature-portfolio-chart/README.md) — this pack is TF / 1D UX only.
+
 ## Problem
 
 Overview comparison chart does not feel synced to the global timeframe: 1Y can look wrong / labels weak; **1D starts ~13:55** instead of full session 09:15–15:30 IST; holiday/weekend 1D flatlines instead of last working day; expand icon is off on Overview.

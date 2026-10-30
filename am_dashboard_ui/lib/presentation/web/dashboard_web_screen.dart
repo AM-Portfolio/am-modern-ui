@@ -6,6 +6,7 @@ import 'package:am_dashboard_ui/presentation/providers/dashboard_provider.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_portfolio_refresh_binder.dart';
 import 'package:am_dashboard_ui/presentation/providers/dashboard_timeframe_provider.dart';
 import 'package:am_dashboard_ui/presentation/providers/has_demo_portfolio_provider.dart';
+import 'package:am_dashboard_ui/presentation/widgets/dashboard_portfolio_selector.dart';
 import 'package:am_dashboard_ui/presentation/widgets/paper_trading_nav_chip.dart';
 import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
@@ -164,6 +165,8 @@ class DashboardWebScreen extends ConsumerWidget {
                           PaperTradingNavChip(onTap: onOpenPaper!),
                           const SizedBox(width: AppSpacing.sm),
                         ],
+                        DashboardPortfolioSelector(userId: userId),
+                        const SizedBox(width: AppSpacing.sm),
                         const GlobalTimeFrameBar(),
                         if (onQuickAdd != null) ...[
                           const SizedBox(width: AppSpacing.sm),

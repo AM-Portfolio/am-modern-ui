@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
+import 'package:am_portfolio_ui/features/portfolio/internal/domain/entities/portfolio_list.dart';
+import 'package:am_portfolio_ui/features/portfolio/presentation/cubit/portfolio_cubit.dart';
 
 import 'package:am_common/am_common.dart';
 import '../../internal/domain/entities/trade_controller_entities.dart';
@@ -13,6 +15,7 @@ import '../components/portfolio_selection_prompt.dart';
 import '../holdings/pages/trade_holdings_dashboard_web_page.dart';
 import '../journal/pages/journal_web_page.dart';
 import '../models/trade_portfolio_view_model.dart';
+import '../models/visible_trade_portfolios.dart';
 import '../trades/pages/trade_list_web_page.dart';
 import '../analysis/trade_analysis_page.dart';
 import 'package:am_market_ui/shared/widgets/trading_view_chart_widget.dart';
@@ -45,7 +48,6 @@ import '../../providers/oms_providers.dart';
 import '../../internal/data/dtos/oms_dto.dart';
 import 'package:am_portfolio_ui/features/portfolio/presentation/mobile/widgets/portfolio_form_modal.dart';
 import 'package:am_portfolio_ui/features/portfolio/internal/data/dtos/portfolio_update_request_dto.dart';
-import 'package:am_portfolio_ui/features/portfolio/internal/domain/entities/portfolio_list.dart';
 import 'package:am_portfolio_ui/features/portfolio/providers/portfolio_providers.dart';
 
 /// Trade view types for navigation
@@ -132,12 +134,28 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
   void didUpdateWidget(TradeWebScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Keep local selection in sync with route props (portfolio switch).
-    if (widget.selectedPortfolioId != oldWidget.selectedPortfolioId &&
-        widget.selectedPortfolioId != null) {
+    final idChanged = widget.selectedPortfolioId != oldWidget.selectedPortfolioId &&
+        widget.selectedPortfolioId != null;
+    final nameChanged = widget.selectedPortfolioName != oldWidget.selectedPortfolioName &&
+        widget.selectedPortfolioName != null &&
+        widget.selectedPortfolioName!.isNotEmpty;
+    if (idChanged || nameChanged) {
       setState(() {
-        _currentPortfolioId = widget.selectedPortfolioId;
-        _currentPortfolioName = widget.selectedPortfolioName;
+        if (widget.selectedPortfolioId != null) {
+          _currentPortfolioId = widget.selectedPortfolioId;
+        }
+        if (widget.selectedPortfolioName != null &&
+            widget.selectedPortfolioName!.isNotEmpty) {
+          _currentPortfolioName = widget.selectedPortfolioName;
+        }
       });
+      if (idChanged) {
+        // Holdings, Calendar, Analysis, Trades, and Journal read this id.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _swipeController.updateItems(_buildNavigationItems());
+        });
+      }
     }
     if (widget.initialTabIndex != null &&
         widget.initialTabIndex != oldWidget.initialTabIndex &&
@@ -404,10 +422,33 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
         tag: 'TradeWebScreen');
   }
 
+  List<PortfolioItem> _shellPortfolios(BuildContext context) {
+    try {
+      return context.watch<PortfolioCubit>().state.portfolioList?.portfolios ??
+          const [];
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  List<TradePortfolioViewModel> _visiblePortfolios(
+    BuildContext context,
+    List<TradePortfolioViewModel> trade,
+  ) {
+    return mergeVisibleTradePortfolios(
+      trade: trade,
+      shell: _shellPortfolios(context),
+      selectedId: _currentPortfolioId,
+      selectedName: _currentPortfolioName,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final brokerPortfolios =
-        ref.watch(tradePortfoliosStreamProvider).asData?.value ?? const [];
+    final brokerPortfolios = _visiblePortfolios(
+      context,
+      ref.watch(tradePortfoliosStreamProvider).asData?.value ?? const [],
+    );
     final omsCubit = ref.watch(omsCubitProvider).asData?.value;
 
     Widget tree(List<TradePortfolioViewModel> portfolios, OmsWallet? paper) {
@@ -660,8 +701,10 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
       builder: (context, ref, child) {
         final portfoliosAsyncValue = ref.watch(enrichedTradePortfoliosProvider);
         // Progressive: stream often has realized cards before enrichment finishes.
-        final streamPortfolios =
-            ref.watch(tradePortfoliosStreamProvider).asData?.value;
+        final streamPortfolios = _visiblePortfolios(
+          context,
+          ref.watch(tradePortfoliosStreamProvider).asData?.value ?? const [],
+        );
 
         return portfoliosAsyncValue.when(
           data: (portfolios) {
@@ -801,19 +844,20 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
               );
             }
 
+            final visible = _visiblePortfolios(context, portfolios);
             if (omsCubit == null) {
-              return template(portfolios, null);
+              return template(visible, null);
             }
             return BlocProvider<OmsCubit>.value(
               value: omsCubit,
               child: BlocBuilder<OmsCubit, OmsState>(
                 builder: (context, oms) =>
-                    template(portfolios, oms.paperWallet),
+                    template(visible, oms.paperWallet),
               ),
             );
           },
           loading: () {
-            if (streamPortfolios != null && streamPortfolios.isNotEmpty) {
+            if (streamPortfolios.isNotEmpty) {
               return TradePortfolioDiscoveryTemplate(
                 portfolios: streamPortfolios,
                 isLoading: false,
@@ -833,9 +877,9 @@ class TradeWebScreenState extends ConsumerState<TradeWebScreen> {
             );
           },
           error: (error, _) => TradePortfolioDiscoveryTemplate(
-            portfolios: streamPortfolios ?? const [],
+            portfolios: streamPortfolios,
             isLoading: false,
-            errorMessage: streamPortfolios == null || streamPortfolios.isEmpty
+            errorMessage: streamPortfolios.isEmpty
                 ? 'Failed to load portfolios: $error'
                 : null,
             onPortfolioSelected: (portfolio) {

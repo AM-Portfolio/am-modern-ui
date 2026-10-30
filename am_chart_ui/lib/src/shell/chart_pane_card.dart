@@ -159,6 +159,21 @@ class _IdentityStrip extends StatelessWidget {
   final bool isActive;
   final ChartBar? hoverBar;
 
+  static String _paneTitle(ChartPaneState pane) {
+    final s = pane.symbol.trim();
+    final u = s.toUpperCase();
+    if (u == 'OVERALL' || s.toLowerCase() == 'overall') return 'Overall';
+    if (u.startsWith('PORTFOLIO:')) {
+      final rest = s.substring('PORTFOLIO:'.length);
+      final parts = rest.split('|');
+      if (parts.length > 1 && parts[1].trim().isNotEmpty) {
+        return parts[1].trim();
+      }
+      return 'Portfolio';
+    }
+    return s;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -232,7 +247,7 @@ class _IdentityStrip extends StatelessWidget {
                 const SizedBox(width: 6),
               ],
               Text(
-                '${pane.symbol} · ${pane.exchange}',
+                '${_paneTitle(pane)} · ${pane.exchange}',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w800,

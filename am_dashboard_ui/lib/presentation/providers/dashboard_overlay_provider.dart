@@ -130,6 +130,7 @@ class DashboardOverlayNotifier extends Notifier<OverlayChartState> {
       final history = await repo.getPortfolioHistory(
         client,
         timeFrame: timeFrame,
+        portfolioId: _preferredPortfolioId,
       );
       if (gen != _generation) return;
 
