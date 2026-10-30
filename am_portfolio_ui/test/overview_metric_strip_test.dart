@@ -53,6 +53,7 @@ Future<void> _pump(
   required PortfolioSummary summary,
   required double width,
   bool isPhone = false,
+  bool isHoldingsLoading = false,
 }) async {
   await tester.binding.setSurfaceSize(Size(width, 800));
   addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -66,6 +67,7 @@ Future<void> _pump(
             summary: summary,
             holdings: holdings,
             isPhone: isPhone,
+            isHoldingsLoading: isHoldingsLoading,
             compact: isPhone,
             glowBorder: !isPhone,
           ),
@@ -131,17 +133,34 @@ void main() {
     expect(find.text('Invested Amount'), findsOneWidget);
   });
 
-  testWidgets('empty holdings keep four cards until mail cost is known',
+  testWidgets('broker principal keeps four cards while holdings load',
       (tester) async {
     await _pump(
       tester,
       width: 960,
       summary: _summary(invested: 863000, gain: 12000),
       holdings: const [],
+      isHoldingsLoading: true,
     );
 
     expect(find.text('Total Return'), findsOneWidget);
     expect(find.text('Invested Amount'), findsOneWidget);
+    expect(find.text("Today's P&L"), findsOneWidget);
+    expect(find.text('Total Balance'), findsOneWidget);
+  });
+
+  testWidgets('zero-principal loading stays at two cards (no flash)',
+      (tester) async {
+    await _pump(
+      tester,
+      width: 960,
+      summary: _summary(),
+      holdings: const [],
+      isHoldingsLoading: true,
+    );
+
+    expect(find.text('Total Return'), findsNothing);
+    expect(find.text('Invested Amount'), findsNothing);
     expect(find.text("Today's P&L"), findsOneWidget);
     expect(find.text('Total Balance'), findsOneWidget);
   });

@@ -8,13 +8,15 @@ import '../../internal/domain/entities/portfolio_summary.dart';
 import 'portfolio_metric_card.dart';
 
 /// Overview KPI strip. Mail / zero-cost books omit Total Return and
-/// Invested Amount. Broker books (and the loading frame) keep all four.
+/// Invested Amount. Broker books with principal keep all four; zero-
+/// principal books stay at two cards while holdings load (no 4→2 flash).
 class OverviewMetricStrip extends StatelessWidget {
   const OverviewMetricStrip({
     super.key,
     required this.summary,
     required this.holdings,
     required this.isPhone,
+    this.isHoldingsLoading = false,
     this.compact = false,
     this.glowBorder = true,
     this.animate = false,
@@ -23,6 +25,7 @@ class OverviewMetricStrip extends StatelessWidget {
   final PortfolioSummary summary;
   final List<PortfolioHolding> holdings;
   final bool isPhone;
+  final bool isHoldingsLoading;
   final bool compact;
   final bool glowBorder;
   final bool animate;
@@ -40,6 +43,7 @@ class OverviewMetricStrip extends StatelessWidget {
       investmentValue: summary.investmentValue,
       totalInvested: summary.totalInvested,
       holdings: holdings,
+      isHoldingsLoading: isHoldingsLoading,
     );
     final periodReturn = summary.totalGainLoss;
     final periodReturnPct = summary.totalGainLossPercentage;
