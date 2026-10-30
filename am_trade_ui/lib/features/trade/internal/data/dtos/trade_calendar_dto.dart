@@ -13,13 +13,35 @@ class TradeCalendarDto {
   factory TradeCalendarDto.fromJson(Map<String, dynamic> json) {
     final portfolioTrades = <String, List<TradeDetailsDto>>{};
 
-    for (final entry in json.entries) {
-      final portfolioId = entry.key;
-      final tradesJson = entry.value as List<dynamic>;
+    // Wrapped shape: { "portfolioTrades": { "<id>": [ ... ] } }
+    final raw = json['portfolioTrades'];
+    final source = raw is Map<String, dynamic>
+        ? raw
+        : (raw is Map
+            ? Map<String, dynamic>.from(raw)
+            : json);
 
-      portfolioTrades[portfolioId] = tradesJson
-          .map((tradeJson) => TradeDetailsDto.fromJson(tradeJson as Map<String, dynamic>))
-          .toList();
+    for (final entry in source.entries) {
+      final portfolioId = entry.key;
+      if (portfolioId == 'portfolioTrades') continue;
+      final value = entry.value;
+      if (value == null) continue;
+      if (value is! List) continue;
+
+      final trades = <TradeDetailsDto>[];
+      for (final item in value) {
+        if (item is! Map) continue;
+        try {
+          trades.add(
+            TradeDetailsDto.fromJson(Map<String, dynamic>.from(item)),
+          );
+        } catch (_) {
+          // Skip malformed rows so one bad fill does not blank the whole calendar.
+        }
+      }
+      if (trades.isNotEmpty) {
+        portfolioTrades[portfolioId] = trades;
+      }
     }
 
     return TradeCalendarDto(portfolioTrades: portfolioTrades);

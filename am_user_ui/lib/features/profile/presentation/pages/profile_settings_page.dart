@@ -769,56 +769,65 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
           ],
         ),
 
-        // Preferences: theme stays on mobile/native only — web uses the global
-        // theme bar. Notifications removed from profile entirely.
-        if (!kIsWeb) ...[
-          const SizedBox(height: AppSpacing.xl),
-          _buildSectionHeader(context, 'Preferences', isDark),
-          const SizedBox(height: AppSpacing.md),
-          _buildGlassSection(
-            context,
-            isDark,
-            children: [
-              BlocBuilder<ThemeCubit, ThemeState>(
-                builder: (context, themeState) {
-                  final currentMode = themeState.mode;
-                  var modeLabel = 'System Default';
-                  if (currentMode == AppThemeMode.light) {
-                    modeLabel = 'Minimal Light';
-                  } else if (currentMode == AppThemeMode.white) {
-                    modeLabel = 'Pure White';
-                  } else if (currentMode == AppThemeMode.dark) {
-                    modeLabel = 'Midnight OLED';
-                  } else if (currentMode == AppThemeMode.skyBlue) {
-                    modeLabel = 'Sky Blue Breeze';
-                  } else if (currentMode == AppThemeMode.imperialGold) {
-                    modeLabel = 'Imperial Gold';
-                  } else if (currentMode == AppThemeMode.cyberNeon) {
-                    modeLabel = 'Cyber Neon / Rose Quartz';
-                  }
+        // Preferences: available across mobile web, mobile native, and desktop.
+        const SizedBox(height: AppSpacing.xl),
+        _buildSectionHeader(context, 'Preferences', isDark),
+        const SizedBox(height: AppSpacing.md),
+        _buildGlassSection(
+          context,
+          isDark,
+          children: [
+            BlocBuilder<ThemeCubit, ThemeState>(
+              builder: (context, themeState) {
+                final currentMode = themeState.mode;
+                var modeLabel = 'System Default';
+                if (currentMode == AppThemeMode.light) {
+                  modeLabel = 'Minimal Light';
+                } else if (currentMode == AppThemeMode.white) {
+                  modeLabel = 'Pure White';
+                } else if (currentMode == AppThemeMode.dark) {
+                  modeLabel = 'Midnight OLED';
+                } else if (currentMode == AppThemeMode.skyBlue) {
+                  modeLabel = 'Sky Blue Breeze';
+                } else if (currentMode == AppThemeMode.imperialGold) {
+                  modeLabel = 'Imperial Gold';
+                } else if (currentMode == AppThemeMode.cyberNeon) {
+                  modeLabel = 'Cyber Neon / Rose Quartz';
+                }
 
-                  return _buildSettingTile(
-                    context,
-                    icon: isDark
-                        ? Icons.light_mode_outlined
-                        : Icons.dark_mode_outlined,
-                    title: 'Theme Mode',
-                    subtitle: modeLabel,
-                    isDark: isDark,
-                    onTap: () =>
-                        _showThemeSelectionDialog(context, currentMode),
-                    trailing: Text(
-                      modeLabel,
-                      style: context.text.body().copyWith(
-                        color: context.colors.textSecondary,
+                return _buildSettingTile(
+                  context,
+                  icon: isDark
+                      ? Icons.light_mode_outlined
+                      : Icons.dark_mode_outlined,
+                  title: 'Theme Mode',
+                  subtitle: 'Appearance and color accents',
+                  isDark: isDark,
+                  onTap: () =>
+                      _showThemeSelectionDialog(context, currentMode),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        modeLabel,
+                        style: context.text.body().copyWith(
+                          color: context.colors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        ],
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: context.colors.divider,
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
 
         const SizedBox(height: AppSpacing.xl),
 
@@ -1201,13 +1210,18 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage>
   }
 
   void _showThemeSelectionDialog(BuildContext context, AppThemeMode currentMode) {
-    showThemeModePickerDialog(
-      context: context,
-      currentMode: currentMode,
-      onSelected: (AppThemeMode mode) {
-        context.read<ThemeCubit>().setTheme(mode);
-      },
-    );
+    try {
+      final cubit = context.read<ThemeCubit>();
+      showThemeModePickerDialog(
+        context: context,
+        currentMode: currentMode,
+        onSelected: (AppThemeMode mode) {
+          cubit.setTheme(mode);
+        },
+      );
+    } catch (e) {
+      debugPrint('Theme selection error: $e');
+    }
   }
 
   void _showDeleteAccountDialog(BuildContext context, bool isDark) {

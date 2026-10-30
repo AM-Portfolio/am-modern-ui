@@ -22,6 +22,7 @@ class MultiSeriesChartConfig extends Equatable {
     this.timeFrameCode,
     this.headerLeading,
     this.legendTrailing,
+    this.showUnitToggle = true,
     this.showExpandButton = true,
     this.onOpenExpanded,
     this.expandedChartPath,
@@ -29,7 +30,15 @@ class MultiSeriesChartConfig extends Equatable {
     this.preNormalizedPercent = false,
     this.initialShowAbsoluteValues = false,
     this.accentColor,
+    this.priceLookup,
+    this.changePctLookup,
   });
+
+  /// Optional lookup callback for the latest live price of a series symbol.
+  final double? Function(String symbol)? priceLookup;
+
+  /// Optional lookup callback for the percentage change of a series symbol.
+  final double? Function(String symbol)? changePctLookup;
 
   /// When null, [resolveSelectedSeries] uses [preferredSeriesOrder] + data labels.
   final List<String>? selectedSeries;
@@ -51,6 +60,9 @@ class MultiSeriesChartConfig extends Equatable {
 
   /// Trailing control beside legend (e.g. add-series popup).
   final Widget? legendTrailing;
+
+  /// When false, hide the built-in % / 123 toggle (host can render its own).
+  final bool showUnitToggle;
 
   final bool showExpandButton;
   final VoidCallback? onOpenExpanded;
@@ -84,6 +96,7 @@ class MultiSeriesChartConfig extends Equatable {
         isBarChart,
         height,
         timeFrameCode,
+        showUnitToggle,
         showExpandButton,
         expandedChartPath,
         showEndValuePills,

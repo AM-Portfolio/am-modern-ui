@@ -548,7 +548,10 @@ class _FilterBottomSheetContentState extends ConsumerState<_FilterBottomSheetCon
     children: [
       _buildSelectionIcon(theme, isSelected),
       const SizedBox(width: 10),
-      if (filter.isDefault) ...[Icon(Icons.star, size: 16, color: Colors.amber[700]), const SizedBox(width: 6)],
+      if (filter.isDefault) ...[
+        Icon(Icons.star, size: 16, color: context.statusWarning),
+        const SizedBox(width: 6),
+      ],
       Expanded(
         child: Text(
           filter.name,
@@ -691,18 +694,20 @@ class _FilterBottomSheetContentState extends ConsumerState<_FilterBottomSheetCon
     itemBuilder: (context, index) => _buildFilterCard(filterList.filters[index]),
   );
 
-  Widget _buildFilterCard(FavoriteFilter filter) => Card(
-    margin: const EdgeInsets.only(bottom: 8),
-    child: ListTile(
-      leading: _buildFilterLeadingIcon(filter.isDefault),
-      title: Text(filter.name),
-      subtitle: filter.description != null ? Text(filter.description!) : null,
-      trailing: _buildFilterTrailingActions(filter),
+  Widget _buildFilterCard(FavoriteFilter filter) => Builder(
+    builder: (context) => Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: Icon(
+          filter.isDefault ? Icons.star : Icons.bookmark_outline,
+          color: filter.isDefault ? context.statusWarning : null,
+        ),
+        title: Text(filter.name),
+        subtitle: filter.description != null ? Text(filter.description!) : null,
+        trailing: _buildFilterTrailingActions(filter),
+      ),
     ),
   );
-
-  Widget _buildFilterLeadingIcon(bool isDefault) =>
-      Icon(isDefault ? Icons.star : Icons.bookmark_outline, color: isDefault ? Colors.amber[700] : null);
 
   Widget _buildFilterTrailingActions(FavoriteFilter filter) => Row(
     mainAxisSize: MainAxisSize.min,

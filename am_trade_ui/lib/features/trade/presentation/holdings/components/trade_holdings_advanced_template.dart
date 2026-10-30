@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../journal_providers.dart';
+import '../../journal/utils/journal_this_trade.dart';
 import '../../models/trade_holding_view_model.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:am_common/am_common.dart';
 
-class TradeHoldingsAdvancedTemplate extends StatefulWidget {
+class TradeHoldingsAdvancedTemplate extends ConsumerStatefulWidget {
   const TradeHoldingsAdvancedTemplate({
     required this.holdings,
     required this.isLoading,
@@ -39,12 +42,14 @@ class TradeHoldingsAdvancedTemplate extends StatefulWidget {
   final Widget? listFooter;
 
   @override
-  State<TradeHoldingsAdvancedTemplate> createState() =>
+  ConsumerState<TradeHoldingsAdvancedTemplate> createState() =>
       _TradeHoldingsAdvancedTemplateState();
 }
 
 class _TradeHoldingsAdvancedTemplateState
-    extends State<TradeHoldingsAdvancedTemplate> with TickerProviderStateMixin {
+    extends ConsumerState<TradeHoldingsAdvancedTemplate>
+    with TickerProviderStateMixin {
+  String? _journalingTradeId;
   final Set<String> _expandedItems = {};
   int _currentPage = 0;
   int? _sortColumnIndex;
@@ -61,6 +66,25 @@ class _TradeHoldingsAdvancedTemplateState
   static const EdgeInsets _cellPad = EdgeInsets.symmetric(horizontal: 8);
 
   Color get _accent => widget.accentColor ?? ModuleColors.trade;
+
+  Future<void> _journalThis(TradeHoldingViewModel holding) async {
+    if (_journalingTradeId != null || widget.embedded) return;
+    setState(() => _journalingTradeId = holding.tradeId);
+    try {
+      final cubit = await ref.read(journalCubitProvider.future);
+      if (!mounted) return;
+      await openJournalThisTrade(
+        context,
+        cubit: cubit,
+        tradeId: holding.tradeId,
+        portfolioId: holding.portfolioId,
+        holding: holding,
+      );
+    } finally {
+      if (mounted) setState(() => _journalingTradeId = null);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -548,6 +572,7 @@ class _TradeHoldingsAdvancedTemplateState
                 Icon(
                   _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
                   size: 14,
+                  color: _accent,
                 ),
             ],
           ),
@@ -693,7 +718,7 @@ class _TradeHoldingsAdvancedTemplateState
         height: 32,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Theme.of(context).primaryColor.withOpacity(0.8), Theme.of(context).primaryColor.withOpacity(0.4)],
+            colors: [_accent.withValues(alpha: 0.85), _accent.withValues(alpha: 0.45)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -813,12 +838,12 @@ class _TradeHoldingsAdvancedTemplateState
     final muted = context.textSecondary;
     final cardSurface = theme.cardSurface;
     final cardBorder = isExpanded
-        ? pnlColor.withValues(alpha: 0.45)
+        ? _accent.withValues(alpha: 0.55)
         : theme.border;
     final avatarLetter = holding.displaySymbol.isNotEmpty
         ? holding.displaySymbol.substring(0, 1).toUpperCase()
         : '?';
-    final currentPriceColor = context.statusWarning;
+    final currentPriceColor = _accent;
 
     return Material(
       color: Colors.transparent,
@@ -860,13 +885,13 @@ class _TradeHoldingsAdvancedTemplateState
                       height: AppComponentSizes.iconButtonSize,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: pnlColor.withValues(alpha: 0.22),
+                        color: _accent.withValues(alpha: 0.16),
                         borderRadius: BorderRadius.circular(AppRadii.sm),
                       ),
                       child: Text(
                         avatarLetter,
                         style: TextStyle(
-                          color: context.textPrimary,
+                          color: _accent,
                           fontWeight: FontWeight.bold,
                           fontSize: AppTypeScale.lg,
                         ),
@@ -1164,23 +1189,55 @@ class _TradeHoldingsAdvancedTemplateState
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerRight,
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  OpenAddTradeNotification(
-                    portfolioId: holding.portfolioId,
-                    existingTrade: holding,
-                  ).dispatch(context);
-                },
-                icon: Icon(Icons.edit, size: 16),
-                label: Text('Edit Trade'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: _accent,
-                  side: BorderSide(
-                    color: _accent.withValues(alpha: 0.45),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                alignment: WrapAlignment.end,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: _journalingTradeId != null
+                        ? null
+                        : () => _journalThis(holding),
+                    icon: _journalingTradeId == holding.tradeId
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.menu_book_outlined, size: 16),
+                    label: const Text('Journal this'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _accent,
+                      side: BorderSide(
+                        color: _accent.withValues(alpha: 0.45),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                    ),
                   ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                ),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      OpenAddTradeNotification(
+                        portfolioId: holding.portfolioId,
+                        existingTrade: holding,
+                      ).dispatch(context);
+                    },
+                    icon: const Icon(Icons.edit, size: 16),
+                    label: const Text('Edit Trade'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _accent,
+                      side: BorderSide(
+                        color: _accent.withValues(alpha: 0.45),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -1367,7 +1424,7 @@ class _TradeHoldingsAdvancedTemplateState
         return context.marketNegative;
       case 'ACTIVE':
       case 'OPEN':
-        return context.statusInfo;
+        return _accent;
       case 'BREAKEVEN':
         return context.statusWarning;
       default:

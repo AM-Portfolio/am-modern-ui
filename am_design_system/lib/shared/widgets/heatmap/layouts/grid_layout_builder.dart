@@ -99,16 +99,9 @@ class GridLayoutBuilder extends HeatmapLayoutBuilder {
     HeatmapData data,
   ) {
     if (!data.configuration.showPerformance) {
-      return Colors.blue.shade400;
+      return themeColors(context).statusInfo;
     }
     return getPerformanceColor(context, tile.performance);
-  }
-
-  /// Gets appropriate text color based on background color
-  @override
-  Color getTextColor(Color backgroundColor) {
-    final luminance = backgroundColor.computeLuminance();
-    return luminance > 0.5 ? Colors.black87 : Colors.white;
   }
 
   /// Builds a centered grid card with consistent styling and proper alignment
@@ -121,17 +114,21 @@ class GridLayoutBuilder extends HeatmapLayoutBuilder {
   }) {
     // Get tile color for consistent background
     final tileColor = getTileColor(context, tile, data);
-    final textColor = getTextColor(tileColor);
+    final textColor = getTextColor(context, tileColor);
+    final colors = themeColors(context);
 
     return Container(
       margin: const EdgeInsets.all(1), // Minimal margin for visual separation
       decoration: BoxDecoration(
         color: tileColor, // Use consistent tile color as background
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: Colors.white.withOpacity(0.2), width: 0.5),
+        border: Border.all(
+          color: colors.border.withValues(alpha: 0.45),
+          width: 0.5,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: colors.textPrimary.withValues(alpha: 0.08),
             blurRadius: 1,
             offset: const Offset(0, 0.5),
           ),

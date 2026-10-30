@@ -2,6 +2,7 @@ import 'package:am_library/am_library.dart';
 import 'package:am_common/core/config/config_service.dart';
 import 'package:am_common/core/config/app_config.dart';
 import 'package:am_common/am_common.dart';
+import '../dtos/calendar_latest_activity_dto.dart';
 import '../dtos/trade_calendar_dto.dart';
 import '../dtos/trade_controller_dtos.dart';
 import '../dtos/trade_holding_dto.dart';
@@ -22,6 +23,9 @@ abstract class TradeRemoteDataSource {
 
   /// Get trade summary from remote API
   Future<TradePortfolioSummaryDto> getTradeSummary(String portfolioId);
+
+  /// Latest trade activity for calendar default open; null when 204 / no trades.
+  Future<CalendarLatestActivityDto?> getCalendarLatestActivity(String portfolioId);
 
   /// Get trade calendar by month from remote API
   Future<TradeCalendarDto> getTradeCalendarByMonth(
@@ -112,6 +116,38 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
         : baseUrl;
     final cleanResource = resource.startsWith('/') ? resource : '/$resource';
     return '$cleanBase$cleanResource';
+  }
+
+  /// Shared calendar parser — never throws on null / sparse rows.
+  TradeCalendarDto _parseTradeCalendarResponse(dynamic data) {
+    if (data == null) return const TradeCalendarDto(portfolioTrades: {});
+
+    if (data is List) {
+      if (data.isEmpty) return const TradeCalendarDto(portfolioTrades: {});
+      final portfolioTrades = <String, List<TradeDetailsDto>>{};
+      for (final item in data) {
+        if (item is! Map) continue;
+        try {
+          final tradeJson = Map<String, dynamic>.from(item);
+          final pid = tradeJson['customPortfolioId'] as String? ??
+              tradeJson['portfolioId'] as String?;
+          if (pid == null || pid.isEmpty) continue;
+          final trade = TradeDetailsDto.fromJson(tradeJson);
+          portfolioTrades.putIfAbsent(pid, () => []).add(trade);
+        } catch (_) {
+          // Skip bad row.
+        }
+      }
+      return TradeCalendarDto(portfolioTrades: portfolioTrades);
+    }
+
+    if (data is Map) {
+      final json = Map<String, dynamic>.from(data);
+      if (json.isEmpty) return const TradeCalendarDto(portfolioTrades: {});
+      return TradeCalendarDto.fromJson(json);
+    }
+
+    return const TradeCalendarDto(portfolioTrades: {});
   }
 
   @override
@@ -420,6 +456,56 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
   }
 
   @override
+  Future<CalendarLatestActivityDto?> getCalendarLatestActivity(
+      String portfolioId) async {
+    AppLogger.methodEntry(
+      'getCalendarLatestActivity',
+      tag: 'TradeRemoteDataSource',
+      params: {'portfolioId': portfolioId},
+    );
+
+    try {
+      final fullUri =
+          '${_buildUri(_tradeConfig.baseUrl, 'v1/trades/calendar/latest-activity')}?portfolioId=$portfolioId';
+
+      final response = await _apiClient.get<CalendarLatestActivityDto?>(
+        fullUri,
+        parser: (data) {
+          if (data == null) return null;
+          if (data is! Map<String, dynamic>) return null;
+          if (data.isEmpty) return null;
+          return CalendarLatestActivityDto.fromJson(data);
+        },
+      );
+
+      AppLogger.methodExit(
+        'getCalendarLatestActivity',
+        tag: 'TradeRemoteDataSource',
+        result: response == null
+            ? 'empty'
+            : '${response.year}-${response.month}',
+      );
+      return response;
+    } catch (e, stackTrace) {
+      AppLogger.error(
+        'Failed to fetch calendar latest activity',
+        tag: 'TradeRemoteDataSource',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      if (_useMockData) {
+        final now = DateTime.now();
+        return CalendarLatestActivityDto(
+          lastTradeDate: now,
+          year: now.year,
+          month: now.month,
+        );
+      }
+      rethrow;
+    }
+  }
+
+  @override
   Future<TradeCalendarDto> getTradeCalendarByMonth(
     String portfolioId, {
     required int year,
@@ -448,28 +534,7 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
 
       final response = await _apiClient.get<TradeCalendarDto>(
         fullUri,
-        parser: (data) {
-          if (data == null) return const TradeCalendarDto(portfolioTrades: {});
-
-          if (data is List) {
-            if (data.isEmpty)
-              return const TradeCalendarDto(portfolioTrades: {});
-            final portfolioTrades = <String, List<TradeDetailsDto>>{};
-            for (final item in data) {
-              final tradeJson = item as Map<String, dynamic>;
-              final portfolioId = tradeJson['customPortfolioId'] as String?;
-              if (portfolioId != null) {
-                final trade = TradeDetailsDto.fromJson(tradeJson);
-                portfolioTrades.putIfAbsent(portfolioId, () => []).add(trade);
-              }
-            }
-            return TradeCalendarDto(portfolioTrades: portfolioTrades);
-          }
-
-          final json = data as Map<String, dynamic>;
-          if (json.isEmpty) return const TradeCalendarDto(portfolioTrades: {});
-          return TradeCalendarDto.fromJson(json);
-        },
+        parser: _parseTradeCalendarResponse,
       );
 
       AppLogger.info('Trade calendar by month fetched successfully from API',
@@ -531,28 +596,7 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
 
       final response = await _apiClient.get<TradeCalendarDto>(
         fullUri,
-        parser: (data) {
-          if (data == null) return const TradeCalendarDto(portfolioTrades: {});
-
-          if (data is List) {
-            if (data.isEmpty)
-              return const TradeCalendarDto(portfolioTrades: {});
-            final portfolioTrades = <String, List<TradeDetailsDto>>{};
-            for (final item in data) {
-              final tradeJson = item as Map<String, dynamic>;
-              final portfolioId = tradeJson['customPortfolioId'] as String?;
-              if (portfolioId != null) {
-                final trade = TradeDetailsDto.fromJson(tradeJson);
-                portfolioTrades.putIfAbsent(portfolioId, () => []).add(trade);
-              }
-            }
-            return TradeCalendarDto(portfolioTrades: portfolioTrades);
-          }
-
-          final json = data as Map<String, dynamic>;
-          if (json.isEmpty) return const TradeCalendarDto(portfolioTrades: {});
-          return TradeCalendarDto.fromJson(json);
-        },
+        parser: _parseTradeCalendarResponse,
       );
 
       AppLogger.info('Trade calendar by day fetched successfully from API',
@@ -620,38 +664,7 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
 
       final response = await _apiClient.get<TradeCalendarDto>(
         fullUri,
-        parser: (data) {
-          if (data == null) {
-            AppLogger.debug('[DateRange Parser] Received null data',
-                tag: 'TradeRemoteDataSource');
-            return const TradeCalendarDto(portfolioTrades: {});
-          }
-
-          if (data is List) {
-            AppLogger.info(
-                '[DateRange Parser] Received array with ${data.length} items',
-                tag: 'TradeRemoteDataSource');
-            if (data.isEmpty)
-              return const TradeCalendarDto(portfolioTrades: {});
-
-            final portfolioTrades = <String, List<TradeDetailsDto>>{};
-            for (final item in data) {
-              final tradeJson = item as Map<String, dynamic>;
-              final portfolioId = tradeJson['customPortfolioId'] as String?;
-              if (portfolioId != null) {
-                final trade = TradeDetailsDto.fromJson(tradeJson);
-                portfolioTrades.putIfAbsent(portfolioId, () => []).add(trade);
-              }
-            }
-            return TradeCalendarDto(portfolioTrades: portfolioTrades);
-          }
-
-          AppLogger.debug('[DateRange Parser] Received map data',
-              tag: 'TradeRemoteDataSource');
-          final json = data as Map<String, dynamic>;
-          if (json.isEmpty) return const TradeCalendarDto(portfolioTrades: {});
-          return TradeCalendarDto.fromJson(json);
-        },
+        parser: _parseTradeCalendarResponse,
       );
 
       AppLogger.info(
@@ -714,28 +727,7 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
 
       final response = await _apiClient.get<TradeCalendarDto>(
         fullUri,
-        parser: (data) {
-          if (data == null) return const TradeCalendarDto(portfolioTrades: {});
-
-          if (data is List) {
-            if (data.isEmpty)
-              return const TradeCalendarDto(portfolioTrades: {});
-            final portfolioTrades = <String, List<TradeDetailsDto>>{};
-            for (final item in data) {
-              final tradeJson = item as Map<String, dynamic>;
-              final portfolioId = tradeJson['customPortfolioId'] as String?;
-              if (portfolioId != null) {
-                final trade = TradeDetailsDto.fromJson(tradeJson);
-                portfolioTrades.putIfAbsent(portfolioId, () => []).add(trade);
-              }
-            }
-            return TradeCalendarDto(portfolioTrades: portfolioTrades);
-          }
-
-          final json = data as Map<String, dynamic>;
-          if (json.isEmpty) return const TradeCalendarDto(portfolioTrades: {});
-          return TradeCalendarDto.fromJson(json);
-        },
+        parser: _parseTradeCalendarResponse,
       );
 
       AppLogger.info('Trade calendar by quarter fetched successfully from API',
@@ -796,28 +788,7 @@ class TradeRemoteDataSourceImpl implements TradeRemoteDataSource {
 
       final response = await _apiClient.get<TradeCalendarDto>(
         fullUri,
-        parser: (data) {
-          if (data == null) return const TradeCalendarDto(portfolioTrades: {});
-
-          if (data is List) {
-            if (data.isEmpty)
-              return const TradeCalendarDto(portfolioTrades: {});
-            final portfolioTrades = <String, List<TradeDetailsDto>>{};
-            for (final item in data) {
-              final tradeJson = item as Map<String, dynamic>;
-              final portfolioId = tradeJson['customPortfolioId'] as String?;
-              if (portfolioId != null) {
-                final trade = TradeDetailsDto.fromJson(tradeJson);
-                portfolioTrades.putIfAbsent(portfolioId, () => []).add(trade);
-              }
-            }
-            return TradeCalendarDto(portfolioTrades: portfolioTrades);
-          }
-
-          final json = data as Map<String, dynamic>;
-          if (json.isEmpty) return const TradeCalendarDto(portfolioTrades: {});
-          return TradeCalendarDto.fromJson(json);
-        },
+        parser: _parseTradeCalendarResponse,
       );
 
       AppLogger.info(

@@ -16,8 +16,7 @@ import 'app.dart';
 import 'features/chart/market_sdk_chart_providers.dart';
 import 'presentation/splash/app_splash_screen.dart';
 
-// Android pipeline test trigger
-// Second Android/Web pipeline test trigger for manual deploy
+// Workflow CI verification trigger for Web, Android, and iOS builds
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   BootTrace.configure();

@@ -46,6 +46,9 @@ class AdvancedHoldingRow {
   final double todayChangePercentage;
   final double portfolioWeight;
 
+  /// Mail/statement imports often have no invested amount or average price.
+  bool get hasCostBasis => investedAmount > 0 || avgPrice > 0;
+
   bool get isProfit => totalGainLoss >= 0;
 
   bool get isTodayUp => todayChangePercentage >= 0;
@@ -89,13 +92,15 @@ class AdvancedHoldingRow {
 
   String get displayQuantity => _qty.format(quantity);
 
-  String get displayAvgPrice => _inr.format(avgPrice);
+  String get displayAvgPrice =>
+      hasCostBasis ? _inr.format(avgPrice) : '—';
 
   String get displayCurrentPrice => _inr.format(currentPrice);
 
   String get displayCurrentValue => _inr.format(currentValue);
 
-  String get displayInvestedAmount => _inr.format(investedAmount);
+  String get displayInvestedAmount =>
+      hasCostBasis ? _inr.format(investedAmount) : '—';
 
   String get displayProfitLoss {
     final prefix = totalGainLoss >= 0 ? '+' : '';

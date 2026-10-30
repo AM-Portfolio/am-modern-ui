@@ -40,8 +40,75 @@ class HeatmapFilters extends StatelessWidget {
     return neg;
   }
 
+  Widget _chip(BuildContext context, String f) {
+    final isSelected = percentFilter == f;
+    final selectedColor = _filterColor(context, f);
+    final onSelected = context.colors.actionPrimaryFg;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: FilterChip(
+        label: Text(f, style: const TextStyle(fontSize: 11)),
+        selected: isSelected,
+        onSelected: (selected) {
+          onPercentFilterChanged(selected ? f : null);
+        },
+        backgroundColor: MarketColors.cardSurface(context),
+        selectedColor: selectedColor,
+        checkmarkColor: onSelected,
+        labelStyle: TextStyle(
+          color: isSelected
+              ? onSelected
+              : MarketColors.textSecondary(context),
+        ),
+        side: BorderSide(
+          color: isSelected
+              ? selectedColor
+              : MarketColors.borderDefault(context),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        visualDensity: VisualDensity.compact,
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.sizeOf(context).width < 768;
+
+    // Mobile Focus Mode: one horizontal chip row, no tall card chrome.
+    if (isMobile) {
+      return SizedBox(
+        height: 40,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          children: [
+            if (title != null) ...[
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 10),
+                  child: Text(
+                    title!,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: MarketColors.textPrimary(context),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            ...filters.map((f) => _chip(context, f)),
+          ],
+        ),
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       width: double.infinity,
@@ -70,37 +137,7 @@ class HeatmapFilters extends StatelessWidget {
           Wrap(
             spacing: 6,
             runSpacing: 6,
-            children: filters.map((f) {
-              final isSelected = percentFilter == f;
-              final selectedColor = _filterColor(context, f);
-              final onSelected = context.colors.actionPrimaryFg;
-
-              return FilterChip(
-                label: Text(f, style: const TextStyle(fontSize: 11)),
-                selected: isSelected,
-                onSelected: (selected) {
-                  onPercentFilterChanged(selected ? f : null);
-                },
-                backgroundColor: MarketColors.cardSurface(context),
-                selectedColor: selectedColor,
-                checkmarkColor: onSelected,
-                labelStyle: TextStyle(
-                  color: isSelected
-                      ? onSelected
-                      : MarketColors.textSecondary(context),
-                ),
-                side: BorderSide(
-                  color: isSelected
-                      ? selectedColor
-                      : MarketColors.borderDefault(context),
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                visualDensity: VisualDensity.compact,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              );
-            }).toList(),
+            children: filters.map((f) => _chip(context, f)).toList(),
           ),
         ],
       ),

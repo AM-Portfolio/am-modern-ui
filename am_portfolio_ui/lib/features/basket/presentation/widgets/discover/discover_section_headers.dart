@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:am_design_system/am_design_system.dart';
 
+import 'discover_copy.dart';
 import 'discover_layout.dart';
 
 /// Compact section headers for Top picks / All baskets.
@@ -61,6 +62,59 @@ class DiscoverTopPicksHeader extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Single-line count + View all used on mobile Discover.
+class DiscoverBasketsMetaRow extends StatelessWidget {
+  const DiscoverBasketsMetaRow({
+    required this.count,
+    required this.onViewAll,
+    super.key,
+  });
+
+  final int count;
+  final VoidCallback onViewAll;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Text(
+            DiscoverCopy.basketsCount(count),
+            key: const Key('discover-baskets-count'),
+            maxLines: 1,
+            softWrap: false,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: context.colors.textSecondary,
+            ),
+          ),
+        ),
+        TextButton(
+          onPressed: onViewAll,
+          style: TextButton.styleFrom(
+            foregroundColor: ModuleColors.portfolio,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: Text(
+            DiscoverCopy.viewAll,
+            key: const Key('discover-view-all'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: ModuleColors.portfolio,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

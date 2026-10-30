@@ -27,7 +27,9 @@ class PaperWalletBanner extends StatelessWidget {
           Expanded(
             child: Text(
               'Paper — practice with virtual cash, not a live broker order.  '
-              'Available ₹${wallet.available}  ·  Reserved ₹${wallet.reserved}',
+              'Available ₹${wallet.available}  ·  Reserved ₹${wallet.reserved}.  '
+              'Calendar, Journal, and Analysis on this selection show paper fills only; '
+              'owner-wide / Investment All stays live-only.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: scheme.onSurface,
                     fontWeight: FontWeight.w600,

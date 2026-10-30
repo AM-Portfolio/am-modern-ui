@@ -376,7 +376,19 @@ class TradeDetailsDto {
     this.tradeEndDate,
   });
 
-  factory TradeDetailsDto.fromJson(Map<String, dynamic> json) => _$TradeDetailsDtoFromJson(json);
+  /// Tolerates sparse/null nested maps from calendar APIs (paper fills often omit fields).
+  factory TradeDetailsDto.fromJson(Map<String, dynamic> json) {
+    final normalized = Map<String, dynamic>.from(json);
+    normalized['instrumentInfo'] ??= <String, dynamic>{};
+    normalized['entryInfo'] ??= <String, dynamic>{};
+    normalized['status'] ??= 'OPEN';
+    normalized['tradePositionType'] ??=
+        normalized['tradeDirection'] ?? normalized['direction'] ?? 'LONG';
+    normalized['tradeId'] ??= normalized['id'] ?? '';
+    normalized['portfolioId'] ??=
+        normalized['customPortfolioId'] ?? normalized['portfolio_id'] ?? '';
+    return _$TradeDetailsDtoFromJson(normalized);
+  }
 
   final String tradeId;
   final String portfolioId;

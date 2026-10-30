@@ -13,12 +13,15 @@ final tradeCalendarCubitProvider = FutureProvider.family<TradeCalendarCubit, Str
   final getTradeCalendarByMonth = await ref.watch(getTradeCalendarByMonthProvider.future);
   final getTradeCalendarByDay = await ref.watch(getTradeCalendarByDayProvider.future);
   final getTradeCalendarByDateRange = await ref.watch(getTradeCalendarByDateRangeProvider.future);
+  final getCalendarLatestActivity =
+      await ref.watch(getCalendarLatestActivityProvider.future);
 
   final cubit = TradeCalendarCubit(
     getTradeCalendar,
     getTradeCalendarByMonth,
     getTradeCalendarByDay,
     getTradeCalendarByDateRange,
+    getCalendarLatestActivity,
   );
 
   // Industry-standard reactive pattern: Listen to the trades stream for this portfolio.

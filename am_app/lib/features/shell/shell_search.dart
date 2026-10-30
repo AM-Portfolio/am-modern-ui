@@ -73,6 +73,11 @@ mixin ShellSearchOps on State<AppShell> {
     String query,
     void Function(List<common.CommandItem> items, {bool isLoading}) emit,
   ) async {
+    final path = Uri.parse(_currentLocation).path;
+    if (path.contains('/journal') && common.JournalSearchBridge.isBound) {
+      common.JournalSearchBridge.tryApply(query);
+    }
+
     ProviderContainer? container;
     try {
       container = ProviderScope.containerOf(context, listen: false);
@@ -101,12 +106,17 @@ mixin ShellSearchOps on State<AppShell> {
   List<common.CommandItem> _emptySearchSuggestions() {
     final searchCtx = _searchContext;
     final seed = _seedActionItems(context);
+    ProviderContainer? container;
+    try {
+      container = ProviderScope.containerOf(context, listen: false);
+    } catch (_) {}
     List<common.CommandItem> items = seed;
     _searchEngine.query(
       rawQuery: '',
       context: searchCtx,
       navContext: context,
       seedActions: seed,
+      container: container,
       onResult: (snap) {
         if (!snap.isLoading) items = snap.items;
       },

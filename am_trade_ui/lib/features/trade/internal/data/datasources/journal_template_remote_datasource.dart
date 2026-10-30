@@ -107,23 +107,23 @@ class JournalTemplateRemoteDataSourceImpl implements JournalTemplateRemoteDataSo
     String? category,
     String? search,
   }) async {
+    // Always fetch the full catalog. Category/search are applied client-side
+    // (Playbooks rail counts + filter). Sending category=CUSTOM historically
+    // contributed to brittle dig 400s depending on deployed enum/binding.
     AppLogger.methodEntry(
       'getTemplates',
       tag: 'JournalTemplateRemoteDataSource',
-      params: {'category': category, 'search': search},
+      params: {
+        'categoryIgnored': category,
+        'searchIgnored': search,
+      },
     );
 
     try {
-      final queryParams = <String, dynamic>{
-        if (category != null) 'category': category,
-        if (search != null) 'search': search,
-      };
-
       final fullUri = _buildUri(_tradeConfig.baseUrl, 'v1/journal-templates');
 
       final response = await _apiClient.get<List<JournalTemplateResponseDto>>(
         fullUri,
-        queryParams: queryParams,
         parser: (data) {
           if (data is List) {
             return data.map((item) => JournalTemplateResponseDto.fromJson(item as Map<String, dynamic>)).toList();

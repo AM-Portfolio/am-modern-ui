@@ -50,37 +50,22 @@ class ShareholdingTrendTable extends StatelessWidget {
       ),
     ];
 
-    final catW = dense ? 110.0 : 130.0;
+    final visible = categories.where((cat) {
+      return shareholding.any((row) {
+        if (row is! Map) return false;
+        final v = row[cat.key];
+        return v is num && v != 0;
+      });
+    }).toList();
+    if (visible.isEmpty) return const SizedBox.shrink();
+
+    final catW = dense ? 104.0 : 130.0;
+    final pad = dense ? 8.0 : 12.0;
+    final spacing = dense ? 4.0 : 8.0;
+    final rowH = dense ? 22.0 : 28.0;
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isBounded = constraints.maxHeight.isFinite &&
-            constraints.maxHeight < double.infinity;
-
-        const pad = 12.0;
-        final titleH = dense ? 16.0 : 20.0;
-        final spacing = dense ? 6.0 : 8.0;
-
-        final double rowH;
-        final bool shouldScroll;
-
-        if (isBounded) {
-          final availableTableH =
-              constraints.maxHeight - (pad * 2) - titleH - spacing;
-          final rowCount = categories.length + 1; // 1 header + 5 categories
-          final idealRowH = availableTableH / rowCount;
-
-          if (idealRowH < 22.0) {
-            rowH = 22.0;
-            shouldScroll = true;
-          } else {
-            rowH = idealRowH.clamp(24.0, 36.0);
-            shouldScroll = false;
-          }
-        } else {
-          rowH = dense ? 24.0 : 28.0;
-          shouldScroll = false;
-        }
 
         Widget tableBody = Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,7 +81,7 @@ class ShareholdingTrendTable extends StatelessWidget {
                     isFirst: true,
                     height: rowH,
                   ),
-                  ...categories.map(
+                  ...visible.map(
                     (cat) => _catCell(context, cat, height: rowH),
                   ),
                 ],
@@ -120,7 +105,7 @@ class ShareholdingTrendTable extends StatelessWidget {
                           height: rowH,
                           highlighted: highlighted,
                         ),
-                        ...categories.map((cat) {
+                        ...visible.map((cat) {
                           final num? val = item[cat.key] as num?;
                           return _dataCell(
                             context,
@@ -148,15 +133,14 @@ class ShareholdingTrendTable extends StatelessWidget {
 
         return Container(
           width: double.infinity,
-          height: isBounded ? double.infinity : null,
-          padding: const EdgeInsets.all(pad),
+          padding: EdgeInsets.all(pad),
           decoration: BoxDecoration(
             color: context.cardColor,
             border: Border.all(color: context.borderColor),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Column(
-            mainAxisSize: isBounded ? MainAxisSize.max : MainAxisSize.min,
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Row(
@@ -181,12 +165,7 @@ class ShareholdingTrendTable extends StatelessWidget {
                 ],
               ),
               SizedBox(height: spacing),
-              if (isBounded && !shouldScroll)
-                Expanded(child: tableBody)
-              else if (isBounded && shouldScroll)
-                Expanded(child: SingleChildScrollView(child: tableBody))
-              else
-                tableBody,
+              tableBody,
             ],
           ),
         );

@@ -11,3 +11,6 @@ export 'presentation/widgets/watchlist/watchlist_controller.dart';
 export 'presentation/widgets/order_ticket/paper_order_ticket_sheet.dart';
 export 'presentation/widgets/paper_analyser_pane.dart';
 export 'presentation/widgets/chart_sidebar_holdings.dart';
+export 'data/oms_models.dart';
+export 'data/paper_market_client.dart';
+export 'data/watchlist_models.dart';

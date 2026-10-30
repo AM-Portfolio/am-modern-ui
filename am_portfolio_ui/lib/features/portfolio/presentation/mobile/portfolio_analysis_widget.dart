@@ -3,10 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../widgets/sectorial_allocation_widget.dart';
 import '../widgets/market_cap_allocation_widget.dart';
-import '../widgets/movers_widget.dart';
+import '../widgets/portfolio_top_movers_panel.dart';
 import '../cubit/portfolio_analytics_cubit.dart';
 import '../cubit/portfolio_analytics_state.dart';
-import 'package:am_common/am_common.dart';
 
 /// Main portfolio analysis widget that orchestrates all analytics components
 /// This widget provides comprehensive portfolio analysis including:
@@ -111,31 +110,10 @@ class _PortfolioAnalysisWidgetState extends State<PortfolioAnalysisWidget> {
     },
   );
 
-  Widget _buildMoversSection(BuildContext context) =>
-      BlocBuilder<PortfolioAnalyticsCubit, PortfolioAnalyticsState>(
-        builder: (context, state) {
-          if (state is PortfolioAnalyticsLoading) {
-            return const MoversWidget(isLoading: true);
-          } else if (state is PortfolioAnalyticsLoaded) {
-            final isLoading = state.isLoadingType(AnalyticsDataType.movers);
-            final error = state.getErrorForType(AnalyticsDataType.movers);
-
-            return MoversWidget(
-              movers: state.movers,
-              isLoading: isLoading,
-              error: error,
-            );
-          } else if (state is PortfolioAnalyticsError) {
-            CommonLogger.error(
-              'Failed to load movers',
-              tag: 'PortfolioAnalysisWidget',
-              error: state.message,
-            );
-            return MoversWidget(error: state.message);
-          }
-
-          return const MoversWidget(isLoading: true);
-        },
+  Widget _buildMoversSection(BuildContext context) => PortfolioTopMoversPanel(
+        portfolioId: widget.portfolioId,
+        timeFrame: TimeFrame.oneMonth,
+        compact: true,
       );
 
   Widget _buildMarketCapAllocationSection(BuildContext context) =>

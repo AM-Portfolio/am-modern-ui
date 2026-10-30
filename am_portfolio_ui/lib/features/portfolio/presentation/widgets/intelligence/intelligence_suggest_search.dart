@@ -100,20 +100,99 @@ Future<List<market.SecurityDocument>> searchIntelligenceSuggest({
   }
 }
 
-/// Stress custom sector — portfolio + canonical stress labels from backend.
+/// Local index/sector catalog for Stress search. Event ids stay out of the overlay.
+const kStressSearchCatalog = <(String, String)>[
+  ('NIFTY 50', 'Index'),
+  ('SENSEX', 'Index'),
+  ('Banking', 'Sector'),
+  ('IT', 'Sector'),
+];
+
+bool isBlockedStressSearchLabel(String label) {
+  final n = label.trim().toLowerCase();
+  if (n.isEmpty) return false;
+  const needles = [
+    'gfc',
+    'covid',
+    'china',
+    'inflation',
+    'election',
+    'crash',
+    'global financial',
+    'china market',
+    'rate hike',
+  ];
+  if (needles.any(n.contains)) return true;
+  const ids = {
+    'GFC_2008',
+    'COVID_2020',
+    'CHINA_2015',
+    'INFLATION_2022',
+    'ELECTION_2024',
+    'CRASH_2008',
+  };
+  return ids.contains(label.trim().toUpperCase());
+}
+
+List<market.SecurityDocument> localStressSearchHits(String query) {
+  final q = query.trim().toLowerCase();
+  if (q.isEmpty) return const [];
+  final compact = q.replaceAll(RegExp(r'[\s_\-]+'), '');
+  final out = <market.SecurityDocument>[];
+  for (final entry in kStressSearchCatalog) {
+    final label = entry.$1;
+    final lc = label.toLowerCase();
+    final cc = lc.replaceAll(RegExp(r'[\s_\-]+'), '');
+    if (lc.contains(q) || cc.contains(compact) || compact.contains(cc)) {
+      out.add(labelToSecurityDocument(label));
+    }
+  }
+  return out;
+}
+
+/// Stress search — local index/sector catalog + backend sectors. No event ids.
 Future<List<market.SecurityDocument>> searchStressSectors({
   required PortfolioRemoteDataSource remote,
   required String portfolioId,
   required String query,
-  int limit = 8,
-}) {
-  return searchIntelligenceSuggest(
-    remote: remote,
-    portfolioId: portfolioId,
-    context: kSuggestCtxStressSector,
-    query: query,
-    limit: limit,
-  );
+  int limit = 16,
+}) async {
+  final local = localStressSearchHits(query);
+  final seen = <String>{
+    for (final d in local) (d.key?.symbol ?? '').trim().toLowerCase(),
+  }..removeWhere((s) => s.isEmpty);
+
+  List<market.SecurityDocument> backend = const [];
+  try {
+    backend = await searchIntelligenceSuggest(
+      remote: remote,
+      portfolioId: portfolioId,
+      context: kSuggestCtxStressSector,
+      query: query,
+      limit: limit,
+    );
+  } catch (_) {
+    backend = const [];
+  }
+
+  final merged = [...local];
+  for (final d in backend) {
+    final label = (d.key?.symbol ?? '').trim();
+    final subtitle = (d.metadata?.companyName ?? '').trim();
+    if (label.isEmpty) continue;
+    if (isBlockedStressSearchLabel(label) ||
+        isBlockedStressSearchLabel(subtitle)) {
+      continue;
+    }
+    final key = label.toLowerCase();
+    if (seen.contains(key)) continue;
+    seen.add(key);
+    // Overlay is sector-mode: name only, never "of book" / holdings copy.
+    merged.add(labelToSecurityDocument(label));
+    if (merged.length >= limit) break;
+  }
+  if (merged.length <= limit) return merged;
+  return merged.take(limit).toList();
 }
 
 /// What-If switch allocation — only sectors that exist on the book.

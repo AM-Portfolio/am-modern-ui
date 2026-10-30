@@ -32,6 +32,7 @@ class CylinderMonthScroller extends StatefulWidget {
   final Map<int, Map<String, MonthlyIndicesPerformance>> groupedData;
   final double rowHeight;
   final bool isDark;
+  final String? focusSymbol;
 
   const CylinderMonthScroller({
     Key? key,
@@ -41,6 +42,7 @@ class CylinderMonthScroller extends StatefulWidget {
     required this.groupedData,
     required this.rowHeight,
     required this.isDark,
+    this.focusSymbol,
   }) : super(key: key);
 
   @override
@@ -310,7 +312,11 @@ class _CylinderMonthScrollerState extends State<CylinderMonthScroller>
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 3.0),
                 child: item != null
-                    ? MonthlyPerformanceCard(data: item, isCompactTable: true)
+                    ? MonthlyPerformanceCard(
+                        data: item,
+                        isCompactTable: true,
+                        focusSymbol: widget.focusSymbol,
+                      )
                     : Container(
                         decoration: BoxDecoration(
                           color: isDark

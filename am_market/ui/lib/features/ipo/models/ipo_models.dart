@@ -1,3 +1,5 @@
+export 'ipo_calendar_models.dart';
+
 class AsraxIpoCountsDto {
   final int open;
   final int upcoming;

@@ -2,6 +2,7 @@
 import 'dart:html' as html;
 import 'dart:ui_web' as ui_web;
 
+import 'package:am_common/core/config/upload_config.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -28,73 +29,86 @@ class _UrlPreviewWidgetState extends State<UrlPreviewWidget> {
   }
 
   void _registerIframe() {
-    if (kIsWeb && !_iframeRegistered) {
-      // Register iframe factory for web
-      ui_web.platformViewRegistry.registerViewFactory(_iframeId, (int viewId) {
-        final iframe = html.IFrameElement()
-          ..src = widget.url
-          ..style.border = 'none'
-          ..style.width = '100%'
-          ..style.height = '100%';
-        return iframe;
-      });
-      _iframeRegistered = true;
-    }
+    if (!kIsWeb || _iframeRegistered) return;
+    if (UploadConfig.isStubOrPlaceholderUrl(widget.url)) return;
+    // Register iframe factory for web
+    ui_web.platformViewRegistry.registerViewFactory(_iframeId, (int viewId) {
+      final iframe = html.IFrameElement()
+        ..src = widget.url
+        ..style.border = 'none'
+        ..style.width = '100%'
+        ..style.height = '100%';
+      return iframe;
+    });
+    _iframeRegistered = true;
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.colors;
+    final accent = ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade;
 
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        color: colors.cardSurface.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.dividerColor),
+        border: Border.all(color: colors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [_buildPreviewArea(theme), _buildUrlText(theme)],
+        children: [
+          _buildPreviewArea(theme, colors, accent),
+          _buildUrlText(theme, accent),
+        ],
       ),
     );
   }
 
-  Widget _buildPreviewArea(ThemeData theme) => ClipRRect(
-    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-    child: Container(
-      height: 200,
-      width: double.infinity,
-      color: theme.colorScheme.surfaceContainerHighest,
-      child: Stack(
-        children: [
-          if (kIsWeb) HtmlElementView(viewType: _iframeId) else _buildImagePreview(theme),
-          _buildOpenIndicator(),
-        ],
+  Widget _buildPreviewArea(ThemeData theme, AppColorsTheme colors, Color accent) {
+    final isStub = UploadConfig.isStubOrPlaceholderUrl(widget.url);
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+      child: Container(
+        height: 200,
+        width: double.infinity,
+        color: colors.cardSurface,
+        child: Stack(
+          children: [
+            if (isStub)
+              _buildErrorPlaceholder(theme, colors, accent)
+            else if (kIsWeb)
+              HtmlElementView(viewType: _iframeId)
+            else
+              _buildImagePreview(theme, colors, accent),
+            _buildOpenIndicator(),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 
-  Widget _buildImagePreview(ThemeData theme) => Image.network(
+  Widget _buildImagePreview(ThemeData theme, AppColorsTheme colors, Color accent) => Image.network(
     'https://image.thum.io/get/width/1200/crop/800/noanimate/${Uri.encodeComponent(widget.url)}',
     fit: BoxFit.cover,
-    errorBuilder: (context, error, stackTrace) => _buildErrorPlaceholder(theme),
+    errorBuilder: (context, error, stackTrace) => _buildErrorPlaceholder(theme, colors, accent),
     loadingBuilder: (context, child, loadingProgress) {
       if (loadingProgress == null) return child;
       return _buildLoadingIndicator(loadingProgress);
     },
   );
 
-  Widget _buildErrorPlaceholder(ThemeData theme) => Container(
-    color: theme.colorScheme.surfaceContainerHighest,
+  Widget _buildErrorPlaceholder(ThemeData theme, AppColorsTheme colors, Color accent) => Container(
+    color: colors.cardSurface,
     child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.web, size: 64, color: theme.colorScheme.primary.withOpacity(0.5)),
+        Icon(Icons.web, size: 64, color: accent.withValues(alpha: 0.5)),
         const SizedBox(height: 12),
         Text(
           'Preview Unavailable',
           style: theme.textTheme.titleMedium?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.7),
+            color: colors.textSecondary,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -103,7 +117,7 @@ class _UrlPreviewWidgetState extends State<UrlPreviewWidget> {
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Text(
             'Click to open in browser',
-            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.5)),
+            style: theme.textTheme.bodySmall?.copyWith(color: colors.textTertiary),
             textAlign: TextAlign.center,
           ),
         ),
@@ -148,17 +162,17 @@ class _UrlPreviewWidgetState extends State<UrlPreviewWidget> {
     ),
   );
 
-  Widget _buildUrlText(ThemeData theme) => Padding(
+  Widget _buildUrlText(ThemeData theme, Color accent) => Padding(
     padding: const EdgeInsets.all(12),
     child: Row(
       children: [
-        Icon(Icons.link, size: 16, color: theme.colorScheme.primary),
+        Icon(Icons.link, size: 16, color: accent),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             widget.url,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.primary,
+              color: accent,
               decoration: TextDecoration.underline,
             ),
             maxLines: 1,

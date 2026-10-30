@@ -15,6 +15,21 @@ enum SmartSearchOverlayPlacement {
   above,
 }
 
+/// Value written into the search field when an overlay row is tapped.
+///
+/// Sector mode shows [name] (no badge); ticker mode selects [symbol].
+/// A " · " subtitle suffix is stripped so the field gets the label only.
+String smartSearchOverlaySelection({
+  required bool sectorMode,
+  required String symbol,
+  required String name,
+}) {
+  if (!sectorMode) return symbol.trim();
+  final shown = name.trim().isNotEmpty ? name.trim() : symbol.trim();
+  final cut = shown.split(' · ').first.trim();
+  return cut.isNotEmpty ? cut : symbol.trim();
+}
+
 /**
  * Reusable, high-speed Smart Search & Recommendation widget.
  * 
@@ -33,6 +48,7 @@ class SmartSearchAnchor extends StatefulWidget {
     super.key,
     this.controller,
     required this.onSelected,
+    this.onQueryChanged,
     this.onSubmit,
     this.hintText,
     this.animatedHints,
@@ -46,6 +62,7 @@ class SmartSearchAnchor extends StatefulWidget {
     this.forceUppercase = true,
     this.resultBadge = 'STOCK',
     this.overlayPlacement = SmartSearchOverlayPlacement.auto,
+    this.overlayMaxHeight = 280,
     this.fontSize,
     this.iconSize,
     this.contentPadding,
@@ -54,6 +71,8 @@ class SmartSearchAnchor extends StatefulWidget {
 
   final TextEditingController? controller;
   final ValueChanged<String> onSelected;
+  /// Fired on keystrokes (raw query) so hosts can sync chips while typing.
+  final ValueChanged<String>? onQueryChanged;
   final VoidCallback? onSubmit;
   final String? hintText;
   final List<String>? animatedHints;
@@ -70,6 +89,8 @@ class SmartSearchAnchor extends StatefulWidget {
   final String? resultBadge;
   /// Stress/What-If footers often sit near the viewport bottom — use [above] or [auto].
   final SmartSearchOverlayPlacement overlayPlacement;
+  /// Max height of the recommendation overlay. Web Stress uses a taller list.
+  final double overlayMaxHeight;
   final double? fontSize;
   final double? iconSize;
   final EdgeInsetsGeometry? contentPadding;
@@ -188,14 +209,20 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
 
   void _handleSelection(String symbol) {
     final normalized = _normalizeSelection(symbol);
-    _controller.text = normalized;
+    _controller.value = TextEditingValue(
+      text: normalized,
+      selection: TextSelection.collapsed(offset: normalized.length),
+    );
     _removeOverlay();
     _focusNode.unfocus();
+    if (mounted) setState(() {});
+    widget.onQueryChanged?.call(normalized);
     widget.onSelected(normalized);
     widget.onSubmit?.call();
   }
 
   void _onQueryChanged(String query) {
+    widget.onQueryChanged?.call(query);
     _debounceTimer?.cancel();
     final trimmed = query.trim();
 
@@ -286,7 +313,7 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
                   ),
                 ],
               ),
-              constraints: const BoxConstraints(maxHeight: 280),
+              constraints: BoxConstraints(maxHeight: widget.overlayMaxHeight),
               child: isQueryEmpty
                   ? Column(
                       mainAxisSize: MainAxisSize.min,
@@ -417,13 +444,18 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
                   final symbol = item.key?.symbol ?? '';
                   final name = item.metadata?.companyName ?? symbol;
                   final initial = (name.isNotEmpty ? name[0] : (symbol.isNotEmpty ? symbol[0] : '?')).toUpperCase();
+                  final selection = smartSearchOverlaySelection(
+                    sectorMode: sectorMode,
+                    symbol: symbol,
+                    name: name,
+                  );
 
                   return GestureDetector(
                     behavior: HitTestBehavior.opaque,
-                    onTapDown: (_) => _handleSelection(symbol),
+                    onTapDown: (_) => _handleSelection(selection),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(8),
-                      onTap: () => _handleSelection(symbol),
+                      onTap: () => _handleSelection(selection),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                         child: sectorMode
@@ -569,6 +601,7 @@ class _SmartSearchAnchorState extends State<SmartSearchAnchor> {
           _removeOverlay();
           final text = _normalizeSelection(val);
           if (text.isNotEmpty) {
+            widget.onQueryChanged?.call(text);
             widget.onSelected(text);
           }
           widget.onSubmit?.call();

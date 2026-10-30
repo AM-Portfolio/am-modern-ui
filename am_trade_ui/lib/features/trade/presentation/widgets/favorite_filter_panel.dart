@@ -81,7 +81,10 @@ class FavoriteFilterPanel extends StatelessWidget {
         children: [
           if (isSelected) Icon(Icons.check_circle, size: 16, color: ModuleColors.trade) else const SizedBox(width: 16),
           const SizedBox(width: 8),
-          if (isDefault) ...[Icon(Icons.star, size: 14, color: Colors.amber[700]), const SizedBox(width: 4)],
+          if (isDefault) ...[
+            Icon(Icons.star, size: 14, color: context.statusWarning),
+            const SizedBox(width: 4),
+          ],
           Expanded(
             child: Text(
               filter.name,
@@ -164,7 +167,10 @@ class FavoriteFilterPanel extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        leading: Icon(isDefault ? Icons.star : Icons.bookmark_outline, color: isDefault ? Colors.amber[700] : null),
+        leading: Icon(
+          isDefault ? Icons.star : Icons.bookmark_outline,
+          color: isDefault ? context.statusWarning : null,
+        ),
         title: Text(filter.name),
         subtitle: filter.description != null ? Text(filter.description!) : null,
         trailing: Row(

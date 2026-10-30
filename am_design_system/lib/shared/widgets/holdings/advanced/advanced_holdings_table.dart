@@ -15,6 +15,7 @@ class AdvancedHoldingsTable extends StatelessWidget {
     this.sortAscending = true,
     this.onRowTap,
     this.onSymbolTap,
+    this.showCostColumns = true,
   });
 
   final List<AdvancedHoldingRow> holdings;
@@ -24,6 +25,7 @@ class AdvancedHoldingsTable extends StatelessWidget {
   final void Function(int columnIndex, bool ascending) onSort;
   final ValueChanged<AdvancedHoldingRow>? onRowTap;
   final ValueChanged<String>? onSymbolTap;
+  final bool showCostColumns;
 
   @override
   Widget build(BuildContext context) {
@@ -51,11 +53,14 @@ class AdvancedHoldingsTable extends StatelessWidget {
             _headerCell(context, 'Company', 2, 1),
             _headerCell(context, 'Sector', 1, 2),
             _headerCell(context, 'Qty', 1, 3, isNumeric: true),
-            _headerCell(context, 'Avg Price', 1, 4, isNumeric: true),
+            if (showCostColumns)
+              _headerCell(context, 'Avg Price', 1, 4, isNumeric: true),
             _headerCell(context, 'LTP', 1, 5, isNumeric: true),
             _headerCell(context, 'Value', 1, 6, isNumeric: true),
-            _headerCell(context, 'P&L', 1, 7, isNumeric: true),
-            _headerCell(context, 'P&L %', 1, 8, isNumeric: true),
+            if (showCostColumns) ...[
+              _headerCell(context, 'P&L', 1, 7, isNumeric: true),
+              _headerCell(context, 'P&L %', 1, 8, isNumeric: true),
+            ],
             _headerCell(context, '1D %', 1, 9, isNumeric: true),
             _headerCell(context, 'Weight', 1, 10, isNumeric: true),
           ],
@@ -116,7 +121,8 @@ class AdvancedHoldingsTable extends StatelessWidget {
         decoration: BoxDecoration(
           color: index.isEven
               ? theme.colorScheme.surface
-              : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              : theme.colorScheme.surfaceContainerHighest
+                  .withValues(alpha: 0.3),
           border: Border(
             bottom: BorderSide(
               color: theme.dividerColor.withValues(alpha: 0.5),
@@ -157,14 +163,15 @@ class AdvancedHoldingsTable extends StatelessWidget {
                 style: const TextStyle(fontSize: 13),
               ),
             ),
-            Expanded(
-              child: Text(
-                holding.displayAvgPrice,
-                textAlign: TextAlign.right,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 13),
+            if (showCostColumns)
+              Expanded(
+                child: Text(
+                  holding.displayAvgPrice,
+                  textAlign: TextAlign.right,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 13),
+                ),
               ),
-            ),
             Expanded(
               child: Text(
                 holding.displayCurrentPrice,
@@ -181,22 +188,25 @@ class AdvancedHoldingsTable extends StatelessWidget {
                 style: const TextStyle(fontSize: 13),
               ),
             ),
-            Expanded(
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: _pnlCell(context, holding.displayProfitLoss, isPositive),
-              ),
-            ),
-            Expanded(
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: _pnlPctCell(
-                  context,
-                  holding.displayProfitLossPercentage,
-                  isPositive,
+            if (showCostColumns) ...[
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child:
+                      _pnlCell(context, holding.displayProfitLoss, isPositive),
                 ),
               ),
-            ),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: _pnlPctCell(
+                    context,
+                    holding.displayProfitLossPercentage,
+                    isPositive,
+                  ),
+                ),
+              ),
+            ],
             Expanded(
               child: Align(
                 alignment: Alignment.centerRight,
@@ -284,8 +294,7 @@ class AdvancedHoldingsTable extends StatelessWidget {
           Icon(
             isPositive ? Icons.trending_up : Icons.trending_down,
             size: 14,
-            color:
-                isPositive ? context.marketPositive : context.marketNegative,
+            color: isPositive ? context.marketPositive : context.marketNegative,
           ),
           const SizedBox(width: 4),
           Flexible(
@@ -305,8 +314,7 @@ class AdvancedHoldingsTable extends StatelessWidget {
       );
 
   Widget _pnlPctCell(BuildContext context, String value, bool isPositive) {
-    final color =
-        isPositive ? context.marketPositive : context.marketNegative;
+    final color = isPositive ? context.marketPositive : context.marketNegative;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(

@@ -102,6 +102,10 @@ class _ChartPortfolioSidebarState extends ConsumerState<ChartPortfolioSidebar> {
       final name =
           (map['portfolioName'] as String?) ?? (map['name'] as String?) ?? '';
       if (id.isEmpty || name.isEmpty) continue;
+      if (name.trim().toLowerCase() == 'paper' ||
+          id.trim().toLowerCase() == 'paper') {
+        continue;
+      }
       final isBasket = kind == 'BASKET' || map['isBasket'] == true;
       final isDummy = kind == 'DUMMY' ||
           kind == 'DEMO' ||
@@ -164,10 +168,12 @@ class _ChartPortfolioSidebarState extends ConsumerState<ChartPortfolioSidebar> {
 
     final rows = <ChartSelectedPortfolio>[
       for (final p in portfolios)
-        ChartSelectedPortfolio(
-          id: p.portfolioId,
-          name: p.isBasket ? '${p.portfolioName} (Basket)' : p.portfolioName,
-        ),
+        if (p.portfolioName.trim().toLowerCase() != 'paper' &&
+            p.portfolioId.trim().toLowerCase() != 'paper')
+          ChartSelectedPortfolio(
+            id: p.portfolioId,
+            name: p.isBasket ? '${p.portfolioName} (Basket)' : p.portfolioName,
+          ),
       if (widget.paperEnabled)
         const ChartSelectedPortfolio(
           id: 'paper',

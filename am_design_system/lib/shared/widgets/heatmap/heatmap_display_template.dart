@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:am_common/am_common.dart';
 
 import '../../models/heatmap.dart';
-import '../../../core/utils/common_logger.dart';
 import '../selectors/heatmap_layout_selector.dart';
 import '../selectors/sector_selector.dart';
 import 'layouts/layouts.dart';
@@ -33,14 +32,6 @@ class HeatmapDisplayTemplate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    CommonLogger.debug(
-      'HeatmapDisplayTemplate: rendering ${data.tiles.length} tiles, layout=$layout',
-      tag: 'Heatmap.Display',
-    );
-
-    // Log complete heatmap tile data including children
-    _logAllChildrenHeatmapTileData();
-
     if (isLoading) {
       return const Center(
         child: Column(
@@ -171,35 +162,4 @@ class HeatmapDisplayTemplate extends StatelessWidget {
     },
   );
 
-  /// Logs basic information about heatmap tile data
-  /// Shows count of tiles, their names, and children count
-  void _logAllChildrenHeatmapTileData() {
-    if (data.tiles.isEmpty) {
-      CommonLogger.debug(
-        'No heatmap tiles available',
-        tag: 'Heatmap.Display.Tiles',
-      );
-      return;
-    }
-
-    CommonLogger.debug(
-      'Heatmap has ${data.tiles.length} tiles',
-      tag: 'Heatmap.Display.Tiles',
-    );
-
-    // Log each tile with basic info
-    for (var i = 0; i < data.tiles.length; i++) {
-      final tile = data.tiles[i];
-      final uiTile = tile is HeatmapTileData
-          ? tile
-          : HeatmapTileData.fromEntity(tile);
-
-      final childrenCount = uiTile.children?.length ?? 0;
-
-      CommonLogger.debug(
-        'Tile ${i + 1}: ${uiTile.name} ($childrenCount children)',
-        tag: 'Heatmap.Display.Tiles',
-      );
-    }
-  }
 }

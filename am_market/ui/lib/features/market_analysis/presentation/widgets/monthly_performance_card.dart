@@ -7,8 +7,14 @@ import 'package:am_market_ui/core/styles/am_text_styles.dart';
 class MonthlyPerformanceCard extends StatefulWidget {
   final MonthlyIndicesPerformance data;
   final bool isCompactTable;
+  final String? focusSymbol;
 
-  const MonthlyPerformanceCard({Key? key, required this.data, this.isCompactTable = false}) : super(key: key);
+  const MonthlyPerformanceCard({
+    Key? key,
+    required this.data,
+    this.isCompactTable = false,
+    this.focusSymbol,
+  }) : super(key: key);
 
   @override
   State<MonthlyPerformanceCard> createState() => _MonthlyPerformanceCardState();
@@ -226,9 +232,11 @@ class _MonthlyPerformanceCardState extends State<MonthlyPerformanceCard> {
   }
 
   void _showRanking(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => PerformanceRankingDialog(data: widget.data),
+    // Mobile: bottom sheet; desktop: dialog (see PerformanceRankingDialog.show).
+    PerformanceRankingDialog.show(
+      context,
+      widget.data,
+      focusSymbol: widget.focusSymbol,
     );
   }
 }

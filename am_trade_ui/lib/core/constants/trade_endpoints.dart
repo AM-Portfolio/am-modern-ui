@@ -28,6 +28,8 @@ class TradeEndpoints {
   static const String calendarDay = '$calendarBase/day';
   static const String calendarQuarter = '$calendarBase/quarter';
   static const String calendarFinancialYear = '$calendarBase/financial-year';
+  static const String calendarLatestActivity = '$calendarBase/latest-activity';
+  static const String calendarCustom = '$calendarBase/custom';
   
   // Metrics
   static const String metrics = '/v1/metrics';

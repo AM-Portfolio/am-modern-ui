@@ -9,6 +9,8 @@ class LayoutConfig {
     this.showTitle = true,
     this.customTitle,
     this.showLayoutSelector = false,
+    this.nestedSectors = false,
+    this.solidFills = false,
   });
 
   /// Mobile-optimized layout configuration
@@ -74,6 +76,13 @@ class LayoutConfig {
   final String? customTitle;
   final bool showLayoutSelector;
 
+  /// When true, sector parent tiles render header chrome + nested child squarify
+  /// (TradingView-style mosaic). Default off so market packs stay unchanged.
+  final bool nestedSectors;
+
+  /// When true, leaf tiles use opaque heat fills instead of glass blur.
+  final bool solidFills;
+
   /// Copy with modifications
   LayoutConfig copyWith({
     HeatmapLayoutType? layoutType,
@@ -81,12 +90,16 @@ class LayoutConfig {
     bool? showTitle,
     String? customTitle,
     bool? showLayoutSelector,
+    bool? nestedSectors,
+    bool? solidFills,
   }) => LayoutConfig(
     layoutType: layoutType ?? this.layoutType,
     compactView: compactView ?? this.compactView,
     showTitle: showTitle ?? this.showTitle,
     customTitle: customTitle ?? this.customTitle,
     showLayoutSelector: showLayoutSelector ?? this.showLayoutSelector,
+    nestedSectors: nestedSectors ?? this.nestedSectors,
+    solidFills: solidFills ?? this.solidFills,
   );
 
   /// Get effective title (custom or default)

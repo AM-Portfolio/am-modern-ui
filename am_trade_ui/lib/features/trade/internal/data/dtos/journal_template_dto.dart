@@ -86,6 +86,7 @@ class JournalTemplateRequestDto {
     this.fields,
     this.isSystemTemplate,
     this.isRecommended,
+    this.createdBy,
     this.tags,
     this.thumbnailUrl,
   });
@@ -99,6 +100,8 @@ class JournalTemplateRequestDto {
   final List<TemplateFieldRequestDto>? fields;
   final bool? isSystemTemplate;
   final bool? isRecommended;
+  /// Optional; trade-api sets creator from auth when omitted.
+  final String? createdBy;
   final List<String>? tags;
   final String? thumbnailUrl;
 

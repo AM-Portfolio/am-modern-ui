@@ -12,6 +12,7 @@ abstract class JournalState with _$JournalState {
   const factory JournalState.loaded({
     required List<JournalEntry> entries,
     JournalSummaryDto? summary,
+    JournalAdherenceDto? adherence,
     @Default('') String statusFilter,
     String? folderId,
     @Default([]) List<String> tagIds,

@@ -85,6 +85,7 @@ class Stock {
     required this.sector,
     this.quantity,
     this.avgPrice,
+    this.investedAmount,
     this.marketValue,
     this.totalReturn,
     this.weight,
@@ -98,10 +99,16 @@ class Stock {
   final String sector;
   final double? quantity;
   final double? avgPrice;
+  final double? investedAmount;
   final double? marketValue;
   final double? totalReturn;
   final double? weight;
   final double? previousClose;
+
+  /// Dhan/mail books often have qty but no avg/invested — treat zeros as missing.
+  bool get hasCostBasis =>
+      (investedAmount != null && investedAmount! > 0) ||
+      (avgPrice != null && avgPrice! > 0);
 
   /// Helper getter for formatted change percent (flat is unsigned 0.00%).
   String get formattedChangePercent {
@@ -132,6 +139,7 @@ class Stock {
     String? sector,
     double? quantity,
     double? avgPrice,
+    double? investedAmount,
     double? marketValue,
     double? totalReturn,
     double? weight,
@@ -146,6 +154,7 @@ class Stock {
       sector: sector ?? this.sector,
       quantity: quantity ?? this.quantity,
       avgPrice: avgPrice ?? this.avgPrice,
+      investedAmount: investedAmount ?? this.investedAmount,
       marketValue: marketValue ?? this.marketValue,
       totalReturn: totalReturn ?? this.totalReturn,
       weight: weight ?? this.weight,

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:am_common/am_common.dart';
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -48,6 +49,21 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
   Timer? _fabHideTimer;
   late _JournalMobileTab _tab;
 
+  bool get _weeklyReviewEnabled =>
+      ref.watch(journalWeeklyReviewEnabledProvider);
+
+  List<_JournalMobileTab> get _visibleTabs => [
+        _JournalMobileTab.entries,
+        _JournalMobileTab.playbooks,
+        _JournalMobileTab.insights,
+        if (_weeklyReviewEnabled) _JournalMobileTab.weekly,
+      ];
+
+  _JournalMobileTab get _activeTab =>
+      (_tab == _JournalMobileTab.weekly && !_weeklyReviewEnabled)
+          ? _JournalMobileTab.entries
+          : _tab;
+
   @override
   void initState() {
     super.initState();
@@ -56,7 +72,14 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final cubit = await ref.read(journalCubitProvider.future);
       if (!mounted) return;
+      cubit.setPortfolioId(widget.portfolioId, reload: false);
       cubit.loadJournalEntries();
+      JournalSearchBridge.bind(
+        applySearchQuery: (q) {
+          if (!mounted) return;
+          cubit.setFilters(searchQuery: q);
+        },
+      );
     });
   }
 
@@ -80,65 +103,79 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
   @override
   void dispose() {
     _fabHideTimer?.cancel();
+    JournalSearchBridge.unbind();
     super.dispose();
   }
 
-  void _openNew(JournalCubit cubit) {
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.candlestick_chart),
-              title: const Text('Trade Journal'),
-              onTap: () {
-                Navigator.pop(ctx);
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => TradeJournalWorkflowPage(
-                      journalCubit: cubit,
-                      portfolioId: widget.portfolioId,
-                    ),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.notes),
-              title: const Text('Daily Note'),
-              onTap: () {
-                Navigator.pop(ctx);
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => SimpleJournalNotePage(
-                      journalCubit: cubit,
-                      entryType: 'DAILY',
-                    ),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.block),
-              title: const Text('Missed Trade'),
-              onTap: () {
-                Navigator.pop(ctx);
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => SimpleJournalNotePage(
-                      journalCubit: cubit,
-                      entryType: 'MISSED',
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
+  Future<void> _openNew(JournalCubit cubit) async {
+    // Hide the floating company nav while the sheet is open so options
+    // do not overlap Dashboard / Portfolio / Trade chrome.
+    GlobalBottomNavVisibility.pushModalLock();
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
         ),
-      ),
-    );
+        builder: (ctx) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: AppSpacing.sm),
+              ListTile(
+                leading: const Icon(Icons.candlestick_chart),
+                title: const Text('Review trade'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => TradeJournalWorkflowPage(
+                        journalCubit: cubit,
+                        portfolioId: widget.portfolioId,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.notes),
+                title: const Text('Daily Note'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => SimpleJournalNotePage(
+                        journalCubit: cubit,
+                        entryType: 'DAILY',
+                      ),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.block),
+                title: const Text('Missed Trade'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => SimpleJournalNotePage(
+                        journalCubit: cubit,
+                        entryType: 'MISSED',
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ],
+          ),
+        ),
+      );
+    } finally {
+      GlobalBottomNavVisibility.popModalLock();
+    }
   }
 
   String _tabLabel(_JournalMobileTab tab) => switch (tab) {
@@ -175,7 +212,7 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
       ],
     );
 
-    final fab = _tab == _JournalMobileTab.entries
+    final fab = _activeTab == _JournalMobileTab.entries
         ? AnimatedScale(
             duration: const Duration(milliseconds: 400),
             scale: _showFab ? 1.0 : 0.0,
@@ -221,11 +258,11 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
         ),
         child: Row(
           children: [
-            for (final tab in _JournalMobileTab.values) ...[
+            for (final tab in _visibleTabs) ...[
               if (tab.index > 0) const SizedBox(width: AppSpacing.sm),
               ChoiceChip(
                 label: Text(_tabLabel(tab)),
-                selected: _tab == tab,
+                selected: _activeTab == tab,
                 onSelected: (_) {
                   setState(() => _tab = tab);
                   if (tab == _JournalMobileTab.entries) {
@@ -243,7 +280,7 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
 
   Widget _buildTabBody(JournalCubit cubit) {
     return IndexedStack(
-      index: _tab.index,
+      index: _activeTab.index,
       children: [
         _buildEntries(cubit),
         TemplateBrowserPage(
@@ -273,7 +310,7 @@ class _JournalMobilePageState extends ConsumerState<JournalMobilePage> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (message) => Center(child: Text('Error: $message')),
         success: (_) => const Center(child: CircularProgressIndicator()),
-        loaded: (entries, summary, status, folder, tags, q, setup) {
+        loaded: (entries, summary, adherence, status, folder, tags, q, setup) {
           if (entries.isEmpty) {
             return const Center(child: Text('No journal entries'));
           }

@@ -15,11 +15,15 @@ class MobileTimeFrameDropdown extends ConsumerWidget {
     this.width = 72,
     this.availableTimeFrames,
     this.primaryColor,
+    this.leading,
+    this.trailingDivider = false,
   });
 
   final double width;
   final List<TimeFrame>? availableTimeFrames;
   final Color? primaryColor;
+  final Widget? leading;
+  final bool trailingDivider;
 
   /// Height that fits approximately 3 menu rows.
   static const double menuMaxHeightForThreeItems = 148;
@@ -48,6 +52,8 @@ class MobileTimeFrameDropdown extends ConsumerWidget {
             isDark ? Colors.white.withValues(alpha: 0.06) : null,
         borderColor: isDark ? Colors.white.withValues(alpha: 0.1) : null,
         contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+        leading: leading,
+        trailingDivider: trailingDivider,
         items: options
             .map((tf) => tf.toSimpleDropdownItem(text: tf.code, fontSize: 12))
             .toList(),

@@ -359,6 +359,7 @@ class ConfigService {
     final analysisUrl = _services['analysis'] ?? '$api/analysis';
     final newsUrl = _services['news'] ?? '$api/news';
     final gmailUrl = _services['gmail'] ?? '$api/gmail';
+    final cloudinaryUrl = _services['cloudinary'] ?? '$api/cloudinary';
     final marketWsUrl =
         _services['marketWs'] ?? '$ws/market/ws/market-data-stream';
 
@@ -415,6 +416,7 @@ class ConfigService {
         oms: OmsApiConfig(baseUrl: omsUrl),
         analysis: AnalysisApiConfig(baseUrl: analysisUrl),
         news: NewsApiConfig(baseUrl: newsUrl),
+        cloudinary: CloudinaryApiConfig(baseUrl: cloudinaryUrl),
         gmail: GmailApiConfig(
           baseUrl: gmailUrl,
           statusEndpoint: '/v1/gmail/status',

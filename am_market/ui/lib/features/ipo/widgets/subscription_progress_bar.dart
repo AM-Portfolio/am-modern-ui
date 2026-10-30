@@ -15,7 +15,6 @@ class SubscriptionProgressBar extends StatelessWidget {
 
     final hasData = subscriptionStr != null && subscriptionStr!.isNotEmpty;
     final isSubscribed = value >= 1.0;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final Color statusColor = !hasData
         ? context.textTertiary

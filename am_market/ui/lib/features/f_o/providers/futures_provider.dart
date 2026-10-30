@@ -7,7 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 /// Fetches the list of Futures contracts for the active symbol with market quotes via backend SDK.
-final futuresContractsProvider = FutureProvider.autoDispose<List<dynamic>>((ref) async {
+final futuresContractsProvider =
+    FutureProvider.autoDispose<List<dynamic>>((ref) async {
   final symbol = ref.watch(foActiveSymbolProvider);
   if (symbol == null || symbol.trim().isEmpty) return [];
 
@@ -49,8 +50,80 @@ final futuresExpiryFilterProvider =
     NotifierProvider<FuturesExpiryFilterNotifier, String>(
         FuturesExpiryFilterNotifier.new);
 
+/// Whether the Futures list should include every underlying returned by the
+/// semantic instrument search. The normal view remains scoped to the active
+/// F&O symbol.
+class FuturesShowAllUnderlyingsNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  @override
+  set state(bool value) => super.state = value;
+}
+
+final futuresShowAllUnderlyingsProvider =
+    NotifierProvider<FuturesShowAllUnderlyingsNotifier, bool>(
+  FuturesShowAllUnderlyingsNotifier.new,
+);
+
+/// Matches a futures-search result to the requested underlying without the
+/// unsafe substring match that would make `NIFTY` include BANKNIFTY and
+/// NIFTYNXT50. Prefer backend metadata; use a strict contract-root fallback
+/// only when that metadata is unavailable.
+bool matchesFutureUnderlying(Map<String, dynamic> contract, String symbol) {
+  final aliases = _underlyingAliases(symbol);
+  if (aliases.isEmpty) return false;
+
+  final metadata = [
+    contract['underlying_symbol'],
+    contract['underlyingSymbol'],
+    contract['underlying'],
+    contract['asset_symbol'],
+    contract['assetSymbol'],
+  ]
+      .whereType<Object?>()
+      .map((value) => value.toString())
+      .where((value) => value.trim().isNotEmpty);
+  final metadataValues = metadata.toList(growable: false);
+  if (metadataValues.isNotEmpty) {
+    return metadataValues
+        .any((value) => aliases.contains(_normalizeUnderlying(value)));
+  }
+
+  final tradingSymbol = (contract['trading_symbol'] ??
+          contract['tradingSymbol'] ??
+          contract['name'] ??
+          '')
+      .toString()
+      .toUpperCase()
+      .trim();
+  return aliases.any((alias) {
+    final expression = RegExp(
+      '^${RegExp.escape(alias)}(?=[\\s_\\-\\d]).*(?:FUT|FUTURE)(?:\\b|\$)',
+    );
+    return expression.hasMatch(tradingSymbol);
+  });
+}
+
+Set<String> _underlyingAliases(String symbol) {
+  final normalized = _normalizeUnderlying(symbol);
+  if (normalized.isEmpty) return const {};
+  const aliases = <String, Set<String>>{
+    'NIFTY50': {'NIFTY50', 'NIFTY'},
+    'NIFTYBANK': {'NIFTYBANK', 'BANKNIFTY'},
+    'NIFTYNEXT50': {'NIFTYNEXT50', 'NIFTYNXT50'},
+    'NIFTYFINANCIALSERVICES': {'NIFTYFINANCIALSERVICES', 'FINNIFTY'},
+    'NIFTYMIDCAPSELECT': {'NIFTYMIDCAPSELECT', 'MIDCPNIFTY'},
+  };
+  return aliases[normalized] ?? {normalized};
+}
+
+String _normalizeUnderlying(String value) =>
+    value.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
+
 /// Filtered list of Futures contracts based on active expiry filter
-final filteredFuturesContractsProvider = Provider.autoDispose<List<dynamic>>((ref) {
+final filteredFuturesContractsProvider =
+    Provider.autoDispose<List<dynamic>>((ref) {
   final contracts = ref
       .watch(futuresContractsProvider)
       .maybeWhen(data: (d) => d, orElse: () => <dynamic>[]);
@@ -91,15 +164,18 @@ class FuturesChartParams {
           currentLtp == other.currentLtp;
 
   @override
-  int get hashCode => symbol.hashCode ^ timeFrame.hashCode ^ currentLtp.hashCode;
+  int get hashCode =>
+      symbol.hashCode ^ timeFrame.hashCode ^ currentLtp.hashCode;
 }
 
 /// Dynamic historical OHLC chart provider delivering instantaneous 0ms responsive chart points
-final futuresHistoricalChartProvider = Provider.autoDispose.family<List<CommonCandlePoint>, FuturesChartParams>((ref, params) {
+final futuresHistoricalChartProvider = Provider.autoDispose
+    .family<List<CommonCandlePoint>, FuturesChartParams>((ref, params) {
   if (params.symbol.trim().isEmpty) return [];
 
   final basePrice = params.currentLtp > 0 ? params.currentLtp : 2200.0;
-  return _buildDynamicCandleSequence(basePrice, params.timeFrame, params.symbol);
+  return _buildDynamicCandleSequence(
+      basePrice, params.timeFrame, params.symbol);
 });
 
 String _formatXLabel(DateTime dt, TimeFrame tf) {
@@ -112,7 +188,8 @@ String _formatXLabel(DateTime dt, TimeFrame tf) {
   return DateFormat('MMM yyyy').format(dt);
 }
 
-List<CommonCandlePoint> _buildDynamicCandleSequence(double basePrice, TimeFrame tf, String symbol) {
+List<CommonCandlePoint> _buildDynamicCandleSequence(
+    double basePrice, TimeFrame tf, String symbol) {
   final now = DateTime.now();
   int count = 15;
   Duration stepDuration = const Duration(days: 2);
@@ -147,7 +224,10 @@ List<CommonCandlePoint> _buildDynamicCandleSequence(double basePrice, TimeFrame 
   }
 
   // Generate unique seed parameters based on symbol name to make every instrument graph reactive & distinct
-  final seed = symbol.toUpperCase().codeUnits.fold<int>(0, (acc, c) => (acc * 37 + c) & 0x7FFFFFFF);
+  final seed = symbol
+      .toUpperCase()
+      .codeUnits
+      .fold<int>(0, (acc, c) => (acc * 37 + c) & 0x7FFFFFFF);
   final freq1 = 0.8 + ((seed % 7) * 0.25);
   final freq2 = 0.4 + ((seed % 11) * 0.15);
   final phase = (seed % 13) * 0.4;
@@ -169,7 +249,9 @@ List<CommonCandlePoint> _buildDynamicCandleSequence(double basePrice, TimeFrame 
       dt = now.subtract(Duration(days: (count - 1 - i) * stepDuration.inDays));
     }
 
-    final wave = (sin((i + 1) * freq1 + phase) * volatility) + (cos((i + 1) * freq2 + phase) * (volatility * 0.6)) + (i * drift);
+    final wave = (sin((i + 1) * freq1 + phase) * volatility) +
+        (cos((i + 1) * freq2 + phase) * (volatility * 0.6)) +
+        (i * drift);
     final open = i == 0 ? basePrice * (1.0 - wave * 0.5) : prevClose;
     final close = basePrice * (1.0 + wave);
     final spread = (close - open).abs() + (basePrice * volatility * 0.3);
@@ -195,11 +277,16 @@ Future<List<dynamic>> _enrichWithLiveQuotes(List<dynamic> instruments) async {
     if (item is Map) {
       final key = item['instrument_key'] ?? item['instrumentKey'];
       final tradingSym = item['trading_symbol'] ?? item['tradingSymbol'];
-      final underlyingSym = item['underlying_symbol'] ?? item['asset_symbol'] ?? item['name'];
+      final underlyingSym =
+          item['underlying_symbol'] ?? item['asset_symbol'] ?? item['name'];
 
       if (key != null && key.toString().isNotEmpty) keys.add(key.toString());
-      if (tradingSym != null && tradingSym.toString().isNotEmpty) keys.add(tradingSym.toString());
-      if (underlyingSym != null && underlyingSym.toString().isNotEmpty) keys.add(underlyingSym.toString());
+      if (tradingSym != null && tradingSym.toString().isNotEmpty) {
+        keys.add(tradingSym.toString());
+      }
+      if (underlyingSym != null && underlyingSym.toString().isNotEmpty) {
+        keys.add(underlyingSym.toString());
+      }
     }
   }
 
@@ -209,11 +296,13 @@ Future<List<dynamic>> _enrichWithLiveQuotes(List<dynamic> instruments) async {
 
   try {
     final sdkService = MarketDataSdkService();
-    final responseMap = await sdkService.marketDataApi.getQuotes(keys.join(','));
+    final responseMap =
+        await sdkService.marketDataApi.getQuotes(keys.join(','));
     if (responseMap != null) {
-      final Map<String, dynamic> rawQuotesMap = (responseMap.containsKey('quotes') && responseMap['quotes'] is Map)
-          ? Map<String, dynamic>.from(responseMap['quotes'] as Map)
-          : responseMap.cast<String, dynamic>();
+      final Map<String, dynamic> rawQuotesMap =
+          (responseMap.containsKey('quotes') && responseMap['quotes'] is Map)
+              ? Map<String, dynamic>.from(responseMap['quotes'] as Map)
+              : responseMap.cast<String, dynamic>();
 
       rawQuotesMap.forEach((key, quoteVal) {
         if (quoteVal is Map) {
@@ -240,8 +329,11 @@ Future<List<dynamic>> _enrichWithLiveQuotes(List<dynamic> instruments) async {
     if (item is Map) {
       final map = Map<String, dynamic>.from(item);
       final key = (map['instrument_key'] ?? map['instrumentKey'])?.toString();
-      final tradingSym = (map['trading_symbol'] ?? map['tradingSymbol'])?.toString();
-      final underlyingSym = (map['underlying_symbol'] ?? map['asset_symbol'] ?? map['name'])?.toString();
+      final tradingSym =
+          (map['trading_symbol'] ?? map['tradingSymbol'])?.toString();
+      final underlyingSym =
+          (map['underlying_symbol'] ?? map['asset_symbol'] ?? map['name'])
+              ?.toString();
 
       final q = (key != null ? quoteByToken[key] : null) ??
           (tradingSym != null ? quoteByToken[tradingSym] : null) ??
@@ -254,10 +346,17 @@ Future<List<dynamic>> _enrichWithLiveQuotes(List<dynamic> instruments) async {
       int volume = 0;
 
       if (q != null) {
-        ltp = (q['lastPrice'] ?? q['last_price'] ?? q['ltp'] as num?)?.toDouble() ?? 0.0;
-        change = (q['netChange'] ?? q['change'] ?? q['net_change'] as num?)?.toDouble() ?? 0.0;
+        ltp = (q['lastPrice'] ?? q['last_price'] ?? q['ltp'] as num?)
+                ?.toDouble() ??
+            0.0;
+        change = (q['netChange'] ?? q['change'] ?? q['net_change'] as num?)
+                ?.toDouble() ??
+            0.0;
 
-        final prevClose = (q['previousClose'] ?? q['prevClose'] ?? q['close'] as num?)?.toDouble() ?? (ltp - change);
+        final prevClose =
+            (q['previousClose'] ?? q['prevClose'] ?? q['close'] as num?)
+                    ?.toDouble() ??
+                (ltp - change);
         if (change == 0.0 && prevClose > 0 && ltp > 0) {
           change = ltp - prevClose;
         }
@@ -266,24 +365,36 @@ Future<List<dynamic>> _enrichWithLiveQuotes(List<dynamic> instruments) async {
           pChange = (change / prevClose) * 100;
         }
 
-        oi = (q['oi'] ?? q['openInterest'] ?? q['open_interest'] as num?)?.toInt() ?? 0;
+        oi = (q['oi'] ?? q['openInterest'] ?? q['open_interest'] as num?)
+                ?.toInt() ??
+            0;
         volume = (q['volume'] ?? q['totalTradedVolume'] as num?)?.toInt() ?? 0;
       }
 
       // If contract-level LTP is still 0.0, fallback to underlying spot quote + expiry cost-of-carry
       if (ltp == 0.0 && underlyingSym != null) {
-        final spotQuote = quoteByToken[underlyingSym] ?? quoteByToken[underlyingSym.toUpperCase()];
+        final spotQuote = quoteByToken[underlyingSym] ??
+            quoteByToken[underlyingSym.toUpperCase()];
         if (spotQuote != null) {
-          final spotLtp = (spotQuote['lastPrice'] ?? spotQuote['last_price'] ?? spotQuote['ltp'] as num?)?.toDouble() ?? 0.0;
-          final spotPrevClose = (spotQuote['previousClose'] ?? spotQuote['prevClose'] as num?)?.toDouble() ?? spotLtp;
+          final spotLtp = (spotQuote['lastPrice'] ??
+                      spotQuote['last_price'] ??
+                      spotQuote['ltp'] as num?)
+                  ?.toDouble() ??
+              0.0;
+          final spotPrevClose =
+              (spotQuote['previousClose'] ?? spotQuote['prevClose'] as num?)
+                      ?.toDouble() ??
+                  spotLtp;
 
           if (spotLtp > 0) {
             final carryFactor = 1.0 + ((idx + 1) * 0.0012);
             ltp = double.parse((spotLtp * carryFactor).toStringAsFixed(2));
 
             final spotChange = spotLtp - spotPrevClose;
-            change = double.parse((spotChange * carryFactor).toStringAsFixed(2));
-            pChange = spotPrevClose > 0 ? (spotChange / spotPrevClose) * 100 : 0.0;
+            change =
+                double.parse((spotChange * carryFactor).toStringAsFixed(2));
+            pChange =
+                spotPrevClose > 0 ? (spotChange / spotPrevClose) * 100 : 0.0;
 
             oi = (ltp * (1250 + idx * 420)).toInt();
             volume = (ltp * (380 + idx * 110)).toInt();

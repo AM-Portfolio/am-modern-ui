@@ -111,6 +111,7 @@ abstract class JournalEntry with _$JournalEntry {
     String? tradeDirection,
     String? folderId,
     String? playbookId,
+    String? portfolioId,
     PreTradePlan? preTradePlan,
     TradeExecution? tradeExecution,
     PostTradeReview? postTradeReview,

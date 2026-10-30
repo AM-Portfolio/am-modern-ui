@@ -7,6 +7,7 @@ import 'package:am_market_ui/features/f_o/presentation/widgets/futures_open_inte
 import 'package:am_market_ui/features/f_o/presentation/widgets/futures_price_chart_widget.dart';
 import 'package:am_market_ui/features/f_o/presentation/widgets/futures_selected_contract_card.dart';
 import 'package:am_market_ui/features/f_o/providers/futures_provider.dart';
+import 'package:am_market_ui/features/f_o/providers/fo_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,6 +19,7 @@ class FuturesView extends ConsumerWidget {
     final colors = context.colors;
     final marketTheme = context.marketTheme;
     final futuresAsync = ref.watch(futuresContractsProvider);
+    final activeSymbol = ref.watch(foActiveSymbolProvider) ?? '';
 
     return futuresAsync.when(
       loading: () => Center(
@@ -104,7 +106,10 @@ class FuturesView extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          FuturesContractsTableWidget(contracts: contracts),
+                          FuturesContractsTableWidget(
+                            contracts: contracts,
+                            activeSymbol: activeSymbol,
+                          ),
                           const SizedBox(height: 16),
                           const FuturesPriceChartWidget(),
                         ],
@@ -142,9 +147,13 @@ class FuturesView extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  FuturesContractsTableWidget(contracts: contracts),
+                  FuturesContractsTableWidget(
+                    contracts: contracts,
+                    activeSymbol: activeSymbol,
+                  ),
                   const SizedBox(height: 12),
-                  const FuturesContractDetailsCard(mobileInformationLayout: true),
+                  const FuturesContractDetailsCard(
+                      mobileInformationLayout: true),
                   const SizedBox(height: 16),
                   const FuturesPriceChartWidget(),
                   const SizedBox(height: 16),

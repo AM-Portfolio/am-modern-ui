@@ -9,10 +9,12 @@ import 'package:intl/intl.dart';
 class FuturesContractsTableWidget extends ConsumerWidget {
   const FuturesContractsTableWidget({
     required this.contracts,
+    required this.activeSymbol,
     super.key,
   });
 
   final List<Object?> contracts;
+  final String activeSymbol;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -20,10 +22,21 @@ class FuturesContractsTableWidget extends ConsumerWidget {
     final marketTheme = context.marketTheme;
     final selectedFilter = ref.watch(futuresExpiryFilterProvider);
     final selectedContract = ref.watch(selectedFutureContractProvider);
+    final showAllUnderlyings = ref.watch(futuresShowAllUnderlyingsProvider);
+
+    final scopedContracts = showAllUnderlyings
+        ? contracts
+        : contracts.where((contract) {
+            if (contract is! Map) return false;
+            return matchesFutureUnderlying(
+              Map<String, dynamic>.from(contract),
+              activeSymbol,
+            );
+          }).toList(growable: false);
 
     // Filter out expired contracts (older than 30 days prior to current date)
     final nowMs = DateTime.now().millisecondsSinceEpoch;
-    final validContracts = contracts.where((c) {
+    final validContracts = scopedContracts.where((c) {
       if (c is Map) {
         final rawExp = c['expiry'];
         if (rawExp is num && rawExp > 0) {
@@ -35,8 +48,10 @@ class FuturesContractsTableWidget extends ConsumerWidget {
 
     // Sort active contracts chronologically by expiry date (near-month Sep 2026 first)
     validContracts.sort((a, b) {
-      final mapA = a is Map ? Map<String, dynamic>.from(a) : <String, dynamic>{};
-      final mapB = b is Map ? Map<String, dynamic>.from(b) : <String, dynamic>{};
+      final mapA =
+          a is Map ? Map<String, dynamic>.from(a) : <String, dynamic>{};
+      final mapB =
+          b is Map ? Map<String, dynamic>.from(b) : <String, dynamic>{};
       final expA = mapA['expiry'] is num ? (mapA['expiry'] as num).toInt() : 0;
       final expB = mapB['expiry'] is num ? (mapB['expiry'] as num).toInt() : 0;
       return expA.compareTo(expB);
@@ -52,7 +67,8 @@ class FuturesContractsTableWidget extends ConsumerWidget {
     }
 
     final filters = ['All', ...dynamicExpiries];
-    final activeFilter = filters.contains(selectedFilter) ? selectedFilter : 'All';
+    final activeFilter =
+        filters.contains(selectedFilter) ? selectedFilter : 'All';
 
     // Active filtering based on dynamic expiry filter
     final filteredContracts = validContracts.where((c) {
@@ -103,6 +119,17 @@ class FuturesContractsTableWidget extends ConsumerWidget {
               ),
               SizedBox(height: isMobile ? 10 : 12),
               AMFilterPillsBar<String>(
+                options: [activeSymbol, 'All underlyings'],
+                selectedOption:
+                    showAllUnderlyings ? 'All underlyings' : activeSymbol,
+                activeColor: ModuleColors.market,
+                onSelected: (value) {
+                  ref.read(futuresShowAllUnderlyingsProvider.notifier).state =
+                      value == 'All underlyings';
+                },
+              ),
+              SizedBox(height: isMobile ? 8 : 10),
+              AMFilterPillsBar<String>(
                 options: filters,
                 selectedOption: activeFilter,
                 activeColor: ModuleColors.market,
@@ -116,8 +143,11 @@ class FuturesContractsTableWidget extends ConsumerWidget {
                   padding: const EdgeInsets.all(24),
                   child: Center(
                     child: Text(
-                      'No futures contracts found for $activeFilter',
-                      style: TextStyle(color: colors.textSecondary, fontSize: 13),
+                      showAllUnderlyings
+                          ? 'No futures contracts found for $activeFilter'
+                          : 'No futures contracts found for $activeSymbol',
+                      style:
+                          TextStyle(color: colors.textSecondary, fontSize: 13),
                     ),
                   ),
                 )
@@ -244,7 +274,10 @@ class FuturesContractsTableWidget extends ConsumerWidget {
                                   ),
                                 ),
                                 const SizedBox(height: 6),
-                                ...filteredContracts.asMap().entries.map((entry) {
+                                ...filteredContracts
+                                    .asMap()
+                                    .entries
+                                    .map((entry) {
                                   final built = _buildContractRowData(
                                     entry.value,
                                     entry.key,
@@ -299,8 +332,7 @@ class FuturesContractsTableWidget extends ConsumerWidget {
                                                 style: TextStyle(
                                                   color: ModuleColors.market,
                                                   fontWeight: FontWeight.bold,
-                                                  fontSize:
-                                                      isCompact ? 12 : 13,
+                                                  fontSize: isCompact ? 12 : 13,
                                                 ),
                                                 overflow: TextOverflow.ellipsis,
                                               ),
@@ -311,8 +343,7 @@ class FuturesContractsTableWidget extends ConsumerWidget {
                                                 child: Text(
                                                   built.expiryStr,
                                                   style: TextStyle(
-                                                    color:
-                                                        colors.textSecondary,
+                                                    color: colors.textSecondary,
                                                     fontSize: 12,
                                                   ),
                                                 ),
@@ -324,8 +355,7 @@ class FuturesContractsTableWidget extends ConsumerWidget {
                                                 style: TextStyle(
                                                   color: colors.textPrimary,
                                                   fontWeight: FontWeight.w600,
-                                                  fontSize:
-                                                      isCompact ? 12 : 13,
+                                                  fontSize: isCompact ? 12 : 13,
                                                 ),
                                                 textAlign: TextAlign.right,
                                               ),
@@ -336,8 +366,7 @@ class FuturesContractsTableWidget extends ConsumerWidget {
                                                 '${built.change >= 0 ? '+' : ''}${built.change.toStringAsFixed(2)}',
                                                 style: TextStyle(
                                                   color: deltaColor,
-                                                  fontSize:
-                                                      isCompact ? 11 : 12,
+                                                  fontSize: isCompact ? 11 : 12,
                                                 ),
                                                 textAlign: TextAlign.right,
                                               ),
@@ -349,8 +378,7 @@ class FuturesContractsTableWidget extends ConsumerWidget {
                                                 style: TextStyle(
                                                   color: deltaColor,
                                                   fontWeight: FontWeight.bold,
-                                                  fontSize:
-                                                      isCompact ? 11 : 12,
+                                                  fontSize: isCompact ? 11 : 12,
                                                 ),
                                                 textAlign: TextAlign.right,
                                               ),
@@ -365,8 +393,7 @@ class FuturesContractsTableWidget extends ConsumerWidget {
                                                 ),
                                                 style: TextStyle(
                                                   color: colors.textPrimary,
-                                                  fontSize:
-                                                      isCompact ? 11 : 12,
+                                                  fontSize: isCompact ? 11 : 12,
                                                 ),
                                                 textAlign: TextAlign.right,
                                               ),
@@ -381,8 +408,7 @@ class FuturesContractsTableWidget extends ConsumerWidget {
                                                 ),
                                                 style: TextStyle(
                                                   color: colors.textPrimary,
-                                                  fontSize:
-                                                      isCompact ? 11 : 12,
+                                                  fontSize: isCompact ? 11 : 12,
                                                 ),
                                                 textAlign: TextAlign.right,
                                               ),
@@ -393,8 +419,7 @@ class FuturesContractsTableWidget extends ConsumerWidget {
                                                 child: Text(
                                                   lotSizeStr,
                                                   style: TextStyle(
-                                                    color:
-                                                        colors.textSecondary,
+                                                    color: colors.textSecondary,
                                                     fontSize: 12,
                                                   ),
                                                   textAlign: TextAlign.right,
@@ -447,11 +472,9 @@ class FuturesContractsTableWidget extends ConsumerWidget {
     final map = contract is Map
         ? Map<String, dynamic>.from(contract)
         : <String, dynamic>{};
-    final tradingSymbol = (map['trading_symbol'] ??
-            map['tradingSymbol'] ??
-            map['name'] ??
-            'FUT')
-        .toString();
+    final tradingSymbol =
+        (map['trading_symbol'] ?? map['tradingSymbol'] ?? map['name'] ?? 'FUT')
+            .toString();
 
     final metrics = _deriveContractMetrics(map, index);
     final ltp = metrics['ltp'] as double;
@@ -507,9 +530,14 @@ class FuturesContractsTableWidget extends ConsumerWidget {
     );
   }
 
-  static Map<String, dynamic> _deriveContractMetrics(Map<String, dynamic> map, int index) {
-    final rawLotSize = map['lot_size'] ?? map['lotSize'] ?? map['minimum_lot_size'] ?? map['lot_multiplier'];
-    final lotSize = (rawLotSize is num && rawLotSize > 0) ? rawLotSize.toInt() : 1;
+  static Map<String, dynamic> _deriveContractMetrics(
+      Map<String, dynamic> map, int index) {
+    final rawLotSize = map['lot_size'] ??
+        map['lotSize'] ??
+        map['minimum_lot_size'] ??
+        map['lot_multiplier'];
+    final lotSize =
+        (rawLotSize is num && rawLotSize > 0) ? rawLotSize.toInt() : 1;
 
     final rawLtp = map['ltp'];
     final ltp = (rawLtp is num) ? rawLtp.toDouble() : 0.0;
@@ -537,7 +565,8 @@ class FuturesContractsTableWidget extends ConsumerWidget {
   }
 
   TextStyle _headerStyle(AppColorsTheme colors) {
-    return TextStyle(color: colors.textSecondary, fontWeight: FontWeight.w600, fontSize: 12);
+    return TextStyle(
+        color: colors.textSecondary, fontWeight: FontWeight.w600, fontSize: 12);
   }
 
   static String _extractExpiryMonthYear(Map<String, dynamic> map) {
@@ -553,8 +582,10 @@ class FuturesContractsTableWidget extends ConsumerWidget {
       }
       return str;
     }
-    final symbol = (map['trading_symbol'] ?? map['tradingSymbol'] ?? '').toString();
-    final match = RegExp(r'(\d{1,2})\s+([A-Z]{3})\s+(\d{2})').firstMatch(symbol);
+    final symbol =
+        (map['trading_symbol'] ?? map['tradingSymbol'] ?? '').toString();
+    final match =
+        RegExp(r'(\d{1,2})\s+([A-Z]{3})\s+(\d{2})').firstMatch(symbol);
     if (match != null) {
       final mStr = match.group(2)!;
       final yStr = '20${match.group(3)!}';
@@ -564,7 +595,8 @@ class FuturesContractsTableWidget extends ConsumerWidget {
   }
 
   static String _formatNum(int num) {
-    return num.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
+    return num.toString().replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
   }
 }
 

@@ -39,13 +39,13 @@ class PeerColumnsHelper {
         ),
       ),
       PeerColumnDef(
-        label: 'ROE %',
+        label: 'ROE',
         key: 'roe',
         valueGetter: (p) => p.roe,
         cellBuilder: (context, p, maxRoe) => buildMetricBar(context, p.roe, maxRoe),
       ),
       PeerColumnDef(
-        label: 'ROA %',
+        label: 'ROA',
         key: 'roa',
         valueGetter: (p) => p.roa,
         cellBuilder: (context, p, _) => Text(
@@ -93,7 +93,7 @@ class PeerColumnsHelper {
         ),
       ),
       PeerColumnDef(
-        label: 'ROCE %',
+        label: 'ROCE',
         key: 'roce',
         valueGetter: (p) => p.roce,
         cellBuilder: (context, p, _) => Text(

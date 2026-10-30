@@ -29,6 +29,7 @@ class UniversalCalendarWidget extends StatefulWidget {
     this.enableCardView = false,
     this.yearCalendarData,
     this.currentYear,
+    this.initialMonth,
     this.showYearCalendar = false,
   });
 
@@ -64,6 +65,9 @@ class UniversalCalendarWidget extends StatefulWidget {
 
   /// Current year for year calendar view
   final int? currentYear;
+
+  /// Month (1–12) to scroll/focus when opening year calendar
+  final int? initialMonth;
 
   /// Show year calendar instead of filter template
   final bool showYearCalendar;
@@ -194,6 +198,7 @@ class _UniversalCalendarWidgetState extends State<UniversalCalendarWidget> {
             initialSelection: _currentSelection,
             yearCalendarData: widget.yearCalendarData,
             currentYear: widget.currentYear,
+            initialMonth: widget.initialMonth,
             showYearCalendar: widget.showYearCalendar,
           ),
           const SizedBox(height: 16),
@@ -211,6 +216,7 @@ class _UniversalCalendarWidgetState extends State<UniversalCalendarWidget> {
       initialSelection: _currentSelection,
       yearCalendarData: widget.yearCalendarData,
       currentYear: widget.currentYear,
+      initialMonth: widget.initialMonth,
       showYearCalendar: widget.showYearCalendar,
     );
   }

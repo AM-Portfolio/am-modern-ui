@@ -7,6 +7,8 @@ import 'package:am_design_system/shared/widgets/navigation/sidebar_layout_metric
 /// Secondary sidebar item model for structured navigation
 class SecondarySidebarItem {
   final String title;
+  /// Compact label for mobile pill chrome (falls back to [title]).
+  final String? shortTitle;
   final IconData icon;
   final VoidCallback? onTap;
   final Widget? trailing;
@@ -17,6 +19,7 @@ class SecondarySidebarItem {
 
   SecondarySidebarItem({
     required this.title,
+    this.shortTitle,
     required this.icon,
     this.onTap,
     this.trailing,
@@ -25,6 +28,11 @@ class SecondarySidebarItem {
     this.isSelected = false,
     this.subtitle,
   });
+
+  String get displayTitle =>
+      (shortTitle != null && shortTitle!.trim().isNotEmpty)
+          ? shortTitle!.trim()
+          : title;
 }
 
 /// A collapsible section in the sidebar

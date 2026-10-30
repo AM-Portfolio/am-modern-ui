@@ -210,3 +210,32 @@ Future<AllocationData> portfolioAllocations(Ref ref, String portfolioId) async {
   final service = await ref.watch(portfolioAnalyticsServiceProvider.future);
   return service.getPortfolioAllocations(portfolioId);
 }
+
+/// Mobile holdings: Sector/Industry strip open/closed.
+/// Toggle lives beside settings on the sticky header (not inside the strip).
+final mobileHoldingsFiltersExpandedProvider =
+    NotifierProvider<MobileHoldingsFiltersExpandedNotifier, bool>(
+  MobileHoldingsFiltersExpandedNotifier.new,
+);
+
+class MobileHoldingsFiltersExpandedNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void set(bool value) => state = value;
+
+  void toggle() => state = !state;
+}
+
+/// True when sector or industry filter is applied (drives sticky icon accent).
+final mobileHoldingsHasActiveFiltersProvider =
+    NotifierProvider<MobileHoldingsHasActiveFiltersNotifier, bool>(
+  MobileHoldingsHasActiveFiltersNotifier.new,
+);
+
+class MobileHoldingsHasActiveFiltersNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void set(bool value) => state = value;
+}

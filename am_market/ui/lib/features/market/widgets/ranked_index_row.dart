@@ -37,6 +37,9 @@ class RankedIndexRow extends StatelessWidget {
             : AppColorsTheme.light);
     // Gains follow theme accent (Imperial Gold); only losses use red.
     final positive = pChange >= 0;
+    final isGlobalWithoutPrice = data.isGlobal && !data.hasValidPrice;
+    final isNonLiveGlobalQuote =
+        data.isGlobal && data.suspended && data.hasValidPrice;
     final accent =
         positive ? colors.actionPrimaryBg : MarketColors.negative(context);
     final accentBg = positive
@@ -100,10 +103,12 @@ class RankedIndexRow extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: colors.actionPrimaryBg.withValues(alpha: 0.12),
+                            color:
+                                colors.actionPrimaryBg.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(99),
                             border: Border.all(
-                              color: colors.actionPrimaryBg.withValues(alpha: 0.4),
+                              color:
+                                  colors.actionPrimaryBg.withValues(alpha: 0.4),
                             ),
                           ),
                           child: Text(
@@ -120,7 +125,7 @@ class RankedIndexRow extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    fmt.format(ltp),
+                    isGlobalWithoutPrice ? '—' : fmt.format(ltp),
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -129,7 +134,11 @@ class RankedIndexRow extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    '$sign${fmt.format(change)}',
+                    isGlobalWithoutPrice
+                        ? 'Quote pending'
+                        : (isNonLiveGlobalQuote
+                            ? 'Last confirmed'
+                            : '$sign${fmt.format(change)}'),
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -137,31 +146,32 @@ class RankedIndexRow extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: accentBg,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      '${positive ? '▲' : '▼'} $sign${pChange.toStringAsFixed(2)}%',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: accent,
+                  if (!isGlobalWithoutPrice && !isNonLiveGlobalQuote)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: accentBg,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '${positive ? '▲' : '▼'} $sign${pChange.toStringAsFixed(2)}%',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: accent,
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
               const SizedBox(height: 8),
               LayoutBuilder(
                 builder: (context, constraints) {
-                  final fillW =
-                      (constraints.maxWidth * frac).clamp(0.0, constraints.maxWidth);
+                  final fillW = (constraints.maxWidth * frac)
+                      .clamp(0.0, constraints.maxWidth);
                   return SizedBox(
                     height: 8,
                     child: Stack(

@@ -121,6 +121,18 @@ class DiscoverViewState {
     }
   }
 
+  /// Compact trigger label for the global-style sort dropdown.
+  String get sortShortLabel {
+    switch (sort) {
+      case DiscoverSortMode.matchDesc:
+        return 'Recommended';
+      case DiscoverSortMode.returnDesc:
+        return 'Return';
+      case DiscoverSortMode.requiredAsc:
+        return 'Required ₹';
+    }
+  }
+
   static String formatReturn(double? value) {
     if (value == null) return '—';
     final sign = value > 0 ? '+' : '';

@@ -1,3 +1,4 @@
+import '../entities/calendar_latest_activity.dart';
 import '../entities/trade_calendar.dart';
 import '../entities/trade_holding.dart';
 import '../entities/trade_portfolio.dart';
@@ -13,6 +14,9 @@ abstract class TradeRepository {
 
   /// Get summary/analysis for a specific trade portfolio
   Future<TradeSummary> getTradeSummary(String portfolioId);
+
+  /// Latest trade year/month for calendar default open; null when no trades.
+  Future<CalendarLatestActivity?> getCalendarLatestActivity(String portfolioId);
 
   /// Get calendar analytics by month for a specific trade portfolio
   Future<TradeCalendar> getTradeCalendarByMonth(

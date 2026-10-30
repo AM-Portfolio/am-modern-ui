@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:am_design_system/am_design_system.dart';
+import '../../../../shared/widgets/market_async_error_view.dart';
 import '../../providers/watchlist_provider.dart';
 import '../../data/models/watchlist_model.dart';
 import '../widgets/watchlist_management_view.dart';
@@ -49,11 +50,59 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
           ),
         ),
         child: Padding(
-          padding: EdgeInsets.all(isMobile ? 12.0 : 16.0),
+          padding: isMobile
+              ? const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.xs,
+                  AppSpacing.md,
+                  AppSpacing.md,
+                )
+              : const EdgeInsets.all(AppSpacing.md),
           child: watchlistsAsync.when(
             data: (watchlists) {
               if (watchlists.isEmpty) {
-                return const Center(child: Text('No watchlists available.'));
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.star_border_rounded,
+                          size: 42,
+                          color: colors.textSecondary,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'No watchlists yet',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        FilledButton.icon(
+                          onPressed: () {
+                            CreateWatchlistDialog.show(
+                              context,
+                              onCreated: (name) {
+                                ref
+                                    .read(watchlistsProvider.notifier)
+                                    .createWatchlist(name);
+                              },
+                            );
+                          },
+                          icon: const Icon(Icons.add, size: 18),
+                          label: const Text('Create watchlist'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: ModuleColors.market,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
               }
 
               final filteredWatchlists = watchlists;
@@ -97,8 +146,13 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
               // Desktop View: Two-pane layout
               return _buildDesktopLayout(context, watchlists, selectedWatchlist);
             },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, st) => Center(child: Text('Error loading watchlists: $e')),
+            loading: () => _WatchlistSkeleton(colors: colors),
+            error: (e, st) => MarketAsyncErrorView(
+              title: "Couldn't load watchlists",
+              error: e,
+              onRetry: () =>
+                  ref.read(watchlistsProvider.notifier).refresh(),
+            ),
           ),
         ),
       ),
@@ -116,7 +170,6 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 8),
         // Unified Header Row: My Watchlists + Count Badge + Create Button
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -160,7 +213,7 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
               },
               icon: Icon(Icons.add, size: 16, color: colors.actionPrimaryFg),
               label: Text(
-                'Create Watchlist',
+                'Create',
                 style: TextStyle(
                   color: colors.actionPrimaryFg,
                   fontWeight: FontWeight.bold,
@@ -176,7 +229,7 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
             ),
           ],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: AppSpacing.xs),
 
         // List of Watchlist Cards
         Expanded(
@@ -515,5 +568,69 @@ class _WatchlistsPageState extends ConsumerState<WatchlistsPage> {
       Icons.folder_outlined,
     ];
     return icons[index % icons.length];
+  }
+}
+
+class _WatchlistSkeleton extends StatelessWidget {
+  const _WatchlistSkeleton({required this.colors});
+
+  final AppColorsTheme colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      padding: const EdgeInsets.only(top: 24),
+      itemCount: 5,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (_, __) {
+        return Container(
+          height: 64,
+          decoration: BoxDecoration(
+            color: colors.cardSurface.withValues(alpha: 0.7),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: colors.border.withValues(alpha: 0.35)),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: colors.border.withValues(alpha: 0.45),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      height: 12,
+                      width: 120,
+                      decoration: BoxDecoration(
+                        color: colors.border.withValues(alpha: 0.45),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 8,
+                      width: 64,
+                      decoration: BoxDecoration(
+                        color: colors.border.withValues(alpha: 0.35),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }

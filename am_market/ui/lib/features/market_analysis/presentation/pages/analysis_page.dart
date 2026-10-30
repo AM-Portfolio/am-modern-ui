@@ -107,7 +107,16 @@ class AnalysisPage extends ConsumerWidget {
                 const IndicesPerformanceViewV2(),
                 const SizedBox(height: 24),
                 // Scrollable content height wrapper for sub-analytics elements
-                const SizedBox(height: 850, child: HeatmapExplorerView()),
+                LayoutBuilder(
+                  builder: (context, c) {
+                    final mobile = c.maxWidth < 600;
+                    // Mobile: content-sized explorer; desktop: tall scroll host.
+                    return SizedBox(
+                      height: mobile ? 520 : 850,
+                      child: const HeatmapExplorerView(),
+                    );
+                  },
+                ),
                 const SizedBox(height: 24),
                 SymbolNewsSection(
                   symbol: newsSymbol,

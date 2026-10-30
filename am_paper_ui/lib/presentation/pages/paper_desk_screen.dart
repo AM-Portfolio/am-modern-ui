@@ -364,6 +364,7 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
                                     onSelectSymbol: _selectSymbol,
                                     onBuySell: _buySell,
                                     onOpenFundamentals: _openFundamentalAnalysis,
+                                    showSearch: false,
                                   ),
                                 ),
                               ),
@@ -432,8 +433,9 @@ class _PaperDeskScreenState extends State<PaperDeskScreen> {
   }
 }
 
-/// Narrow: watchlist only (no Paper desk / Watchlist|Desk chrome).
-/// Desk mid-pane opens when FA or a placed order needs it.
+enum _NarrowSurface { watchlist, positions }
+
+/// Narrow: Watchlist | Positions always reachable; desk mid-pane opens for FA/orders.
 class _NarrowDeskBody extends StatefulWidget {
   const _NarrowDeskBody({
     super.key,
@@ -463,6 +465,8 @@ class _NarrowDeskBody extends StatefulWidget {
 }
 
 class _NarrowDeskBodyState extends State<_NarrowDeskBody> {
+  _NarrowSurface _surface = _NarrowSurface.watchlist;
+
   void showDesk() {
     widget.onShowDeskChanged(true);
   }
@@ -470,31 +474,121 @@ class _NarrowDeskBodyState extends State<_NarrowDeskBody> {
   @override
   Widget build(BuildContext context) {
     final showOverview = widget.midTab == _MidTab.overview;
-    return Stack(
+    final colors = context.colors;
+    final accent = ModuleColors.market;
+
+    Widget body;
+    if (widget.showDesk) {
+      body = widget.midTabBar(context);
+    } else if (_surface == _NarrowSurface.positions) {
+      body = const PaperPositionsPnlPane();
+    } else {
+      body = PaperWatchlistPane(
+        selectedSymbol: widget.symbol,
+        onSelectSymbol: widget.onSelectSymbol,
+        onBuySell: widget.onBuySell,
+        onOpenFundamentals: widget.onOpenFundamentals,
+        compactChrome: true,
+        showSearch: false,
+      );
+    }
+
+    return Column(
       children: [
+        Expanded(
+          child: Stack(
+            children: [
+              body,
+              if (widget.hasSymbol)
+                Offstage(
+                  offstage: true,
+                  child: TickerMode(
+                    enabled: !showOverview || !widget.showDesk,
+                    child: SizedBox(
+                      width: MediaQuery.sizeOf(context).width,
+                      height: MediaQuery.sizeOf(context).height,
+                      child: PaperAnalyserPane(symbol: widget.symbol),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
         if (!widget.showDesk)
-          PaperWatchlistPane(
-            selectedSymbol: widget.symbol,
-            onSelectSymbol: widget.onSelectSymbol,
-            onBuySell: widget.onBuySell,
-            onOpenFundamentals: widget.onOpenFundamentals,
-            compactChrome: true,
-          )
-        else
-          widget.midTabBar(context),
-        if (widget.hasSymbol)
-          Offstage(
-            offstage: true,
-            child: TickerMode(
-              enabled: !showOverview || !widget.showDesk,
-              child: SizedBox(
-                width: MediaQuery.sizeOf(context).width,
-                height: MediaQuery.sizeOf(context).height,
-                child: PaperAnalyserPane(symbol: widget.symbol),
+          Material(
+            color: colors.surface,
+            child: SafeArea(
+              top: false,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _NarrowSurfaceChip(
+                      label: 'Watchlist',
+                      selected: _surface == _NarrowSurface.watchlist,
+                      accent: accent,
+                      onTap: () => setState(
+                        () => _surface = _NarrowSurface.watchlist,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: _NarrowSurfaceChip(
+                      label: 'Positions',
+                      selected: _surface == _NarrowSurface.positions,
+                      accent: accent,
+                      onTap: () => setState(
+                        () => _surface = _NarrowSurface.positions,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
       ],
+    );
+  }
+}
+
+class _NarrowSurfaceChip extends StatelessWidget {
+  const _NarrowSurfaceChip({
+    required this.label,
+    required this.selected,
+    required this.accent,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final Color accent;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(color: colors.divider),
+            bottom: BorderSide(
+              color: selected ? accent : Colors.transparent,
+              width: 2.5,
+            ),
+          ),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            color: selected ? accent : colors.textSecondary,
+            fontSize: 13,
+          ),
+        ),
+      ),
     );
   }
 }

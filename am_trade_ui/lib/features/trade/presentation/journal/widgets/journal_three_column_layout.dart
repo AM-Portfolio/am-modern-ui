@@ -1,12 +1,9 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../internal/domain/entities/journal_entry.dart';
 import '../../../internal/domain/entities/notebook_item.dart';
-import '../../../internal/domain/entities/notebook_tag.dart';
 import '../../cubit/journal/journal_cubit.dart';
-import '../../cubit/journal/journal_state.dart';
 import '../../notebook/cubit/notebook_cubit.dart';
 import '../../notebook/cubit/notebook_state.dart';
 import '../../web/widgets/journal/journal_entry_form.dart';
@@ -14,30 +11,49 @@ import '../models/journal_folder_filter.dart';
 import '../pages/trade_journal_workflow_page.dart';
 import 'journal_entry_detail_view.dart';
 import 'journal_entry_list_view.dart';
-import 'journal_navigation_sidebar.dart';
 import 'simple_template_dialog.dart';
 
+/// Two-column journal workspace: entries list | detail / create.
+/// Folder filtering is owned by the parent (filter bar).
 class JournalThreeColumnLayout extends StatefulWidget {
   const JournalThreeColumnLayout({
     required this.entries,
     required this.journalCubit,
     required this.notebookCubit,
+    required this.selectedFolder,
     this.portfolioId = '',
-    this.onAddFolder,
-    this.onNewTradeTap,
-    this.onEntryDropped,
+    this.pendingTemplate,
+    this.onPendingTemplateConsumed,
     this.onSelectedSymbolChanged,
+    this.onComposerOpenChanged,
+    this.focusEntryId,
+    this.onEntryCreated,
+    this.listFilterSlot,
     super.key,
   });
 
   final List<JournalEntry> entries;
   final JournalCubit journalCubit;
   final NotebookCubit notebookCubit;
+  final String selectedFolder;
   final String portfolioId;
-  final VoidCallback? onAddFolder;
-  final VoidCallback? onNewTradeTap;
-  final void Function(JournalEntry entry, String folderId)? onEntryDropped;
+
+  /// Filters rendered inside the entries rail (inspiration layout).
+  final Widget? listFilterSlot;
+
+  /// When set (e.g. from Playbooks), open Log Day and apply this template once.
+  final JournalTemplateSelection? pendingTemplate;
+  final VoidCallback? onPendingTemplateConsumed;
   final ValueChanged<String?>? onSelectedSymbolChanged;
+
+  /// Fired after Log Day (or the embedded trade workflow) saves a new entry.
+  final ValueChanged<String>? onEntryCreated;
+
+  /// True while Log Day / create pane is open — parent can free vertical space.
+  final ValueChanged<bool>? onComposerOpenChanged;
+
+  /// When set, selects this entry in the list (e.g. Global Search pick).
+  final String? focusEntryId;
 
   @override
   State<JournalThreeColumnLayout> createState() =>
@@ -45,89 +61,359 @@ class JournalThreeColumnLayout extends StatefulWidget {
 }
 
 class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
-  String _selectedFolder = JournalFolderFilter.dailyJournal;
   String? _selectedEntryId;
   bool _isCreatingNew = false;
-  /// When creating or viewing a trade-discipline entry, show workflow.
+
+  /// Edit on an existing entry — same full-page chrome as Log Day.
+  bool _isEditingEntry = false;
+
+  /// True while creating a new structured trade via the wizard.
   bool _useTradeWorkflow = false;
-  bool _isLeftSidebarCollapsed = false;
+
+  /// Force wizard for a completed trade (user tapped Edit journal).
+  bool _forceTradeEdit = false;
+  int? _forceTradeEditStep;
+
+  /// Fresh entity from getById — preferred over list row until list catches up.
+  JournalEntry? _hydratedEntry;
+
+  /// Single-flight hydrate: ignore stale responses; skip parallel getById for same id.
+  int _hydrateRequestId = 0;
+  String? _hydrateInFlightId;
+
   GlobalKey<JournalEntryFormState> _newFormKey =
       GlobalKey<JournalEntryFormState>();
+  final GlobalKey<TradeJournalWorkflowPageState> _newTradeWorkflowKey =
+      GlobalKey<TradeJournalWorkflowPageState>();
+  final GlobalKey<TradeJournalWorkflowPageState> _editTradeWorkflowKey =
+      GlobalKey<TradeJournalWorkflowPageState>();
+  JournalTemplateSelection? _composerTemplate;
+
+  /// Blocks list taps / mode switches while create/edit has unsaved work.
+  Future<bool> _guardUnsavedLeave() async {
+    if (_isCreatingNew && _useTradeWorkflow) {
+      final state = _newTradeWorkflowKey.currentState;
+      if (state != null) return state.confirmLeaveIfUnsaved();
+      return true;
+    }
+    if (_isCreatingNew) {
+      final state = _newFormKey.currentState;
+      if (state != null) return state.confirmLeaveIfUnsaved();
+      return true;
+    }
+    if (!_isCreatingNew &&
+        (_forceTradeEdit ||
+            (_selectedEntry != null &&
+                JournalFolderFilter.shouldOpenTradeWorkflow(_selectedEntry!)))) {
+      final state = _editTradeWorkflowKey.currentState;
+      if (state != null && state.hasUnsavedChanges) {
+        return state.confirmLeaveIfUnsaved();
+      }
+    }
+    return true;
+  }
 
   List<NotebookItem> get _notebookFolders {
     final state = widget.notebookCubit.state;
     return state is NotebookLoaded ? state.items : const [];
   }
 
-  List<JournalEntry> get _filteredEntries => JournalFolderFilter.filter(
-        entries: widget.entries,
-        folder: _selectedFolder,
-        notebookFolders: _notebookFolders,
-      );
-
   @override
   void initState() {
     super.initState();
-    final filtered = _filteredEntries;
-    if (filtered.isNotEmpty) {
-      _selectedEntryId = filtered.first.id;
+    if (widget.entries.isNotEmpty) {
+      _selectedEntryId = widget.entries.first.id;
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) => _notifySelectedSymbol());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _notifySelectedSymbol();
+      _hydrateSelectedEntry();
+    });
   }
 
   @override
   void didUpdateWidget(covariant JournalThreeColumnLayout oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_isCreatingNew) return;
-    final filtered = _filteredEntries;
-    final stillVisible = filtered.any((e) => e.id == _selectedEntryId);
-    if (!stillVisible) {
-      setState(() {
-        _selectedEntryId = filtered.isNotEmpty ? filtered.first.id : null;
+    if (widget.pendingTemplate != null &&
+        widget.pendingTemplate != oldWidget.pendingTemplate) {
+      final selection = widget.pendingTemplate!;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _composerTemplate = selection;
+        _startNewEntry(tradeWorkflow: false);
+        widget.onPendingTemplateConsumed?.call();
       });
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) => _notifySelectedSymbol());
+    final focusId = widget.focusEntryId;
+    final focusChanged =
+        focusId != null && focusId != oldWidget.focusEntryId;
+    final entriesChanged = widget.entries != oldWidget.entries;
+    final canFocus = focusId != null &&
+        widget.entries.any((e) => e.id == focusId);
+
+    if (oldWidget.selectedFolder != widget.selectedFolder) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        if (canFocus) {
+          await _applyFocusEntry(focusId);
+          return;
+        }
+        if (!await _guardUnsavedLeave()) return;
+        if (!mounted) return;
+        setState(() {
+          _useTradeWorkflow = false;
+          _forceTradeEdit = false;
+          _forceTradeEditStep = null;
+          _hydratedEntry = null;
+          _isEditingEntry = false;
+          _selectedEntryId =
+              widget.entries.isNotEmpty ? widget.entries.first.id : null;
+        });
+        _setCreating(false);
+        _notifyComposerOpen();
+        _notifySelectedSymbol();
+        await _hydrateSelectedEntry();
+      });
+      return;
+    }
+    if ((focusChanged || entriesChanged) && canFocus) {
+      // Close New Trade / Log Day composer so imported stubs are visible.
+      _applyFocusEntry(focusId);
+    }
+    if (_isCreatingNew) return;
+    var needsHydrate = false;
+    final stillVisible = widget.entries.any((e) => e.id == _selectedEntryId);
+    if (!stillVisible) {
+      setState(() {
+        _selectedEntryId =
+            widget.entries.isNotEmpty ? widget.entries.first.id : null;
+        _forceTradeEdit = false;
+        _forceTradeEditStep = null;
+        _hydratedEntry = null;
+      });
+      needsHydrate = _selectedEntryId != null;
+    } else if (_hydratedEntry != null &&
+        _hydratedEntry!.id == _selectedEntryId) {
+      final listRow =
+          widget.entries.where((e) => e.id == _selectedEntryId).firstOrNull;
+      if (listRow != null &&
+          !listRow.updatedAt.isBefore(_hydratedEntry!.updatedAt)) {
+        _hydratedEntry = null;
+        needsHydrate = true;
+      }
+    } else if (_selectedEntryId != null &&
+        (_hydratedEntry == null || _hydratedEntry!.id != _selectedEntryId)) {
+      needsHydrate = true;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _notifySelectedSymbol();
+      if (needsHydrate) _hydrateSelectedEntry();
+    });
+  }
+
+  JournalEntry? get _selectedEntry {
+    if (_hydratedEntry != null && _hydratedEntry!.id == _selectedEntryId) {
+      return _hydratedEntry;
+    }
+    return widget.entries.where((e) => e.id == _selectedEntryId).firstOrNull;
   }
 
   void _notifySelectedSymbol() {
-    final filtered = _filteredEntries;
-    final selected =
-        filtered.where((e) => e.id == _selectedEntryId).firstOrNull;
-    widget.onSelectedSymbolChanged?.call(selected?.symbol);
+    widget.onSelectedSymbolChanged?.call(_selectedEntry?.symbol);
   }
 
-  void _selectFolder(String folder) {
-    final filtered = JournalFolderFilter.filter(
-      entries: widget.entries,
-      folder: folder,
-      notebookFolders: _notebookFolders,
-    );
+  /// Full getById for the current selection (list rows often omit attachments).
+  Future<void> _hydrateSelectedEntry() async {
+    final id = _selectedEntryId;
+    if (!mounted || id == null || _isCreatingNew) return;
+    // Avoid stampede on fast list refreshes / re-taps while one load is in flight.
+    if (_hydrateInFlightId == id) return;
+    final requestId = ++_hydrateRequestId;
+    _hydrateInFlightId = id;
+    try {
+      final fresh = await widget.journalCubit.loadEntryDetail(id);
+      if (!mounted || requestId != _hydrateRequestId) return;
+      if (_selectedEntryId != id || fresh == null) return;
+      setState(() => _hydratedEntry = fresh);
+    } finally {
+      if (_hydrateInFlightId == id) _hydrateInFlightId = null;
+    }
+  }
+
+  /// Select [entryId], exit any open composer, show the entries rail again.
+  Future<void> _applyFocusEntry(String entryId) async {
+    if (!mounted) return;
+    final already =
+        _selectedEntryId == entryId && !_isCreatingNew && !_useTradeWorkflow;
+    final alreadyHydrated = _hydratedEntry?.id == entryId;
+    if (already && !_forceTradeEdit) {
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _notifySelectedSymbol());
+      if (!alreadyHydrated) await _hydrateSelectedEntry();
+      return;
+    }
+    if (!await _guardUnsavedLeave()) return;
+    if (!mounted) return;
     setState(() {
-      _selectedFolder = folder;
+      _selectedEntryId = entryId;
       _isCreatingNew = false;
       _useTradeWorkflow = false;
-      _selectedEntryId = filtered.isNotEmpty ? filtered.first.id : null;
+      _forceTradeEdit = false;
+      _forceTradeEditStep = null;
+      _hydratedEntry = null;
+      _isEditingEntry = false;
+      _composerTemplate = null;
     });
-    if (_selectedEntryId != null) {
-      final entry = filtered.first;
-      _useTradeWorkflow = _isTradeLike(entry);
-    }
-    _notifySelectedSymbol();
+    _notifyComposerOpen();
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _notifySelectedSymbol());
+    await _hydrateSelectedEntry();
   }
 
-  void _startNewEntry({bool tradeWorkflow = false}) {
+  /// Always keep the entries rail (same as Log Day). Trade Pre/Execute/Post
+  /// shares the right pane; collapsing the list felt like the sidebar vanished.
+  bool get _focusFullPage => false;
+
+  /// Which create-mode pill is highlighted (`false` Log day, `true` Trade).
+  /// Always non-null so one segment stays selected in the rail.
+  bool _createModeHighlight(JournalEntry? selected) {
+    if (_isCreatingNew) return _useTradeWorkflow;
+    if (_forceTradeEdit) return true;
+    if (selected != null) {
+      return JournalFolderFilter.shouldOpenTradeWorkflow(selected);
+    }
+    // Default when browsing with nothing selected.
+    return true;
+  }
+
+  void _notifyComposerOpen() {
+    widget.onComposerOpenChanged?.call(_focusFullPage);
+  }
+
+  void _setCreating(bool value) {
+    if (_isCreatingNew == value) return;
+    setState(() {
+      _isCreatingNew = value;
+      if (value) _isEditingEntry = false;
+    });
+    _notifyComposerOpen();
+  }
+
+  void _setEditingEntry(bool value) {
+    if (_isEditingEntry == value) return;
+    setState(() => _isEditingEntry = value);
+    _notifyComposerOpen();
+  }
+
+  Future<void> _startNewEntry({
+    bool tradeWorkflow = false,
+    bool clearTemplate = false,
+  }) async {
+    // Switching Log day ↔ Trade (or re-opening) while composing must warn.
+    if (_isCreatingNew ||
+        (_newTradeWorkflowKey.currentState?.hasUnsavedChanges ?? false) ||
+        (_editTradeWorkflowKey.currentState?.hasUnsavedChanges ?? false)) {
+      if (!await _guardUnsavedLeave()) return;
+    }
+    if (!mounted) return;
     setState(() {
       _selectedEntryId = null;
-      _isCreatingNew = true;
+      _isEditingEntry = false;
       _useTradeWorkflow = tradeWorkflow;
+      _forceTradeEdit = false;
+      _forceTradeEditStep = null;
+      if (clearTemplate) _composerTemplate = null;
       _newFormKey = GlobalKey<JournalEntryFormState>();
     });
+    _setCreating(true);
     widget.onSelectedSymbolChanged?.call(null);
   }
 
-  bool _isTradeLike(JournalEntry? entry) {
-    if (entry == null) return false;
-    return JournalFolderFilter.isTradeLikeEntry(entry);
+  Future<void> _closeComposer({
+    String? selectEntryId,
+    bool skipLeaveGuard = false,
+  }) async {
+    // After an in-form Cancel dialog already confirmed leave, skip re-prompt.
+    if (!skipLeaveGuard &&
+        selectEntryId == null &&
+        !await _guardUnsavedLeave()) {
+      return;
+    }
+    if (!mounted) return;
+    setState(() {
+      _useTradeWorkflow = false;
+      _forceTradeEdit = false;
+      _forceTradeEditStep = null;
+      _hydratedEntry = null;
+      _composerTemplate = null;
+      _isEditingEntry = false;
+      _selectedEntryId = selectEntryId ??
+          (widget.entries.isNotEmpty ? widget.entries.first.id : null);
+    });
+    _setCreating(false);
+    await _hydrateSelectedEntry();
+  }
+
+  Future<void> _onEntrySelected(JournalEntry entry) async {
+    final sameSelected =
+        _selectedEntryId == entry.id && !_isCreatingNew && !_forceTradeEdit;
+    final alreadyHydrated = _hydratedEntry?.id == entry.id;
+    // Re-tap of the selected row: still hydrate if we only have the list row.
+    if (sameSelected && alreadyHydrated) return;
+    if (!sameSelected) {
+      if (!await _guardUnsavedLeave()) return;
+      if (!mounted) return;
+      setState(() {
+        _selectedEntryId = entry.id;
+        _useTradeWorkflow = false;
+        _forceTradeEdit = false;
+        _forceTradeEditStep = null;
+        _hydratedEntry = null;
+        _isEditingEntry = false;
+      });
+      _setCreating(false);
+      _notifyComposerOpen();
+      widget.onSelectedSymbolChanged?.call(entry.symbol);
+    }
+    await _hydrateSelectedEntry();
+  }
+
+  Future<void> _confirmAndDelete(JournalEntry entry) async {
+    final title = entry.title.trim().isEmpty
+        ? (entry.symbol?.trim().isNotEmpty == true
+            ? entry.symbol!.trim()
+            : 'Untitled entry')
+        : entry.title.trim();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete journal?'),
+        content: Text('“$title” will be removed.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: ctx.statusError,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    await widget.journalCubit.removeJournalEntry(entry.id);
+    if (!mounted) return;
+    setState(() {
+      if (_selectedEntryId == entry.id) {
+        _selectedEntryId = null;
+        _hydratedEntry = null;
+        _forceTradeEdit = false;
+        _forceTradeEditStep = null;
+      }
+    });
   }
 
   Future<void> _browseTemplates(
@@ -142,89 +428,109 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
           SnackBar(
             content: Text('Applied "${selection.name}" template'),
             backgroundColor: ModuleColors.trade,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(AppSpacing.md),
           ),
         );
       },
     );
   }
 
+  /// Leave enough width for Notes + right meta column inside the detail pane.
+  /// Trade module sidebar already ate outer chrome — this rail must give way.
+  static double _entriesRailWidth(double workspaceWidth) {
+    const minDetail = 640.0;
+    final forRail = workspaceWidth - minDetail;
+    if (forRail < 168) return 168;
+    if (forRail < 220) return 200;
+    if (forRail < 280) return 240;
+    if (forRail < 320) return 280;
+    return 300;
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final filteredEntries = _filteredEntries;
-    final selectedEntry =
-        filteredEntries.where((e) => e.id == _selectedEntryId).firstOrNull;
+    final selectedEntry = _selectedEntry;
+    final focusFullPage = _focusFullPage;
 
     return ColoredBox(
       color: colors.surface,
-      child: Row(
-        children: [
-          BlocBuilder<NotebookCubit, NotebookState>(
-            bloc: widget.notebookCubit,
-            builder: (context, state) {
-              final folders =
-                  state is NotebookLoaded ? state.items : <NotebookItem>[];
-              final tags =
-                  state is NotebookLoaded ? state.tags : <NotebookTag>[];
-
-              return JournalNavigationSidebar(
-                selectedFolder: _selectedFolder,
-                onFolderSelected: _selectFolder,
-                isCollapsed: _isLeftSidebarCollapsed,
-                onToggleCollapse: () => setState(
-                  () => _isLeftSidebarCollapsed = !_isLeftSidebarCollapsed,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final railWidth =
+              focusFullPage ? 0.0 : _entriesRailWidth(constraints.maxWidth);
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeOutCubic,
+                width: railWidth,
+                // ClipRect — AnimatedContainer forbids clipBehavior without decoration.
+                child: railWidth <= 0
+                    ? const SizedBox.shrink()
+                    : ClipRect(
+                        child: JournalEntryListView(
+                          entries: widget.entries,
+                          selectedEntryId: _selectedEntryId,
+                          showListTitle: false,
+                          // Parent AnimatedContainer owns width — fill it.
+                          width: double.infinity,
+                          createMode: _createModeHighlight(selectedEntry),
+                          filterSlot: widget.listFilterSlot,
+                          emptyMessage: JournalFolderFilter.emptyMessage(
+                            widget.selectedFolder,
+                          ).split('\n').first,
+                          emptySubtitle:
+                              'Start documenting your trades to unlock powerful insights.',
+                          onEntrySelected: _onEntrySelected,
+                          onDeleteEntry: _confirmAndDelete,
+                          onLogDayPressed: () => _startNewEntry(
+                                tradeWorkflow: false,
+                                clearTemplate: true,
+                              ),
+                          onNewTradeJournalPressed: () => _startNewEntry(
+                                tradeWorkflow: true,
+                                clearTemplate: true,
+                              ),
+                        ),
+                      ),
+              ),
+              Expanded(
+                child: ClipRect(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 340),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (child, animation) {
+                      final slide = Tween<Offset>(
+                        begin: const Offset(0.04, 0),
+                        end: Offset.zero,
+                      ).animate(animation);
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(position: slide, child: child),
+                      );
+                    },
+                    child: KeyedSubtree(
+                      // Do not key on _isEditingEntry — remounting on Edit forces a
+                      // second click before the form actually enters edit mode.
+                      key: ValueKey(
+                        _isCreatingNew
+                            ? 'composer-${_useTradeWorkflow ? 'trade' : 'day'}'
+                            : _forceTradeEdit
+                                ? 'trade-edit-${selectedEntry?.id ?? 'none'}'
+                                : (selectedEntry?.id ?? 'empty-detail'),
+                      ),
+                      child: _buildRightPane(colors, selectedEntry),
+                    ),
+                  ),
                 ),
-                folders: folders,
-                tags: tags,
-                onAddFolder: widget.onAddFolder,
-                onTagTap: (tagId) {
-                  final current = widget.journalCubit.state.maybeWhen(
-                    loaded: (_, __, ___, ____, tagIds, _____, ______) => tagIds,
-                    orElse: () => <String>[],
-                  );
-                  final next = List<String>.from(current);
-                  if (next.contains(tagId)) {
-                    next.remove(tagId);
-                  } else {
-                    next.add(tagId);
-                  }
-                  widget.journalCubit.setFilters(tagIds: next);
-                },
-                onNewTradeTap: () {
-                  _startNewEntry(tradeWorkflow: true);
-                  widget.onNewTradeTap?.call();
-                },
-                onEntryDropped: widget.onEntryDropped,
-              );
-            },
-          ),
-          VerticalDivider(
-            width: 1,
-            color: colors.border.withValues(alpha: 0.35),
-          ),
-          JournalEntryListView(
-            entries: filteredEntries,
-            selectedEntryId: _isCreatingNew ? null : _selectedEntryId,
-            listTitle: JournalFolderFilter.listTitle(_selectedFolder),
-            emptyMessage: JournalFolderFilter.emptyMessage(_selectedFolder),
-            onEntrySelected: (entry) {
-              setState(() {
-                _selectedEntryId = entry.id;
-                _isCreatingNew = false;
-                _useTradeWorkflow = _isTradeLike(entry);
-              });
-              widget.onSelectedSymbolChanged?.call(entry.symbol);
-            },
-            onLogDayPressed: () => _startNewEntry(tradeWorkflow: false),
-          ),
-          VerticalDivider(
-            width: 1,
-            color: colors.border.withValues(alpha: 0.35),
-          ),
-          Expanded(
-            child: _buildRightPane(colors, selectedEntry),
-          ),
-        ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -232,119 +538,91 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
   Widget _buildRightPane(dynamic colors, JournalEntry? selectedEntry) {
     if (_isCreatingNew && _useTradeWorkflow) {
       return TradeJournalWorkflowPage(
-        key: const ValueKey('new-trade-workflow'),
+        key: _newTradeWorkflowKey,
         journalCubit: widget.journalCubit,
         portfolioId: widget.portfolioId,
         embedded: true,
-        onEmbeddedDone: (entryId) {
+        onEmbeddedDone: (entryId, {required bool complete}) {
           setState(() {
-            _isCreatingNew = false;
-            _useTradeWorkflow = true;
             _selectedEntryId = entryId;
+            _useTradeWorkflow = false;
+            _forceTradeEdit = false;
+            _forceTradeEditStep = null;
           });
+          _setCreating(false);
+          widget.onEntryCreated?.call(entryId);
         },
         onEmbeddedCancel: () {
-          setState(() {
-            _isCreatingNew = false;
-            _useTradeWorkflow = false;
-          });
+          _closeComposer(skipLeaveGuard: true);
         },
       );
     }
 
     if (!_isCreatingNew &&
         selectedEntry != null &&
-        (_useTradeWorkflow || _isTradeLike(selectedEntry))) {
+        JournalFolderFilter.shouldOpenTradeWorkflow(selectedEntry)) {
+      final completed =
+          JournalFolderFilter.isCompletedTradeJournal(selectedEntry);
+      // Same Pre/Execute/Post template for saved journals; completed starts locked.
       return TradeJournalWorkflowPage(
-        key: ValueKey('wf-${selectedEntry.id}'),
+        key: _editTradeWorkflowKey,
         journalCubit: widget.journalCubit,
         initialEntry: selectedEntry,
         portfolioId: widget.portfolioId,
         embedded: true,
-        onEmbeddedDone: (entryId) {
+        initialReadOnly: completed && !_forceTradeEdit,
+        startAtStep: _forceTradeEditStep ?? (completed ? 2 : null),
+        onEmbeddedDone: (entryId, {required bool complete}) {
           setState(() {
             _selectedEntryId = entryId;
-            _useTradeWorkflow = true;
+            if (complete) {
+              _forceTradeEdit = false;
+              _forceTradeEditStep = null;
+            }
           });
+          _notifyComposerOpen();
+          widget.onEntryCreated?.call(entryId);
         },
         onEmbeddedCancel: () {
-          setState(() => _useTradeWorkflow = false);
+          setState(() {
+            _forceTradeEdit = false;
+            _forceTradeEditStep = null;
+          });
+          _notifyComposerOpen();
+        },
+        onEmbeddedDeleted: () {
+          setState(() {
+            _selectedEntryId = null;
+            _hydratedEntry = null;
+            _forceTradeEdit = false;
+            _forceTradeEditStep = null;
+          });
+          _notifyComposerOpen();
         },
       );
     }
 
     if (_isCreatingNew) {
       return ColoredBox(
-        color: colors.cardSurface.withValues(alpha: 0.35),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                AppSpacing.lg,
-                AppSpacing.lg,
-                AppSpacing.sm + AppSpacing.xs,
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.edit_document,
-                    size: 22,
-                    color: ModuleColors.trade,
-                  ),
-                  const SizedBox(width: AppSpacing.sm + AppSpacing.xs),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'New Journal Entry',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                        ),
-                        Text(
-                          'Folder: $_selectedFolder',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: colors.textSecondary,
-                              ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  AppButton(
-                    text: 'Use template',
-                    icon: Icons.auto_awesome_outlined,
-                    backgroundColor: ModuleColors.trade,
-                    onPressed: () => _browseTemplates(_newFormKey),
-                  ),
-                ],
-              ),
-            ),
-            Divider(height: 1, color: colors.border.withValues(alpha: 0.35)),
-            Expanded(
-              child: JournalEntryForm(
-                key: _newFormKey,
-                cubit: widget.journalCubit,
-                portfolioId: widget.portfolioId,
-                defaultEntryType: JournalFolderFilter.createEntryType(
-                  _selectedFolder,
-                ),
-                defaultFolderId: JournalFolderFilter.createFolderId(
-                  _selectedFolder,
-                  notebookFolders: _notebookFolders,
-                ),
-                onCreated: (entryId) {
-                  setState(() {
-                    _isCreatingNew = false;
-                    _selectedEntryId = entryId;
-                    _useTradeWorkflow = false;
-                  });
-                },
-                onBrowseTemplates: () => _browseTemplates(_newFormKey),
-              ),
-            ),
-          ],
+        color: colors.surface,
+        child: JournalEntryForm(
+          key: _newFormKey,
+          cubit: widget.journalCubit,
+          portfolioId: widget.portfolioId,
+          initialTemplate: _composerTemplate,
+          defaultEntryType: JournalFolderFilter.createEntryType(
+            widget.selectedFolder,
+          ),
+          defaultFolderId: JournalFolderFilter.createFolderId(
+            widget.selectedFolder,
+            notebookFolders: _notebookFolders,
+          ),
+          onCreated: (entryId) {
+            _closeComposer(selectEntryId: entryId, skipLeaveGuard: true);
+            widget.onEntryCreated?.call(entryId);
+          },
+          onBrowseTemplates: () => _browseTemplates(_newFormKey),
+          onCancelCreate: () => _closeComposer(skipLeaveGuard: true),
         ),
       );
     }
@@ -354,6 +632,7 @@ class _JournalThreeColumnLayoutState extends State<JournalThreeColumnLayout> {
       entry: selectedEntry,
       cubit: widget.journalCubit,
       portfolioId: widget.portfolioId,
+      onEditModeChanged: _setEditingEntry,
     );
   }
 }

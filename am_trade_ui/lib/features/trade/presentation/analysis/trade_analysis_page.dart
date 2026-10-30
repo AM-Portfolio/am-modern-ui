@@ -197,7 +197,16 @@ class _TradeAnalysisPageState extends ConsumerState<TradeAnalysisPage> {
                     icon: Icons.download_outlined,
                     type: AppButtonType.secondary,
                     isOutlined: true,
-                    onPressed: () {},
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Metrics export is not available yet. Use Journal → Export CSV for journal data.',
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    },
                     height: 36,
                   ),
                 ],

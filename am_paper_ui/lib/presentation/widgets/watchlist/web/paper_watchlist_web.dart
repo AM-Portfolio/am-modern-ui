@@ -1,4 +1,3 @@
-import 'package:am_common/am_common.dart' show MobileSearchScope;
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
@@ -14,6 +13,7 @@ class PaperWatchlistWeb extends StatefulWidget {
     required this.onSelectSymbol,
     required this.onBuySell,
     this.onOpenFundamentals,
+    this.showSearch = true,
   });
 
   final WatchlistController controller;
@@ -21,6 +21,7 @@ class PaperWatchlistWeb extends StatefulWidget {
   final ValueChanged<String> onSelectSymbol;
   final WatchlistSideCallback onBuySell;
   final ValueChanged<String>? onOpenFundamentals;
+  final bool showSearch;
 
   @override
   State<PaperWatchlistWeb> createState() => _PaperWatchlistWebState();
@@ -67,20 +68,6 @@ class _PaperWatchlistWebState extends State<PaperWatchlistWeb> {
                     icon: Icon(Icons.refresh, color: colors.textSecondary),
                   ),
               ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: () => MobileSearchScope.tryOpenGlobalSearch(context),
-                icon: Icon(Icons.search_rounded, size: 18, color: ModuleColors.market),
-                label: Text(
-                  'Add stocks via global search',
-                  style: TextStyle(color: ModuleColors.market, fontSize: 13),
-                ),
-              ),
             ),
           ),
           Padding(

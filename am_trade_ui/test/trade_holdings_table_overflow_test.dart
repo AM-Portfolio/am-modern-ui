@@ -2,6 +2,7 @@ import 'package:am_design_system/am_design_system.dart';
 import 'package:am_trade_ui/features/trade/presentation/holdings/components/trade_holdings_advanced_template.dart';
 import 'package:am_trade_ui/features/trade/presentation/models/trade_holding_view_model.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -13,7 +14,8 @@ void main() {
       addTearDown(tester.view.reset);
 
       await tester.pumpWidget(
-        MaterialApp(
+        ProviderScope(
+          child: MaterialApp(
           theme: ThemeData(
             extensions: const [
               AppColorsTheme.light,
@@ -43,6 +45,7 @@ void main() {
               ),
             ),
           ),
+        ),
         ),
       );
       await tester.pumpAndSettle();

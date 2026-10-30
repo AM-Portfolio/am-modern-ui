@@ -112,6 +112,20 @@ void main() {
     expect(stress.betaAssumed, isFalse);
     expect(stress.betaUsed, 0.5);
     expect(stress.historyDays, 30);
+    expect(stress.equityWeightPct, isNull);
+  });
+
+  test('StressResult parses equityWeightPct for How we calculate sheet', () {
+    final stress = StressResult.fromJson({
+      'portfolioId': 'p1',
+      'method': 'PORTFOLIO_BETA',
+      'betaUsed': 1.2,
+      'betaAssumed': false,
+      'historyDays': 40,
+      'equityWeightPct': 70.0,
+      'scenarios': [],
+    });
+    expect(stress.equityWeightPct, 70.0);
   });
 
   test('StressResult method ASSUMED_ONE treats string betaAssumed as assumed', () {

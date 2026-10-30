@@ -1,7 +1,10 @@
 import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../journal_template_providers.dart';
+import '../models/journal_template_api_mapper.dart';
 import '../models/journal_template_catalog.dart';
 
 export '../models/journal_template_catalog.dart'
@@ -9,11 +12,10 @@ export '../models/journal_template_catalog.dart'
         JournalTemplateSelection,
         JournalTemplateCatalog,
         JournalTemplateCategory,
-        JournalTemplateSection,
-        buildTemplateDocument;
+        JournalTemplateSection;
 
-/// Journal templates picker matching the product mockup.
-class EnhancedTemplateDialog extends StatefulWidget {
+/// Journal templates picker — prefers Playbooks API, falls back to local catalog.
+class EnhancedTemplateDialog extends ConsumerStatefulWidget {
   const EnhancedTemplateDialog({
     required this.onTemplateSelected,
     super.key,
@@ -37,16 +39,22 @@ class EnhancedTemplateDialog extends StatefulWidget {
   }
 
   @override
-  State<EnhancedTemplateDialog> createState() => _EnhancedTemplateDialogState();
+  ConsumerState<EnhancedTemplateDialog> createState() =>
+      _EnhancedTemplateDialogState();
 }
 
 enum _TemplateFilter { all, daily, tradeSetup, review, myTemplates }
 
-class _EnhancedTemplateDialogState extends State<EnhancedTemplateDialog> {
+class _EnhancedTemplateDialogState
+    extends ConsumerState<EnhancedTemplateDialog> {
   late JournalTemplateSelection _selected;
   final TextEditingController _searchController = TextEditingController();
   _TemplateFilter _filter = _TemplateFilter.all;
   final FocusNode _searchFocus = FocusNode();
+  List<JournalTemplateSelection> _apiTemplates = const [];
+  var _loadingApi = true;
+  /// Per-template checklist ticks chosen in the preview (carried into Apply).
+  final Map<String, Set<String>> _checkedByTemplate = {};
 
   List<Color> get _sectionColors => [
         ModuleColors.trade,
@@ -55,11 +63,36 @@ class _EnhancedTemplateDialogState extends State<EnhancedTemplateDialog> {
         ModuleColors.reports,
       ];
 
+  List<JournalTemplateSelection> get _allTemplates {
+    if (_apiTemplates.isNotEmpty) {
+      return [..._apiTemplates, JournalTemplateCatalog.blank];
+    }
+    return JournalTemplateCatalog.all;
+  }
+
   @override
   void initState() {
     super.initState();
     _selected = JournalTemplateCatalog.all.first;
     _searchController.addListener(() => setState(() {}));
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadApiTemplates());
+  }
+
+  Future<void> _loadApiTemplates() async {
+    try {
+      final repo = await ref.read(journalTemplateRepositoryProvider.future);
+      final templates = await repo.getTemplates();
+      if (!mounted) return;
+      setState(() {
+        _apiTemplates =
+            templates.map(journalTemplateToSelection).toList(growable: false);
+        _selected = _allTemplates.first;
+        _loadingApi = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingApi = false);
+    }
   }
 
   @override
@@ -71,7 +104,7 @@ class _EnhancedTemplateDialogState extends State<EnhancedTemplateDialog> {
 
   List<JournalTemplateSelection> get _filtered {
     final q = _searchController.text.trim().toLowerCase();
-    return JournalTemplateCatalog.all.where((t) {
+    return _allTemplates.where((t) {
       final matchesFilter = switch (_filter) {
         _TemplateFilter.all => true,
         _TemplateFilter.daily => t.category == JournalTemplateCategory.daily,
@@ -79,7 +112,8 @@ class _EnhancedTemplateDialogState extends State<EnhancedTemplateDialog> {
           t.category == JournalTemplateCategory.tradeSetup,
         _TemplateFilter.review => t.category == JournalTemplateCategory.review,
         _TemplateFilter.myTemplates =>
-          t.category == JournalTemplateCategory.custom,
+          t.category == JournalTemplateCategory.custom ||
+              (t.badgeLabel == 'Playbook'),
       };
       if (!matchesFilter) return false;
       if (q.isEmpty) return true;
@@ -163,7 +197,24 @@ class _EnhancedTemplateDialogState extends State<EnhancedTemplateDialog> {
     return KeyEventResult.ignored;
   }
 
-  void _useSelected() => widget.onTemplateSelected(_selected);
+  void _selectTemplate(JournalTemplateSelection t) {
+    final restored = _checkedByTemplate[t.name] ?? const <String>{};
+    setState(() => _selected = t.copyWith(checkedItems: restored));
+  }
+
+  void _toggleChecklistItem(String item) {
+    final next = Set<String>.from(_selected.checkedItems);
+    if (!next.add(item)) next.remove(item);
+    _checkedByTemplate[_selected.name] = next;
+    setState(() => _selected = _selected.copyWith(checkedItems: next));
+  }
+
+  void _useSelected() => widget.onTemplateSelected(
+        _selected.copyWith(
+          checkedItems: _checkedByTemplate[_selected.name] ??
+              _selected.checkedItems,
+        ),
+      );
 
   void _useBlank() =>
       widget.onTemplateSelected(JournalTemplateCatalog.blank);
@@ -201,7 +252,14 @@ class _EnhancedTemplateDialogState extends State<EnhancedTemplateDialog> {
               child: Column(
                 children: [
                   _buildHeader(theme, colors),
-                  Divider(height: 1, color: colors.border.withValues(alpha: 0.35)),
+                  if (_loadingApi)
+                    LinearProgressIndicator(
+                      minHeight: 2,
+                      color: ModuleColors.trade,
+                      backgroundColor: ModuleColors.trade.withValues(alpha: 0.15),
+                    )
+                  else
+                    Divider(height: 1, color: colors.border.withValues(alpha: 0.35)),
                   Expanded(
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -373,7 +431,7 @@ class _EnhancedTemplateDialogState extends State<EnhancedTemplateDialog> {
                       selected: t.name == _selected.name,
                       icon: _iconFor(t.icon),
                       iconColor: _iconColorFor(t.icon),
-                      onTap: () => setState(() => _selected = t),
+                      onTap: () => _selectTemplate(t),
                     ),
                   ),
                 ),
@@ -390,7 +448,7 @@ class _EnhancedTemplateDialogState extends State<EnhancedTemplateDialog> {
                       selected: t.name == _selected.name,
                       icon: _iconFor(t.icon),
                       iconColor: _iconColorFor(t.icon),
-                      onTap: () => setState(() => _selected = t),
+                      onTap: () => _selectTemplate(t),
                     ),
                   ),
                 ),
@@ -548,17 +606,48 @@ class _EnhancedTemplateDialogState extends State<EnhancedTemplateDialog> {
                     child: Row(
                       children: [
                         Icon(
-                          Icons.description_outlined,
+                          Icons.checklist_rounded,
                           size: 16,
-                          color: colors.textSecondary,
+                          color: ModuleColors.trade,
                         ),
                         const SizedBox(width: AppSpacing.xs + AppSpacing.xxs),
-                        Text(
-                          'Template Preview',
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Interactive checklist',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Text(
+                                'Tap boxes now — you can still edit them after Use template.',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: colors.textSecondary,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
+                        if (t.itemCount > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.sm,
+                              vertical: AppSpacing.xxs + 1,
+                            ),
+                            decoration: BoxDecoration(
+                              color: ModuleColors.trade.withValues(alpha: 0.14),
+                              borderRadius: AppRadii.chip,
+                            ),
+                            child: Text(
+                              '${t.checkedItems.length}/${t.itemCount}',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: ModuleColors.trade,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -580,6 +669,9 @@ class _EnhancedTemplateDialogState extends State<EnhancedTemplateDialog> {
                               final section = sections[index];
                               final color =
                                   _sectionColors[index % _sectionColors.length];
+                              final promptsSection = section.title
+                                  .toLowerCase()
+                                  .contains('prompt');
                               return Padding(
                                 padding: const EdgeInsets.only(
                                   bottom: AppSpacing.md,
@@ -588,6 +680,9 @@ class _EnhancedTemplateDialogState extends State<EnhancedTemplateDialog> {
                                   index: index + 1,
                                   color: color,
                                   section: section,
+                                  notePrompts: promptsSection,
+                                  checkedItems: _selected.checkedItems,
+                                  onToggleItem: _toggleChecklistItem,
                                 ),
                               );
                             },
@@ -636,7 +731,7 @@ class _EnhancedTemplateDialogState extends State<EnhancedTemplateDialog> {
           const SizedBox(width: AppSpacing.xs + AppSpacing.xxs),
           Expanded(
             child: Text(
-              'Tip: You can always edit the template after creating the journal.',
+              'Tip: Check items here, then keep editing the same checklist in Notes after apply.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: colors.textSecondary,
               ),
@@ -996,11 +1091,17 @@ class _PreviewSectionBlock extends StatelessWidget {
     required this.index,
     required this.color,
     required this.section,
+    required this.checkedItems,
+    required this.onToggleItem,
+    this.notePrompts = false,
   });
 
   final int index;
   final Color color;
   final JournalTemplateSection section;
+  final Set<String> checkedItems;
+  final ValueChanged<String> onToggleItem;
+  final bool notePrompts;
 
   @override
   Widget build(BuildContext context) {
@@ -1039,29 +1140,78 @@ class _PreviewSectionBlock extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
-              ...section.items.map(
-                (item) => Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.check_box_outline_blank_rounded,
-                        size: 18,
-                        color: colors.textSecondary.withValues(alpha: 0.8),
+              ...section.items.map((item) {
+                if (notePrompts) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: Text(
+                      item,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontStyle: FontStyle.italic,
+                        height: 1.35,
+                        color: colors.textSecondary,
                       ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: Text(
-                          item,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            height: 1.3,
-                          ),
+                    ),
+                  );
+                }
+                final checked = checkedItems.contains(item);
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                  child: Material(
+                    color: checked
+                        ? ModuleColors.trade.withValues(alpha: 0.1)
+                        : colors.surface.withValues(alpha: 0.35),
+                    borderRadius: AppRadii.card,
+                    child: InkWell(
+                      onTap: () => onToggleItem(item),
+                      borderRadius: AppRadii.card,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm,
+                          vertical: AppSpacing.sm,
+                        ),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: Checkbox(
+                                value: checked,
+                                onChanged: (_) => onToggleItem(item),
+                                activeColor: ModuleColors.trade,
+                                side: BorderSide(
+                                  color: colors.border.withValues(alpha: 0.7),
+                                ),
+                                materialTapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: Text(
+                                item,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  height: 1.3,
+                                  decoration: checked
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                                  color: checked
+                                      ? colors.textSecondary
+                                      : colors.textPrimary,
+                                  fontWeight: checked
+                                      ? FontWeight.w500
+                                      : FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
+                );
+              }),
             ],
           ),
         ),

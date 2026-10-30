@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:provider/provider.dart';
 import 'package:am_market_common/models/market_data.dart';
+import 'package:am_market_common/providers/market_provider.dart';
 import 'index_card.dart';
 
 class PinnedIndicesGrid extends StatelessWidget {
@@ -34,6 +36,81 @@ class PinnedIndicesGrid extends StatelessWidget {
     }
 
     final itemsToShow = indices.take(6).toList();
+    return _DesktopIndicesGrid(
+      indices: itemsToShow,
+      selectedIndexSymbol: selectedIndexSymbol,
+      onIndexSelected: onIndexSelected,
+    );
+  }
+}
+
+class _DesktopIndicesGrid extends StatefulWidget {
+  const _DesktopIndicesGrid({
+    required this.indices,
+    required this.selectedIndexSymbol,
+    required this.onIndexSelected,
+  });
+
+  final List<StockIndicesMarketData> indices;
+  final String selectedIndexSymbol;
+  final ValueChanged<StockIndicesMarketData> onIndexSelected;
+
+  @override
+  State<_DesktopIndicesGrid> createState() => _DesktopIndicesGridState();
+}
+
+class _DesktopIndicesGridState extends State<_DesktopIndicesGrid> {
+  MarketProvider? _marketProvider;
+  String? _lastSparklineRange;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _warmSparklines());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final provider = context.read<MarketProvider>();
+    if (!identical(_marketProvider, provider)) {
+      _marketProvider?.removeListener(_onMarketProviderChanged);
+      _marketProvider = provider;
+      _marketProvider?.addListener(_onMarketProviderChanged);
+    }
+  }
+
+  void _onMarketProviderChanged() {
+    final range = _marketProvider?.selectedIndicesTimeframe;
+    if (range == null || range == _lastSparklineRange) return;
+    _warmSparklines();
+  }
+
+  @override
+  void didUpdateWidget(covariant _DesktopIndicesGrid oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.indices.length != widget.indices.length) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _warmSparklines());
+    }
+  }
+
+  void _warmSparklines() {
+    if (!mounted || widget.indices.isEmpty) return;
+    final provider = context.read<MarketProvider>();
+    final symbols = widget.indices.map((e) => e.indexSymbol).toList();
+    final range = provider.selectedIndicesTimeframe;
+    _lastSparklineRange = range;
+    unawaited(provider.ensureIndexSparklines(symbols, range: range));
+  }
+
+  @override
+  void dispose() {
+    _marketProvider?.removeListener(_onMarketProviderChanged);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -43,14 +120,14 @@ class PinnedIndicesGrid extends StatelessWidget {
         mainAxisSpacing: 10.0,
         mainAxisExtent: 72.0,
       ),
-      itemCount: itemsToShow.length,
+      itemCount: widget.indices.length,
       itemBuilder: (context, index) {
-        final data = itemsToShow[index];
-        final isSelected = data.indexSymbol == selectedIndexSymbol;
+        final data = widget.indices[index];
+        final isSelected = data.indexSymbol == widget.selectedIndexSymbol;
         return IndexCard(
           data: data,
           isSelected: isSelected,
-          onTap: () => onIndexSelected(data),
+          onTap: () => widget.onIndexSelected(data),
         );
       },
     );
@@ -85,6 +162,8 @@ class _MobileIndicesStripState extends State<_MobileIndicesStrip>
   Duration _lastElapsed = Duration.zero;
   bool _paused = false;
   bool _marqueeEnabled = false;
+  MarketProvider? _marketProvider;
+  String? _lastSparklineRange;
 
   int get _baseCount => widget.indices.length;
 
@@ -99,19 +178,52 @@ class _MobileIndicesStripState extends State<_MobileIndicesStrip>
   void initState() {
     super.initState();
     _ticker = createTicker(_onTick);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _evaluateMarquee());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _evaluateMarquee();
+      _warmSparklines();
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final provider = context.read<MarketProvider>();
+    if (!identical(_marketProvider, provider)) {
+      _marketProvider?.removeListener(_onMarketProviderChanged);
+      _marketProvider = provider;
+      _marketProvider?.addListener(_onMarketProviderChanged);
+    }
+  }
+
+  void _onMarketProviderChanged() {
+    final range = _marketProvider?.selectedIndicesTimeframe;
+    if (range == null || range == _lastSparklineRange) return;
+    _warmSparklines();
   }
 
   @override
   void didUpdateWidget(covariant _MobileIndicesStrip oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.indices.length != widget.indices.length) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _evaluateMarquee());
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _evaluateMarquee();
+        _warmSparklines();
+      });
     }
+  }
+
+  void _warmSparklines() {
+    if (!mounted || widget.indices.isEmpty) return;
+    final provider = context.read<MarketProvider>();
+    final symbols = widget.indices.map((e) => e.indexSymbol).toList();
+    final range = provider.selectedIndicesTimeframe;
+    _lastSparklineRange = range;
+    unawaited(provider.ensureIndexSparklines(symbols, range: range));
   }
 
   @override
   void dispose() {
+    _marketProvider?.removeListener(_onMarketProviderChanged);
     _resumeTimer?.cancel();
     _ticker?.dispose();
     _controller.dispose();

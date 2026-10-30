@@ -28,9 +28,9 @@ import 'attachment_picker/attachment_picker.dart';
 /// - [isEditMode]: Whether attachments can be added/removed
 ///
 /// Optional parameters:
-/// - [label]: Display label (default: 'Attachments')
-/// - [maxAttachments]: Maximum number of attachments (default: unlimited)
-/// - [allowedType]: Restrict file types (default: all types allowed)
+/// - [label]: Display label (default: 'Attachments'); empty hides title text
+/// - [maxAttachments]: Maximum number of attachments (default: 5)
+/// - [allowedType]: File filter (default: [AttachmentType.image], matches picker)
 /// - [showPreview]: Show attachment previews (default: true)
 /// - [readOnly]: Prevent user interaction (default: false)
 class SharedAttachmentSection extends StatelessWidget {
@@ -43,7 +43,7 @@ class SharedAttachmentSection extends StatelessWidget {
     super.key,
     this.label,
     this.maxAttachments,
-    this.allowedType,
+    this.allowedType = AttachmentType.image,
     this.showPreview = true,
     this.readOnly = false,
   });
@@ -55,19 +55,20 @@ class SharedAttachmentSection extends StatelessWidget {
   final bool isEditMode;
   final String? label;
   final int? maxAttachments;
-  final String? allowedType;
+  final AttachmentType allowedType;
   final bool showPreview;
   final bool readOnly;
 
   @override
   Widget build(BuildContext context) => AttachmentPicker(
-    initialUrls: imageUrls,
-    onAttachmentsChanged: onAttachmentsChanged,
-    featureName: featureName,
-    userId: userId,
-    readOnly: readOnly || !isEditMode,
-    label: label,
-    maxAttachments: maxAttachments ?? 5,
-    showPreview: showPreview,
-  );
+        initialUrls: imageUrls,
+        onAttachmentsChanged: onAttachmentsChanged,
+        featureName: featureName,
+        userId: userId,
+        readOnly: readOnly || !isEditMode,
+        label: label,
+        maxAttachments: maxAttachments ?? 5,
+        showPreview: showPreview,
+        allowedType: allowedType,
+      );
 }

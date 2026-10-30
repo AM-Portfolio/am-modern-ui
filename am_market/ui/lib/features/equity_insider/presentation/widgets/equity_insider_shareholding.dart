@@ -51,89 +51,49 @@ class _EquityInsiderShareholdingState
           builder: (context, constraints) {
             final hasBoundedHeight = constraints.maxHeight.isFinite &&
                 constraints.maxHeight < double.infinity;
-            final sideBySide = constraints.maxWidth >= 560;
+            // 40% desktop column is ~360–480px; pie + legend must sit in a row.
+            final pieBesideLegend = constraints.maxWidth >= 340;
+            final chartBesideTable = constraints.maxWidth >= 560;
 
             final chips = _buildPeriodChips(shareholding);
+            final chartCard = _buildChartCard(
+              context,
+              slices,
+              isHorizontal: pieBesideLegend,
+            );
             final trendTable = ShareholdingTrendTable(
               shareholding: shareholding,
               dense: true,
               highlightPeriodIndex: _selectedQuarterIndex,
             );
 
-            if (!hasBoundedHeight) {
-              // Equity Insider full page (unbounded scroll): stack naturally.
-              final chartCard = _buildChartCard(context, slices,
-                  expandChart: false, isHorizontal: sideBySide);
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildCompactHeader(chips),
-                  const SizedBox(height: 8),
-                  if (sideBySide)
-                    IntrinsicHeight(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(flex: 4, child: chartCard),
-                          const SizedBox(width: 16),
-                          Expanded(flex: 6, child: trendTable),
-                        ],
-                      ),
-                    )
-                  else ...[
-                    chartCard,
-                    const SizedBox(height: 10),
-                    trendTable,
-                  ],
-                ],
-              );
-            }
-
-            // Chart bottom panel: fill full height, no dead space.
-            final chartCard = _buildChartCard(context, slices,
-                expandChart: true, isHorizontal: sideBySide);
-            return Column(
+            final packed = Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildCompactHeader(chips),
-                const SizedBox(height: 6),
-                Expanded(
-                  child: sideBySide
-                      ? Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Expanded(
-                              flex: 4,
-                              child: chartCard,
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              flex: 6,
-                              child: trendTable,
-                            ),
-                          ],
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            SizedBox(
-                              height: 168,
-                              child: _buildChartCard(
-                                context,
-                                slices,
-                                expandChart: true,
-                                isHorizontal: false,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Expanded(
-                              child: trendTable,
-                            ),
-                          ],
-                        ),
-                ),
+                const SizedBox(height: 8),
+                if (chartBesideTable)
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(flex: 5, child: chartCard),
+                        const SizedBox(width: 10),
+                        Expanded(flex: 5, child: trendTable),
+                      ],
+                    ),
+                  )
+                else ...[
+                  chartCard,
+                  const SizedBox(height: 8),
+                  trendTable,
+                ],
               ],
             );
+
+            if (!hasBoundedHeight) return packed;
+            return SingleChildScrollView(child: packed);
           },
         );
       },
@@ -204,10 +164,9 @@ class _EquityInsiderShareholdingState
   Widget _buildChartCard(
     BuildContext context,
     List<_SliceData> slices, {
-    required bool expandChart,
     bool isHorizontal = false,
   }) {
-    final chartSize = isHorizontal ? 180.0 : 128.0;
+    final chartSize = isHorizontal ? 104.0 : 96.0;
     final chart = SizedBox(
       width: chartSize,
       height: chartSize,
@@ -215,7 +174,7 @@ class _EquityInsiderShareholdingState
     );
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
       decoration: BoxDecoration(
         color: context.cardColor,
         border: Border.all(color: context.borderColor),
@@ -223,56 +182,19 @@ class _EquityInsiderShareholdingState
       ),
       child: isHorizontal
           ? Row(
-              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                if (expandChart)
-                  Expanded(
-                    child: Center(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: chart,
-                      ),
-                    ),
-                  )
-                else
-                  Center(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: chart,
-                    ),
-                  ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Center(
-                    child: SingleChildScrollView(
-                      child: _buildLegend(slices),
-                    ),
-                  ),
-                ),
+                chart,
+                const SizedBox(width: 10),
+                Expanded(child: _buildLegend(slices)),
               ],
             )
           : Column(
-              mainAxisSize: expandChart ? MainAxisSize.max : MainAxisSize.min,
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (expandChart)
-                  Expanded(
-                    child: Center(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: chart,
-                      ),
-                    ),
-                  )
-                else
-                  Center(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: chart,
-                    ),
-                  ),
-                const SizedBox(height: 4),
+                Center(child: chart),
+                const SizedBox(height: 6),
                 _buildLegend(slices),
               ],
             ),
@@ -318,13 +240,13 @@ class _EquityInsiderShareholdingState
             ),
             borderData: FlBorderData(show: false),
             sectionsSpace: 2.0,
-            centerSpaceRadius: isLarge ? 54 : 36,
+            centerSpaceRadius: isLarge ? 34 : 30,
             sections: slices.asMap().entries.map((entry) {
               final idx = entry.key;
               final data = entry.value;
               final isTouch = _activeIndex == idx;
-              final normalRadius = isLarge ? 30.0 : 20.0;
-              final touchRadius = isLarge ? 40.0 : 28.0;
+              final normalRadius = isLarge ? 20.0 : 18.0;
+              final touchRadius = isLarge ? 26.0 : 24.0;
               final radius = isTouch ? touchRadius : normalRadius;
               return PieChartSectionData(
                 color: data.color,
@@ -386,8 +308,8 @@ class _EquityInsiderShareholdingState
             onTap: () => _onClick(idx),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 160),
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-              margin: const EdgeInsets.only(bottom: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              margin: EdgeInsets.zero,
               decoration: BoxDecoration(
                 color: isTouch
                     ? context.textPrimary.withValues(alpha: 0.05)

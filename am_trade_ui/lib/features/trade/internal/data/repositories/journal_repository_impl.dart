@@ -1,4 +1,3 @@
-import 'package:am_common/am_common.dart';
 import '../../domain/entities/journal_entry.dart';
 import '../../domain/repositories/journal_repository.dart';
 import '../datasources/journal_remote_data_source.dart';
@@ -26,6 +25,7 @@ class JournalRepositoryImpl implements JournalRepository {
     String? tradeDirection,
     String? folderId,
     String? playbookId,
+    String? portfolioId,
     PreTradePlan? preTradePlan,
     TradeExecution? tradeExecution,
     PostTradeReview? postTradeReview,
@@ -54,6 +54,7 @@ class JournalRepositoryImpl implements JournalRepository {
         tradeDirection: tradeDirection,
         folderId: folderId,
         playbookId: playbookId,
+        portfolioId: portfolioId,
         preTradePlan: preTradePlan != null
             ? JournalEntryMapper.toPreTradePlanDto(preTradePlan)
             : null,
@@ -92,6 +93,7 @@ class JournalRepositoryImpl implements JournalRepository {
     String? tradeDirection,
     String? folderId,
     String? playbookId,
+    String? portfolioId,
     PreTradePlan? preTradePlan,
     TradeExecution? tradeExecution,
     PostTradeReview? postTradeReview,
@@ -120,6 +122,7 @@ class JournalRepositoryImpl implements JournalRepository {
       tradeDirection: tradeDirection,
       folderId: folderId,
       playbookId: playbookId,
+      portfolioId: portfolioId,
       preTradePlan: preTradePlan,
       tradeExecution: tradeExecution,
       postTradeReview: postTradeReview,
@@ -160,6 +163,7 @@ class JournalRepositoryImpl implements JournalRepository {
     String? tradeDirection,
     String? folderId,
     String? playbookId,
+    String? portfolioId,
     PreTradePlan? preTradePlan,
     TradeExecution? tradeExecution,
     PostTradeReview? postTradeReview,
@@ -188,6 +192,7 @@ class JournalRepositoryImpl implements JournalRepository {
       tradeDirection: tradeDirection,
       folderId: folderId,
       playbookId: playbookId,
+      portfolioId: portfolioId,
       preTradePlan: preTradePlan,
       tradeExecution: tradeExecution,
       postTradeReview: postTradeReview,
@@ -242,18 +247,25 @@ class JournalRepositoryImpl implements JournalRepository {
   @override
   Future<JournalSummaryDto> getSummary(
     DateTime startDate,
-    DateTime endDate,
-  ) =>
-      _remoteDataSource.getSummary(_dateOnly(startDate), _dateOnly(endDate));
+    DateTime endDate, {
+    String? portfolioId,
+  }) =>
+      _remoteDataSource.getSummary(
+        _dateOnly(startDate),
+        _dateOnly(endDate),
+        portfolioId: portfolioId,
+      );
 
   @override
   Future<List<MistakeAnalysisDto>> getMistakesSummary(
     DateTime startDate,
-    DateTime endDate,
-  ) =>
+    DateTime endDate, {
+    String? portfolioId,
+  }) =>
       _remoteDataSource.getMistakesSummary(
         _dateOnly(startDate),
         _dateOnly(endDate),
+        portfolioId: portfolioId,
       );
 
   @override
@@ -261,28 +273,37 @@ class JournalRepositoryImpl implements JournalRepository {
     DateTime startDate,
     DateTime endDate, {
     int limit = 10,
+    String? portfolioId,
   }) =>
       _remoteDataSource.getLessons(
         _dateOnly(startDate),
         _dateOnly(endDate),
         limit: limit,
+        portfolioId: portfolioId,
       );
 
   @override
   Future<JournalAdherenceDto> getAdherence(
     DateTime startDate,
-    DateTime endDate,
-  ) =>
-      _remoteDataSource.getAdherence(_dateOnly(startDate), _dateOnly(endDate));
+    DateTime endDate, {
+    String? portfolioId,
+  }) =>
+      _remoteDataSource.getAdherence(
+        _dateOnly(startDate),
+        _dateOnly(endDate),
+        portfolioId: portfolioId,
+      );
 
   @override
   Future<JournalReportCardDto> getReportCard(
     DateTime startDate,
-    DateTime endDate,
-  ) =>
+    DateTime endDate, {
+    String? portfolioId,
+  }) =>
       _remoteDataSource.getReportCard(
         _dateOnly(startDate),
         _dateOnly(endDate),
+        portfolioId: portfolioId,
       );
 
   @override
@@ -353,17 +374,27 @@ class JournalRepositoryImpl implements JournalRepository {
       _remoteDataSource.bulkDelete(entryIds);
 
   @override
-  Future<String> exportCsv(DateTime startDate, DateTime endDate) =>
-      _remoteDataSource.exportCsv(_dateOnly(startDate), _dateOnly(endDate));
+  Future<String> exportCsv(
+    DateTime startDate,
+    DateTime endDate, {
+    String? portfolioId,
+  }) =>
+      _remoteDataSource.exportCsv(
+        _dateOnly(startDate),
+        _dateOnly(endDate),
+        portfolioId: portfolioId,
+      );
 
   @override
   Future<List<JournalEntry>> createFromTrades(
     List<String> tradeIds, {
-    String journalStatus = 'COMPLETED',
+    String journalStatus = 'DRAFT',
+    String? portfolioId,
   }) async {
     final dtos = await _remoteDataSource.createFromTrades(
       tradeIds,
       journalStatus: journalStatus,
+      portfolioId: portfolioId,
     );
     return dtos.map(JournalEntryMapper.fromResponseDto).toList();
   }

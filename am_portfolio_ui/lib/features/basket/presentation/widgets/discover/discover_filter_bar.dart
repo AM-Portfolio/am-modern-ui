@@ -38,7 +38,7 @@ class DiscoverFilterBar extends StatelessWidget {
       };
 
   /// Trailing cluster width estimate for period chips + sort + clear.
-  static const double _periodChipsTrailing = 268;
+  static const double _periodChipsTrailing = 236;
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +80,6 @@ class DiscoverFilterBar extends StatelessWidget {
               _SortMenu(
                 discoverState: discoverState,
                 onSortChanged: onSortChanged,
-                compact: !showPeriodChips,
               ),
               _ClearButton(onClearAll: onClearAll),
             ],
@@ -132,34 +131,21 @@ class _PeriodMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final periodLabel = DiscoverFilterBar.periodShort(discoverState.period);
-    return PopupMenuButton<DiscoverPerformancePeriod>(
-      tooltip: 'Performance period',
-      initialValue: discoverState.period,
-      onSelected: onPeriodChanged,
-      itemBuilder: (context) => [
-        for (final p in DiscoverPerformancePeriod.values)
-          PopupMenuItem(
-            value: p,
-            child: Text(DiscoverFilterBar.periodShort(p)),
-          ),
-      ],
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            periodLabel,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: ModuleColors.portfolio,
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-          Icon(
-            Icons.arrow_drop_down,
-            color: ModuleColors.portfolio,
-            size: 18,
-          ),
+    return Padding(
+      padding: const EdgeInsets.only(left: AppSpacing.xs),
+      child: _GlobalStyleDropdown<DiscoverPerformancePeriod>(
+        width: 52,
+        value: discoverState.period,
+        items: [
+          for (final p in DiscoverPerformancePeriod.values)
+            p.toSimpleDropdownItem(
+              text: DiscoverFilterBar.periodShort(p),
+              fontSize: 12,
+            ),
         ],
+        onChanged: (p) {
+          if (p != null) onPeriodChanged(p);
+        },
       ),
     );
   }
@@ -169,49 +155,35 @@ class _SortMenu extends StatelessWidget {
   const _SortMenu({
     required this.discoverState,
     required this.onSortChanged,
-    required this.compact,
   });
 
   final DiscoverViewState discoverState;
   final ValueChanged<DiscoverSortMode> onSortChanged;
-  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    return PopupMenuButton<DiscoverSortMode>(
-      tooltip: 'Sort',
-      initialValue: discoverState.sort,
-      onSelected: onSortChanged,
-      itemBuilder: (context) => const [
-        PopupMenuItem(
-          value: DiscoverSortMode.matchDesc,
-          child: Text('Recommended'),
-        ),
-        PopupMenuItem(
-          value: DiscoverSortMode.returnDesc,
-          child: Text('Return (high → low)'),
-        ),
-        PopupMenuItem(
-          value: DiscoverSortMode.requiredAsc,
-          child: Text('Required ₹ (low → high)'),
-        ),
-      ],
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.tune, color: ModuleColors.portfolio, size: 16),
-          if (!compact) ...[
-            const SizedBox(width: 4),
-            Text(
-              discoverState.sortMenuLabel,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: ModuleColors.portfolio,
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-          ],
-          Icon(Icons.arrow_drop_down, color: ModuleColors.portfolio, size: 18),
+    return Padding(
+      padding: const EdgeInsets.only(left: AppSpacing.xs),
+      child: _GlobalStyleDropdown<DiscoverSortMode>(
+        width: 128,
+        value: discoverState.sort,
+        items: [
+          DiscoverSortMode.matchDesc.toSimpleDropdownItem(
+            text: 'Recommended',
+            fontSize: 12,
+          ),
+          DiscoverSortMode.returnDesc.toSimpleDropdownItem(
+            text: 'Return',
+            fontSize: 12,
+          ),
+          DiscoverSortMode.requiredAsc.toSimpleDropdownItem(
+            text: 'Required ₹',
+            fontSize: 12,
+          ),
         ],
+        onChanged: (mode) {
+          if (mode != null) onSortChanged(mode);
+        },
       ),
     );
   }
@@ -274,7 +246,7 @@ class _ThemeOverflowRow extends StatelessWidget {
       builder: (context, constraints) {
         final budget =
             (constraints.maxWidth - trailingReserve).clamp(80.0, 9999.0);
-        final moreWidth = _chipWidth('More ▾') + AppSpacing.sm;
+        const moreWidth = 40.0 + AppSpacing.sm;
         final topPicksWidth = _chipWidth('Top picks') + AppSpacing.sm;
         var used = topPicksWidth;
         final visible = <BasketTheme>[];
@@ -344,45 +316,76 @@ class _ThemeOverflowRow extends StatelessWidget {
                   },
                 ),
               if (overflow.isNotEmpty)
-                PopupMenuButton<BasketTheme>(
-                  tooltip: 'More themes',
-                  onSelected: (t) =>
-                      onThemeSelect(query: t.query, themeId: t.id),
-                  itemBuilder: (context) => [
-                    for (final t in overflow)
-                      PopupMenuItem(
-                        value: t,
-                        child: Text(
-                          t.label,
-                          style: TextStyle(
-                            fontWeight: selectedThemeId == t.id
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            color: selectedThemeId == t.id
-                                ? ModuleColors.portfolio
-                                : null,
-                          ),
+                Padding(
+                  padding: const EdgeInsets.only(right: AppSpacing.xs),
+                  child: _GlobalStyleDropdown<BasketTheme>(
+                    width: 40,
+                    icon: Icons.more_horiz,
+                    items: [
+                      for (final t in overflow)
+                        t.toSimpleDropdownItem(
+                          text: t.label,
+                          fontSize: 12,
                         ),
-                      ),
-                  ],
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: AppSpacing.xs),
-                    child: IgnorePointer(
-                      child: AmToggleChip(
-                        label: 'More ▾',
-                        selected:
-                            overflow.any((t) => t.id == selectedThemeId),
-                        compact: true,
-                        accentColor: ModuleColors.portfolio,
-                        onTap: () {},
-                      ),
-                    ),
+                    ],
+                    onChanged: (t) {
+                      if (t != null) {
+                        onThemeSelect(query: t.query, themeId: t.id);
+                      }
+                    },
                   ),
                 ),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+/// Compact overlay dropdown matching [MobileTimeFrameDropdown].
+class _GlobalStyleDropdown<T> extends StatelessWidget {
+  const _GlobalStyleDropdown({
+    required this.width,
+    required this.items,
+    required this.onChanged,
+    this.value,
+    this.hint,
+    this.icon,
+  });
+
+  final double width;
+  final T? value;
+  final String? hint;
+  final IconData? icon;
+  final List<DropdownMenuItem<T>> items;
+  final ValueChanged<T?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return SizedBox(
+      width: width,
+      child: CustomDropdown<T>(
+        value: value,
+        hint: hint,
+        icon: icon,
+        height: 36,
+        isExpanded: true,
+        fontSize: 12,
+        iconSize: icon == Icons.more_horiz ? 18 : 16,
+        borderRadius: 10,
+        menuMaxHeight: MobileTimeFrameDropdown.menuMaxHeightForThreeItems,
+        menuMaxWidth: width < 120 ? 160 : width,
+        primaryColor: ModuleColors.portfolio,
+        backgroundColor: isDark ? Colors.white.withValues(alpha: 0.06) : null,
+        borderColor: isDark ? Colors.white.withValues(alpha: 0.1) : null,
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: icon == Icons.more_horiz ? 4 : 6,
+        ),
+        items: items,
+        onChanged: onChanged,
+      ),
     );
   }
 }

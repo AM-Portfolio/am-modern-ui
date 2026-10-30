@@ -82,7 +82,7 @@ class MarketProvider with ChangeNotifier {
   // PriceService Integration
   PriceService? _priceService;
   final Set<String> _subscribedSymbols = {};
-  static const int _maxLiveStreamSymbols = 20;
+  final Set<String> _detailSymbols = {};
   DateTime? _lastNotify;
   static const Duration _notifyThrottle = Duration(milliseconds: 300);
   StreamSubscription<MarketDataUpdate>? _priceUpdateSub;
@@ -128,6 +128,7 @@ class MarketProvider with ChangeNotifier {
     if (_allIndicesData.isNotEmpty) {
       symbols.addAll(_allIndicesData.map((e) => e.indexSymbol));
     }
+    symbols.addAll(_detailSymbols);
     if (symbols.isEmpty) return;
 
     await _priceService!.subscribe(
@@ -137,33 +138,63 @@ class MarketProvider with ChangeNotifier {
     );
     _subscribedSymbols
       ..clear()
-      ..addAll(symbols.take(_maxLiveStreamSymbols));
+      ..addAll(symbols);
   }
 
-  Future<void> _ensurePriceSubscription(List<String> symbols) async {
-    if (_priceService == null || symbols.isEmpty) return;
+  Future<void> _ensurePriceSubscription(List<String> symbols,
+      {bool? isIndexSymbol}) async {
+    if (symbols.isEmpty) return;
 
-    final room = _maxLiveStreamSymbols - _subscribedSymbols.length;
-    if (room <= 0) {
-      CommonLogger.info(
-        'Live stream cap reached ($_maxLiveStreamSymbols symbols) — not adding more',
-        tag: 'MarketProvider._ensurePriceSubscription',
-      );
+    final pending =
+        symbols.where((s) => !_subscribedSymbols.contains(s)).toList();
+    if (pending.isEmpty) return;
+
+    if (_priceService == null) {
+      // Keep ownership until PriceService is attached; setPriceService will
+      // replay the complete active set through _resubscribeActiveSymbols.
+      _subscribedSymbols.addAll(pending);
       return;
     }
 
-    final pending = symbols
-        .where((s) => !_subscribedSymbols.contains(s))
-        .take(room)
-        .toList();
-    if (pending.isEmpty) return;
-
-    await _priceService!.subscribe(pending, isIndexSymbol: _indexSymbol);
+    await _priceService!.subscribe(
+      pending,
+      isIndexSymbol: isIndexSymbol ?? _indexSymbol,
+    );
     _subscribedSymbols.addAll(pending);
     CommonLogger.info(
-      'Subscribed to ${pending.length} symbols (${_subscribedSymbols.length}/$_maxLiveStreamSymbols active)',
+      'Subscribed to ${pending.length} symbols (${_subscribedSymbols.length} active)',
       tag: 'MarketProvider._ensurePriceSubscription',
     );
+  }
+
+  Future<void> subscribeLiveSymbol(String symbol,
+      {bool isIndexSymbol = false}) async {
+    final normalized = symbol.trim();
+    if (normalized.isEmpty) return;
+    _detailSymbols.add(normalized);
+    if (_priceService == null) return;
+    await _priceService!.subscribe([normalized], isIndexSymbol: isIndexSymbol);
+    _subscribedSymbols.add(normalized);
+  }
+
+  Future<void> unsubscribeLiveSymbol(String symbol) async {
+    final normalized = symbol.trim();
+    if (normalized.isEmpty) return;
+    _detailSymbols.remove(normalized);
+    if (_isRequiredByActiveMarketView(normalized)) return;
+    await _priceService?.unsubscribe([normalized]);
+    _subscribedSymbols.remove(normalized);
+  }
+
+  bool _isRequiredByActiveMarketView(String symbol) {
+    final upper = symbol.toUpperCase();
+    if (_selectedIndex?.toUpperCase() == upper) return true;
+    if (_allIndicesData.any((item) => item.indexSymbol.toUpperCase() == upper))
+      return true;
+    if (_currentIndexData?.stocks
+            .any((item) => item.symbol.toUpperCase() == upper) ??
+        false) return true;
+    return _detailSymbols.contains(symbol);
   }
 
   Future<void> _releasePriceSubscription() async {
@@ -291,6 +322,11 @@ class MarketProvider with ChangeNotifier {
   Map<String, List<double>> _indexSparklines = {};
   bool _isLoadingSparklines = false;
   String? _sparklineRange;
+  List<String>? _pendingSparklineSymbols;
+  String? _pendingSparklineRange;
+
+  /// Bumped on TF change so in-flight sparkline fetches discard stale results.
+  int _sparklineGeneration = 0;
 
   String get selectedIndicesTimeframe => _selectedIndicesTimeframe;
   Map<String, double> get timeframeBasePrices => _timeframeBasePrices;
@@ -302,6 +338,13 @@ class MarketProvider with ChangeNotifier {
     if (_selectedIndicesTimeframe == timeframe) return;
 
     _selectedIndicesTimeframe = timeframe;
+    // Sparklines must match card TF — clear cache + pending so stale in-flight
+    // writes cannot poison the next range.
+    _indexSparklines.clear();
+    _sparklineRange = null;
+    _pendingSparklineSymbols = null;
+    _pendingSparklineRange = null;
+    _sparklineGeneration++;
     final requestGeneration = ++_indicesRequestGeneration;
     notifyListeners();
 
@@ -346,13 +389,12 @@ class MarketProvider with ChangeNotifier {
 
   /// Loads mini close-price series for index sparkline cards.
   /// Skips symbols already cached for [range]. Safe to call repeatedly.
-  /// Concurrent calls while a fetch is in flight are ignored (no rebuild storm).
+  /// Concurrent calls while a fetch is in flight are queued and drained after.
+  /// In-flight results are discarded when [setIndicesTimeframe] bumps generation.
   Future<void> ensureIndexSparklines(
     List<String> symbols, {
     String range = '1W',
   }) async {
-    if (_isLoadingSparklines) return;
-
     final unique = symbols
         .map((s) => s.trim())
         .where((s) => s.isNotEmpty)
@@ -360,31 +402,57 @@ class MarketProvider with ChangeNotifier {
         .toList();
     if (unique.isEmpty) return;
 
-    if (_sparklineRange != null && _sparklineRange != range) {
-      _indexSparklines.clear();
+    if (_isLoadingSparklines) {
+      final pending = <String>{
+        ...?_pendingSparklineSymbols,
+        ...unique,
+      }.toList();
+      _pendingSparklineSymbols = pending;
+      _pendingSparklineRange = range;
+      return;
     }
-    _sparklineRange = range;
 
-    final missing = unique
-        .where((s) => (_indexSparklines[s]?.length ?? 0) < 2)
-        .toList();
+    // Cache is valid only for the active range (null after TF clear).
+    if (_sparklineRange != range) {
+      _indexSparklines.clear();
+      _sparklineRange = range;
+    }
+
+    final missing = unique.where((s) {
+      final direct = _indexSparklines[s];
+      final upper = _indexSparklines[s.toUpperCase()];
+      return (direct?.length ?? 0) < 2 && (upper?.length ?? 0) < 2;
+    }).toList();
     if (missing.isEmpty) return;
 
+    final fetchGeneration = _sparklineGeneration;
     _isLoadingSparklines = true;
-    // Safe to notify: callers must not invoke this from build, and the
-    // in-flight guard above blocks re-entry (preserves web sparkline shimmer).
     notifyListeners();
 
     try {
-      final fetcher =
-          debugHistoryBatchFetcher ?? _apiService.fetchHistoryBatch;
+      final fetcher = debugHistoryBatchFetcher ?? _apiService.fetchHistoryBatch;
       final history = await fetcher(missing, range);
-      history.forEach((sym, points) {
+      // TF may have changed while we awaited — never write a stale series.
+      if (fetchGeneration != _sparklineGeneration || _sparklineRange != range) {
+        return;
+      }
+      for (final requested in missing) {
+        List<Map<String, dynamic>>? points = history[requested];
+        if (points == null) {
+          for (final entry in history.entries) {
+            if (entry.key.toUpperCase() == requested.toUpperCase()) {
+              points = entry.value;
+              break;
+            }
+          }
+        }
+        if (points == null) continue;
         final closes = extractSparklineCloses(points);
         if (closes.length >= 2) {
-          _indexSparklines[sym] = closes;
+          _indexSparklines[requested] = closes;
+          _indexSparklines[requested.toUpperCase()] = closes;
         }
-      });
+      }
     } catch (e) {
       CommonLogger.error(
         'Error fetching index sparklines',
@@ -394,20 +462,53 @@ class MarketProvider with ChangeNotifier {
     } finally {
       _isLoadingSparklines = false;
       notifyListeners();
+      final pending = _pendingSparklineSymbols;
+      final pendingRange = _pendingSparklineRange ?? range;
+      _pendingSparklineSymbols = null;
+      _pendingSparklineRange = null;
+      if (pending != null && pending.isNotEmpty) {
+        await ensureIndexSparklines(pending, range: pendingRange);
+      }
     }
   }
 
   /// Maps history data-points to a sparkline close series (testable helper).
-  static List<double> extractSparklineCloses(List<Map<String, dynamic>> points) {
+  /// Points are sorted ascending by timestamp so first→last slope is correct.
+  static List<double> extractSparklineCloses(
+      List<Map<String, dynamic>> points) {
+    final sorted = List<Map<String, dynamic>>.from(points)
+      ..sort((a, b) {
+        final ta = _sparklinePointMillis(a);
+        final tb = _sparklinePointMillis(b);
+        return ta.compareTo(tb);
+      });
     final closes = <double>[];
-    for (final point in points) {
-      final raw =
-          point['close'] ?? point['price'] ?? point['lastPrice'] ?? point['value'];
+    for (final point in sorted) {
+      final raw = point['close'] ??
+          point['price'] ??
+          point['lastPrice'] ??
+          point['value'];
       if (raw is num && raw > 0) {
         closes.add(raw.toDouble());
       }
     }
     return closes;
+  }
+
+  static int _sparklinePointMillis(Map<String, dynamic> point) {
+    final raw = point['timestamp'] ??
+        point['time'] ??
+        point['date'] ??
+        point['datetime'] ??
+        point['ts'];
+    if (raw is int) return raw;
+    if (raw is num) return raw.toInt();
+    if (raw is String) {
+      final asInt = int.tryParse(raw);
+      if (asInt != null) return asInt;
+      return DateTime.tryParse(raw)?.millisecondsSinceEpoch ?? 0;
+    }
+    return 0;
   }
 
   void toggleForceRefresh(bool value) {
@@ -474,28 +575,79 @@ class MarketProvider with ChangeNotifier {
       _internalLivePrices[baseSymbol] = data;
     }
 
-    // 3. Update allIndicesData
-    String updateSymbolBase =
-        rawSymbol.contains('|') ? rawSymbol.split('|').last : rawSymbol;
+    // 3. Update index collections and selected-index state.
+    final updateSymbolBase = rawSymbol.contains('|')
+        ? rawSymbol.split('|').last
+        : rawSymbol.contains(':')
+            ? rawSymbol.split(':').last
+            : rawSymbol;
+    final newLtp = _toDouble(data['lastPrice']);
+    final newPChange = _toDouble(data['changePercent'] ?? data['pChange']);
+    final newChange = _toDouble(data['change'] ?? data['netChange']);
+    var changed = false;
 
-    for (int i = 0; i < _allIndicesData.length; i++) {
-      if (_allIndicesData[i].indexSymbol.toUpperCase() ==
-          updateSymbolBase.toUpperCase()) {
-        final current = _allIndicesData[i];
-        final double? newLtp = data['lastPrice']?.toDouble();
-        final double? newPChange = data['changePercent']?.toDouble();
+    changed |= _updateIndexList(
+        _allIndicesData, updateSymbolBase, newLtp, newPChange, newChange);
+    changed |= _updateIndexList(
+        _globalIndicesData, updateSymbolBase, newLtp, newPChange, newChange);
 
-        if (newLtp != null) {
-          _allIndicesData[i] = current.copyWith(
-              lastPrice: newLtp, pChange: newPChange ?? current.pChange);
-          _notifyThrottled();
-        }
-        break;
-      }
+    if (_currentIndexData != null &&
+        _currentIndexData!.indexSymbol.toUpperCase() ==
+            updateSymbolBase.toUpperCase()) {
+      _currentIndexData = _currentIndexData!.copyWith(
+        lastPrice: newLtp ?? _currentIndexData!.lastPrice,
+        pChange: newPChange ?? _currentIndexData!.pChange,
+        change: newChange ?? _currentIndexData!.change,
+      );
+      changed = true;
     }
+
+    if (_currentIndexData != null) {
+      final updatedStocks = _currentIndexData!.stocks.map((stock) {
+        final matches =
+            stock.symbol.toUpperCase() == updateSymbolBase.toUpperCase() ||
+                stock.symbol.toUpperCase() == rawSymbol.toUpperCase();
+        if (!matches) return stock;
+        changed = true;
+        return stock.copyWith(
+          lastPrice: newLtp ?? stock.lastPrice,
+          pChange: newPChange ?? stock.pChange,
+          change: newChange ?? stock.change,
+        );
+      }).toList();
+      _currentIndexData = _currentIndexData!.copyWith(stocks: updatedStocks);
+    }
+
+    if (changed) _notifyThrottled();
 
     // Emit event
     _livePriceController.add(data);
+  }
+
+  bool _updateIndexList(
+    List<StockIndicesMarketData> items,
+    String symbol,
+    double? ltp,
+    double? pChange,
+    double? change,
+  ) {
+    var changed = false;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].indexSymbol.toUpperCase() != symbol.toUpperCase()) continue;
+      final current = items[i];
+      items[i] = current.copyWith(
+        lastPrice: ltp ?? current.lastPrice,
+        pChange: pChange ?? current.pChange,
+        change: change ?? current.change,
+      );
+      changed = true;
+    }
+    return changed;
+  }
+
+  static double? _toDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    return value == null ? null : double.tryParse(value.toString());
   }
 
   void _notifyThrottled() {
@@ -644,7 +796,12 @@ class MarketProvider with ChangeNotifier {
           "Data refreshed for $_selectedIndex. Constituents: ${_currentIndexData?.stocks.length ?? 0}",
           tag: "MarketProvider.refreshIndexData");
       if (_selectedIndex != null) {
-        await _ensurePriceSubscription([_selectedIndex!]);
+        await _ensurePriceSubscription([_selectedIndex!], isIndexSymbol: true);
+        await _ensurePriceSubscription(
+          _currentIndexData?.stocks.map((stock) => stock.symbol).toList() ??
+              const <String>[],
+          isIndexSymbol: false,
+        );
         _syncWithPriceService();
       }
     } catch (e) {
@@ -719,10 +876,7 @@ class MarketProvider with ChangeNotifier {
       }
 
       await _ensurePriceSubscription(
-        _allIndicesData
-            .take(_maxLiveStreamSymbols)
-            .map((e) => e.indexSymbol)
-            .toList(),
+        _allIndicesData.map((e) => e.indexSymbol).toList(),
       );
       _syncWithPriceService();
     } catch (e) {
@@ -765,6 +919,9 @@ class MarketProvider with ChangeNotifier {
         "Successfully loaded ${_globalIndicesData.length} global indices",
         tag: "MarketProvider.loadGlobalIndicesData",
       );
+      // Global indexes remain REST-backed until the product explicitly
+      // enables live global-index streaming. Do not add them to the socket
+      // subscription set from this loader.
       notifyListeners();
     } catch (e) {
       CommonLogger.error(
@@ -900,9 +1057,11 @@ class MarketProvider with ChangeNotifier {
 
   /// Loads heatmap for [symbol]. Always returns the fetched map for the caller
   /// (dashboard must not rely on shared [heatmapValues], which Analysis can race).
-  Future<Map<String, double>> loadHeatmap(String symbol, String timeframe) async {
+  Future<Map<String, double>> loadHeatmap(
+      String symbol, String timeframe) async {
     final loadId = ++_heatmapLoadId;
-    CommonLogger.info("Loading heatmap for $symbol ($timeframe)", tag: "MarketProvider.loadHeatmap");
+    CommonLogger.info("Loading heatmap for $symbol ($timeframe)",
+        tag: "MarketProvider.loadHeatmap");
     try {
       var values = await _apiService.fetchHeatmap(symbol, timeframe: timeframe);
       // Stale/bad INDICES 1D Redis cache often returns almost all 0.0 — recompute once.
@@ -924,7 +1083,8 @@ class MarketProvider with ChangeNotifier {
       }
       return values;
     } catch (e) {
-      CommonLogger.error("Error loading heatmap", tag: "MarketProvider.loadHeatmap", error: e);
+      CommonLogger.error("Error loading heatmap",
+          tag: "MarketProvider.loadHeatmap", error: e);
       if (loadId == _heatmapLoadId) {
         _heatmapValues = {};
         notifyListeners();

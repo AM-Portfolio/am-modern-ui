@@ -230,11 +230,6 @@ class _PortfolioXrayPanelState extends ConsumerState<PortfolioXrayPanel>
       3 => xray.assetClassWeights,
       _ => xray.sectorWeights,
     };
-    
-    // Sector bug guard: filter out 'Unknown' sectors
-    if (_tab == 0) {
-      raw = raw.where((w) => w.name.toLowerCase() != 'unknown').toList();
-    }
 
     // Class uses real assetClassWeights from intelligence — no EQUITY 100% fake.
     final sorted = [...raw]

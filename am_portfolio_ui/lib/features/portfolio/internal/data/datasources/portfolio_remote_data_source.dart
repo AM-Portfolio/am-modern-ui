@@ -1042,24 +1042,40 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
       metadata: {'portfolioId': portfolioId, 'deleteTrades': deleteTrades},
     );
 
+    // Broker-agnostic: any portfolioId (Upstox, Groww, Zerodha, Angel, …).
+    // 1) Hard-delete on am-portfolio when the book exists there (sync Mongo+Redis+Kafka).
+    // 2) Always best-effort trade delete so dual-DB books and Paper/trade-only books clear too.
+    var deletedOnPortfolio = false;
     try {
-      final baseUri = _buildUri(
-        _tradeBaseUrl,
-        '/v1/portfolios/$portfolioId?deleteTrades=$deleteTrades',
-      );
-
+      final portfolioUri = _buildUri(_baseUrl, '/v1/portfolios/$portfolioId');
       await _apiClient.delete<void>(
-        baseUri,
-        parser: (_) {}, // No content expected
+        portfolioUri,
+        parser: (_) {},
       );
-
+      deletedOnPortfolio = true;
       CommonLogger.info(
-        'Portfolio deleted successfully',
+        'Portfolio $portfolioId deleted via am-portfolio API',
+        tag: 'PortfolioRemoteDataSource',
+      );
+    } on ApiException catch (e) {
+      if (e.statusCode != 404) {
+        CommonLogger.error(
+          'Failed to delete portfolio via am-portfolio',
+          tag: 'PortfolioRemoteDataSource',
+          error: e,
+        );
+        if (!_useMockData) {
+          rethrow;
+        }
+        return;
+      }
+      CommonLogger.info(
+        'Portfolio $portfolioId not in am-portfolio (404); trade delete will run',
         tag: 'PortfolioRemoteDataSource',
       );
     } catch (e) {
       CommonLogger.error(
-        'Failed to delete portfolio',
+        'Failed to delete portfolio via am-portfolio',
         tag: 'PortfolioRemoteDataSource',
         error: e,
       );
@@ -1067,6 +1083,67 @@ class PortfolioRemoteDataSourceImpl implements PortfolioRemoteDataSource {
         rethrow;
       }
       return;
+    }
+
+    try {
+      final tradeUri = _buildUri(
+        _tradeBaseUrl,
+        '/v1/portfolios/$portfolioId?deleteTrades=$deleteTrades',
+      );
+      await _apiClient.delete<void>(
+        tradeUri,
+        parser: (_) {},
+      );
+      CommonLogger.info(
+        'Portfolio $portfolioId deleted via trade API'
+        '${deletedOnPortfolio ? ' (dual-DB clear)' : ' (trade-only / Paper)'}',
+        tag: 'PortfolioRemoteDataSource',
+      );
+    } on ApiException catch (e) {
+      // 404 on trade is fine when the book was portfolio-only.
+      if (e.statusCode == 404 && deletedOnPortfolio) {
+        CommonLogger.info(
+          'Portfolio $portfolioId already absent from trade (OK after portfolio delete)',
+          tag: 'PortfolioRemoteDataSource',
+        );
+        return;
+      }
+      if (deletedOnPortfolio) {
+        // Portfolio Mongo already gone; trade clear may still arrive via Kafka.
+        CommonLogger.warning(
+          'Trade delete after portfolio delete failed for $portfolioId '
+          '(status=${e.statusCode}); Kafka DELETE fan-out may still clear trade',
+          tag: 'PortfolioRemoteDataSource',
+          error: e,
+        );
+        return;
+      }
+      CommonLogger.error(
+        'Failed to delete portfolio via trade',
+        tag: 'PortfolioRemoteDataSource',
+        error: e,
+      );
+      if (!_useMockData) {
+        rethrow;
+      }
+    } catch (e) {
+      if (deletedOnPortfolio) {
+        CommonLogger.warning(
+          'Trade delete after portfolio delete failed for $portfolioId; '
+          'Kafka DELETE fan-out may still clear trade',
+          tag: 'PortfolioRemoteDataSource',
+          error: e,
+        );
+        return;
+      }
+      CommonLogger.error(
+        'Failed to delete portfolio via trade',
+        tag: 'PortfolioRemoteDataSource',
+        error: e,
+      );
+      if (!_useMockData) {
+        rethrow;
+      }
     }
   }
 

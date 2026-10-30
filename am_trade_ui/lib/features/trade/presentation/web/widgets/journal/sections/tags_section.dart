@@ -1,3 +1,4 @@
+import 'package:am_design_system/am_design_system.dart';
 import 'package:flutter/material.dart';
 
 import '../widgets/tags_selector.dart';
@@ -13,6 +14,8 @@ class TagsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.colors;
+    final accent = ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade;
 
     if (selectedTags.isEmpty && !isEditMode) {
       return const SizedBox.shrink();
@@ -20,9 +23,9 @@ class TagsSection extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: theme.dividerColor.withOpacity(0.3)),
+        border: Border.all(color: colors.divider),
         borderRadius: BorderRadius.circular(12),
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.1),
+        color: colors.cardSurface.withValues(alpha: 0.08),
       ),
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -30,12 +33,12 @@ class TagsSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.label, size: 16, color: theme.colorScheme.primary),
+              Icon(Icons.label, size: 16, color: accent),
               const SizedBox(width: 6),
               Text(
                 'Tags',
                 style: theme.textTheme.labelMedium?.copyWith(
-                  color: theme.colorScheme.primary,
+                  color: accent,
                   fontWeight: FontWeight.w600,
                 ),
               ),

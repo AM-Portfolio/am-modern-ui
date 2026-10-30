@@ -14,6 +14,7 @@ import 'multi_series_chart_data.dart';
 import '../zoom/app_zoom_scroll_guard.dart';
 
 const double kComparisonChartHeaderRowHeight = 36.0;
+const double kComparisonChartToolbarControlWidth = 72.0;
 
 /// Wins the gesture arena against parent [PageView] / scroll navigators so
 /// vertical drags on the chart do not switch Market Data pages.
@@ -69,6 +70,7 @@ class MultiIndexChart extends StatefulWidget {
   final String? timeFrameCode;
   final Widget? headerLeading;
   final Widget? legendTrailing;
+  final bool showUnitToggle;
   final bool showExpandButton;
   final VoidCallback? onOpenExpanded;
   final String? expandedChartPath;
@@ -78,6 +80,12 @@ class MultiIndexChart extends StatefulWidget {
 
   /// When set, first series uses this color; area fill is only drawn for that series.
   final Color? accentColor;
+
+  /// Optional live price lookup callback for series symbols.
+  final double? Function(String symbol)? priceLookup;
+
+  /// Optional percentage change lookup callback for series symbols.
+  final double? Function(String symbol)? changePctLookup;
 
   const MultiIndexChart({
     super.key,
@@ -92,6 +100,7 @@ class MultiIndexChart extends StatefulWidget {
     this.timeFrameCode,
     this.headerLeading,
     this.legendTrailing,
+    this.showUnitToggle = true,
     this.showExpandButton = true,
     this.onOpenExpanded,
     this.expandedChartPath,
@@ -99,6 +108,8 @@ class MultiIndexChart extends StatefulWidget {
     this.preNormalizedPercent = false,
     this.initialShowAbsoluteValues = false,
     this.accentColor,
+    this.priceLookup,
+    this.changePctLookup,
   }) : assert(
           chartData != null || historicalData != null,
           'Provide chartData or historicalData',
@@ -122,6 +133,8 @@ class MultiIndexChart extends StatefulWidget {
     String? expandedChartPath,
     bool showEndValuePills = true,
     bool initialShowAbsoluteValues = false,
+    double? Function(String symbol)? priceLookup,
+    double? Function(String symbol)? changePctLookup,
   }) {
     return MultiIndexChart(
       key: key,
@@ -140,6 +153,8 @@ class MultiIndexChart extends StatefulWidget {
       expandedChartPath: expandedChartPath,
       showEndValuePills: showEndValuePills,
       initialShowAbsoluteValues: initialShowAbsoluteValues,
+      priceLookup: priceLookup,
+      changePctLookup: changePctLookup,
     );
   }
 
@@ -167,12 +182,98 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
   double _zoomScale = 1.0;
   double _pinchBaseScale = 1.0;
   double _lastChartViewportWidth = 300;
-  bool _isPinching = false;
 
   late bool _showAbsoluteValues;
   List<Map<String, dynamic>> _chartData = [];
   List<String> _activeIndices = [];
   Set<String> _hiddenIndices = {}; // Track indices hidden by the user
+  Map<String, double> _baselinePrices = {};
+  Map<String, double> _latestPrices = {};
+
+  double? _resolveSeriesPrice(String symbol) {
+    if (widget.priceLookup != null) {
+      final p = widget.priceLookup!(symbol);
+      if (p != null && p > 0) return p;
+    }
+    if (_latestPrices.containsKey(symbol) && _latestPrices[symbol]! > 0) {
+      return _latestPrices[symbol];
+    }
+    if (widget.chartData != null && widget.chartData!.series.containsKey(symbol)) {
+      final pts = widget.chartData!.series[symbol];
+      if (pts != null && pts.isNotEmpty) {
+        return pts.last.value;
+      }
+    }
+    final rawList = widget._resolvedHistoricalData[symbol];
+    if (rawList != null && rawList.isNotEmpty) {
+      for (int i = rawList.length - 1; i >= 0; i--) {
+        final pt = rawList[i];
+        final val = pt['close'] ?? pt['price'] ?? pt['lastPrice'] ?? pt['value'];
+        if (val is num && val.toDouble() > 0) {
+          return val.toDouble();
+        }
+      }
+    }
+    return null;
+  }
+
+  double? _resolveSeriesChangePct(String symbol) {
+    if (widget.changePctLookup != null) {
+      final cp = widget.changePctLookup!(symbol);
+      if (cp != null) return cp;
+    }
+    final latest = _resolveSeriesPrice(symbol);
+    if (latest == null || latest <= 0) return null;
+
+    double? baseline;
+    if (_baselinePrices.containsKey(symbol) && _baselinePrices[symbol]! > 0) {
+      baseline = _baselinePrices[symbol];
+    } else if (widget.chartData != null && widget.chartData!.series.containsKey(symbol)) {
+      final pts = widget.chartData!.series[symbol];
+      if (pts != null && pts.isNotEmpty) {
+        baseline = pts.first.value;
+      }
+    } else {
+      final rawList = widget._resolvedHistoricalData[symbol];
+      if (rawList != null && rawList.isNotEmpty) {
+        for (int i = 0; i < rawList.length; i++) {
+          final pt = rawList[i];
+          final val = pt['close'] ?? pt['price'] ?? pt['lastPrice'] ?? pt['value'];
+          if (val is num && val.toDouble() > 0) {
+            baseline = val.toDouble();
+            break;
+          }
+        }
+      }
+    }
+
+    if (baseline != null && baseline > 0) {
+      return ((latest - baseline) / baseline) * 100;
+    }
+    return null;
+  }
+
+  String _formatIndexPrice(double price) {
+    if (price <= 0) return '';
+    final isWhole = price == price.roundToDouble();
+    final decimals = isWhole ? 0 : (price >= 10000 ? 1 : 2);
+    final fixed = price.toStringAsFixed(decimals);
+    final parts = fixed.split('.');
+    final intStr = parts[0];
+
+    if (intStr.length <= 3) {
+      return parts.length > 1 ? '$intStr.${parts[1]}' : intStr;
+    }
+
+    final lastThree = intStr.substring(intStr.length - 3);
+    final remaining = intStr.substring(0, intStr.length - 3);
+    final formattedRemaining = remaining.replaceAllMapped(
+      RegExp(r'(\d+?)(?=(\d\d)+$)'),
+      (m) => '${m[1]},',
+    );
+    final formattedInt = '$formattedRemaining,$lastThree';
+    return parts.length > 1 ? '$formattedInt.${parts[1]}' : formattedInt;
+  }
 
   /// [SIP/Absolute Value Optimization] Helper getter to verify if the chart meets all safety conditions
   /// required to enable Multi-Label Y-Axis scaling. This requires Absolute Mode to be active, at least 2
@@ -307,16 +408,6 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     );
   }
 
-  /// Returns true when the chart is scrolled to (or near) the right edge,
-  /// meaning the user is viewing the most recent data points.
-  /// Pills are only meaningful when the latest data is visible.
-  bool get _isViewingRecentData {
-    if (!_scrollController.hasClients) return true;
-    final pos = _scrollController.position;
-    if (pos.maxScrollExtent < 1.0)
-      return true; // chart fits entirely in viewport
-    return (pos.maxScrollExtent - pos.pixels) < 40.0;
-  }
 
   DateTime? _parseFlexibleDateTime(String str) {
     final parsed = DateTime.tryParse(str);
@@ -415,6 +506,9 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     // Automatically fallback to Percentage Mode on Bar Chart view
     if (widget.isBarChart) {
       _showAbsoluteValues = false;
+    } else if (widget.initialShowAbsoluteValues !=
+        oldWidget.initialShowAbsoluteValues) {
+      _showAbsoluteValues = widget.initialShowAbsoluteValues;
     }
 
     final dataChanged = widget.chartData != oldWidget.chartData ||
@@ -422,8 +516,10 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
         widget.selectedIndices != oldWidget.selectedIndices ||
         widget.isBarChart != oldWidget.isBarChart ||
         widget.timeFrameCode != oldWidget.timeFrameCode;
+    final absoluteChanged = !widget.isBarChart &&
+        widget.initialShowAbsoluteValues != oldWidget.initialShowAbsoluteValues;
 
-    if (dataChanged) {
+    if (dataChanged || absoluteChanged) {
       _prepareDataAndRecalculate(resetViewport: true);
     }
   }
@@ -631,6 +727,9 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
       timeFrameCode: widget.timeFrameCode,
       isIntraday: isIntraday,
     );
+
+    _baselinePrices = baselinePrices;
+    _latestPrices = lastKnownPrices;
 
     if (resetViewport || isInitial) {
       _fitZoomToFullSeries();
@@ -888,11 +987,9 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
             instance
               ..onStart = (details) {
                 _pinchBaseScale = _zoomScale;
-                _isPinching = details.pointerCount >= 2;
               }
               ..onUpdate = (details) {
                 if (details.pointerCount >= 2) {
-                  _isPinching = true;
                   _zoom(
                     _pinchBaseScale * details.scale,
                     viewportWidth,
@@ -902,9 +999,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                   _panBy(details.focalPointDelta.dx);
                 }
               }
-              ..onEnd = (_) {
-                _isPinching = false;
-              };
+              ..onEnd = (_) {};
           },
         ),
       },
@@ -1016,6 +1111,7 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
           _buildCompactToolbar(context)
         else
           SizedBox(
+            width: double.infinity,
             height: kComparisonChartHeaderRowHeight,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -1025,8 +1121,10 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
                   const SizedBox(width: 8),
                   widget.legendTrailing!,
                 ],
-                const SizedBox(width: 8),
-                _buildUnitToggle(context),
+                if (_showBuiltInUnitToggle) ...[
+                  const SizedBox(width: 8),
+                  _buildUnitToggle(context),
+                ],
                 if (widget.showExpandButton) ...[
                   const SizedBox(width: 8),
                   _buildExpandButton(context),
@@ -1069,77 +1167,85 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
     );
   }
 
-  /// Compact phones: legend on its own scroll row; controls below (no discrete zoom).
+  bool get _showBuiltInUnitToggle =>
+      widget.showUnitToggle && !widget.preNormalizedPercent;
+
+  /// Compact phones: unified single row with scrollable legend on the left
+  /// and % / trailing controls on the right.
   Widget _buildCompactToolbar(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SizedBox(
-          height: 28,
-          child: _buildLegend(context, scrollable: true),
-        ),
-        const SizedBox(height: 4),
-        SizedBox(
-          height: 36,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              _buildUnitToggle(context, compact: true),
-              if (widget.legendTrailing != null) ...[
-                const SizedBox(width: 6),
-                widget.legendTrailing!,
-              ],
-              if (widget.showExpandButton) ...[
-                const SizedBox(width: 2),
-                _buildExpandButton(context, compact: true),
-              ],
-            ],
+    return SizedBox(
+      width: double.infinity,
+      height: 32,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: _buildLegend(context, scrollable: true),
           ),
-        ),
-      ],
+          if (_showBuiltInUnitToggle) ...[
+            const SizedBox(width: 6),
+            _buildUnitToggle(context, compact: true),
+          ],
+          if (widget.legendTrailing != null) ...[
+            const SizedBox(width: 4),
+            widget.legendTrailing!,
+          ],
+          if (widget.showExpandButton) ...[
+            const SizedBox(width: 2),
+            _buildExpandButton(context, compact: true),
+          ],
+        ],
+      ),
     );
   }
 
   Widget _buildUnitToggle(BuildContext context, {bool compact = false}) {
-    if (widget.preNormalizedPercent) {
+    if (!_showBuiltInUnitToggle) {
       return const SizedBox.shrink();
     }
-    return Container(
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: (Theme.of(context).brightness == Brightness.dark)
-            ? Colors.white.withOpacity(0.05)
-            : Colors.black.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildToggleSegment(
-            label: '%',
-            isSelected: !_showAbsoluteValues,
-            compact: compact,
-            onTap: () {
-              setState(() {
-                _showAbsoluteValues = false;
-                _prepareDataAndRecalculate(resetViewport: true);
-              });
-            },
-          ),
-          _buildToggleSegment(
-            label: '123',
-            isSelected: _showAbsoluteValues,
-            isEnabled: !widget.isBarChart,
-            compact: compact,
-            onTap: () {
-              setState(() {
-                _showAbsoluteValues = true;
-                _prepareDataAndRecalculate(resetViewport: true);
-              });
-            },
-          ),
-        ],
+    return SizedBox(
+      key: const Key('comparison-chart-unit-toggle'),
+      width: kComparisonChartToolbarControlWidth,
+      height: kComparisonChartHeaderRowHeight,
+      child: Container(
+        padding: const EdgeInsets.all(2),
+        decoration: BoxDecoration(
+          color: (Theme.of(context).brightness == Brightness.dark)
+              ? Colors.white.withOpacity(0.05)
+              : Colors.black.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: _buildToggleSegment(
+                label: '%',
+                isSelected: !_showAbsoluteValues,
+                compact: compact,
+                onTap: () {
+                  setState(() {
+                    _showAbsoluteValues = false;
+                    _prepareDataAndRecalculate(resetViewport: true);
+                  });
+                },
+              ),
+            ),
+            Expanded(
+              child: _buildToggleSegment(
+                label: '123',
+                isSelected: _showAbsoluteValues,
+                isEnabled: !widget.isBarChart,
+                compact: compact,
+                onTap: () {
+                  setState(() {
+                    _showAbsoluteValues = true;
+                    _prepareDataAndRecalculate(resetViewport: true);
+                  });
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1225,23 +1331,23 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
           message: !isEnabled && label == '123'
               ? 'Absolute mode is not supported on Bar Charts'
               : '',
-          child: GestureDetector(
-            onTap: onTap,
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: compact ? 6 : 10,
-                vertical: compact ? 4 : 6,
-              ),
-              decoration: BoxDecoration(
-                color: bgColor,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                label,
-                style: TextStyle(
-                  color: color,
-                  fontSize: compact ? 10 : 11,
-                  fontWeight: FontWeight.bold,
+          child: SizedBox.expand(
+            child: GestureDetector(
+              onTap: onTap,
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: compact ? 10 : 11,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -1253,12 +1359,18 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
 
   Widget _buildLegend(BuildContext context, {bool scrollable = false}) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final isCompact = _isCompact(context);
+
     final chips = _activeIndices.asMap().entries.map((entry) {
       final index = entry.key;
       final symbol = entry.value;
       final color = widget.colorForSeriesIndex(index);
       final isHidden = _hiddenIndices.contains(symbol);
+
+      final price = _resolveSeriesPrice(symbol);
+      final pctChange = _resolveSeriesChangePct(symbol);
+      final priceStr = price != null ? _formatIndexPrice(price) : '';
 
       return AmClickCapsule(
         triggerOnHover: true,
@@ -1296,48 +1408,107 @@ class _MultiIndexChartState extends State<MultiIndexChart> {
             ),
           ],
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: isCompact ? 12 : 16,
-              height: 3,
-              decoration: BoxDecoration(
-                color: isHidden ? Colors.grey : color,
-                borderRadius: BorderRadius.circular(2),
-              ),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: isCompact ? 6 : 8,
+            vertical: isCompact ? 3 : 4,
+          ),
+          decoration: BoxDecoration(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.04)
+                : Colors.black.withValues(alpha: 0.04),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: isHidden
+                  ? Colors.grey.withValues(alpha: 0.3)
+                  : color.withValues(alpha: 0.4),
+              width: 1,
             ),
-            const SizedBox(width: 6),
-            Text(
-              symbol,
-              style: TextStyle(
-                color: isHidden
-                    ? Colors.grey
-                    : theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
-                decoration: isHidden ? TextDecoration.lineThrough : null,
-                fontSize: isCompact ? 9.5 : 13,
-                fontWeight: FontWeight.w600,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: isCompact ? 10 : 14,
+                height: 3,
+                decoration: BoxDecoration(
+                  color: isHidden ? Colors.grey : color,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-          ],
+              const SizedBox(width: 5),
+              Text(
+                symbol,
+                style: TextStyle(
+                  color: isHidden
+                      ? Colors.grey
+                      : (isDark ? Colors.white70 : Colors.black87),
+                  decoration: isHidden ? TextDecoration.lineThrough : null,
+                  fontSize: isCompact ? 10 : 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (priceStr.isNotEmpty) ...[
+                const SizedBox(width: 5),
+                Text(
+                  priceStr,
+                  style: TextStyle(
+                    color: isHidden
+                        ? Colors.grey
+                        : (isDark ? Colors.white : Colors.black),
+                    fontSize: isCompact ? 10 : 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+              if (pctChange != null) ...[
+                const SizedBox(width: 4),
+                Text(
+                  '${pctChange >= 0 ? '+' : ''}${pctChange.toStringAsFixed(2)}%',
+                  style: TextStyle(
+                    color: isHidden
+                        ? Colors.grey
+                        : (pctChange >= 0
+                            ? (isDark
+                                ? const Color(0xFF00FF9D)
+                                : Colors.green.shade700)
+                            : (isDark
+                                ? const Color(0xFFFF5252)
+                                : Colors.red.shade700)),
+                    fontSize: isCompact ? 9 : 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       );
     }).toList();
 
-    if (scrollable) {
+    if (scrollable || isCompact) {
       return ListView.separated(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         itemCount: chips.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
-        itemBuilder: (_, i) => chips[i],
+        separatorBuilder: (_, __) => const SizedBox(width: 6),
+        itemBuilder: (_, i) => Center(child: chips[i]),
       );
     }
 
-    return Wrap(
-      spacing: isCompact ? 12 : 24,
-      runSpacing: 8,
-      children: chips,
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (int i = 0; i < chips.length; i++) ...[
+            if (i > 0) const SizedBox(width: 8),
+            chips[i],
+          ],
+        ],
+      ),
     );
   }
 

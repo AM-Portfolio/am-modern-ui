@@ -5,6 +5,7 @@ import 'package:am_library/am_library.dart';
 import 'package:am_design_system/am_design_system.dart' as calendar_types;
 import 'package:am_design_system/am_design_system.dart';
 import '../../internal/domain/entities/trade_calendar.dart' as entities;
+import '../../internal/domain/usecases/get_calendar_latest_activity.dart';
 import '../../internal/domain/usecases/get_trade_calendar.dart';
 import '../../internal/domain/usecases/get_trade_calendar_by_date_range.dart';
 import '../../internal/domain/usecases/get_trade_calendar_by_day.dart';
@@ -16,6 +17,13 @@ import '../services/calendar_aggregation_service.dart';
 import '../services/calendar_navigation_service.dart';
 import 'trade_calendar_state.dart';
 
+/// Year/month target for opening the calendar on the user's latest trade.
+class CalendarOpenTarget {
+  const CalendarOpenTarget({required this.year, required this.month});
+  final int year;
+  final int month;
+}
+
 /// Enhanced Cubit for managing trade calendar state with Universal Calendar integration
 /// Provides optimized state management, caching, and seamless universal template integration
 /// Now supports hierarchical calendar views (yearly → monthly → daily)
@@ -25,12 +33,14 @@ class TradeCalendarCubit extends Cubit<TradeCalendarState> {
     this._getTradeCalendarByMonth,
     this._getTradeCalendarByDay,
     this._getTradeCalendarByDateRange,
+    this._getCalendarLatestActivity,
   ) : super(TradeCalendarInitial());
 
   final GetTradeCalendar _getTradeCalendar;
   final GetTradeCalendarByMonth _getTradeCalendarByMonth;
   final GetTradeCalendarByDay _getTradeCalendarByDay;
   final GetTradeCalendarByDateRange _getTradeCalendarByDateRange;
+  final GetCalendarLatestActivity _getCalendarLatestActivity;
 
   // Services
   final CalendarNavigationService _navigationService = CalendarNavigationService();
@@ -433,6 +443,47 @@ class TradeCalendarCubit extends Cubit<TradeCalendarState> {
 
   /// Get current navigation state
   view_models.CalendarNavigationState get navigationState => _navigationState;
+
+  /// Resolve latest trade year/month without loading calendar data.
+  /// Falls back to wall-clock now when the portfolio has no trades or the call fails.
+  Future<CalendarOpenTarget> resolveLatestOpenTarget({required String portfolioId}) async {
+    AppLogger.methodEntry('resolveLatestOpenTarget', tag: 'TradeCalendarCubit', params: {
+      'portfolioId': portfolioId,
+    });
+
+    final now = DateTime.now();
+    var year = now.year;
+    var month = now.month;
+
+    try {
+      final latest = await _getCalendarLatestActivity(portfolioId);
+      if (latest != null) {
+        if (latest.year > now.year) {
+          year = now.year;
+          month = now.month;
+        } else {
+          year = latest.year;
+          month = latest.month.clamp(1, 12);
+        }
+      }
+    } catch (error, stackTrace) {
+      AppLogger.warning(
+        'Latest activity lookup failed; falling back to current year/month',
+        tag: 'TradeCalendarCubit',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return CalendarOpenTarget(year: year, month: month);
+  }
+
+  /// Resolve latest trade year/month, open yearly view there, and return the target.
+  Future<CalendarOpenTarget> openAtLatestActivity({required String portfolioId}) async {
+    final target = await resolveLatestOpenTarget(portfolioId: portfolioId);
+    await navigateToYearly(portfolioId: portfolioId, year: target.year);
+    return target;
+  }
 
   /// Navigate to yearly view
   Future<void> navigateToYearly({required String portfolioId, int? year}) async {

@@ -127,6 +127,7 @@ class _PaperWatchlistPaneState extends ConsumerState<PaperWatchlistPane> {
           onSelectSymbol: widget.onSelectSymbol,
           onBuySell: widget.onBuySell,
           onOpenFundamentals: widget.onOpenFundamentals,
+          showSearch: widget.showSearch,
         );
         if (!widget.showRecentHistory) return web;
         return Column(

@@ -52,6 +52,7 @@ class SortableTable<T> extends StatefulWidget {
     this.rowTextStyle,
     this.headerBackgroundColor,
     this.rowHoverColor,
+    this.shrinkWrap = false,
   });
 
   /// List of data items
@@ -86,6 +87,10 @@ class SortableTable<T> extends StatefulWidget {
 
   /// Row hover color
   final Color? rowHoverColor;
+
+  /// When true, size to content (for embedding in a parent [ListView]).
+  /// When false (default), body expands to fill remaining height.
+  final bool shrinkWrap;
 
   @override
   State<SortableTable<T>> createState() => _SortableTableState<T>();
@@ -271,19 +276,30 @@ class _SortableTableState<T> extends State<SortableTable<T>> {
 
             if (widget.showDividers) const Divider(height: 1),
 
-            // Table rows - use ListView.separated without shrinkWrap to enable proper scrolling
-            Expanded(
-              child: ListView.separated(
-                // Enable physics for scrolling
-                physics: const AlwaysScrollableScrollPhysics(),
+            // Table rows — Expanded when filling a pane; shrinkWrap when nested in scroll views
+            if (widget.shrinkWrap)
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
                 itemCount: _sortedItems.length,
                 itemBuilder: (context, index) =>
                     _buildTableRow(_sortedItems[index], theme),
                 separatorBuilder: (context, index) => widget.showDividers
                     ? const Divider(height: 1, thickness: 1)
                     : const SizedBox.shrink(),
+              )
+            else
+              Expanded(
+                child: ListView.separated(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: _sortedItems.length,
+                  itemBuilder: (context, index) =>
+                      _buildTableRow(_sortedItems[index], theme),
+                  separatorBuilder: (context, index) => widget.showDividers
+                      ? const Divider(height: 1, thickness: 1)
+                      : const SizedBox.shrink(),
+                ),
               ),
-            ),
           ],
         );
       },

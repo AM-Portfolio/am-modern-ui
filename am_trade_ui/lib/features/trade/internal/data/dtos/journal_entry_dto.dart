@@ -172,6 +172,7 @@ class TradeJournalEntryRequestDto {
     this.tradeDirection,
     this.folderId,
     this.playbookId,
+    this.portfolioId,
     this.preTradePlan,
     this.tradeExecution,
     this.postTradeReview,
@@ -202,6 +203,7 @@ class TradeJournalEntryRequestDto {
   final String? tradeDirection;
   final String? folderId;
   final String? playbookId;
+  final String? portfolioId;
   final PreTradePlanDto? preTradePlan;
   final TradeExecutionDto? tradeExecution;
   final PostTradeReviewDto? postTradeReview;
@@ -242,6 +244,7 @@ class TradeJournalEntryResponseDto {
     this.tradeDirection,
     this.folderId,
     this.playbookId,
+    this.portfolioId,
     this.preTradePlan,
     this.tradeExecution,
     this.postTradeReview,
@@ -274,6 +277,7 @@ class TradeJournalEntryResponseDto {
   final String? tradeDirection;
   final String? folderId;
   final String? playbookId;
+  final String? portfolioId;
   final PreTradePlanDto? preTradePlan;
   final TradeExecutionDto? tradeExecution;
   final PostTradeReviewDto? postTradeReview;
