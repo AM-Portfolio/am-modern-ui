@@ -151,21 +151,31 @@ void main() {
     );
   });
 
-  test('overviewShowsCostMetrics does not hide cards while holdings are empty',
+  test('overviewShowsCostMetrics hides cost cards while zero-principal loads',
       () {
     expect(
       overviewShowsCostMetrics(
         investmentValue: 0,
         totalInvested: 0,
         holdings: const [],
+        isHoldingsLoading: true,
       ),
-      isTrue,
+      isFalse,
+    );
+    expect(
+      overviewShowsCostMetrics(
+        investmentValue: 0,
+        totalInvested: 0,
+        holdings: const [],
+      ),
+      isFalse,
     );
     expect(
       overviewShowsCostMetrics(
         investmentValue: 863000,
         totalInvested: 863000,
         holdings: const [],
+        isHoldingsLoading: true,
       ),
       isTrue,
     );
