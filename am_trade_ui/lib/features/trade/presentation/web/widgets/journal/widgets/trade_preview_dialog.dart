@@ -36,6 +36,8 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = context.colors;
+    final accent = ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade;
     final periodText = _getPeriodText();
 
     return Dialog(
@@ -48,7 +50,7 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                color: accent.withValues(alpha: 0.12),
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               ),
               child: Row(
@@ -56,10 +58,10 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withOpacity(0.1),
+                      color: accent.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(Icons.analytics, color: theme.colorScheme.primary, size: 24),
+                    child: Icon(Icons.analytics, color: accent, size: 24),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -72,8 +74,8 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          '${widget.trades.length} trade${widget.trades.length != 1 ? 's' : ''} â€¢ ${_selectedIds.length} selected',
-                          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                          '${widget.trades.length} trade${widget.trades.length != 1 ? 's' : ''} • ${_selectedIds.length} selected',
+                          style: theme.textTheme.bodySmall?.copyWith(color: colors.textSecondary),
                         ),
                       ],
                     ),
@@ -86,7 +88,7 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
             // Trade List
             Expanded(
               child: widget.trades.isEmpty
-                  ? _buildEmptyState(theme)
+                  ? _buildEmptyState(theme, colors)
                   : ListView.separated(
                       padding: const EdgeInsets.all(16),
                       itemCount: widget.trades.length,
@@ -94,7 +96,7 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
                       itemBuilder: (context, index) {
                         final trade = widget.trades[index];
                         final isSelected = _selectedIds.contains(trade.tradeId);
-                        return _buildTradeCard(theme, trade, isSelected);
+                        return _buildTradeCard(theme, colors, accent, trade, isSelected);
                       },
                     ),
             ),
@@ -103,7 +105,7 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: theme.dividerColor)),
+                border: Border(top: BorderSide(color: colors.divider)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -152,26 +154,32 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
     }
   }
 
-  Widget _buildEmptyState(ThemeData theme) => Center(
+  Widget _buildEmptyState(ThemeData theme, AppColorsTheme colors) => Center(
     child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.inbox_outlined, size: 64, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
+        Icon(Icons.inbox_outlined, size: 64, color: colors.textSecondary.withValues(alpha: 0.5)),
         const SizedBox(height: 16),
         Text(
           'No trades found for this period',
-          style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          style: theme.textTheme.titleMedium?.copyWith(color: colors.textSecondary),
         ),
         const SizedBox(height: 8),
         Text(
           'Try selecting a different date or period',
-          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7)),
+          style: theme.textTheme.bodySmall?.copyWith(color: colors.textSecondary.withValues(alpha: 0.7)),
         ),
       ],
     ),
   );
 
-  Widget _buildTradeCard(ThemeData theme, TradeHoldingViewModel trade, bool isSelected) {
+  Widget _buildTradeCard(
+    ThemeData theme,
+    AppColorsTheme colors,
+    Color accent,
+    TradeHoldingViewModel trade,
+    bool isSelected,
+  ) {
     final profitLoss = trade.profitLoss ?? 0.0;
     final profitLossPercentage = trade.profitLossPercentage ?? 0.0;
     final isProfitable = profitLoss >= 0;
@@ -194,11 +202,11 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             border: Border.all(
-              color: isSelected ? theme.colorScheme.primary : theme.dividerColor.withOpacity(0.5),
+              color: isSelected ? accent : colors.border,
               width: isSelected ? 2 : 1,
             ),
             borderRadius: BorderRadius.circular(12),
-            color: isSelected ? theme.colorScheme.primaryContainer.withOpacity(0.1) : theme.colorScheme.surface,
+            color: isSelected ? accent.withValues(alpha: 0.08) : colors.surface,
           ),
           child: Row(
             children: [
@@ -228,14 +236,14 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.secondaryContainer.withOpacity(0.5),
+                            color: colors.cardSurface,
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             trade.symbol,
                             style: theme.textTheme.labelMedium?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.onSecondaryContainer,
+                              color: colors.textPrimary,
                             ),
                           ),
                         ),
@@ -246,16 +254,16 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: statusColor.withOpacity(0.15),
+                              color: statusColor.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(4),
-                              border: Border.all(color: statusColor.withOpacity(0.3)),
+                              border: Border.all(color: statusColor.withValues(alpha: 0.3)),
                             ),
                             child: Text(
                               trade.status!.replaceAll('_', ' '),
                               style: theme.textTheme.labelSmall?.copyWith(
                                 color: statusColor,
                                 fontWeight: FontWeight.w600,
-                                fontSize: 10,
+                                fontSize: AppTypeScale.xs,
                               ),
                             ),
                           ),
@@ -267,18 +275,18 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
                           Chip(
                             label: Text(
                               trade.tradePositionType!,
-                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+                              style: const TextStyle(fontSize: AppTypeScale.xs, fontWeight: FontWeight.w600),
                             ),
                             padding: EdgeInsets.zero,
                             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             visualDensity: VisualDensity.compact,
                             backgroundColor: trade.tradePositionType == 'LONG'
-                                ? context.statusSuccess.withOpacity(0.15)
-                                : context.statusError.withOpacity(0.15),
+                                ? context.statusSuccess.withValues(alpha: 0.15)
+                                : context.statusError.withValues(alpha: 0.15),
                             side: BorderSide(
                               color: trade.tradePositionType == 'LONG'
-                                  ? context.statusSuccess.withOpacity(0.3)
-                                  : context.statusError.withOpacity(0.3),
+                                  ? context.statusSuccess.withValues(alpha: 0.3)
+                                  : context.statusError.withValues(alpha: 0.3),
                             ),
                           ),
                       ],
@@ -293,13 +301,14 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
                         if (trade.entryTimestamp != null)
                           _buildDetailChip(
                             theme,
+                            colors,
                             Icons.calendar_today,
                             DateFormat('MMM dd, yyyy').format(trade.entryTimestamp!),
                           ),
-                        _buildDetailChip(theme, Icons.shopping_cart, 'Qty: ${trade.quantity ?? 0}'),
-                        _buildDetailChip(theme, Icons.currency_rupee, trade.entryPrice?.toStringAsFixed(2) ?? '0.00'),
+                        _buildDetailChip(theme, colors, Icons.shopping_cart, 'Qty: ${trade.quantity ?? 0}'),
+                        _buildDetailChip(theme, colors, Icons.currency_rupee, trade.entryPrice?.toStringAsFixed(2) ?? '0.00'),
                         if (trade.exitPrice != null)
-                          _buildDetailChip(theme, Icons.exit_to_app, trade.exitPrice!.toStringAsFixed(2)),
+                          _buildDetailChip(theme, colors, Icons.exit_to_app, trade.exitPrice!.toStringAsFixed(2)),
                       ],
                     ),
                   ],
@@ -313,8 +322,8 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
                   color: isProfitable
-                      ? context.statusSuccess.withOpacity(0.1)
-                      : context.statusError.withOpacity(0.1),
+                      ? context.statusSuccess.withValues(alpha: 0.1)
+                      : context.statusError.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
@@ -347,20 +356,20 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
     );
   }
 
-  Widget _buildDetailChip(ThemeData theme, IconData icon, String label) => Container(
+  Widget _buildDetailChip(ThemeData theme, AppColorsTheme colors, IconData icon, String label) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
     decoration: BoxDecoration(
-      color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+      color: colors.cardSurface.withValues(alpha: 0.5),
       borderRadius: BorderRadius.circular(6),
     ),
     child: Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 12, color: theme.colorScheme.onSurfaceVariant),
+        Icon(icon, size: 12, color: colors.textSecondary),
         const SizedBox(width: 4),
         Text(
           label,
-          style: theme.textTheme.labelSmall?.copyWith(fontSize: 10, color: theme.colorScheme.onSurfaceVariant),
+          style: theme.textTheme.labelSmall?.copyWith(fontSize: AppTypeScale.xs, color: colors.textSecondary),
         ),
       ],
     ),
@@ -377,8 +386,7 @@ class _TradePreviewDialogState extends State<TradePreviewDialog> {
       case 'BREAK_EVEN':
         return context.statusWarning;
       default:
-        return ModuleColors.trade;
+        return ModuleColorProvider.maybeOf(context) ?? ModuleColors.trade;
     }
   }
 }
-
