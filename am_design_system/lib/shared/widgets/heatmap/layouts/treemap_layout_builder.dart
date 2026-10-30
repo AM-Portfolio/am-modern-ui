@@ -450,49 +450,53 @@ class _NestedSectorPanelState extends State<_NestedSectorPanel> {
                 child: SizedBox(
                   height: headerH,
                   width: double.infinity,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          color: colors.divider
-                              .withValues(alpha: isDark ? 0.9 : 1),
-                          width: 1,
+                  // Clip: short sector cards must not yellow-stripe the mosaic.
+                  child: ClipRect(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: colors.divider
+                                .withValues(alpha: isDark ? 0.9 : 1),
+                            width: 1,
+                          ),
                         ),
                       ),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Container(
-                          width: 2,
-                          color: accent.withValues(
-                            alpha: _focused ? 0.75 : 0.35,
-                          ),
-                        ),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Container(
+                            width: 2,
+                            color: accent.withValues(
+                              alpha: _focused ? 0.75 : 0.35,
                             ),
-                            child: wide
-                                ? _buildWideHeader(
-                                    label,
-                                    amount,
-                                    quantity,
-                                    titleColor,
-                                    metaColor,
-                                  )
-                                : _buildCompactHeader(
-                                    label,
-                                    amount,
-                                    quantity,
-                                    titleColor,
-                                    metaColor,
-                                  ),
                           ),
-                        ),
-                      ],
+                          Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: headerH >= 28 ? 4 : 2,
+                              ),
+                              child: wide
+                                  ? _buildWideHeader(
+                                      label,
+                                      amount,
+                                      quantity,
+                                      titleColor,
+                                      metaColor,
+                                    )
+                                  : _buildCompactHeader(
+                                      label,
+                                      amount,
+                                      quantity,
+                                      titleColor,
+                                      metaColor,
+                                      showMeta: headerH >= 28,
+                                    ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -650,12 +654,14 @@ class _NestedSectorPanelState extends State<_NestedSectorPanel> {
     double? amount,
     double? quantity,
     Color titleColor,
-    Color metaColor,
-  ) {
-    final stats = _sectorStats(amount, quantity);
+    Color metaColor, {
+    bool showMeta = true,
+  }) {
+    final stats = showMeta ? _sectorStats(amount, quantity) : '';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Row(
           children: [
@@ -1128,10 +1134,14 @@ class _Rect {
     if (maxW <= 1 || maxH <= 1) {
       return const _Rect(left: 0, top: 0, width: 0, height: 0);
     }
-    final l = left.clamp(0.0, maxW);
-    final t = top.clamp(0.0, maxH);
-    final w = min(width, maxW - l).clamp(0.0, maxW);
-    final h = min(height, maxH - t).clamp(0.0, maxH);
+    // Floor origin + size so Positioned left+width never exceeds the canvas
+    // by a fractional pixel (yellow overflow stripes on nested mobile tiles).
+    final l = left.floorToDouble().clamp(0.0, maxW);
+    final t = top.floorToDouble().clamp(0.0, maxH);
+    final w = min(width.floorToDouble(), (maxW - l).floorToDouble())
+        .clamp(0.0, maxW);
+    final h = min(height.floorToDouble(), (maxH - t).floorToDouble())
+        .clamp(0.0, maxH);
     return _Rect(left: l, top: t, width: w, height: h);
   }
 
